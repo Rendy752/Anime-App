@@ -2,7 +2,7 @@ package com.example.animeapp.dataclass
 
 data class ResponseWithPaginationResponse(
     val pagination: Pagination,
-    val data: List<Any>
+    val data: List<AnimeRecommendation>
 )
 
 data class Pagination(

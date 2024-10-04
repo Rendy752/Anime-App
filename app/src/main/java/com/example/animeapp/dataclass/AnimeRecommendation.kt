@@ -1,5 +1,11 @@
 package com.example.animeapp.dataclass
 
+import androidx.room.Entity
+
+@Entity(
+    tableName = "anime_recommendations",
+    primaryKeys = ["mal_id"]
+)
 data class AnimeRecommendation(
 val mal_id: String,
 val entry: List<AnimeHeader>,
