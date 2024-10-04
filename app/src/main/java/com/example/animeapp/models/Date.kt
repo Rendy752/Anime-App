@@ -1,4 +1,4 @@
-package com.example.animeapp.dataclass
+package com.example.animeapp.models
 
 data class Aired(
     val from: String,

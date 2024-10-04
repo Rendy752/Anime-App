@@ -2,7 +2,7 @@ package com.example.animeapp.db
 
 import androidx.lifecycle.LiveData
 import androidx.room.*
-import com.example.animeapp.dataclass.AnimeRecommendation
+import com.example.animeapp.models.AnimeRecommendation
 
 @Dao
 interface AnimeRecommendationsDao {

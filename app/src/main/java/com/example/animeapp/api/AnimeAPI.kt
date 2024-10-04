@@ -1,7 +1,7 @@
 package com.example.animeapp.api
 
-import com.example.animeapp.dataclass.AnimeDetail
-import com.example.animeapp.dataclass.ResponseWithPaginationResponse
+import com.example.animeapp.models.AnimeDetail
+import com.example.animeapp.models.ResponseWithPaginationResponse
 import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Path
