@@ -6,11 +6,12 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import com.example.animeapp.databinding.FragmentDetailBinding
 import com.example.animeapp.databinding.FragmentHomeBinding
 
-class HomeFragment : Fragment() {
+class DetailFragment : Fragment() {
 
-    private var _binding: FragmentHomeBinding? = null
+    private var _binding: FragmentDetailBinding? = null
     private val binding get() = _binding!!
 
     override fun onCreateView(
@@ -18,7 +19,7 @@ class HomeFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        _binding = FragmentHomeBinding.inflate(inflater, container, false)
+        _binding = FragmentDetailBinding.inflate(inflater, container, false)
 
         val detailViewModel = ViewModelProvider(this).get(DetailViewModel::class.java)
         detailViewModel.text.observe(viewLifecycleOwner) {
