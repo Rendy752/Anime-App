@@ -7,18 +7,22 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
+import com.example.animeapp.MainActivity
 import com.example.animeapp.databinding.FragmentAboutBinding
+import com.example.animeapp.ui.animerecommendations.AnimeRecommendationsViewModel
 
 class AboutFragment : Fragment() {
 
     private var _binding: FragmentAboutBinding? = null
     private val binding get() = _binding!!
+    lateinit var viewModel: AnimeRecommendationsViewModel
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
+        viewModel = (activity as MainActivity).viewModel
         val aboutViewModel =
             ViewModelProvider(this).get(AboutViewModel::class.java)
 

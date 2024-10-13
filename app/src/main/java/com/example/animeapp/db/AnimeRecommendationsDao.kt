@@ -10,7 +10,7 @@ interface AnimeRecommendationsDao {
     suspend fun insertAnimeRecommendation(animeRecommendations: List<AnimeRecommendation>): List<Long>
 
     @Query("SELECT * FROM anime_recommendations")
-    suspend fun getAllAnimeRecommendations(): LiveData<List<AnimeRecommendation>>
+    fun getAllAnimeRecommendations(): LiveData<List<AnimeRecommendation>>
 
     @Delete
     suspend fun deleteAnimeRecommendation(animeRecommendation: AnimeRecommendation)
