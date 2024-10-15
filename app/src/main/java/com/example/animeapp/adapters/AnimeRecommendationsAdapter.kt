@@ -20,7 +20,7 @@ class AnimeRecommendationsAdapter : RecyclerView.Adapter<AnimeRecommendationsAda
                 tvSecondAnimeTitle.text = animeRecommendation.entry[1].title
                 tvContent.text = animeRecommendation.content
                 tvRecommendedBy.text = "recommended by ${animeRecommendation.user.username}"
-                tvDate.text = DateUtils.formatDateToAgo(animeRecommendation.date)
+                tvDate.text = "~ ${DateUtils.formatDateToAgo(animeRecommendation.date)}"
 
                 tvFirstAnimeTitle.setOnClickListener {
                     onAnimeTitleClickListener?.let { it(animeRecommendation.entry[0].mal_id.toString()) }

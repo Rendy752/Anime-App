@@ -1,16 +1,33 @@
-<resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Theme.AnimeApp" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
-        <!-- Primary brand color. -->
-        <item name="colorPrimary">@color/purple_200</item>
-        <item name="colorPrimaryVariant">@color/purple_700</item>
-        <item name="colorOnPrimary">@color/black</item>
-        <!-- Secondary brand color. -->
-        <item name="colorSecondary">@color/teal_200</item>
-        <item name="colorSecondaryVariant">@color/teal_200</item>
-        <item name="colorOnSecondary">@color/black</item>
-        <!-- Status bar color. -->
-        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
-        <!-- Customize your theme here. -->
+<resources>
+
+    <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.DarkActionBar"></style>
+
+    <style name="AppTheme.AnimeRecommendation">
+        <item name="colorPrimary">@color/nightColorPrimaryDark</item>
+        <item name="colorPrimaryDark">@color/nightColorPrimaryDark</item>
+        <item name="colorAccent">@color/nightCollorAccentDark</item>
+        <item name="android:windowBackground">@color/windowBackground</item>
+    </style>
+
+    <style name="AnimeTitle">
+        <item name="android:textColor">@color/nightTextColorPrimary</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="RecommendationContent">
+        <item name="android:textColor">@color/nightTextColorSecondary</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+
+    <style name="ColorPrimaryContent">
+        <item name="android:textColor">@color/nightTextColorPrimary</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="ColorSecondaryContent">
+        <item name="android:textColor">@color/nightTextColorSecondary</item>
+        <item name="android:textSize">12sp</item>
     </style>
 </resources>

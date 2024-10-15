@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:background="@drawable/bottom_border"
     android:padding="16dp">
 
     <LinearLayout
@@ -20,25 +21,34 @@
             android:orientation="vertical">
 
             <TextView
-                android:layout_width="wrap_content"
+                style="@style/ColorPrimaryContent"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:gravity="center"
                 android:text="@string/if_you_like"
                 android:textStyle="bold" />
 
             <ImageView
                 android:id="@+id/ivFirstAnimeImage"
-                android:layout_width="match_parent"
+                android:layout_width="100dp"
                 android:layout_height="150dp"
+                android:layout_gravity="center"
                 android:scaleType="centerCrop"
                 tools:src="@tools:sample/avatars" />
 
             <TextView
                 android:id="@+id/tvFirstAnimeTitle"
+                style="@style/AnimeTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 tools:text="Anime Title 1" />
+
         </LinearLayout>
+
+        <Space
+            android:layout_width="8dp"
+            android:layout_height="0dp" />
 
         <LinearLayout
             android:layout_width="0dp"
@@ -47,31 +57,39 @@
             android:orientation="vertical">
 
             <TextView
-                android:layout_width="wrap_content"
+                style="@style/ColorPrimaryContent"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:gravity="center"
                 android:text="@string/then_you_might_like"
                 android:textStyle="bold" />
 
             <ImageView
                 android:id="@+id/ivSecondAnimeImage"
-                android:layout_width="match_parent"
+                android:layout_width="100dp"
                 android:layout_height="150dp"
+                android:layout_gravity="center"
                 android:scaleType="centerCrop"
                 tools:src="@tools:sample/avatars" />
 
             <TextView
                 android:id="@+id/tvSecondAnimeTitle"
+                style="@style/AnimeTitle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:gravity="center"
                 tools:text="Anime Title 2" />
+
         </LinearLayout>
+
     </LinearLayout>
 
     <TextView
+        style="@style/ColorPrimaryContent"
         android:id="@+id/tvContent"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        android:justificationMode="inter_word"
         android:layout_marginTop="8dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -79,6 +97,7 @@
         tools:text="Content" />
 
     <TextView
+        style="@style/ColorPrimaryContent"
         android:id="@+id/tvRecommendedBy"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -88,6 +107,7 @@
         app:layout_constraintTop_toBottomOf="@id/tvContent" />
 
     <TextView
+        style="@style/ColorPrimaryContent"
         android:id="@+id/tvDate"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
