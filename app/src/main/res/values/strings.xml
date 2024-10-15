@@ -1,5 +1,5 @@
 <resources>
     <string name="app_name">Anime App</string>
-    <string name="title_home">Home</string>
+    <string name="title_recommendation">Recommendation</string>
     <string name="title_about">About</string>
 </resources>

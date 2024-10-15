@@ -22,7 +22,7 @@ class DetailFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        viewModel = (activity as MainActivity).viewModel
+        viewModel = (activity as MainActivity).animeRecommendationsViewModel
         _binding = FragmentDetailBinding.inflate(inflater, container, false)
 
         val detailViewModel = ViewModelProvider(this).get(DetailViewModel::class.java)

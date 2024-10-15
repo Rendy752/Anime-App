@@ -17,23 +17,25 @@ import com.example.animeapp.ui.animerecommendations.AnimeRecommendationsViewMode
 class MainActivity : AppCompatActivity() {
     lateinit var viewModel: AnimeRecommendationsViewModel
     private lateinit var binding: ActivityMainBinding
+    val animeRecommendationsViewModel: AnimeRecommendationsViewModel
+        get() = viewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-
         val animeRecommendationsRepository = AnimeRecommendationsRepository(AnimeRecommendationsDatabase(this))
         val viewModelProviderFactory = AnimeRecommendationsViewModelProviderFactory(animeRecommendationsRepository)
         viewModel = ViewModelProvider(this, viewModelProviderFactory).get(AnimeRecommendationsViewModel::class.java)
+
+        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(binding.root)
 
         val navView: BottomNavigationView = binding.navView
 
         val navController = findNavController(R.id.nav_host_fragment_activity_main)
         val appBarConfiguration = AppBarConfiguration(
             setOf(
-                R.id.navigation_home, R.id.navigation_about
+                R.id.navigation_recommendation, R.id.navigation_about
             )
         )
         setupActionBarWithNavController(navController, appBarConfiguration)

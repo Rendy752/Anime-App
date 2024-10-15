@@ -3,24 +3,25 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/mobile_navigation"
-    app:startDestination="@+id/navigation_home">
+    app:startDestination="@id/navigation_recommendation">
 
     <fragment
-        android:id="@+id/navigation_home"
-        android:name="com.example.animeapp.ui.home.HomeFragment"
-        android:label="@string/title_home"
-        tools:layout="@layout/fragment_home">
+        android:id="@+id/navigation_recommendation"
+        android:name="com.example.animeapp.ui.animerecommendations.AnimeRecommendationsFragment"
+        tools:layout="@layout/fragment_recommendation"
+        android:label="@string/title_recommendation">
         <action
             android:id="@+id/action_navigation_home_to_navigation_about"
             app:destination="@id/navigation_about"
-            app:popUpTo="@id/navigation_home"
-            app:popUpToInclusive="true" />
+            app:enterAnim="@anim/slide_in_right"
+            app:exitAnim="@anim/slide_out_left"
+            app:popEnterAnim="@anim/slide_in_left"
+            app:popExitAnim="@anim/slide_out_right" />
     </fragment>
 
     <fragment
         android:id="@+id/navigation_about"
         android:name="com.example.animeapp.ui.about.AboutFragment"
-        android:label="@string/title_about"
-        tools:layout="@layout/fragment_about" />
-
+        tools:layout="@layout/fragment_about"
+        android:label="@string/title_about" />
 </navigation>
