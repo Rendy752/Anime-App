@@ -9,7 +9,7 @@ import retrofit2.http.Query
 
 interface AnimeAPI {
     @GET("v4/recommendations/anime")
-    suspend fun getRecommendations(
+    suspend fun getAnimeRecommendations(
         @Query("page") page: Int = 1,
     ): Response<ResponseWithPaginationResponse>
 

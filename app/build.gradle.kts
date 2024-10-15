@@ -59,6 +59,7 @@ dependencies {
     val logging_interceptor_version = "4.12.0"
     val nav_version = "2.8.2"
     val glide_version = "4.16.0"
+    val prettytime_version = "5.0.8.Final"
 
     // ViewModel
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version")
@@ -85,4 +86,7 @@ dependencies {
     // Glide
     implementation("com.github.bumptech.glide:glide:$glide_version")
     annotationProcessor("com.github.bumptech.glide:compiler:$glide_version")
+
+    //PrettyTime
+    implementation("org.ocpsoft.prettytime:prettytime:$prettytime_version")
 }

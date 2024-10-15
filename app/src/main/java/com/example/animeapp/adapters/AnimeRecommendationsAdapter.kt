@@ -6,23 +6,39 @@ import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.example.animeapp.databinding.ItemAnimeDetailBinding
+import com.example.animeapp.databinding.ItemAnimeRecommendationBinding
 import com.example.animeapp.models.AnimeRecommendation
+import com.example.animeapp.utils.DateUtils
 
-class AnimeRecommendationAdapter : RecyclerView.Adapter<AnimeRecommendationAdapter.AnimeRecommendationViewHolder>() {
-    inner class AnimeRecommendationViewHolder(private val binding: ItemAnimeDetailBinding) : RecyclerView.ViewHolder(binding.root) {
+class AnimeRecommendationsAdapter : RecyclerView.Adapter<AnimeRecommendationsAdapter.AnimeRecommendationViewHolder>() {
+    inner class AnimeRecommendationViewHolder(private val binding: ItemAnimeRecommendationBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(animeRecommendation: AnimeRecommendation) {
             binding.apply {
-                Glide.with(itemView.context).load(animeRecommendation.entry[0].images.jpg.image_url).into(ivArticleImage)
-                tvDate.text = animeRecommendation.date
+                Glide.with(itemView.context).load(animeRecommendation.entry[0].images.jpg.image_url).into(ivFirstAnimeImage)
+                tvFirstAnimeTitle.text = animeRecommendation.entry[0].title
+                Glide.with(itemView.context).load(animeRecommendation.entry[1].images.jpg.image_url).into(ivSecondAnimeImage)
+                tvSecondAnimeTitle.text = animeRecommendation.entry[1].title
                 tvContent.text = animeRecommendation.content
-                itemView.setOnClickListener {
-                    onItemClickListener?.let { it(animeRecommendation) }
+                tvRecommendedBy.text = "recommended by ${animeRecommendation.user.username}"
+                tvDate.text = DateUtils.formatDateToAgo(animeRecommendation.date)
+
+                tvFirstAnimeTitle.setOnClickListener {
+                    onAnimeTitleClickListener?.let { it(animeRecommendation.entry[0].mal_id.toString()) }
+                }
+
+                tvSecondAnimeTitle.setOnClickListener {
+                    onAnimeTitleClickListener?.let { it(animeRecommendation.entry[1].mal_id.toString()) }
                 }
             }
         }
     }
-    private var _binding: ItemAnimeDetailBinding? = null
+
+    private var onAnimeTitleClickListener: ((String) -> Unit)? = null
+    fun setOnAnimeTitleClickListener(listener: (String) -> Unit) {
+        onAnimeTitleClickListener = listener
+    }
+
+    private var _binding: ItemAnimeRecommendationBinding? = null
     private val binding get() = _binding!!
 
     private val differCallback = object : DiffUtil.ItemCallback<AnimeRecommendation>() {
@@ -44,7 +60,7 @@ class AnimeRecommendationAdapter : RecyclerView.Adapter<AnimeRecommendationAdapt
         parent: ViewGroup,
         viewType: Int
     ): AnimeRecommendationViewHolder {
-        val binding = ItemAnimeDetailBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        val binding = ItemAnimeRecommendationBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return AnimeRecommendationViewHolder(binding)
     }
 
@@ -64,6 +80,4 @@ class AnimeRecommendationAdapter : RecyclerView.Adapter<AnimeRecommendationAdapt
     fun setOnItemClickListener(listener: (AnimeRecommendation) -> Unit) {
         onItemClickListener = listener
     }
-
-
 }
