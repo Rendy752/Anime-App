@@ -3,6 +3,7 @@
     <string name="title_recommendation">Recommendation</string>
     <string name="title_about">About</string>
     <string name="title_detail">Detail</string>
+    <string name="title_logging">Logging</string>
     <string name="if_you_like">If you like...</string>
     <string name="then_you_might_like">...then you might like</string>
 </resources>

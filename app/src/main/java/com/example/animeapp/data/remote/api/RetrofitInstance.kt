@@ -1,28 +1,33 @@
 package com.example.animeapp.data.remote.api
 
+import com.example.animeapp.data.remote.logging.LogCollectorInterceptor
 import com.example.animeapp.utils.Const.Companion.BASE_URL
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
-class RetrofitInstance {
-    companion object {
-        private val retrofit by lazy {
-            val logging = HttpLoggingInterceptor()
-            logging.setLevel(HttpLoggingInterceptor.Level.BODY)
-            val client = OkHttpClient.Builder()
-                .addInterceptor(logging)
-                .build()
-            Retrofit.Builder()
-                .baseUrl(BASE_URL)
-                .addConverterFactory(GsonConverterFactory.create())
-                .client(client)
-                .build()
-        }
+object RetrofitInstance {
+    internal val logCollectorInterceptor = LogCollectorInterceptor()
 
-        val api by lazy {
-            retrofit.create(AnimeAPI::class.java)
-        }
+    private val okHttpClient by lazy {
+        OkHttpClient.Builder()
+            .addInterceptor(logCollectorInterceptor)
+            .addInterceptor(HttpLoggingInterceptor().apply {
+                level = HttpLoggingInterceptor.Level.BODY
+            })
+            .build()
+    }
+
+    private val retrofit by lazy {
+        Retrofit.Builder()
+            .baseUrl(BASE_URL)
+            .addConverterFactory(GsonConverterFactory.create())
+            .client(okHttpClient)
+            .build()
+    }
+
+    val api: AnimeAPI by lazy {
+        retrofit.create(AnimeAPI::class.java)
     }
 }

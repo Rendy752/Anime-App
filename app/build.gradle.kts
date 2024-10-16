@@ -79,6 +79,7 @@ dependencies {
     // Retrofit
     implementation("com.squareup.retrofit2:retrofit:$retrofit_version")
     implementation("com.squareup.retrofit2:converter-gson:$retrofit_version")
+    implementation("com.squareup.okhttp3:okhttp:$logging_interceptor_version")
     implementation("com.squareup.okhttp3:logging-interceptor:$logging_interceptor_version")
 
     // Navigation

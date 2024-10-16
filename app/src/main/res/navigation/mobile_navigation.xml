@@ -12,20 +12,10 @@
         android:label="@string/title_recommendation">
         <action
             android:id="@+id/animeRecommendationsFragment_to_aboutFragment"
-            app:destination="@id/aboutFragment"
-            app:enterAnim="@anim/slide_in_right"
-            app:exitAnim="@anim/slide_out_left"
-            app:popEnterAnim="@anim/slide_in_left"
-            app:popExitAnim="@anim/slide_out_right" />
+            app:destination="@id/aboutFragment" />
         <action
             android:id="@+id/action_animeRecommendationsFragment_to_animeDetailFragment"
-            app:destination="@id/animeDetailFragment"
-            app:popUpTo="@id/animeRecommendationsFragment"
-            app:popUpToInclusive="true"
-            app:enterAnim="@anim/slide_in_right"
-            app:exitAnim="@anim/slide_out_left"
-            app:popEnterAnim="@anim/slide_in_left"
-            app:popExitAnim="@anim/slide_out_right" />
+            app:destination="@id/animeDetailFragment" />
     </fragment>
 
     <fragment
@@ -39,4 +29,15 @@
         android:name="com.example.animeapp.ui.fragments.AnimeDetailFragment"
         android:label="@string/title_detail"
         tools:layout="@layout/fragment_detail" />
+
+    <fragment
+        android:id="@+id/loggingFragment"
+        android:name="com.example.animeapp.ui.fragments.LoggingFragment"
+        android:label="@string/title_logging"
+        tools:layout="@layout/fragment_logging">
+    </fragment>
+
+    <action
+        android:id="@+id/action_global_loggingFragment"
+        app:destination="@id/loggingFragment" />
 </navigation>

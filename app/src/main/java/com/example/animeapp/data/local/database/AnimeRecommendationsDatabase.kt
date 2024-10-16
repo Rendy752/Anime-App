@@ -9,28 +9,26 @@ import com.example.animeapp.data.local.dao.AnimeRecommendationsDao
 import com.example.animeapp.data.local.entities.Converters
 import com.example.animeapp.models.AnimeRecommendation
 
-@Database(
-    entities = [AnimeRecommendation::class],
-    version = 1
-)
+@Database(entities = [AnimeRecommendation::class], version = 1, exportSchema = false)
 @TypeConverters(Converters::class)
 abstract class AnimeRecommendationsDatabase : RoomDatabase() {
+
     abstract fun getAnimeRecommendationsDao(): AnimeRecommendationsDao
 
     companion object {
         @Volatile
-        private var instance: AnimeRecommendationsDatabase? = null
-        private val LOCK = Any()
+        private var INSTANCE: AnimeRecommendationsDatabase? = null
 
-        operator fun invoke(context: Context) = instance ?: synchronized(LOCK) {
-            instance ?: createDatabase(context).also { instance = it }
+        fun getDatabase(context: Context): AnimeRecommendationsDatabase {
+            return INSTANCE ?: synchronized(this) {
+                val instance = Room.databaseBuilder(
+                    context.applicationContext,
+                    AnimeRecommendationsDatabase::class.java,
+                    "anime_recommendations_db.db"
+                ).build()
+                INSTANCE = instance
+                instance
+            }
         }
-
-        private fun createDatabase(context: Context) =
-            Room.databaseBuilder(
-                context.applicationContext,
-                AnimeRecommendationsDatabase::class.java,
-                "anime_recommendations_db.db"
-            ).build()
     }
 }
