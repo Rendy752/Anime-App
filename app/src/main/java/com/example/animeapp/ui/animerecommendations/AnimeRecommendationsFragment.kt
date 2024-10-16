@@ -7,6 +7,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
+import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.animeapp.MainActivity
@@ -29,12 +30,10 @@ class AnimeRecommendationsFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         viewModel = (activity as MainActivity).animeRecommendationsViewModel
-
         _binding = FragmentRecommendationBinding.inflate(inflater, container, false)
         val root: View = binding.root
-
-        viewModel = (activity as MainActivity).animeRecommendationsViewModel
         setupRecyclerView()
+
         viewModel.animeRecommendations.observe(viewLifecycleOwner, Observer { response ->
             when (response) {
                 is Resource.Success -> {
@@ -61,9 +60,17 @@ class AnimeRecommendationsFragment : Fragment() {
             val bundle = Bundle().apply {
                 putString("id", animeId)
             }
+            val navOptions = NavOptions.Builder()
+                .setEnterAnim(R.anim.slide_in_right)
+                .setExitAnim(R.anim.slide_out_left)
+                .setPopEnterAnim(R.anim.slide_in_left)
+                .setPopExitAnim(R.anim.slide_out_right)
+                .build()
+
             findNavController().navigate(
                 R.id.action_animeRecommendationsFragment_to_detailFragment,
-                bundle
+                bundle,
+                navOptions
             )
         }
 
@@ -80,7 +87,6 @@ class AnimeRecommendationsFragment : Fragment() {
 
     private fun setupRecyclerView() {
         animeRecommendationsAdapter = AnimeRecommendationsAdapter()
-        Log.d("AnimeRecommendationsFragment", "setupRecyclerView: ${animeRecommendationsAdapter}")
         binding.rvAnimeRecommendations.apply {
             adapter = animeRecommendationsAdapter
             layoutManager = LinearLayoutManager(activity)

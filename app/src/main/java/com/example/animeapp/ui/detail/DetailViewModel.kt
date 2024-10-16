@@ -1,13 +1,32 @@
 package com.example.animeapp.ui.home
 
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.example.animeapp.models.AnimeDetail
+import com.example.animeapp.models.AnimeDetailResponse
+import com.example.animeapp.repository.AnimeDetailRepository
+import com.example.animeapp.utils.Resource
+import kotlinx.coroutines.launch
+import retrofit2.Response
 
-class DetailViewModel : ViewModel() {
+class DetailViewModel(
+    private val animeDetailRepository: AnimeDetailRepository
+) : ViewModel() {
+    val animeDetail: MutableLiveData<Resource<AnimeDetailResponse>> = MutableLiveData()
 
-    private val _text = MutableLiveData<String>().apply {
-        value = "This is detail Fragment"
+    fun getAnimeDetail(id: Int) = viewModelScope.launch {
+        animeDetail.postValue(Resource.Loading())
+        val response = animeDetailRepository.getAnimeDetail(id)
+        animeDetail.postValue(handleAnimeDetailResponse(response))
     }
-    val text: LiveData<String> = _text
+
+    fun handleAnimeDetailResponse(response: Response<AnimeDetailResponse>): Resource<AnimeDetailResponse> {
+        if (response.isSuccessful) {
+            response.body()?.let { resultResponse ->
+                return Resource.Success(resultResponse)
+            }
+        }
+        return Resource.Error(response.message())
+    }
 }

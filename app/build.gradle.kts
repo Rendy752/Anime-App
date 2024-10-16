@@ -2,6 +2,7 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("kotlin-kapt")
+    id("com.google.dagger.hilt.android")
 }
 
 android {
@@ -60,6 +61,7 @@ dependencies {
     val nav_version = "2.8.2"
     val glide_version = "4.16.0"
     val prettytime_version = "5.0.8.Final"
+    val hilt_version = "2.51.1"
 
     // ViewModel
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version")
@@ -89,4 +91,13 @@ dependencies {
 
     //PrettyTime
     implementation("org.ocpsoft.prettytime:prettytime:$prettytime_version")
+
+    //Hilt
+    implementation("com.google.dagger:hilt-android:$hilt_version")
+    kapt("com.google.dagger:hilt-android-compiler:$hilt_version")
+
+    //ViewModel injection
+//    implementation("androidx.hilt:hilt-lifecycle-viewmodel:1.0.0")
+    kapt("androidx.hilt:hilt-compiler:1.0.0")
+    implementation("androidx.hilt:hilt-navigation-fragment:1.0.0")
 }

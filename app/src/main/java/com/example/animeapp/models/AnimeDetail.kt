@@ -1,5 +1,11 @@
 package com.example.animeapp.models
 
+import androidx.room.Entity
+
+@Entity(
+    tableName = "anime_detail",
+    primaryKeys = ["mal_id"]
+)
 data class AnimeDetail(
     val mal_id: Int,
     val url: String,
@@ -19,7 +25,7 @@ data class AnimeDetail(
     val aired: Aired,
     val duration: String,
     val rating: String,
-    val score: Int,
+    val score: Double,
     val scored_by: Int,
     val rank: Int,
     val popularity: Int,
@@ -27,7 +33,7 @@ data class AnimeDetail(
     val favorites: Int,
     val synopsis: String,
     val background: String,
-    val season: String,
+    val season: String?,
     val year: Int,
     val broadcast: Broadcast,
     val producers: List<CommonIdentity>,
