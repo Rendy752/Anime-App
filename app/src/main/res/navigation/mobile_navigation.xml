@@ -7,7 +7,7 @@
 
     <fragment
         android:id="@+id/animeRecommendationsFragment"
-        android:name="com.example.animeapp.ui.animerecommendations.AnimeRecommendationsFragment"
+        android:name="com.example.animeapp.ui.fragments.AnimeRecommendationsFragment"
         tools:layout="@layout/fragment_recommendation"
         android:label="@string/title_recommendation">
         <action
@@ -18,8 +18,8 @@
             app:popEnterAnim="@anim/slide_in_left"
             app:popExitAnim="@anim/slide_out_right" />
         <action
-            android:id="@+id/action_animeRecommendationsFragment_to_detailFragment"
-            app:destination="@id/detailFragment"
+            android:id="@+id/action_animeRecommendationsFragment_to_animeDetailFragment"
+            app:destination="@id/animeDetailFragment"
             app:popUpTo="@id/animeRecommendationsFragment"
             app:popUpToInclusive="true"
             app:enterAnim="@anim/slide_in_right"
@@ -30,13 +30,13 @@
 
     <fragment
         android:id="@+id/aboutFragment"
-        android:name="com.example.animeapp.ui.about.AboutFragment"
+        android:name="com.example.animeapp.ui.fragments.AboutFragment"
         tools:layout="@layout/fragment_about"
         android:label="@string/title_about" />
 
     <fragment
-        android:id="@+id/detailFragment"
-        android:name="com.example.animeapp.ui.detail.DetailFragment"
+        android:id="@+id/animeDetailFragment"
+        android:name="com.example.animeapp.ui.fragments.AnimeDetailFragment"
         android:label="@string/title_detail"
         tools:layout="@layout/fragment_detail" />
 </navigation>

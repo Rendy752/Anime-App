@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animerecommendations
+package com.example.animeapp.ui.fragments
 
 import android.os.Bundle
 import android.util.Log
@@ -10,10 +10,11 @@ import androidx.lifecycle.Observer
 import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.animeapp.MainActivity
+import com.example.animeapp.ui.activities.MainActivity
 import com.example.animeapp.R
-import com.example.animeapp.adapters.AnimeRecommendationsAdapter
+import com.example.animeapp.ui.adapters.AnimeRecommendationsAdapter
 import com.example.animeapp.databinding.FragmentRecommendationBinding
+import com.example.animeapp.ui.viewmodels.AnimeRecommendationsViewModel
 import com.example.animeapp.utils.Resource
 
 class AnimeRecommendationsFragment : Fragment() {
@@ -68,7 +69,7 @@ class AnimeRecommendationsFragment : Fragment() {
                 .build()
 
             findNavController().navigate(
-                R.id.action_animeRecommendationsFragment_to_detailFragment,
+                R.id.action_animeRecommendationsFragment_to_animeDetailFragment,
                 bundle,
                 navOptions
             )

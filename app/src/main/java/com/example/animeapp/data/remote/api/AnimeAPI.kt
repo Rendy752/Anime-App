@@ -1,4 +1,4 @@
-package com.example.animeapp.api
+package com.example.animeapp.data.remote.api
 
 import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.models.AnimeRecommendationResponse

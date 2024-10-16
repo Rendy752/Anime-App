@@ -1,4 +1,4 @@
-package com.example.animeapp.db
+package com.example.animeapp.data.local.database
 
 import android.content.Context
 import androidx.room.Database
@@ -7,6 +7,8 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.example.animeapp.data.local.dao.AnimeDetailDao
+import com.example.animeapp.data.local.entities.Converters
 import com.example.animeapp.models.AnimeDetail
 
 @Database(

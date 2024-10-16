@@ -1,9 +1,7 @@
 package com.example.animeapp.repository
 
-import com.example.animeapp.api.RetrofitInstance
-import com.example.animeapp.db.AnimeDetailDatabase
-import com.example.animeapp.models.AnimeDetailResponse
-import retrofit2.Response
+import com.example.animeapp.data.remote.api.RetrofitInstance
+import com.example.animeapp.data.local.database.AnimeDetailDatabase
 
 class AnimeDetailRepository(
     val db: AnimeDetailDatabase

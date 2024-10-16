@@ -1,10 +1,12 @@
-package com.example.animeapp.db
+package com.example.animeapp.data.local.database
 
 import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import com.example.animeapp.data.local.dao.AnimeRecommendationsDao
+import com.example.animeapp.data.local.entities.Converters
 import com.example.animeapp.models.AnimeRecommendation
 
 @Database(

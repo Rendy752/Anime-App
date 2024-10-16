@@ -1,16 +1,15 @@
-package com.example.animeapp.ui.home
+package com.example.animeapp.ui.viewmodels
 
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.repository.AnimeDetailRepository
 import com.example.animeapp.utils.Resource
 import kotlinx.coroutines.launch
 import retrofit2.Response
 
-class DetailViewModel(
+class AnimeDetailViewModel(
     private val animeDetailRepository: AnimeDetailRepository
 ) : ViewModel() {
     val animeDetail: MutableLiveData<Resource<AnimeDetailResponse>> = MutableLiveData()

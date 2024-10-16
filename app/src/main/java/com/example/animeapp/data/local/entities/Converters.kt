@@ -1,4 +1,4 @@
-package com.example.animeapp.db
+package com.example.animeapp.data.local.entities
 
 import androidx.room.TypeConverter
 import com.example.animeapp.models.Aired

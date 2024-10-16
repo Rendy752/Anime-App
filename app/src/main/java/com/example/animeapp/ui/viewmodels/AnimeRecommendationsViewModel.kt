@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animerecommendations
+package com.example.animeapp.ui.viewmodels
 
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel

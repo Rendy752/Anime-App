@@ -1,4 +1,4 @@
-package com.example.animeapp.db
+package com.example.animeapp.data.local.dao
 
 import androidx.lifecycle.LiveData
 import androidx.room.Dao

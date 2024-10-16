@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.detail
+package com.example.animeapp.ui.fragments
 
 import android.os.Bundle
 import android.util.Log
@@ -7,16 +7,16 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
-import com.example.animeapp.MainActivity
+import com.example.animeapp.ui.activities.MainActivity
 import com.example.animeapp.databinding.FragmentDetailBinding
-import com.example.animeapp.ui.home.DetailViewModel
+import com.example.animeapp.ui.viewmodels.AnimeDetailViewModel
 import com.example.animeapp.utils.Resource
 
-class DetailFragment : Fragment() {
+class AnimeDetailFragment : Fragment() {
 
     private var _binding: FragmentDetailBinding? = null
     private val binding get() = _binding!!
-    lateinit var viewModel: DetailViewModel
+    lateinit var viewModel: AnimeDetailViewModel
 
     val TAG = "AnimeDetailFragment"
 
@@ -25,7 +25,7 @@ class DetailFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        viewModel = (activity as MainActivity).detailViewModel
+        viewModel = (activity as MainActivity).animeDetailViewModel
         _binding = FragmentDetailBinding.inflate(inflater, container, false)
         val root: View = binding.root
 

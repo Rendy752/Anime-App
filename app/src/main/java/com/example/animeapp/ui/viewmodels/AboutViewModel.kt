@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.about
+package com.example.animeapp.ui.viewmodels
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
