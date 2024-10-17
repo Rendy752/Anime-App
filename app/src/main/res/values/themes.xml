@@ -2,6 +2,12 @@
 
     <style name="AppTheme" parent="Theme.MaterialComponents.Light.DarkActionBar"></style>
 
+    <style name="container">
+        <item name="android:background">@drawable/container_light</item>
+        <item name="android:padding">16dp</item>
+        <item name="android:layout_margin">8dp</item>"
+    </style>
+
     <style name="AppTheme.AnimeRecommendation">
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
@@ -29,5 +35,17 @@
     <style name="ColorSecondaryContent">
         <item name="android:textColor">@color/textColorSecondary</item>
         <item name="android:textSize">12sp</item>
+    </style>
+
+    <style name="LogTextViewStyle">
+        <item name="android:padding">8dp</item>
+        <item name="android:background">@drawable/container_light</item>
+    </style>
+
+    <style name="LogButtonStyle">
+        <item name="android:backgroundTint">@color/colorPrimary</item>
+        <item name="android:textColor">@color/nightTextColorSecondary</item>
+        <item name="android:padding">8dp</item>
+        <item name="android:textSize">14sp</item>
     </style>
 </resources>

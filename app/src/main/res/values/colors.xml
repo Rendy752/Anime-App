@@ -9,7 +9,7 @@
     <color name="textColorSecondary">#808080</color>
 
     <color name="nightColorPrimaryDark">#121212</color>
-    <color name="nightCollorAccentDark">#BB86FC</color>
+    <color name="nightColorAccentDark">#BB86FC</color>
     <color name="nightTextColorPrimary">#FFFFFF</color>
     <color name="nightTextColorSecondary">#BDBDBD</color>
 </resources>

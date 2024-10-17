@@ -3,6 +3,7 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("kotlin-kapt")
     id("com.google.dagger.hilt.android")
+    id("kotlin-parcelize")
 }
 
 android {
@@ -101,4 +102,6 @@ dependencies {
 //    implementation("androidx.hilt:hilt-lifecycle-viewmodel:1.0.0")
     kapt("androidx.hilt:hilt-compiler:1.0.0")
     implementation("androidx.hilt:hilt-navigation-fragment:1.0.0")
+
+    implementation("com.google.code.gson:gson:2.10.1")
 }
