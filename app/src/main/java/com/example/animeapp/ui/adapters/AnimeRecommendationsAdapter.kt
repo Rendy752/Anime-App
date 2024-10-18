@@ -6,12 +6,12 @@ import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.example.animeapp.databinding.ItemAnimeRecommendationBinding
+import com.example.animeapp.databinding.AnimeRecommendationItemBinding
 import com.example.animeapp.models.AnimeRecommendation
 import com.example.animeapp.utils.DateUtils
 
 class AnimeRecommendationsAdapter : RecyclerView.Adapter<AnimeRecommendationsAdapter.AnimeRecommendationViewHolder>() {
-    inner class AnimeRecommendationViewHolder(private val binding: ItemAnimeRecommendationBinding) : RecyclerView.ViewHolder(binding.root) {
+    inner class AnimeRecommendationViewHolder(private val binding: AnimeRecommendationItemBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(animeRecommendation: AnimeRecommendation) {
             binding.apply {
                 Glide.with(itemView.context).load(animeRecommendation.entry[0].images.jpg.image_url).into(ivFirstAnimeImage)
@@ -38,7 +38,7 @@ class AnimeRecommendationsAdapter : RecyclerView.Adapter<AnimeRecommendationsAda
         onAnimeTitleClickListener = listener
     }
 
-    private var _binding: ItemAnimeRecommendationBinding? = null
+    private var _binding: AnimeRecommendationItemBinding? = null
     private val binding get() = _binding!!
 
     private val differCallback = object : DiffUtil.ItemCallback<AnimeRecommendation>() {
@@ -60,7 +60,7 @@ class AnimeRecommendationsAdapter : RecyclerView.Adapter<AnimeRecommendationsAda
         parent: ViewGroup,
         viewType: Int
     ): AnimeRecommendationViewHolder {
-        val binding = ItemAnimeRecommendationBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        val binding = AnimeRecommendationItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return AnimeRecommendationViewHolder(binding)
     }
 
