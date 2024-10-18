@@ -46,7 +46,7 @@
 
                 <TextView
                     android:id="@+id/tvFirstAnimeTitle"
-                    style="@style/AnimeTitle"
+                    style="@style/AnimeTitle.Primary"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@color/shimmer_placeholder"
@@ -84,7 +84,7 @@
 
                 <TextView
                     android:id="@+id/tvSecondAnimeTitle"
-                    style="@style/AnimeTitle"
+                    style="@style/AnimeTitle.Primary"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:background="@color/shimmer_placeholder"

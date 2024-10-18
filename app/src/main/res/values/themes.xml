@@ -16,9 +16,16 @@
     </style>
 
     <style name="AnimeTitle" parent="@android:style/TextAppearance.Medium">
-        <item name="android:textColor">@color/textColorPrimary</item>
         <item name="android:textSize">16sp</item>
         <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="AnimeTitle.Primary" parent="@android:style/TextAppearance.Medium">
+        <item name="android:textColor">@color/textColorPrimary</item>
+    </style>
+
+    <style name="AnimeTitle.Secondary" parent="@android:style/TextAppearance.Medium">
+        <item name="android:textColor">@color/textColorSecondary</item>
     </style>
 
     <style name="RecommendationContent">
@@ -55,5 +62,13 @@
         <item name="android:layout_gravity">center</item>
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">wrap_content</item>
+    </style>
+
+    <style name="SynonymTextStyle" parent="@android:style/TextAppearance.Medium">
+        <item name="android:textColor">@color/textColorSecondary</item>
+        <item name="android:background">@drawable/container_light</item>
+        <item name="android:padding">8dp</item>
+        <item name="android:textSize">12sp</item>
+        <item name="android:layout_marginRight">4dp</item>
     </style>
 </resources>
