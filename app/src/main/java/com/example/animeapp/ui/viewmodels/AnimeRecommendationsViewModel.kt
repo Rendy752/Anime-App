@@ -1,38 +1,42 @@
 package com.example.animeapp.ui.viewmodels
 
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.animeapp.models.AnimeRecommendationResponse
 import com.example.animeapp.repository.AnimeRecommendationsRepository
 import com.example.animeapp.utils.Resource
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import retrofit2.Response
 
 class AnimeRecommendationsViewModel(
     private val animeRecommendationsRepository: AnimeRecommendationsRepository
 ) : ViewModel() {
-    val animeRecommendations: MutableLiveData<Resource<AnimeRecommendationResponse>> =
-        MutableLiveData()
-    var animeRecommendationsPage = 1
+
+    private val _animeRecommendations = MutableStateFlow<Resource<AnimeRecommendationResponse>>(Resource.Loading())
+    val animeRecommendations: StateFlow<Resource<AnimeRecommendationResponse>> = _animeRecommendations.asStateFlow()
+
+    private var animeRecommendationsPage = 1
 
     init {
         getAnimeRecommendations()
     }
 
-    fun getAnimeRecommendations() = viewModelScope.launch {
-        animeRecommendations.postValue(Resource.Loading())
-        val response =
-            animeRecommendationsRepository.getAnimeRecommendations(animeRecommendationsPage)
-        animeRecommendations.postValue(handleAnimeRecommendationsResponse(response))
+    private fun getAnimeRecommendations() = viewModelScope.launch {
+        _animeRecommendations.value = Resource.Loading()
+        val response = animeRecommendationsRepository.getAnimeRecommendations(animeRecommendationsPage)
+        _animeRecommendations.value = handleAnimeRecommendationsResponse(response)
     }
 
-    fun handleAnimeRecommendationsResponse(response: Response<AnimeRecommendationResponse>): Resource<AnimeRecommendationResponse> {
-        if (response.isSuccessful) {
+    private fun handleAnimeRecommendationsResponse(response: Response<AnimeRecommendationResponse>): Resource<AnimeRecommendationResponse> {
+        return if (response.isSuccessful) {
             response.body()?.let { resultResponse ->
-                return Resource.Success(resultResponse)
-            }
+                Resource.Success(resultResponse)
+            } ?: Resource.Error("Response body is null")
+        } else {
+            Resource.Error(response.message())
         }
-        return Resource.Error(response.message())
     }
 }

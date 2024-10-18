@@ -63,6 +63,10 @@ dependencies {
     val glide_version = "4.16.0"
     val prettytime_version = "5.0.8.Final"
     val hilt_version = "2.51.1"
+    var hilt_compiler_version = "1.0.0"
+    val hilt_navigation_version = "1.0.0"
+    val gson_version = "2.10.1"
+    val shimmer_version = "0.5.0"
 
     // ViewModel
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version")
@@ -100,8 +104,12 @@ dependencies {
 
     //ViewModel injection
 //    implementation("androidx.hilt:hilt-lifecycle-viewmodel:1.0.0")
-    kapt("androidx.hilt:hilt-compiler:1.0.0")
-    implementation("androidx.hilt:hilt-navigation-fragment:1.0.0")
+    kapt("androidx.hilt:hilt-compiler:$hilt_compiler_version")
+    implementation("androidx.hilt:hilt-navigation-fragment:$hilt_navigation_version")
 
-    implementation("com.google.code.gson:gson:2.10.1")
+    //Gson
+    implementation("com.google.code.gson:gson:$gson_version")
+
+    //Loading Skeleton
+    implementation("com.facebook.shimmer:shimmer:$shimmer_version")
 }

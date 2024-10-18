@@ -6,9 +6,14 @@ import com.example.animeapp.repository.AnimeRecommendationsRepository
 import com.example.animeapp.ui.viewmodels.AnimeRecommendationsViewModel
 
 class AnimeRecommendationsViewModelProviderFactory(
-    val animeRecommendationsRepository: AnimeRecommendationsRepository
-): ViewModelProvider.Factory {
+    private val animeRecommendationsRepository: AnimeRecommendationsRepository
+) : ViewModelProvider.Factory {
+
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
-        return AnimeRecommendationsViewModel(animeRecommendationsRepository) as T
+        if (modelClass.isAssignableFrom(AnimeRecommendationsViewModel::class.java)) {
+            @Suppress("UNCHECKED_CAST")
+            return AnimeRecommendationsViewModel(animeRecommendationsRepository) as T
+        }
+        throw IllegalArgumentException("Unknown ViewModel class")
     }
 }

@@ -1,119 +1,145 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<com.facebook.shimmer.ShimmerFrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/shimmer_view_container"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
-    style="@style/container" >
+    android:layout_height="wrap_content">
 
-    <LinearLayout
-        android:id="@+id/llAnimeContainer"
+    <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
+        style="@style/container"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        app:layout_constraintTop_toTopOf="parent">
+        android:layout_height="wrap_content">
 
         <LinearLayout
-            android:layout_width="0dp"
+            android:id="@+id/llAnimeContainer"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
+            android:orientation="horizontal"
+            app:layout_constraintTop_toTopOf="parent">
 
-            <TextView
-                style="@style/ColorPrimaryContent"
-                android:layout_width="match_parent"
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:gravity="center"
-                android:text="@string/if_you_like"
-                android:textStyle="bold" />
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-            <ImageView
-                android:id="@+id/ivFirstAnimeImage"
-                android:layout_width="100dp"
-                android:layout_height="150dp"
-                android:layout_gravity="center"
-                android:scaleType="centerCrop"
-                tools:src="@tools:sample/avatars" />
+                <TextView
+                    style="@style/ColorPrimaryContent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="@string/if_you_like"
+                    android:textStyle="bold" />
 
-            <TextView
-                android:id="@+id/tvFirstAnimeTitle"
-                style="@style/AnimeTitle"
-                android:layout_width="match_parent"
+                <ImageView
+                    android:id="@+id/ivFirstAnimeImage"
+                    android:layout_width="100dp"
+                    android:layout_height="150dp"
+                    android:layout_gravity="center"
+                    android:layout_marginVertical="8dp"
+                    android:background="@color/shimmer_placeholder"
+                    android:scaleType="centerCrop"
+                    tools:src="@tools:sample/avatars" />
+
+                <TextView
+                    android:id="@+id/tvFirstAnimeTitle"
+                    style="@style/AnimeTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@color/shimmer_placeholder"
+                    android:gravity="center" />
+
+            </LinearLayout>
+
+            <Space
+                android:layout_width="8dp"
+                android:layout_height="0dp" />
+
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:gravity="center"
-                tools:text="Anime Title 1" />
+                android:layout_weight="1"
+                android:orientation="vertical">
+
+                <TextView
+                    style="@style/ColorPrimaryContent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="@string/then_you_might_like"
+                    android:textStyle="bold" />
+
+                <ImageView
+                    android:id="@+id/ivSecondAnimeImage"
+                    android:layout_width="100dp"
+                    android:layout_height="150dp"
+                    android:layout_gravity="center"
+                    android:layout_marginVertical="8dp"
+                    android:background="@color/shimmer_placeholder"
+                    android:scaleType="centerCrop"
+                    tools:src="@tools:sample/avatars" />
+
+                <TextView
+                    android:id="@+id/tvSecondAnimeTitle"
+                    style="@style/AnimeTitle"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@color/shimmer_placeholder"
+                    android:gravity="center" />
+
+            </LinearLayout>
 
         </LinearLayout>
 
-        <Space
-            android:layout_width="8dp"
-            android:layout_height="0dp" />
-
-        <LinearLayout
+        <TextView
+            android:id="@+id/tvContent"
+            style="@style/ColorPrimaryContent"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:orientation="vertical">
+            android:layout_marginTop="8dp"
+            android:background="@color/shimmer_placeholder"
+            android:justificationMode="inter_word"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/llAnimeContainer" />
+
+        <LinearLayout
+            android:id="@+id/llBottomContainer"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:orientation="horizontal"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tvContent">
 
             <TextView
+                android:id="@+id/tvRecommendedBy"
                 style="@style/ColorPrimaryContent"
-                android:layout_width="match_parent"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:gravity="center"
-                android:text="@string/then_you_might_like"
-                android:textStyle="bold" />
+                android:layout_weight="1"
+                android:background="@color/shimmer_placeholder" />
 
-            <ImageView
-                android:id="@+id/ivSecondAnimeImage"
-                android:layout_width="100dp"
-                android:layout_height="150dp"
-                android:layout_gravity="center"
-                android:scaleType="centerCrop"
-                tools:src="@tools:sample/avatars" />
+            <Space
+                android:layout_width="8dp"
+                android:layout_height="0dp" />
 
             <TextView
-                android:id="@+id/tvSecondAnimeTitle"
-                style="@style/AnimeTitle"
-                android:layout_width="match_parent"
+                android:id="@+id/tvDate"
+                style="@style/ColorPrimaryContent"
+                android:textAlignment="textEnd"
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:gravity="center"
-                tools:text="Anime Title 2" />
+                android:layout_weight="1"
+                android:background="@color/shimmer_placeholder" />
 
         </LinearLayout>
 
-    </LinearLayout>
 
-    <TextView
-        style="@style/ColorPrimaryContent"
-        android:id="@+id/tvContent"
-        android:layout_width="0dp"
-        android:layout_height="wrap_content"
-        android:justificationMode="inter_word"
-        android:layout_marginTop="8dp"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/llAnimeContainer"
-        tools:text="Content" />
-
-    <TextView
-        style="@style/ColorPrimaryContent"
-        android:id="@+id/tvRecommendedBy"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvContent" />
-
-    <TextView
-        style="@style/ColorPrimaryContent"
-        android:id="@+id/tvDate"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvContent"
-        tools:text="Date" />
-
-</androidx.constraintlayout.widget.ConstraintLayout>
+    </androidx.constraintlayout.widget.ConstraintLayout>
+</com.facebook.shimmer.ShimmerFrameLayout>

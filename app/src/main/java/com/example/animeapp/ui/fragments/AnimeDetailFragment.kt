@@ -6,7 +6,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Observer
 import com.example.animeapp.ui.activities.MainActivity
 import com.example.animeapp.databinding.FragmentDetailBinding
 import com.example.animeapp.ui.viewmodels.AnimeDetailViewModel
@@ -29,12 +28,12 @@ class AnimeDetailFragment : Fragment() {
         _binding = FragmentDetailBinding.inflate(inflater, container, false)
         val root: View = binding.root
 
-        val animeId = arguments?.getString("id")
+        val animeId = arguments?.getInt("id")
         if (animeId != null) {
-            viewModel.getAnimeDetail(animeId.toInt())
+            viewModel.getAnimeDetail(animeId)
         }
 
-        viewModel.animeDetail.observe(viewLifecycleOwner, Observer { response ->
+        viewModel.animeDetail.observe(viewLifecycleOwner) { response ->
             when (response) {
                 is Resource.Success -> {
                     hideProgressBar()
@@ -54,7 +53,7 @@ class AnimeDetailFragment : Fragment() {
                     showProgressBar()
                 }
             }
-        })
+        }
 
         return root
     }

@@ -11,73 +11,116 @@ import com.example.animeapp.models.AnimeRecommendation
 import com.example.animeapp.utils.DateUtils
 
 class AnimeRecommendationsAdapter : RecyclerView.Adapter<AnimeRecommendationsAdapter.AnimeRecommendationViewHolder>() {
-    inner class AnimeRecommendationViewHolder(private val binding: AnimeRecommendationItemBinding) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(animeRecommendation: AnimeRecommendation) {
+
+    companion object {
+        private const val VIEW_TYPE_ITEM = 0
+        private const val VIEW_TYPE_LOADING = 1
+    }
+
+    inner class AnimeRecommendationViewHolder(private val binding: AnimeRecommendationItemBinding) :
+        RecyclerView.ViewHolder(binding.root) {
+
+        fun bind(animeRecommendation: AnimeRecommendation?, isLoading: Boolean) {
             binding.apply {
-                Glide.with(itemView.context).load(animeRecommendation.entry[0].images.jpg.image_url).into(ivFirstAnimeImage)
-                tvFirstAnimeTitle.text = animeRecommendation.entry[0].title
-                Glide.with(itemView.context).load(animeRecommendation.entry[1].images.jpg.image_url).into(ivSecondAnimeImage)
-                tvSecondAnimeTitle.text = animeRecommendation.entry[1].title
-                tvContent.text = animeRecommendation.content
-                tvRecommendedBy.text = "recommended by ${animeRecommendation.user.username}"
-                tvDate.text = "~ ${DateUtils.formatDateToAgo(animeRecommendation.date)}"
+                if (isLoading) {
+                    shimmerViewContainer.startShimmer()
+                } else {
+                    shimmerViewContainer.stopShimmer()
+                    shimmerViewContainer.hideShimmer()
 
-                tvFirstAnimeTitle.setOnClickListener {
-                    onAnimeTitleClickListener?.let { it(animeRecommendation.entry[0].mal_id.toString()) }
-                }
-
-                tvSecondAnimeTitle.setOnClickListener {
-                    onAnimeTitleClickListener?.let { it(animeRecommendation.entry[1].mal_id.toString()) }
+                    animeRecommendation?.let { recommendation ->
+                        bindAnimeData(recommendation)
+                        setupClickListeners(recommendation)
+                        resetBackgrounds()
+                    }
                 }
             }
         }
+
+        private fun AnimeRecommendationItemBinding.bindAnimeData(recommendation: AnimeRecommendation) {
+            Glide.with(itemView.context)
+                .load(recommendation.entry[0].images.jpg.image_url)
+                .into(ivFirstAnimeImage)
+            tvFirstAnimeTitle.text = recommendation.entry[0].title
+            Glide.with(itemView.context)
+                .load(recommendation.entry[1].images.jpg.image_url)
+                .into(ivSecondAnimeImage)
+            tvSecondAnimeTitle.text = recommendation.entry[1].title
+            tvContent.text = recommendation.content
+            tvRecommendedBy.text = "recommended by ${recommendation.user.username}"
+            tvDate.text = "~ ${DateUtils.formatDateToAgo(recommendation.date)}"
+        }
+
+        private fun AnimeRecommendationItemBinding.setupClickListeners(recommendation: AnimeRecommendation) {
+            tvFirstAnimeTitle.setOnClickListener {
+                onItemClickListener?.invoke(recommendation.entry[0].mal_id)
+            }
+
+            tvSecondAnimeTitle.setOnClickListener {
+                onItemClickListener?.invoke(recommendation.entry[1].mal_id)
+            }
+        }
+
+        private fun AnimeRecommendationItemBinding.resetBackgrounds() {
+            ivFirstAnimeImage.background = null
+            tvFirstAnimeTitle.background = null
+            ivSecondAnimeImage.background = null
+            tvSecondAnimeTitle.background = null
+            tvContent.background = null
+            tvRecommendedBy.background = null
+            tvDate.background = null
+        }
     }
 
-    private var onAnimeTitleClickListener: ((String) -> Unit)? = null
-    fun setOnAnimeTitleClickListener(listener: (String) -> Unit) {
-        onAnimeTitleClickListener = listener
-    }
 
-    private var _binding: AnimeRecommendationItemBinding? = null
-    private val binding get() = _binding!!
+    private var isLoading = false
+
+    fun setLoading(isLoading: Boolean) {
+        this.isLoading = isLoading
+        notifyDataSetChanged()
+    }
 
     private val differCallback = object : DiffUtil.ItemCallback<AnimeRecommendation>() {
         override fun areItemsTheSame(oldItem: AnimeRecommendation, newItem: AnimeRecommendation): Boolean {
             return oldItem.mal_id == newItem.mal_id
         }
 
-        override fun areContentsTheSame(
-            oldItem: AnimeRecommendation,
-            newItem: AnimeRecommendation
-        ): Boolean {
+        override fun areContentsTheSame(oldItem: AnimeRecommendation, newItem: AnimeRecommendation): Boolean {
             return oldItem == newItem
         }
     }
 
     val differ = AsyncListDiffer(this, differCallback)
 
-    override fun onCreateViewHolder(
-        parent: ViewGroup,
-        viewType: Int
-    ): AnimeRecommendationViewHolder {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AnimeRecommendationViewHolder {
         val binding = AnimeRecommendationItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return AnimeRecommendationViewHolder(binding)
     }
 
-    override fun getItemCount(
-
-    ): Int {
-        return differ.currentList.size
+    override fun getItemViewType(position: Int): Int {
+        return if (isLoading && position < 5) {
+            VIEW_TYPE_LOADING
+        } else {
+            VIEW_TYPE_ITEM
+        }
     }
 
-    override fun onBindViewHolder(holder: AnimeRecommendationViewHolder, position: Int) {
-        val animeRecommendation = differ.currentList[position]
-        holder.bind(animeRecommendation)
+    override fun getItemCount(): Int {
+        return if (isLoading) 5 else differ.currentList.size
     }
 
-    private var onItemClickListener: ((AnimeRecommendation) -> Unit)? = null
+    override fun onBindViewHolder(holder: AnimeRecommendationsAdapter.AnimeRecommendationViewHolder, position: Int) {
+        val animeRecommendation = if (!isLoading || position >= differ.currentList.size) {
+            differ.currentList.getOrNull(position)
+        } else {
+            null
+        }
+        holder.bind(animeRecommendation, isLoading && position < 5)
+    }
 
-    fun setOnItemClickListener(listener: (AnimeRecommendation) -> Unit) {
+    private var onItemClickListener: ((Int) -> Unit)? = null
+
+    fun setOnItemClickListener(listener: (Int) -> Unit) {
         onItemClickListener = listener
     }
 }

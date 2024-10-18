@@ -12,4 +12,6 @@
     <color name="nightColorAccentDark">#BB86FC</color>
     <color name="nightTextColorPrimary">#FFFFFF</color>
     <color name="nightTextColorSecondary">#BDBDBD</color>
+
+    <color name="shimmer_placeholder">#dddddd</color>
 </resources>

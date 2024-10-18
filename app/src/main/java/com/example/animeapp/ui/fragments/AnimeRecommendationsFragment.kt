@@ -6,7 +6,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.Observer
+import androidx.lifecycle.asFlow
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -16,50 +17,71 @@ import com.example.animeapp.ui.adapters.AnimeRecommendationsAdapter
 import com.example.animeapp.databinding.FragmentRecommendationBinding
 import com.example.animeapp.ui.viewmodels.AnimeRecommendationsViewModel
 import com.example.animeapp.utils.Resource
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 class AnimeRecommendationsFragment : Fragment() {
     private var _binding: FragmentRecommendationBinding? = null
     private val binding get() = _binding!!
-    lateinit var viewModel: AnimeRecommendationsViewModel
-    lateinit var animeRecommendationsAdapter: AnimeRecommendationsAdapter
 
-    val TAG = "AnimeRecommendationsFragment"
+    private lateinit var viewModel: AnimeRecommendationsViewModel
+    private lateinit var animeRecommendationsAdapter: AnimeRecommendationsAdapter
+
+    private val tag = "AnimeRecommendationsFragment"
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-        viewModel = (activity as MainActivity).animeRecommendationsViewModel
         _binding = FragmentRecommendationBinding.inflate(inflater, container, false)
-        val root: View = binding.root
+        viewModel = (activity as MainActivity).animeRecommendationsViewModel
+        return binding.root
+    }
+
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
         setupRecyclerView()
+        setupObservers()
+        setupClickListeners()
+    }
 
-        viewModel.animeRecommendations.observe(viewLifecycleOwner, Observer { response ->
-            when (response) {
-                is Resource.Success -> {
-                    hideProgressBar()
-                    response.data?.let { animeResponse ->
-                        animeRecommendationsAdapter.differ.submitList(animeResponse.data)
+    private fun setupRecyclerView() {
+        animeRecommendationsAdapter = AnimeRecommendationsAdapter()
+        binding.rvAnimeRecommendations.apply {
+            adapter = animeRecommendationsAdapter
+            layoutManager = LinearLayoutManager(activity)
+        }
+    }
+
+    private fun setupObservers() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            viewModel.animeRecommendations.collectLatest { response ->
+                when (response) {
+                    is Resource.Success -> {
+                        response.data?.let { animeResponse ->
+                            animeRecommendationsAdapter.setLoading(false)
+                            animeRecommendationsAdapter.differ.submitList(animeResponse.data)
+                        }
                     }
-                }
-
-                is Resource.Error -> {
-                    hideProgressBar()
-                    response.message?.let { message ->
-                        Log.e(TAG, "An error occured: ${message}")
+                    is Resource.Error -> {
+                        animeRecommendationsAdapter.setLoading(false)
+                        response.message?.let { message ->
+                            Log.e(tag, "An error occurred: $message")
+                        }
                     }
-                }
-
-                is Resource.Loading -> {
-                    showProgressBar()
+                    is Resource.Loading -> {
+                        animeRecommendationsAdapter.setLoading(true)
+                    }
                 }
             }
-        })
+        }
+    }
 
-        animeRecommendationsAdapter.setOnAnimeTitleClickListener { animeId ->
+    private fun setupClickListeners() {
+        animeRecommendationsAdapter.setOnItemClickListener { animeId ->
             val bundle = Bundle().apply {
-                putString("id", animeId)
+                putInt("id", animeId)
             }
             val navOptions = NavOptions.Builder()
                 .setEnterAnim(R.anim.slide_in_right)
@@ -73,24 +95,6 @@ class AnimeRecommendationsFragment : Fragment() {
                 bundle,
                 navOptions
             )
-        }
-
-        return root
-    }
-
-    private fun hideProgressBar() {
-        binding.paginationProgressBar.visibility = View.INVISIBLE
-    }
-
-    private fun showProgressBar() {
-        binding.paginationProgressBar.visibility = View.VISIBLE
-    }
-
-    private fun setupRecyclerView() {
-        animeRecommendationsAdapter = AnimeRecommendationsAdapter()
-        binding.rvAnimeRecommendations.apply {
-            adapter = animeRecommendationsAdapter
-            layoutManager = LinearLayoutManager(activity)
         }
     }
 
