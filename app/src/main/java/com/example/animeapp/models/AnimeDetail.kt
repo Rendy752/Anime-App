@@ -32,7 +32,7 @@ data class AnimeDetail(
     val members: Int,
     val favorites: Int,
     val synopsis: String,
-    val background: String,
+    val background: String?,
     val season: String?,
     val year: Int,
     val broadcast: Broadcast,
