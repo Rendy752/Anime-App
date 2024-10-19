@@ -39,7 +39,8 @@ class AnimeDetailFragment : Fragment() {
         viewModel.animeDetail.observe(viewLifecycleOwner) { response ->
             when (response) {
                 is Resource.Success -> {
-                    hideProgressBar()
+                    binding.shimmerViewContainer.stopShimmer()
+                    binding.shimmerViewContainer.hideShimmer()
 //                    data class AnimeDetail(
 //                        val mal_id: Int,
 //                        val url: String,
@@ -131,31 +132,35 @@ class AnimeDetailFragment : Fragment() {
 //                        binding.tvStreaming.text = detail.streaming
 //                        binding.tvTitles.text = detail.titles
 //                        binding.tvTrailerImagesUrl.text = detail.trailer.images.image_url
+
+                        binding.tvTitle.background = null
+                        binding.tvEnglishTitle.background = null
+                        binding.tvType.background = null
+                        binding.tvSource.background = null
+                        binding.tvEpisodes.background = null
+                        binding.tvStatus.background = null
+                        binding.tvAiring.background = null
+                        binding.llAnimeBody.background = null
+                        binding.rvTitleSynonyms.background = null
                     }
                 }
 
                 is Resource.Error -> {
-                    hideProgressBar()
+                    binding.shimmerViewContainer.stopShimmer()
+                    binding.shimmerViewContainer.hideShimmer()
                     response.message?.let { message ->
                         Log.e(tag, "An error occured: ${message}")
                     }
                 }
 
                 is Resource.Loading -> {
-                    showProgressBar()
+                    binding.shimmerViewContainer.showShimmer(true)
+                    binding.shimmerViewContainer.startShimmer()
                 }
             }
         }
 
         return root
-    }
-
-    private fun hideProgressBar() {
-        binding.paginationProgressBar.visibility = View.INVISIBLE
-    }
-
-    private fun showProgressBar() {
-        binding.paginationProgressBar.visibility = View.VISIBLE
     }
 
     override fun onDestroyView() {

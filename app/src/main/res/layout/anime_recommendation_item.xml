@@ -34,7 +34,7 @@
                     android:text="@string/if_you_like"
                     android:textStyle="bold" />
 
-                <ImageView
+                <com.google.android.material.imageview.ShapeableImageView
                     android:id="@+id/ivFirstAnimeImage"
                     android:layout_width="100dp"
                     android:layout_height="150dp"
@@ -42,6 +42,7 @@
                     android:layout_marginVertical="8dp"
                     android:background="@color/shimmer_placeholder"
                     android:scaleType="centerCrop"
+                    app:shapeAppearanceOverlay="@style/RoundedImageViewShape"
                     tools:src="@tools:sample/avatars" />
 
                 <TextView
@@ -72,7 +73,7 @@
                     android:text="@string/then_you_might_like"
                     android:textStyle="bold" />
 
-                <ImageView
+                <com.google.android.material.imageview.ShapeableImageView
                     android:id="@+id/ivSecondAnimeImage"
                     android:layout_width="100dp"
                     android:layout_height="150dp"
@@ -80,6 +81,7 @@
                     android:layout_marginVertical="8dp"
                     android:background="@color/shimmer_placeholder"
                     android:scaleType="centerCrop"
+                    app:shapeAppearanceOverlay="@style/RoundedImageViewShape"
                     tools:src="@tools:sample/avatars" />
 
                 <TextView
@@ -132,11 +134,11 @@
             <TextView
                 android:id="@+id/tvDate"
                 style="@style/ColorPrimaryContent"
-                android:textAlignment="textEnd"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:background="@color/shimmer_placeholder" />
+                android:background="@color/shimmer_placeholder"
+                android:textAlignment="textEnd" />
 
         </LinearLayout>
 
