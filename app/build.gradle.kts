@@ -68,6 +68,7 @@ dependencies {
     val gson_version = "2.10.1"
     val shimmer_version = "0.5.0"
     val splash_screen_version = "1.0.0"
+    val commons_text_version = "1.10.0"
 
     // ViewModel
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version")
@@ -116,4 +117,7 @@ dependencies {
 
     //Splash screen
     implementation("androidx.core:core-splashscreen:$splash_screen_version")
+
+    //Commons text
+    implementation("org.apache.commons:commons-text:$commons_text_version")
 }

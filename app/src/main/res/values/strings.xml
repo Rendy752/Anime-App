@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Anime App</string>
+    <string name="app_name">AnimeApp</string>
     <string name="title_recommendation">Recommendation</string>
     <string name="title_about">About</string>
     <string name="title_detail">Detail</string>
@@ -30,4 +30,5 @@
     <string name="favorites">Favorites</string>
     <string name="author_name">Rendy Pratama</string>
     <string name="author_email">rendypratama752@gmail.com</string>
+    <string name="share">Share</string>
 </resources>

@@ -1,8 +1,10 @@
 package com.example.animeapp.ui.activities
 
 import android.content.Context
+import android.content.Intent
 import android.hardware.Sensor
 import android.hardware.SensorManager
+import android.net.Uri
 import android.os.Bundle
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import androidx.appcompat.app.AppCompatActivity
@@ -11,7 +13,9 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.navigation.NavOptions
 import androidx.navigation.findNavController
+import androidx.navigation.fragment.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
@@ -29,6 +33,7 @@ import com.example.animeapp.utils.LogUtils
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ShakeDetector
 import kotlinx.coroutines.launch
+import kotlin.text.toIntOrNull
 
 class MainActivity : AppCompatActivity() {
 
@@ -58,6 +63,7 @@ class MainActivity : AppCompatActivity() {
         setupSensor()
         setupViewBinding()
         setupNavigation()
+        setupActionViewIntent()
     }
 
     private fun setupSplashScreen() {
@@ -92,6 +98,35 @@ class MainActivity : AppCompatActivity() {
         )
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
+    }
+
+    private fun setupActionViewIntent() {
+        if (intent?.action == Intent.ACTION_VIEW && intent?.scheme == "animeapp") {
+            handleAnimeUrl(intent.data)
+        }
+    }
+
+    private fun handleAnimeUrl(uri: Uri?) {
+        val id = uri?.getQueryParameter("id")?.toIntOrNull()
+        if (id != null) {
+            val navController = supportFragmentManager.findFragmentById(R.id.nav_host_fragment_activity_main)?.findNavController()
+
+            navController?.let {
+                val bundle = Bundle().apply { putInt("id", id) }
+                val navOptions = NavOptions.Builder()
+                    .setEnterAnim(R.anim.slide_in_right)
+                    .setExitAnim(R.anim.slide_out_left)
+                    .setPopEnterAnim(R.anim.slide_in_left)
+                    .setPopExitAnim(R.anim.slide_out_right)
+                    .build()
+
+                it.navigate(
+                    R.id.action_animeRecommendationsFragment_to_animeDetailFragment,
+                    bundle,
+                    navOptions
+                )
+            }
+        }
     }
 
     override fun onSupportNavigateUp(): Boolean {
