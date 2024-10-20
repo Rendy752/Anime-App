@@ -43,6 +43,7 @@ class AnimeRecommendationsFragment : Fragment() {
         setupRecyclerView()
         setupObservers()
         setupClickListeners()
+        setupRefreshFloatingActionButton()
     }
 
     private fun setupRecyclerView() {
@@ -94,6 +95,12 @@ class AnimeRecommendationsFragment : Fragment() {
                 bundle,
                 navOptions
             )
+        }
+    }
+
+    private fun setupRefreshFloatingActionButton() {
+        binding.fabRefresh.setOnClickListener {
+            viewModel.refreshData()
         }
     }
 

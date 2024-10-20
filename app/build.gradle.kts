@@ -67,6 +67,7 @@ dependencies {
     val hilt_navigation_version = "1.0.0"
     val gson_version = "2.10.1"
     val shimmer_version = "0.5.0"
+    val splash_screen_version = "1.0.0"
 
     // ViewModel
     implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version")
@@ -112,4 +113,7 @@ dependencies {
 
     //Loading Skeleton
     implementation("com.facebook.shimmer:shimmer:$shimmer_version")
+
+    //Splash screen
+    implementation("androidx.core:core-splashscreen:$splash_screen_version")
 }

@@ -39,4 +39,8 @@ class AnimeRecommendationsViewModel(
             Resource.Error(response.message())
         }
     }
+
+    fun refreshData() {
+        getAnimeRecommendations()
+    }
 }

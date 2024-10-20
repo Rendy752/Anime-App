@@ -6,7 +6,11 @@ import android.hardware.SensorManager
 import android.os.Bundle
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
@@ -22,55 +26,69 @@ import com.example.animeapp.ui.providerfactories.AnimeRecommendationsViewModelPr
 import com.example.animeapp.ui.providerfactories.AnimeDetailViewModelProviderFactory
 import com.example.animeapp.ui.viewmodels.AnimeDetailViewModel
 import com.example.animeapp.utils.LogUtils
+import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ShakeDetector
+import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
-    private val viewModel: AnimeRecommendationsViewModel by lazy {
-        val animeRecommendationsRepository = AnimeRecommendationsRepository(
-            AnimeRecommendationsDatabase.getDatabase(this)
-        )
-        val viewModelProviderFactory =
-            AnimeRecommendationsViewModelProviderFactory(animeRecommendationsRepository)
-        ViewModelProvider(
-            this,
-            viewModelProviderFactory
-        ).get(AnimeRecommendationsViewModel::class.java)
-    }
 
     private lateinit var binding: ActivityMainBinding
-    val animeRecommendationsViewModel: AnimeRecommendationsViewModel
-        get() = viewModel
-
-    val animeDetailViewModel: AnimeDetailViewModel by lazy {
-        val animeDetailRepository = AnimeDetailRepository(AnimeDetailDatabase.getDatabase(this))
-        val animeDetailViewModelProviderFactory =
-            AnimeDetailViewModelProviderFactory(animeDetailRepository)
-        ViewModelProvider(
-            this,
-            animeDetailViewModelProviderFactory
-        )[AnimeDetailViewModel::class.java]
-    }
-
     private lateinit var sensorManager: SensorManager
     private lateinit var shakeDetector: ShakeDetector
 
+    private val viewModel: AnimeRecommendationsViewModel by lazy {
+        val repository = AnimeRecommendationsRepository(AnimeRecommendationsDatabase.getDatabase(this))
+        val factory = AnimeRecommendationsViewModelProviderFactory(repository)
+        ViewModelProvider(this, factory)[AnimeRecommendationsViewModel::class.java]
+    }
+
+    val animeRecommendationsViewModel: AnimeRecommendationsViewModel get() = viewModel
+
+    val animeDetailViewModel: AnimeDetailViewModel by lazy {
+        val repository = AnimeDetailRepository(AnimeDetailDatabase.getDatabase(this))
+        val factory = AnimeDetailViewModelProviderFactory(repository)
+        ViewModelProvider(this, factory)[AnimeDetailViewModel::class.java]
+    }
+
+    private var isDataLoaded = false
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
-        shakeDetector = ShakeDetector {
-            LogUtils.showLogs(this)
-        }
+        setupSplashScreen()
+        setupSensor()
+        setupViewBinding()
+        setupNavigation()
+    }
 
+    private fun setupSplashScreen() {
+        val splashScreen = installSplashScreen()
+        splashScreen.setKeepOnScreenCondition { !isDataLoaded }
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.animeRecommendations.collect { resource ->
+                    if (resource is Resource.Success) {
+                        isDataLoaded = true
+                    }
+                }
+            }
+        }
+    }
+
+    private fun setupSensor() {
+        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
+        shakeDetector = ShakeDetector { LogUtils.showLogs(this) }
+    }
+
+    private fun setupViewBinding() {
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+    }
 
+    private fun setupNavigation() {
         val navView: BottomNavigationView = binding.navView
-
         val navController = findNavController(R.id.nav_host_fragment_activity_main)
         val appBarConfiguration = AppBarConfiguration(
-            setOf(
-                R.id.animeRecommendationsFragment, R.id.aboutFragment
-            )
+            setOf(R.id.animeRecommendationsFragment, R.id.aboutFragment)
         )
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
