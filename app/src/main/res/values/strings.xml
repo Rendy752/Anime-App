@@ -28,4 +28,6 @@
     <string name="popularity">Popularity</string>
     <string name="members">Members</string>
     <string name="favorites">Favorites</string>
+    <string name="author_name">Rendy Pratama</string>
+    <string name="author_email">rendypratama752@gmail.com</string>
 </resources>

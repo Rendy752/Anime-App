@@ -79,4 +79,9 @@
         <item name="android:textSize">12sp</item>
         <item name="android:layout_marginRight">4dp</item>
     </style>
+
+    <style name="RoundedImageView">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
 </resources>
