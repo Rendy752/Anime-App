@@ -36,16 +36,16 @@ data class AnimeDetail(
     val season: String?,
     val year: Int,
     val broadcast: Broadcast,
-    val producers: List<CommonIdentity>,
-    val licensors: List<CommonIdentity>,
+    val producers: List<CommonIdentity>?,
+    val licensors: List<CommonIdentity>?,
     val studios: List<CommonIdentity>,
-    val genres: List<CommonIdentity>,
-    val explicit_genres: List<CommonIdentity>,
-    val themes: List<CommonIdentity>,
-    val demographics: List<CommonIdentity>,
-    val relations: List<Relation>,
+    val genres: List<CommonIdentity>?,
+    val explicit_genres: List<CommonIdentity>?,
+    val themes: List<CommonIdentity>?,
+    val demographics: List<CommonIdentity>?,
+    val relations: List<Relation>?,
     val theme: Theme,
-    val external: List<NameAndUrl>,
-    val streaming: List<NameAndUrl>
+    val external: List<NameAndUrl>?,
+    val streaming: List<NameAndUrl?>
 )
 

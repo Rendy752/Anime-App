@@ -19,20 +19,30 @@ import androidx.navigation.fragment.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
+import com.chuckerteam.chucker.api.BodyDecoder
+import com.chuckerteam.chucker.api.Chucker
+import com.chuckerteam.chucker.api.ChuckerCollector
+import com.chuckerteam.chucker.api.ChuckerInterceptor
+import com.chuckerteam.chucker.api.RetentionManager
 import com.example.animeapp.R
 import com.example.animeapp.databinding.ActivityMainBinding
 import com.example.animeapp.data.local.database.AnimeDetailDatabase
 import com.example.animeapp.data.local.database.AnimeRecommendationsDatabase
+import com.example.animeapp.data.remote.api.RetrofitInstance
 import com.example.animeapp.repository.AnimeDetailRepository
 import com.example.animeapp.repository.AnimeRecommendationsRepository
 import com.example.animeapp.ui.viewmodels.AnimeRecommendationsViewModel
 import com.example.animeapp.ui.providerfactories.AnimeRecommendationsViewModelProviderFactory
 import com.example.animeapp.ui.providerfactories.AnimeDetailViewModelProviderFactory
 import com.example.animeapp.ui.viewmodels.AnimeDetailViewModel
-import com.example.animeapp.utils.LogUtils
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ShakeDetector
 import kotlinx.coroutines.launch
+import okhttp3.MediaType
+import okhttp3.Request
+import okhttp3.Response
+import okio.BufferedSource
+import okio.ByteString
 import kotlin.text.toIntOrNull
 
 class MainActivity : AppCompatActivity() {
@@ -50,7 +60,7 @@ class MainActivity : AppCompatActivity() {
     val animeRecommendationsViewModel: AnimeRecommendationsViewModel get() = viewModel
 
     val animeDetailViewModel: AnimeDetailViewModel by lazy {
-        val repository = AnimeDetailRepository(AnimeDetailDatabase.getDatabase(this))
+        val repository = AnimeDetailRepository(AnimeDetailDatabase.getDatabase(this).getAnimeDetailDao())
         val factory = AnimeDetailViewModelProviderFactory(repository)
         ViewModelProvider(this, factory)[AnimeDetailViewModel::class.java]
     }
@@ -64,6 +74,7 @@ class MainActivity : AppCompatActivity() {
         setupViewBinding()
         setupNavigation()
         setupActionViewIntent()
+        setupChucker()
     }
 
     private fun setupSplashScreen() {
@@ -82,7 +93,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupSensor() {
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
-        shakeDetector = ShakeDetector { LogUtils.showLogs(this) }
+        shakeDetector = ShakeDetector { startActivity(Chucker.getLaunchIntent(this)) }
     }
 
     private fun setupViewBinding() {
@@ -104,6 +115,39 @@ class MainActivity : AppCompatActivity() {
         if (intent?.action == Intent.ACTION_VIEW && intent?.scheme == "animeapp") {
             handleAnimeUrl(intent.data)
         }
+    }
+
+    private fun setupChucker() {
+        val decoder = @Suppress("NOTHING_TO_OVERRIDE") object : BodyDecoder {
+            override fun decode(source: BufferedSource, contentType: MediaType?): String {
+                return source.readString(Charsets.UTF_8)
+            }
+
+            override fun decodeRequest(request: Request, body: ByteString): String {
+                return body.utf8()
+            }
+
+            override fun decodeResponse(response: Response, body: ByteString): String {
+                return body.utf8()
+            }
+        }
+
+        val chuckerCollector = ChuckerCollector(
+            context = this,
+            showNotification = true,
+            retentionPeriod = RetentionManager.Period.ONE_HOUR
+        )
+
+        val chuckerInterceptor = ChuckerInterceptor.Builder(this)
+            .collector(chuckerCollector)
+            .maxContentLength(250_000L)
+            .redactHeaders("Auth-Token", "Bearer")
+            .alwaysReadResponseBody(true)
+            .addBodyDecoder(decoder)
+            .createShortcut(true)
+            .build()
+
+        RetrofitInstance.addInterceptor(chuckerInterceptor)
     }
 
     private fun handleAnimeUrl(uri: Uri?) {

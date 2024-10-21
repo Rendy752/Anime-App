@@ -29,15 +29,4 @@
         android:name="com.example.animeapp.ui.fragments.AnimeDetailFragment"
         android:label="@string/title_detail"
         tools:layout="@layout/fragment_detail" />
-
-    <fragment
-        android:id="@+id/loggingFragment"
-        android:name="com.example.animeapp.ui.fragments.LoggingFragment"
-        android:label="@string/title_logging"
-        tools:layout="@layout/fragment_logging">
-    </fragment>
-
-    <action
-        android:id="@+id/action_global_loggingFragment"
-        app:destination="@id/loggingFragment" />
 </navigation>

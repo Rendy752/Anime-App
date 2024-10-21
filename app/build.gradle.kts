@@ -1,9 +1,9 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id("kotlin-kapt")
     id("com.google.dagger.hilt.android")
     id("kotlin-parcelize")
+    id("com.google.devtools.ksp") version "1.9.0-1.0.11"
 }
 
 android {
@@ -54,70 +54,57 @@ dependencies {
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
-    val lifecycle_version = "2.8.6"
-    val room_version = "2.6.1"
-    val coroutines_version = "1.9.0"
-    val retrofit_version = "2.9.0"
-    val logging_interceptor_version = "4.12.0"
-    val nav_version = "2.8.2"
-    val glide_version = "4.16.0"
-    val prettytime_version = "5.0.8.Final"
-    val hilt_version = "2.51.1"
-    var hilt_compiler_version = "1.0.0"
-    val hilt_navigation_version = "1.0.0"
-    val gson_version = "2.10.1"
-    val shimmer_version = "0.5.0"
-    val splash_screen_version = "1.0.0"
-    val commons_text_version = "1.10.0"
-
     // ViewModel
-    implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycle_version")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:$lifecycle_version")
+    implementation(libs.androidx.lifecycle.viewmodel.ktx.v286)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
 
     // Room
-    implementation("androidx.room:room-runtime:$room_version")
-    kapt("androidx.room:room-compiler:$room_version")
-    implementation("androidx.room:room-ktx:$room_version")
+    implementation(libs.androidx.room.runtime)
+    ksp(libs.androidx.room.compiler)
+    implementation(libs.androidx.room.ktx)
 
     // Coroutines
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:$coroutines_version")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$coroutines_version")
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.kotlinx.coroutines.core)
 
     // Retrofit
-    implementation("com.squareup.retrofit2:retrofit:$retrofit_version")
-    implementation("com.squareup.retrofit2:converter-gson:$retrofit_version")
-    implementation("com.squareup.okhttp3:okhttp:$logging_interceptor_version")
-    implementation("com.squareup.okhttp3:logging-interceptor:$logging_interceptor_version")
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
+    implementation(libs.okhttp)
+    implementation(libs.logging.interceptor)
 
     // Navigation
-    implementation("androidx.navigation:navigation-fragment-ktx:$nav_version")
-    implementation("androidx.navigation:navigation-ui-ktx:$nav_version")
+    implementation(libs.androidx.navigation.fragment.ktx.v282)
+    implementation(libs.androidx.navigation.ui.ktx.v282)
 
     // Glide
-    implementation("com.github.bumptech.glide:glide:$glide_version")
-    annotationProcessor("com.github.bumptech.glide:compiler:$glide_version")
+    implementation(libs.glide)
+    ksp(libs.compiler)
 
     //PrettyTime
-    implementation("org.ocpsoft.prettytime:prettytime:$prettytime_version")
+    implementation(libs.prettytime)
 
     //Hilt
-    implementation("com.google.dagger:hilt-android:$hilt_version")
-    kapt("com.google.dagger:hilt-android-compiler:$hilt_version")
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.android.compiler)
 
     //ViewModel injection
-//    implementation("androidx.hilt:hilt-lifecycle-viewmodel:1.0.0")
-    kapt("androidx.hilt:hilt-compiler:$hilt_compiler_version")
-    implementation("androidx.hilt:hilt-navigation-fragment:$hilt_navigation_version")
+    ksp(libs.androidx.hilt.compiler)
+    implementation(libs.androidx.hilt.navigation.fragment)
 
     //Gson
-    implementation("com.google.code.gson:gson:$gson_version")
+    implementation(libs.gson)
 
     //Loading Skeleton
-    implementation("com.facebook.shimmer:shimmer:$shimmer_version")
+    implementation(libs.shimmer)
 
     //Splash screen
-    implementation("androidx.core:core-splashscreen:$splash_screen_version")
+    implementation(libs.androidx.core.splashscreen)
 
     //Commons text
-    implementation("org.apache.commons:commons-text:$commons_text_version")
+    implementation(libs.commons.text)
+
+    //Chucker
+    debugImplementation(libs.library)
+    releaseImplementation(libs.library.no.op)
 }

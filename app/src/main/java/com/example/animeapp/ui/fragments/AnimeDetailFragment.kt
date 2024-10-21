@@ -1,5 +1,6 @@
 package com.example.animeapp.ui.fragments
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -22,8 +23,8 @@ import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.ui.adapters.TitleSynonymsAdapter
 import com.example.animeapp.ui.viewmodels.AnimeDetailViewModel
 import com.example.animeapp.utils.Resource
-import com.example.animeapp.utils.formatSynopsis
-import org.apache.commons.text.StringEscapeUtils
+import com.example.animeapp.utils.TextUtils.formatSynopsis
+import com.example.animeapp.utils.TextUtils.joinOrNA
 
 class AnimeDetailFragment : Fragment(), MenuProvider {
 
@@ -58,6 +59,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                 is Resource.Success -> handleSuccess(response)
                 is Resource.Error -> handleError(response)
                 is Resource.Loading -> handleLoading()
+                else -> handleEmpty()
             }
         }
     }
@@ -73,7 +75,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                     val animeUrl = detail.url
                     val animeTitle = detail.title
                     val animeScore = detail.score
-                    val animeGenres = detail.genres.joinToString(", ") { it.name }
+                    val animeGenres = detail.genres?.joinToString(", ") { it.name }
 
                     val animeSynopsis = formatSynopsis(detail.synopsis)
                     val animeTrailerUrl = detail.trailer.url ?: ""
@@ -142,6 +144,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                 is Resource.Success -> handleSuccess(response)
                 is Resource.Error -> handleError(response)
                 is Resource.Loading -> handleLoading()
+                else -> handleEmpty()
             }
         }
 
@@ -198,12 +201,12 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
             binding.tvReleased.text = detail.year.toString()
             binding.tvAired.text = detail.aired.string
             binding.tvRating.text = detail.rating
-            binding.tvGenres.text = detail.genres.joinToString(", ") { it.name }
+            binding.tvGenres.text = joinOrNA(detail.genres) { it.name }
             binding.tvEpisodes.text = detail.episodes.toString()
 
             binding.tvStudios.text = detail.studios.joinToString(", ") { it.name }
-            binding.tvProducers.text = detail.producers.joinToString(", ") { it.name }
-            binding.tvLicensors.text = detail.licensors.joinToString(", ") { it.name }
+            binding.tvProducers.text = joinOrNA(detail.producers) { it.name }
+            binding.tvLicensors.text = joinOrNA(detail.licensors) { it.name }
             binding.tvBroadcast.text = detail.broadcast.string
             binding.tvDuration.text = detail.duration
 
@@ -214,9 +217,9 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
             }
 
             binding.tvScore.text = detail.score.toString()
-            binding.tvScoredBy.text = "${detail.scored_by.toString()} Users"
-            binding.tvRanked.text = "#${detail.rank.toString()}"
-            binding.tvPopularity.text = "#${detail.popularity.toString()}"
+            binding.tvScoredBy.text = resources.getString(R.string.scored_by_users, detail.scored_by)
+            binding.tvRanked.text = resources.getString(R.string.ranked_number, detail.rank)
+            binding.tvPopularity.text = resources.getString(R.string.popularity_number, detail.popularity)
             binding.tvMembers.text = detail.members.toString()
             binding.tvFavorites.text = detail.favorites.toString()
 
@@ -240,9 +243,12 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
         }
     }
 
+    @SuppressLint("SetTextI18n")
     private fun handleError(response: Resource.Error<AnimeDetailResponse>) {
         binding.shimmerViewContainer.stopShimmer()
         binding.shimmerViewContainer.hideShimmer()
+        binding.tvError.visibility = View.VISIBLE
+        binding.tvError.text = "An error occurred: ${response.message}"
         response.message?.let { message ->
             Log.e(tag, "An error occurred: $message")
         }
@@ -251,6 +257,14 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
     private fun handleLoading() {
         binding.shimmerViewContainer.showShimmer(true)
         binding.shimmerViewContainer.startShimmer()
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun handleEmpty() {
+        binding.shimmerViewContainer.stopShimmer()
+        binding.shimmerViewContainer.hideShimmer()
+        binding.tvError.visibility = View.VISIBLE
+        binding.tvError.text = "An error occurred while fetching the anime detail."
     }
 
     override fun onDestroyView() {
