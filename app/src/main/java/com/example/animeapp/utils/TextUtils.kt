@@ -14,8 +14,8 @@ object TextUtils {
             if (it.isNotEmpty()) {
                 it.joinToString(", ", transform = transform)
             } else {
-                "N/A"
+                "-"
             }
-        } ?: "N/A"
+        } ?: "-"
     }
 }

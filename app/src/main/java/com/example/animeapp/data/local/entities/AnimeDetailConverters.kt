@@ -134,6 +134,11 @@ class AnimeDetailConverters {
     }
 
     @TypeConverter
+    fun fromNameAndUrlList(nameAndUrl: List<NameAndUrl>): String {
+        return Gson().toJson(nameAndUrl)
+    }
+
+    @TypeConverter
     fun toNameAndUrlList(nameAndUrlJson: String): List<NameAndUrl> {
         val type = object : TypeToken<List<NameAndUrl>>() {}.type
         return Gson().fromJson(nameAndUrlJson, type)

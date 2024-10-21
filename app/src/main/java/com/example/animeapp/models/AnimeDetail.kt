@@ -34,7 +34,7 @@ data class AnimeDetail(
     val synopsis: String,
     val background: String?,
     val season: String?,
-    val year: Int,
+    val year: Int?,
     val broadcast: Broadcast,
     val producers: List<CommonIdentity>?,
     val licensors: List<CommonIdentity>?,
@@ -46,6 +46,6 @@ data class AnimeDetail(
     val relations: List<Relation>?,
     val theme: Theme,
     val external: List<NameAndUrl>?,
-    val streaming: List<NameAndUrl?>
+    val streaming: List<NameAndUrl>?
 )
 

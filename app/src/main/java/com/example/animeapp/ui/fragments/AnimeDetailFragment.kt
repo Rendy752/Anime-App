@@ -197,8 +197,8 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
             binding.tvStatus.text = detail.status
             binding.tvType.text = detail.type
             binding.tvSource.text = detail.source
-            binding.tvSeason.text = detail.season
-            binding.tvReleased.text = detail.year.toString()
+            binding.tvSeason.text = detail.season ?: "-"
+            binding.tvReleased.text = detail.year?.toString() ?: "-"
             binding.tvAired.text = detail.aired.string
             binding.tvRating.text = detail.rating
             binding.tvGenres.text = joinOrNA(detail.genres) { it.name }
@@ -207,7 +207,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
             binding.tvStudios.text = detail.studios.joinToString(", ") { it.name }
             binding.tvProducers.text = joinOrNA(detail.producers) { it.name }
             binding.tvLicensors.text = joinOrNA(detail.licensors) { it.name }
-            binding.tvBroadcast.text = detail.broadcast.string
+            binding.tvBroadcast.text = detail.broadcast.string ?: "-"
             binding.tvDuration.text = detail.duration
 
             val embedUrl = detail.trailer.embed_url ?: ""
@@ -217,9 +217,11 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
             }
 
             binding.tvScore.text = detail.score.toString()
-            binding.tvScoredBy.text = resources.getString(R.string.scored_by_users, detail.scored_by)
+            binding.tvScoredBy.text =
+                resources.getString(R.string.scored_by_users, detail.scored_by)
             binding.tvRanked.text = resources.getString(R.string.ranked_number, detail.rank)
-            binding.tvPopularity.text = resources.getString(R.string.popularity_number, detail.popularity)
+            binding.tvPopularity.text =
+                resources.getString(R.string.popularity_number, detail.popularity)
             binding.tvMembers.text = detail.members.toString()
             binding.tvFavorites.text = detail.favorites.toString()
 
