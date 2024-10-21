@@ -167,7 +167,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
             binding.tvEnglishTitle.text = detail.title_english
             binding.tvJapaneseTitle.text = detail.title_japanese
             binding.rvTitleSynonyms.apply {
-                adapter = TitleSynonymsAdapter(detail.title_synonyms.toList())
+                adapter = detail.title_synonyms?.let { TitleSynonymsAdapter(it.toList()) }
                 layoutManager = LinearLayoutManager(
                     requireContext(), LinearLayoutManager.HORIZONTAL, false
                 )

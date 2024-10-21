@@ -16,7 +16,7 @@ data class AnimeDetail(
     val title: String,
     val title_english: String?,
     val title_japanese: String?,
-    val title_synonyms: Array<String>,
+    val title_synonyms: Array<String>?,
     val type: String,
     val source: String,
     val episodes: Int,
