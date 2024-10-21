@@ -1,7 +1,6 @@
 package com.example.animeapp.ui.fragments
 
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -25,8 +24,6 @@ class AnimeRecommendationsFragment : Fragment() {
 
     private lateinit var viewModel: AnimeRecommendationsViewModel
     private lateinit var animeRecommendationsAdapter: AnimeRecommendationsAdapter
-
-    private val tag = "AnimeRecommendationsFragment"
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -66,9 +63,6 @@ class AnimeRecommendationsFragment : Fragment() {
                     }
                     is Resource.Error -> {
                         animeRecommendationsAdapter.setLoading(false)
-                        response.message?.let { message ->
-                            Log.e(tag, "An error occurred: $message")
-                        }
                     }
                     is Resource.Loading -> {
                         animeRecommendationsAdapter.setLoading(true)

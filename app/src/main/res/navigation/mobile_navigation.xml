@@ -29,4 +29,8 @@
         android:name="com.example.animeapp.ui.fragments.AnimeDetailFragment"
         android:label="@string/title_detail"
         tools:layout="@layout/fragment_detail" />
+
+    <action
+        android:id="@+id/action_global_animeDetailFragment"
+        app:destination="@id/animeDetailFragment" />
 </navigation>

@@ -1,10 +1,11 @@
 package com.example.animeapp.ui.viewmodels
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.util.AttributeSet
-import android.util.Log
 import android.webkit.WebView
 
+@SuppressLint("SetJavaScriptEnabled")
 class YoutubePlayerView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
@@ -34,8 +35,6 @@ class YoutubePlayerView @JvmOverloads constructor(
             """.trimIndent()
 
             loadDataWithBaseURL(null, html, "text/html", "utf-8", null)
-        } else {
-            Log.e("YoutubePlayerView", "Invalid video URL")
         }
     }
 

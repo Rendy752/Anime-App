@@ -55,7 +55,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var shakeDetector: ShakeDetector
 
     private val viewModel: AnimeRecommendationsViewModel by lazy {
-        val repository = AnimeRecommendationsRepository(AnimeRecommendationsDatabase.getDatabase(this))
+        val repository =
+            AnimeRecommendationsRepository(AnimeRecommendationsDatabase.getDatabase(this))
         val factory = AnimeRecommendationsViewModelProviderFactory(repository)
         ViewModelProvider(this, factory)[AnimeRecommendationsViewModel::class.java]
     }
@@ -63,7 +64,8 @@ class MainActivity : AppCompatActivity() {
     val animeRecommendationsViewModel: AnimeRecommendationsViewModel get() = viewModel
 
     val animeDetailViewModel: AnimeDetailViewModel by lazy {
-        val repository = AnimeDetailRepository(AnimeDetailDatabase.getDatabase(this).getAnimeDetailDao())
+        val repository =
+            AnimeDetailRepository(AnimeDetailDatabase.getDatabase(this).getAnimeDetailDao())
         val factory = AnimeDetailViewModelProviderFactory(repository)
         ViewModelProvider(this, factory)[AnimeDetailViewModel::class.java]
     }
@@ -76,7 +78,6 @@ class MainActivity : AppCompatActivity() {
         setupSensor()
         setupViewBinding()
         setupNavigation()
-        setupActionViewIntent()
         setupChucker()
     }
 
@@ -94,8 +95,10 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                 } else {
-                    binding.root.showSnackbar("No internet connection. Please check your network settings.",
-                        Snackbar.LENGTH_INDEFINITE)
+                    binding.root.showSnackbar(
+                        "No internet connection. Please check your network settings.",
+                        Snackbar.LENGTH_INDEFINITE
+                    )
                 }
             }
         }
@@ -125,8 +128,9 @@ class MainActivity : AppCompatActivity() {
         navView.setupWithNavController(navController)
     }
 
-    private fun setupActionViewIntent() {
-        if (intent?.action == Intent.ACTION_VIEW && intent?.scheme == "animeapp") {
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        if (intent?.action == Intent.ACTION_VIEW && intent.scheme == "animeapp" && intent.data != null) {
             handleAnimeUrl(intent.data)
         }
     }
@@ -165,24 +169,30 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleAnimeUrl(uri: Uri?) {
-        val id = uri?.getQueryParameter("id")?.toIntOrNull()
-        if (id != null) {
-            val navController = supportFragmentManager.findFragmentById(R.id.nav_host_fragment_activity_main)?.findNavController()
+        uri?.pathSegments?.let { segments ->
+            if (segments.size >= 2 && segments[0] == "detail") {
+                val id = segments[1].toIntOrNull()
+                if (id != null) {
+                    val navController =
+                        supportFragmentManager.findFragmentById(R.id.nav_host_fragment_activity_main)
+                            ?.findNavController()
 
-            navController?.let {
-                val bundle = Bundle().apply { putInt("id", id) }
-                val navOptions = NavOptions.Builder()
-                    .setEnterAnim(R.anim.slide_in_right)
-                    .setExitAnim(R.anim.slide_out_left)
-                    .setPopEnterAnim(R.anim.slide_in_left)
-                    .setPopExitAnim(R.anim.slide_out_right)
-                    .build()
+                    navController?.let {
+                        val bundle = Bundle().apply { putInt("id", id) }
+                        val navOptions = NavOptions.Builder()
+                            .setEnterAnim(R.anim.slide_in_right)
+                            .setExitAnim(R.anim.slide_out_left)
+                            .setPopEnterAnim(R.anim.slide_in_left)
+                            .setPopExitAnim(R.anim.slide_out_right)
+                            .build()
 
-                it.navigate(
-                    R.id.action_animeRecommendationsFragment_to_animeDetailFragment,
-                    bundle,
-                    navOptions
-                )
+                        it.navigate(
+                            R.id.action_global_animeDetailFragment,
+                            bundle,
+                            navOptions
+                        )
+                    }
+                }
             }
         }
     }

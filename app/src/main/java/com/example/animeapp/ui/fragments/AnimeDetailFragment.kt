@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
@@ -31,8 +30,6 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
     private var _binding: FragmentDetailBinding? = null
     private val binding get() = _binding!!
     lateinit var viewModel: AnimeDetailViewModel
-
-    private val tag = "AnimeDetailFragment"
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -80,7 +77,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                     val animeSynopsis = formatSynopsis(detail.synopsis)
                     val animeTrailerUrl = detail.trailer.url ?: ""
                     val malId = detail.mal_id
-                    val customUrl = "animeapp://anime?id=$malId"
+                    val customUrl = "animeapp://anime/detail/$malId"
 
                     val trailerSection = if (animeTrailerUrl.isNotEmpty()) {
                         """
@@ -133,27 +130,14 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
         viewModel = (activity as MainActivity).animeDetailViewModel
         _binding = FragmentDetailBinding.inflate(inflater, container, false)
         val root: View = binding.root
-
-        val animeId = arguments?.getInt("id")
-        if (animeId != null) {
-            viewModel.getAnimeDetail(animeId)
-        }
-
-        viewModel.animeDetail.observe(viewLifecycleOwner) { response ->
-            when (response) {
-                is Resource.Success -> handleSuccess(response)
-                is Resource.Error -> handleError(response)
-                is Resource.Loading -> handleLoading()
-                else -> handleEmpty()
-            }
-        }
-
         return root
     }
 
     private fun handleSuccess(response: Resource.Success<AnimeDetailResponse>) {
         binding.shimmerViewContainer.stopShimmer()
         binding.shimmerViewContainer.hideShimmer()
+        binding.tvError.visibility = View.GONE
+
         response.data?.data?.let { detail ->
             Glide.with(this).load(detail.images.jpg.large_image_url)
                 .into(binding.ivAnimeImage)
@@ -251,9 +235,6 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
         binding.shimmerViewContainer.hideShimmer()
         binding.tvError.visibility = View.VISIBLE
         binding.tvError.text = "An error occurred: ${response.message}"
-        response.message?.let { message ->
-            Log.e(tag, "An error occurred: $message")
-        }
     }
 
     private fun handleLoading() {
