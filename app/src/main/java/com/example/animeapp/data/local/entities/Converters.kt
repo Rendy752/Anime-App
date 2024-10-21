@@ -1,5 +1,6 @@
 package com.example.animeapp.data.local.entities
 
+import android.provider.MediaStore.Audio.Genres
 import androidx.room.TypeConverter
 import com.example.animeapp.models.Aired
 import com.example.animeapp.models.AnimeHeader
@@ -99,6 +100,18 @@ class Converters {
     }
 
     @TypeConverter
+    fun fromGenreList(genres: List<Genres>?): String {
+        return Gson().toJson(genres)
+    }
+
+    @TypeConverter
+    fun toGenreList(genreString: String?): List<Genres>? {
+        return genreString?.let {
+            Gson().fromJson(it, object : TypeToken<List<Genres>>() {}.type)
+        }
+    }
+
+    @TypeConverter
     fun fromCommonIdentityList(commonIdentities: List<CommonIdentity>): String {
         return Gson().toJson(commonIdentities)
     }
@@ -110,14 +123,27 @@ class Converters {
     }
 
     @TypeConverter
-    fun fromRelationList(relations: List<Relation>): String {
+    fun fromNullableCommonIdentityList(commonIdentities: List<CommonIdentity>?): String {
+        return Gson().toJson(commonIdentities)
+    }
+
+    @TypeConverter
+    fun toNullableCommonIdentityList(commonIdentitiesJson: String?): List<CommonIdentity>? {
+        return commonIdentitiesJson?.let {
+            Gson().fromJson(it, object : TypeToken<List<CommonIdentity>>() {}.type)
+        }
+    }
+
+    @TypeConverter
+    fun fromNullableRelationList(relations: List<Relation>?): String {
         return Gson().toJson(relations)
     }
 
     @TypeConverter
-    fun toRelationList(relationsJson: String): List<Relation> {
-        val type = object : TypeToken<List<Relation>>() {}.type
-        return Gson().fromJson(relationsJson, type)
+    fun toNullableRelationList(relationsJson: String?): List<Relation>? {
+        return relationsJson?.let {
+            Gson().fromJson(it, object : TypeToken<List<Relation>>() {}.type)
+        }
     }
 
     @TypeConverter
@@ -131,6 +157,18 @@ class Converters {
     }
 
     @TypeConverter
+    fun fromNullableNameAndUrlList(nameAndUrls: List<NameAndUrl?>?): String? {
+        return Gson().toJson(nameAndUrls)
+    }
+
+    @TypeConverter
+    fun toNullableNameAndUrlList(nameAndUrlsJson: String?): List<NameAndUrl?>? {
+        return nameAndUrlsJson?.let {
+            Gson().fromJson(it, object : TypeToken<List<NameAndUrl?>?>() {}.type)
+        }
+    }
+
+    @TypeConverter
     fun fromNameAndUrlList(nameAndUrl: List<NameAndUrl>): String {
         return Gson().toJson(nameAndUrl)
     }
@@ -140,6 +178,4 @@ class Converters {
         val type = object : TypeToken<List<NameAndUrl>>() {}.type
         return Gson().fromJson(nameAndUrlJson, type)
     }
-
-
 }
