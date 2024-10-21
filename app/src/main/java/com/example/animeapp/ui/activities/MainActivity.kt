@@ -6,6 +6,7 @@ import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.net.Uri
 import android.os.Bundle
+import android.view.View
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -35,8 +36,10 @@ import com.example.animeapp.ui.viewmodels.AnimeRecommendationsViewModel
 import com.example.animeapp.ui.providerfactories.AnimeRecommendationsViewModelProviderFactory
 import com.example.animeapp.ui.providerfactories.AnimeDetailViewModelProviderFactory
 import com.example.animeapp.ui.viewmodels.AnimeDetailViewModel
+import com.example.animeapp.utils.NetworkUtils
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ShakeDetector
+import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.launch
 import okhttp3.MediaType
 import okhttp3.Request
@@ -82,13 +85,24 @@ class MainActivity : AppCompatActivity() {
         splashScreen.setKeepOnScreenCondition { !isDataLoaded }
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.animeRecommendations.collect { resource ->
-                    if (resource is Resource.Success) {
-                        isDataLoaded = true
+                if (NetworkUtils.isNetworkAvailable(this@MainActivity)) {
+                    viewModel.animeRecommendations.collect { resource ->
+                        if (resource is Resource.Success) {
+                            isDataLoaded = true
+                        } else if (resource is Resource.Error && !isDataLoaded) {
+                            binding.root.showSnackbar("Error loading data. Please check your connection.")
+                        }
                     }
+                } else {
+                    binding.root.showSnackbar("No internet connection. Please check your network settings.",
+                        Snackbar.LENGTH_INDEFINITE)
                 }
             }
         }
+    }
+
+    private fun View.showSnackbar(message: String, duration: Int = Snackbar.LENGTH_SHORT) {
+        Snackbar.make(this, message, duration).show()
     }
 
     private fun setupSensor() {

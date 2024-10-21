@@ -3,7 +3,6 @@ package com.example.animeapp.data.local.entities
 import android.provider.MediaStore.Audio.Genres
 import androidx.room.TypeConverter
 import com.example.animeapp.models.Aired
-import com.example.animeapp.models.AnimeHeader
 import com.example.animeapp.models.Broadcast
 import com.example.animeapp.models.CommonIdentity
 import com.example.animeapp.models.Images
@@ -12,32 +11,10 @@ import com.example.animeapp.models.Relation
 import com.example.animeapp.models.Theme
 import com.example.animeapp.models.Title
 import com.example.animeapp.models.Trailer
-import com.example.animeapp.models.User
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
-class Converters {
-    @TypeConverter
-    fun fromAnimeHeaderList(value: List<AnimeHeader>): String {
-        return value.joinToString(",") { it.mal_id.toString() }
-    }
-
-    @TypeConverter
-    fun toAnimeHeaderList(value: String): List<AnimeHeader> {
-        val malIds = value.split(",")
-        return malIds.map { AnimeHeader(it.toInt(), "") }
-    }
-
-    @TypeConverter
-    fun fromUser(value: User): String {
-        return value.username
-    }
-
-    @TypeConverter
-    fun toUser(value: String): User {
-        return User(value, "", "")
-    }
-
+class AnimeDetailConverters {
     @TypeConverter
     fun fromImages(images: Images): String {
         return Gson().toJson(images)
@@ -100,18 +77,6 @@ class Converters {
     }
 
     @TypeConverter
-    fun fromGenreList(genres: List<Genres>?): String {
-        return Gson().toJson(genres)
-    }
-
-    @TypeConverter
-    fun toGenreList(genreString: String?): List<Genres>? {
-        return genreString?.let {
-            Gson().fromJson(it, object : TypeToken<List<Genres>>() {}.type)
-        }
-    }
-
-    @TypeConverter
     fun fromCommonIdentityList(commonIdentities: List<CommonIdentity>): String {
         return Gson().toJson(commonIdentities)
     }
@@ -166,11 +131,6 @@ class Converters {
         return nameAndUrlsJson?.let {
             Gson().fromJson(it, object : TypeToken<List<NameAndUrl?>?>() {}.type)
         }
-    }
-
-    @TypeConverter
-    fun fromNameAndUrlList(nameAndUrl: List<NameAndUrl>): String {
-        return Gson().toJson(nameAndUrl)
     }
 
     @TypeConverter

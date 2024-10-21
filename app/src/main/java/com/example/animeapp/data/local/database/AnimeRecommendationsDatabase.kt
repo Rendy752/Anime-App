@@ -6,11 +6,11 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.example.animeapp.data.local.dao.AnimeRecommendationsDao
-import com.example.animeapp.data.local.entities.Converters
+import com.example.animeapp.data.local.entities.AnimeRecommendationsConverter
 import com.example.animeapp.models.AnimeRecommendation
 
 @Database(entities = [AnimeRecommendation::class], version = 1, exportSchema = false)
-@TypeConverters(Converters::class)
+@TypeConverters(AnimeRecommendationsConverter::class)
 abstract class AnimeRecommendationsDatabase : RoomDatabase() {
 
     abstract fun getAnimeRecommendationsDao(): AnimeRecommendationsDao
