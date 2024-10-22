@@ -1,6 +1,6 @@
-package com.example.animeapp.data.remote.api
+package com.example.animeappkotlin.data.remote.api
 
-import com.example.animeapp.utils.Const.Companion.BASE_URL
+import com.example.animeappkotlin.utils.Const.Companion.BASE_URL
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit

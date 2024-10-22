@@ -121,7 +121,7 @@
                 android:layout_marginTop="8dp"
                 android:scrollbars="none">
 
-                <com.example.animeapp.utils.EqualHeightLinearLayout
+                <com.example.animeappkotlin.utils.EqualHeightLinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
@@ -274,7 +274,7 @@
                             android:text="@string/favorites" />
                     </LinearLayout>
 
-                </com.example.animeapp.utils.EqualHeightLinearLayout>
+                </com.example.animeappkotlin.utils.EqualHeightLinearLayout>
             </HorizontalScrollView>
 
             <LinearLayout
@@ -286,7 +286,7 @@
                 android:orientation="horizontal"
                 android:visibility="gone">
 
-                <com.example.animeapp.ui.viewmodels.YoutubePlayerView
+                <com.example.animeappkotlin.ui.viewmodels.YoutubePlayerView
                     android:id="@+id/youtubePlayerView"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content" />

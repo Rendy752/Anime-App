@@ -7,11 +7,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.animeapp"
+    namespace = "com.example.animeappkotlin"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.animeapp"
+        applicationId = "com.example.animeappkotlin"
         minSdk = 30
         targetSdk = 34
         versionCode = 1

@@ -1,4 +1,4 @@
-package com.example.animeapp.utils
+package com.example.animeappkotlin.utils
 
 import org.apache.commons.text.StringEscapeUtils
 

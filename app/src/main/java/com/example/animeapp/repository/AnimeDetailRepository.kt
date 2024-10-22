@@ -1,8 +1,8 @@
-package com.example.animeapp.repository
+package com.example.animeappkotlin.repository
 
-import com.example.animeapp.data.local.dao.AnimeDetailDao
-import com.example.animeapp.data.remote.api.RetrofitInstance
-import com.example.animeapp.models.AnimeDetailResponse
+import com.example.animeappkotlin.data.local.dao.AnimeDetailDao
+import com.example.animeappkotlin.data.remote.api.RetrofitInstance
+import com.example.animeappkotlin.models.AnimeDetailResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import retrofit2.Response

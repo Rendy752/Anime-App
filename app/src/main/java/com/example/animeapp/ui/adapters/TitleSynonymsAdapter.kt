@@ -1,9 +1,9 @@
-package com.example.animeapp.ui.adapters
+package com.example.animeappkotlin.ui.adapters
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.example.animeapp.databinding.TitleSynonymItemBinding
+import com.example.animeappkotlin.databinding.TitleSynonymItemBinding
 
 class TitleSynonymsAdapter(private val synonyms: List<String>) :
     RecyclerView.Adapter<TitleSynonymsAdapter.SynonymViewHolder>() {

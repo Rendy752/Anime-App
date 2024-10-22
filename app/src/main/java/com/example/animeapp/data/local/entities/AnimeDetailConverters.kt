@@ -1,16 +1,16 @@
-package com.example.animeapp.data.local.entities
+package com.example.animeappkotlin.data.local.entities
 
 import android.provider.MediaStore.Audio.Genres
 import androidx.room.TypeConverter
-import com.example.animeapp.models.Aired
-import com.example.animeapp.models.Broadcast
-import com.example.animeapp.models.CommonIdentity
-import com.example.animeapp.models.Images
-import com.example.animeapp.models.NameAndUrl
-import com.example.animeapp.models.Relation
-import com.example.animeapp.models.Theme
-import com.example.animeapp.models.Title
-import com.example.animeapp.models.Trailer
+import com.example.animeappkotlin.models.Aired
+import com.example.animeappkotlin.models.Broadcast
+import com.example.animeappkotlin.models.CommonIdentity
+import com.example.animeappkotlin.models.Images
+import com.example.animeappkotlin.models.NameAndUrl
+import com.example.animeappkotlin.models.Relation
+import com.example.animeappkotlin.models.Theme
+import com.example.animeappkotlin.models.Title
+import com.example.animeappkotlin.models.Trailer
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 

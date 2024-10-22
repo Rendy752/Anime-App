@@ -1,10 +1,10 @@
-package com.example.animeapp.ui.viewmodels
+package com.example.animeappkotlin.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.animeapp.models.AnimeRecommendationResponse
-import com.example.animeapp.repository.AnimeRecommendationsRepository
-import com.example.animeapp.utils.Resource
+import com.example.animeappkotlin.models.AnimeRecommendationResponse
+import com.example.animeappkotlin.repository.AnimeRecommendationsRepository
+import com.example.animeappkotlin.utils.Resource
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

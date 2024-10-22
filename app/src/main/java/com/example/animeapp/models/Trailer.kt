@@ -1,4 +1,4 @@
-package com.example.animeapp.models
+package com.example.animeappkotlin.models
 
 data class Trailer(
     val youtube_id: String?,

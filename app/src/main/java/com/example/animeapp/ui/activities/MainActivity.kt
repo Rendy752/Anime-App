@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.activities
+package com.example.animeappkotlin.ui.activities
 
 import android.content.Context
 import android.content.Intent
@@ -25,20 +25,20 @@ import com.chuckerteam.chucker.api.Chucker
 import com.chuckerteam.chucker.api.ChuckerCollector
 import com.chuckerteam.chucker.api.ChuckerInterceptor
 import com.chuckerteam.chucker.api.RetentionManager
-import com.example.animeapp.R
-import com.example.animeapp.databinding.ActivityMainBinding
-import com.example.animeapp.data.local.database.AnimeDetailDatabase
-import com.example.animeapp.data.local.database.AnimeRecommendationsDatabase
-import com.example.animeapp.data.remote.api.RetrofitInstance
-import com.example.animeapp.repository.AnimeDetailRepository
-import com.example.animeapp.repository.AnimeRecommendationsRepository
-import com.example.animeapp.ui.viewmodels.AnimeRecommendationsViewModel
-import com.example.animeapp.ui.providerfactories.AnimeRecommendationsViewModelProviderFactory
-import com.example.animeapp.ui.providerfactories.AnimeDetailViewModelProviderFactory
-import com.example.animeapp.ui.viewmodels.AnimeDetailViewModel
-import com.example.animeapp.utils.NetworkUtils
-import com.example.animeapp.utils.Resource
-import com.example.animeapp.utils.ShakeDetector
+import com.example.animeappkotlin.R
+import com.example.animeappkotlin.databinding.ActivityMainBinding
+import com.example.animeappkotlin.data.local.database.AnimeDetailDatabase
+import com.example.animeappkotlin.data.local.database.AnimeRecommendationsDatabase
+import com.example.animeappkotlin.data.remote.api.RetrofitInstance
+import com.example.animeappkotlin.repository.AnimeDetailRepository
+import com.example.animeappkotlin.repository.AnimeRecommendationsRepository
+import com.example.animeappkotlin.ui.viewmodels.AnimeRecommendationsViewModel
+import com.example.animeappkotlin.ui.providerfactories.AnimeRecommendationsViewModelProviderFactory
+import com.example.animeappkotlin.ui.providerfactories.AnimeDetailViewModelProviderFactory
+import com.example.animeappkotlin.ui.viewmodels.AnimeDetailViewModel
+import com.example.animeappkotlin.utils.NetworkUtils
+import com.example.animeappkotlin.utils.Resource
+import com.example.animeappkotlin.utils.ShakeDetector
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.coroutines.launch
 import okhttp3.MediaType
@@ -130,7 +130,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
-        if (intent?.action == Intent.ACTION_VIEW && intent.scheme == "animeapp" && intent.data != null) {
+        if (intent?.action == Intent.ACTION_VIEW && intent.scheme == "animeappkotlin" && intent.data != null) {
             handleAnimeUrl(intent.data)
         }
     }

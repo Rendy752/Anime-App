@@ -1,8 +1,8 @@
-package com.example.animeapp.data.local.entities
+package com.example.animeappkotlin.data.local.entities
 
 import androidx.room.TypeConverter
-import com.example.animeapp.models.AnimeHeader
-import com.example.animeapp.models.User
+import com.example.animeappkotlin.models.AnimeHeader
+import com.example.animeappkotlin.models.User
 
 class AnimeRecommendationsConverter {
     @TypeConverter

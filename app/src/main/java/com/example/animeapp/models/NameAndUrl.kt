@@ -1,4 +1,4 @@
-package com.example.animeapp.models
+package com.example.animeappkotlin.models
 
 data class NameAndUrl(
     val name: String,

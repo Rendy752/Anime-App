@@ -30,7 +30,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
-                    android:scheme="animeapp"
+                    android:scheme="animeappkotlin"
                     android:host="anime"
                     android:pathPattern="/detail/.*" />
             </intent-filter>

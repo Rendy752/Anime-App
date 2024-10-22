@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.fragments
+package com.example.animeappkotlin.ui.fragments
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -9,12 +9,12 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.animeapp.ui.activities.MainActivity
-import com.example.animeapp.R
-import com.example.animeapp.ui.adapters.AnimeRecommendationsAdapter
-import com.example.animeapp.databinding.FragmentRecommendationBinding
-import com.example.animeapp.ui.viewmodels.AnimeRecommendationsViewModel
-import com.example.animeapp.utils.Resource
+import com.example.animeappkotlin.ui.activities.MainActivity
+import com.example.animeappkotlin.R
+import com.example.animeappkotlin.ui.adapters.AnimeRecommendationsAdapter
+import com.example.animeappkotlin.databinding.FragmentRecommendationBinding
+import com.example.animeappkotlin.ui.viewmodels.AnimeRecommendationsViewModel
+import com.example.animeappkotlin.utils.Resource
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 

@@ -1,7 +1,7 @@
-package com.example.animeapp.repository
+package com.example.animeappkotlin.repository
 
-import com.example.animeapp.data.remote.api.RetrofitInstance
-import com.example.animeapp.data.local.database.AnimeRecommendationsDatabase
+import com.example.animeappkotlin.data.remote.api.RetrofitInstance
+import com.example.animeappkotlin.data.local.database.AnimeRecommendationsDatabase
 
 class AnimeRecommendationsRepository(
     val db: AnimeRecommendationsDatabase

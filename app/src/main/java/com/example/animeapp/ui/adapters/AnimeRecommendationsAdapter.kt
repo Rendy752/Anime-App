@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.adapters
+package com.example.animeappkotlin.ui.adapters
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -6,9 +6,9 @@ import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
-import com.example.animeapp.databinding.AnimeRecommendationItemBinding
-import com.example.animeapp.models.AnimeRecommendation
-import com.example.animeapp.utils.DateUtils
+import com.example.animeappkotlin.databinding.AnimeRecommendationItemBinding
+import com.example.animeappkotlin.models.AnimeRecommendation
+import com.example.animeappkotlin.utils.DateUtils
 
 class AnimeRecommendationsAdapter : RecyclerView.Adapter<AnimeRecommendationsAdapter.AnimeRecommendationViewHolder>() {
 

@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.fragments
+package com.example.animeappkotlin.ui.fragments
 
 import android.annotation.SuppressLint
 import android.content.Intent
@@ -15,15 +15,15 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
-import com.example.animeapp.R
-import com.example.animeapp.ui.activities.MainActivity
-import com.example.animeapp.databinding.FragmentDetailBinding
-import com.example.animeapp.models.AnimeDetailResponse
-import com.example.animeapp.ui.adapters.TitleSynonymsAdapter
-import com.example.animeapp.ui.viewmodels.AnimeDetailViewModel
-import com.example.animeapp.utils.Resource
-import com.example.animeapp.utils.TextUtils.formatSynopsis
-import com.example.animeapp.utils.TextUtils.joinOrNA
+import com.example.animeappkotlin.R
+import com.example.animeappkotlin.ui.activities.MainActivity
+import com.example.animeappkotlin.databinding.FragmentDetailBinding
+import com.example.animeappkotlin.models.AnimeDetailResponse
+import com.example.animeappkotlin.ui.adapters.TitleSynonymsAdapter
+import com.example.animeappkotlin.ui.viewmodels.AnimeDetailViewModel
+import com.example.animeappkotlin.utils.Resource
+import com.example.animeappkotlin.utils.TextUtils.formatSynopsis
+import com.example.animeappkotlin.utils.TextUtils.joinOrNA
 
 class AnimeDetailFragment : Fragment(), MenuProvider {
 

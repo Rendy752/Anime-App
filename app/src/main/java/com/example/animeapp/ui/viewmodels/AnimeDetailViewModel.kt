@@ -1,11 +1,11 @@
-package com.example.animeapp.ui.viewmodels
+package com.example.animeappkotlin.ui.viewmodels
 
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.animeapp.models.AnimeDetailResponse
-import com.example.animeapp.repository.AnimeDetailRepository
-import com.example.animeapp.utils.Resource
+import com.example.animeappkotlin.models.AnimeDetailResponse
+import com.example.animeappkotlin.repository.AnimeDetailRepository
+import com.example.animeappkotlin.utils.Resource
 import kotlinx.coroutines.launch
 import retrofit2.Response
 

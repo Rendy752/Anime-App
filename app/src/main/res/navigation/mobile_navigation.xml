@@ -7,7 +7,7 @@
 
     <fragment
         android:id="@+id/animeRecommendationsFragment"
-        android:name="com.example.animeapp.ui.fragments.AnimeRecommendationsFragment"
+        android:name="com.example.animeappkotlin.ui.fragments.AnimeRecommendationsFragment"
         tools:layout="@layout/fragment_recommendation"
         android:label="@string/title_recommendation">
         <action
@@ -20,13 +20,13 @@
 
     <fragment
         android:id="@+id/aboutFragment"
-        android:name="com.example.animeapp.ui.fragments.AboutFragment"
+        android:name="com.example.animeappkotlin.ui.fragments.AboutFragment"
         tools:layout="@layout/fragment_about"
         android:label="@string/title_about" />
 
     <fragment
         android:id="@+id/animeDetailFragment"
-        android:name="com.example.animeapp.ui.fragments.AnimeDetailFragment"
+        android:name="com.example.animeappkotlin.ui.fragments.AnimeDetailFragment"
         android:label="@string/title_detail"
         tools:layout="@layout/fragment_detail" />
 

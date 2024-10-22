@@ -1,4 +1,4 @@
-package com.example.animeapp.utils
+package com.example.animeappkotlin.utils
 
 import org.ocpsoft.prettytime.PrettyTime
 import java.text.SimpleDateFormat

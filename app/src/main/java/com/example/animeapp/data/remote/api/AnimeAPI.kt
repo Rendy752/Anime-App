@@ -1,7 +1,7 @@
-package com.example.animeapp.data.remote.api
+package com.example.animeappkotlin.data.remote.api
 
-import com.example.animeapp.models.AnimeDetailResponse
-import com.example.animeapp.models.AnimeRecommendationResponse
+import com.example.animeappkotlin.models.AnimeDetailResponse
+import com.example.animeappkotlin.models.AnimeRecommendationResponse
 import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Path

@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.viewmodels
+package com.example.animeappkotlin.ui.viewmodels
 
 import android.annotation.SuppressLint
 import android.content.Context
