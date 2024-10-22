@@ -6,11 +6,11 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import com.example.animeappkotlin.data.local.dao.AnimeDetailDao
-import com.example.animeappkotlin.data.local.entities.AnimeDetailConverters
+import com.example.animeappkotlin.data.local.entities.AnimeDetailConverter
 import com.example.animeappkotlin.models.AnimeDetail
 
 @Database(entities = [AnimeDetail::class], version = 6, exportSchema = false)
-@TypeConverters(AnimeDetailConverters::class)
+@TypeConverters(AnimeDetailConverter::class)
 abstract class AnimeDetailDatabase : RoomDatabase() {
 
     abstract fun getAnimeDetailDao(): AnimeDetailDao
@@ -25,8 +25,7 @@ abstract class AnimeDetailDatabase : RoomDatabase() {
                     context.applicationContext,
                     AnimeDetailDatabase::class.java,
                     "anime_detail_db.db"
-                ).
-                fallbackToDestructiveMigration().build()
+                ).build()
                 INSTANCE = instance
                 instance
             }

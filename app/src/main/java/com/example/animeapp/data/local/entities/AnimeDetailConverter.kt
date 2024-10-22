@@ -1,6 +1,5 @@
 package com.example.animeappkotlin.data.local.entities
 
-import android.provider.MediaStore.Audio.Genres
 import androidx.room.TypeConverter
 import com.example.animeappkotlin.models.Aired
 import com.example.animeappkotlin.models.Broadcast
@@ -14,7 +13,7 @@ import com.example.animeappkotlin.models.Trailer
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
-class AnimeDetailConverters {
+class AnimeDetailConverter {
     @TypeConverter
     fun fromImages(images: Images): String {
         return Gson().toJson(images)
