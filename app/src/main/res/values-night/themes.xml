@@ -3,7 +3,7 @@
     <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.DarkActionBar"></style>
 
     <style name="Theme.App.Starting" parent="Theme.SplashScreen" >
-        <item name="windowSplashScreenBackground">@drawable/container_night</item>
+        <item name="windowSplashScreenBackground">@color/textColorPrimary</item>
         <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_app_icon_round</item>
         <item name="postSplashScreenTheme">@style/AppTheme</item>
     </style>

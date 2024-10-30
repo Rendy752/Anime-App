@@ -56,7 +56,7 @@ class MainActivity : AppCompatActivity() {
 
     private val viewModel: AnimeRecommendationsViewModel by lazy {
         val repository =
-            AnimeRecommendationsRepository(AnimeRecommendationsDatabase.getDatabase(this))
+            AnimeRecommendationsRepository(RetrofitInstance.api, AnimeRecommendationsDatabase.getDatabase(this))
         val factory = AnimeRecommendationsViewModelProviderFactory(repository)
         ViewModelProvider(this, factory)[AnimeRecommendationsViewModel::class.java]
     }

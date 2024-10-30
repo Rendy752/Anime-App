@@ -1,4 +1,4 @@
-package com.example.animeapp
+package com.example.animeappkotlin
 
 import org.junit.Test
 
