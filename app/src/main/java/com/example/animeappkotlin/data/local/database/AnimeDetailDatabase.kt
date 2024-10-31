@@ -25,7 +25,7 @@ abstract class AnimeDetailDatabase : RoomDatabase() {
                     context.applicationContext,
                     AnimeDetailDatabase::class.java,
                     "anime_detail_db.db"
-                ).build()
+                ).fallbackToDestructiveMigration().build()
                 INSTANCE = instance
                 instance
             }

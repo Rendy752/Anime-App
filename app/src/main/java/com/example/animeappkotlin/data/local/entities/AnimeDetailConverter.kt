@@ -1,145 +1,131 @@
 package com.example.animeappkotlin.data.local.entities
 
 import androidx.room.TypeConverter
-import com.example.animeappkotlin.models.Aired
-import com.example.animeappkotlin.models.Broadcast
-import com.example.animeappkotlin.models.CommonIdentity
-import com.example.animeappkotlin.models.Images
-import com.example.animeappkotlin.models.NameAndUrl
-import com.example.animeappkotlin.models.Relation
-import com.example.animeappkotlin.models.Theme
-import com.example.animeappkotlin.models.Title
-import com.example.animeappkotlin.models.Trailer
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
+import com.example.animeappkotlin.models.*
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 class AnimeDetailConverter {
+
+    private val json = Json { ignoreUnknownKeys = true }
+
     @TypeConverter
     fun fromImages(images: Images): String {
-        return Gson().toJson(images)
+        return json.encodeToString(images)
     }
 
     @TypeConverter
     fun toImages(imagesJson: String): Images {
-        return Gson().fromJson(imagesJson, Images::class.java)
+        return json.decodeFromString(imagesJson)
     }
 
     @TypeConverter
     fun fromTrailer(trailer: Trailer): String {
-        return Gson().toJson(trailer)
+        return json.encodeToString(trailer)
     }
 
     @TypeConverter
     fun toTrailer(trailerJson: String): Trailer {
-        return Gson().fromJson(trailerJson, Trailer::class.java)
+        return json.decodeFromString(trailerJson)
     }
 
     @TypeConverter
     fun fromTitlesList(titles: List<Title>): String {
-        return Gson().toJson(titles)
+        return json.encodeToString(titles)
     }
 
     @TypeConverter
     fun toTitlesList(titlesJson: String): List<Title> {
-        val type = object : TypeToken<List<Title>>() {}.type
-        return Gson().fromJson(titlesJson, type)
+        return json.decodeFromString(titlesJson)
     }
 
     @TypeConverter
     fun fromStringArray(strings: Array<String>): String {
-        return strings.joinToString(",")
+        return json.encodeToString(strings) // Use Json for string array as well
     }
 
     @TypeConverter
     fun toStringArray(string: String): Array<String> {
-        return string.split(",").toTypedArray()
+        return json.decodeFromString(string) // Use Json for string array as well
     }
 
     @TypeConverter
     fun fromAired(aired: Aired): String {
-        return Gson().toJson(aired)
+        return json.encodeToString(aired)
     }
 
     @TypeConverter
     fun toAired(airedJson: String): Aired {
-        return Gson().fromJson(airedJson, Aired::class.java)
+        return json.decodeFromString(airedJson)
     }
 
     @TypeConverter
     fun fromBroadcast(broadcast: Broadcast): String {
-        return Gson().toJson(broadcast)
+        return json.encodeToString(broadcast)
     }
 
     @TypeConverter
     fun toBroadcast(broadcastJson: String): Broadcast {
-        return Gson().fromJson(broadcastJson, Broadcast::class.java)
+        return json.decodeFromString(broadcastJson)
     }
 
     @TypeConverter
     fun fromCommonIdentityList(commonIdentities: List<CommonIdentity>): String {
-        return Gson().toJson(commonIdentities)
+        return json.encodeToString(commonIdentities)
     }
 
     @TypeConverter
     fun toCommonIdentityList(commonIdentitiesJson: String): List<CommonIdentity> {
-        val type = object : TypeToken<List<CommonIdentity>>() {}.type
-        return Gson().fromJson(commonIdentitiesJson, type)
+        return json.decodeFromString(commonIdentitiesJson)
     }
 
     @TypeConverter
-    fun fromNullableCommonIdentityList(commonIdentities: List<CommonIdentity>?): String {
-        return Gson().toJson(commonIdentities)
+    fun fromNullableCommonIdentityList(commonIdentities: List<CommonIdentity>?): String? {
+        return commonIdentities?.let { json.encodeToString(it) }
     }
 
     @TypeConverter
     fun toNullableCommonIdentityList(commonIdentitiesJson: String?): List<CommonIdentity>? {
-        return commonIdentitiesJson?.let {
-            Gson().fromJson(it, object : TypeToken<List<CommonIdentity>>() {}.type)
-        }
+        return commonIdentitiesJson?.let { json.decodeFromString(it) }
     }
 
     @TypeConverter
-    fun fromNullableRelationList(relations: List<Relation>?): String {
-        return Gson().toJson(relations)
+    fun fromNullableRelationList(relations: List<Relation>?): String? {
+        return relations?.let { json.encodeToString(it) }
     }
 
     @TypeConverter
     fun toNullableRelationList(relationsJson: String?): List<Relation>? {
-        return relationsJson?.let {
-            Gson().fromJson(it, object : TypeToken<List<Relation>>() {}.type)
-        }
+        return relationsJson?.let { json.decodeFromString(it) }
     }
 
     @TypeConverter
     fun fromTheme(theme: Theme): String {
-        return Gson().toJson(theme)
+        return json.encodeToString(theme)
     }
 
     @TypeConverter
     fun toTheme(themeJson: String): Theme {
-        return Gson().fromJson(themeJson, Theme::class.java)
+        return json.decodeFromString(themeJson)
     }
 
     @TypeConverter
     fun fromNullableNameAndUrlList(nameAndUrls: List<NameAndUrl?>?): String? {
-        return Gson().toJson(nameAndUrls)
+        return nameAndUrls?.let { json.encodeToString(it) }
     }
 
     @TypeConverter
     fun toNullableNameAndUrlList(nameAndUrlsJson: String?): List<NameAndUrl?>? {
-        return nameAndUrlsJson?.let {
-            Gson().fromJson(it, object : TypeToken<List<NameAndUrl?>?>() {}.type)
-        }
+        return nameAndUrlsJson?.let { json.decodeFromString(it) }
     }
 
     @TypeConverter
     fun fromNameAndUrlList(nameAndUrl: List<NameAndUrl>): String {
-        return Gson().toJson(nameAndUrl)
+        return json.encodeToString(nameAndUrl)
     }
 
     @TypeConverter
     fun toNameAndUrlList(nameAndUrlJson: String): List<NameAndUrl> {
-        val type = object : TypeToken<List<NameAndUrl>>() {}.type
-        return Gson().fromJson(nameAndUrlJson, type)
+        return json.decodeFromString(nameAndUrlJson)
     }
 }

@@ -4,6 +4,7 @@ plugins {
     id("com.google.dagger.hilt.android")
     id("kotlin-parcelize")
     id("com.google.devtools.ksp") version "1.9.0-1.0.11"
+    id("kotlinx-serialization")
 }
 
 android {
@@ -90,8 +91,8 @@ dependencies {
     ksp(libs.androidx.hilt.compiler)
     implementation(libs.androidx.hilt.navigation.fragment)
 
-    //Gson
-    implementation(libs.gson)
+    //Kotlinx Serialization
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.2")
 
     //Loading Skeleton
     implementation(libs.shimmer)

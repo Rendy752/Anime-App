@@ -1,11 +1,14 @@
 package com.example.animeappkotlin.models
 
 import androidx.room.Entity
+import kotlinx.serialization.Serializable
 
 @Entity(
     tableName = "anime_detail",
     primaryKeys = ["mal_id"]
 )
+
+@Serializable
 data class AnimeDetail(
     val mal_id: Int,
     val url: String,

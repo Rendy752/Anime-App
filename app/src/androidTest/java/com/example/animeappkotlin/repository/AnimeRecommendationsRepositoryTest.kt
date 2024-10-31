@@ -8,10 +8,10 @@ import com.example.animeappkotlin.data.local.database.AnimeRecommendationsDataba
 import com.example.animeappkotlin.data.remote.api.AnimeAPI
 import com.example.animeappkotlin.data.remote.api.MockAnimeAPI
 import com.example.animeappkotlin.models.*
-import com.google.gson.Gson
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.serializer
 import org.junit.*
 import org.junit.runner.RunWith
 
@@ -25,13 +25,12 @@ class AnimeRecommendationsRepositoryTest {
     private lateinit var animeAPI: AnimeAPI
     private lateinit var database: AnimeRecommendationsDatabase
     private lateinit var mockResponse: AnimeRecommendationResponse
-    private lateinit var gson: Gson
+    private val json = Json { ignoreUnknownKeys = true } // Create a Json instance
 
     @Before
     fun setup() {
         mockResponse = createMockResponse()
         animeAPI = MockAnimeAPI(mockResponse) // Inject MockAnimeAPI for testing
-        gson = Gson()
 
         database = Room.inMemoryDatabaseBuilder(
             InstrumentationRegistry.getInstrumentation().targetContext,
@@ -62,33 +61,24 @@ class AnimeRecommendationsRepositoryTest {
     @Test
     fun performanceTest() = runTest {
         val iterations = 10
-        val executionTimes = LongArray(iterations)
+        val serializationTimes = LongArray(iterations)
         val deserializationTimes = LongArray(iterations)
-        val cpuUsages = DoubleArray(iterations)
-        val memoryUsages = LongArray(iterations)
 
         repeat(iterations) { i ->
-            executionTimes[i] = measureApiConsumptionTime()
-            delay(1000) // Delay between tests
+            serializationTimes[i] = measureSerializationTime()
             deserializationTimes[i] = measureDeserializationTime()
-            delay(1000) // Delay between tests
-            cpuUsages[i] = measureCpuUsageDuringApiConsumption()
-            delay(1000) // Delay between tests
-            memoryUsages[i] = measureMemoryUsageDuringApiConsumption()
+
+            delay(1000) // Delay between iterations
         }
 
         // Display results and calculate means
         println("\nResults:")
-        println("Execution Times: ${executionTimes.contentToString()}")
+        println("Serialization Times: ${serializationTimes.contentToString()}")
         println("Deserialization Times: ${deserializationTimes.contentToString()}")
-        println("CPU Usages (Disclaimer: Might not be accurate): ${cpuUsages.contentToString()}")
-        println("Memory Usages (Disclaimer: Might not be accurate): ${memoryUsages.contentToString()}")
 
         println("\nMeans:")
-        println("Mean Execution Time: ${executionTimes.average()} ms")
+        println("Mean Serialization Time: ${serializationTimes.average()} ms")
         println("Mean Deserialization Time: ${deserializationTimes.average()} ms")
-        println("Mean CPU Usage (Disclaimer: Might not be accurate): ${cpuUsages.average()} %")
-        println("Mean Memory Usage (Disclaimer: Might not be accurate): ${memoryUsages.average()} bytes")
     }
 
     private fun createMockResponse(): AnimeRecommendationResponse {
@@ -130,48 +120,22 @@ class AnimeRecommendationsRepositoryTest {
         return AnimeRecommendationResponse(pagination, data)
     }
 
-    private fun measureApiConsumptionTime(): Long = runBlocking {
+    private fun measureSerializationTime(): Long {
         val startTime = System.currentTimeMillis()
-        repository.getAnimeRecommendations(1)
+        val jsonString = json.encodeToString(AnimeRecommendationResponse.serializer(), mockResponse) // Use serializer()
         val endTime = System.currentTimeMillis()
-        println("API Consumption Time: ${endTime - startTime} ms")
-
-        return@runBlocking endTime - startTime
-    }
-
-    private fun measureDeserializationTime(): Long {
-        val startTime = System.currentTimeMillis()
-        val jsonResponse = gson.toJson(mockResponse)
-        gson.fromJson(jsonResponse, AnimeRecommendationResponse::class.java)
-        val endTime = System.currentTimeMillis()
-        println("Deserialization Time: ${endTime - startTime} ms")
+        println("Serialization Time: ${endTime - startTime} ms")
 
         return endTime - startTime
     }
 
-    private fun measureCpuUsageDuringApiConsumption(): Double {
-        val cpuBefore = getCpuUsage()
-        runBlocking { repository.getAnimeRecommendations(1) } // Simulate refresh
-        val cpuAfter = getCpuUsage()
-        return cpuAfter - cpuBefore
-    }
+    private fun measureDeserializationTime(): Long {
+        val jsonString = json.encodeToString(AnimeRecommendationResponse.serializer(), mockResponse) // Use serializer() for encoding
+        val startTime = System.currentTimeMillis()
+        json.decodeFromString<AnimeRecommendationResponse>(AnimeRecommendationResponse.serializer(), jsonString) // Specify type explicitly
+        val endTime = System.currentTimeMillis()
+        println("Deserialization Time: ${endTime - startTime} ms")
 
-    private fun measureMemoryUsageDuringApiConsumption(): Long {
-        val memoryBefore = getMemoryUsage()
-        runBlocking { repository.getAnimeRecommendations(1) } // Simulate refresh
-        val memoryAfter = getMemoryUsage()
-        return memoryAfter - memoryBefore
-    }
-
-    private fun getCpuUsage(): Double {
-        val runtime = Runtime.getRuntime()
-        val totalMemory = runtime.totalMemory()
-        val usedMemory = totalMemory - runtime.freeMemory()
-        return (usedMemory.toDouble() / totalMemory) * 100 // Approximate CPU usage
-    }
-
-    private fun getMemoryUsage(): Long {
-        val runtime = Runtime.getRuntime()
-        return runtime.totalMemory() - runtime.freeMemory()
+        return endTime - startTime
     }
 }
