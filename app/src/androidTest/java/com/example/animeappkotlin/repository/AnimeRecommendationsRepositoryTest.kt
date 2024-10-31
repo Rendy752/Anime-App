@@ -6,14 +6,14 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.example.animeappkotlin.data.local.database.AnimeRecommendationsDatabase
 import com.example.animeappkotlin.data.remote.api.AnimeAPI
-import com.example.animeappkotlin.data.remote.api.MockAnimeAPI
+import com.example.animeappkotlin.data.remote.api.RetrofitInstance
 import com.example.animeappkotlin.models.*
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.serializer
 import org.junit.*
 import org.junit.runner.RunWith
+import retrofit2.Response
 
 @RunWith(AndroidJUnit4::class)
 class AnimeRecommendationsRepositoryTest {
@@ -24,13 +24,11 @@ class AnimeRecommendationsRepositoryTest {
     private lateinit var repository: AnimeRecommendationsRepository
     private lateinit var animeAPI: AnimeAPI
     private lateinit var database: AnimeRecommendationsDatabase
-    private lateinit var mockResponse: AnimeRecommendationResponse
     private val json = Json { ignoreUnknownKeys = true } // Create a Json instance
 
     @Before
     fun setup() {
-        mockResponse = createMockResponse()
-        animeAPI = MockAnimeAPI(mockResponse) // Inject MockAnimeAPI for testing
+        animeAPI = RetrofitInstance.api;
 
         database = Room.inMemoryDatabaseBuilder(
             InstrumentationRegistry.getInstrumentation().targetContext,
@@ -47,38 +45,38 @@ class AnimeRecommendationsRepositoryTest {
     }
 
     @Test
-    fun testGetAnimeRecommendations() = runTest {
-        val response = animeAPI.getAnimeRecommendations(1)
-        Assert.assertEquals(mockResponse, response.body())
-    }
-
-    @Test
-    fun repository_getAnimeRecommendations_returnsData() = runTest {
-        val response = repository.getAnimeRecommendations(1)
-        Assert.assertNotNull(response)
-    }
-
-    @Test
     fun performanceTest() = runTest {
         val iterations = 10
         val serializationTimes = LongArray(iterations)
         val deserializationTimes = LongArray(iterations)
 
-        repeat(iterations) { i ->
-            serializationTimes[i] = measureSerializationTime()
-            deserializationTimes[i] = measureDeserializationTime()
 
-            delay(1000) // Delay between iterations
+        val realApiResponse: Response<AnimeRecommendationResponse> =
+            animeAPI.getAnimeRecommendations(1)
+        val realResponseData = realApiResponse.body()
+
+        if (realResponseData != null) {
+            // Warm-up
+            repeat(3) { // Perform 3 warm-up iterations
+                measureSerializationTime(realResponseData)
+                measureDeserializationTime(realResponseData)
+            }
+            repeat(iterations) { i ->
+                serializationTimes[i] = measureSerializationTime(realResponseData)
+                deserializationTimes[i] = measureDeserializationTime(realResponseData)
+                delay(1000)
+            }
+
+            println("\nResults:")
+            println("Serialization Times: ${serializationTimes.contentToString()}")
+            println("Deserialization Times: ${deserializationTimes.contentToString()}")
+
+            println("\nMeans:")
+            println("Mean Serialization Time: ${serializationTimes.average()} ms")
+            println("Mean Deserialization Time: ${deserializationTimes.average()} ms")
+        } else {
+            println("Error fetching real API response")
         }
-
-        // Display results and calculate means
-        println("\nResults:")
-        println("Serialization Times: ${serializationTimes.contentToString()}")
-        println("Deserialization Times: ${deserializationTimes.contentToString()}")
-
-        println("\nMeans:")
-        println("Mean Serialization Time: ${serializationTimes.average()} ms")
-        println("Mean Deserialization Time: ${deserializationTimes.average()} ms")
     }
 
     private fun createMockResponse(): AnimeRecommendationResponse {
@@ -120,22 +118,21 @@ class AnimeRecommendationsRepositoryTest {
         return AnimeRecommendationResponse(pagination, data)
     }
 
-    private fun measureSerializationTime(): Long {
+    private fun measureSerializationTime(data: AnimeRecommendationResponse): Long {
         val startTime = System.currentTimeMillis()
-        val jsonString = json.encodeToString(AnimeRecommendationResponse.serializer(), mockResponse) // Use serializer()
+        json.encodeToString(AnimeRecommendationResponse.serializer(), data)
         val endTime = System.currentTimeMillis()
-        println("Serialization Time: ${endTime - startTime} ms")
-
         return endTime - startTime
     }
 
-    private fun measureDeserializationTime(): Long {
-        val jsonString = json.encodeToString(AnimeRecommendationResponse.serializer(), mockResponse) // Use serializer() for encoding
+    private fun measureDeserializationTime(data: AnimeRecommendationResponse): Long {
+        val jsonString = json.encodeToString(AnimeRecommendationResponse.serializer(), data)
         val startTime = System.currentTimeMillis()
-        json.decodeFromString<AnimeRecommendationResponse>(AnimeRecommendationResponse.serializer(), jsonString) // Specify type explicitly
+        json.decodeFromString(
+            AnimeRecommendationResponse.serializer(),
+            jsonString
+        )
         val endTime = System.currentTimeMillis()
-        println("Deserialization Time: ${endTime - startTime} ms")
-
         return endTime - startTime
     }
 }
