@@ -9,7 +9,7 @@ import com.example.animeappkotlin.data.local.dao.AnimeDetailDao
 import com.example.animeappkotlin.data.local.entities.AnimeDetailConverter
 import com.example.animeappkotlin.models.AnimeDetail
 
-@Database(entities = [AnimeDetail::class], version = 6, exportSchema = false)
+@Database(entities = [AnimeDetail::class], version = 7, exportSchema = false)
 @TypeConverters(AnimeDetailConverter::class)
 abstract class AnimeDetailDatabase : RoomDatabase() {
 
