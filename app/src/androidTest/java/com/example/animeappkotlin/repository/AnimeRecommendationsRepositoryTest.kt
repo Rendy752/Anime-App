@@ -57,10 +57,10 @@ class AnimeRecommendationsRepositoryTest {
 
         if (realResponseData != null) {
             // Warm-up
-            repeat(3) { // Perform 3 warm-up iterations
-                measureSerializationTime(realResponseData)
-                measureDeserializationTime(realResponseData)
-            }
+//            repeat(3) {
+//                measureSerializationTime(realResponseData)
+//                measureDeserializationTime(realResponseData)
+//            }
             repeat(iterations) { i ->
                 serializationTimes[i] = measureSerializationTime(realResponseData)
                 deserializationTimes[i] = measureDeserializationTime(realResponseData)

@@ -4,10 +4,10 @@
     <selectionStates>
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2024-10-23T18:05:13.506194800Z">
+        <DropdownSelection timestamp="2024-11-24T08:02:30.892436500Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="PhysicalDevice" identifier="serial=524b638e" />
+              <DeviceId pluginId="PhysicalDevice" identifier="serial=10DE5E0E9D0009H" />
             </handle>
           </Target>
         </DropdownSelection>
@@ -15,17 +15,14 @@
       </SelectionState>
       <SelectionState runConfigName="AnimeRecommendationsRepositoryTest">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2024-10-31T12:09:37.454905Z">
+        <DropdownSelection timestamp="2024-11-24T03:57:16.048804100Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="PhysicalDevice" identifier="serial=524b638e" />
+              <DeviceId pluginId="PhysicalDevice" identifier="serial=10DE5E0E9D0009H" />
             </handle>
           </Target>
         </DropdownSelection>
         <DialogSelection />
-      </SelectionState>
-      <SelectionState runConfigName="performanceTestColdStart()">
-        <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
     </selectionStates>
   </component>
