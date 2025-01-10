@@ -37,4 +37,5 @@
     <string name="popularity_number">#%d</string>
     <string name="search_anime">Search Anime</string>
     <string name="limit">Limit: </string>
+    <string name="filter">Filter</string>
 </resources>

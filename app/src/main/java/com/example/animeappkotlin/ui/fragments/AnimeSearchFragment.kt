@@ -2,13 +2,18 @@ package com.example.animeappkotlin.ui.fragments
 
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Spinner
 import android.widget.Toast
+import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
@@ -26,7 +31,7 @@ import com.example.animeappkotlin.utils.Resource
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
-class AnimeSearchFragment : Fragment() {
+class AnimeSearchFragment : Fragment(), MenuProvider {
 
     private var _binding: FragmentAnimeSearchBinding? = null
     private val binding get() = _binding!!
@@ -49,6 +54,7 @@ class AnimeSearchFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupMenu()
         setupViewModel()
         setupRecyclerView()
         setupSearchView()
@@ -57,6 +63,10 @@ class AnimeSearchFragment : Fragment() {
         setupClickListeners()
         setupRefreshFloatingActionButton()
         updatePagination(null)
+    }
+
+    private fun setupMenu() {
+        requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
     }
 
     private fun setupViewModel() {
@@ -140,6 +150,20 @@ class AnimeSearchFragment : Fragment() {
             override fun onNothingSelected(parent: AdapterView<*>?) {
                 Toast.makeText(requireContext(), "Nothing selected", Toast.LENGTH_SHORT).show()
             }
+        }
+    }
+
+    override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+        menuInflater.inflate(R.menu.search_fragment_menu, menu)
+    }
+
+    override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
+        return when (menuItem.itemId) {
+            R.id.action_filter -> {
+                Toast.makeText(requireContext(), "Filter clicked", Toast.LENGTH_SHORT).show()
+                true
+            }
+            else -> false
         }
     }
 
