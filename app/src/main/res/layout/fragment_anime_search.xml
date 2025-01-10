@@ -12,14 +12,14 @@
         android:layout_height="wrap_content"
         android:layout_margin="8dp"
         android:background="@drawable/search_view_background"
+        app:closeIcon="@drawable/ic_close_red_24dp"
         app:iconifiedByDefault="false"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         app:queryHint="@string/search_anime"
-        app:searchIcon="@drawable/ic_search_blue_24dp"
-        app:closeIcon="@drawable/ic_close_red_24dp"
-        app:searchHintIcon="@null">
+        app:searchHintIcon="@null"
+        app:searchIcon="@drawable/ic_search_blue_24dp">
 
     </androidx.appcompat.widget.SearchView>
 
@@ -28,7 +28,7 @@
         android:layout_width="0dp"
         android:layout_height="0dp"
         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-        app:layout_constraintBottom_toTopOf="@id/paginationTextView"
+        app:layout_constraintBottom_toTopOf="@id/subMenuContainer"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/searchView" />
@@ -40,16 +40,34 @@
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="16dp"
         android:src="@drawable/ic_refresh_blue_24dp"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@id/subMenuContainer"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <TextView
-        android:id="@+id/paginationTextView"
-        android:layout_width="wrap_content"
+    <LinearLayout
+        android:id="@+id/subMenuContainer"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="8dp"
-        app:layout_constraintBottom_toBottomOf="@id/fabRefresh"
+        android:background="@color/textColorSecondary"
+        android:orientation="horizontal"
+        android:padding="8dp"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent">
+
+        <Spinner
+            android:id="@+id/limitSpinner"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:spinnerMode="dropdown" />
+
+        <LinearLayout
+            android:id="@+id/paginationButtonContainer"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="end"
+            android:orientation="horizontal" />
+
+    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

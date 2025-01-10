@@ -32,7 +32,7 @@ class AnimeSearchFragment : Fragment() {
     private lateinit var animeSearchAdapter: AnimeSearchAdapter
 
     private val debouncer = Debouncer(lifecycleScope) { query ->
-        viewModel.searchAnime(query)
+        viewModel.searchAnime(query,viewModel.animeSearchResults.value.data?.pagination?.current_page ?: 1)
     }
 
     override fun onCreateView(
@@ -52,6 +52,14 @@ class AnimeSearchFragment : Fragment() {
         setupObservers()
         setupClickListeners()
         setupRefreshFloatingActionButton()
+
+        Pagination.setPaginationButtons(
+            binding.paginationButtonContainer,
+            null,
+            onPaginationClick = { pageNumber ->
+                viewModel.searchAnime(binding.searchView.query.toString(), pageNumber)
+            }
+        )
     }
 
     private fun setupViewModel() {
@@ -126,14 +134,19 @@ class AnimeSearchFragment : Fragment() {
 
     private fun setupRefreshFloatingActionButton() {
         binding.fabRefresh.setOnClickListener {
-            viewModel.searchAnime(binding.searchView.query.toString())
+            viewModel.searchAnime(binding.searchView.query.toString(),viewModel.animeSearchResults.value.data?.pagination?.current_page ?: 1)
         }
     }
 
     private fun updatePagination(pagination: CompletePagination?) {
-        val paginationText = Pagination.getPaginationText(pagination)
-        binding.paginationTextView.text = paginationText
-        binding.paginationTextView.visibility = if (paginationText.isBlank()) View.GONE else View.VISIBLE
+        Pagination.setPaginationButtons(
+            binding.paginationButtonContainer,
+            pagination,
+            onPaginationClick = { pageNumber ->
+                viewModel.searchAnime(binding.searchView.query.toString(), pageNumber)
+            }
+        )
+        binding.paginationButtonContainer.visibility = if (pagination == null) View.GONE else View.VISIBLE
     }
 
     override fun onDestroyView() {

@@ -36,4 +36,9 @@
     <string name="ranked_number">#%d</string>
     <string name="popularity_number">#%d</string>
     <string name="search_anime">Search Anime</string>
+    <string name="limit">Limit: </string>
+    <string name="five">5</string>
+    <string name="ten">10</string>
+    <string name="twenty">20</string>
+    <string name="twenty_five">25</string>
 </resources>

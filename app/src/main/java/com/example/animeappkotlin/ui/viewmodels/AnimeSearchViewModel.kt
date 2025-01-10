@@ -26,12 +26,12 @@ class AnimeSearchViewModel(
         getRandomAnime()
     }
 
-    fun searchAnime(query: String) = viewModelScope.launch {
+    fun searchAnime(query: String, page: Int) = viewModelScope.launch {
         if (query.isBlank()) {
             getRandomAnime()
         } else {
             _animeSearchResults.value = Resource.Loading()
-            val response = animeSearchRepository.searchAnime(query)
+            val response = animeSearchRepository.searchAnime(query, page)
             _animeSearchResults.value = handleAnimeSearchResponse(response)
         }
     }
