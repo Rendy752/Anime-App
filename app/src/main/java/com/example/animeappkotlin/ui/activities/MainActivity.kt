@@ -32,10 +32,13 @@ import com.example.animeappkotlin.data.local.database.AnimeRecommendationsDataba
 import com.example.animeappkotlin.data.remote.api.RetrofitInstance
 import com.example.animeappkotlin.repository.AnimeDetailRepository
 import com.example.animeappkotlin.repository.AnimeRecommendationsRepository
+import com.example.animeappkotlin.repository.AnimeSearchRepository
 import com.example.animeappkotlin.ui.viewmodels.AnimeRecommendationsViewModel
 import com.example.animeappkotlin.ui.providerfactories.AnimeRecommendationsViewModelProviderFactory
 import com.example.animeappkotlin.ui.providerfactories.AnimeDetailViewModelProviderFactory
 import com.example.animeappkotlin.ui.viewmodels.AnimeDetailViewModel
+import com.example.animeappkotlin.ui.viewmodels.AnimeSearchViewModel
+import com.example.animeappkotlin.ui.viewmodels.AnimeSearchViewModelProviderFactory
 import com.example.animeappkotlin.utils.NetworkUtils
 import com.example.animeappkotlin.utils.Resource
 import com.example.animeappkotlin.utils.ShakeDetector
@@ -54,21 +57,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var sensorManager: SensorManager
     private lateinit var shakeDetector: ShakeDetector
 
-    private val viewModel: AnimeRecommendationsViewModel by lazy {
-        val repository =
-            AnimeRecommendationsRepository(RetrofitInstance.api, AnimeRecommendationsDatabase.getDatabase(this))
-        val factory = AnimeRecommendationsViewModelProviderFactory(repository)
-        ViewModelProvider(this, factory)[AnimeRecommendationsViewModel::class.java]
-    }
-
-    val animeRecommendationsViewModel: AnimeRecommendationsViewModel get() = viewModel
-
-    val animeDetailViewModel: AnimeDetailViewModel by lazy {
-        val repository =
-            AnimeDetailRepository(AnimeDetailDatabase.getDatabase(this).getAnimeDetailDao())
-        val factory = AnimeDetailViewModelProviderFactory(repository)
-        ViewModelProvider(this, factory)[AnimeDetailViewModel::class.java]
-    }
+    private lateinit var animeRecommendationsRepository: AnimeRecommendationsRepository
+    private lateinit var animeSearchRepository: AnimeSearchRepository
+    private lateinit var animeDetailRepository: AnimeDetailRepository
 
     private var isDataLoaded = false
 
@@ -76,9 +67,38 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setupSplashScreen()
         setupSensor()
+        setupRepositories()
         setupViewBinding()
         setupNavigation()
         setupChucker()
+    }
+
+    private fun setupRepositories() {
+        animeRecommendationsRepository = AnimeRecommendationsRepository(
+            api = RetrofitInstance.api,
+            db = AnimeRecommendationsDatabase.getDatabase(this)
+        )
+        animeSearchRepository = AnimeSearchRepository(api = RetrofitInstance.api)
+        animeDetailRepository = AnimeDetailRepository(
+            animeDetailDao = AnimeDetailDatabase.getDatabase(this).getAnimeDetailDao()
+        )
+    }
+
+    private val viewModel: AnimeRecommendationsViewModel by lazy {
+        val factory = AnimeRecommendationsViewModelProviderFactory(animeRecommendationsRepository)
+        ViewModelProvider(this, factory)[AnimeRecommendationsViewModel::class.java]
+    }
+
+    val animeRecommendationsViewModel: AnimeRecommendationsViewModel get() = viewModel
+
+    val animeSearchViewModel: AnimeSearchViewModel by lazy {
+        val factory = AnimeSearchViewModelProviderFactory(animeSearchRepository)
+        ViewModelProvider(this, factory)[AnimeSearchViewModel::class.java]
+    }
+
+    val animeDetailViewModel: AnimeDetailViewModel by lazy {
+        val factory = AnimeDetailViewModelProviderFactory(animeDetailRepository)
+        ViewModelProvider(this, factory)[AnimeDetailViewModel::class.java]
     }
 
     private fun setupSplashScreen() {

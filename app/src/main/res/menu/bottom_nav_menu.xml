@@ -7,6 +7,11 @@
         android:title="@string/title_recommendation" />
 
     <item
+        android:id="@+id/animeSearchFragment"
+        android:icon="@drawable/ic_manage_search_black_24dp"
+        android:title="@string/title_search" />
+
+    <item
         android:id="@+id/aboutFragment"
         android:icon="@drawable/ic_person_black_24dp"
         android:title="@string/title_about" />
