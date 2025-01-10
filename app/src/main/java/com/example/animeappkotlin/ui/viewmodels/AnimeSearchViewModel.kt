@@ -44,12 +44,10 @@ class AnimeSearchViewModel(
 
     private fun handleAnimeSearchResponse(response: Response<AnimeSearchResponse>): Resource<AnimeSearchResponse> {
         return if (response.isSuccessful) {
-            Log.d("AnimeSearchViewModel", "Response successful: ${response.body()}")
             response.body()?.let { resultResponse ->
                 Resource.Success(resultResponse)
             } ?: Resource.Error("Response body is null")
         } else {
-            Log.e("AnimeSearchViewModel", "Response error: ${response.message()}")
             Resource.Error(response.message())
         }
     }

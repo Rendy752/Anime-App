@@ -13,10 +13,12 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.animeappkotlin.R
 import com.example.animeappkotlin.databinding.FragmentAnimeSearchBinding
+import com.example.animeappkotlin.models.CompletePagination
 import com.example.animeappkotlin.ui.activities.MainActivity
 import com.example.animeappkotlin.ui.adapters.AnimeSearchAdapter
 import com.example.animeappkotlin.ui.viewmodels.AnimeSearchViewModel
 import com.example.animeappkotlin.utils.Debouncer
+import com.example.animeappkotlin.utils.Pagination
 import com.example.animeappkotlin.utils.Resource
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -105,13 +107,12 @@ class AnimeSearchFragment : Fragment() {
                 when (response) {
                     is Resource.Success -> {
                         response.data?.let { searchResponse ->
-                            Log.d("AnimeSearchFragment", "Anime search results: $searchResponse")
                             animeSearchAdapter.setLoading(false)
+                            updatePagination(response.data?.pagination)
                             animeSearchAdapter.differ.submitList(searchResponse.data)
                         }
                     }
                     is Resource.Error -> {
-                        Log.e("AnimeSearchFragment", "Error: ${response.message}")
                         animeSearchAdapter.setLoading(false)
                         Toast.makeText(requireContext(), "An error occurred: ${response.message}", Toast.LENGTH_LONG).show()
                     }
@@ -127,6 +128,12 @@ class AnimeSearchFragment : Fragment() {
         binding.fabRefresh.setOnClickListener {
             viewModel.searchAnime(binding.searchView.query.toString())
         }
+    }
+
+    private fun updatePagination(pagination: CompletePagination?) {
+        val paginationText = Pagination.getPaginationText(pagination)
+        binding.paginationTextView.text = paginationText
+        binding.paginationTextView.visibility = if (paginationText.isBlank()) View.GONE else View.VISIBLE
     }
 
     override fun onDestroyView() {
