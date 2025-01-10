@@ -8,6 +8,7 @@ import com.example.animeappkotlin.models.AnimeSearchResponse
 import com.example.animeappkotlin.models.CompletePagination
 import com.example.animeappkotlin.models.Items
 import com.example.animeappkotlin.repository.AnimeSearchRepository
+import com.example.animeappkotlin.utils.Limit
 import com.example.animeappkotlin.utils.Resource
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,19 +20,51 @@ class AnimeSearchViewModel(
     private val animeSearchRepository: AnimeSearchRepository
 ) : ViewModel() {
 
-    private val _animeSearchResults = MutableStateFlow<Resource<AnimeSearchResponse>>(Resource.Loading())
-    val animeSearchResults: StateFlow<Resource<AnimeSearchResponse>> = _animeSearchResults.asStateFlow()
+    private val _animeSearchResults =
+        MutableStateFlow<Resource<AnimeSearchResponse>>(Resource.Loading())
+    val animeSearchResults: StateFlow<Resource<AnimeSearchResponse>> =
+        _animeSearchResults.asStateFlow()
+
+    private val _query = MutableStateFlow("")
+    val query: StateFlow<String> = _query.asStateFlow()
+
+    private val _page = MutableStateFlow(1)
+    val page: StateFlow<Int> = _page.asStateFlow()
+
+    private val _limit = MutableStateFlow<Int?>(Limit.DEFAULT_LIMIT)
+    val limit: StateFlow<Int?> = _limit.asStateFlow()
 
     init {
         getRandomAnime()
     }
 
-    fun searchAnime(query: String, page: Int) = viewModelScope.launch {
-        if (query.isBlank()) {
+    fun updateQuery(query: String) {
+        _query.value = query
+        _page.value = 1
+        searchAnime()
+    }
+
+    fun updatePage(page: Int) {
+        _page.value = page
+        searchAnime()
+    }
+
+    fun updateLimit(limit: Int?) {
+        _limit.value = limit
+        _page.value = 1
+        searchAnime()
+    }
+
+    fun searchAnime() = viewModelScope.launch {
+        if (query.value.isBlank()) {
             getRandomAnime()
         } else {
             _animeSearchResults.value = Resource.Loading()
-            val response = animeSearchRepository.searchAnime(query, page)
+            val response = animeSearchRepository.searchAnime(
+                query.value,
+                page.value,
+                limit.value ?: Limit.DEFAULT_LIMIT
+            )
             _animeSearchResults.value = handleAnimeSearchResponse(response)
         }
     }

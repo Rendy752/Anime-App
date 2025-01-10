@@ -1,10 +1,8 @@
 package com.example.animeappkotlin.utils
 
 import android.view.LayoutInflater
-import android.view.View
 import android.widget.LinearLayout
 import android.widget.TextView
-import androidx.core.view.children
 import com.example.animeappkotlin.R
 import com.example.animeappkotlin.models.CompletePagination
 
@@ -15,7 +13,7 @@ object Pagination {
         pagination: CompletePagination?,
         onPaginationClick: (Int) -> Unit
     ) {
-        container.removeAllViews() // Clear previous buttons
+        container.removeAllViews()
 
         if (pagination == null) {
             return
@@ -31,26 +29,30 @@ object Pagination {
             addButton(inflater, container, "<", onPaginationClick, currentPage - 1)
         }
 
-        if (lastPage == 2) {
-            addButton(inflater, container, "1", onPaginationClick, 1, currentPage == 1)
-            addButton(inflater, container, "2", onPaginationClick, 2, currentPage == 2)
-        } else {
-            for (i in 1..minOf(2, lastPage)) {
+        if (lastPage <= 4) {
+            for (i in 1..lastPage) {
                 addButton(inflater, container, "$i", onPaginationClick, i, currentPage == i)
             }
-            if (lastPage > 3 && currentPage > 3) {
+        } else {
+            addButton(inflater, container, "1", onPaginationClick, 1, currentPage == 1)
+            addButton(inflater, container, "2", onPaginationClick, 2, currentPage == 2)
+
+            if (currentPage > 3) {
                 addDots(inflater, container)
             }
+
             if (currentPage > 2 && currentPage < lastPage - 1) {
                 addButton(inflater, container, "$currentPage", onPaginationClick, currentPage, true)
             }
-            if (lastPage > 4 && currentPage < lastPage - 2) {
+
+            if (currentPage < lastPage - 2) {
                 addDots(inflater, container)
             }
-            for (i in maxOf(1, lastPage - 1)..lastPage) {
-                addButton(inflater, container, "$i", onPaginationClick, i, currentPage == i)
-            }
+
+            addButton(inflater, container, "${lastPage - 1}", onPaginationClick, lastPage - 1, currentPage == lastPage - 1)
+            addButton(inflater, container, "$lastPage", onPaginationClick, lastPage, currentPage == lastPage)
         }
+
 
         if (hasNextPage) {
             addButton(inflater, container, ">", onPaginationClick, currentPage + 1)
@@ -68,7 +70,12 @@ object Pagination {
         val button = inflater.inflate(R.layout.pagination_button, container, false) as TextView
         button.text = text
         if (isCurrentPage) {
-            button.setBackgroundResource(R.drawable.pagination_button_current_bg) // Example background for current page
+            button.isEnabled = false
+            button.setBackgroundResource(R.drawable.pagination_button_current_bg)
+            button.setTextColor(container.context.getColor(R.color.nightTextColorPrimary))
+        } else {
+            button.setBackgroundResource(R.drawable.pagination_button_bg)
+            button.setTextColor(container.context.getColor(R.color.textColorPrimary))
         }
         button.setOnClickListener {
             onPaginationClick(pageNumber)

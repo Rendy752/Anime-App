@@ -5,6 +5,9 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.Spinner
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -18,6 +21,7 @@ import com.example.animeappkotlin.ui.activities.MainActivity
 import com.example.animeappkotlin.ui.adapters.AnimeSearchAdapter
 import com.example.animeappkotlin.ui.viewmodels.AnimeSearchViewModel
 import com.example.animeappkotlin.utils.Debouncer
+import com.example.animeappkotlin.utils.Limit
 import com.example.animeappkotlin.utils.Pagination
 import com.example.animeappkotlin.utils.Resource
 import kotlinx.coroutines.flow.collectLatest
@@ -32,7 +36,7 @@ class AnimeSearchFragment : Fragment() {
     private lateinit var animeSearchAdapter: AnimeSearchAdapter
 
     private val debouncer = Debouncer(lifecycleScope) { query ->
-        viewModel.searchAnime(query,viewModel.animeSearchResults.value.data?.pagination?.current_page ?: 1)
+        viewModel.updateQuery(query)
     }
 
     override fun onCreateView(
@@ -49,17 +53,11 @@ class AnimeSearchFragment : Fragment() {
         setupViewModel()
         setupRecyclerView()
         setupSearchView()
+        setupLimitSpinner()
         setupObservers()
         setupClickListeners()
         setupRefreshFloatingActionButton()
-
-        Pagination.setPaginationButtons(
-            binding.paginationButtonContainer,
-            null,
-            onPaginationClick = { pageNumber ->
-                viewModel.searchAnime(binding.searchView.query.toString(), pageNumber)
-            }
-        )
+        updatePagination(null)
     }
 
     private fun setupViewModel() {
@@ -109,6 +107,33 @@ class AnimeSearchFragment : Fragment() {
         })
     }
 
+    private fun setupLimitSpinner() {
+        val limitSpinner: Spinner = binding.limitSpinner
+        val limitAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, Limit.limitOptions)
+        limitSpinner.adapter = limitAdapter
+
+        val defaultLimitIndex = Limit.limitOptions.indexOf("10")
+        limitSpinner.setSelection(defaultLimitIndex)
+
+        limitSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val selectedLimit = when (position) {
+                    0 -> 5
+                    1 -> 10
+                    2 -> 15
+                    3 -> 20
+                    4 -> 25
+                    else -> 10
+                }
+                viewModel.updateLimit(selectedLimit)
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                Toast.makeText(requireContext(), "Nothing selected", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
+
     private fun setupObservers() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.animeSearchResults.collectLatest { response ->
@@ -116,13 +141,26 @@ class AnimeSearchFragment : Fragment() {
                     is Resource.Success -> {
                         response.data?.let { searchResponse ->
                             animeSearchAdapter.setLoading(false)
-                            updatePagination(response.data?.pagination)
+                            updatePagination(response.data.pagination)
+
+                            val limitAdapter = binding.limitSpinner.adapter
+                            if (limitAdapter != null) {
+                                val limitIndex = Limit.limitOptions.indexOf(viewModel.limit.value.toString())
+                                binding.limitSpinner.setSelection(if (limitIndex == -1) 0 else limitIndex)
+                            } else {
+                                Log.e("AnimeSearchFragment", "Limit Spinner adapter is null")
+                            }
+
                             animeSearchAdapter.differ.submitList(searchResponse.data)
                         }
                     }
                     is Resource.Error -> {
                         animeSearchAdapter.setLoading(false)
-                        Toast.makeText(requireContext(), "An error occurred: ${response.message}", Toast.LENGTH_LONG).show()
+                        Toast.makeText(
+                            requireContext(),
+                            "An error occurred: ${response.message}",
+                            Toast.LENGTH_LONG
+                        ).show()
                     }
                     is Resource.Loading -> {
                         animeSearchAdapter.setLoading(true)
@@ -134,7 +172,7 @@ class AnimeSearchFragment : Fragment() {
 
     private fun setupRefreshFloatingActionButton() {
         binding.fabRefresh.setOnClickListener {
-            viewModel.searchAnime(binding.searchView.query.toString(),viewModel.animeSearchResults.value.data?.pagination?.current_page ?: 1)
+            viewModel.searchAnime()
         }
     }
 
@@ -143,7 +181,7 @@ class AnimeSearchFragment : Fragment() {
             binding.paginationButtonContainer,
             pagination,
             onPaginationClick = { pageNumber ->
-                viewModel.searchAnime(binding.searchView.query.toString(), pageNumber)
+                viewModel.updatePage(pageNumber)
             }
         )
         binding.paginationButtonContainer.visibility = if (pagination == null) View.GONE else View.VISIBLE
