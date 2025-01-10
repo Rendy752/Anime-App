@@ -1,6 +1,7 @@
 package com.example.animeappkotlin.data.remote.api
 
 import com.example.animeappkotlin.models.AnimeDetailResponse
+import com.example.animeappkotlin.models.AnimeRandomResponse
 import com.example.animeappkotlin.models.AnimeRecommendationResponse
 import com.example.animeappkotlin.models.AnimeSearchResponse
 import kotlinx.coroutines.runBlocking
@@ -23,6 +24,9 @@ interface AnimeAPI {
     suspend fun getAnimeDetail(
         @Path("id") id: Int
     ): Response<AnimeDetailResponse>
+
+    @GET("/v4/random/anime")
+    suspend fun getRandomAnime(): Response<AnimeRandomResponse>
 
     @GET("v4/anime")
     suspend fun getAnimeSearch(

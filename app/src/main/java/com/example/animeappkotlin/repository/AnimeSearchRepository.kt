@@ -8,4 +8,6 @@ class AnimeSearchRepository(
 ) {
     suspend fun searchAnime(query: String) =
         api.getAnimeSearch(q = query)
+
+    suspend fun getRandomAnime() = api.getRandomAnime()
 }
