@@ -11,11 +11,17 @@
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_margin="8dp"
-        android:background="@color/textColorSecondary"
+        android:background="@drawable/search_view_background"
         app:iconifiedByDefault="false"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:queryHint="@string/search_anime"
+        app:searchIcon="@drawable/ic_search_blue_24dp"
+        app:closeIcon="@drawable/ic_close_red_24dp"
+        app:searchHintIcon="@null">
+
+    </androidx.appcompat.widget.SearchView>
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvAnimeSearch"

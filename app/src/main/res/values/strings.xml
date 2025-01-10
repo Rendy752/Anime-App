@@ -35,4 +35,5 @@
     <string name="scored_by_users">%d Users</string>
     <string name="ranked_number">#%d</string>
     <string name="popularity_number">#%d</string>
+    <string name="search_anime">Search Anime</string>
 </resources>
