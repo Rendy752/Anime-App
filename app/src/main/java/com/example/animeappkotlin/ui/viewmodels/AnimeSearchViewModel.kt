@@ -36,7 +36,7 @@ class AnimeSearchViewModel(
         }
     }
 
-    private fun getRandomAnime() = viewModelScope.launch {
+    fun getRandomAnime() = viewModelScope.launch {
         _animeSearchResults.value = Resource.Loading()
         val response = animeSearchRepository.getRandomAnime()
         _animeSearchResults.value = handleAnimeRandomResponse(response)

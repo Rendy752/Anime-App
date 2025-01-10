@@ -49,6 +49,7 @@ class AnimeSearchFragment : Fragment() {
         setupSearchView()
         setupObservers()
         setupClickListeners()
+        setupRefreshFloatingActionButton()
     }
 
     private fun setupViewModel() {
@@ -119,6 +120,12 @@ class AnimeSearchFragment : Fragment() {
                     }
                 }
             }
+        }
+    }
+
+    private fun setupRefreshFloatingActionButton() {
+        binding.fabRefresh.setOnClickListener {
+            viewModel.searchAnime(binding.searchView.query.toString())
         }
     }
 
