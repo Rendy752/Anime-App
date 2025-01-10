@@ -1,7 +1,6 @@
 package com.example.animeappkotlin.ui.fragments
 
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -93,7 +92,8 @@ class AnimeSearchFragment : Fragment() {
     }
 
     private fun setupSearchView() {
-        binding.searchView.setOnQueryTextListener(object : androidx.appcompat.widget.SearchView.OnQueryTextListener {
+        binding.searchView.setOnQueryTextListener(object :
+            androidx.appcompat.widget.SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 return true
             }
@@ -109,14 +109,23 @@ class AnimeSearchFragment : Fragment() {
 
     private fun setupLimitSpinner() {
         val limitSpinner: Spinner = binding.limitSpinner
-        val limitAdapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, Limit.limitOptions)
+        val limitAdapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_dropdown_item,
+            Limit.limitOptions
+        )
         limitSpinner.adapter = limitAdapter
 
         val defaultLimitIndex = Limit.limitOptions.indexOf("10")
         limitSpinner.setSelection(defaultLimitIndex)
 
         limitSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
                 val selectedLimit = when (position) {
                     0 -> 5
                     1 -> 10
@@ -141,19 +150,18 @@ class AnimeSearchFragment : Fragment() {
                     is Resource.Success -> {
                         response.data?.let { searchResponse ->
                             animeSearchAdapter.setLoading(false)
+
                             updatePagination(response.data.pagination)
 
-                            val limitAdapter = binding.limitSpinner.adapter
-                            if (limitAdapter != null) {
-                                val limitIndex = Limit.limitOptions.indexOf(viewModel.limit.value.toString())
-                                binding.limitSpinner.setSelection(if (limitIndex == -1) 0 else limitIndex)
-                            } else {
-                                Log.e("AnimeSearchFragment", "Limit Spinner adapter is null")
-                            }
+                            binding.limitSpinner.adapter
+                            val limitIndex =
+                                Limit.limitOptions.indexOf(viewModel.limit.value.toString())
+                            binding.limitSpinner.setSelection(if (limitIndex == -1) 0 else limitIndex)
 
                             animeSearchAdapter.differ.submitList(searchResponse.data)
                         }
                     }
+
                     is Resource.Error -> {
                         animeSearchAdapter.setLoading(false)
                         Toast.makeText(
@@ -162,6 +170,7 @@ class AnimeSearchFragment : Fragment() {
                             Toast.LENGTH_LONG
                         ).show()
                     }
+
                     is Resource.Loading -> {
                         animeSearchAdapter.setLoading(true)
                     }
@@ -184,7 +193,8 @@ class AnimeSearchFragment : Fragment() {
                 viewModel.updatePage(pageNumber)
             }
         )
-        binding.paginationButtonContainer.visibility = if (pagination == null) View.GONE else View.VISIBLE
+        binding.paginationButtonContainer.visibility =
+            if (pagination == null) View.GONE else View.VISIBLE
     }
 
     override fun onDestroyView() {

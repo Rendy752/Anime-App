@@ -219,13 +219,6 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
             }
 
             binding.tvSynopsis.text = detail.synopsis
-
-//                        binding.tvExplicitGenres.text = detail.explicit_genres
-//                        binding.tvRelations.text = detail.relations
-//                        binding.tvTheme.text = detail.theme
-//                        binding.tvExternal.text = detail.external
-//                        binding.tvStreaming.text = detail.streaming
-//                        binding.tvTitles.text = detail.titles
         }
     }
 
