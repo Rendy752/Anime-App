@@ -38,4 +38,7 @@
     <string name="search_anime">Search Anime</string>
     <string name="limit">Limit: </string>
     <string name="filter">Filter</string>
+    <string name="relation_name">Relation Name</string>
+    <string name="entry_type">Entry Type</string>
+    <string name="entry_name">Entry Type</string>
 </resources>

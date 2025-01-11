@@ -52,10 +52,16 @@ class AnimeRecommendationsAdapter : RecyclerView.Adapter<AnimeRecommendationsAda
         }
 
         private fun AnimeRecommendationItemBinding.setupClickListeners(recommendation: AnimeRecommendation) {
+            ivFirstAnimeImage.setOnClickListener {
+                onItemClickListener?.invoke(recommendation.entry[0].mal_id)
+            }
             tvFirstAnimeTitle.setOnClickListener {
                 onItemClickListener?.invoke(recommendation.entry[0].mal_id)
             }
 
+            ivSecondAnimeImage.setOnClickListener {
+                onItemClickListener?.invoke(recommendation.entry[1].mal_id)
+            }
             tvSecondAnimeTitle.setOnClickListener {
                 onItemClickListener?.invoke(recommendation.entry[1].mal_id)
             }

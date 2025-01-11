@@ -21,6 +21,7 @@ import com.example.animeappkotlin.data.local.database.AnimeDetailDatabase
 import com.example.animeappkotlin.databinding.FragmentDetailBinding
 import com.example.animeappkotlin.models.AnimeDetailResponse
 import com.example.animeappkotlin.repository.AnimeDetailRepository
+import com.example.animeappkotlin.ui.adapters.RelationsAdapter
 import com.example.animeappkotlin.ui.adapters.TitleSynonymsAdapter
 import com.example.animeappkotlin.ui.providerfactories.AnimeDetailViewModelProviderFactory
 import com.example.animeappkotlin.ui.viewmodels.AnimeDetailViewModel
@@ -226,6 +227,18 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
             }
 
             binding.tvSynopsis.text = detail.synopsis ?: "-"
+
+            binding.rvRelations.apply {
+                adapter = detail.relations?.let { RelationsAdapter(it.toList()) }
+                layoutManager = LinearLayoutManager(
+                    requireContext(), LinearLayoutManager.HORIZONTAL, false
+                )
+            }
+
+            binding.tvOpening.text = joinOrNA(detail.theme.openings) { it }
+            binding.tvEnding.text = joinOrNA(detail.theme.endings) { it }
+            binding.tvExternalLinks.text = joinOrNA(detail.external) { it.name }
+            binding.tvStreamingLinks.text = joinOrNA(detail.streaming) { it.name }
         }
     }
 
