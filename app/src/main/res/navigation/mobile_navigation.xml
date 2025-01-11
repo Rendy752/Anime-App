@@ -38,7 +38,11 @@
         android:id="@+id/animeDetailFragment"
         android:name="com.example.animeappkotlin.ui.fragments.AnimeDetailFragment"
         android:label="@string/title_detail"
-        tools:layout="@layout/fragment_detail" />
+        tools:layout="@layout/fragment_detail">
+        <action
+            android:id="@+id/action_animeDetailFragment_self"
+            app:destination="@id/animeDetailFragment" />
+    </fragment>
 
     <action
         android:id="@+id/action_global_animeDetailFragment"

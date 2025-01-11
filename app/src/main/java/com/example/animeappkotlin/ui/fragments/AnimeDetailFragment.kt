@@ -14,13 +14,18 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
+import androidx.navigation.NavOptions
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.example.animeappkotlin.R
 import com.example.animeappkotlin.data.local.database.AnimeDetailDatabase
 import com.example.animeappkotlin.databinding.FragmentDetailBinding
+import com.example.animeappkotlin.databinding.RelationItemBinding
 import com.example.animeappkotlin.models.AnimeDetailResponse
 import com.example.animeappkotlin.repository.AnimeDetailRepository
+import com.example.animeappkotlin.ui.adapters.AnimeRecommendationsAdapter
+import com.example.animeappkotlin.ui.adapters.AnimeSearchAdapter
 import com.example.animeappkotlin.ui.adapters.RelationsAdapter
 import com.example.animeappkotlin.ui.adapters.TitleSynonymsAdapter
 import com.example.animeappkotlin.ui.providerfactories.AnimeDetailViewModelProviderFactory
@@ -32,6 +37,8 @@ import com.example.animeappkotlin.utils.TextUtils.joinOrNA
 class AnimeDetailFragment : Fragment(), MenuProvider {
     private var _binding: FragmentDetailBinding? = null
     private val binding get() = _binding!!
+
+    private lateinit var animeSearchAdapter: AnimeSearchAdapter
 
     private val viewModel: AnimeDetailViewModel by viewModels {
         val animeDetailRepository = AnimeDetailRepository(
@@ -228,11 +235,32 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
 
             binding.tvSynopsis.text = detail.synopsis ?: "-"
 
-            binding.rvRelations.apply {
-                adapter = RelationsAdapter(detail.relations)
-                layoutManager = LinearLayoutManager(
-                    requireContext(), LinearLayoutManager.HORIZONTAL, false
-                )
+            if (detail.relations?.size!! > 0) {
+                binding.rvRelations.apply {
+                    adapter = RelationsAdapter(detail.relations) { animeId ->
+                        val bundle = Bundle().apply {
+                            putInt("id", animeId)
+                        }
+                        val navOptions = NavOptions.Builder()
+                            .setEnterAnim(R.anim.slide_in_right)
+                            .setExitAnim(R.anim.slide_out_left)
+                            .setPopEnterAnim(R.anim.slide_in_left)
+                            .setPopExitAnim(R.anim.slide_out_right)
+                            .setPopUpTo(R.id.animeDetailFragment, true)
+                            .build()
+
+                        findNavController().navigate(
+                            R.id.action_animeDetailFragment_self,
+                            bundle,
+                            navOptions
+                        )
+                    }
+                    layoutManager = LinearLayoutManager(
+                        requireContext(), LinearLayoutManager.HORIZONTAL, false
+                    )
+                }
+            } else {
+                binding.relationContainer.visibility = View.GONE
             }
 
             binding.tvOpening.text = joinOrNA(detail.theme.openings) { it }

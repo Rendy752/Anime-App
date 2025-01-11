@@ -1,15 +1,13 @@
 package com.example.animeappkotlin.ui.adapters
 
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.AsyncListDiffer
 import androidx.recyclerview.widget.DiffUtil
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
 import com.example.animeappkotlin.databinding.AnimeSearchItemBinding
 import com.example.animeappkotlin.models.AnimeDetail
+import com.example.animeappkotlin.utils.AnimeHeaderUtils
 
 class AnimeSearchAdapter : RecyclerView.Adapter<AnimeSearchAdapter.AnimeSearchViewHolder>() {
 
@@ -30,68 +28,18 @@ class AnimeSearchAdapter : RecyclerView.Adapter<AnimeSearchAdapter.AnimeSearchVi
                     shimmerViewContainer.hideShimmer()
 
                     anime?.let { data ->
-                        bindAnimeData(data)
+                        AnimeHeaderUtils.bindAnimeData(binding, data)
                         setupClickListeners(data)
-                        resetBackgrounds()
                     }
                 }
             }
         }
     }
 
-    private fun AnimeSearchItemBinding.bindAnimeData(data: AnimeDetail) {
-        Glide.with(root.context)
-            .load(data.images.jpg.image_url)
-            .into(ivAnimeImage)
-
-        when (data.approved) {
-            true -> {
-                ivApproved.visibility = View.VISIBLE
-            }
-
-            false -> {
-                ivApproved.visibility = View.GONE
-            }
-        }
-        when (data.airing) {
-            true -> {
-                ivAired.visibility = View.VISIBLE
-                ivNotAired.visibility = View.GONE
-            }
-
-            false -> {
-                ivAired.visibility = View.GONE
-                ivNotAired.visibility = View.VISIBLE
-            }
-        }
-
-        tvAnimeTitle.text = data.title
-        rvTitleSynonyms.apply {
-            adapter = data.title_synonyms?.let { TitleSynonymsAdapter(it.toList()) }
-            layoutManager = LinearLayoutManager(root.context, LinearLayoutManager.HORIZONTAL, false)
-        }
-        tvAnimeType.text = "${data.type} (${data.episodes} eps)"
-        tvAnimeRanked.text = "Ranked #${data.rank}"
-        tvAnimePopularity.text = "Popularity #${data.popularity}"
-        tvAnimeScore.text = "Scored ${data.score} by ${data.scored_by} users"
-        tvAnimeMembers.text = "${data.members} members"
-    }
-
     private fun AnimeSearchItemBinding.setupClickListeners(data: AnimeDetail) {
         root.setOnClickListener {
             onItemClickListener?.invoke(data.mal_id)
         }
-    }
-
-    private fun AnimeSearchItemBinding.resetBackgrounds() {
-        ivAnimeImage.background = null
-        contentLayout.background = null
-        rvTitleSynonyms.background = null
-        tvAnimeType.background = null
-        tvAnimeRanked.background = null
-        tvAnimePopularity.background = null
-        tvAnimeScore.background = null
-        tvAnimeMembers.background = null
     }
 
     private var isLoading = false

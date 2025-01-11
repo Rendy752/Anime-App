@@ -7,13 +7,18 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.animeappkotlin.databinding.RelationItemBinding
 import com.example.animeappkotlin.models.Relation
 
-class RelationsAdapter(private val relations: List<Relation>?) :
+class RelationsAdapter(
+    private val relations: List<Relation>?,
+    private val onItemClickListener: (Int) -> Unit
+) :
     RecyclerView.Adapter<RelationsAdapter.RelationViewHolder>() {
 
-    class RelationViewHolder(val binding: RelationItemBinding) : RecyclerView.ViewHolder(binding.root)
+    class RelationViewHolder(val binding: RelationItemBinding) :
+        RecyclerView.ViewHolder(binding.root)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RelationViewHolder {
-        val binding = RelationItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        val binding =
+            RelationItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return RelationViewHolder(binding)
     }
 
@@ -21,7 +26,7 @@ class RelationsAdapter(private val relations: List<Relation>?) :
         val relation = relations?.getOrNull(position)
         relation?.let {
             holder.binding.tvRelationName.text = "${relation.entry.size} ${relation.relation}"
-            val relationItemsAdapter = EntriesAdapter(relation)
+            val relationItemsAdapter = EntriesAdapter(relation, onItemClickListener)
             holder.binding.rvRelationItems.apply {
                 adapter = relationItemsAdapter
                 layoutManager = LinearLayoutManager(holder.itemView.context)
