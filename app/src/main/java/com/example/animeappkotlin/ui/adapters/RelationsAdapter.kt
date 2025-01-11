@@ -20,7 +20,7 @@ class RelationsAdapter(private val relations: List<Relation>?) :
     override fun onBindViewHolder(holder: RelationViewHolder, position: Int) {
         val relation = relations?.getOrNull(position)
         relation?.let {
-            holder.binding.tvRelationName.text = relation.relation
+            holder.binding.tvRelationName.text = "${relation.entry.size} ${relation.relation}"
             val relationItemsAdapter = EntriesAdapter(relation)
             holder.binding.rvRelationItems.apply {
                 adapter = relationItemsAdapter

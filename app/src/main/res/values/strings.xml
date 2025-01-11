@@ -41,4 +41,5 @@
     <string name="relation_name">Relation Name</string>
     <string name="entry_type">Entry Type</string>
     <string name="entry_name">Entry Type</string>
+    <string name="relations">Relations</string>
 </resources>

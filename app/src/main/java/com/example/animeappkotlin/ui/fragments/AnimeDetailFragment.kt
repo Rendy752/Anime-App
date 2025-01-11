@@ -229,7 +229,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
             binding.tvSynopsis.text = detail.synopsis ?: "-"
 
             binding.rvRelations.apply {
-                adapter = detail.relations?.let { RelationsAdapter(it.toList()) }
+                adapter = RelationsAdapter(detail.relations)
                 layoutManager = LinearLayoutManager(
                     requireContext(), LinearLayoutManager.HORIZONTAL, false
                 )
