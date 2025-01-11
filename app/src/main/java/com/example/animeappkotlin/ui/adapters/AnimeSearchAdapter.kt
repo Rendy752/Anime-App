@@ -70,8 +70,11 @@ class AnimeSearchAdapter : RecyclerView.Adapter<AnimeSearchAdapter.AnimeSearchVi
             adapter = data.title_synonyms?.let { TitleSynonymsAdapter(it.toList()) }
             layoutManager = LinearLayoutManager(root.context, LinearLayoutManager.HORIZONTAL, false)
         }
-        tvAnimeType.text = data.type
-        tvAnimeScore.text = data.score.toString()
+        tvAnimeType.text = "${data.type} (${data.episodes} eps)"
+        tvAnimeRanked.text = "Ranked #${data.rank}"
+        tvAnimePopularity.text = "Popularity #${data.popularity}"
+        tvAnimeScore.text = "Scored ${data.score} by ${data.scored_by} users"
+        tvAnimeMembers.text = "${data.members} members"
     }
 
     private fun AnimeSearchItemBinding.setupClickListeners(data: AnimeDetail) {
@@ -85,7 +88,10 @@ class AnimeSearchAdapter : RecyclerView.Adapter<AnimeSearchAdapter.AnimeSearchVi
         contentLayout.background = null
         rvTitleSynonyms.background = null
         tvAnimeType.background = null
+        tvAnimeRanked.background = null
+        tvAnimePopularity.background = null
         tvAnimeScore.background = null
+        tvAnimeMembers.background = null
     }
 
     private var isLoading = false
