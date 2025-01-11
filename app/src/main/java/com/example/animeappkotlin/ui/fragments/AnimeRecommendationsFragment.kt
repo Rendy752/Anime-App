@@ -5,14 +5,18 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.animeappkotlin.ui.activities.MainActivity
 import com.example.animeappkotlin.R
+import com.example.animeappkotlin.data.local.database.AnimeRecommendationsDatabase
+import com.example.animeappkotlin.data.remote.api.RetrofitInstance
 import com.example.animeappkotlin.ui.adapters.AnimeRecommendationsAdapter
 import com.example.animeappkotlin.databinding.FragmentRecommendationBinding
+import com.example.animeappkotlin.repository.AnimeRecommendationsRepository
+import com.example.animeappkotlin.ui.providerfactories.AnimeRecommendationsViewModelProviderFactory
 import com.example.animeappkotlin.ui.viewmodels.AnimeRecommendationsViewModel
 import com.example.animeappkotlin.utils.Resource
 import kotlinx.coroutines.flow.collectLatest
@@ -22,8 +26,15 @@ class AnimeRecommendationsFragment : Fragment() {
     private var _binding: FragmentRecommendationBinding? = null
     private val binding get() = _binding!!
 
-    private lateinit var viewModel: AnimeRecommendationsViewModel
     private lateinit var animeRecommendationsAdapter: AnimeRecommendationsAdapter
+
+    private val viewModel: AnimeRecommendationsViewModel by viewModels {
+        val animeRecommendationsRepository = AnimeRecommendationsRepository(
+            api = RetrofitInstance.api,
+            db = AnimeRecommendationsDatabase.getDatabase(requireActivity())
+        )
+        AnimeRecommendationsViewModelProviderFactory(animeRecommendationsRepository)
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -31,7 +42,6 @@ class AnimeRecommendationsFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View {
         _binding = FragmentRecommendationBinding.inflate(inflater, container, false)
-        viewModel = (activity as MainActivity).animeRecommendationsViewModel
         return binding.root
     }
 

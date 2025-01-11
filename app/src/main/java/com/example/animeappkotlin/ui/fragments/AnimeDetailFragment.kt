@@ -12,42 +12,42 @@ import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.example.animeappkotlin.R
-import com.example.animeappkotlin.ui.activities.MainActivity
+import com.example.animeappkotlin.data.local.database.AnimeDetailDatabase
 import com.example.animeappkotlin.databinding.FragmentDetailBinding
 import com.example.animeappkotlin.models.AnimeDetailResponse
+import com.example.animeappkotlin.repository.AnimeDetailRepository
 import com.example.animeappkotlin.ui.adapters.TitleSynonymsAdapter
+import com.example.animeappkotlin.ui.providerfactories.AnimeDetailViewModelProviderFactory
 import com.example.animeappkotlin.ui.viewmodels.AnimeDetailViewModel
 import com.example.animeappkotlin.utils.Resource
 import com.example.animeappkotlin.utils.TextUtils.formatSynopsis
 import com.example.animeappkotlin.utils.TextUtils.joinOrNA
 
 class AnimeDetailFragment : Fragment(), MenuProvider {
-
     private var _binding: FragmentDetailBinding? = null
     private val binding get() = _binding!!
-    lateinit var viewModel: AnimeDetailViewModel
+
+    private val viewModel: AnimeDetailViewModel by viewModels {
+        val animeDetailRepository = AnimeDetailRepository(
+            animeDetailDao = AnimeDetailDatabase.getDatabase(requireActivity()).getAnimeDetailDao()
+        )
+        AnimeDetailViewModelProviderFactory(animeDetailRepository)
+    }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setupMenu()
-        setupViewModel()
         observeAnimeDetail()
+        fetchAnimeDetail()
     }
 
     private fun setupMenu() {
         requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
-    }
-
-    private fun setupViewModel() {
-        viewModel = (activity as MainActivity).animeDetailViewModel
-        val animeId = arguments?.getInt("id")
-        if (animeId != null) {
-            viewModel.getAnimeDetail(animeId)
-        }
     }
 
     private fun observeAnimeDetail() {
@@ -58,6 +58,13 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                 is Resource.Loading -> handleLoading()
                 else -> handleEmpty()
             }
+        }
+    }
+
+    private fun fetchAnimeDetail() {
+        val animeId = arguments?.getInt("id")
+        if (animeId != null) {
+            viewModel.getAnimeDetail(animeId)
         }
     }
 
@@ -74,7 +81,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                     val animeScore = detail.score
                     val animeGenres = detail.genres?.joinToString(", ") { it.name }
 
-                    val animeSynopsis = formatSynopsis(detail.synopsis)
+                    val animeSynopsis = formatSynopsis(detail.synopsis ?: "-")
                     val animeTrailerUrl = detail.trailer.url ?: ""
                     val malId = detail.mal_id
                     val customUrl = "animeapp://anime/detail/$malId"
@@ -125,12 +132,12 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
     }
 
     override fun onCreateView(
-        inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
     ): View {
-        viewModel = (activity as MainActivity).animeDetailViewModel
         _binding = FragmentDetailBinding.inflate(inflater, container, false)
-        val root: View = binding.root
-        return root
+        return binding.root
     }
 
     private fun handleSuccess(response: Resource.Success<AnimeDetailResponse>) {
@@ -188,7 +195,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
             binding.tvGenres.text = joinOrNA(detail.genres) { it.name }
             binding.tvEpisodes.text = detail.episodes.toString()
 
-            binding.tvStudios.text = detail.studios.joinToString(", ") { it.name }
+            binding.tvStudios.text = joinOrNA(detail.studios) { it.name }
             binding.tvProducers.text = joinOrNA(detail.producers) { it.name }
             binding.tvLicensors.text = joinOrNA(detail.licensors) { it.name }
             binding.tvBroadcast.text = detail.broadcast.string ?: "-"
@@ -218,7 +225,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                 }
             }
 
-            binding.tvSynopsis.text = detail.synopsis
+            binding.tvSynopsis.text = detail.synopsis ?: "-"
         }
     }
 

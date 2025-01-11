@@ -6,50 +6,19 @@ import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.net.Uri
 import android.os.Bundle
-import android.view.View
-import com.google.android.material.bottomnavigation.BottomNavigationView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavOptions
 import androidx.navigation.findNavController
 import androidx.navigation.fragment.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
-import com.chuckerteam.chucker.api.BodyDecoder
 import com.chuckerteam.chucker.api.Chucker
-import com.chuckerteam.chucker.api.ChuckerCollector
-import com.chuckerteam.chucker.api.ChuckerInterceptor
-import com.chuckerteam.chucker.api.RetentionManager
 import com.example.animeappkotlin.R
 import com.example.animeappkotlin.databinding.ActivityMainBinding
-import com.example.animeappkotlin.data.local.database.AnimeDetailDatabase
-import com.example.animeappkotlin.data.local.database.AnimeRecommendationsDatabase
-import com.example.animeappkotlin.data.remote.api.RetrofitInstance
-import com.example.animeappkotlin.repository.AnimeDetailRepository
-import com.example.animeappkotlin.repository.AnimeRecommendationsRepository
-import com.example.animeappkotlin.repository.AnimeSearchRepository
-import com.example.animeappkotlin.ui.viewmodels.AnimeRecommendationsViewModel
-import com.example.animeappkotlin.ui.providerfactories.AnimeRecommendationsViewModelProviderFactory
-import com.example.animeappkotlin.ui.providerfactories.AnimeDetailViewModelProviderFactory
-import com.example.animeappkotlin.ui.viewmodels.AnimeDetailViewModel
-import com.example.animeappkotlin.ui.viewmodels.AnimeSearchViewModel
-import com.example.animeappkotlin.ui.viewmodels.AnimeSearchViewModelProviderFactory
-import com.example.animeappkotlin.utils.NetworkUtils
-import com.example.animeappkotlin.utils.Resource
 import com.example.animeappkotlin.utils.ShakeDetector
-import com.google.android.material.snackbar.Snackbar
-import kotlinx.coroutines.launch
-import okhttp3.MediaType
-import okhttp3.Request
-import okhttp3.Response
-import okio.BufferedSource
-import okio.ByteString
-import kotlin.text.toIntOrNull
+import com.google.android.material.bottomnavigation.BottomNavigationView
 
 class MainActivity : AppCompatActivity() {
 
@@ -57,75 +26,16 @@ class MainActivity : AppCompatActivity() {
     private lateinit var sensorManager: SensorManager
     private lateinit var shakeDetector: ShakeDetector
 
-    private lateinit var animeRecommendationsRepository: AnimeRecommendationsRepository
-    private lateinit var animeSearchRepository: AnimeSearchRepository
-    private lateinit var animeDetailRepository: AnimeDetailRepository
-
-    private var isDataLoaded = false
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setupSplashScreen()
         setupSensor()
-        setupRepositories()
         setupViewBinding()
         setupNavigation()
-        setupChucker()
-    }
-
-    private fun setupRepositories() {
-        animeRecommendationsRepository = AnimeRecommendationsRepository(
-            api = RetrofitInstance.api,
-            db = AnimeRecommendationsDatabase.getDatabase(this)
-        )
-        animeSearchRepository = AnimeSearchRepository(api = RetrofitInstance.api)
-        animeDetailRepository = AnimeDetailRepository(
-            animeDetailDao = AnimeDetailDatabase.getDatabase(this).getAnimeDetailDao()
-        )
-    }
-
-    private val viewModel: AnimeRecommendationsViewModel by lazy {
-        val factory = AnimeRecommendationsViewModelProviderFactory(animeRecommendationsRepository)
-        ViewModelProvider(this, factory)[AnimeRecommendationsViewModel::class.java]
-    }
-
-    val animeRecommendationsViewModel: AnimeRecommendationsViewModel get() = viewModel
-
-    val animeSearchViewModel: AnimeSearchViewModel by lazy {
-        val factory = AnimeSearchViewModelProviderFactory(animeSearchRepository)
-        ViewModelProvider(this, factory)[AnimeSearchViewModel::class.java]
-    }
-
-    val animeDetailViewModel: AnimeDetailViewModel by lazy {
-        val factory = AnimeDetailViewModelProviderFactory(animeDetailRepository)
-        ViewModelProvider(this, factory)[AnimeDetailViewModel::class.java]
     }
 
     private fun setupSplashScreen() {
-        val splashScreen = installSplashScreen()
-        splashScreen.setKeepOnScreenCondition { !isDataLoaded }
-        lifecycleScope.launch {
-            repeatOnLifecycle(Lifecycle.State.STARTED) {
-                if (NetworkUtils.isNetworkAvailable(this@MainActivity)) {
-                    viewModel.animeRecommendations.collect { resource ->
-                        if (resource is Resource.Success) {
-                            isDataLoaded = true
-                        } else if (resource is Resource.Error && !isDataLoaded) {
-                            binding.root.showSnackbar("Error loading data. Please check your connection.")
-                        }
-                    }
-                } else {
-                    binding.root.showSnackbar(
-                        "No internet connection. Please check your network settings.",
-                        Snackbar.LENGTH_INDEFINITE
-                    )
-                }
-            }
-        }
-    }
-
-    private fun View.showSnackbar(message: String, duration: Int = Snackbar.LENGTH_SHORT) {
-        Snackbar.make(this, message, duration).show()
+        installSplashScreen()
     }
 
     private fun setupSensor() {
@@ -142,7 +52,11 @@ class MainActivity : AppCompatActivity() {
         val navView: BottomNavigationView = binding.navView
         val navController = findNavController(R.id.nav_host_fragment_activity_main)
         val appBarConfiguration = AppBarConfiguration(
-            setOf(R.id.animeRecommendationsFragment, R.id.animeSearchFragment, R.id.aboutFragment)
+            setOf(
+                R.id.animeRecommendationsFragment,
+                R.id.animeSearchFragment,
+                R.id.aboutFragment
+            )
         )
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
@@ -150,42 +64,12 @@ class MainActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
-        if (intent?.action == Intent.ACTION_VIEW && intent.scheme == "animeappkotlin" && intent.data != null) {
+        if (intent?.action == Intent.ACTION_VIEW &&
+            intent.scheme == "animeappkotlin" &&
+            intent.data != null
+        ) {
             handleAnimeUrl(intent.data)
         }
-    }
-
-    private fun setupChucker() {
-        val decoder = @Suppress("NOTHING_TO_OVERRIDE") object : BodyDecoder {
-            override fun decode(source: BufferedSource, contentType: MediaType?): String {
-                return source.readString(Charsets.UTF_8)
-            }
-
-            override fun decodeRequest(request: Request, body: ByteString): String {
-                return body.utf8()
-            }
-
-            override fun decodeResponse(response: Response, body: ByteString): String {
-                return body.utf8()
-            }
-        }
-
-        val chuckerCollector = ChuckerCollector(
-            context = this,
-            showNotification = true,
-            retentionPeriod = RetentionManager.Period.ONE_HOUR
-        )
-
-        val chuckerInterceptor = ChuckerInterceptor.Builder(this)
-            .collector(chuckerCollector)
-            .maxContentLength(250_000L)
-            .redactHeaders("Auth-Token", "Bearer")
-            .alwaysReadResponseBody(true)
-            .addBodyDecoder(decoder)
-            .createShortcut(true)
-            .build()
-
-        RetrofitInstance.addInterceptor(chuckerInterceptor)
     }
 
     private fun handleAnimeUrl(uri: Uri?) {

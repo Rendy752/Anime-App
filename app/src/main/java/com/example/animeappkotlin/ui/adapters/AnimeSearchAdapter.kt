@@ -93,7 +93,9 @@ class AnimeSearchAdapter : RecyclerView.Adapter<AnimeSearchAdapter.AnimeSearchVi
     fun setLoading(isLoading: Boolean) {
         this.isLoading = isLoading
         if (!isLoading) {
-            differ.submitList(emptyList())
+            if (differ.currentList.isNotEmpty()) {
+                differ.submitList(emptyList())
+            }
         }
         notifyDataSetChanged()
     }

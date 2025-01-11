@@ -13,16 +13,21 @@ import android.widget.Spinner
 import android.widget.Toast
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavOptions
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.animeappkotlin.R
+import com.example.animeappkotlin.data.remote.api.RetrofitInstance
 import com.example.animeappkotlin.databinding.FragmentAnimeSearchBinding
 import com.example.animeappkotlin.models.CompletePagination
+import com.example.animeappkotlin.repository.AnimeSearchRepository
 import com.example.animeappkotlin.ui.activities.MainActivity
 import com.example.animeappkotlin.ui.adapters.AnimeSearchAdapter
+import com.example.animeappkotlin.ui.providerfactories.AnimeSearchViewModelProviderFactory
 import com.example.animeappkotlin.ui.viewmodels.AnimeSearchViewModel
 import com.example.animeappkotlin.utils.Debouncer
 import com.example.animeappkotlin.utils.Limit
@@ -36,11 +41,15 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
     private var _binding: FragmentAnimeSearchBinding? = null
     private val binding get() = _binding!!
 
-    private lateinit var viewModel: AnimeSearchViewModel
     private lateinit var animeSearchAdapter: AnimeSearchAdapter
 
     private val debouncer = Debouncer(lifecycleScope) { query ->
         viewModel.updateQuery(query)
+    }
+
+    private val viewModel: AnimeSearchViewModel by viewModels {
+        val animeSearchRepository = AnimeSearchRepository(api = RetrofitInstance.api)
+        AnimeSearchViewModelProviderFactory(animeSearchRepository)
     }
 
     override fun onCreateView(
@@ -55,7 +64,6 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setupMenu()
-        setupViewModel()
         setupRecyclerView()
         setupSearchView()
         setupLimitSpinner()
@@ -67,10 +75,6 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
 
     private fun setupMenu() {
         requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
-    }
-
-    private fun setupViewModel() {
-        viewModel = (activity as MainActivity).animeSearchViewModel
     }
 
     private fun setupRecyclerView() {
@@ -168,35 +172,37 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
     }
 
     private fun setupObservers() {
-        viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.animeSearchResults.collectLatest { response ->
-                when (response) {
-                    is Resource.Success -> {
-                        response.data?.let { searchResponse ->
-                            animeSearchAdapter.setLoading(false)
+        lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.animeSearchResults.collectLatest { response ->
+                    when (response) {
+                        is Resource.Success -> {
+                            response.data?.let { searchResponse ->
+                                animeSearchAdapter.setLoading(false)
 
-                            updatePagination(response.data.pagination)
+                                updatePagination(response.data.pagination)
 
-                            binding.limitSpinner.adapter
-                            val limitIndex =
-                                Limit.limitOptions.indexOf(viewModel.limit.value.toString())
-                            binding.limitSpinner.setSelection(if (limitIndex == -1) 0 else limitIndex)
+                                binding.limitSpinner.adapter
+                                val limitIndex =
+                                    Limit.limitOptions.indexOf(viewModel.limit.value.toString())
+                                binding.limitSpinner.setSelection(if (limitIndex == -1) 0 else limitIndex)
 
-                            animeSearchAdapter.differ.submitList(searchResponse.data)
+                                animeSearchAdapter.differ.submitList(searchResponse.data)
+                            }
                         }
-                    }
 
-                    is Resource.Error -> {
-                        animeSearchAdapter.setLoading(false)
-                        Toast.makeText(
-                            requireContext(),
-                            "An error occurred: ${response.message}",
-                            Toast.LENGTH_LONG
-                        ).show()
-                    }
+                        is Resource.Error -> {
+                            animeSearchAdapter.setLoading(false)
+                            Toast.makeText(
+                                requireContext(),
+                                "An error occurred: ${response.message}",
+                                Toast.LENGTH_LONG
+                            ).show()
+                        }
 
-                    is Resource.Loading -> {
-                        animeSearchAdapter.setLoading(true)
+                        is Resource.Loading -> {
+                            animeSearchAdapter.setLoading(true)
+                        }
                     }
                 }
             }

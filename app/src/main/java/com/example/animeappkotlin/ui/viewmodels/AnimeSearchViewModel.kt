@@ -33,10 +33,6 @@ class AnimeSearchViewModel(
     private val _limit = MutableStateFlow<Int?>(Limit.DEFAULT_LIMIT)
     val limit: StateFlow<Int?> = _limit.asStateFlow()
 
-    init {
-        getRandomAnime()
-    }
-
     fun updateQuery(query: String) {
         _query.value = query
         _page.value = 1
