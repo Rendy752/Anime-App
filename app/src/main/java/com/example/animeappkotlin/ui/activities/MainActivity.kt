@@ -15,7 +15,11 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.chuckerteam.chucker.api.Chucker
+import com.chuckerteam.chucker.api.ChuckerCollector
+import com.chuckerteam.chucker.api.ChuckerInterceptor
+import com.chuckerteam.chucker.api.RetentionManager
 import com.example.animeappkotlin.R
+import com.example.animeappkotlin.data.remote.api.RetrofitInstance
 import com.example.animeappkotlin.databinding.ActivityMainBinding
 import com.example.animeappkotlin.utils.ShakeDetector
 import com.google.android.material.bottomnavigation.BottomNavigationView
@@ -32,6 +36,7 @@ class MainActivity : AppCompatActivity() {
         setupSensor()
         setupViewBinding()
         setupNavigation()
+        setupChucker()
     }
 
     private fun setupSplashScreen() {
@@ -60,6 +65,24 @@ class MainActivity : AppCompatActivity() {
         )
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
+    }
+
+    private fun setupChucker() {
+        val chuckerCollector = ChuckerCollector(
+            this,
+            true,
+            RetentionManager.Period.ONE_HOUR
+        )
+
+        val chuckerInterceptor = ChuckerInterceptor.Builder(this)
+            .collector(chuckerCollector)
+            .maxContentLength(250_000L)
+            .redactHeaders("Auth-Token", "Bearer")
+            .alwaysReadResponseBody(true)
+            .createShortcut(true)
+            .build()
+
+        RetrofitInstance.addInterceptor(chuckerInterceptor)
     }
 
     override fun onNewIntent(intent: Intent?) {
