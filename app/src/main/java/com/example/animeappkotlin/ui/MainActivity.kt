@@ -21,6 +21,7 @@ import com.chuckerteam.chucker.api.RetentionManager
 import com.example.animeappkotlin.R
 import com.example.animeappkotlin.data.remote.api.RetrofitInstance
 import com.example.animeappkotlin.databinding.ActivityMainBinding
+import com.example.animeappkotlin.utils.Navigation
 import com.example.animeappkotlin.utils.ShakeDetector
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
@@ -88,7 +89,7 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         if (intent?.action == Intent.ACTION_VIEW &&
-            intent.scheme == "animeappkotlin" &&
+            intent.scheme == "animeapp" &&
             intent.data != null
         ) {
             handleAnimeUrl(intent.data)
@@ -98,25 +99,16 @@ class MainActivity : AppCompatActivity() {
     private fun handleAnimeUrl(uri: Uri?) {
         uri?.pathSegments?.let { segments ->
             if (segments.size >= 2 && segments[0] == "detail") {
-                val id = segments[1].toIntOrNull()
-                if (id != null) {
-                    val navController =
+                val animeId = segments[1].toIntOrNull()
+                if (animeId != null) {
+                    val navHostFragment =
                         supportFragmentManager.findFragmentById(R.id.nav_host_fragment_activity_main)
-                            ?.findNavController()
-
-                    navController?.let {
-                        val bundle = Bundle().apply { putInt("id", id) }
-                        val navOptions = NavOptions.Builder()
-                            .setEnterAnim(R.anim.slide_in_right)
-                            .setExitAnim(R.anim.slide_out_left)
-                            .setPopEnterAnim(R.anim.slide_in_left)
-                            .setPopExitAnim(R.anim.slide_out_right)
-                            .build()
-
-                        it.navigate(
-                            R.id.action_global_animeDetailFragment,
-                            bundle,
-                            navOptions
+                    val currentFragment = navHostFragment?.childFragmentManager?.fragments?.get(0)
+                    if (currentFragment != null) {
+                        Navigation.navigateToAnimeDetail(
+                            currentFragment,
+                            animeId,
+                            R.id.action_global_animeDetailFragment
                         )
                     }
                 }

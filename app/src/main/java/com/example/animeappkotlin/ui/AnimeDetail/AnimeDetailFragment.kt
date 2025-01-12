@@ -25,6 +25,7 @@ import com.example.animeappkotlin.models.AnimeDetailResponse
 import com.example.animeappkotlin.repository.AnimeDetailRepository
 import com.example.animeappkotlin.ui.Common.AnimeHeaderAdapter
 import com.example.animeappkotlin.ui.Common.TitleSynonymsAdapter
+import com.example.animeappkotlin.utils.Navigation
 import com.example.animeappkotlin.utils.Resource
 import com.example.animeappkotlin.utils.TextUtils.formatSynopsis
 import com.example.animeappkotlin.utils.TextUtils.joinOrNA
@@ -81,13 +82,13 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                 viewModel.animeDetail.value?.data?.data?.let { detail ->
                     val animeUrl = detail.url
                     val animeTitle = detail.title
-                    val animeScore = detail.score
+                    val animeScore = detail.score ?: "0"
                     val animeGenres = detail.genres?.joinToString(", ") { it.name }
 
                     val animeSynopsis = formatSynopsis(detail.synopsis ?: "-")
                     val animeTrailerUrl = detail.trailer.url ?: ""
                     val malId = detail.mal_id
-                    val customUrl = "animeapp://anime/detail/$malId"
+                    val customUrl = "animeappkotlin://anime/detail/$malId"
 
                     val trailerSection = if (animeTrailerUrl.isNotEmpty()) {
                         """
@@ -116,7 +117,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
 
                     Web URL: $animeUrl
                     App URL: $customUrl
-                    Download the app now: https://play.google.com/store/apps/details?id=com.example.animeapp
+                    Download the app now: https://play.google.com/store/apps/details?id=com.example.animeappkotlin
                 """.trimIndent()
 
                     val sendIntent: Intent = Intent().apply {
@@ -194,7 +195,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
             binding.tvSeason.text = detail.season ?: "-"
             binding.tvReleased.text = detail.year?.toString() ?: "-"
             binding.tvAired.text = detail.aired.string
-            binding.tvRating.text = detail.rating
+            binding.tvRating.text = detail.rating ?: "Unknown"
             binding.tvGenres.text = joinOrNA(detail.genres) { it.name }
             binding.tvEpisodes.text = detail.episodes.toString()
 
@@ -210,10 +211,10 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                 binding.youtubePlayerView.playVideo(embedUrl)
             }
 
-            binding.tvScore.text = detail.score.toString()
+            binding.tvScore.text = detail.score?.toString() ?: "0"
             binding.tvScoredBy.text =
-                resources.getString(R.string.scored_by_users, detail.scored_by)
-            binding.tvRanked.text = resources.getString(R.string.ranked_number, detail.rank)
+                resources.getString(R.string.scored_by_users, detail.scored_by ?: 0)
+            binding.tvRanked.text = resources.getString(R.string.ranked_number, detail.rank ?: 0)
             binding.tvPopularity.text =
                 resources.getString(R.string.popularity_number, detail.popularity)
             binding.tvMembers.text = detail.members.toString()
@@ -231,23 +232,13 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
             binding.tvSynopsis.text = detail.synopsis ?: "-"
 
             if (detail.relations?.size!! > 0) {
+                if (detail.relations.size > 1) binding.tvRelation.text = "${detail.relations.size} Relations"
                 binding.rvRelations.apply {
                     adapter = RelationsAdapter(detail.relations) { animeId ->
-                        val bundle = Bundle().apply {
-                            putInt("id", animeId)
-                        }
-                        val navOptions = NavOptions.Builder()
-                            .setEnterAnim(R.anim.slide_in_right)
-                            .setExitAnim(R.anim.slide_out_left)
-                            .setPopEnterAnim(R.anim.slide_in_left)
-                            .setPopExitAnim(R.anim.slide_out_right)
-                            .setPopUpTo(R.id.animeDetailFragment, true)
-                            .build()
-
-                        findNavController().navigate(
-                            R.id.action_animeDetailFragment_self,
-                            bundle,
-                            navOptions
+                        Navigation.navigateToAnimeDetail(
+                            this@AnimeDetailFragment,
+                            animeId,
+                            R.id.action_animeDetailFragment_self
                         )
                     }
                     layoutManager = LinearLayoutManager(

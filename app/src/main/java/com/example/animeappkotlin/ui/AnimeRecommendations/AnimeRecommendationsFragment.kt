@@ -15,6 +15,7 @@ import com.example.animeappkotlin.data.local.database.AnimeRecommendationsDataba
 import com.example.animeappkotlin.data.remote.api.RetrofitInstance
 import com.example.animeappkotlin.databinding.FragmentRecommendationBinding
 import com.example.animeappkotlin.repository.AnimeRecommendationsRepository
+import com.example.animeappkotlin.utils.Navigation
 import com.example.animeappkotlin.utils.Resource
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -81,20 +82,10 @@ class AnimeRecommendationsFragment : Fragment() {
 
     private fun setupClickListeners() {
         animeRecommendationsAdapter.setOnItemClickListener { animeId ->
-            val bundle = Bundle().apply {
-                putInt("id", animeId)
-            }
-            val navOptions = NavOptions.Builder()
-                .setEnterAnim(R.anim.slide_in_right)
-                .setExitAnim(R.anim.slide_out_left)
-                .setPopEnterAnim(R.anim.slide_in_left)
-                .setPopExitAnim(R.anim.slide_out_right)
-                .build()
-
-            findNavController().navigate(
-                R.id.action_animeRecommendationsFragment_to_animeDetailFragment,
-                bundle,
-                navOptions
+            Navigation.navigateToAnimeDetail(
+                this,
+                animeId,
+                R.id.action_animeRecommendationsFragment_to_animeDetailFragment
             )
         }
     }

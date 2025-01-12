@@ -28,6 +28,7 @@ import com.example.animeappkotlin.repository.AnimeSearchRepository
 import com.example.animeappkotlin.ui.Common.AnimeHeaderAdapter
 import com.example.animeappkotlin.utils.Debouncer
 import com.example.animeappkotlin.utils.Limit
+import com.example.animeappkotlin.utils.Navigation
 import com.example.animeappkotlin.utils.Pagination
 import com.example.animeappkotlin.utils.Resource
 import kotlinx.coroutines.flow.collectLatest
@@ -84,20 +85,10 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
 
     private fun setupClickListeners() {
         animeHeaderAdapter.setOnItemClickListener { animeId ->
-            val bundle = Bundle().apply {
-                putInt("id", animeId)
-            }
-            val navOptions = NavOptions.Builder()
-                .setEnterAnim(R.anim.slide_in_right)
-                .setExitAnim(R.anim.slide_out_left)
-                .setPopEnterAnim(R.anim.slide_in_left)
-                .setPopExitAnim(R.anim.slide_out_right)
-                .build()
-
-            findNavController().navigate(
-                R.id.action_animeSearchFragment_to_animeDetailFragment,
-                bundle,
-                navOptions
+            Navigation.navigateToAnimeDetail(
+                this,
+                animeId,
+                R.id.action_animeSearchFragment_to_animeDetailFragment
             )
         }
     }

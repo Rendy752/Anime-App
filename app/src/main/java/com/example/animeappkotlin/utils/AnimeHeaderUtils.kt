@@ -37,9 +37,9 @@ object AnimeHeaderUtils {
                 LinearLayoutManager(binding.root.context, LinearLayoutManager.HORIZONTAL, false)
         }
         binding.tvAnimeType.text = "${data.type} (${data.episodes} eps)"
-        binding.tvAnimeRanked.text = "Ranked #${data.rank}"
+        binding.tvAnimeRanked.text = "Ranked #${data.rank ?: 0}"
         binding.tvAnimePopularity.text = "Popularity #${data.popularity}"
-        binding.tvAnimeScore.text = "Scored ${data.score} by ${data.scored_by} users"
+        binding.tvAnimeScore.text = "Scored ${data.score ?: 0} by ${data.scored_by ?: 0} users"
         binding.tvAnimeMembers.text = "${data.members} members"
 
         resetBackground(binding)
