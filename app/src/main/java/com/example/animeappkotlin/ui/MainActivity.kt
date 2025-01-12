@@ -1,4 +1,4 @@
-package com.example.animeappkotlin.ui.activities
+package com.example.animeappkotlin.ui
 
 import android.content.Context
 import android.content.Intent

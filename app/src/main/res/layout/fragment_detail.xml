@@ -287,7 +287,7 @@
                 android:orientation="horizontal"
                 android:visibility="gone">
 
-                <com.example.animeappkotlin.ui.viewmodels.YoutubePlayerView
+                <com.example.animeappkotlin.ui.Common.YoutubePlayerView
                     android:id="@+id/youtubePlayerView"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content" />

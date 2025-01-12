@@ -1,4 +1,4 @@
-package com.example.animeappkotlin.ui.viewmodels
+package com.example.animeappkotlin.ui.AnimeSearch
 
 import AnimeSearchQueryState
 import androidx.lifecycle.ViewModel

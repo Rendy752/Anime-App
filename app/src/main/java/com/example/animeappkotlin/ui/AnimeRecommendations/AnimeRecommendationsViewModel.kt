@@ -1,4 +1,4 @@
-package com.example.animeappkotlin.ui.viewmodels
+package com.example.animeappkotlin.ui.AnimeRecommendations
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope

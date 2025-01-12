@@ -1,4 +1,4 @@
-package com.example.animeappkotlin.ui.activities
+package com.example.animeappkotlin.ui.AnimeRecommendations
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
@@ -7,8 +7,6 @@ import com.example.animeappkotlin.data.local.database.AnimeRecommendationsDataba
 import com.example.animeappkotlin.data.remote.api.RetrofitInstance
 import com.example.animeappkotlin.databinding.FragmentRecommendationBinding
 import com.example.animeappkotlin.repository.AnimeRecommendationsRepository
-import com.example.animeappkotlin.ui.viewmodels.AnimeRecommendationsViewModel
-import com.example.animeappkotlin.ui.providerfactories.AnimeRecommendationsViewModelProviderFactory
 
 class AnimeRecommendationsActivity : AppCompatActivity() {
 

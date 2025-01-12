@@ -1,4 +1,4 @@
-package com.example.animeappkotlin.ui.activities
+package com.example.animeappkotlin.ui.About
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity

@@ -1,9 +1,8 @@
-package com.example.animeappkotlin.ui.providerfactories
+package com.example.animeappkotlin.ui.AnimeRecommendations
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.animeappkotlin.repository.AnimeRecommendationsRepository
-import com.example.animeappkotlin.ui.viewmodels.AnimeRecommendationsViewModel
 
 class AnimeRecommendationsViewModelProviderFactory(
     private val animeRecommendationsRepository: AnimeRecommendationsRepository

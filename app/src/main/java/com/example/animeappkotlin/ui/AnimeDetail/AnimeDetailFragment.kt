@@ -1,4 +1,4 @@
-package com.example.animeappkotlin.ui.fragments
+package com.example.animeappkotlin.ui.AnimeDetail
 
 import android.annotation.SuppressLint
 import android.content.Intent
@@ -21,15 +21,10 @@ import com.bumptech.glide.Glide
 import com.example.animeappkotlin.R
 import com.example.animeappkotlin.data.local.database.AnimeDetailDatabase
 import com.example.animeappkotlin.databinding.FragmentDetailBinding
-import com.example.animeappkotlin.databinding.RelationItemBinding
 import com.example.animeappkotlin.models.AnimeDetailResponse
 import com.example.animeappkotlin.repository.AnimeDetailRepository
-import com.example.animeappkotlin.ui.adapters.AnimeRecommendationsAdapter
-import com.example.animeappkotlin.ui.adapters.AnimeSearchAdapter
-import com.example.animeappkotlin.ui.adapters.RelationsAdapter
-import com.example.animeappkotlin.ui.adapters.TitleSynonymsAdapter
-import com.example.animeappkotlin.ui.providerfactories.AnimeDetailViewModelProviderFactory
-import com.example.animeappkotlin.ui.viewmodels.AnimeDetailViewModel
+import com.example.animeappkotlin.ui.Common.AnimeHeaderAdapter
+import com.example.animeappkotlin.ui.Common.TitleSynonymsAdapter
 import com.example.animeappkotlin.utils.Resource
 import com.example.animeappkotlin.utils.TextUtils.formatSynopsis
 import com.example.animeappkotlin.utils.TextUtils.joinOrNA
@@ -38,7 +33,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
     private var _binding: FragmentDetailBinding? = null
     private val binding get() = _binding!!
 
-    private lateinit var animeSearchAdapter: AnimeSearchAdapter
+    private lateinit var animeHeaderAdapter: AnimeHeaderAdapter
 
     private val viewModel: AnimeDetailViewModel by viewModels {
         val animeDetailRepository = AnimeDetailRepository(

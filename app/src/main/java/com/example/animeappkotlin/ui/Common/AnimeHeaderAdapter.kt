@@ -1,4 +1,4 @@
-package com.example.animeappkotlin.ui.adapters
+package com.example.animeappkotlin.ui.Common
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -9,7 +9,7 @@ import com.example.animeappkotlin.databinding.AnimeSearchItemBinding
 import com.example.animeappkotlin.models.AnimeDetail
 import com.example.animeappkotlin.utils.AnimeHeaderUtils
 
-class AnimeSearchAdapter : RecyclerView.Adapter<AnimeSearchAdapter.AnimeSearchViewHolder>() {
+class AnimeHeaderAdapter : RecyclerView.Adapter<AnimeHeaderAdapter.AnimeSearchViewHolder>() {
 
     companion object {
         private const val VIEW_TYPE_ITEM = 0

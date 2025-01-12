@@ -1,4 +1,4 @@
-package com.example.animeappkotlin.ui.adapters
+package com.example.animeappkotlin.ui.AnimeRecommendations
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -115,7 +115,7 @@ class AnimeRecommendationsAdapter : RecyclerView.Adapter<AnimeRecommendationsAda
         return if (isLoading) 5 else differ.currentList.size
     }
 
-    override fun onBindViewHolder(holder: AnimeRecommendationsAdapter.AnimeRecommendationViewHolder, position: Int) {
+    override fun onBindViewHolder(holder: AnimeRecommendationViewHolder, position: Int) {
         val animeRecommendation = if (!isLoading || position >= differ.currentList.size) {
             differ.currentList.getOrNull(position)
         } else {

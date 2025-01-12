@@ -1,9 +1,8 @@
-package com.example.animeappkotlin.ui.providerfactories
+package com.example.animeappkotlin.ui.AnimeDetail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import com.example.animeappkotlin.repository.AnimeDetailRepository
-import com.example.animeappkotlin.ui.viewmodels.AnimeDetailViewModel
 
 class AnimeDetailViewModelProviderFactory(
     val animeDetailRepository: AnimeDetailRepository

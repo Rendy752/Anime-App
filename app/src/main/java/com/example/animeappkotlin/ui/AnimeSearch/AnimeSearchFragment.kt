@@ -1,4 +1,4 @@
-package com.example.animeappkotlin.ui.fragments
+package com.example.animeappkotlin.ui.AnimeSearch
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -25,9 +25,7 @@ import com.example.animeappkotlin.data.remote.api.RetrofitInstance
 import com.example.animeappkotlin.databinding.FragmentAnimeSearchBinding
 import com.example.animeappkotlin.models.CompletePagination
 import com.example.animeappkotlin.repository.AnimeSearchRepository
-import com.example.animeappkotlin.ui.adapters.AnimeSearchAdapter
-import com.example.animeappkotlin.ui.providerfactories.AnimeSearchViewModelProviderFactory
-import com.example.animeappkotlin.ui.viewmodels.AnimeSearchViewModel
+import com.example.animeappkotlin.ui.Common.AnimeHeaderAdapter
 import com.example.animeappkotlin.utils.Debouncer
 import com.example.animeappkotlin.utils.Limit
 import com.example.animeappkotlin.utils.Pagination
@@ -40,7 +38,7 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
     private var _binding: FragmentAnimeSearchBinding? = null
     private val binding get() = _binding!!
 
-    private lateinit var animeSearchAdapter: AnimeSearchAdapter
+    private lateinit var animeHeaderAdapter: AnimeHeaderAdapter
 
     private val debouncer = Debouncer(lifecycleScope) { query ->
         viewModel.updateQuery(query)
@@ -77,15 +75,15 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
     }
 
     private fun setupRecyclerView() {
-        animeSearchAdapter = AnimeSearchAdapter()
+        animeHeaderAdapter = AnimeHeaderAdapter()
         binding.rvAnimeSearch.apply {
-            adapter = animeSearchAdapter
+            adapter = animeHeaderAdapter
             layoutManager = LinearLayoutManager(activity)
         }
     }
 
     private fun setupClickListeners() {
-        animeSearchAdapter.setOnItemClickListener { animeId ->
+        animeHeaderAdapter.setOnItemClickListener { animeId ->
             val bundle = Bundle().apply {
                 putInt("id", animeId)
             }
@@ -179,7 +177,7 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
                     when (response) {
                         is Resource.Success -> {
                             response.data?.let { searchResponse ->
-                                animeSearchAdapter.setLoading(false)
+                                animeHeaderAdapter.setLoading(false)
 
                                 updatePagination(response.data.pagination)
 
@@ -188,12 +186,12 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
                                     Limit.limitOptions.indexOf(viewModel.queryState.value.limit.toString())
                                 binding.limitSpinner.setSelection(if (limitIndex == -1) 0 else limitIndex)
 
-                                animeSearchAdapter.differ.submitList(searchResponse.data)
+                                animeHeaderAdapter.differ.submitList(searchResponse.data)
                             }
                         }
 
                         is Resource.Error -> {
-                            animeSearchAdapter.setLoading(false)
+                            animeHeaderAdapter.setLoading(false)
                             Toast.makeText(
                                 requireContext(),
                                 "An error occurred: ${response.message}",
@@ -202,7 +200,7 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
                         }
 
                         is Resource.Loading -> {
-                            animeSearchAdapter.setLoading(true)
+                            animeHeaderAdapter.setLoading(true)
                         }
                     }
                 }

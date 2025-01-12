@@ -1,4 +1,4 @@
-package com.example.animeappkotlin.ui.fragments
+package com.example.animeappkotlin.ui.About
 
 import android.os.Bundle
 import android.view.LayoutInflater

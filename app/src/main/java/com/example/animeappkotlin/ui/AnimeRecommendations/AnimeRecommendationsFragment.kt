@@ -1,4 +1,4 @@
-package com.example.animeappkotlin.ui.fragments
+package com.example.animeappkotlin.ui.AnimeRecommendations
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -13,11 +13,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.animeappkotlin.R
 import com.example.animeappkotlin.data.local.database.AnimeRecommendationsDatabase
 import com.example.animeappkotlin.data.remote.api.RetrofitInstance
-import com.example.animeappkotlin.ui.adapters.AnimeRecommendationsAdapter
 import com.example.animeappkotlin.databinding.FragmentRecommendationBinding
 import com.example.animeappkotlin.repository.AnimeRecommendationsRepository
-import com.example.animeappkotlin.ui.providerfactories.AnimeRecommendationsViewModelProviderFactory
-import com.example.animeappkotlin.ui.viewmodels.AnimeRecommendationsViewModel
 import com.example.animeappkotlin.utils.Resource
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
