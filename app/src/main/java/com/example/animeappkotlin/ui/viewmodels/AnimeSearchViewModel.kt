@@ -1,5 +1,6 @@
 package com.example.animeappkotlin.ui.viewmodels
 
+import AnimeSearchQueryState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.animeappkotlin.models.AnimeRandomResponse
@@ -24,41 +25,39 @@ class AnimeSearchViewModel(
     val animeSearchResults: StateFlow<Resource<AnimeSearchResponse>> =
         _animeSearchResults.asStateFlow()
 
-    private val _query = MutableStateFlow("")
-    val query: StateFlow<String> = _query.asStateFlow()
-
-    private val _page = MutableStateFlow(1)
-    val page: StateFlow<Int> = _page.asStateFlow()
-
-    private val _limit = MutableStateFlow<Int?>(Limit.DEFAULT_LIMIT)
-    val limit: StateFlow<Int?> = _limit.asStateFlow()
+    private val _queryState = MutableStateFlow(AnimeSearchQueryState())
+    val queryState: StateFlow<AnimeSearchQueryState> = _queryState.asStateFlow()
 
     fun updateQuery(query: String) {
-        _query.value = query
-        _page.value = 1
+        _queryState.value = queryState.value.copy(query = query, page = 1)
         searchAnime()
     }
 
     fun updatePage(page: Int) {
-        _page.value = page
+        _queryState.value = queryState.value.copy(page = page)
         searchAnime()
     }
 
     fun updateLimit(limit: Int?) {
-        _limit.value = limit
-        _page.value = 1
-        searchAnime()
+        if (_queryState.value.limit != limit) {
+            _queryState.value = queryState.value.copy(limit = limit, page = 1)
+            searchAnime()
+        }
+    }
+
+    init {
+        getRandomAnime()
     }
 
     fun searchAnime() = viewModelScope.launch {
-        if (query.value.isBlank()) {
+        if (queryState.value.query.isBlank()) {
             getRandomAnime()
         } else {
             _animeSearchResults.value = Resource.Loading()
             val response = animeSearchRepository.searchAnime(
-                query.value,
-                page.value,
-                limit.value ?: Limit.DEFAULT_LIMIT
+                queryState.value.query,
+                queryState.value.page,
+                queryState.value.limit ?: Limit.DEFAULT_LIMIT
             )
             _animeSearchResults.value = handleAnimeSearchResponse(response)
         }

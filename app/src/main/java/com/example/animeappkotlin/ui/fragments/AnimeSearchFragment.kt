@@ -25,7 +25,6 @@ import com.example.animeappkotlin.data.remote.api.RetrofitInstance
 import com.example.animeappkotlin.databinding.FragmentAnimeSearchBinding
 import com.example.animeappkotlin.models.CompletePagination
 import com.example.animeappkotlin.repository.AnimeSearchRepository
-import com.example.animeappkotlin.ui.activities.MainActivity
 import com.example.animeappkotlin.ui.adapters.AnimeSearchAdapter
 import com.example.animeappkotlin.ui.providerfactories.AnimeSearchViewModelProviderFactory
 import com.example.animeappkotlin.ui.viewmodels.AnimeSearchViewModel
@@ -130,8 +129,10 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
         )
         limitSpinner.adapter = limitAdapter
 
-        val defaultLimitIndex = Limit.limitOptions.indexOf("10")
-        limitSpinner.setSelection(defaultLimitIndex)
+        if (viewModel.queryState.value.limit == Limit.DEFAULT_LIMIT) {
+            val defaultLimitIndex = Limit.limitOptions.indexOf("10")
+            limitSpinner.setSelection(defaultLimitIndex)
+        }
 
         limitSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(
@@ -184,7 +185,7 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
 
                                 binding.limitSpinner.adapter
                                 val limitIndex =
-                                    Limit.limitOptions.indexOf(viewModel.limit.value.toString())
+                                    Limit.limitOptions.indexOf(viewModel.queryState.value.limit.toString())
                                 binding.limitSpinner.setSelection(if (limitIndex == -1) 0 else limitIndex)
 
                                 animeSearchAdapter.differ.submitList(searchResponse.data)
