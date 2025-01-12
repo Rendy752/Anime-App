@@ -1,5 +1,6 @@
 package com.example.animeappkotlin.utils
 
+import android.util.Log
 import android.view.View
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide

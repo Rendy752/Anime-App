@@ -92,7 +92,7 @@ dependencies {
     implementation(libs.androidx.hilt.navigation.fragment)
 
     //Kotlinx Serialization
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.2.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
 
     //Loading Skeleton
     implementation(libs.shimmer)

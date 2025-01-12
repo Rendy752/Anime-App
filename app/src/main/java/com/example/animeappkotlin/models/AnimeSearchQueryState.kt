@@ -1,3 +1,4 @@
+package com.example.animeappkotlin.models
 import com.example.animeappkotlin.utils.Limit
 
 data class AnimeSearchQueryState(

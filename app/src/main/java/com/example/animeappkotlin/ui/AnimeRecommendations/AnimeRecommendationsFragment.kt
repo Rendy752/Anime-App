@@ -7,11 +7,8 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
-import androidx.navigation.NavOptions
-import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.animeappkotlin.R
-import com.example.animeappkotlin.data.local.database.AnimeRecommendationsDatabase
 import com.example.animeappkotlin.data.remote.api.RetrofitInstance
 import com.example.animeappkotlin.databinding.FragmentRecommendationBinding
 import com.example.animeappkotlin.repository.AnimeRecommendationsRepository
@@ -28,8 +25,7 @@ class AnimeRecommendationsFragment : Fragment() {
 
     private val viewModel: AnimeRecommendationsViewModel by viewModels {
         val animeRecommendationsRepository = AnimeRecommendationsRepository(
-            api = RetrofitInstance.api,
-            db = AnimeRecommendationsDatabase.getDatabase(requireActivity())
+            RetrofitInstance.api
         )
         AnimeRecommendationsViewModelProviderFactory(animeRecommendationsRepository)
     }
@@ -69,9 +65,11 @@ class AnimeRecommendationsFragment : Fragment() {
                             animeRecommendationsAdapter.differ.submitList(animeResponse.data)
                         }
                     }
+
                     is Resource.Error -> {
                         animeRecommendationsAdapter.setLoading(false)
                     }
+
                     is Resource.Loading -> {
                         animeRecommendationsAdapter.setLoading(true)
                     }

@@ -1,9 +1,9 @@
 package com.example.animeappkotlin.ui.AnimeSearch
 
-import AnimeSearchQueryState
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.animeappkotlin.models.AnimeRandomResponse
+import com.example.animeappkotlin.models.AnimeDetailResponse
+import com.example.animeappkotlin.models.AnimeSearchQueryState
 import com.example.animeappkotlin.models.AnimeSearchResponse
 import com.example.animeappkotlin.models.CompletePagination
 import com.example.animeappkotlin.models.Items
@@ -79,7 +79,7 @@ class AnimeSearchViewModel(
         }
     }
 
-    private fun handleAnimeRandomResponse(response: Response<AnimeRandomResponse>): Resource<AnimeSearchResponse> {
+    private fun handleAnimeRandomResponse(response: Response<AnimeDetailResponse>): Resource<AnimeSearchResponse> {
         if (response.isSuccessful) {
             response.body()?.let { resultResponse ->
                 val searchResponse = AnimeSearchResponse(

@@ -9,7 +9,7 @@ import com.example.animeappkotlin.data.local.dao.AnimeRecommendationsDao
 import com.example.animeappkotlin.data.local.entities.AnimeRecommendationsConverter
 import com.example.animeappkotlin.models.AnimeRecommendation
 
-@Database(entities = [AnimeRecommendation::class], version = 1, exportSchema = false)
+@Database(entities = [AnimeRecommendation::class], version = 3, exportSchema = false)
 @TypeConverters(AnimeRecommendationsConverter::class)
 abstract class AnimeRecommendationsDatabase : RoomDatabase() {
 
@@ -25,7 +25,7 @@ abstract class AnimeRecommendationsDatabase : RoomDatabase() {
                     context.applicationContext,
                     AnimeRecommendationsDatabase::class.java,
                     "anime_recommendations_db.db"
-                ).build()
+                ).fallbackToDestructiveMigration().build()
                 INSTANCE = instance
                 instance
             }

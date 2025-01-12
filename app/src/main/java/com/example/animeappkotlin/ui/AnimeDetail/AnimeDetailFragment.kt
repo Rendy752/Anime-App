@@ -14,8 +14,6 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
-import androidx.navigation.NavOptions
-import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.example.animeappkotlin.R
@@ -23,7 +21,6 @@ import com.example.animeappkotlin.data.local.database.AnimeDetailDatabase
 import com.example.animeappkotlin.databinding.FragmentDetailBinding
 import com.example.animeappkotlin.models.AnimeDetailResponse
 import com.example.animeappkotlin.repository.AnimeDetailRepository
-import com.example.animeappkotlin.ui.Common.AnimeHeaderAdapter
 import com.example.animeappkotlin.ui.Common.TitleSynonymsAdapter
 import com.example.animeappkotlin.utils.Navigation
 import com.example.animeappkotlin.utils.Resource
@@ -33,8 +30,6 @@ import com.example.animeappkotlin.utils.TextUtils.joinOrNA
 class AnimeDetailFragment : Fragment(), MenuProvider {
     private var _binding: FragmentDetailBinding? = null
     private val binding get() = _binding!!
-
-    private lateinit var animeHeaderAdapter: AnimeHeaderAdapter
 
     private val viewModel: AnimeDetailViewModel by viewModels {
         val animeDetailRepository = AnimeDetailRepository(
