@@ -1,5 +1,6 @@
-package com.example.animeappkotlin.ui.Common
+package com.example.animeappkotlin.ui.common
 
+import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.AsyncListDiffer
@@ -44,6 +45,7 @@ class AnimeHeaderAdapter : RecyclerView.Adapter<AnimeHeaderAdapter.AnimeSearchVi
 
     private var isLoading = false
 
+    @SuppressLint("NotifyDataSetChanged")
     fun setLoading(isLoading: Boolean) {
         this.isLoading = isLoading
         if (!isLoading) {

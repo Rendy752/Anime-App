@@ -23,7 +23,7 @@ import com.example.animeappkotlin.data.remote.api.RetrofitInstance
 import com.example.animeappkotlin.databinding.FragmentAnimeSearchBinding
 import com.example.animeappkotlin.models.CompletePagination
 import com.example.animeappkotlin.repository.AnimeSearchRepository
-import com.example.animeappkotlin.ui.Common.AnimeHeaderAdapter
+import com.example.animeappkotlin.ui.common.AnimeHeaderAdapter
 import com.example.animeappkotlin.utils.Debounce
 import com.example.animeappkotlin.utils.Limit
 import com.example.animeappkotlin.utils.Navigation

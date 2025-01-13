@@ -6,7 +6,7 @@ import com.bumptech.glide.Glide
 import com.example.animeappkotlin.R
 import com.example.animeappkotlin.databinding.AnimeSearchItemBinding
 import com.example.animeappkotlin.models.AnimeDetail
-import com.example.animeappkotlin.ui.Common.TitleSynonymsAdapter
+import com.example.animeappkotlin.ui.common.TitleSynonymsAdapter
 
 object AnimeHeaderUtils {
     fun bindAnimeData(binding: AnimeSearchItemBinding, data: AnimeDetail) {

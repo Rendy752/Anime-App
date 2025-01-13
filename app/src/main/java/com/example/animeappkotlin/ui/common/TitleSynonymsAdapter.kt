@@ -1,4 +1,4 @@
-package com.example.animeappkotlin.ui.Common
+package com.example.animeappkotlin.ui.common
 
 import android.view.LayoutInflater
 import android.view.ViewGroup

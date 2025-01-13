@@ -1,4 +1,4 @@
-package com.example.animeappkotlin.ui.Common
+package com.example.animeappkotlin.ui.common
 
 import android.annotation.SuppressLint
 import android.content.Context

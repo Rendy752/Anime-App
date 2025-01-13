@@ -1,6 +1,5 @@
 package com.example.animeappkotlin.ui.AnimeDetail
 
-import android.annotation.SuppressLint
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -21,7 +20,7 @@ import com.example.animeappkotlin.data.local.database.AnimeDetailDatabase
 import com.example.animeappkotlin.databinding.FragmentDetailBinding
 import com.example.animeappkotlin.models.AnimeDetailResponse
 import com.example.animeappkotlin.repository.AnimeDetailRepository
-import com.example.animeappkotlin.ui.Common.TitleSynonymsAdapter
+import com.example.animeappkotlin.ui.common.TitleSynonymsAdapter
 import com.example.animeappkotlin.utils.Navigation
 import com.example.animeappkotlin.utils.Resource
 import com.example.animeappkotlin.utils.TextUtils.formatSynopsis
