@@ -5,7 +5,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
 
-class Debouncer(
+class Debounce(
     private val coroutineScope: CoroutineScope,
     private val delayMillis: Long = 1000L,
     private val onDebounced: (String) -> Unit

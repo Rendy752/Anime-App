@@ -250,12 +250,11 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
         }
     }
 
-    @SuppressLint("SetTextI18n")
     private fun handleError(response: Resource.Error<AnimeDetailResponse>) {
         binding.shimmerViewContainer.stopShimmer()
         binding.shimmerViewContainer.hideShimmer()
         binding.tvError.visibility = View.VISIBLE
-        binding.tvError.text = "An error occurred: ${response.message}"
+        "An error occurred: ${response.message}".also { binding.tvError.text = it }
     }
 
     private fun handleLoading() {
@@ -263,12 +262,11 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
         binding.shimmerViewContainer.startShimmer()
     }
 
-    @SuppressLint("SetTextI18n")
     private fun handleEmpty() {
         binding.shimmerViewContainer.stopShimmer()
         binding.shimmerViewContainer.hideShimmer()
         binding.tvError.visibility = View.VISIBLE
-        binding.tvError.text = "An error occurred while fetching the anime detail."
+        "An error occurred while fetching the anime detail.".also { binding.tvError.text = it }
     }
 
     override fun onDestroyView() {

@@ -24,7 +24,7 @@ import com.example.animeappkotlin.databinding.FragmentAnimeSearchBinding
 import com.example.animeappkotlin.models.CompletePagination
 import com.example.animeappkotlin.repository.AnimeSearchRepository
 import com.example.animeappkotlin.ui.Common.AnimeHeaderAdapter
-import com.example.animeappkotlin.utils.Debouncer
+import com.example.animeappkotlin.utils.Debounce
 import com.example.animeappkotlin.utils.Limit
 import com.example.animeappkotlin.utils.Navigation
 import com.example.animeappkotlin.utils.Pagination
@@ -39,7 +39,7 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
 
     private lateinit var animeHeaderAdapter: AnimeHeaderAdapter
 
-    private val debounce = Debouncer(lifecycleScope) { query ->
+    private val debounce = Debounce(lifecycleScope) { query ->
         viewModel.updateQuery(query)
     }
 
@@ -117,7 +117,7 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
         limitSpinner.adapter = limitAdapter
 
         if (viewModel.queryState.value.limit == Limit.DEFAULT_LIMIT) {
-            val defaultLimitIndex = Limit.limitOptions.indexOf("10")
+            val defaultLimitIndex = Limit.limitOptions.indexOf(10)
             limitSpinner.setSelection(defaultLimitIndex)
         }
 
@@ -128,19 +128,13 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
                 position: Int,
                 id: Long
             ) {
-                val selectedLimit = when (position) {
-                    0 -> 5
-                    1 -> 10
-                    2 -> 15
-                    3 -> 20
-                    4 -> 25
-                    else -> 10
-                }
+                val selectedLimit = Limit.getLimitValue(position)
                 viewModel.updateLimit(selectedLimit)
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {
-                Toast.makeText(requireContext(), "Nothing selected", Toast.LENGTH_SHORT).show()
+                val defaultLimit = Limit.DEFAULT_LIMIT
+                viewModel.updateLimit(defaultLimit)
             }
         }
     }
@@ -177,7 +171,7 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
 
                                     binding.subMenuContainer.limitSpinner.adapter
                                     val limitIndex =
-                                        Limit.limitOptions.indexOf(viewModel.queryState.value.limit.toString())
+                                        Limit.limitOptions.indexOf(viewModel.queryState.value.limit)
                                     binding.subMenuContainer.limitSpinner.setSelection(if (limitIndex == -1) 0 else limitIndex)
 
                                     animeHeaderAdapter.differ.submitList(searchResponse.data)

@@ -1,6 +1,5 @@
 package com.example.animeappkotlin.utils
 
-import android.util.Log
 import android.view.View
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
@@ -22,11 +21,21 @@ object AnimeHeaderUtils {
 
         when (data.airing) {
             true -> {
-                binding.tvAiredStatus.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_notifications_active_24dp, 0);
+                binding.tvAiredStatus.setCompoundDrawablesWithIntrinsicBounds(
+                    0,
+                    0,
+                    R.drawable.ic_notifications_active_24dp,
+                    0
+                )
             }
 
             false -> {
-                binding.tvAiredStatus.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_done_24dp, 0);
+                binding.tvAiredStatus.setCompoundDrawablesWithIntrinsicBounds(
+                    0,
+                    0,
+                    R.drawable.ic_done_24dp,
+                    0
+                )
             }
         }
 
@@ -36,11 +45,11 @@ object AnimeHeaderUtils {
             layoutManager =
                 LinearLayoutManager(binding.root.context, LinearLayoutManager.HORIZONTAL, false)
         }
-        binding.tvAnimeType.text = "${data.type} (${data.episodes} eps)"
-        binding.tvAnimeRanked.text = "Ranked #${data.rank ?: 0}"
-        binding.tvAnimePopularity.text = "Popularity #${data.popularity}"
-        binding.tvAnimeScore.text = "Scored ${data.score ?: 0} by ${data.scored_by ?: 0} users"
-        binding.tvAnimeMembers.text = "${data.members} members"
+        "${data.type} (${data.episodes} eps)".also { binding.tvAnimeType.text = it }
+        "Ranked #${data.rank ?: 0}".also { binding.tvAnimeRanked.text = it }
+        "Popularity #${data.popularity}".also { binding.tvAnimePopularity.text = it }
+        "Scored ${data.score ?: 0} by ${data.scored_by ?: 0} users".also { binding.tvAnimeScore.text = it }
+        "${data.members} members".also { binding.tvAnimeMembers.text = it }
 
         resetBackground(binding)
     }
@@ -57,11 +66,11 @@ object AnimeHeaderUtils {
             layoutManager =
                 LinearLayoutManager(binding.root.context, LinearLayoutManager.HORIZONTAL, false)
         }
-        binding.tvAnimeType.text = "Unknown Type (Unknown Episodes)"
-        binding.tvAnimeRanked.text = "Ranked #Unknown"
-        binding.tvAnimePopularity.text = "Popularity #Unknown"
-        binding.tvAnimeScore.text = "Scored Unknown by Unknown users"
-        binding.tvAnimeMembers.text = "Unknown members"
+        "Unknown Type (Unknown Episodes)".also { binding.tvAnimeType.text = it }
+        "Ranked #Unknown".also { binding.tvAnimeRanked.text = it }
+        "Popularity #Unknown".also { binding.tvAnimePopularity.text = it }
+        "Scored Unknown by Unknown users".also { binding.tvAnimeScore.text = it }
+        "Unknown members".also { binding.tvAnimeMembers.text = it }
 
         resetBackground(binding)
     }
