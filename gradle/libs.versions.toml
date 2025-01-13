@@ -1,5 +1,5 @@
 [versions]
-agp = "8.6.1"
+agp = "8.7.3"
 byteBuddy = "1.14.8"
 commonsText = "1.10.0"
 coreSplashscreen = "1.0.1"
