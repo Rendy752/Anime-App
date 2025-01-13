@@ -1,6 +1,5 @@
 package com.example.animeappkotlin.ui.AnimeSearch
 
-import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Menu
@@ -18,13 +17,10 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.navigation.NavOptions
-import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.animeappkotlin.R
 import com.example.animeappkotlin.data.remote.api.RetrofitInstance
 import com.example.animeappkotlin.databinding.FragmentAnimeSearchBinding
-import com.example.animeappkotlin.models.AnimeDetailResponse
 import com.example.animeappkotlin.models.CompletePagination
 import com.example.animeappkotlin.repository.AnimeSearchRepository
 import com.example.animeappkotlin.ui.Common.AnimeHeaderAdapter
@@ -43,7 +39,7 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
 
     private lateinit var animeHeaderAdapter: AnimeHeaderAdapter
 
-    private val debouncer = Debouncer(lifecycleScope) { query ->
+    private val debounce = Debouncer(lifecycleScope) { query ->
         viewModel.updateQuery(query)
     }
 
@@ -104,7 +100,7 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
 
             override fun onQueryTextChange(newText: String?): Boolean {
                 newText?.let {
-                    debouncer.query(it)
+                    debounce.query(it)
                 }
                 return true
             }
@@ -112,7 +108,7 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
     }
 
     private fun setupLimitSpinner() {
-        val limitSpinner: Spinner = binding.limitSpinner
+        val limitSpinner: Spinner = binding.subMenuContainer.limitSpinner
         val limitAdapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,
@@ -179,10 +175,10 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
                                 } else {
                                     updatePagination(response.data.pagination)
 
-                                    binding.limitSpinner.adapter
+                                    binding.subMenuContainer.limitSpinner.adapter
                                     val limitIndex =
                                         Limit.limitOptions.indexOf(viewModel.queryState.value.limit.toString())
-                                    binding.limitSpinner.setSelection(if (limitIndex == -1) 0 else limitIndex)
+                                    binding.subMenuContainer.limitSpinner.setSelection(if (limitIndex == -1) 0 else limitIndex)
 
                                     animeHeaderAdapter.differ.submitList(searchResponse.data)
                                 }
@@ -217,13 +213,13 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
 
     private fun updatePagination(pagination: CompletePagination?) {
         Pagination.setPaginationButtons(
-            binding.paginationButtonContainer,
+            binding.subMenuContainer.paginationButtonContainer,
             pagination,
             onPaginationClick = { pageNumber ->
                 viewModel.updatePage(pageNumber)
             }
         )
-        binding.paginationButtonContainer.visibility =
+        binding.subMenuContainer.paginationButtonContainer.visibility =
             if (pagination == null) View.GONE else View.VISIBLE
     }
 

@@ -56,50 +56,13 @@
         app:layout_constraintBottom_toTopOf="@id/subMenuContainer"
         app:layout_constraintEnd_toEndOf="parent" />
 
-    <LinearLayout
+    <include
         android:id="@+id/subMenuContainer"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:background="@color/textColorSecondary"
-        android:orientation="horizontal"
-        android:padding="8dp"
+        layout="@layout/limit_and_pagination"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent">
-
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:orientation="vertical"
-            android:gravity="center_vertical">
-
-            <TextView
-                style="@style/ColorPrimaryContent"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/limit"
-                android:textSize="16sp" />
-
-        </LinearLayout>
-
-        <Spinner
-            android:id="@+id/limitSpinner"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:spinnerMode="dropdown"
-            android:background="@drawable/spinner_background"
-            android:popupBackground="@drawable/spinner_dropdown_background"
-            android:layout_marginStart="8dp"
-            android:dropDownVerticalOffset="40dp" />
-
-        <LinearLayout
-            android:id="@+id/paginationButtonContainer"
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="1"
-            android:gravity="center_vertical|end"
-            android:orientation="horizontal" />
-
-    </LinearLayout>
+        app:layout_constraintStart_toStartOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
