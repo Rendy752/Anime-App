@@ -1,5 +1,6 @@
 package com.example.animeappkotlin.ui.AnimeSearch
 
+import android.annotation.SuppressLint
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Menu
@@ -23,6 +24,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.animeappkotlin.R
 import com.example.animeappkotlin.data.remote.api.RetrofitInstance
 import com.example.animeappkotlin.databinding.FragmentAnimeSearchBinding
+import com.example.animeappkotlin.models.AnimeDetailResponse
 import com.example.animeappkotlin.models.CompletePagination
 import com.example.animeappkotlin.repository.AnimeSearchRepository
 import com.example.animeappkotlin.ui.Common.AnimeHeaderAdapter
@@ -157,6 +159,7 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
                 Toast.makeText(requireContext(), "Filter clicked", Toast.LENGTH_SHORT).show()
                 true
             }
+
             else -> false
         }
     }
@@ -170,19 +173,26 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
                             response.data?.let { searchResponse ->
                                 animeHeaderAdapter.setLoading(false)
 
-                                updatePagination(response.data.pagination)
+                                if (searchResponse.data.isEmpty()) {
+                                    binding.tvError.visibility = View.VISIBLE
+                                    binding.tvError.text = "No results found"
+                                } else {
+                                    updatePagination(response.data.pagination)
 
-                                binding.limitSpinner.adapter
-                                val limitIndex =
-                                    Limit.limitOptions.indexOf(viewModel.queryState.value.limit.toString())
-                                binding.limitSpinner.setSelection(if (limitIndex == -1) 0 else limitIndex)
+                                    binding.limitSpinner.adapter
+                                    val limitIndex =
+                                        Limit.limitOptions.indexOf(viewModel.queryState.value.limit.toString())
+                                    binding.limitSpinner.setSelection(if (limitIndex == -1) 0 else limitIndex)
 
-                                animeHeaderAdapter.differ.submitList(searchResponse.data)
+                                    animeHeaderAdapter.differ.submitList(searchResponse.data)
+                                }
                             }
                         }
 
                         is Resource.Error -> {
                             animeHeaderAdapter.setLoading(false)
+                            binding.tvError.visibility = View.VISIBLE
+                            binding.tvError.text = "An error occurred: ${response.message}"
                             Toast.makeText(
                                 requireContext(),
                                 "An error occurred: ${response.message}",

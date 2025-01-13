@@ -4,5 +4,5 @@
     android:layout_height="wrap_content"
     android:layout_margin="4dp"
     android:padding="8dp"
-    android:text="..."
+    android:text="@string/three_dots"
     android:textColor="@color/cardview_dark_background" />

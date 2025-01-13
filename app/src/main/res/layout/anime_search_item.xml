@@ -39,23 +39,13 @@
                 app:shapeAppearanceOverlay="@style/RoundedImageViewShape"
                 tools:src="@tools:sample/avatars" />
 
-            <ImageView
-                android:id="@+id/ivAired"
+            <TextView
+                android:id="@+id/tvAiredStatus"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_marginTop="8dp"
-                android:src="@drawable/ic_notifications_active_24dp"
-                android:visibility="gone" />
-
-            <ImageView
-                android:id="@+id/ivNotAired"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:layout_marginTop="8dp"
-                android:src="@drawable/ic_done_24dp"
-                android:visibility="gone" />
+                android:layout_gravity="start|top"
+                android:layout_margin="8dp"
+                android:textSize="18sp" />
         </FrameLayout>
 
         <LinearLayout
@@ -81,6 +71,7 @@
                 android:id="@+id/ivApproved"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:contentDescription="@string/approved_icon"
                 android:src="@drawable/ic_recommend_blue_24dp"
                 android:visibility="gone" />
         </LinearLayout>

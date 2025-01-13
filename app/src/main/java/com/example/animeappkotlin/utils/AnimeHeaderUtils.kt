@@ -19,15 +19,14 @@ object AnimeHeaderUtils {
             true -> binding.ivApproved.visibility = View.VISIBLE
             false -> binding.ivApproved.visibility = View.GONE
         }
+
         when (data.airing) {
             true -> {
-                binding.ivAired.visibility = View.VISIBLE
-                binding.ivNotAired.visibility = View.GONE
+                binding.tvAiredStatus.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_notifications_active_24dp, 0);
             }
 
             false -> {
-                binding.ivAired.visibility = View.GONE
-                binding.ivNotAired.visibility = View.VISIBLE
+                binding.tvAiredStatus.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_done_24dp, 0);
             }
         }
 

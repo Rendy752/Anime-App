@@ -14,6 +14,8 @@
     <string name="episodes">"Episodes: "</string>
     <string name="released">"Released: "</string>
     <string name="aired">"Aired: "</string>
+    <string name="approved_icon">"Approved Icon"</string>
+    <string name="refresh_button">"Refresh Button"</string>
     <string name="season">"Season: "</string>
     <string name="studios">"Studios: "</string>
     <string name="genres">"Genres: "</string>
@@ -42,4 +44,5 @@
     <string name="entry_type">Entry Type</string>
     <string name="entry_name">Entry Type</string>
     <string name="relation">Relation</string>
+    <string name="three_dots">...</string>
 </resources>
