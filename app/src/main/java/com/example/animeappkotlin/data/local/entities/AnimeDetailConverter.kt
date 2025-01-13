@@ -41,12 +41,12 @@ class AnimeDetailConverter {
 
     @TypeConverter
     fun fromStringArray(strings: Array<String>): String {
-        return json.encodeToString(strings) // Use Json for string array as well
+        return json.encodeToString(strings)
     }
 
     @TypeConverter
     fun toStringArray(string: String): Array<String> {
-        return json.decodeFromString(string) // Use Json for string array as well
+        return json.decodeFromString(string)
     }
 
     @TypeConverter
@@ -67,16 +67,6 @@ class AnimeDetailConverter {
     @TypeConverter
     fun toBroadcast(broadcastJson: String): Broadcast {
         return json.decodeFromString(broadcastJson)
-    }
-
-    @TypeConverter
-    fun fromCommonIdentityList(commonIdentities: List<CommonIdentity>): String {
-        return json.encodeToString(commonIdentities)
-    }
-
-    @TypeConverter
-    fun toCommonIdentityList(commonIdentitiesJson: String): List<CommonIdentity> {
-        return json.decodeFromString(commonIdentitiesJson)
     }
 
     @TypeConverter
@@ -112,16 +102,6 @@ class AnimeDetailConverter {
     @TypeConverter
     fun fromNullableNameAndUrlList(nameAndUrls: List<NameAndUrl?>?): String? {
         return nameAndUrls?.let { json.encodeToString(it) }
-    }
-
-    @TypeConverter
-    fun toNullableNameAndUrlList(nameAndUrlsJson: String?): List<NameAndUrl?>? {
-        return nameAndUrlsJson?.let { json.decodeFromString(it) }
-    }
-
-    @TypeConverter
-    fun fromNameAndUrlList(nameAndUrl: List<NameAndUrl>): String {
-        return json.encodeToString(nameAndUrl)
     }
 
     @TypeConverter

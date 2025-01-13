@@ -7,9 +7,9 @@
 
     <fragment
         android:id="@+id/animeRecommendationsFragment"
-        android:name="com.example.animeappkotlin.ui.fragments.AnimeRecommendationsFragment"
-        tools:layout="@layout/fragment_recommendation"
-        android:label="@string/title_recommendation">
+        android:name="com.example.animeappkotlin.ui.animeRecommendations.AnimeRecommendationsFragment"
+        android:label="@string/title_recommendation"
+        tools:layout="@layout/fragment_recommendation">
         <action
             android:id="@+id/animeRecommendationsFragment_to_aboutFragment"
             app:destination="@id/aboutFragment" />
@@ -19,16 +19,30 @@
     </fragment>
 
     <fragment
+        android:id="@+id/animeSearchFragment"
+        android:name="com.example.animeappkotlin.ui.animeSearch.AnimeSearchFragment"
+        android:label="@string/title_search"
+        tools:layout="@layout/fragment_anime_search">
+        <action
+            android:id="@+id/action_animeSearchFragment_to_animeDetailFragment"
+            app:destination="@id/animeDetailFragment" />
+    </fragment>
+
+    <fragment
         android:id="@+id/aboutFragment"
-        android:name="com.example.animeappkotlin.ui.fragments.AboutFragment"
-        tools:layout="@layout/fragment_about"
-        android:label="@string/title_about" />
+        android:name="com.example.animeappkotlin.ui.about.AboutFragment"
+        android:label="@string/title_about"
+        tools:layout="@layout/fragment_about" />
 
     <fragment
         android:id="@+id/animeDetailFragment"
-        android:name="com.example.animeappkotlin.ui.fragments.AnimeDetailFragment"
+        android:name="com.example.animeappkotlin.ui.animeDetail.AnimeDetailFragment"
         android:label="@string/title_detail"
-        tools:layout="@layout/fragment_detail" />
+        tools:layout="@layout/fragment_detail">
+        <action
+            android:id="@+id/action_animeDetailFragment_self"
+            app:destination="@id/animeDetailFragment" />
+    </fragment>
 
     <action
         android:id="@+id/action_global_animeDetailFragment"

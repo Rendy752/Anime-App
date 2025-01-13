@@ -28,6 +28,7 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:baselineAligned="false"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
@@ -39,27 +40,18 @@
                         android:id="@+id/ivAnimeImage"
                         android:layout_width="200dp"
                         android:layout_height="300dp"
+                        android:background="@color/shimmer_placeholder"
                         android:scaleType="centerCrop"
                         app:shapeAppearanceOverlay="@style/RoundedImageViewShape"
                         tools:src="@tools:sample/avatars" />
 
-                    <ImageView
-                        android:id="@+id/ivAired"
+                    <TextView
+                        android:id="@+id/tvAiredStatus"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:layout_marginTop="8dp"
-                        android:src="@drawable/ic_notifications_active_24dp"
-                        android:visibility="gone" />
-
-                    <ImageView
-                        android:id="@+id/ivNotAired"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:layout_marginTop="8dp"
-                        android:src="@drawable/ic_done_24dp"
-                        android:visibility="gone" />
+                        android:layout_gravity="start|top"
+                        android:layout_margin="8dp"
+                        android:textSize="18sp" />
                 </FrameLayout>
 
                 <LinearLayout
@@ -74,7 +66,8 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        tools:ignore="UseCompoundDrawables">
 
                         <TextView
                             android:id="@+id/tvTitle"
@@ -87,6 +80,7 @@
                             android:id="@+id/ivApproved"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:contentDescription="@string/approved_icon"
                             android:src="@drawable/ic_recommend_blue_24dp"
                             android:visibility="gone" />
                     </LinearLayout>
@@ -286,7 +280,7 @@
                 android:orientation="horizontal"
                 android:visibility="gone">
 
-                <com.example.animeappkotlin.ui.viewmodels.YoutubePlayerView
+                <com.example.animeappkotlin.ui.common.YoutubePlayerView
                     android:id="@+id/youtubePlayerView"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content" />
@@ -298,6 +292,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
+                android:baselineAligned="false"
                 android:orientation="horizontal">
 
                 <LinearLayout
@@ -317,6 +312,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_columnWeight="1"
+                            android:contentDescription="@string/status"
                             android:src="@drawable/dot" />
 
                         <TextView
@@ -343,6 +339,7 @@
                             android:id="@+id/dotType"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:contentDescription="@string/type"
                             android:src="@drawable/dot" />
 
                         <TextView
@@ -369,6 +366,7 @@
                             android:id="@+id/dotSource"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:contentDescription="@string/source"
                             android:src="@drawable/dot" />
 
                         <TextView
@@ -395,6 +393,7 @@
                             android:id="@+id/dotSeason"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:contentDescription="@string/season"
                             android:src="@drawable/dot" />
 
                         <TextView
@@ -421,6 +420,7 @@
                             android:id="@+id/dotReleased"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:contentDescription="@string/released"
                             android:src="@drawable/dot" />
 
                         <TextView
@@ -447,6 +447,7 @@
                             android:id="@+id/dotAired"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:contentDescription="@string/aired"
                             android:src="@drawable/dot" />
 
                         <TextView
@@ -473,6 +474,7 @@
                             android:id="@+id/dotRating"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:contentDescription="@string/rating"
                             android:src="@drawable/dot" />
 
                         <TextView
@@ -499,6 +501,7 @@
                             android:id="@+id/dotGenres"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:contentDescription="@string/genres"
                             android:src="@drawable/dot" />
 
                         <TextView
@@ -525,6 +528,7 @@
                             android:id="@+id/dotEpisodes"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:contentDescription="@string/episodes"
                             android:src="@drawable/dot" />
 
                         <TextView
@@ -558,6 +562,7 @@
                             android:id="@+id/dotStudios"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:contentDescription="@string/studios"
                             android:src="@drawable/dot" />
 
                         <TextView
@@ -578,12 +583,14 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:gravity="center_vertical"
-                        android:orientation="horizontal">
+                        android:orientation="horizontal"
+                        tools:ignore="TooManyViews">
 
                         <ImageView
                             android:id="@+id/dotProducers"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:contentDescription="@string/producers"
                             android:src="@drawable/dot" />
 
                         <TextView
@@ -610,6 +617,7 @@
                             android:id="@+id/dotLicensors"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:contentDescription="@string/licensors"
                             android:src="@drawable/dot" />
 
                         <TextView
@@ -636,6 +644,7 @@
                             android:id="@+id/dotBroadcast"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:contentDescription="@string/broadcast"
                             android:src="@drawable/dot" />
 
                         <TextView
@@ -662,6 +671,7 @@
                             android:id="@+id/dotDuration"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:contentDescription="@string/duration"
                             android:src="@drawable/dot" />
 
                         <TextView
@@ -723,6 +733,61 @@
                 <TextView
                     android:id="@+id/tvSynopsis"
                     style="@style/RecommendationContent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/relationContainer"
+                style="@style/container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvRelation"
+                    style="@style/AnimeTitle.Primary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bottom_border"
+                    android:justificationMode="inter_word"
+                    android:text="@string/relation" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvRelations"
+                    android:layout_width="match_parent"
+                    android:layout_height="350dp"
+                    android:layout_marginTop="8dp" />
+            </LinearLayout>
+
+            <LinearLayout
+                style="@style/container"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvOpening"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+                <TextView
+                    android:id="@+id/tvEnding"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp" />
+
+                <TextView
+                    android:id="@+id/tvExternalLinks"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp" />
+
+                <TextView
+                    android:id="@+id/tvStreamingLinks"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp" />

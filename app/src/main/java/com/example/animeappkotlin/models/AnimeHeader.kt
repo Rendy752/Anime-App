@@ -8,11 +8,4 @@ data class AnimeHeader(
     val url: String,
     val images: Images,
     val title: String
-) {
-    constructor(mal_id: Int, url: String) : this(
-        mal_id,
-        url,
-        Images(ImageUrl("", "", "", "", ""), ImageUrl("", "", "", "", "")),
-        ""
-    )
-}
+)

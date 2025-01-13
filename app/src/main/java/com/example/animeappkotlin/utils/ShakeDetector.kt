@@ -3,13 +3,14 @@ package com.example.animeappkotlin.utils
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
+import kotlin.math.abs
 
 class ShakeDetector(private val onShakeListener: () -> Unit) : SensorEventListener {
 
     private var lastUpdate: Long = 0
-    private var last_x = 0f
-    private var last_y = 0f
-    private var last_z = 0f
+    private var lastX = 0f
+    private var lastY = 0f
+    private var lastZ = 0f
 
     override fun onSensorChanged(event: SensorEvent) {
         val curTime = System.currentTimeMillis()
@@ -19,13 +20,13 @@ class ShakeDetector(private val onShakeListener: () -> Unit) : SensorEventListen
             val x = event.values[0]
             val y = event.values[1]
             val z = event.values[2]
-            val speed = Math.abs(x + y + z - last_x - last_y - last_z) / diffTime * 10000
+            val speed = abs(x + y + z - lastX - lastY - lastZ) / diffTime * 10000
             if (speed > SHAKE_THRESHOLD) {
                 onShakeListener()
             }
-            last_x = x
-            last_y = y
-            last_z = z
+            lastX = x
+            lastY = y
+            lastZ = z
         }
     }
 

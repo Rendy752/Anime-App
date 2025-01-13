@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">AnimeAppKotlin</string>
     <string name="title_recommendation">Recommendation</string>
+    <string name="title_search">Search</string>
     <string name="title_about">About</string>
     <string name="title_detail">Detail</string>
     <string name="title_logging">Logging</string>
@@ -13,6 +14,8 @@
     <string name="episodes">"Episodes: "</string>
     <string name="released">"Released: "</string>
     <string name="aired">"Aired: "</string>
+    <string name="approved_icon">"Approved Icon"</string>
+    <string name="refresh_button">"Refresh Button"</string>
     <string name="season">"Season: "</string>
     <string name="studios">"Studios: "</string>
     <string name="genres">"Genres: "</string>
@@ -34,4 +37,11 @@
     <string name="scored_by_users">%d Users</string>
     <string name="ranked_number">#%d</string>
     <string name="popularity_number">#%d</string>
+    <string name="search_anime">Search Anime</string>
+    <string name="filter">Filter</string>
+    <string name="relation_name">Relation Name</string>
+    <string name="entry_type">Entry Type</string>
+    <string name="entry_name">Entry Type</string>
+    <string name="relation">Relation</string>
+    <string name="three_dots">…</string>
 </resources>

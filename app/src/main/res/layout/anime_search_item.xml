@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.facebook.shimmer.ShimmerFrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/shimmer_view_container"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <androidx.constraintlayout.widget.ConstraintLayout
+        style="@style/container.withMargin"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="16dp">
+
+        <androidx.constraintlayout.widget.Guideline
+            android:id="@+id/guidelineCenter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            app:layout_constraintGuide_percent="0.5"
+            app:layout_constraintTop_toTopOf="@id/contentLayout"
+            app:layout_constraintBottom_toBottomOf="@id/tvAnimeMembers"/>
+
+        <FrameLayout
+            android:id="@+id/flAnimeImage"
+            android:layout_width="100dp"
+            android:layout_height="150dp"
+            android:gravity="center_vertical"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="@+id/guidelineCenter"
+            app:layout_constraintBottom_toBottomOf="@+id/guidelineCenter">
+
+            <com.google.android.material.imageview.ShapeableImageView
+                android:id="@+id/ivAnimeImage"
+                android:layout_width="100dp"
+                android:layout_height="150dp"
+                android:background="@color/shimmer_placeholder"
+                android:scaleType="centerCrop"
+                app:shapeAppearanceOverlay="@style/RoundedImageViewShape"
+                tools:src="@tools:sample/avatars" />
+
+            <TextView
+                android:id="@+id/tvAiredStatus"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="start|top"
+                android:layout_margin="8dp"
+                android:textSize="18sp" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:id="@+id/contentLayout"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:background="@color/shimmer_placeholder"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toEndOf="@id/flAnimeImage"
+            app:layout_constraintTop_toTopOf="parent">
+
+            <TextView
+                android:id="@+id/tvAnimeTitle"
+                style="@style/AnimeTitle.Primary"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1" />
+
+            <ImageView
+                android:id="@+id/ivApproved"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:contentDescription="@string/approved_icon"
+                android:src="@drawable/ic_recommend_blue_24dp"
+                android:visibility="gone" />
+        </LinearLayout>
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/rvTitleSynonyms"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@color/shimmer_placeholder"
+            app:layout_constraintEnd_toEndOf="@id/contentLayout"
+            app:layout_constraintStart_toStartOf="@id/contentLayout"
+            app:layout_constraintTop_toBottomOf="@id/contentLayout" />
+
+        <TextView
+            android:id="@+id/tvAnimeType"
+            style="@style/ColorPrimaryContent"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@color/shimmer_placeholder"
+            app:layout_constraintStart_toStartOf="@id/contentLayout"
+            app:layout_constraintEnd_toEndOf="@id/contentLayout"
+            app:layout_constraintTop_toBottomOf="@id/rvTitleSynonyms" />
+
+        <TextView
+            android:id="@+id/tvAnimeScore"
+            style="@style/ColorPrimaryContent"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:background="@color/shimmer_placeholder"
+            app:layout_constraintStart_toStartOf="@id/contentLayout"
+            app:layout_constraintEnd_toEndOf="@id/contentLayout"
+            app:layout_constraintTop_toBottomOf="@id/tvAnimeType" />
+
+        <TextView
+            android:id="@+id/tvAnimeRanked"
+            style="@style/ColorPrimaryContent"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:background="@color/shimmer_placeholder"
+            app:layout_constraintStart_toStartOf="@id/contentLayout"
+            app:layout_constraintEnd_toEndOf="@id/contentLayout"
+            app:layout_constraintTop_toBottomOf="@id/tvAnimeScore" />
+
+        <TextView
+            android:id="@+id/tvAnimePopularity"
+            style="@style/ColorPrimaryContent"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:background="@color/shimmer_placeholder"
+            app:layout_constraintStart_toStartOf="@id/contentLayout"
+            app:layout_constraintEnd_toEndOf="@id/contentLayout"
+            app:layout_constraintTop_toBottomOf="@id/tvAnimeRanked" />
+
+        <TextView
+            android:id="@+id/tvAnimeMembers"
+            style="@style/ColorPrimaryContent"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:background="@color/shimmer_placeholder"
+            app:layout_constraintStart_toStartOf="@id/contentLayout"
+            app:layout_constraintEnd_toEndOf="@id/contentLayout"
+            app:layout_constraintTop_toBottomOf="@id/tvAnimePopularity" />
+
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+</com.facebook.shimmer.ShimmerFrameLayout>
