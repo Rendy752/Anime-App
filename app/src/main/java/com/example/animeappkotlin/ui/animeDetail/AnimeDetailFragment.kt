@@ -1,4 +1,4 @@
-package com.example.animeappkotlin.ui.AnimeDetail
+package com.example.animeappkotlin.ui.animeDetail
 
 import android.content.Intent
 import android.net.Uri
@@ -82,7 +82,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                     val animeSynopsis = formatSynopsis(detail.synopsis ?: "-")
                     val animeTrailerUrl = detail.trailer.url ?: ""
                     val malId = detail.mal_id
-                    val customUrl = "animeappkotlin://anime/detail/$malId"
+                    val customUrl = "animeapp://anime/detail/$malId"
 
                     val trailerSection = if (animeTrailerUrl.isNotEmpty()) {
                         """
@@ -174,11 +174,11 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
 
             when (detail.airing) {
                 true -> {
-                    binding.tvAiredStatus.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_notifications_active_24dp, 0);
+                    binding.tvAiredStatus.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_notifications_active_24dp, 0)
                 }
 
                 false -> {
-                    binding.tvAiredStatus.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_done_24dp, 0);
+                    binding.tvAiredStatus.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_done_24dp, 0)
                 }
             }
 
@@ -190,7 +190,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
             binding.tvAired.text = detail.aired.string
             binding.tvRating.text = detail.rating ?: "Unknown"
             binding.tvGenres.text = joinOrNA(detail.genres) { it.name }
-            binding.tvEpisodes.text = detail.episodes.toString()
+            detail.episodes.toString().also { binding.tvEpisodes.text = it }
 
             binding.tvStudios.text = joinOrNA(detail.studios) { it.name }
             binding.tvProducers.text = joinOrNA(detail.producers) { it.name }
@@ -210,8 +210,8 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
             binding.tvRanked.text = resources.getString(R.string.ranked_number, detail.rank ?: 0)
             binding.tvPopularity.text =
                 resources.getString(R.string.popularity_number, detail.popularity)
-            binding.tvMembers.text = detail.members.toString()
-            binding.tvFavorites.text = detail.favorites.toString()
+            detail.members.toString().also { binding.tvMembers.text = it }
+            detail.favorites.toString().also { binding.tvFavorites.text = it }
 
             detail.background?.let { background ->
                 if (background.isNotBlank()) {
@@ -225,7 +225,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
             binding.tvSynopsis.text = detail.synopsis ?: "-"
 
             if (detail.relations?.size!! > 0) {
-                if (detail.relations.size > 1) binding.tvRelation.text = "${detail.relations.size} Relations"
+                if (detail.relations.size > 1) "${detail.relations.size} Relations".also { binding.tvRelation.text = it }
                 binding.rvRelations.apply {
                     adapter = RelationsAdapter(detail.relations) { animeId ->
                         Navigation.navigateToAnimeDetail(

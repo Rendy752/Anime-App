@@ -1,4 +1,4 @@
-package com.example.animeappkotlin.ui.AnimeDetail
+package com.example.animeappkotlin.ui.animeDetail
 
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel

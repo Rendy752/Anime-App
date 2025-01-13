@@ -1,4 +1,4 @@
-package com.example.animeappkotlin.ui.AnimeSearch
+package com.example.animeappkotlin.ui.animeSearch
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -63,7 +63,7 @@ class AnimeSearchViewModel(
         }
     }
 
-    fun getRandomAnime() = viewModelScope.launch {
+    private fun getRandomAnime() = viewModelScope.launch {
         _animeSearchResults.value = Resource.Loading()
         val response = animeSearchRepository.getRandomAnime()
         _animeSearchResults.value = handleAnimeRandomResponse(response)

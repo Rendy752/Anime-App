@@ -1,4 +1,4 @@
-package com.example.animeappkotlin.ui.AnimeDetail
+package com.example.animeappkotlin.ui.animeDetail
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -25,7 +25,7 @@ class RelationsAdapter(
     override fun onBindViewHolder(holder: RelationViewHolder, position: Int) {
         val relation = relations?.getOrNull(position)
         relation?.let {
-            holder.binding.tvRelationName.text = "${relation.entry.size} ${relation.relation}"
+            "${relation.entry.size} ${relation.relation}".also { holder.binding.tvRelationName.text = it }
             val relationItemsAdapter = EntriesAdapter(relation, onItemClickListener)
             holder.binding.rvRelationItems.apply {
                 adapter = relationItemsAdapter

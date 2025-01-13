@@ -1,4 +1,4 @@
-package com.example.animeappkotlin.ui.AnimeRecommendations
+package com.example.animeappkotlin.ui.animeRecommendations
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider

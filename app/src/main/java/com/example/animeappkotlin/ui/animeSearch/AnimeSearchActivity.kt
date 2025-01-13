@@ -1,4 +1,4 @@
-package com.example.animeappkotlin.ui.AnimeSearch
+package com.example.animeappkotlin.ui.animeSearch
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
@@ -10,7 +10,7 @@ import com.example.animeappkotlin.repository.AnimeSearchRepository
 class AnimeSearchActivity : AppCompatActivity() {
 
     private lateinit var binding: FragmentAnimeSearchBinding
-    lateinit var viewModel: AnimeSearchViewModel
+    private lateinit var viewModel: AnimeSearchViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

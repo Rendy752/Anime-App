@@ -1,4 +1,4 @@
-package com.example.animeappkotlin.ui.About
+package com.example.animeappkotlin.ui.about
 
 import android.os.Bundle
 import android.view.LayoutInflater

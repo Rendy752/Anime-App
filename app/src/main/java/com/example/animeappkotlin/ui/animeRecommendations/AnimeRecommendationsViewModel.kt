@@ -1,6 +1,5 @@
-package com.example.animeappkotlin.ui.AnimeRecommendations
+package com.example.animeappkotlin.ui.animeRecommendations
 
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.animeappkotlin.models.AnimeRecommendationResponse

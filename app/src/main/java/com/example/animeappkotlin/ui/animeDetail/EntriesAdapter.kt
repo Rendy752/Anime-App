@@ -1,4 +1,4 @@
-package com.example.animeappkotlin.ui.AnimeDetail
+package com.example.animeappkotlin.ui.animeDetail
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -41,7 +41,7 @@ class EntriesAdapter(
     }
 
     override fun getItemCount(): Int {
-        return relationItems.entry.size ?: 0
+        return relationItems.entry.size
     }
 
     private fun getAnimeDetail(animeId: Int): AnimeDetail? {

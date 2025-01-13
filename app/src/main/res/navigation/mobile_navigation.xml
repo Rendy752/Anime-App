@@ -7,7 +7,7 @@
 
     <fragment
         android:id="@+id/animeRecommendationsFragment"
-        android:name="com.example.animeappkotlin.ui.AnimeRecommendations.AnimeRecommendationsFragment"
+        android:name="com.example.animeappkotlin.ui.animeRecommendations.AnimeRecommendationsFragment"
         android:label="@string/title_recommendation"
         tools:layout="@layout/fragment_recommendation">
         <action
@@ -20,7 +20,7 @@
 
     <fragment
         android:id="@+id/animeSearchFragment"
-        android:name="com.example.animeappkotlin.ui.AnimeSearch.AnimeSearchFragment"
+        android:name="com.example.animeappkotlin.ui.animeSearch.AnimeSearchFragment"
         android:label="@string/title_search"
         tools:layout="@layout/fragment_anime_search">
         <action
@@ -30,13 +30,13 @@
 
     <fragment
         android:id="@+id/aboutFragment"
-        android:name="com.example.animeappkotlin.ui.About.AboutFragment"
+        android:name="com.example.animeappkotlin.ui.about.AboutFragment"
         android:label="@string/title_about"
         tools:layout="@layout/fragment_about" />
 
     <fragment
         android:id="@+id/animeDetailFragment"
-        android:name="com.example.animeappkotlin.ui.AnimeDetail.AnimeDetailFragment"
+        android:name="com.example.animeappkotlin.ui.animeDetail.AnimeDetailFragment"
         android:label="@string/title_detail"
         tools:layout="@layout/fragment_detail">
         <action

@@ -1,4 +1,4 @@
-package com.example.animeappkotlin.ui.AnimeSearch
+package com.example.animeappkotlin.ui.animeSearch
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider

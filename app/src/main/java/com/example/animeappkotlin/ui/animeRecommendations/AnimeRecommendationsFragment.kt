@@ -1,4 +1,4 @@
-package com.example.animeappkotlin.ui.AnimeRecommendations
+package com.example.animeappkotlin.ui.animeRecommendations
 
 import android.os.Bundle
 import android.view.LayoutInflater

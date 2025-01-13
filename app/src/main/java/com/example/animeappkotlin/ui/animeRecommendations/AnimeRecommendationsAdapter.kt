@@ -1,6 +1,6 @@
-package com.example.animeappkotlin.ui.AnimeRecommendations
+package com.example.animeappkotlin.ui.animeRecommendations
 
-import android.util.Log
+import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.AsyncListDiffer
@@ -48,8 +48,8 @@ class AnimeRecommendationsAdapter : RecyclerView.Adapter<AnimeRecommendationsAda
                 .into(ivSecondAnimeImage)
             tvSecondAnimeTitle.text = recommendation.entry[1].title
             tvContent.text = recommendation.content
-            tvRecommendedBy.text = "recommended by ${recommendation.user.username}"
-            tvDate.text = "~ ${DateUtils.formatDateToAgo(recommendation.date)}"
+            "recommended by ${recommendation.user.username}".also { tvRecommendedBy.text = it }
+            "~ ${DateUtils.formatDateToAgo(recommendation.date)}".also { tvDate.text = it }
         }
 
         private fun AnimeRecommendationItemBinding.setupClickListeners(recommendation: AnimeRecommendation) {
@@ -82,6 +82,7 @@ class AnimeRecommendationsAdapter : RecyclerView.Adapter<AnimeRecommendationsAda
 
     private var isLoading = false
 
+    @SuppressLint("NotifyDataSetChanged")
     fun setLoading(isLoading: Boolean) {
         this.isLoading = isLoading
         notifyDataSetChanged()

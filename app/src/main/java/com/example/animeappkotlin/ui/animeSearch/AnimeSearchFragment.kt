@@ -1,4 +1,4 @@
-package com.example.animeappkotlin.ui.AnimeSearch
+package com.example.animeappkotlin.ui.animeSearch
 
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -165,7 +165,7 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
 
                                 if (searchResponse.data.isEmpty()) {
                                     binding.tvError.visibility = View.VISIBLE
-                                    binding.tvError.text = "No results found"
+                                    "No results found".also { binding.tvError.text = it }
                                 } else {
                                     updatePagination(response.data.pagination)
 
@@ -182,7 +182,7 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
                         is Resource.Error -> {
                             animeHeaderAdapter.setLoading(false)
                             binding.tvError.visibility = View.VISIBLE
-                            binding.tvError.text = "An error occurred: ${response.message}"
+                            "An error occurred: ${response.message}".also { binding.tvError.text = it }
                             Toast.makeText(
                                 requireContext(),
                                 "An error occurred: ${response.message}",

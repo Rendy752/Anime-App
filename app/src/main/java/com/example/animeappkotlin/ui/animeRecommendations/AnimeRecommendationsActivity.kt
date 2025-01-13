@@ -1,4 +1,4 @@
-package com.example.animeappkotlin.ui.AnimeRecommendations
+package com.example.animeappkotlin.ui.animeRecommendations
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
@@ -10,7 +10,7 @@ import com.example.animeappkotlin.repository.AnimeRecommendationsRepository
 class AnimeRecommendationsActivity : AppCompatActivity() {
 
     private lateinit var binding: FragmentRecommendationBinding
-    lateinit var viewModel: AnimeRecommendationsViewModel
+    private lateinit var viewModel: AnimeRecommendationsViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
