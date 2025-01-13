@@ -92,7 +92,7 @@ dependencies {
     implementation(libs.androidx.hilt.navigation.fragment)
 
     //Kotlinx Serialization
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
+    implementation(libs.kotlinx.serialization.json)
 
     //Loading Skeleton
     implementation(libs.shimmer)
@@ -108,25 +108,23 @@ dependencies {
     releaseImplementation(libs.library.no.op)
 
     // --- Testing Dependencies ---
-    testImplementation("junit:junit:4.13.2") // JUnit for unit testing
-    androidTestImplementation("androidx.test.ext:junit:1.1.5") // AndroidX Test for UI testing
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1") // Espresso for UI testing
+    testImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.espresso.core)
 
     // Mocking Libraries
-    testImplementation("org.mockito:mockito-core:5.3.1") // Mockito for mocking
-    implementation("org.mockito:mockito-core:5.3.1") // Mockito for mocking
-//    testImplementation("org.mockito:mockito-inline:5.3.1") // Mockito for mocking final classes and methods
-//    androidTestImplementation("org.mockito:mockito-inline:5.2.0") // Mockito for mocking final classes and methods
-    androidTestImplementation("org.mockito:mockito-android:5.3.1") // Mockito for Android testing
+    testImplementation(libs.mockito.core)
+    implementation(libs.mockito.core)
+    androidTestImplementation(libs.mockito.android)
 
     // --- Architecture Components Testing ---
-    androidTestImplementation("androidx.arch.core:core-testing:2.2.0") // For testing LiveData and other Architecture Components
+    androidTestImplementation(libs.androidx.core.testing)
 
     // --- Coroutines Testing ---
-    androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    androidTestImplementation(libs.kotlinx.coroutines.test)
 
-    testImplementation("net.bytebuddy:byte-buddy:1.14.8")
-    testImplementation("net.bytebuddy:byte-buddy-agent:1.14.8")
-    implementation("androidx.multidex:multidex:2.0.1")
-    androidTestImplementation("com.squareup.okhttp3:mockwebserver:4.11.0")
+    testImplementation(libs.byte.buddy)
+    testImplementation(libs.byte.buddy.agent)
+    implementation(libs.androidx.multidex)
+    androidTestImplementation(libs.mockwebserver)
 }
