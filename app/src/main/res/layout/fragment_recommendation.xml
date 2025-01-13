@@ -19,7 +19,7 @@
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabRefresh"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_height="56dp"
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="16dp"
         android:contentDescription="@string/refresh_button"

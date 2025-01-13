@@ -69,6 +69,7 @@ object Pagination {
     ) {
         val button = inflater.inflate(R.layout.pagination_button, container, false) as TextView
         button.text = text
+        button.setPadding(30, 20, 30, 20)
         if (isCurrentPage) {
             button.isEnabled = false
             button.setBackgroundResource(R.drawable.pagination_button_current_bg)
