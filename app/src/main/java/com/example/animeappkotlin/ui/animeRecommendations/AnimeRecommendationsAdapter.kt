@@ -11,7 +11,8 @@ import com.example.animeappkotlin.databinding.AnimeRecommendationItemBinding
 import com.example.animeappkotlin.models.AnimeRecommendation
 import com.example.animeappkotlin.utils.DateUtils
 
-class AnimeRecommendationsAdapter : RecyclerView.Adapter<AnimeRecommendationsAdapter.AnimeRecommendationViewHolder>() {
+class AnimeRecommendationsAdapter :
+    RecyclerView.Adapter<AnimeRecommendationsAdapter.AnimeRecommendationViewHolder>() {
 
     companion object {
         private const val VIEW_TYPE_ITEM = 0
@@ -89,19 +90,32 @@ class AnimeRecommendationsAdapter : RecyclerView.Adapter<AnimeRecommendationsAda
     }
 
     private val differCallback = object : DiffUtil.ItemCallback<AnimeRecommendation>() {
-        override fun areItemsTheSame(oldItem: AnimeRecommendation, newItem: AnimeRecommendation): Boolean {
+        override fun areItemsTheSame(
+            oldItem: AnimeRecommendation,
+            newItem: AnimeRecommendation
+        ): Boolean {
             return oldItem.mal_id == newItem.mal_id
         }
 
-        override fun areContentsTheSame(oldItem: AnimeRecommendation, newItem: AnimeRecommendation): Boolean {
+        override fun areContentsTheSame(
+            oldItem: AnimeRecommendation,
+            newItem: AnimeRecommendation
+        ): Boolean {
             return oldItem == newItem
         }
     }
 
     val differ = AsyncListDiffer(this, differCallback)
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AnimeRecommendationViewHolder {
-        val binding = AnimeRecommendationItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int
+    ): AnimeRecommendationViewHolder {
+        val binding = AnimeRecommendationItemBinding.inflate(
+            LayoutInflater.from(parent.context),
+            parent,
+            false
+        )
         return AnimeRecommendationViewHolder(binding)
     }
 

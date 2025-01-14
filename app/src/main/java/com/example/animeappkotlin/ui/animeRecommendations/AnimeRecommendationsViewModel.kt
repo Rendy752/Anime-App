@@ -15,8 +15,10 @@ class AnimeRecommendationsViewModel(
     private val animeRecommendationsRepository: AnimeRecommendationsRepository
 ) : ViewModel() {
 
-    private val _animeRecommendations = MutableStateFlow<Resource<AnimeRecommendationResponse>>(Resource.Loading())
-    val animeRecommendations: StateFlow<Resource<AnimeRecommendationResponse>> = _animeRecommendations.asStateFlow()
+    private val _animeRecommendations =
+        MutableStateFlow<Resource<AnimeRecommendationResponse>>(Resource.Loading())
+    val animeRecommendations: StateFlow<Resource<AnimeRecommendationResponse>> =
+        _animeRecommendations.asStateFlow()
 
     private var animeRecommendationsPage = 1
 
@@ -26,7 +28,8 @@ class AnimeRecommendationsViewModel(
 
     private fun getAnimeRecommendations() = viewModelScope.launch {
         _animeRecommendations.value = Resource.Loading()
-        val response = animeRecommendationsRepository.getAnimeRecommendations(animeRecommendationsPage)
+        val response =
+            animeRecommendationsRepository.getAnimeRecommendations(animeRecommendationsPage)
         _animeRecommendations.value = handleAnimeRecommendationsResponse(response)
     }
 

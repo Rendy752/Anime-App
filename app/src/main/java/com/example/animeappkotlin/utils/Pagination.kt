@@ -49,8 +49,22 @@ object Pagination {
                 addDots(inflater, container)
             }
 
-            addButton(inflater, container, "${lastPage - 1}", onPaginationClick, lastPage - 1, currentPage == lastPage - 1)
-            addButton(inflater, container, "$lastPage", onPaginationClick, lastPage, currentPage == lastPage)
+            addButton(
+                inflater,
+                container,
+                "${lastPage - 1}",
+                onPaginationClick,
+                lastPage - 1,
+                currentPage == lastPage - 1
+            )
+            addButton(
+                inflater,
+                container,
+                "$lastPage",
+                onPaginationClick,
+                lastPage,
+                currentPage == lastPage
+            )
         }
 
 

@@ -8,21 +8,22 @@ import kotlinx.coroutines.withContext
 import retrofit2.Response
 
 class AnimeDetailRepository(private val animeDetailDao: AnimeDetailDao) {
-    suspend fun getAnimeDetail(id: Int): Response<AnimeDetailResponse> = withContext(Dispatchers.IO) {
-        val cachedAnimeDetail = animeDetailDao.getAnimeDetailById(id)
-        if (cachedAnimeDetail != null) {
-            val animeDetailResponse = AnimeDetailResponse(cachedAnimeDetail)
-            Response.success(animeDetailResponse)
-        } else {
-            val response = RetrofitInstance.api.getAnimeDetail(id)
-            if (response.isSuccessful) {
-                response.body()?.let { animeDetailResponse ->
-                    animeDetailDao.insertAnimeDetail(animeDetailResponse.data)
+    suspend fun getAnimeDetail(id: Int): Response<AnimeDetailResponse> =
+        withContext(Dispatchers.IO) {
+            val cachedAnimeDetail = animeDetailDao.getAnimeDetailById(id)
+            if (cachedAnimeDetail != null) {
+                val animeDetailResponse = AnimeDetailResponse(cachedAnimeDetail)
+                Response.success(animeDetailResponse)
+            } else {
+                val response = RetrofitInstance.api.getAnimeDetail(id)
+                if (response.isSuccessful) {
+                    response.body()?.let { animeDetailResponse ->
+                        animeDetailDao.insertAnimeDetail(animeDetailResponse.data)
+                    }
                 }
+                response
             }
-            response
         }
-    }
 
     suspend fun getCachedAnimeDetail(id: Int): AnimeDetailResponse? {
         return withContext(Dispatchers.IO) {
