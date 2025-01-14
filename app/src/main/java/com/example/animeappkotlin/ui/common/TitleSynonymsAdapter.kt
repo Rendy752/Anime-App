@@ -8,10 +8,12 @@ import com.example.animeappkotlin.databinding.TitleSynonymItemBinding
 class TitleSynonymsAdapter(private val synonyms: List<String>) :
     RecyclerView.Adapter<TitleSynonymsAdapter.SynonymViewHolder>() {
 
-    class SynonymViewHolder(val binding: TitleSynonymItemBinding) : RecyclerView.ViewHolder(binding.root)
+    class SynonymViewHolder(val binding: TitleSynonymItemBinding) :
+        RecyclerView.ViewHolder(binding.root)
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SynonymViewHolder {
-        val binding = TitleSynonymItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
+        val binding =
+            TitleSynonymItemBinding.inflate(LayoutInflater.from(parent.context), parent, false)
         return SynonymViewHolder(binding)
     }
 

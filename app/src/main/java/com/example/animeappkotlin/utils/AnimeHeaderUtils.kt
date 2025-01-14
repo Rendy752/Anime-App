@@ -48,7 +48,9 @@ object AnimeHeaderUtils {
         "${data.type} (${data.episodes} eps)".also { binding.tvAnimeType.text = it }
         "Ranked #${data.rank ?: 0}".also { binding.tvAnimeRanked.text = it }
         "Popularity #${data.popularity}".also { binding.tvAnimePopularity.text = it }
-        "Scored ${data.score ?: 0} by ${data.scored_by ?: 0} users".also { binding.tvAnimeScore.text = it }
+        "Scored ${data.score ?: 0} by ${data.scored_by ?: 0} users".also {
+            binding.tvAnimeScore.text = it
+        }
         "${data.members} members".also { binding.tvAnimeMembers.text = it }
 
         resetBackground(binding)

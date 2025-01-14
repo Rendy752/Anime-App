@@ -182,7 +182,9 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
                         is Resource.Error -> {
                             animeHeaderAdapter.setLoading(false)
                             binding.tvError.visibility = View.VISIBLE
-                            "An error occurred: ${response.message}".also { binding.tvError.text = it }
+                            "An error occurred: ${response.message}".also {
+                                binding.tvError.text = it
+                            }
                             Toast.makeText(
                                 requireContext(),
                                 "An error occurred: ${response.message}",

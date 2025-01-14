@@ -174,11 +174,21 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
 
             when (detail.airing) {
                 true -> {
-                    binding.tvAiredStatus.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_notifications_active_24dp, 0)
+                    binding.tvAiredStatus.setCompoundDrawablesWithIntrinsicBounds(
+                        0,
+                        0,
+                        R.drawable.ic_notifications_active_24dp,
+                        0
+                    )
                 }
 
                 false -> {
-                    binding.tvAiredStatus.setCompoundDrawablesWithIntrinsicBounds(0, 0, R.drawable.ic_done_24dp, 0)
+                    binding.tvAiredStatus.setCompoundDrawablesWithIntrinsicBounds(
+                        0,
+                        0,
+                        R.drawable.ic_done_24dp,
+                        0
+                    )
                 }
             }
 
@@ -225,7 +235,9 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
             binding.tvSynopsis.text = detail.synopsis ?: "-"
 
             if (detail.relations?.size!! > 0) {
-                if (detail.relations.size > 1) "${detail.relations.size} Relations".also { binding.tvRelation.text = it }
+                if (detail.relations.size > 1) "${detail.relations.size} Relations".also {
+                    binding.tvRelation.text = it
+                }
                 binding.rvRelations.apply {
                     adapter = RelationsAdapter(detail.relations) { animeId ->
                         Navigation.navigateToAnimeDetail(

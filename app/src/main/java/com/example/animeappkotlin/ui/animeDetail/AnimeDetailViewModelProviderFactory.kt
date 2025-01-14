@@ -6,7 +6,7 @@ import com.example.animeappkotlin.repository.AnimeDetailRepository
 
 class AnimeDetailViewModelProviderFactory(
     private val animeDetailRepository: AnimeDetailRepository
-): ViewModelProvider.Factory {
+) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         @Suppress("UNCHECKED_CAST")
         return AnimeDetailViewModel(animeDetailRepository) as T

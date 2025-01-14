@@ -37,6 +37,8 @@ class EntriesAdapter(
             } else {
                 AnimeHeaderUtils.handleNullData(holder.binding, relationItem.name)
             }
+            holder.binding.shimmerViewContainer.stopShimmer()
+            holder.binding.shimmerViewContainer.hideShimmer()
         }
     }
 
