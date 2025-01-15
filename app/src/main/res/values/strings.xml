@@ -43,5 +43,10 @@
     <string name="entry_type">Entry Type</string>
     <string name="entry_name">Entry Type</string>
     <string name="relation">Relation</string>
+    <string name="opening">Opening</string>
+    <string name="ending">Ending</string>
+    <string name="external">External</string>
+    <string name="streaming">Streaming</string>
     <string name="three_dots">…</string>
+    <string name="list">List</string>
 </resources>

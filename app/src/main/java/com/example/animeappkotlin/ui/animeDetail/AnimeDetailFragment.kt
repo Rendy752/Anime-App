@@ -20,7 +20,9 @@ import com.example.animeappkotlin.data.local.database.AnimeDetailDatabase
 import com.example.animeappkotlin.databinding.FragmentDetailBinding
 import com.example.animeappkotlin.models.AnimeDetailResponse
 import com.example.animeappkotlin.repository.AnimeDetailRepository
+import com.example.animeappkotlin.ui.common.NameAndUrlAdapter
 import com.example.animeappkotlin.ui.common.TitleSynonymsAdapter
+import com.example.animeappkotlin.ui.common.UnorderedListAdapter
 import com.example.animeappkotlin.utils.Navigation
 import com.example.animeappkotlin.utils.Resource
 import com.example.animeappkotlin.utils.TextUtils.formatSynopsis
@@ -254,10 +256,49 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                 binding.relationContainer.visibility = View.GONE
             }
 
-            binding.tvOpening.text = joinOrNA(detail.theme.openings) { it }
-            binding.tvEnding.text = joinOrNA(detail.theme.endings) { it }
-            binding.tvExternalLinks.text = joinOrNA(detail.external) { it.name }
-            binding.tvStreamingLinks.text = joinOrNA(detail.streaming) { it.name }
+            if (detail.theme.openings?.size!! > 0) {
+                binding.rvOpening.apply {
+                    adapter = detail.theme.openings.let { UnorderedListAdapter(it) }
+                    layoutManager = LinearLayoutManager(
+                        requireContext()
+                    )
+                }
+            } else {
+                binding.openingContainer.visibility = View.GONE
+            }
+
+            if (detail.theme.endings?.size!! > 0) {
+                binding.rvEnding.apply {
+                    adapter = detail.theme.endings.let { UnorderedListAdapter(it) }
+                    layoutManager = LinearLayoutManager(
+                        requireContext()
+                    )
+                }
+            } else {
+                binding.endingContainer.visibility = View.GONE
+            }
+
+            if (detail.external?.size!! > 0) {
+                binding.rvExternal.apply {
+                    adapter = detail.external.let { NameAndUrlAdapter(it) }
+                    layoutManager = LinearLayoutManager(
+                        requireContext()
+                    )
+                }
+            } else {
+                binding.externalContainer.visibility = View.GONE
+            }
+
+            if (detail.streaming?.size!! > 0) {
+                binding.rvStreaming.apply {
+                    adapter = detail.streaming.let { NameAndUrlAdapter(it) }
+                    layoutManager = LinearLayoutManager(
+                        requireContext()
+                    )
+                }
+            } else {
+                binding.streamingContainer.visibility = View.GONE
+            }
         }
     }
 
