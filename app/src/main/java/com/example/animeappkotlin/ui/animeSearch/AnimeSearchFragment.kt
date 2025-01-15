@@ -39,12 +39,8 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
 
     private lateinit var animeHeaderAdapter: AnimeHeaderAdapter
 
-    private val debounce = Debounce(lifecycleScope) { query ->
-        viewModel.updateQuery(query)
-    }
-
     private val viewModel: AnimeSearchViewModel by viewModels {
-        val animeSearchRepository = AnimeSearchRepository(api = RetrofitInstance.api)
+        val animeSearchRepository = AnimeSearchRepository(RetrofitInstance.api)
         AnimeSearchViewModelProviderFactory(animeSearchRepository)
     }
 
@@ -92,6 +88,13 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
     }
 
     private fun setupSearchView() {
+        val debounce = Debounce(
+            lifecycleScope,
+            1000L,
+            { query -> viewModel.updateQuery(query) },
+            viewModel
+        )
+
         binding.searchView.setOnQueryTextListener(object :
             androidx.appcompat.widget.SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {

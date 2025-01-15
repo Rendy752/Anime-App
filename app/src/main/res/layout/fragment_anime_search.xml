@@ -19,9 +19,7 @@
         app:layout_constraintTop_toTopOf="parent"
         app:queryHint="@string/search_anime"
         app:searchHintIcon="@null"
-        app:searchIcon="@drawable/ic_search_blue_24dp">
-
-    </androidx.appcompat.widget.SearchView>
+        app:searchIcon="@drawable/ic_search_blue_24dp" />
 
     <TextView
         android:id="@+id/tvError"
@@ -33,7 +31,7 @@
         app:layout_constraintBottom_toTopOf="@id/subMenuContainer"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/searchView"/>
+        app:layout_constraintTop_toBottomOf="@id/searchView" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvAnimeSearch"
@@ -58,9 +56,9 @@
 
     <include
         android:id="@+id/subMenuContainer"
+        layout="@layout/limit_and_pagination"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        layout="@layout/limit_and_pagination"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
