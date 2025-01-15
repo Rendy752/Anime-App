@@ -20,6 +20,7 @@ import com.example.animeappkotlin.data.local.database.AnimeDetailDatabase
 import com.example.animeappkotlin.databinding.FragmentDetailBinding
 import com.example.animeappkotlin.models.AnimeDetailResponse
 import com.example.animeappkotlin.repository.AnimeDetailRepository
+import com.example.animeappkotlin.ui.common.NameAndUrlAdapter
 import com.example.animeappkotlin.ui.common.TitleSynonymsAdapter
 import com.example.animeappkotlin.ui.common.UnorderedListAdapter
 import com.example.animeappkotlin.utils.Navigation
@@ -275,6 +276,28 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                 }
             } else {
                 binding.endingContainer.visibility = View.GONE
+            }
+
+            if (detail.external?.size!! > 0) {
+                binding.rvExternal.apply {
+                    adapter = detail.external.let { NameAndUrlAdapter(it) }
+                    layoutManager = LinearLayoutManager(
+                        requireContext()
+                    )
+                }
+            } else {
+                binding.externalContainer.visibility = View.GONE
+            }
+
+            if (detail.streaming?.size!! > 0) {
+                binding.rvStreaming.apply {
+                    adapter = detail.streaming.let { NameAndUrlAdapter(it) }
+                    layoutManager = LinearLayoutManager(
+                        requireContext()
+                    )
+                }
+            } else {
+                binding.streamingContainer.visibility = View.GONE
             }
         }
     }
