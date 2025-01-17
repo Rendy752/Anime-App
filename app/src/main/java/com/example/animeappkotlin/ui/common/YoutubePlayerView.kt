@@ -25,7 +25,7 @@ class YoutubePlayerView @JvmOverloads constructor(
                 <head>
                     <style>
                         body { margin: 0; }
-                        iframe { display: block; width: 100%; height: 100%; border: none; }
+                        iframe { display: block; width: 100%; height: calc(100vw / 1.7777); border: none; }
                     </style>
                 </head>
                 <body>
