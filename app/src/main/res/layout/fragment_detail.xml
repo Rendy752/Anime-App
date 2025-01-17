@@ -72,10 +72,11 @@
                         <TextView
                             android:id="@+id/tvTitle"
                             style="@style/AnimeTitle.Primary"
-                            android:textColor="@android:color/holo_blue_light"
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
-                            android:layout_weight="1" />
+                            android:layout_weight="1"
+                            android:longClickable="true"
+                            android:textColor="@android:color/holo_blue_light" />
 
                         <ImageView
                             android:id="@+id/ivApproved"

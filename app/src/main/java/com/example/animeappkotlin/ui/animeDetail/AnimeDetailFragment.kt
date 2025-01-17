@@ -1,15 +1,20 @@
 package com.example.animeappkotlin.ui.animeDetail
 
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
-import androidx.core.view.MenuProvider
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
+import androidx.core.content.ContextCompat
+import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -27,6 +32,7 @@ import com.example.animeappkotlin.utils.Navigation
 import com.example.animeappkotlin.utils.Resource
 import com.example.animeappkotlin.utils.TextUtils.formatSynopsis
 import com.example.animeappkotlin.utils.TextUtils.joinOrNA
+
 
 class AnimeDetailFragment : Fragment(), MenuProvider {
     private var _binding: FragmentDetailBinding? = null
@@ -155,6 +161,13 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                     startActivity(intent)
                 }
             }
+            binding.tvTitle.setOnLongClickListener {
+                val clipboard =
+                    ContextCompat.getSystemService(requireContext(), ClipboardManager::class.java)
+                val clip = ClipData.newPlainText("Anime Title", binding.tvTitle.text.toString())
+                clipboard?.setPrimaryClip(clip)
+                true
+            };
             binding.tvEnglishTitle.text = detail.title_english
             binding.tvJapaneseTitle.text = detail.title_japanese
             binding.rvTitleSynonyms.apply {
