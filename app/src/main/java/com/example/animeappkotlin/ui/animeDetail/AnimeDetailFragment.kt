@@ -1,15 +1,18 @@
 package com.example.animeappkotlin.ui.animeDetail
 
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
-import androidx.core.view.MenuProvider
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import androidx.core.content.ContextCompat
+import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
@@ -23,10 +26,12 @@ import com.example.animeappkotlin.repository.AnimeDetailRepository
 import com.example.animeappkotlin.ui.common.NameAndUrlAdapter
 import com.example.animeappkotlin.ui.common.TitleSynonymsAdapter
 import com.example.animeappkotlin.ui.common.UnorderedListAdapter
+import com.example.animeappkotlin.utils.Const.Companion.YOUTUBE_URL
 import com.example.animeappkotlin.utils.Navigation
 import com.example.animeappkotlin.utils.Resource
 import com.example.animeappkotlin.utils.TextUtils.formatSynopsis
 import com.example.animeappkotlin.utils.TextUtils.joinOrNA
+
 
 class AnimeDetailFragment : Fragment(), MenuProvider {
     private var _binding: FragmentDetailBinding? = null
@@ -155,6 +160,13 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                     startActivity(intent)
                 }
             }
+            binding.tvTitle.setOnLongClickListener {
+                val clipboard =
+                    ContextCompat.getSystemService(requireContext(), ClipboardManager::class.java)
+                val clip = ClipData.newPlainText("Anime Title", binding.tvTitle.text.toString())
+                clipboard?.setPrimaryClip(clip)
+                true
+            }
             binding.tvEnglishTitle.text = detail.title_english
             binding.tvJapaneseTitle.text = detail.title_japanese
             binding.rvTitleSynonyms.apply {
@@ -258,7 +270,14 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
 
             if (detail.theme.openings?.size!! > 0) {
                 binding.rvOpening.apply {
-                    adapter = detail.theme.openings.let { UnorderedListAdapter(it) }
+                    adapter = detail.theme.openings.let {
+                        UnorderedListAdapter(it) { opening ->
+                            val encodedOpening = Uri.encode(opening)
+                            val youtubeSearchUrl = "${YOUTUBE_URL}results?search_query=$encodedOpening"
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(youtubeSearchUrl))
+                            startActivity(intent)
+                        }
+                    }
                     layoutManager = LinearLayoutManager(
                         requireContext()
                     )
@@ -269,7 +288,16 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
 
             if (detail.theme.endings?.size!! > 0) {
                 binding.rvEnding.apply {
-                    adapter = detail.theme.endings.let { UnorderedListAdapter(it) }
+                    adapter = detail.theme.endings.let {
+                        UnorderedListAdapter(it)
+                        { ending ->
+                            val encodedEnding = Uri.encode(ending)
+                            val youtubeSearchUrl = "${YOUTUBE_URL}results?search_query=$encodedEnding"
+                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(youtubeSearchUrl))
+                            startActivity(intent)
+                            startActivity(intent)
+                        }
+                    }
                     layoutManager = LinearLayoutManager(
                         requireContext()
                     )
@@ -280,7 +308,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
 
             if (detail.external?.size!! > 0) {
                 binding.rvExternal.apply {
-                    adapter = detail.external.let { NameAndUrlAdapter(it) }
+                    adapter = NameAndUrlAdapter(detail.external)
                     layoutManager = LinearLayoutManager(
                         requireContext()
                     )
@@ -291,7 +319,8 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
 
             if (detail.streaming?.size!! > 0) {
                 binding.rvStreaming.apply {
-                    adapter = detail.streaming.let { NameAndUrlAdapter(it) }
+                    adapter =
+                        NameAndUrlAdapter(detail.streaming)
                     layoutManager = LinearLayoutManager(
                         requireContext()
                     )
