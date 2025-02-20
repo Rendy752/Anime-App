@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">AnimeAppKotlin</string>
+    <string name="app_name">AnimeApp</string>
     <string name="title_recommendation">Recommendation</string>
     <string name="title_search">Search</string>
     <string name="title_settings">Settings</string>
