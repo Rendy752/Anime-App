@@ -11,8 +11,8 @@
         android:label="@string/title_recommendation"
         tools:layout="@layout/fragment_recommendation">
         <action
-            android:id="@+id/animeRecommendationsFragment_to_aboutFragment"
-            app:destination="@id/aboutFragment" />
+            android:id="@+id/animeRecommendationsFragment_to_settingsFragment"
+            app:destination="@id/settingsFragment" />
         <action
             android:id="@+id/action_animeRecommendationsFragment_to_animeDetailFragment"
             app:destination="@id/animeDetailFragment" />
@@ -29,10 +29,10 @@
     </fragment>
 
     <fragment
-        android:id="@+id/aboutFragment"
-        android:name="com.example.animeappkotlin.ui.about.AboutFragment"
-        android:label="@string/title_about"
-        tools:layout="@layout/fragment_about" />
+        android:id="@+id/settingsFragment"
+        android:name="com.example.animeappkotlin.ui.settings.SettingsFragment"
+        android:label="@string/title_settings"
+        tools:layout="@layout/fragment_settings" />
 
     <fragment
         android:id="@+id/animeDetailFragment"
