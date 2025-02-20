@@ -21,6 +21,7 @@ import com.example.animeappkotlin.data.remote.api.RetrofitInstance
 import com.example.animeappkotlin.databinding.ActivityMainBinding
 import com.example.animeappkotlin.utils.Navigation
 import com.example.animeappkotlin.utils.ShakeDetector
+import com.example.animeappkotlin.utils.Theme
 import com.google.android.material.bottomnavigation.BottomNavigationView
 
 class MainActivity : AppCompatActivity() {
@@ -32,6 +33,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setupSplashScreen()
+        setupTheme()
         setupSensor()
         setupViewBinding()
         setupNavigation()
@@ -40,6 +42,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupSplashScreen() {
         installSplashScreen()
+    }
+
+    private fun setupTheme() {
+        val sharedPrefs = getSharedPreferences("theme_prefs", Context.MODE_PRIVATE)
+        val isDarkMode = sharedPrefs.getBoolean("is_dark_mode", false)
+        Theme.setTheme(isDarkMode)
     }
 
     private fun setupSensor() {
@@ -59,7 +67,7 @@ class MainActivity : AppCompatActivity() {
             setOf(
                 R.id.animeRecommendationsFragment,
                 R.id.animeSearchFragment,
-                R.id.aboutFragment
+                R.id.settingsFragment
             )
         )
         setupActionBarWithNavController(navController, appBarConfiguration)
