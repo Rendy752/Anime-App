@@ -24,14 +24,16 @@ class RelationsAdapter(
 
     override fun onBindViewHolder(holder: RelationViewHolder, position: Int) {
         val relation = relations?.getOrNull(position)
-        relation?.let {
-            "${relation.entry.size} ${relation.relation}".also {
-                holder.binding.tvRelationName.text = it
-            }
-            val relationItemsAdapter = EntriesAdapter(relation, onItemClickListener)
-            holder.binding.rvRelationItems.apply {
-                adapter = relationItemsAdapter
-                layoutManager = LinearLayoutManager(holder.itemView.context)
+        holder.binding.apply {
+            relation?.let {
+                "${relation.entry.size} ${relation.relation}".also {
+                    tvRelationName.text = it
+                }
+                val relationItemsAdapter = EntriesAdapter(relation, onItemClickListener)
+                rvRelationItems.apply {
+                    adapter = relationItemsAdapter
+                    layoutManager = LinearLayoutManager(holder.itemView.context)
+                }
             }
         }
     }

@@ -146,208 +146,222 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
     }
 
     private fun handleSuccess(response: Resource.Success<AnimeDetailResponse>) {
-        binding.shimmerViewContainer.stopShimmer()
-        binding.shimmerViewContainer.hideShimmer()
-        binding.tvError.visibility = View.GONE
+        binding.apply {
+            shimmerViewContainer.stopShimmer()
+            shimmerViewContainer.hideShimmer()
+            tvError.visibility = View.GONE
 
-        response.data?.data?.let { detail ->
-            Glide.with(this).load(detail.images.jpg.large_image_url)
-                .into(binding.ivAnimeImage)
-            binding.tvTitle.text = detail.title
-            binding.tvTitle.setOnClickListener {
-                viewModel.animeDetail.value?.data?.data?.let { detail ->
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(detail.url))
-                    startActivity(intent)
-                }
-            }
-            binding.tvTitle.setOnLongClickListener {
-                val clipboard =
-                    ContextCompat.getSystemService(requireContext(), ClipboardManager::class.java)
-                val clip = ClipData.newPlainText("Anime Title", binding.tvTitle.text.toString())
-                clipboard?.setPrimaryClip(clip)
-                true
-            }
-            binding.tvEnglishTitle.text = detail.title_english
-            binding.tvJapaneseTitle.text = detail.title_japanese
-            binding.rvTitleSynonyms.apply {
-                adapter = detail.title_synonyms?.let { TitleSynonymsAdapter(it.toList()) }
-                layoutManager = LinearLayoutManager(
-                    requireContext(), LinearLayoutManager.HORIZONTAL, false
-                )
-            }
-
-            when (detail.approved) {
-                true -> {
-                    binding.ivApproved.visibility = View.VISIBLE
-                }
-
-                false -> {
-                    binding.ivApproved.visibility = View.GONE
-                }
-            }
-
-            when (detail.airing) {
-                true -> {
-                    binding.tvAiredStatus.setCompoundDrawablesWithIntrinsicBounds(
-                        0,
-                        0,
-                        R.drawable.ic_notifications_active_24dp,
-                        0
-                    )
-                }
-
-                false -> {
-                    binding.tvAiredStatus.setCompoundDrawablesWithIntrinsicBounds(
-                        0,
-                        0,
-                        R.drawable.ic_done_24dp,
-                        0
-                    )
-                }
-            }
-
-            binding.tvStatus.text = detail.status
-            binding.tvType.text = detail.type
-            binding.tvSource.text = detail.source
-            binding.tvSeason.text = detail.season ?: "-"
-            binding.tvReleased.text = detail.year?.toString() ?: "-"
-            binding.tvAired.text = detail.aired.string
-            binding.tvRating.text = detail.rating ?: "Unknown"
-            binding.tvGenres.text = joinOrNA(detail.genres) { it.name }
-            detail.episodes.toString().also { binding.tvEpisodes.text = it }
-
-            binding.tvStudios.text = joinOrNA(detail.studios) { it.name }
-            binding.tvProducers.text = joinOrNA(detail.producers) { it.name }
-            binding.tvLicensors.text = joinOrNA(detail.licensors) { it.name }
-            binding.tvBroadcast.text = detail.broadcast.string ?: "-"
-            binding.tvDuration.text = detail.duration
-
-            val embedUrl = detail.trailer.embed_url ?: ""
-            if (embedUrl.isNotEmpty()) {
-                binding.llYoutubePreview.visibility = View.VISIBLE
-                binding.youtubePlayerView.playVideo(embedUrl)
-            }
-
-            binding.tvScore.text = detail.score?.toString() ?: "0"
-            binding.tvScoredBy.text =
-                resources.getString(R.string.scored_by_users, detail.scored_by ?: 0)
-            binding.tvRanked.text = resources.getString(R.string.ranked_number, detail.rank ?: 0)
-            binding.tvPopularity.text =
-                resources.getString(R.string.popularity_number, detail.popularity)
-            detail.members.toString().also { binding.tvMembers.text = it }
-            detail.favorites.toString().also { binding.tvFavorites.text = it }
-
-            detail.background?.let { background ->
-                if (background.isNotBlank()) {
-                    binding.llBackground.visibility = View.VISIBLE
-                    binding.tvBackground.text = background
-                } else {
-                    binding.llBackground.visibility = View.GONE
-                }
-            }
-
-            binding.tvSynopsis.text = detail.synopsis ?: "-"
-
-            if (detail.relations?.size!! > 0) {
-                if (detail.relations.size > 1) "${detail.relations.size} Relations".also {
-                    binding.tvRelation.text = it
-                }
-                binding.rvRelations.apply {
-                    adapter = RelationsAdapter(detail.relations) { animeId ->
-                        Navigation.navigateToAnimeDetail(
-                            this@AnimeDetailFragment,
-                            animeId,
-                            R.id.action_animeDetailFragment_self
-                        )
+            response.data?.data?.let { detail ->
+                Glide.with(requireContext()).load(detail.images.jpg.large_image_url)
+                    .into(ivAnimeImage)
+                tvTitle.text = detail.title
+                tvTitle.setOnClickListener {
+                    viewModel.animeDetail.value?.data?.data?.let { detail ->
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(detail.url))
+                        startActivity(intent)
                     }
+                }
+                tvTitle.setOnLongClickListener {
+                    val clipboard =
+                        ContextCompat.getSystemService(
+                            requireContext(),
+                            ClipboardManager::class.java
+                        )
+                    val clip = ClipData.newPlainText("Anime Title", tvTitle.text.toString())
+                    clipboard?.setPrimaryClip(clip)
+                    true
+                }
+                tvEnglishTitle.text = detail.title_english
+                tvJapaneseTitle.text = detail.title_japanese
+                rvTitleSynonyms.apply {
+                    adapter = detail.title_synonyms?.let { TitleSynonymsAdapter(it.toList()) }
                     layoutManager = LinearLayoutManager(
                         requireContext(), LinearLayoutManager.HORIZONTAL, false
                     )
                 }
-            } else {
-                binding.relationContainer.visibility = View.GONE
-            }
 
-            if (detail.theme.openings?.size!! > 0) {
-                binding.rvOpening.apply {
-                    adapter = detail.theme.openings.let {
-                        UnorderedListAdapter(it) { opening ->
-                            val encodedOpening = Uri.encode(opening)
-                            val youtubeSearchUrl = "${YOUTUBE_URL}results?search_query=$encodedOpening"
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(youtubeSearchUrl))
-                            startActivity(intent)
-                        }
+                when (detail.approved) {
+                    true -> {
+                        ivApproved.visibility = View.VISIBLE
                     }
-                    layoutManager = LinearLayoutManager(
-                        requireContext()
-                    )
-                }
-            } else {
-                binding.openingContainer.visibility = View.GONE
-            }
 
-            if (detail.theme.endings?.size!! > 0) {
-                binding.rvEnding.apply {
-                    adapter = detail.theme.endings.let {
-                        UnorderedListAdapter(it)
-                        { ending ->
-                            val encodedEnding = Uri.encode(ending)
-                            val youtubeSearchUrl = "${YOUTUBE_URL}results?search_query=$encodedEnding"
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(youtubeSearchUrl))
-                            startActivity(intent)
-                            startActivity(intent)
-                        }
+                    false -> {
+                        ivApproved.visibility = View.GONE
                     }
-                    layoutManager = LinearLayoutManager(
-                        requireContext()
-                    )
                 }
-            } else {
-                binding.endingContainer.visibility = View.GONE
-            }
 
-            if (detail.external?.size!! > 0) {
-                binding.rvExternal.apply {
-                    adapter = NameAndUrlAdapter(detail.external)
-                    layoutManager = LinearLayoutManager(
-                        requireContext()
-                    )
-                }
-            } else {
-                binding.externalContainer.visibility = View.GONE
-            }
+                when (detail.airing) {
+                    true -> {
+                        tvAiredStatus.setCompoundDrawablesWithIntrinsicBounds(
+                            0,
+                            0,
+                            R.drawable.ic_notifications_active_24dp,
+                            0
+                        )
+                    }
 
-            if (detail.streaming?.size!! > 0) {
-                binding.rvStreaming.apply {
-                    adapter =
-                        NameAndUrlAdapter(detail.streaming)
-                    layoutManager = LinearLayoutManager(
-                        requireContext()
-                    )
+                    false -> {
+                        tvAiredStatus.setCompoundDrawablesWithIntrinsicBounds(
+                            0,
+                            0,
+                            R.drawable.ic_done_24dp,
+                            0
+                        )
+                    }
                 }
-            } else {
-                binding.streamingContainer.visibility = View.GONE
+
+                tvStatus.text = detail.status
+                tvType.text = detail.type
+                tvSource.text = detail.source
+                tvSeason.text = detail.season ?: "-"
+                tvReleased.text = detail.year?.toString() ?: "-"
+                tvAired.text = detail.aired.string
+                tvRating.text = detail.rating ?: "Unknown"
+                tvGenres.text = joinOrNA(detail.genres) { it.name }
+                detail.episodes.toString().also { tvEpisodes.text = it }
+
+                tvStudios.text = joinOrNA(detail.studios) { it.name }
+                tvProducers.text = joinOrNA(detail.producers) { it.name }
+                tvLicensors.text = joinOrNA(detail.licensors) { it.name }
+                tvBroadcast.text = detail.broadcast.string ?: "-"
+                tvDuration.text = detail.duration
+
+                val embedUrl = detail.trailer.embed_url ?: ""
+                if (embedUrl.isNotEmpty()) {
+                    llYoutubePreview.visibility = View.VISIBLE
+                    youtubePlayerView.playVideo(embedUrl)
+                }
+
+                tvScore.text = detail.score?.toString() ?: "0"
+                tvScoredBy.text =
+                    resources.getString(R.string.scored_by_users, detail.scored_by ?: 0)
+                tvRanked.text =
+                    resources.getString(R.string.ranked_number, detail.rank ?: 0)
+                tvPopularity.text =
+                    resources.getString(R.string.popularity_number, detail.popularity)
+                detail.members.toString().also { tvMembers.text = it }
+                detail.favorites.toString().also { tvFavorites.text = it }
+
+                detail.background?.let { background ->
+                    if (background.isNotBlank()) {
+                        llBackground.visibility = View.VISIBLE
+                        tvBackground.text = background
+                    } else {
+                        llBackground.visibility = View.GONE
+                    }
+                }
+
+                tvSynopsis.text = detail.synopsis ?: "-"
+
+                if (detail.relations?.size!! > 0) {
+                    if (detail.relations.size > 1) "${detail.relations.size} Relations".also {
+                        tvRelation.text = it
+                    }
+                    rvRelations.apply {
+                        adapter = RelationsAdapter(detail.relations) { animeId ->
+                            Navigation.navigateToAnimeDetail(
+                                this@AnimeDetailFragment,
+                                animeId,
+                                R.id.action_animeDetailFragment_self
+                            )
+                        }
+                        layoutManager = LinearLayoutManager(
+                            requireContext(), LinearLayoutManager.HORIZONTAL, false
+                        )
+                    }
+                } else {
+                    relationContainer.visibility = View.GONE
+                }
+
+                if (detail.theme.openings?.size!! > 0) {
+                    rvOpening.apply {
+                        adapter = detail.theme.openings.let {
+                            UnorderedListAdapter(it) { opening ->
+                                val encodedOpening = Uri.encode(opening)
+                                val youtubeSearchUrl =
+                                    "${YOUTUBE_URL}results?search_query=$encodedOpening"
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(youtubeSearchUrl))
+                                startActivity(intent)
+                            }
+                        }
+                        layoutManager = LinearLayoutManager(
+                            requireContext()
+                        )
+                    }
+                } else {
+                    openingContainer.visibility = View.GONE
+                }
+
+                if (detail.theme.endings?.size!! > 0) {
+                    rvEnding.apply {
+                        adapter = detail.theme.endings.let {
+                            UnorderedListAdapter(it)
+                            { ending ->
+                                val encodedEnding = Uri.encode(ending)
+                                val youtubeSearchUrl =
+                                    "${YOUTUBE_URL}results?search_query=$encodedEnding"
+                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(youtubeSearchUrl))
+                                startActivity(intent)
+                                startActivity(intent)
+                            }
+                        }
+                        layoutManager = LinearLayoutManager(
+                            requireContext()
+                        )
+                    }
+                } else {
+                    endingContainer.visibility = View.GONE
+                }
+
+                if (detail.external?.size!! > 0) {
+                    rvExternal.apply {
+                        adapter = NameAndUrlAdapter(detail.external)
+                        layoutManager = LinearLayoutManager(
+                            requireContext()
+                        )
+                    }
+                } else {
+                    externalContainer.visibility = View.GONE
+                }
+
+                if (detail.streaming?.size!! > 0) {
+                    rvStreaming.apply {
+                        adapter =
+                            NameAndUrlAdapter(detail.streaming)
+                        layoutManager = LinearLayoutManager(
+                            requireContext()
+                        )
+                    }
+                } else {
+                    streamingContainer.visibility = View.GONE
+                }
             }
         }
     }
 
     private fun handleError(response: Resource.Error<AnimeDetailResponse>) {
-        binding.shimmerViewContainer.stopShimmer()
-        binding.shimmerViewContainer.hideShimmer()
-        binding.tvError.visibility = View.VISIBLE
-        "An error occurred: ${response.message}".also { binding.tvError.text = it }
+        binding.apply {
+            shimmerViewContainer.stopShimmer()
+            shimmerViewContainer.hideShimmer()
+            tvError.visibility = View.VISIBLE
+            "An error occurred: ${response.message}".also { tvError.text = it }
+        }
     }
 
     private fun handleLoading() {
-        binding.shimmerViewContainer.showShimmer(true)
-        binding.shimmerViewContainer.startShimmer()
+        binding.apply {
+            shimmerViewContainer.showShimmer(true)
+            shimmerViewContainer.startShimmer()
+        }
     }
 
     private fun handleEmpty() {
-        binding.shimmerViewContainer.stopShimmer()
-        binding.shimmerViewContainer.hideShimmer()
-        binding.tvError.visibility = View.VISIBLE
-        "An error occurred while fetching the anime detail.".also { binding.tvError.text = it }
+        binding.apply {
+            shimmerViewContainer.stopShimmer()
+            shimmerViewContainer.hideShimmer()
+            tvError.visibility = View.VISIBLE
+            "No results found".also { tvError.text = it }
+        }
     }
 
     override fun onDestroyView() {

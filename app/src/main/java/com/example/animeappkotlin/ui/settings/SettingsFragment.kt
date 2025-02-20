@@ -30,11 +30,13 @@ class SettingsFragment : Fragment() {
     private fun setupTheme() {
         val themePrefs = requireActivity().getSharedPreferences("theme_prefs", Context.MODE_PRIVATE)
         val isDarkMode = themePrefs.getBoolean("is_dark_mode", false)
-        binding.switchDarkMode.isChecked = isDarkMode
-        Theme.setTheme(isDarkMode)
-        binding.switchDarkMode.setOnCheckedChangeListener { _, isChecked ->
-            Theme.setTheme(isChecked)
-            themePrefs.edit().putBoolean("is_dark_mode", isChecked).apply()
+        binding.apply {
+            switchDarkMode.isChecked = isDarkMode
+            Theme.setTheme(isDarkMode)
+            switchDarkMode.setOnCheckedChangeListener { _, isChecked ->
+                Theme.setTheme(isChecked)
+                themePrefs.edit().putBoolean("is_dark_mode", isChecked).apply()
+            }
         }
     }
 

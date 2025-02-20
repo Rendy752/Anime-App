@@ -18,10 +18,12 @@ class UnorderedListAdapter(private val item: List<String>, private val onItemCli
     }
 
     override fun onBindViewHolder(holder: UnorderedListViewHolder, position: Int) {
-        holder.binding.tvListItem.text = item[position]
-        if (onItemClick != null) holder.binding.tvListItem.setTextColor(holder.itemView.context.getColor(android.R.color.holo_blue_light))
-        holder.binding.root.setOnClickListener {
-            onItemClick?.invoke(item[position])
+        holder.binding.apply {
+            tvListItem.text = item[position]
+            if (onItemClick != null) tvListItem.setTextColor(holder.itemView.context.getColor(android.R.color.holo_blue_light))
+            root.setOnClickListener {
+                onItemClick?.invoke(item[position])
+            }
         }
     }
 

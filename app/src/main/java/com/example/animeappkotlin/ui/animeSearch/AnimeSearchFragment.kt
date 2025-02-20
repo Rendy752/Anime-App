@@ -161,42 +161,44 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
         lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.animeSearchResults.collectLatest { response ->
-                    when (response) {
-                        is Resource.Success -> {
-                            response.data?.let { searchResponse ->
-                                animeHeaderAdapter.setLoading(false)
+                    binding.apply {
 
-                                if (searchResponse.data.isEmpty()) {
-                                    binding.tvError.visibility = View.VISIBLE
-                                    "No results found".also { binding.tvError.text = it }
-                                } else {
-                                    updatePagination(response.data.pagination)
+                        when (response) {
+                            is Resource.Success -> {
+                                response.data?.let { searchResponse ->
+                                    animeHeaderAdapter.setLoading(false)
+                                    if (searchResponse.data.isEmpty()) {
+                                        tvError.visibility = View.VISIBLE
+                                        "No results found".also { tvError.text = it }
+                                    } else {
+                                        updatePagination(response.data.pagination)
 
-                                    binding.subMenuContainer.limitSpinner.adapter
-                                    val limitIndex =
-                                        Limit.limitOptions.indexOf(viewModel.queryState.value.limit)
-                                    binding.subMenuContainer.limitSpinner.setSelection(if (limitIndex == -1) 0 else limitIndex)
+                                        subMenuContainer.limitSpinner.adapter
+                                        val limitIndex =
+                                            Limit.limitOptions.indexOf(viewModel.queryState.value.limit)
+                                        subMenuContainer.limitSpinner.setSelection(if (limitIndex == -1) 0 else limitIndex)
 
-                                    animeHeaderAdapter.differ.submitList(searchResponse.data)
+                                        animeHeaderAdapter.differ.submitList(searchResponse.data)
+                                    }
                                 }
                             }
-                        }
 
-                        is Resource.Error -> {
-                            animeHeaderAdapter.setLoading(false)
-                            binding.tvError.visibility = View.VISIBLE
-                            "An error occurred: ${response.message}".also {
-                                binding.tvError.text = it
+                            is Resource.Error -> {
+                                animeHeaderAdapter.setLoading(false)
+                                tvError.visibility = View.VISIBLE
+                                "An error occurred: ${response.message}".also {
+                                    tvError.text = it
+                                }
+                                Toast.makeText(
+                                    requireContext(),
+                                    "An error occurred: ${response.message}",
+                                    Toast.LENGTH_LONG
+                                ).show()
                             }
-                            Toast.makeText(
-                                requireContext(),
-                                "An error occurred: ${response.message}",
-                                Toast.LENGTH_LONG
-                            ).show()
-                        }
 
-                        is Resource.Loading -> {
-                            animeHeaderAdapter.setLoading(true)
+                            is Resource.Loading -> {
+                                animeHeaderAdapter.setLoading(true)
+                            }
                         }
                     }
                 }
@@ -211,15 +213,17 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
     }
 
     private fun updatePagination(pagination: CompletePagination?) {
-        Pagination.setPaginationButtons(
-            binding.subMenuContainer.paginationButtonContainer,
-            pagination,
-            onPaginationClick = { pageNumber ->
-                viewModel.updatePage(pageNumber)
-            }
-        )
-        binding.subMenuContainer.paginationButtonContainer.visibility =
-            if (pagination == null) View.GONE else View.VISIBLE
+        binding.apply {
+            Pagination.setPaginationButtons(
+                subMenuContainer.paginationButtonContainer,
+                pagination,
+                onPaginationClick = { pageNumber ->
+                    viewModel.updatePage(pageNumber)
+                }
+            )
+            subMenuContainer.paginationButtonContainer.visibility =
+                if (pagination == null) View.GONE else View.VISIBLE
+        }
     }
 
     override fun onDestroyView() {

@@ -21,13 +21,15 @@ class NameAndUrlAdapter(private val item: List<NameAndUrl>) :
     }
 
     override fun onBindViewHolder(holder: UnorderedListViewHolder, position: Int) {
-        holder.binding.tvListItem.text = item[position].name
-        holder.binding.tvListItem.setTextColor(holder.itemView.context.getColor(android.R.color.holo_blue_light))
-        holder.binding.tvListItem.textSize = 16f
-        holder.binding.tvListItem.setOnClickListener {
-            item[position].url.let { url ->
-                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                holder.itemView.context.startActivity(intent)
+        holder.binding.apply {
+            tvListItem.text = item[position].name
+            tvListItem.setTextColor(holder.itemView.context.getColor(android.R.color.holo_blue_light))
+            tvListItem.textSize = 16f
+            tvListItem.setOnClickListener {
+                item[position].url.let { url ->
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                    holder.itemView.context.startActivity(intent)
+                }
             }
         }
     }
