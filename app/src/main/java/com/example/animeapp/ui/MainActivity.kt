@@ -9,6 +9,9 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
@@ -45,10 +48,14 @@ class MainActivity : AppCompatActivity() {
         installSplashScreen()
     }
 
-    private fun setupTheme() {
+    private fun isDarkMode(): Boolean {
         val sharedPrefs = getSharedPreferences("theme_prefs", Context.MODE_PRIVATE)
         val isDarkMode = sharedPrefs.getBoolean("is_dark_mode", false)
-        Theme.setTheme(isDarkMode)
+        return isDarkMode
+    }
+
+    private fun setupTheme() {
+        Theme.setTheme(this, isDarkMode())
     }
 
     private fun setupSensor() {
@@ -62,6 +69,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setupNavigation() {
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { view, insets ->
+            val systemBarsInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.updatePadding(
+                left = systemBarsInsets.left,
+                top = systemBarsInsets.top,
+                right = systemBarsInsets.right,
+            )
+            insets
+        }
+
         val navView: BottomNavigationView = binding.navView
         val navController = findNavController(R.id.nav_host_fragment_activity_main)
         val appBarConfiguration = AppBarConfiguration(
@@ -71,6 +88,7 @@ class MainActivity : AppCompatActivity() {
                 R.id.settingsFragment
             )
         )
+
         setupActionBarWithNavController(navController, appBarConfiguration)
         navView.setupWithNavController(navController)
     }

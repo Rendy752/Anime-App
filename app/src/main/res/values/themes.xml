@@ -1,11 +1,23 @@
 <resources>
 
-    <style name="AppTheme" parent="Theme.MaterialComponents.Light.DarkActionBar" />
+    <style name="AppTheme" parent="Theme.MaterialComponents.Light.DarkActionBar">
+        <item name="actionBarTheme">@style/CustomActionBarStyle.Light</item>
+        <item name="android:actionBarStyle">@style/CustomActionBarStyle.Light</item>
+    </style>
 
     <style name="Theme.App.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/nightTextColorPrimary</item>
         <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_app_icon_round</item>
         <item name="postSplashScreenTheme">@style/AppTheme</item>
+    </style>
+
+    <style name="CustomActionBarStyle.Light" parent="ThemeOverlay.AppCompat.ActionBar">
+        <item name="android:background">?android:attr/windowBackground</item>
+        <item name="titleTextStyle">@style/CustomActionBarTitleTextStyle.Light</item>
+    </style>
+
+    <style name="CustomActionBarTitleTextStyle.Light" parent="TextAppearance.AppCompat.Widget.ActionBar.Title">
+        <item name="android:textColor">?attr/colorOnSurface</item>
     </style>
 
     <style name="container">

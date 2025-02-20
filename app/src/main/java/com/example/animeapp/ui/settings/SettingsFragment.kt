@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import com.example.animeapp.databinding.FragmentSettingsBinding
 import com.example.animeapp.utils.Theme
@@ -32,9 +33,10 @@ class SettingsFragment : Fragment() {
         val isDarkMode = themePrefs.getBoolean("is_dark_mode", false)
         binding.apply {
             switchDarkMode.isChecked = isDarkMode
-            Theme.setTheme(isDarkMode)
+            val activity = requireActivity() as AppCompatActivity
+            Theme.setTheme(activity, isDarkMode)
             switchDarkMode.setOnCheckedChangeListener { _, isChecked ->
-                Theme.setTheme(isChecked)
+                Theme.setTheme(activity, isChecked)
                 themePrefs.edit().putBoolean("is_dark_mode", isChecked).apply()
             }
         }
