@@ -97,7 +97,11 @@ class AnimeSearchViewModel(
     fun applyFilters(filters: Map<String, Any?>) {
         _filterState.value = AnimeFilterState(
             type = filters["type"] as? String,
-            score = filters["score"] as? Double,
+            score = if (filters["minScore"] != null || filters["maxScore"] != null) {
+                null
+            } else {
+                filters["score"] as? Double
+            },
             minScore = filters["minScore"] as? Double,
             maxScore = filters["maxScore"] as? Double,
             status = filters["status"] as? String,
