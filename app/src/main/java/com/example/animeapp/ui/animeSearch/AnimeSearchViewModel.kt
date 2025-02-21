@@ -29,7 +29,7 @@ class AnimeSearchViewModel(
     val queryState: StateFlow<AnimeSearchQueryState> = _queryState.asStateFlow()
 
     private val _filterState = MutableStateFlow(AnimeFilterState())
-    val filterState: StateFlow<AnimeFilterState> = _filterState.asStateFlow()
+    private val filterState: StateFlow<AnimeFilterState> = _filterState.asStateFlow()
 
     fun updateQuery(query: String) {
         _queryState.value = queryState.value.copy(query = query, page = 1)

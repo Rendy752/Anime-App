@@ -26,24 +26,50 @@ object FilterUtils {
     val GENRE_OPTIONS = listOf("Action", "Adventure", "Comedy", "Drama", "Fantasy", "Sci-Fi")
 
     fun collectFilterValues(binding: BottomSheetAnimeSearchFilterBinding): Map<String, Any?> {
-        return mapOf(
-            "type" to binding.typeSpinner.text.toString().takeIf { it != "Any" },
-            "score" to binding.scoreEditText.text.toString().toDoubleOrNull(),
-            "minScore" to binding.minScoreEditText.text.toString().toDoubleOrNull(),
-            "maxScore" to binding.maxScoreEditText.text.toString().toDoubleOrNull(),
-            "status" to binding.statusSpinner.text.toString().takeIf { it != "Any" },
-            "rating" to RATING_DESCRIPTIONS.entries.firstOrNull {
-                it.value == binding.ratingSpinner.text.toString()
-            }?.key?.takeIf { it != "Any" },
-            "sfw" to binding.sfwCheckBox.isChecked,
-            "unapproved" to binding.unapprovedCheckBox.isChecked,
-            "genres" to getChipGroupValues(binding.genresChipGroup),
-            "orderBy" to binding.orderBySpinner.text.toString().takeIf { it != "Any" },
-            "sort" to binding.sortSpinner.text.toString().takeIf { it != "Any" },
-            "producers" to binding.producersEditText.text.toString().takeIf { it.isNotBlank() },
-            "startDate" to binding.startDateEditText.text.toString().takeIf { it.isNotBlank() },
-            "endDate" to binding.endDateEditText.text.toString().takeIf { it.isNotBlank() }
-        )
+        binding.apply {
+            val enableDateRange = binding.enableDateRangeCheckBox.isChecked
+
+            val startDate = if (!enableDateRange) {
+                null
+            } else {
+                DateUtils.formatDate(
+                    binding.startDatePicker.year,
+                    binding.startDatePicker.month,
+                    binding.startDatePicker.dayOfMonth
+                )
+                    .takeIf { it.isNotBlank() }
+            }
+
+            val endDate = if (!enableDateRange) {
+                null
+            } else {
+                DateUtils.formatDate(
+                    binding.endDatePicker.year,
+                    binding.endDatePicker.month,
+                    binding.endDatePicker.dayOfMonth
+                )
+                    .takeIf { it.isNotBlank() }
+            }
+
+            return mapOf(
+                "type" to typeSpinner.text.toString().takeIf { it != "Any" },
+                "score" to scoreEditText.text.toString().toDoubleOrNull(),
+                "minScore" to minScoreEditText.text.toString().toDoubleOrNull(),
+                "maxScore" to maxScoreEditText.text.toString().toDoubleOrNull(),
+                "status" to statusSpinner.text.toString().takeIf { it != "Any" },
+                "rating" to RATING_DESCRIPTIONS.entries.firstOrNull {
+                    it.value == ratingSpinner.text.toString()
+                }?.key?.takeIf { it != "Any" },
+                "sfw" to sfwCheckBox.isChecked,
+                "unapproved" to unapprovedCheckBox.isChecked,
+                "genres" to getChipGroupValues(genresChipGroup),
+                "orderBy" to orderBySpinner.text.toString().takeIf { it != "Any" },
+                "sort" to sortSpinner.text.toString().takeIf { it != "Any" },
+                "producers" to producersEditText.text.toString().takeIf { it.isNotBlank() },
+                "startDate" to startDate,
+                "endDate" to endDate
+            )
+        }
     }
 
     private fun getChipGroupValues(chipGroup: ChipGroup): String? {

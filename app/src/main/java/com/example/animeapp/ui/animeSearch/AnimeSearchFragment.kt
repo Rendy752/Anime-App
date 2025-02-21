@@ -183,8 +183,30 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
             orderBySpinner.setText(currentFilterState["orderBy"] as? String ?: "Any")
             sortSpinner.setText(currentFilterState["sort"] as? String ?: "Any")
             producersEditText.setText(currentFilterState["producers"] as? String ?: "")
-            startDateEditText.setText(currentFilterState["startDate"] as? String ?: "")
-            endDateEditText.setText(currentFilterState["endDate"] as? String ?: "")
+
+            enableDateRangeCheckBox.setOnCheckedChangeListener { _, isChecked ->
+                startDateLabel.visibility = if (isChecked) View.VISIBLE else View.GONE
+                startDateTf.visibility = if (isChecked) View.VISIBLE else View.GONE
+                endDateLabel.visibility = if (isChecked) View.VISIBLE else View.GONE
+                endDateTf.visibility = if (isChecked) View.VISIBLE else View.GONE
+            }
+
+            val startDateString = currentFilterState["startDate"] as? String
+            if (startDateString != null) {
+                val startDate = startDateString.split("-")
+                if (startDate.size == 3) {
+                    startDatePicker.updateDate(startDate[0].toInt(), startDate[1].toInt() - 1, startDate[2].toInt())
+                }
+            }
+            val endDateString = currentFilterState["endDate"] as? String
+            if (endDateString != null) {
+                val endDate = endDateString.split("-")
+                if (endDate.size == 3) {
+                    endDatePicker.updateDate(endDate[0].toInt(), endDate[1].toInt() - 1, endDate[2].toInt())
+                }
+            }
+
+            enableDateRangeCheckBox.isChecked = currentFilterState["startDate"] != null && currentFilterState["endDate"] != null
             sfwCheckBox.isChecked = currentFilterState["sfw"] as? Boolean ?: false
             unapprovedCheckBox.isChecked = currentFilterState["unapproved"] as? Boolean ?: false
 
@@ -243,7 +265,7 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
             bottomSheet.apply {
                 val layoutParams = layoutParams as CoordinatorLayout.LayoutParams
                 val horizontalMargin =
-                    resources.getDimensionPixelSize(R.dimen.activity_horizontal_margin)
+                    resources.getDimensionPixelSize(R.dimen.bottom_sheet_horizontal_margin)
                 layoutParams.leftMargin = horizontalMargin
                 layoutParams.rightMargin = horizontalMargin
 
