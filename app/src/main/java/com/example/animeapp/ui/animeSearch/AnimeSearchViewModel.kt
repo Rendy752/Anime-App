@@ -3,6 +3,7 @@ package com.example.animeapp.ui.animeSearch
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.animeapp.models.AnimeDetailResponse
+import com.example.animeapp.models.AnimeFilterState
 import com.example.animeapp.models.AnimeSearchQueryState
 import com.example.animeapp.models.AnimeSearchResponse
 import com.example.animeapp.models.CompletePagination
@@ -27,6 +28,9 @@ class AnimeSearchViewModel(
 
     private val _queryState = MutableStateFlow(AnimeSearchQueryState())
     val queryState: StateFlow<AnimeSearchQueryState> = _queryState.asStateFlow()
+
+    private val _filterState = MutableStateFlow(AnimeFilterState())
+    val filterState: StateFlow<AnimeFilterState> = _filterState.asStateFlow()
 
     fun updateQuery(query: String) {
         _queryState.value = queryState.value.copy(query = query, page = 1)
@@ -61,6 +65,54 @@ class AnimeSearchViewModel(
             )
             _animeSearchResults.value = handleAnimeSearchResponse(response)
         }
+    }
+
+    fun applyFilters(filters: Map<String, Any?>) {
+        _filterState.value = AnimeFilterState(
+            type = filters["type"] as? String,
+            score = filters["score"] as? Double,
+            minScore = filters["minScore"] as? Double,
+            maxScore = filters["maxScore"] as? Double,
+            status = filters["status"] as? String,
+            rating = filters["rating"] as? String,
+            sfw = filters["sfw"] as? Boolean,
+            unapproved = filters["unapproved"] as? Boolean,
+            genres = filters["genres"] as? String,
+            genresExclude = filters["genresExclude"] as? String,
+            orderBy = filters["orderBy"] as? String,
+            sort = filters["sort"] as? String,
+            letter = filters["letter"] as? String,
+            producers = filters["producers"] as? String,
+            startDate = filters["startDate"] as? String,
+            endDate = filters["endDate"] as? String
+        )
+        searchAnimeWithFilters()
+    }
+
+    private fun searchAnimeWithFilters() = viewModelScope.launch {
+        _animeSearchResults.value = Resource.Loading()
+        val response = animeSearchRepository.searchAnime(
+            query = queryState.value.query,
+            page = queryState.value.page,
+            limit = queryState.value.limit?: Limit.DEFAULT_LIMIT,
+            type = filterState.value.type,
+            score = filterState.value.score,
+            minScore = filterState.value.minScore,
+            maxScore = filterState.value.maxScore,
+            status = filterState.value.status,
+            rating = filterState.value.rating,
+            sfw = filterState.value.sfw,
+            unapproved = filterState.value.unapproved,
+            genres = filterState.value.genres,
+            genresExclude = filterState.value.genresExclude,
+            orderBy = filterState.value.orderBy,
+            sort = filterState.value.sort,
+            letter = filterState.value.letter,
+            producers = filterState.value.producers,
+            startDate = filterState.value.startDate,
+            endDate = filterState.value.endDate
+        )
+        _animeSearchResults.value = handleAnimeSearchResponse(response)
     }
 
     private fun getRandomAnime() = viewModelScope.launch {

@@ -11,6 +11,7 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Spinner
 import android.widget.Toast
+import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -20,15 +21,23 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.animeapp.R
 import com.example.animeapp.data.remote.api.RetrofitInstance
+import com.example.animeapp.databinding.BottomSheetAnimeSearchFilterBinding
 import com.example.animeapp.databinding.FragmentAnimeSearchBinding
 import com.example.animeapp.models.CompletePagination
 import com.example.animeapp.repository.AnimeSearchRepository
 import com.example.animeapp.ui.common.AnimeHeaderAdapter
 import com.example.animeapp.utils.Debounce
+import com.example.animeapp.utils.FilterUtils
 import com.example.animeapp.utils.Limit
 import com.example.animeapp.utils.Navigation
 import com.example.animeapp.utils.Pagination
 import com.example.animeapp.utils.Resource
+import com.google.android.material.bottomsheet.BottomSheetBehavior
+import com.google.android.material.bottomsheet.BottomSheetDialog
+import com.google.android.material.chip.Chip
+import com.google.android.material.chip.ChipGroup
+import com.google.android.material.shape.CornerFamily
+import com.google.android.material.shape.MaterialShapeDrawable
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
@@ -149,11 +158,102 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
     override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
         return when (menuItem.itemId) {
             R.id.action_filter -> {
-                Toast.makeText(requireContext(), "Filter clicked", Toast.LENGTH_SHORT).show()
+                showFilterBottomSheet()
                 true
             }
 
             else -> false
+        }
+    }
+
+    private fun showFilterBottomSheet() {
+        val bottomSheetDialog = BottomSheetDialog(requireContext())
+        val bottomSheetBinding = BottomSheetAnimeSearchFilterBinding.inflate(layoutInflater)
+        bottomSheetDialog.setContentView(bottomSheetBinding.root)
+
+        bottomSheetBinding.apply {
+            val typeAdapter = ArrayAdapter(
+                requireContext(),
+                android.R.layout.simple_dropdown_item_1line,
+                FilterUtils.TYPE_OPTIONS
+            )
+            typeSpinner.setAdapter(typeAdapter)
+
+            val statusAdapter = ArrayAdapter(
+                requireContext(),
+                android.R.layout.simple_dropdown_item_1line,
+                FilterUtils.STATUS_OPTIONS
+            )
+            statusSpinner.setAdapter(statusAdapter)
+
+            val ratingAdapter = ArrayAdapter(
+                requireContext(),
+                android.R.layout.simple_dropdown_item_1line,
+                FilterUtils.RATING_OPTIONS
+            )
+            ratingSpinner.setAdapter(ratingAdapter)
+
+            val orderByAdapter = ArrayAdapter(
+                requireContext(),
+                android.R.layout.simple_dropdown_item_1line,
+                FilterUtils.ORDER_BY_OPTIONS
+            )
+            orderBySpinner.setAdapter(orderByAdapter)
+
+            val sortAdapter = ArrayAdapter(
+                requireContext(),
+                android.R.layout.simple_dropdown_item_1line,
+                FilterUtils.SORT_OPTIONS
+            )
+            sortSpinner.setAdapter(sortAdapter)
+
+            val genres = FilterUtils.GENRE_OPTIONS
+            populateGenreChipGroup(genresChipGroup, genres)
+
+            applyButton.setOnClickListener {
+                val filterValues = FilterUtils.collectFilterValues(bottomSheetBinding)
+
+                viewModel.applyFilters(filterValues)
+
+                bottomSheetDialog.dismiss()
+            }
+        }
+
+        bottomSheetDialog.setOnShowListener { dialog ->
+            val bottomSheet =
+                (dialog as BottomSheetDialog).findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
+            val behavior = BottomSheetBehavior.from(bottomSheet!!)
+
+            bottomSheet.apply {
+                val layoutParams = layoutParams as CoordinatorLayout.LayoutParams
+                val horizontalMargin = resources.getDimensionPixelSize(R.dimen.activity_horizontal_margin)
+                layoutParams.leftMargin = horizontalMargin
+                layoutParams.rightMargin = horizontalMargin
+
+                background =
+                    MaterialShapeDrawable.createWithElevationOverlay(requireContext()).apply {
+                        shapeAppearanceModel =
+                            shapeAppearanceModel.toBuilder().setTopLeftCorner(CornerFamily.ROUNDED, 40f)
+                                .setTopRightCorner(CornerFamily.ROUNDED, 40f)
+                                .build()
+                    }
+            }
+
+            behavior.apply {
+                state = BottomSheetBehavior.STATE_EXPANDED
+                maxHeight = resources.displayMetrics.heightPixels / 2
+            }
+
+        }
+
+        bottomSheetDialog.show()
+    }
+
+    private fun populateGenreChipGroup(chipGroup: ChipGroup, genres: List<String>) {
+        for (genre in genres) {
+            val chip = Chip(requireContext())
+            chip.text = genre
+            chipGroup.addView(chip)
         }
     }
 
