@@ -78,15 +78,32 @@ class AnimeSearchViewModel(
             sfw = filters["sfw"] as? Boolean,
             unapproved = filters["unapproved"] as? Boolean,
             genres = filters["genres"] as? String,
-            genresExclude = filters["genresExclude"] as? String,
             orderBy = filters["orderBy"] as? String,
             sort = filters["sort"] as? String,
-            letter = filters["letter"] as? String,
             producers = filters["producers"] as? String,
             startDate = filters["startDate"] as? String,
             endDate = filters["endDate"] as? String
         )
         searchAnimeWithFilters()
+    }
+
+    fun getFilterState(): Map<String, Any?> {
+        return mapOf(
+            "type" to filterState.value.type,
+            "score" to filterState.value.score,
+            "minScore" to filterState.value.minScore,
+            "maxScore" to filterState.value.maxScore,
+            "status" to filterState.value.status,
+            "rating" to filterState.value.rating,
+            "sfw" to filterState.value.sfw,
+            "unapproved" to filterState.value.unapproved,
+            "genres" to filterState.value.genres,
+            "orderBy" to filterState.value.orderBy,
+            "sort" to filterState.value.sort,
+            "producers" to filterState.value.producers,
+            "startDate" to filterState.value.startDate,
+            "endDate" to filterState.value.endDate
+        )
     }
 
     private fun searchAnimeWithFilters() = viewModelScope.launch {
@@ -104,10 +121,8 @@ class AnimeSearchViewModel(
             sfw = filterState.value.sfw,
             unapproved = filterState.value.unapproved,
             genres = filterState.value.genres,
-            genresExclude = filterState.value.genresExclude,
             orderBy = filterState.value.orderBy,
             sort = filterState.value.sort,
-            letter = filterState.value.letter,
             producers = filterState.value.producers,
             startDate = filterState.value.startDate,
             endDate = filterState.value.endDate
