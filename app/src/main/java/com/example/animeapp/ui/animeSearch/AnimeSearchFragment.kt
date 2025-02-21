@@ -286,6 +286,7 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
                                     animeHeaderAdapter.setLoading(false)
                                     if (searchResponse.data.isEmpty()) {
                                         tvError.visibility = View.VISIBLE
+                                        updatePagination(null)
                                         "No results found".also { tvError.text = it }
                                     } else {
                                         updatePagination(response.data.pagination)
@@ -303,6 +304,7 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
                             is Resource.Error -> {
                                 animeHeaderAdapter.setLoading(false)
                                 tvError.visibility = View.VISIBLE
+                                updatePagination(null)
                                 "An error occurred: ${response.message}".also {
                                     tvError.text = it
                                 }
@@ -315,6 +317,7 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
 
                             is Resource.Loading -> {
                                 animeHeaderAdapter.setLoading(true)
+                                tvError.visibility = View.GONE
                             }
                         }
                     }
@@ -331,15 +334,19 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
 
     private fun updatePagination(pagination: CompletePagination?) {
         binding.apply {
-            Pagination.setPaginationButtons(
-                subMenuContainer.paginationButtonContainer,
-                pagination,
-                onPaginationClick = { pageNumber ->
-                    viewModel.updatePage(pageNumber)
-                }
-            )
-            subMenuContainer.paginationButtonContainer.visibility =
-                if (pagination == null) View.GONE else View.VISIBLE
+            if (pagination == null) {
+                subMenuContainer.paginationButtonContainer.visibility = View.GONE
+                viewModel.updatePage(1)
+            } else {
+                Pagination.setPaginationButtons(
+                    subMenuContainer.paginationButtonContainer,
+                    pagination,
+                    onPaginationClick = { pageNumber ->
+                        viewModel.updatePage(pageNumber)
+                    }
+                )
+                subMenuContainer.paginationButtonContainer.visibility = View.VISIBLE
+            }
         }
     }
 
