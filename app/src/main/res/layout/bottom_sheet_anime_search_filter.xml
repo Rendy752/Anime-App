@@ -82,9 +82,9 @@
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="4dp"
+                android:layout_marginStart="4dp"
                 app:layout_constraintStart_toEndOf="@+id/typeTf"
-                app:layout_constraintEnd_toStartOf="@id/ratingTf"
+                app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/genresChipGroup">
 
                 <AutoCompleteTextView
@@ -100,10 +100,10 @@
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toEndOf="@+id/statusTf"
-                app:layout_constraintTop_toBottomOf="@id/genresChipGroup">
+                android:layout_marginEnd="4dp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toStartOf="@id/scoreTf"
+                app:layout_constraintTop_toBottomOf="@id/typeTf">
 
                 <AutoCompleteTextView
                     android:id="@+id/ratingSpinner"
@@ -118,10 +118,10 @@
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginEnd="4dp"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toStartOf="@id/minScoreTf"
-                app:layout_constraintTop_toBottomOf="@+id/typeTf">
+                android:layout_marginStart="4dp"
+                app:layout_constraintStart_toEndOf="@id/ratingTf"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toBottomOf="@+id/statusTf">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/scoreEditText"
@@ -136,10 +136,10 @@
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginHorizontal="4dp"
-                app:layout_constraintStart_toEndOf="@+id/scoreTf"
+                android:layout_marginEnd="4dp"
+                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toStartOf="@id/maxScoreTf"
-                app:layout_constraintTop_toBottomOf="@id/statusTf">
+                app:layout_constraintTop_toBottomOf="@id/ratingTf">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/minScoreEditText"
@@ -157,7 +157,7 @@
                 android:layout_marginStart="4dp"
                 app:layout_constraintEnd_toEndOf="parent"
                 app:layout_constraintStart_toEndOf="@+id/minScoreTf"
-                app:layout_constraintTop_toBottomOf="@id/ratingTf">
+                app:layout_constraintTop_toBottomOf="@id/scoreTf">
 
                 <com.google.android.material.textfield.TextInputEditText
                     android:id="@+id/maxScoreEditText"
@@ -175,7 +175,7 @@
                 android:layout_marginEnd="4dp"
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toStartOf="@+id/sortTf"
-                app:layout_constraintTop_toBottomOf="@+id/scoreTf">
+                app:layout_constraintTop_toBottomOf="@+id/minScoreTf">
 
                 <AutoCompleteTextView
                     android:id="@+id/orderBySpinner"
