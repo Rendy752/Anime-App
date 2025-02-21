@@ -9,7 +9,7 @@ object FilterUtils {
     val TYPE_OPTIONS =
         listOf("Any", "TV", "Movie", "OVA", "Special", "ONA", "Music", "CM", "PV", "TV Special")
     val STATUS_OPTIONS = listOf("Any", "Airing", "Complete", "Upcoming")
-    val RATING_OPTIONS = listOf("G", "PG", "PG13", "R17", "R", "Rx")
+    val RATING_OPTIONS = listOf("Any", "G", "PG", "PG13", "R17", "R", "Rx")
     val ORDER_BY_OPTIONS = listOf(
         "Any", "mal_id", "title", "start_date", "end_date", "episodes", "score",
         "scored_by", "rank", "popularity", "members", "favorites"

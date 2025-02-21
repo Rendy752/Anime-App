@@ -54,14 +54,41 @@ class AnimeSearchViewModel(
     }
 
     fun searchAnime() = viewModelScope.launch {
-        if (queryState.value.query.isBlank()) {
+        if (queryState.value.query.isBlank() &&
+            filterState.value.type == null &&
+            filterState.value.score == null &&
+            filterState.value.minScore == null &&
+            filterState.value.maxScore == null &&
+            filterState.value.status == null &&
+            filterState.value.rating == null &&
+            filterState.value.sfw == null &&
+            filterState.value.unapproved == null &&
+            filterState.value.genres == null &&
+            filterState.value.producers == null &&
+            filterState.value.startDate == null &&
+            filterState.value.endDate == null
+        ) {
             getRandomAnime()
         } else {
             _animeSearchResults.value = Resource.Loading()
             val response = animeSearchRepository.searchAnime(
-                queryState.value.query,
-                queryState.value.page,
-                queryState.value.limit ?: Limit.DEFAULT_LIMIT
+                query = queryState.value.query,
+                page = queryState.value.page,
+                limit = queryState.value.limit ?: Limit.DEFAULT_LIMIT,
+                type = filterState.value.type,
+                score = filterState.value.score,
+                minScore = filterState.value.minScore,
+                maxScore = filterState.value.maxScore,
+                status = filterState.value.status,
+                rating = filterState.value.rating,
+                sfw = filterState.value.sfw,
+                unapproved = filterState.value.unapproved,
+                genres = filterState.value.genres,
+                orderBy = filterState.value.orderBy,
+                sort = filterState.value.sort,
+                producers = filterState.value.producers,
+                startDate = filterState.value.startDate,
+                endDate = filterState.value.endDate
             )
             _animeSearchResults.value = handleAnimeSearchResponse(response)
         }
@@ -84,7 +111,7 @@ class AnimeSearchViewModel(
             startDate = filters["startDate"] as? String,
             endDate = filters["endDate"] as? String
         )
-        searchAnimeWithFilters()
+        searchAnime()
     }
 
     fun getFilterState(): Map<String, Any?> {
@@ -104,30 +131,6 @@ class AnimeSearchViewModel(
             "startDate" to filterState.value.startDate,
             "endDate" to filterState.value.endDate
         )
-    }
-
-    private fun searchAnimeWithFilters() = viewModelScope.launch {
-        _animeSearchResults.value = Resource.Loading()
-        val response = animeSearchRepository.searchAnime(
-            query = queryState.value.query,
-            page = queryState.value.page,
-            limit = queryState.value.limit?: Limit.DEFAULT_LIMIT,
-            type = filterState.value.type,
-            score = filterState.value.score,
-            minScore = filterState.value.minScore,
-            maxScore = filterState.value.maxScore,
-            status = filterState.value.status,
-            rating = filterState.value.rating,
-            sfw = filterState.value.sfw,
-            unapproved = filterState.value.unapproved,
-            genres = filterState.value.genres,
-            orderBy = filterState.value.orderBy,
-            sort = filterState.value.sort,
-            producers = filterState.value.producers,
-            startDate = filterState.value.startDate,
-            endDate = filterState.value.endDate
-        )
-        _animeSearchResults.value = handleAnimeSearchResponse(response)
     }
 
     private fun getRandomAnime() = viewModelScope.launch {
