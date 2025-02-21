@@ -174,19 +174,19 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
         val currentFilterState = viewModel.getFilterState()
 
         bottomSheetBinding.apply {
-            typeSpinner.setText(currentFilterState["type"] as? String?: "Any")
-            statusSpinner.setText(currentFilterState["status"] as? String?: "Any")
-            ratingSpinner.setText(currentFilterState["rating"] as? String?: "Any")
+            typeSpinner.setText(currentFilterState["type"] as? String ?: "Any")
+            statusSpinner.setText(currentFilterState["status"] as? String ?: "Any")
+            ratingSpinner.setText(currentFilterState["rating"] as? String ?: "Any")
             scoreEditText.setText(currentFilterState["score"]?.toString())
             minScoreEditText.setText(currentFilterState["minScore"]?.toString())
             maxScoreEditText.setText(currentFilterState["maxScore"]?.toString())
-            orderBySpinner.setText(currentFilterState["orderBy"] as? String?: "Any")
-            sortSpinner.setText(currentFilterState["sort"] as? String?: "Any")
-            producersEditText.setText(currentFilterState["producers"] as? String?: "")
-            startDateEditText.setText(currentFilterState["startDate"] as? String?: "")
-            endDateEditText.setText(currentFilterState["endDate"] as? String?: "")
-            sfwCheckBox.isChecked = currentFilterState["sfw"] as? Boolean?: false
-            unapprovedCheckBox.isChecked = currentFilterState["unapproved"] as? Boolean?: false
+            orderBySpinner.setText(currentFilterState["orderBy"] as? String ?: "Any")
+            sortSpinner.setText(currentFilterState["sort"] as? String ?: "Any")
+            producersEditText.setText(currentFilterState["producers"] as? String ?: "")
+            startDateEditText.setText(currentFilterState["startDate"] as? String ?: "")
+            endDateEditText.setText(currentFilterState["endDate"] as? String ?: "")
+            sfwCheckBox.isChecked = currentFilterState["sfw"] as? Boolean ?: false
+            unapprovedCheckBox.isChecked = currentFilterState["unapproved"] as? Boolean ?: false
 
             val typeAdapter = ArrayAdapter(
                 requireContext(),
@@ -205,7 +205,9 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
             val ratingAdapter = ArrayAdapter(
                 requireContext(),
                 android.R.layout.simple_dropdown_item_1line,
-                FilterUtils.RATING_OPTIONS
+                FilterUtils.RATING_OPTIONS.map { ratingCode ->
+                    FilterUtils.getRatingDescription(ratingCode)
+                }
             )
             ratingSpinner.setAdapter(ratingAdapter)
 
@@ -240,14 +242,16 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
 
             bottomSheet.apply {
                 val layoutParams = layoutParams as CoordinatorLayout.LayoutParams
-                val horizontalMargin = resources.getDimensionPixelSize(R.dimen.activity_horizontal_margin)
+                val horizontalMargin =
+                    resources.getDimensionPixelSize(R.dimen.activity_horizontal_margin)
                 layoutParams.leftMargin = horizontalMargin
                 layoutParams.rightMargin = horizontalMargin
 
                 background =
                     MaterialShapeDrawable.createWithElevationOverlay(requireContext()).apply {
                         shapeAppearanceModel =
-                            shapeAppearanceModel.toBuilder().setTopLeftCorner(CornerFamily.ROUNDED, 40f)
+                            shapeAppearanceModel.toBuilder()
+                                .setTopLeftCorner(CornerFamily.ROUNDED, 40f)
                                 .setTopRightCorner(CornerFamily.ROUNDED, 40f)
                                 .build()
                     }

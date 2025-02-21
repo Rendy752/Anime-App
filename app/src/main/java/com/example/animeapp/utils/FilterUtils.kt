@@ -10,6 +10,14 @@ object FilterUtils {
         listOf("Any", "TV", "Movie", "OVA", "Special", "ONA", "Music", "CM", "PV", "TV Special")
     val STATUS_OPTIONS = listOf("Any", "Airing", "Complete", "Upcoming")
     val RATING_OPTIONS = listOf("Any", "G", "PG", "PG13", "R17", "R", "Rx")
+    private val RATING_DESCRIPTIONS = mapOf(
+        "G" to "All Ages",
+        "PG" to "Children",
+        "PG13" to "Teens 13 or older",
+        "R17" to "17+ (violence & profanity)",
+        "R" to "Mild Nudity",
+        "Rx" to "Hentai"
+    )
     val ORDER_BY_OPTIONS = listOf(
         "Any", "mal_id", "title", "start_date", "end_date", "episodes", "score",
         "scored_by", "rank", "popularity", "members", "favorites"
@@ -24,7 +32,9 @@ object FilterUtils {
             "minScore" to binding.minScoreEditText.text.toString().toDoubleOrNull(),
             "maxScore" to binding.maxScoreEditText.text.toString().toDoubleOrNull(),
             "status" to binding.statusSpinner.text.toString().takeIf { it != "Any" },
-            "rating" to binding.ratingSpinner.text.toString().takeIf { it != "Any" },
+            "rating" to RATING_DESCRIPTIONS.entries.firstOrNull {
+                it.value == binding.ratingSpinner.text.toString()
+            }?.key?.takeIf { it != "Any" },
             "sfw" to binding.sfwCheckBox.isChecked,
             "unapproved" to binding.unapprovedCheckBox.isChecked,
             "genres" to getChipGroupValues(binding.genresChipGroup),
@@ -45,5 +55,9 @@ object FilterUtils {
             }
         }
         return if (selectedChipIds.isNotEmpty()) selectedChipIds.joinToString(",") else null
+    }
+
+    fun getRatingDescription(ratingCode: String): String {
+        return RATING_DESCRIPTIONS[ratingCode] ?: ratingCode
     }
 }
