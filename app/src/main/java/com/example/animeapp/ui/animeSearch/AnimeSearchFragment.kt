@@ -334,19 +334,15 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
 
     private fun updatePagination(pagination: CompletePagination?) {
         binding.apply {
-            if (pagination == null) {
-                subMenuContainer.paginationButtonContainer.visibility = View.GONE
-                viewModel.updatePage(1)
-            } else {
-                Pagination.setPaginationButtons(
-                    subMenuContainer.paginationButtonContainer,
-                    pagination,
-                    onPaginationClick = { pageNumber ->
-                        viewModel.updatePage(pageNumber)
-                    }
-                )
-                subMenuContainer.paginationButtonContainer.visibility = View.VISIBLE
-            }
+            Pagination.setPaginationButtons(
+                subMenuContainer.paginationButtonContainer,
+                pagination,
+                { pageNumber ->
+                    viewModel.updatePage(pageNumber)
+                }
+            )
+            subMenuContainer.paginationButtonContainer.visibility =
+                if (pagination == null) View.GONE else View.VISIBLE
         }
     }
 

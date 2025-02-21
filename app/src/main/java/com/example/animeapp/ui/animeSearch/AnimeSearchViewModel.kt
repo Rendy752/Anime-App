@@ -7,7 +7,6 @@ import com.example.animeapp.models.AnimeFilterState
 import com.example.animeapp.models.AnimeSearchQueryState
 import com.example.animeapp.models.AnimeSearchResponse
 import com.example.animeapp.models.CompletePagination
-import com.example.animeapp.models.Items
 import com.example.animeapp.repository.AnimeSearchRepository
 import com.example.animeapp.utils.Limit
 import com.example.animeapp.utils.Resource
@@ -115,6 +114,7 @@ class AnimeSearchViewModel(
             startDate = filters["startDate"] as? String,
             endDate = filters["endDate"] as? String
         )
+        _queryState.value = queryState.value.copy(limit = 10, page = 1)
         searchAnime()
     }
 
@@ -158,16 +158,7 @@ class AnimeSearchViewModel(
             response.body()?.let { resultResponse ->
                 val searchResponse = AnimeSearchResponse(
                     data = listOf(resultResponse.data),
-                    pagination = CompletePagination(
-                        last_visible_page = 1,
-                        has_next_page = false,
-                        current_page = 1,
-                        items = Items(
-                            count = 1,
-                            total = 1,
-                            per_page = 1
-                        )
-                    )
+                    pagination = CompletePagination.default()
                 )
                 return Resource.Success(searchResponse)
             } ?: return Resource.Error("Response body is null")
