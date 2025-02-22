@@ -32,4 +32,6 @@ class AnimeSearchRepository(
     )
 
     suspend fun getRandomAnime() = api.getRandomAnime()
+
+    suspend fun getGenres() = api.getGenres()
 }
