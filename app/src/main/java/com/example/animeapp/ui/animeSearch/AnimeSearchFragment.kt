@@ -11,6 +11,7 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Spinner
 import android.widget.Toast
+import androidx.appcompat.widget.SearchView.OnQueryTextListener
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
@@ -29,6 +30,7 @@ import com.example.animeapp.ui.common.AnimeHeaderAdapter
 import com.example.animeapp.utils.Debounce
 import com.example.animeapp.utils.FilterUtils
 import com.example.animeapp.utils.Limit
+import com.example.animeapp.utils.MinMaxInputFilter
 import com.example.animeapp.utils.Navigation
 import com.example.animeapp.utils.Pagination
 import com.example.animeapp.utils.Resource
@@ -100,12 +102,12 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
         val debounce = Debounce(
             lifecycleScope,
             1000L,
-            { query -> viewModel.updateQuery(query) },
+            { query -> viewModel.applyFilters(viewModel.queryState.value.copy(query = query)) },
             viewModel
         )
 
         binding.searchView.setOnQueryTextListener(object :
-            androidx.appcompat.widget.SearchView.OnQueryTextListener {
+            OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 return true
             }
@@ -141,12 +143,18 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
                 id: Long
             ) {
                 val selectedLimit = Limit.getLimitValue(position)
-                viewModel.updateLimit(selectedLimit)
+                if (viewModel.queryState.value.limit != selectedLimit) {
+                    val updatedQueryState = viewModel.queryState.value.copy(
+                        limit = selectedLimit
+                    )
+                    viewModel.applyFilters(
+                        updatedQueryState
+                    )
+                }
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {
-                val defaultLimit = Limit.DEFAULT_LIMIT
-                viewModel.updateLimit(defaultLimit)
+                viewModel.applyFilters(viewModel.queryState.value.copy(limit = Limit.DEFAULT_LIMIT))
             }
         }
     }
@@ -171,18 +179,71 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
         val bottomSheetBinding = BottomSheetAnimeSearchFilterBinding.inflate(layoutInflater)
         bottomSheetDialog.setContentView(bottomSheetBinding.root)
 
-        val currentFilterState = viewModel.getFilterState()
+        populateBottomSheetFilters(bottomSheetBinding)
 
-        bottomSheetBinding.apply {
-            typeSpinner.setText(currentFilterState["type"] as? String ?: "Any")
-            statusSpinner.setText(currentFilterState["status"] as? String ?: "Any")
-            ratingSpinner.setText(currentFilterState["rating"] as? String ?: "Any")
-            scoreEditText.setText(currentFilterState["score"]?.toString())
-            minScoreEditText.setText(currentFilterState["minScore"]?.toString())
-            maxScoreEditText.setText(currentFilterState["maxScore"]?.toString())
-            orderBySpinner.setText(currentFilterState["orderBy"] as? String ?: "Any")
-            sortSpinner.setText(currentFilterState["sort"] as? String ?: "Any")
-            producersEditText.setText(currentFilterState["producers"] as? String ?: "")
+        bottomSheetBinding.applyButton.setOnClickListener {
+            viewModel.applyFilters(
+                FilterUtils.collectFilterValues(
+                    viewModel.queryState.value,
+                    bottomSheetBinding
+                )
+            )
+            bottomSheetDialog.dismiss()
+        }
+
+        bottomSheetDialog.setOnShowListener { dialog ->
+            val bottomSheet =
+                (dialog as BottomSheetDialog).findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
+            val behavior = BottomSheetBehavior.from(bottomSheet!!)
+
+            bottomSheet.apply {
+                val layoutParams = layoutParams as CoordinatorLayout.LayoutParams
+                val horizontalMargin =
+                    resources.getDimensionPixelSize(R.dimen.bottom_sheet_horizontal_margin)
+                layoutParams.leftMargin = horizontalMargin
+                layoutParams.rightMargin = horizontalMargin
+
+                background =
+                    MaterialShapeDrawable.createWithElevationOverlay(requireContext()).apply {
+                        shapeAppearanceModel =
+                            shapeAppearanceModel.toBuilder()
+                                .setTopLeftCorner(CornerFamily.ROUNDED, 40f)
+                                .setTopRightCorner(CornerFamily.ROUNDED, 40f)
+                                .build()
+                    }
+            }
+
+            behavior.apply {
+                state = BottomSheetBehavior.STATE_EXPANDED
+                maxHeight = resources.displayMetrics.heightPixels / 2
+            }
+        }
+
+        bottomSheetDialog.show()
+    }
+
+    private fun populateBottomSheetFilters(binding: BottomSheetAnimeSearchFilterBinding) {
+        val currentFilterState = viewModel.queryState.value
+        binding.apply {
+            typeSpinner.setText(currentFilterState.type ?: "Any")
+            statusSpinner.setText(currentFilterState.status ?: "Any")
+            ratingSpinner.setText(
+                FilterUtils.getRatingDescription(
+                    currentFilterState.rating ?: "Any"
+                )
+            )
+
+            val minMaxFilter = MinMaxInputFilter(1.0, 10.0)
+            scoreEditText.filters = arrayOf(minMaxFilter)
+            scoreEditText.setText(currentFilterState.score.toString())
+            minScoreEditText.filters = arrayOf(minMaxFilter)
+            minScoreEditText.setText(currentFilterState.minScore.toString())
+            maxScoreEditText.filters = arrayOf(minMaxFilter)
+            maxScoreEditText.setText(currentFilterState.maxScore.toString())
+
+            orderBySpinner.setText(currentFilterState.orderBy ?: "Any")
+            sortSpinner.setText(currentFilterState.sort ?: "Any")
+            producersEditText.setText(currentFilterState.producers ?: "")
 
             enableDateRangeCheckBox.setOnCheckedChangeListener { _, isChecked ->
                 startDateLabel.visibility = if (isChecked) View.VISIBLE else View.GONE
@@ -191,24 +252,33 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
                 endDateTf.visibility = if (isChecked) View.VISIBLE else View.GONE
             }
 
-            val startDateString = currentFilterState["startDate"] as? String
+            val startDateString = currentFilterState.startDate
             if (startDateString != null) {
                 val startDate = startDateString.split("-")
                 if (startDate.size == 3) {
-                    startDatePicker.updateDate(startDate[0].toInt(), startDate[1].toInt() - 1, startDate[2].toInt())
+                    startDatePicker.updateDate(
+                        startDate[0].toInt(),
+                        startDate[1].toInt() - 1,
+                        startDate[2].toInt()
+                    )
                 }
             }
-            val endDateString = currentFilterState["endDate"] as? String
+            val endDateString = currentFilterState.endDate
             if (endDateString != null) {
                 val endDate = endDateString.split("-")
                 if (endDate.size == 3) {
-                    endDatePicker.updateDate(endDate[0].toInt(), endDate[1].toInt() - 1, endDate[2].toInt())
+                    endDatePicker.updateDate(
+                        endDate[0].toInt(),
+                        endDate[1].toInt() - 1,
+                        endDate[2].toInt()
+                    )
                 }
             }
 
-            enableDateRangeCheckBox.isChecked = currentFilterState["startDate"] != null && currentFilterState["endDate"] != null
-            sfwCheckBox.isChecked = currentFilterState["sfw"] as? Boolean ?: false
-            unapprovedCheckBox.isChecked = currentFilterState["unapproved"] as? Boolean ?: false
+            enableDateRangeCheckBox.isChecked =
+                currentFilterState.startDate != null && currentFilterState.endDate != null
+            sfwCheckBox.isChecked = currentFilterState.sfw ?: false
+            unapprovedCheckBox.isChecked = currentFilterState.unapproved ?: false
 
             val typeAdapter = ArrayAdapter(
                 requireContext(),
@@ -249,43 +319,7 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
 
             val genres = FilterUtils.GENRE_OPTIONS
             populateGenreChipGroup(genresChipGroup, genres)
-
-            applyButton.setOnClickListener {
-                val filterValues = FilterUtils.collectFilterValues(bottomSheetBinding)
-                viewModel.applyFilters(filterValues)
-                bottomSheetDialog.dismiss()
-            }
         }
-
-        bottomSheetDialog.setOnShowListener { dialog ->
-            val bottomSheet =
-                (dialog as BottomSheetDialog).findViewById<View>(com.google.android.material.R.id.design_bottom_sheet)
-            val behavior = BottomSheetBehavior.from(bottomSheet!!)
-
-            bottomSheet.apply {
-                val layoutParams = layoutParams as CoordinatorLayout.LayoutParams
-                val horizontalMargin =
-                    resources.getDimensionPixelSize(R.dimen.bottom_sheet_horizontal_margin)
-                layoutParams.leftMargin = horizontalMargin
-                layoutParams.rightMargin = horizontalMargin
-
-                background =
-                    MaterialShapeDrawable.createWithElevationOverlay(requireContext()).apply {
-                        shapeAppearanceModel =
-                            shapeAppearanceModel.toBuilder()
-                                .setTopLeftCorner(CornerFamily.ROUNDED, 40f)
-                                .setTopRightCorner(CornerFamily.ROUNDED, 40f)
-                                .build()
-                    }
-            }
-
-            behavior.apply {
-                state = BottomSheetBehavior.STATE_EXPANDED
-                maxHeight = resources.displayMetrics.heightPixels / 2
-            }
-        }
-
-        bottomSheetDialog.show()
     }
 
     private fun populateGenreChipGroup(chipGroup: ChipGroup, genres: List<String>) {
@@ -301,7 +335,6 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.animeSearchResults.collectLatest { response ->
                     binding.apply {
-
                         when (response) {
                             is Resource.Success -> {
                                 response.data?.let { searchResponse ->
@@ -350,7 +383,7 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
 
     private fun setupRefreshFloatingActionButton() {
         binding.fabRefresh.setOnClickListener {
-            viewModel.searchAnime()
+            viewModel.applyFilters(viewModel.queryState.value)
         }
     }
 
@@ -358,11 +391,10 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
         binding.apply {
             Pagination.setPaginationButtons(
                 subMenuContainer.paginationButtonContainer,
-                pagination,
-                { pageNumber ->
-                    viewModel.updatePage(pageNumber)
-                }
-            )
+                pagination
+            ) { pageNumber ->
+                viewModel.applyFilters(viewModel.queryState.value.copy(page = pageNumber))
+            }
             subMenuContainer.paginationButtonContainer.visibility =
                 if (pagination == null) View.GONE else View.VISIBLE
         }

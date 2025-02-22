@@ -3,12 +3,10 @@ package com.example.animeapp.ui.animeSearch
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.animeapp.models.AnimeDetailResponse
-import com.example.animeapp.models.AnimeFilterState
 import com.example.animeapp.models.AnimeSearchQueryState
 import com.example.animeapp.models.AnimeSearchResponse
 import com.example.animeapp.models.CompletePagination
 import com.example.animeapp.repository.AnimeSearchRepository
-import com.example.animeapp.utils.Limit
 import com.example.animeapp.utils.Resource
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -25,116 +23,32 @@ class AnimeSearchViewModel(
     val animeSearchResults: StateFlow<Resource<AnimeSearchResponse>> =
         _animeSearchResults.asStateFlow()
 
+    private var previousQueryState: AnimeSearchQueryState? = null
     private val _queryState = MutableStateFlow(AnimeSearchQueryState())
     val queryState: StateFlow<AnimeSearchQueryState> = _queryState.asStateFlow()
-
-    private val _filterState = MutableStateFlow(AnimeFilterState())
-    private val filterState: StateFlow<AnimeFilterState> = _filterState.asStateFlow()
-
-    fun updateQuery(query: String) {
-        _queryState.value = queryState.value.copy(query = query, page = 1)
-        searchAnime()
-    }
-
-    fun updatePage(page: Int) {
-        _queryState.value = queryState.value.copy(page = page)
-        searchAnime()
-    }
-
-    fun updateLimit(limit: Int?) {
-        if (_queryState.value.limit != limit) {
-            _queryState.value = queryState.value.copy(limit = limit, page = 1)
-            searchAnime()
-        }
-    }
 
     init {
         getRandomAnime()
     }
 
-    fun searchAnime() = viewModelScope.launch {
-        if (queryState.value.query.isBlank() &&
-            filterState.value.type == null &&
-            filterState.value.score == null &&
-            filterState.value.minScore == null &&
-            filterState.value.maxScore == null &&
-            filterState.value.status == null &&
-            filterState.value.rating == null &&
-            filterState.value.sfw == null &&
-            filterState.value.unapproved == null &&
-            filterState.value.genres == null &&
-            filterState.value.producers == null &&
-            filterState.value.startDate == null &&
-            filterState.value.endDate == null
-        ) {
+    private fun searchAnime() = viewModelScope.launch {
+        if (queryState.value.isDefault()) {
             getRandomAnime()
         } else {
             _animeSearchResults.value = Resource.Loading()
-            val response = animeSearchRepository.searchAnime(
-                query = queryState.value.query,
-                page = queryState.value.page,
-                limit = queryState.value.limit ?: Limit.DEFAULT_LIMIT,
-                type = filterState.value.type,
-                score = filterState.value.score,
-                minScore = filterState.value.minScore,
-                maxScore = filterState.value.maxScore,
-                status = filterState.value.status,
-                rating = filterState.value.rating,
-                sfw = filterState.value.sfw,
-                unapproved = filterState.value.unapproved,
-                genres = filterState.value.genres,
-                orderBy = filterState.value.orderBy,
-                sort = filterState.value.sort,
-                producers = filterState.value.producers,
-                startDate = filterState.value.startDate,
-                endDate = filterState.value.endDate
-            )
+            previousQueryState = queryState.value.copy()
+            val response = animeSearchRepository.searchAnime(queryState.value)
             _animeSearchResults.value = handleAnimeSearchResponse(response)
         }
     }
 
-    fun applyFilters(filters: Map<String, Any?>) {
-        _filterState.value = AnimeFilterState(
-            type = filters["type"] as? String,
-            score = if (filters["minScore"] != null || filters["maxScore"] != null) {
-                null
-            } else {
-                filters["score"] as? Double
-            },
-            minScore = filters["minScore"] as? Double,
-            maxScore = filters["maxScore"] as? Double,
-            status = filters["status"] as? String,
-            rating = filters["rating"] as? String,
-            sfw = filters["sfw"] as? Boolean,
-            unapproved = filters["unapproved"] as? Boolean,
-            genres = filters["genres"] as? String,
-            orderBy = filters["orderBy"] as? String,
-            sort = filters["sort"] as? String,
-            producers = filters["producers"] as? String,
-            startDate = filters["startDate"] as? String,
-            endDate = filters["endDate"] as? String
-        )
-        _queryState.value = queryState.value.copy(limit = 10, page = 1)
+    fun applyFilters(updatedQueryState: AnimeSearchQueryState) {
+        _queryState.value = if (updatedQueryState.isDefault()) {
+            previousQueryState?.copy() ?: AnimeSearchQueryState()
+        } else {
+            updatedQueryState
+        }
         searchAnime()
-    }
-
-    fun getFilterState(): Map<String, Any?> {
-        return mapOf(
-            "type" to filterState.value.type,
-            "score" to filterState.value.score,
-            "minScore" to filterState.value.minScore,
-            "maxScore" to filterState.value.maxScore,
-            "status" to filterState.value.status,
-            "rating" to filterState.value.rating,
-            "sfw" to filterState.value.sfw,
-            "unapproved" to filterState.value.unapproved,
-            "genres" to filterState.value.genres,
-            "orderBy" to filterState.value.orderBy,
-            "sort" to filterState.value.sort,
-            "producers" to filterState.value.producers,
-            "startDate" to filterState.value.startDate,
-            "endDate" to filterState.value.endDate
-        )
     }
 
     private fun getRandomAnime() = viewModelScope.launch {

@@ -1,6 +1,7 @@
 package com.example.animeapp.utils
 
 import com.example.animeapp.databinding.BottomSheetAnimeSearchFilterBinding
+import com.example.animeapp.models.AnimeSearchQueryState
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 
@@ -25,7 +26,7 @@ object FilterUtils {
     val SORT_OPTIONS = listOf("Any", "desc", "asc")
     val GENRE_OPTIONS = listOf("Action", "Adventure", "Comedy", "Drama", "Fantasy", "Sci-Fi")
 
-    fun collectFilterValues(binding: BottomSheetAnimeSearchFilterBinding): Map<String, Any?> {
+    fun collectFilterValues(currentState: AnimeSearchQueryState, binding: BottomSheetAnimeSearchFilterBinding): AnimeSearchQueryState {
         binding.apply {
             val enableDateRange = binding.enableDateRangeCheckBox.isChecked
 
@@ -37,7 +38,6 @@ object FilterUtils {
                     binding.startDatePicker.month,
                     binding.startDatePicker.dayOfMonth
                 )
-                    .takeIf { it.isNotBlank() }
             }
 
             val endDate = if (!enableDateRange) {
@@ -48,26 +48,34 @@ object FilterUtils {
                     binding.endDatePicker.month,
                     binding.endDatePicker.dayOfMonth
                 )
-                    .takeIf { it.isNotBlank() }
             }
 
-            return mapOf(
-                "type" to typeSpinner.text.toString().takeIf { it != "Any" },
-                "score" to scoreEditText.text.toString().toDoubleOrNull(),
-                "minScore" to minScoreEditText.text.toString().toDoubleOrNull(),
-                "maxScore" to maxScoreEditText.text.toString().toDoubleOrNull(),
-                "status" to statusSpinner.text.toString().takeIf { it != "Any" },
-                "rating" to RATING_DESCRIPTIONS.entries.firstOrNull {
+            val minScore = minScoreEditText.text.toString().toDoubleOrNull()
+            val maxScore = maxScoreEditText.text.toString().toDoubleOrNull()
+
+            return currentState.copy(
+                page = 1,
+                limit = 10,
+                type = typeSpinner.text.toString().takeIf { it != "Any" },
+                score = if (minScore != null || maxScore != null) {
+                    null
+                } else {
+                    scoreEditText.text.toString().toDoubleOrNull()
+                },
+                minScore = minScore,
+                maxScore = maxScore,
+                status = statusSpinner.text.toString().takeIf { it != "Any" },
+                rating = RATING_DESCRIPTIONS.entries.firstOrNull {
                     it.value == ratingSpinner.text.toString()
                 }?.key?.takeIf { it != "Any" },
-                "sfw" to sfwCheckBox.isChecked,
-                "unapproved" to unapprovedCheckBox.isChecked,
-                "genres" to getChipGroupValues(genresChipGroup),
-                "orderBy" to orderBySpinner.text.toString().takeIf { it != "Any" },
-                "sort" to sortSpinner.text.toString().takeIf { it != "Any" },
-                "producers" to producersEditText.text.toString().takeIf { it.isNotBlank() },
-                "startDate" to startDate,
-                "endDate" to endDate
+                sfw = sfwCheckBox.isChecked,
+                unapproved = unapprovedCheckBox.isChecked,
+                genres = getChipGroupValues(genresChipGroup),
+                orderBy = orderBySpinner.text.toString().takeIf { it != "Any" },
+                sort = sortSpinner.text.toString().takeIf { it != "Any" },
+                producers = producersEditText.text.toString().takeIf { it.isNotBlank() },
+                startDate = startDate,
+                endDate = endDate
             )
         }
     }
