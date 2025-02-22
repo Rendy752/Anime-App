@@ -60,6 +60,7 @@
     <string name="order_by_field">Order By</string>
     <string name="sort_field">Sort</string>
     <string name="letter_field">Letter</string>
+    <string name="genres_field">Genres</string>
     <string name="producers_field">Producers</string>
     <string name="start_date_field">Start Date</string>
     <string name="end_date_field">End Date</string>
