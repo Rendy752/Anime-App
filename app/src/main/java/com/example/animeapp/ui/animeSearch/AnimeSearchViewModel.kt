@@ -43,11 +43,7 @@ class AnimeSearchViewModel(
     }
 
     fun applyFilters(updatedQueryState: AnimeSearchQueryState) {
-        _queryState.value = if (updatedQueryState.isDefault()) {
-            previousQueryState?.copy() ?: AnimeSearchQueryState()
-        } else {
-            updatedQueryState
-        }
+        _queryState.value = updatedQueryState
         searchAnime()
     }
 

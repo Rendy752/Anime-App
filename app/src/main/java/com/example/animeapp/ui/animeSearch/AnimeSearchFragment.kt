@@ -102,7 +102,8 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
         val debounce = Debounce(
             lifecycleScope,
             1000L,
-            { query -> viewModel.applyFilters(viewModel.queryState.value.copy(query = query)) },
+            { query ->
+                viewModel.applyFilters(viewModel.queryState.value.copy(query = query)) },
             viewModel
         )
 

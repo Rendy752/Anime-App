@@ -14,14 +14,12 @@ class Debounce(
 ) {
 
     private var searchJob: Job? = null
-    private var lastText: String? = null
 
     fun query(text: String) {
-        lastText = text
         searchJob?.cancel()
         searchJob = coroutineScope.launch {
             delay(delayMillis)
-            if (lastText == text && text != viewModel.queryState.value.query) {
+            if (text != viewModel.queryState.value.query) {
                 onDebounced(text)
             }
         }
