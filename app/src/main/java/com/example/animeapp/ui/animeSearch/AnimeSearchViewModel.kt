@@ -6,6 +6,7 @@ import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.models.AnimeSearchQueryState
 import com.example.animeapp.models.AnimeSearchResponse
 import com.example.animeapp.models.CompletePagination
+import com.example.animeapp.models.GenresResponse
 import com.example.animeapp.repository.AnimeSearchRepository
 import com.example.animeapp.utils.Resource
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,12 +24,15 @@ class AnimeSearchViewModel(
     val animeSearchResults: StateFlow<Resource<AnimeSearchResponse>> =
         _animeSearchResults.asStateFlow()
 
-    private var previousQueryState: AnimeSearchQueryState? = null
     private val _queryState = MutableStateFlow(AnimeSearchQueryState())
     val queryState: StateFlow<AnimeSearchQueryState> = _queryState.asStateFlow()
 
+    private val _genres = MutableStateFlow<Resource<GenresResponse>>(Resource.Loading())
+    val genres: StateFlow<Resource<GenresResponse>> = _genres.asStateFlow()
+
     init {
         getRandomAnime()
+        fetchGenres()
     }
 
     private fun searchAnime() = viewModelScope.launch {
@@ -36,7 +40,6 @@ class AnimeSearchViewModel(
             getRandomAnime()
         } else {
             _animeSearchResults.value = Resource.Loading()
-            previousQueryState = queryState.value.copy()
             val response = animeSearchRepository.searchAnime(queryState.value)
             _animeSearchResults.value = handleAnimeSearchResponse(response)
         }
@@ -75,5 +78,20 @@ class AnimeSearchViewModel(
         } else {
             return Resource.Error(response.message())
         }
+    }
+
+    private fun fetchGenres() = viewModelScope.launch {
+        _genres.value = Resource.Loading()
+        val response = animeSearchRepository.getGenres()
+        _genres.value = handleGenresResponse(response)
+    }
+
+    private fun handleGenresResponse(response: Response<GenresResponse>): Resource<GenresResponse> {
+        if (response.isSuccessful) {
+            response.body()?.let { resultResponse ->
+                return Resource.Success(resultResponse)
+            }
+        }
+        return Resource.Error(response.message())
     }
 }

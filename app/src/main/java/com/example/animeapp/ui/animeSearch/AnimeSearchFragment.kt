@@ -25,8 +25,10 @@ import com.example.animeapp.data.remote.api.RetrofitInstance
 import com.example.animeapp.databinding.BottomSheetAnimeSearchFilterBinding
 import com.example.animeapp.databinding.FragmentAnimeSearchBinding
 import com.example.animeapp.models.CompletePagination
+import com.example.animeapp.models.Genres
 import com.example.animeapp.repository.AnimeSearchRepository
 import com.example.animeapp.ui.common.AnimeHeaderAdapter
+import com.example.animeapp.ui.common.FlowLayout
 import com.example.animeapp.utils.Debounce
 import com.example.animeapp.utils.FilterUtils
 import com.example.animeapp.utils.Limit
@@ -37,7 +39,6 @@ import com.example.animeapp.utils.Resource
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.chip.Chip
-import com.google.android.material.chip.ChipGroup
 import com.google.android.material.shape.CornerFamily
 import com.google.android.material.shape.MaterialShapeDrawable
 import kotlinx.coroutines.flow.collectLatest
@@ -318,16 +319,27 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
             )
             sortSpinner.setAdapter(sortAdapter)
 
-            val genres = FilterUtils.GENRE_OPTIONS
-            populateGenreChipGroup(genresChipGroup, genres)
+            viewLifecycleOwner.lifecycleScope.launch {
+                repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    viewModel.genres.collect { genresResponse ->
+                        if (genresResponse is Resource.Success) {
+                            val genres = genresResponse.data?.data?: emptyList()
+                            populateGenreChipGroup(genreFlowLayout, genres)
+                        }
+                    }
+                }
+            }
         }
     }
 
-    private fun populateGenreChipGroup(chipGroup: ChipGroup, genres: List<String>) {
+    private fun populateGenreChipGroup(flowLayout: FlowLayout, genres: List<Genres>) {
+        flowLayout.removeAllViews()
         for (genre in genres) {
             val chip = Chip(requireContext())
-            chip.text = genre
-            chipGroup.addView(chip)
+            chip.text = genre.name
+
+            //... (Set other chip properties like onClickListener, etc.)...
+            flowLayout.addView(chip)
         }
     }
 

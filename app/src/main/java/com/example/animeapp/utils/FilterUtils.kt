@@ -2,8 +2,6 @@ package com.example.animeapp.utils
 
 import com.example.animeapp.databinding.BottomSheetAnimeSearchFilterBinding
 import com.example.animeapp.models.AnimeSearchQueryState
-import com.google.android.material.chip.Chip
-import com.google.android.material.chip.ChipGroup
 
 object FilterUtils {
 
@@ -24,7 +22,6 @@ object FilterUtils {
         "scored_by", "rank", "popularity", "members", "favorites"
     )
     val SORT_OPTIONS = listOf("Any", "desc", "asc")
-    val GENRE_OPTIONS = listOf("Action", "Adventure", "Comedy", "Drama", "Fantasy", "Sci-Fi")
 
     fun collectFilterValues(currentState: AnimeSearchQueryState, binding: BottomSheetAnimeSearchFilterBinding): AnimeSearchQueryState {
         binding.apply {
@@ -70,7 +67,6 @@ object FilterUtils {
                 }?.key?.takeIf { it != "Any" },
                 sfw = sfwCheckBox.isChecked,
                 unapproved = unapprovedCheckBox.isChecked,
-                genres = getChipGroupValues(genresChipGroup),
                 orderBy = orderBySpinner.text.toString().takeIf { it != "Any" },
                 sort = sortSpinner.text.toString().takeIf { it != "Any" },
                 producers = producersEditText.text.toString().takeIf { it.isNotBlank() },
@@ -78,17 +74,6 @@ object FilterUtils {
                 endDate = endDate
             )
         }
-    }
-
-    private fun getChipGroupValues(chipGroup: ChipGroup): String? {
-        val selectedChipIds = mutableListOf<Int>()
-        for (i in 0 until chipGroup.childCount) {
-            val chip = chipGroup.getChildAt(i) as? Chip
-            if (chip?.isChecked == true) {
-                selectedChipIds.add(chip.id)
-            }
-        }
-        return if (selectedChipIds.isNotEmpty()) selectedChipIds.joinToString(",") else null
     }
 
     fun getRatingDescription(ratingCode: String): String {
