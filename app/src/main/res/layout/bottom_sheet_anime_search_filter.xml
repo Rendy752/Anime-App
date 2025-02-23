@@ -6,11 +6,19 @@
     android:layout_marginTop="10dp"
     android:orientation="vertical">
 
+    <View
+        android:id="@+id/miniRoundedLine"
+        android:layout_width="48dp"
+        android:layout_height="4dp"
+        android:layout_gravity="center_horizontal"
+        android:layout_marginTop="4dp"
+        android:background="@drawable/mini_rounded_line" />
+
     <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="8dp"
-        android:background="@drawable/bottom_border">
+        android:background="@drawable/bottom_border"
+        android:padding="8dp">
 
         <TextView
             android:id="@+id/tvTitle"
@@ -62,14 +70,6 @@
             android:layout_height="wrap_content"
             android:padding="8dp">
 
-            <com.example.animeapp.ui.common.FlowLayout
-                android:id="@+id/genreFlowLayout"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toTopOf="parent" />
-
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/typeTf"
                 style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
@@ -78,7 +78,7 @@
                 android:layout_marginEnd="4dp"
                 app:layout_constraintEnd_toStartOf="@id/statusTf"
                 app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/genreFlowLayout">
+                app:layout_constraintTop_toTopOf="parent">
 
                 <AutoCompleteTextView
                     android:id="@+id/typeSpinner"
@@ -94,9 +94,9 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="4dp"
-                app:layout_constraintStart_toEndOf="@+id/typeTf"
                 app:layout_constraintEnd_toEndOf="parent"
-                app:layout_constraintTop_toBottomOf="@id/genreFlowLayout">
+                app:layout_constraintStart_toEndOf="@+id/typeTf"
+                app:layout_constraintTop_toTopOf="parent">
 
                 <AutoCompleteTextView
                     android:id="@+id/statusSpinner"
@@ -112,8 +112,8 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="4dp"
-                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toStartOf="@id/scoreTf"
+                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/typeTf">
 
                 <AutoCompleteTextView
@@ -130,8 +130,8 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="4dp"
-                app:layout_constraintStart_toEndOf="@id/ratingTf"
                 app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@id/ratingTf"
                 app:layout_constraintTop_toBottomOf="@+id/statusTf">
 
                 <com.google.android.material.textfield.TextInputEditText
@@ -148,8 +148,8 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="4dp"
-                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toStartOf="@id/maxScoreTf"
+                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/ratingTf">
 
                 <com.google.android.material.textfield.TextInputEditText
@@ -184,8 +184,8 @@
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="4dp"
-                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toStartOf="@+id/sortTf"
+                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/minScoreTf">
 
                 <AutoCompleteTextView
@@ -219,8 +219,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/enable_date_range"
-                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/orderByTf" />
 
             <TextView
@@ -232,8 +232,8 @@
                 android:gravity="center"
                 android:text="@string/start_date_field"
                 android:visibility="gone"
-                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toStartOf="@+id/endDateLabel"
+                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/enableDateRangeCheckBox" />
 
             <com.google.android.material.textfield.TextInputLayout
@@ -243,8 +243,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="4dp"
                 android:visibility="gone"
-                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toStartOf="@id/endDateTf"
+                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/startDateLabel">
 
                 <DatePicker
@@ -259,13 +259,13 @@
                 android:id="@+id/endDateLabel"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
                 android:layout_marginStart="4dp"
+                android:layout_marginTop="8dp"
                 android:gravity="center"
                 android:text="@string/end_date_field"
                 android:visibility="gone"
-                app:layout_constraintStart_toEndOf="@id/startDateLabel"
                 app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@id/startDateLabel"
                 app:layout_constraintTop_toBottomOf="@+id/enableDateRangeCheckBox" />
 
             <com.google.android.material.textfield.TextInputLayout
@@ -293,8 +293,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginEnd="4dp"
                 android:text="@string/include_unapproved_field"
-                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintEnd_toStartOf="@+id/sfwCheckBox"
+                app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@+id/startDateTf" />
 
             <CheckBox
