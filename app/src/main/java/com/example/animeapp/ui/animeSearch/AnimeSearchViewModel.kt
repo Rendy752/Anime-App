@@ -9,13 +9,16 @@ import com.example.animeapp.models.CompletePagination
 import com.example.animeapp.models.GenresResponse
 import com.example.animeapp.repository.AnimeSearchRepository
 import com.example.animeapp.utils.Resource
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import retrofit2.Response
+import javax.inject.Inject
 
-class AnimeSearchViewModel(
+@HiltViewModel
+class AnimeSearchViewModel @Inject constructor(
     private val animeSearchRepository: AnimeSearchRepository
 ) : ViewModel() {
 

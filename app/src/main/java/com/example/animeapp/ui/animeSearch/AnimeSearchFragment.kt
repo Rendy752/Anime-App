@@ -24,7 +24,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.animeapp.R
-import com.example.animeapp.data.remote.api.RetrofitInstance
 import com.example.animeapp.databinding.BottomSheetAnimeSearchFilterBinding
 import com.example.animeapp.databinding.GenresFlowLayoutBinding
 import com.example.animeapp.databinding.ProducersFlowLayoutBinding
@@ -32,7 +31,6 @@ import com.example.animeapp.databinding.FragmentAnimeSearchBinding
 import com.example.animeapp.models.CompletePagination
 import com.example.animeapp.models.Genres
 import com.example.animeapp.models.GenresResponse
-import com.example.animeapp.repository.AnimeSearchRepository
 import com.example.animeapp.ui.common.AnimeHeaderAdapter
 import com.example.animeapp.ui.common.FlowLayout
 import com.example.animeapp.utils.Debounce
@@ -49,9 +47,11 @@ import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.chip.Chip
 import com.google.android.material.shape.CornerFamily
 import com.google.android.material.shape.MaterialShapeDrawable
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
+@AndroidEntryPoint
 class AnimeSearchFragment : Fragment(), MenuProvider {
 
     private var _binding: FragmentAnimeSearchBinding? = null
@@ -59,10 +59,7 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
 
     private lateinit var animeHeaderAdapter: AnimeHeaderAdapter
 
-    private val viewModel: AnimeSearchViewModel by viewModels {
-        val animeSearchRepository = AnimeSearchRepository(RetrofitInstance.api)
-        AnimeSearchViewModelProviderFactory(animeSearchRepository)
-    }
+    private val viewModel: AnimeSearchViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater,

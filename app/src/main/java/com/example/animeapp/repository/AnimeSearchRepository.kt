@@ -1,11 +1,10 @@
 package com.example.animeapp.repository
 
 import com.example.animeapp.data.remote.api.AnimeAPI
-import com.example.animeapp.data.remote.api.RetrofitInstance
 import com.example.animeapp.models.AnimeSearchQueryState
 
 class AnimeSearchRepository(
-    private val api: AnimeAPI = RetrofitInstance.api
+    private val api: AnimeAPI
 ) {
     suspend fun searchAnime(
         queryState: AnimeSearchQueryState
