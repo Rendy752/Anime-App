@@ -332,7 +332,6 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
 
             orderBySpinner.setText(currentFilterState.orderBy ?: "Any")
             sortSpinner.setText(currentFilterState.sort ?: "Any")
-            producersEditText.setText(currentFilterState.producers ?: "")
 
             enableDateRangeCheckBox.setOnCheckedChangeListener { _, isChecked ->
                 startDateLabel.visibility = if (isChecked) View.VISIBLE else View.GONE

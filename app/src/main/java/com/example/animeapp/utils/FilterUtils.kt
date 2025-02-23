@@ -69,7 +69,6 @@ object FilterUtils {
                 unapproved = unapprovedCheckBox.isChecked,
                 orderBy = orderBySpinner.text.toString().takeIf { it != "Any" },
                 sort = sortSpinner.text.toString().takeIf { it != "Any" },
-                producers = producersEditText.text.toString().takeIf { it.isNotBlank() },
                 startDate = startDate,
                 endDate = endDate
             )
