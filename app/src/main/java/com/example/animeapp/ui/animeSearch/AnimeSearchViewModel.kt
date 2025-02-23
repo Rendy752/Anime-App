@@ -80,7 +80,7 @@ class AnimeSearchViewModel(
         }
     }
 
-    private fun fetchGenres() = viewModelScope.launch {
+    fun fetchGenres() = viewModelScope.launch {
         _genres.value = Resource.Loading()
         val response = animeSearchRepository.getGenres()
         _genres.value = handleGenresResponse(response)

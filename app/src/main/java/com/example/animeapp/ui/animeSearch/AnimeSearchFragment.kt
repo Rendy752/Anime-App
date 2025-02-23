@@ -24,6 +24,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.animeapp.R
 import com.example.animeapp.data.remote.api.RetrofitInstance
 import com.example.animeapp.databinding.BottomSheetAnimeSearchFilterBinding
+import com.example.animeapp.databinding.GenresFlowLayoutBinding
+import com.example.animeapp.databinding.ProducersFlowLayoutBinding
 import com.example.animeapp.databinding.FragmentAnimeSearchBinding
 import com.example.animeapp.models.CompletePagination
 import com.example.animeapp.models.Genres
@@ -132,25 +134,48 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
                 elevation = 10f
                 width = ViewGroup.LayoutParams.MATCH_PARENT
             }
-            val genresView = layoutInflater.inflate(R.layout.genres_flow_layout, root, false)
-            genresPopupWindow.contentView = genresView
-            val genreFlowLayout = genresView.findViewById<FlowLayout>(R.id.genreFlowLayout)
-            viewLifecycleOwner.lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.STARTED) {
-                    viewModel.genres.collect { response ->
-                        when (response) {
-                            is Resource.Success -> {
-                                val genres = response.data?.data ?: emptyList()
-                                populateGenreChipGroup(genreFlowLayout, genres)
-                                genreFlowLayout.setLoading(false)
-                            }
 
-                            is Resource.Loading -> {
-                                genreFlowLayout.setLoading(true)
-                            }
+            val genresFlowLayoutBinding =
+                GenresFlowLayoutBinding.inflate(layoutInflater, root, false)
+            genresPopupWindow.contentView = genresFlowLayoutBinding.root
+            val genreFlowLayout = genresFlowLayoutBinding.genreFlowLayout
+            genresFlowLayoutBinding.apply {
+                retryButton.setOnClickListener {
+                    viewModel.fetchGenres()
+                }
+                viewLifecycleOwner.lifecycleScope.launch {
+                    repeatOnLifecycle(Lifecycle.State.STARTED) {
+                        viewModel.genres.collect { response ->
+                            when (response) {
+                                is Resource.Success -> {
+                                    genreFlowLayout.setLoading(false)
+                                    val genres = response.data?.data ?: emptyList()
+                                    if (genres.isEmpty()) {
+                                        emptyTextView.visibility = View.VISIBLE
+                                        retryButton.visibility = View.VISIBLE
+                                    } else {
+                                        emptyTextView.visibility = View.GONE
+                                        retryButton.visibility = View.GONE
+                                        populateGenreChipGroup(genreFlowLayout, genres)
+                                    }
+                                }
 
-                            is Resource.Error -> {
-                                genreFlowLayout.setLoading(false)
+                                is Resource.Loading -> {
+                                    emptyTextView.visibility = View.GONE
+                                    retryButton.visibility = View.GONE
+                                    genreFlowLayout.setLoading(true)
+                                }
+
+                                is Resource.Error -> {
+                                    genreFlowLayout.setLoading(false)
+                                    emptyTextView.visibility = View.VISIBLE
+                                    retryButton.visibility = View.VISIBLE
+                                    Toast.makeText(
+                                        requireContext(),
+                                        "An error occurred",
+                                        Toast.LENGTH_LONG
+                                    ).show()
+                                }
                             }
                         }
                     }
@@ -169,10 +194,11 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
                 elevation = 10f
                 width = ViewGroup.LayoutParams.MATCH_PARENT
             }
-            val producersView =
-                layoutInflater.inflate(R.layout.producers_flow_layout, root, false)
-            producersPopupWindow.contentView = producersView
-            val producerFlowLayout = producersView.findViewById<FlowLayout>(R.id.producerFlowLayout)
+
+            val producersFlowLayoutBinding =
+                ProducersFlowLayoutBinding.inflate(layoutInflater, root, false)
+            producersPopupWindow.contentView = producersFlowLayoutBinding.root
+            val producerFlowLayout = producersFlowLayoutBinding.producerFlowLayout
 
             producersPopupWindow.setOnDismissListener {}
             producersField.setOnClickListener {
