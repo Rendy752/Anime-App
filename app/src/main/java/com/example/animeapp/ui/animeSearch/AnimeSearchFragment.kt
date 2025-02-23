@@ -31,6 +31,7 @@ import com.example.animeapp.databinding.ProducersFlowLayoutBinding
 import com.example.animeapp.databinding.FragmentAnimeSearchBinding
 import com.example.animeapp.models.CompletePagination
 import com.example.animeapp.models.Genres
+import com.example.animeapp.models.GenresResponse
 import com.example.animeapp.repository.AnimeSearchRepository
 import com.example.animeapp.ui.common.AnimeHeaderAdapter
 import com.example.animeapp.ui.common.FlowLayout
@@ -117,103 +118,54 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
         )
 
         binding.apply {
-            searchView.setOnQueryTextListener(object :
-                OnQueryTextListener {
+            searchView.setOnQueryTextListener(object : OnQueryTextListener {
                 override fun onQueryTextSubmit(query: String?): Boolean {
                     return true
                 }
 
                 override fun onQueryTextChange(newText: String?): Boolean {
-                    newText?.let {
-                        debounce.query(it)
-                    }
+                    newText?.let { debounce.query(it) }
                     return true
                 }
             })
 
-            val genresPopupWindow = PopupWindow(requireContext()).apply {
-                isOutsideTouchable = true
-                isFocusable = true
-                elevation = 10f
-                width = ViewGroup.LayoutParams.MATCH_PARENT
+            setupGenresPopupWindow()
+            setupProducersPopupWindow()
+        }
+    }
 
-                val backgroundDrawable = GradientDrawable().apply {
-                    shape = GradientDrawable.RECTANGLE
-                    setColor(if (Theme.isDarkMode()) Color.WHITE else Color.BLACK)
-                    cornerRadius = 20f
-                    alpha = (255 * 0.7f).toInt()
-                }
+    private fun setupGenresPopupWindow() {
+        val genresPopupWindow = createPopupWindow()
 
-                setBackgroundDrawable(backgroundDrawable)
-            }
+        binding.apply {
+            val genresFlowLayoutBinding =
+                GenresFlowLayoutBinding.inflate(layoutInflater, root, false)
+            genresFlowLayoutBinding.apply {
+                genresPopupWindow.contentView = genresFlowLayoutBinding.root
+                val genreFlowLayout = genresFlowLayoutBinding.genreFlowLayout
+                genresFlowLayoutBinding.retryButton.setOnClickListener { viewModel.fetchGenres() }
 
-            GenresFlowLayoutBinding.inflate(layoutInflater, root, false).apply {
-                genresPopupWindow.contentView = root
-                val genreFlowLayout = genreFlowLayout
-                retryButton.setOnClickListener {
-                    viewModel.fetchGenres()
-                }
                 viewLifecycleOwner.lifecycleScope.launch {
                     repeatOnLifecycle(Lifecycle.State.STARTED) {
                         viewModel.genres.collect { response ->
-                            when (response) {
-                                is Resource.Success -> {
-                                    genreFlowLayout.setLoading(false)
-                                    val genres = response.data?.data ?: emptyList()
-                                    if (genres.isEmpty()) {
-                                        emptyTextView.visibility = View.VISIBLE
-                                        retryButton.visibility = View.VISIBLE
-                                    } else {
-                                        emptyTextView.visibility = View.GONE
-                                        retryButton.visibility = View.GONE
-                                        populateGenreChipGroup(genreFlowLayout, genres)
-                                    }
-                                }
+                            handleGenreResponse(response, genresFlowLayoutBinding, genreFlowLayout)
 
-                                is Resource.Loading -> {
-                                    emptyTextView.visibility = View.GONE
-                                    retryButton.visibility = View.GONE
-                                    genreFlowLayout.setLoading(true)
-                                }
-
-                                is Resource.Error -> {
-                                    genreFlowLayout.setLoading(false)
-                                    emptyTextView.visibility = View.VISIBLE
-                                    retryButton.visibility = View.VISIBLE
-                                    Toast.makeText(
-                                        requireContext(),
-                                        "An error occurred",
-                                        Toast.LENGTH_LONG
-                                    ).show()
-                                }
-                            }
                         }
                     }
                 }
             }
 
             genresPopupWindow.setOnDismissListener {}
-
             genresField.setOnClickListener {
                 genresPopupWindow.showAsDropDown(it, -it.width, 1.toPx())
             }
+        }
+    }
 
-            val producersPopupWindow = PopupWindow(requireContext()).apply {
-                isOutsideTouchable = true
-                isFocusable = true
-                elevation = 10f
-                width = ViewGroup.LayoutParams.MATCH_PARENT
+    private fun setupProducersPopupWindow() {
+        val producersPopupWindow = createPopupWindow()
 
-                val backgroundDrawable = GradientDrawable().apply {
-                    shape = GradientDrawable.RECTANGLE
-                    setColor(if (Theme.isDarkMode()) Color.WHITE else Color.BLACK)
-                    cornerRadius = 20f
-                    alpha = (255 * 0.7f).toInt()
-                }
-
-                setBackgroundDrawable(backgroundDrawable)
-            }
-
+        binding.apply {
             val producersFlowLayoutBinding =
                 ProducersFlowLayoutBinding.inflate(layoutInflater, root, false)
             producersPopupWindow.contentView = producersFlowLayoutBinding.root
@@ -223,6 +175,64 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
             producersField.setOnClickListener {
                 producersPopupWindow.showAsDropDown(it, it.width, 1.toPx())
             }
+        }
+    }
+
+    private fun handleGenreResponse(
+        response: Resource<GenresResponse>,
+        binding: GenresFlowLayoutBinding,
+        genreFlowLayout: FlowLayout
+    ) {
+        binding.apply {
+            when (response) {
+                is Resource.Success -> {
+                    genreFlowLayout.setLoading(false)
+                    val genres = response.data?.data ?: emptyList()
+                    if (genres.isEmpty()) {
+                        emptyTextView.visibility = View.VISIBLE
+                        retryButton.visibility = View.VISIBLE
+                    } else {
+                        emptyTextView.visibility = View.GONE
+                        retryButton.visibility = View.GONE
+                        populateGenreChipGroup(genreFlowLayout, genres)
+                    }
+                }
+
+                is Resource.Loading -> {
+                    emptyTextView.visibility = View.GONE
+                    retryButton.visibility = View.GONE
+                    genreFlowLayout.setLoading(true)
+                }
+
+                is Resource.Error -> {
+                    genreFlowLayout.setLoading(false)
+                    emptyTextView.visibility = View.VISIBLE
+                    retryButton.visibility = View.VISIBLE
+                    Toast.makeText(
+                        requireContext(),
+                        "An error occurred",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
+    }
+
+    private fun createPopupWindow(): PopupWindow {
+        return PopupWindow(requireContext()).apply {
+            isOutsideTouchable = true
+            isFocusable = true
+            elevation = 10f
+            width = ViewGroup.LayoutParams.MATCH_PARENT
+
+            val backgroundDrawable = GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                setColor(if (Theme.isDarkMode()) Color.WHITE else Color.BLACK)
+                cornerRadius = 20f
+                alpha = (255 * 0.7f).toInt()
+            }
+
+            setBackgroundDrawable(backgroundDrawable)
         }
     }
 
