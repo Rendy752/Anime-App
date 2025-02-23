@@ -299,18 +299,35 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
             populateBottomSheetFilters(this)
 
             resetButton.setOnClickListener {
-                viewModel.resetBottomSheetFilters()
-                bottomSheetDialog.dismiss()
+                if (viewModel.queryState.value.isDefault()) {
+                    Toast.makeText(requireContext(), "No filters applied", Toast.LENGTH_SHORT)
+                        .show()
+                } else {
+                    viewModel.resetBottomSheetFilters()
+                    bottomSheetDialog.dismiss()
+                }
             }
 
             applyButton.setOnClickListener {
-                viewModel.applyFilters(
-                    FilterUtils.collectFilterValues(
+                if (FilterUtils.collectFilterValues(
                         viewModel.queryState.value,
                         this
+                    ) == viewModel.queryState.value.resetBottomSheetFilters()
+                ) {
+                    Toast.makeText(
+                        requireContext(),
+                        "No filters applied, you can reset",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                } else {
+                    viewModel.applyFilters(
+                        FilterUtils.collectFilterValues(
+                            viewModel.queryState.value,
+                            this
+                        )
                     )
-                )
-                bottomSheetDialog.dismiss()
+                    bottomSheetDialog.dismiss()
+                }
             }
         }
 
