@@ -23,7 +23,10 @@ object FilterUtils {
     )
     val SORT_OPTIONS = listOf("Any", "desc", "asc")
 
-    fun collectFilterValues(currentState: AnimeSearchQueryState, binding: BottomSheetAnimeSearchFilterBinding): AnimeSearchQueryState {
+    fun collectFilterValues(
+        currentState: AnimeSearchQueryState,
+        binding: BottomSheetAnimeSearchFilterBinding
+    ): AnimeSearchQueryState {
         binding.apply {
             val enableDateRange = binding.enableDateRangeCheckBox.isChecked
 
@@ -65,8 +68,8 @@ object FilterUtils {
                 rating = RATING_DESCRIPTIONS.entries.firstOrNull {
                     it.value == ratingSpinner.text.toString()
                 }?.key?.takeIf { it != "Any" },
-                sfw = sfwCheckBox.isChecked,
-                unapproved = unapprovedCheckBox.isChecked,
+                sfw = sfwCheckBox.isChecked.takeIf { it },
+                unapproved = unapprovedCheckBox.isChecked.takeIf { it },
                 orderBy = orderBySpinner.text.toString().takeIf { it != "Any" },
                 sort = sortSpinner.text.toString().takeIf { it != "Any" },
                 startDate = startDate,

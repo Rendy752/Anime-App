@@ -94,4 +94,9 @@ class AnimeSearchViewModel(
         }
         return Resource.Error(response.message())
     }
+
+    fun resetBottomSheetFilters() {
+        _queryState.value = queryState.value.resetBottomSheetFilters()
+        searchAnime()
+    }
 }

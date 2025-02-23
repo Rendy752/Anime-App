@@ -266,18 +266,26 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
     private fun showFilterBottomSheet() {
         val bottomSheetDialog = BottomSheetDialog(requireContext())
         val bottomSheetBinding = BottomSheetAnimeSearchFilterBinding.inflate(layoutInflater)
-        bottomSheetDialog.setContentView(bottomSheetBinding.root)
 
-        populateBottomSheetFilters(bottomSheetBinding)
+        bottomSheetBinding.apply {
+            bottomSheetDialog.setContentView(root)
 
-        bottomSheetBinding.applyButton.setOnClickListener {
-            viewModel.applyFilters(
-                FilterUtils.collectFilterValues(
-                    viewModel.queryState.value,
-                    bottomSheetBinding
+            populateBottomSheetFilters(this)
+
+            resetButton.setOnClickListener {
+                viewModel.resetBottomSheetFilters()
+                bottomSheetDialog.dismiss()
+            }
+
+            applyButton.setOnClickListener {
+                viewModel.applyFilters(
+                    FilterUtils.collectFilterValues(
+                        viewModel.queryState.value,
+                        this
+                    )
                 )
-            )
-            bottomSheetDialog.dismiss()
+                bottomSheetDialog.dismiss()
+            }
         }
 
         bottomSheetDialog.setOnShowListener { dialog ->
