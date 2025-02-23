@@ -477,21 +477,30 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
                     binding.apply {
                         when (response) {
                             is Resource.Success -> {
-                                response.data?.let { searchResponse ->
+                                response.data?.data?.let { data ->
                                     animeHeaderAdapter.setLoading(false)
-                                    if (searchResponse.data.isEmpty()) {
-                                        tvError.visibility = View.VISIBLE
-                                        updatePagination(null)
-                                        "No results found".also { tvError.text = it }
-                                    } else {
-                                        updatePagination(response.data.pagination)
+                                    subMenuContainer.apply {
+                                        if (data.isEmpty()) {
+                                            tvError.visibility = View.VISIBLE
+                                            limitSpinner.visibility = View.GONE
+                                            updatePagination(null)
+                                            "No results found".also { tvError.text = it }
+                                        } else {
+                                            updatePagination(response.data.pagination)
 
-                                        subMenuContainer.limitSpinner.adapter
-                                        val limitIndex =
-                                            Limit.limitOptions.indexOf(viewModel.queryState.value.limit)
-                                        subMenuContainer.limitSpinner.setSelection(if (limitIndex == -1) 0 else limitIndex)
+                                            if (data.size <= 4) {
+                                                limitSpinner.visibility = View.GONE
+                                            } else {
+                                                limitSpinner.visibility =
+                                                    View.VISIBLE
+                                                limitSpinner.adapter
+                                                val limitIndex =
+                                                    Limit.limitOptions.indexOf(viewModel.queryState.value.limit)
+                                                limitSpinner.setSelection(if (limitIndex == -1) 0 else limitIndex)
+                                            }
 
-                                        animeHeaderAdapter.differ.submitList(searchResponse.data)
+                                            animeHeaderAdapter.differ.submitList(data)
+                                        }
                                     }
                                 }
                             }
