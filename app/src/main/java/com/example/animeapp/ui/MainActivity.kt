@@ -1,9 +1,6 @@
 package com.example.animeapp.ui
 
-import android.content.Context
 import android.content.Intent
-import android.hardware.Sensor
-import android.hardware.SensorManager
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Toast
@@ -16,12 +13,9 @@ import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
-import com.chuckerteam.chucker.api.Chucker
 import com.example.animeapp.R
 import com.example.animeapp.databinding.ActivityMainBinding
 import com.example.animeapp.utils.Navigation
-import com.example.animeapp.utils.ShakeDetector
-import com.example.animeapp.utils.Theme
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -29,35 +23,16 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private lateinit var sensorManager: SensorManager
-    private lateinit var shakeDetector: ShakeDetector
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setupSplashScreen()
-        setupTheme()
-        setupSensor()
         setupViewBinding()
         setupNavigation()
     }
 
     private fun setupSplashScreen() {
         installSplashScreen()
-    }
-
-    private fun isDarkMode(): Boolean {
-        val sharedPrefs = getSharedPreferences("theme_prefs", Context.MODE_PRIVATE)
-        val isDarkMode = sharedPrefs.getBoolean("is_dark_mode", false)
-        return isDarkMode
-    }
-
-    private fun setupTheme() {
-        Theme.setTheme(this, isDarkMode())
-    }
-
-    private fun setupSensor() {
-        sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
-        shakeDetector = ShakeDetector { startActivity(Chucker.getLaunchIntent(this)) }
     }
 
     private fun setupViewBinding() {
@@ -125,19 +100,5 @@ class MainActivity : AppCompatActivity() {
     override fun onSupportNavigateUp(): Boolean {
         val navController = findNavController(R.id.nav_host_fragment_activity_main)
         return navController.navigateUp() || super.onSupportNavigateUp()
-    }
-
-    override fun onResume() {
-        super.onResume()
-        sensorManager.registerListener(
-            shakeDetector,
-            sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
-            SensorManager.SENSOR_DELAY_NORMAL
-        )
-    }
-
-    override fun onPause() {
-        super.onPause()
-        sensorManager.unregisterListener(shakeDetector)
     }
 }
