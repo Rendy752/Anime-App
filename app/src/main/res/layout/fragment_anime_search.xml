@@ -21,39 +21,65 @@
         app:searchHintIcon="@null"
         app:searchIcon="@drawable/ic_search_blue_24dp" />
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/genresTextField"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+    <LinearLayout
+        android:id="@+id/genresField"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="8dp"
         android:layout_marginEnd="4dp"
-        android:hint="@string/genres_field"
-        app:layout_constraintEnd_toStartOf="@id/producersTextField"
+        android:background="@drawable/search_view_background"
+        android:clickable="true"
+        android:focusable="true"
+        android:orientation="horizontal"
+        android:padding="12dp"
+        app:layout_constraintEnd_toStartOf="@id/producersField"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/searchView">
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-    </com.google.android.material.textfield.TextInputLayout>
+        <TextView
+            android:id="@+id/genres_field_label"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/genres_field" />
 
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/producersTextField"
-        style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox"
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/chevron_down"
+            android:src="@drawable/ic_chevron_down_blue_24dp" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/producersField"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_marginStart="4dp"
         android:layout_marginEnd="8dp"
-        android:hint="@string/producers_field"
+        android:background="@drawable/search_view_background"
+        android:clickable="true"
+        android:focusable="true"
+        android:orientation="horizontal"
+        android:padding="12dp"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toEndOf="@id/genresTextField"
+        app:layout_constraintStart_toEndOf="@id/genresField"
         app:layout_constraintTop_toBottomOf="@id/searchView">
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-    </com.google.android.material.textfield.TextInputLayout>
+        <TextView
+            android:id="@+id/producers_field_label"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/producers_field" />
+
+        <ImageView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:contentDescription="@string/chevron_down"
+            android:src="@drawable/ic_chevron_down_blue_24dp" />
+
+    </LinearLayout>
 
     <TextView
         android:id="@+id/tvError"
@@ -65,7 +91,7 @@
         app:layout_constraintBottom_toTopOf="@id/subMenuContainer"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/genresTextField" />
+        app:layout_constraintTop_toBottomOf="@id/genresField" />
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/rvAnimeSearch"
@@ -75,7 +101,7 @@
         app:layout_constraintBottom_toTopOf="@id/subMenuContainer"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/genresTextField" />
+        app:layout_constraintTop_toBottomOf="@id/genresField" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/fabRefresh"

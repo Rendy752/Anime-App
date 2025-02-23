@@ -9,6 +9,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.PopupWindow
 import android.widget.Spinner
 import android.widget.Toast
 import androidx.appcompat.widget.SearchView.OnQueryTextListener
@@ -36,6 +37,7 @@ import com.example.animeapp.utils.MinMaxInputFilter
 import com.example.animeapp.utils.Navigation
 import com.example.animeapp.utils.Pagination
 import com.example.animeapp.utils.Resource
+import com.example.animeapp.utils.ViewUtils.toPx
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.chip.Chip
@@ -104,23 +106,79 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
             lifecycleScope,
             1000L,
             { query ->
-                viewModel.applyFilters(viewModel.queryState.value.copy(query = query)) },
+                viewModel.applyFilters(viewModel.queryState.value.copy(query = query))
+            },
             viewModel
         )
 
-        binding.searchView.setOnQueryTextListener(object :
-            OnQueryTextListener {
-            override fun onQueryTextSubmit(query: String?): Boolean {
-                return true
+        binding.apply {
+            searchView.setOnQueryTextListener(object :
+                OnQueryTextListener {
+                override fun onQueryTextSubmit(query: String?): Boolean {
+                    return true
+                }
+
+                override fun onQueryTextChange(newText: String?): Boolean {
+                    newText?.let {
+                        debounce.query(it)
+                    }
+                    return true
+                }
+            })
+
+            val genresPopupWindow = PopupWindow(requireContext()).apply {
+                isOutsideTouchable = true
+                isFocusable = true
+                elevation = 10f
+                width = ViewGroup.LayoutParams.MATCH_PARENT
+            }
+            val genresView = layoutInflater.inflate(R.layout.genres_flow_layout, root, false)
+            genresPopupWindow.contentView = genresView
+            val genreFlowLayout = genresView.findViewById<FlowLayout>(R.id.genreFlowLayout)
+            viewLifecycleOwner.lifecycleScope.launch {
+                repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    viewModel.genres.collect { response ->
+                        when (response) {
+                            is Resource.Success -> {
+                                val genres = response.data?.data ?: emptyList()
+                                populateGenreChipGroup(genreFlowLayout, genres)
+                                genreFlowLayout.setLoading(false)
+                            }
+
+                            is Resource.Loading -> {
+                                genreFlowLayout.setLoading(true)
+                            }
+
+                            is Resource.Error -> {
+                                genreFlowLayout.setLoading(false)
+                            }
+                        }
+                    }
+                }
             }
 
-            override fun onQueryTextChange(newText: String?): Boolean {
-                newText?.let {
-                    debounce.query(it)
-                }
-                return true
+            genresPopupWindow.setOnDismissListener {}
+
+            genresField.setOnClickListener {
+                genresPopupWindow.showAsDropDown(it, -it.width, 8.toPx())
             }
-        })
+
+            val producersPopupWindow = PopupWindow(requireContext()).apply {
+                isOutsideTouchable = true
+                isFocusable = true
+                elevation = 10f
+                width = ViewGroup.LayoutParams.MATCH_PARENT
+            }
+            val producersView =
+                layoutInflater.inflate(R.layout.producers_flow_layout, root, false)
+            producersPopupWindow.contentView = producersView
+            val producerFlowLayout = producersView.findViewById<FlowLayout>(R.id.producerFlowLayout)
+
+            producersPopupWindow.setOnDismissListener {}
+            producersField.setOnClickListener {
+                producersPopupWindow.showAsDropDown(it, it.width, 8.toPx())
+            }
+        }
     }
 
     private fun setupLimitSpinner() {
@@ -147,16 +205,19 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
                 val selectedLimit = Limit.getLimitValue(position)
                 if (viewModel.queryState.value.limit != selectedLimit) {
                     val updatedQueryState = viewModel.queryState.value.copy(
-                        limit = selectedLimit
+                        limit = selectedLimit, page = 1
                     )
-                    viewModel.applyFilters(
-                        updatedQueryState
-                    )
+                    viewModel.applyFilters(updatedQueryState)
                 }
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {
-                viewModel.applyFilters(viewModel.queryState.value.copy(limit = Limit.DEFAULT_LIMIT))
+                viewModel.applyFilters(
+                    viewModel.queryState.value.copy(
+                        limit = Limit.DEFAULT_LIMIT,
+                        page = 1
+                    )
+                )
             }
         }
     }
@@ -318,17 +379,6 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
                 FilterUtils.SORT_OPTIONS
             )
             sortSpinner.setAdapter(sortAdapter)
-
-            viewLifecycleOwner.lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.STARTED) {
-                    viewModel.genres.collect { genresResponse ->
-                        if (genresResponse is Resource.Success) {
-                            val genres = genresResponse.data?.data?: emptyList()
-                            populateGenreChipGroup(genreFlowLayout, genres)
-                        }
-                    }
-                }
-            }
         }
     }
 

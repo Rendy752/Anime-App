@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.AttributeSet
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ProgressBar
 import kotlin.math.roundToInt
 
 class FlowLayout(context: Context, attrs: AttributeSet?) : ViewGroup(context, attrs) {
@@ -15,6 +16,9 @@ class FlowLayout(context: Context, attrs: AttributeSet?) : ViewGroup(context, at
         (horizontalSpacingDp * resources.displayMetrics.density).roundToInt()
     }
 
+    private var isLoading = false
+    private lateinit var progressBar: ProgressBar
+
     override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
         val width = MeasureSpec.getSize(widthMeasureSpec) - paddingLeft - paddingRight
         val widthMode = MeasureSpec.getMode(widthMeasureSpec)
@@ -24,6 +28,10 @@ class FlowLayout(context: Context, attrs: AttributeSet?) : ViewGroup(context, at
         var maxHeight = 0
         var lineWidth = 0
         var lineHeight = 0
+
+        if (isLoading) {
+            maxHeight += progressBar.measuredHeight
+        }
 
         val childViews = (0 until childCount).map { getChildAt(it) }
         lines.clear()
@@ -92,5 +100,32 @@ class FlowLayout(context: Context, attrs: AttributeSet?) : ViewGroup(context, at
 
             top += lineHeight
         }
+
+        if (isLoading) {
+            progressBar.layout(
+                (width - progressBar.measuredWidth) / 2, // Center horizontally
+                top,
+                (width + progressBar.measuredWidth) / 2,
+                top + progressBar.measuredHeight
+            )
+        }
+    }
+
+    fun setLoading(isLoading: Boolean) {
+        this.isLoading = isLoading
+
+        if (isLoading) {
+            if (!::progressBar.isInitialized) {
+                progressBar = ProgressBar(context)
+                addView(progressBar)
+            }
+            progressBar.visibility = View.VISIBLE
+        } else {
+            if (::progressBar.isInitialized) {
+                progressBar.visibility = View.GONE
+            }
+        }
+
+        requestLayout()
     }
 }

@@ -67,4 +67,5 @@
     <string name="include_unapproved_field">Include Unapproved</string>
     <string name="sfw_only_field">SFW Only</string>
     <string name="enable_date_range">Enable Date Range</string>
+    <string name="chevron_down">Chevron Down</string>
 </resources>
