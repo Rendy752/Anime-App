@@ -411,8 +411,9 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
     private fun populateGenreChipGroup(flowLayout: FlowLayout, genres: List<Genres>) {
         flowLayout.removeAllViews()
         for (genre in genres) {
-            val chip = Chip(requireContext())
+            val chip = layoutInflater.inflate(R.layout.chip_layout, flowLayout, false) as Chip
             chip.text = genre.name
+            chip.id = genre.mal_id
 
             //... (Set other chip properties like onClickListener, etc.)...
             flowLayout.addView(chip)

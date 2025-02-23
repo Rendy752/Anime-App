@@ -20,18 +20,33 @@
             android:text="@string/filter_anime"
             android:textSize="18sp"
             android:textStyle="bold"
-            app:layout_constraintBottom_toBottomOf="@+id/applyButton"
-            app:layout_constraintEnd_toStartOf="@id/applyButton"
+            app:layout_constraintBottom_toBottomOf="@+id/resetButton"
+            app:layout_constraintEnd_toStartOf="@id/resetButton"
             app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent" />
+
+        <Button
+            android:id="@+id/resetButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_marginEnd="4dp"
+            android:backgroundTint="@color/textColorSecondary"
+            android:text="@string/reset"
+            app:layout_constraintEnd_toStartOf="@id/applyButton"
+            app:layout_constraintStart_toEndOf="@id/tvTitle"
             app:layout_constraintTop_toTopOf="parent" />
 
         <Button
             android:id="@+id/applyButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="8dp"
+            android:backgroundTint="@color/colorPrimary"
             android:text="@string/apply"
             app:layout_constraintEnd_toEndOf="parent"
-            app:layout_constraintStart_toEndOf="@id/tvTitle"
+            app:layout_constraintStart_toEndOf="@id/resetButton"
             app:layout_constraintTop_toTopOf="parent" />
     </androidx.constraintlayout.widget.ConstraintLayout>
 

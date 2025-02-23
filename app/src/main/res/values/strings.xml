@@ -70,4 +70,5 @@
     <string name="chevron_down">Chevron Down</string>
     <string name="no_genres_found">No genres found</string>
     <string name="retry">Retry</string>
+    <string name="reset">Reset</string>
 </resources>
