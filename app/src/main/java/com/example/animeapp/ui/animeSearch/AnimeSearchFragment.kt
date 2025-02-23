@@ -1,5 +1,7 @@
 package com.example.animeapp.ui.animeSearch
 
+import android.graphics.Color
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Menu
@@ -39,6 +41,7 @@ import com.example.animeapp.utils.MinMaxInputFilter
 import com.example.animeapp.utils.Navigation
 import com.example.animeapp.utils.Pagination
 import com.example.animeapp.utils.Resource
+import com.example.animeapp.utils.Theme
 import com.example.animeapp.utils.ViewUtils.toPx
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
@@ -73,7 +76,7 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
         super.onViewCreated(view, savedInstanceState)
         setupMenu()
         setupRecyclerView()
-        setupSearchView()
+        setupView()
         setupLimitSpinner()
         setupObservers()
         setupClickListeners()
@@ -103,7 +106,7 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
         }
     }
 
-    private fun setupSearchView() {
+    private fun setupView() {
         val debounce = Debounce(
             lifecycleScope,
             1000L,
@@ -133,13 +136,20 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
                 isFocusable = true
                 elevation = 10f
                 width = ViewGroup.LayoutParams.MATCH_PARENT
+
+                val backgroundDrawable = GradientDrawable().apply {
+                    shape = GradientDrawable.RECTANGLE
+                    setColor(if (Theme.isDarkMode()) Color.WHITE else Color.BLACK)
+                    cornerRadius = 20f
+                    alpha = (255 * 0.7f).toInt()
+                }
+
+                setBackgroundDrawable(backgroundDrawable)
             }
 
-            val genresFlowLayoutBinding =
-                GenresFlowLayoutBinding.inflate(layoutInflater, root, false)
-            genresPopupWindow.contentView = genresFlowLayoutBinding.root
-            val genreFlowLayout = genresFlowLayoutBinding.genreFlowLayout
-            genresFlowLayoutBinding.apply {
+            GenresFlowLayoutBinding.inflate(layoutInflater, root, false).apply {
+                genresPopupWindow.contentView = root
+                val genreFlowLayout = genreFlowLayout
                 retryButton.setOnClickListener {
                     viewModel.fetchGenres()
                 }
@@ -185,7 +195,7 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
             genresPopupWindow.setOnDismissListener {}
 
             genresField.setOnClickListener {
-                genresPopupWindow.showAsDropDown(it, -it.width, 8.toPx())
+                genresPopupWindow.showAsDropDown(it, -it.width, 1.toPx())
             }
 
             val producersPopupWindow = PopupWindow(requireContext()).apply {
@@ -193,6 +203,15 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
                 isFocusable = true
                 elevation = 10f
                 width = ViewGroup.LayoutParams.MATCH_PARENT
+
+                val backgroundDrawable = GradientDrawable().apply {
+                    shape = GradientDrawable.RECTANGLE
+                    setColor(if (Theme.isDarkMode()) Color.WHITE else Color.BLACK)
+                    cornerRadius = 20f
+                    alpha = (255 * 0.7f).toInt()
+                }
+
+                setBackgroundDrawable(backgroundDrawable)
             }
 
             val producersFlowLayoutBinding =
@@ -202,7 +221,7 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
 
             producersPopupWindow.setOnDismissListener {}
             producersField.setOnClickListener {
-                producersPopupWindow.showAsDropDown(it, it.width, 8.toPx())
+                producersPopupWindow.showAsDropDown(it, it.width, 1.toPx())
             }
         }
     }

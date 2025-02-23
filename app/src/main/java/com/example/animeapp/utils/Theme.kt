@@ -40,4 +40,11 @@ object Theme {
             }
         }
     }
+
+    fun isDarkMode(): Boolean {
+        return when(AppCompatDelegate.getDefaultNightMode()){
+            AppCompatDelegate.MODE_NIGHT_YES -> true
+            else -> false
+        }
+    }
 }
