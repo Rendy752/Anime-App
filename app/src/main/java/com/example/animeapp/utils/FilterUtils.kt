@@ -1,6 +1,6 @@
 package com.example.animeapp.utils
 
-import com.example.animeapp.databinding.BottomSheetAnimeSearchFilterBinding
+import com.example.animeapp.databinding.FragmentBottomSheetFilterBinding
 import com.example.animeapp.models.AnimeSearchQueryState
 
 object FilterUtils {
@@ -25,7 +25,7 @@ object FilterUtils {
 
     fun collectFilterValues(
         currentState: AnimeSearchQueryState,
-        binding: BottomSheetAnimeSearchFilterBinding
+        binding: FragmentBottomSheetFilterBinding
     ): AnimeSearchQueryState {
         binding.apply {
             val enableDateRange = binding.enableDateRangeCheckBox.isChecked

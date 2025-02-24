@@ -1,7 +1,5 @@
 package com.example.animeapp.ui.animeSearch
 
-import android.graphics.Color
-import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Menu
@@ -9,55 +7,29 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
-import android.widget.AdapterView
 import android.widget.ArrayAdapter
-import android.widget.PopupWindow
-import android.widget.Spinner
 import android.widget.Toast
-import androidx.appcompat.widget.SearchView.OnQueryTextListener
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.lifecycleScope
-import androidx.lifecycle.repeatOnLifecycle
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.animeapp.R
-import com.example.animeapp.databinding.BottomSheetAnimeSearchFilterBinding
-import com.example.animeapp.databinding.GenresFlowLayoutBinding
-import com.example.animeapp.databinding.ProducersFlowLayoutBinding
 import com.example.animeapp.databinding.FragmentAnimeSearchBinding
-import com.example.animeapp.models.CompletePagination
-import com.example.animeapp.models.Genres
-import com.example.animeapp.models.GenresResponse
-import com.example.animeapp.ui.common.AnimeHeaderAdapter
-import com.example.animeapp.ui.common.FlowLayout
-import com.example.animeapp.utils.Debounce
+import com.example.animeapp.databinding.FragmentBottomSheetFilterBinding
 import com.example.animeapp.utils.FilterUtils
-import com.example.animeapp.utils.Limit
 import com.example.animeapp.utils.MinMaxInputFilter
-import com.example.animeapp.utils.Navigation
-import com.example.animeapp.utils.Pagination
-import com.example.animeapp.utils.Resource
-import com.example.animeapp.utils.Theme
-import com.example.animeapp.utils.ViewUtils.toPx
 import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
-import com.google.android.material.chip.Chip
 import com.google.android.material.shape.CornerFamily
 import com.google.android.material.shape.MaterialShapeDrawable
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class AnimeSearchFragment : Fragment(), MenuProvider {
 
     private var _binding: FragmentAnimeSearchBinding? = null
     private val binding get() = _binding!!
-
-    private lateinit var animeHeaderAdapter: AnimeHeaderAdapter
 
     private val viewModel: AnimeSearchViewModel by viewModels()
 
@@ -73,205 +45,19 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setupMenu()
-        setupRecyclerView()
-        setupView()
-        setupLimitSpinner()
-        setupObservers()
-        setupClickListeners()
         setupRefreshFloatingActionButton()
-        updatePagination(null)
+
+        if (savedInstanceState == null) {
+            childFragmentManager.beginTransaction()
+                .replace(R.id.filterFragment, FilterFragment())
+                .replace(R.id.resultsFragment, ResultsFragment())
+                .replace(R.id.limitAndPaginationFragment, LimitAndPaginationFragment())
+                .commit()
+        }
     }
 
     private fun setupMenu() {
         requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
-    }
-
-    private fun setupRecyclerView() {
-        animeHeaderAdapter = AnimeHeaderAdapter()
-        binding.rvAnimeSearch.apply {
-            adapter = animeHeaderAdapter
-            layoutManager = LinearLayoutManager(activity)
-        }
-    }
-
-    private fun setupClickListeners() {
-        animeHeaderAdapter.setOnItemClickListener { animeId ->
-            Navigation.navigateToAnimeDetail(
-                this,
-                animeId,
-                R.id.action_animeSearchFragment_to_animeDetailFragment
-            )
-        }
-    }
-
-    private fun setupView() {
-        val debounce = Debounce(
-            lifecycleScope,
-            1000L,
-            { query ->
-                viewModel.applyFilters(viewModel.queryState.value.copy(query = query))
-            },
-            viewModel
-        )
-
-        binding.apply {
-            searchView.setOnQueryTextListener(object : OnQueryTextListener {
-                override fun onQueryTextSubmit(query: String?): Boolean {
-                    return true
-                }
-
-                override fun onQueryTextChange(newText: String?): Boolean {
-                    newText?.let { debounce.query(it) }
-                    return true
-                }
-            })
-
-            setupGenresPopupWindow()
-            setupProducersPopupWindow()
-        }
-    }
-
-    private fun setupGenresPopupWindow() {
-        val genresPopupWindow = createPopupWindow()
-
-        binding.apply {
-            val genresFlowLayoutBinding =
-                GenresFlowLayoutBinding.inflate(layoutInflater, root, false)
-            genresFlowLayoutBinding.apply {
-                genresPopupWindow.contentView = genresFlowLayoutBinding.root
-                val genreFlowLayout = genresFlowLayoutBinding.genreFlowLayout
-                genresFlowLayoutBinding.retryButton.setOnClickListener { viewModel.fetchGenres() }
-
-                viewLifecycleOwner.lifecycleScope.launch {
-                    repeatOnLifecycle(Lifecycle.State.STARTED) {
-                        viewModel.genres.collect { response ->
-                            handleGenreResponse(response, genresFlowLayoutBinding, genreFlowLayout)
-
-                        }
-                    }
-                }
-            }
-
-            genresPopupWindow.setOnDismissListener {}
-            genresField.setOnClickListener {
-                genresPopupWindow.showAsDropDown(it, -it.width, 1.toPx())
-            }
-        }
-    }
-
-    private fun setupProducersPopupWindow() {
-        val producersPopupWindow = createPopupWindow()
-
-        binding.apply {
-            val producersFlowLayoutBinding =
-                ProducersFlowLayoutBinding.inflate(layoutInflater, root, false)
-            producersPopupWindow.contentView = producersFlowLayoutBinding.root
-            val producerFlowLayout = producersFlowLayoutBinding.producerFlowLayout
-
-            producersPopupWindow.setOnDismissListener {}
-            producersField.setOnClickListener {
-                producersPopupWindow.showAsDropDown(it, it.width, 1.toPx())
-            }
-        }
-    }
-
-    private fun handleGenreResponse(
-        response: Resource<GenresResponse>,
-        binding: GenresFlowLayoutBinding,
-        genreFlowLayout: FlowLayout
-    ) {
-        binding.apply {
-            when (response) {
-                is Resource.Success -> {
-                    genreFlowLayout.setLoading(false)
-                    val genres = response.data?.data ?: emptyList()
-                    if (genres.isEmpty()) {
-                        emptyTextView.visibility = View.VISIBLE
-                        retryButton.visibility = View.VISIBLE
-                    } else {
-                        emptyTextView.visibility = View.GONE
-                        retryButton.visibility = View.GONE
-                        populateGenreChipGroup(genreFlowLayout, genres)
-                    }
-                }
-
-                is Resource.Loading -> {
-                    emptyTextView.visibility = View.GONE
-                    retryButton.visibility = View.GONE
-                    genreFlowLayout.setLoading(true)
-                }
-
-                is Resource.Error -> {
-                    genreFlowLayout.setLoading(false)
-                    emptyTextView.visibility = View.VISIBLE
-                    retryButton.visibility = View.VISIBLE
-                    Toast.makeText(
-                        requireContext(),
-                        "An error occurred",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
-            }
-        }
-    }
-
-    private fun createPopupWindow(): PopupWindow {
-        return PopupWindow(requireContext()).apply {
-            isOutsideTouchable = true
-            isFocusable = true
-            elevation = 10f
-            width = ViewGroup.LayoutParams.MATCH_PARENT
-
-            val backgroundDrawable = GradientDrawable().apply {
-                shape = GradientDrawable.RECTANGLE
-                setColor(if (Theme.isDarkMode()) Color.WHITE else Color.BLACK)
-                cornerRadius = 20f
-                alpha = (255 * 0.7f).toInt()
-            }
-
-            setBackgroundDrawable(backgroundDrawable)
-        }
-    }
-
-    private fun setupLimitSpinner() {
-        val limitSpinner: Spinner = binding.subMenuContainer.limitSpinner
-        val limitAdapter = ArrayAdapter(
-            requireContext(),
-            android.R.layout.simple_spinner_dropdown_item,
-            Limit.limitOptions
-        )
-        limitSpinner.adapter = limitAdapter
-
-        if (viewModel.queryState.value.limit == Limit.DEFAULT_LIMIT) {
-            val defaultLimitIndex = Limit.limitOptions.indexOf(10)
-            limitSpinner.setSelection(defaultLimitIndex)
-        }
-
-        limitSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(
-                parent: AdapterView<*>?,
-                view: View?,
-                position: Int,
-                id: Long
-            ) {
-                val selectedLimit = Limit.getLimitValue(position)
-                if (viewModel.queryState.value.limit != selectedLimit) {
-                    val updatedQueryState = viewModel.queryState.value.copy(
-                        limit = selectedLimit, page = 1
-                    )
-                    viewModel.applyFilters(updatedQueryState)
-                }
-            }
-
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-                viewModel.applyFilters(
-                    viewModel.queryState.value.copy(
-                        limit = Limit.DEFAULT_LIMIT,
-                        page = 1
-                    )
-                )
-            }
-        }
     }
 
     override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
@@ -291,7 +77,7 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
 
     private fun showFilterBottomSheet() {
         val bottomSheetDialog = BottomSheetDialog(requireContext())
-        val bottomSheetBinding = BottomSheetAnimeSearchFilterBinding.inflate(layoutInflater)
+        val bottomSheetBinding = FragmentBottomSheetFilterBinding.inflate(layoutInflater)
 
         bottomSheetBinding.apply {
             bottomSheetDialog.setContentView(root)
@@ -300,7 +86,7 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
 
             resetButton.setOnClickListener {
                 if (viewModel.queryState.value.isDefault()) {
-                    Toast.makeText(requireContext(), "No filters applied", Toast.LENGTH_SHORT)
+                    Toast.makeText(requireContext(), "No filters applied yet", Toast.LENGTH_SHORT)
                         .show()
                 } else {
                     viewModel.resetBottomSheetFilters()
@@ -362,7 +148,7 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
         bottomSheetDialog.show()
     }
 
-    private fun populateBottomSheetFilters(binding: BottomSheetAnimeSearchFilterBinding) {
+    private fun populateBottomSheetFilters(binding: FragmentBottomSheetFilterBinding) {
         val currentFilterState = viewModel.queryState.value
         binding.apply {
             typeSpinner.setText(currentFilterState.type ?: "Any")
@@ -458,94 +244,9 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
         }
     }
 
-    private fun populateGenreChipGroup(flowLayout: FlowLayout, genres: List<Genres>) {
-        flowLayout.removeAllViews()
-        for (genre in genres) {
-            val chip = layoutInflater.inflate(R.layout.chip_layout, flowLayout, false) as Chip
-            chip.text = genre.name
-            chip.id = genre.mal_id
-
-            //... (Set other chip properties like onClickListener, etc.)...
-            flowLayout.addView(chip)
-        }
-    }
-
-    private fun setupObservers() {
-        lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.animeSearchResults.collectLatest { response ->
-                    binding.apply {
-                        when (response) {
-                            is Resource.Success -> {
-                                response.data?.data?.let { data ->
-                                    animeHeaderAdapter.setLoading(false)
-                                    subMenuContainer.apply {
-                                        if (data.isEmpty()) {
-                                            tvError.visibility = View.VISIBLE
-                                            limitSpinner.visibility = View.GONE
-                                            updatePagination(null)
-                                            "No results found".also { tvError.text = it }
-                                        } else {
-                                            updatePagination(response.data.pagination)
-
-                                            if (data.size <= 4) {
-                                                limitSpinner.visibility = View.GONE
-                                            } else {
-                                                limitSpinner.visibility =
-                                                    View.VISIBLE
-                                                limitSpinner.adapter
-                                                val limitIndex =
-                                                    Limit.limitOptions.indexOf(viewModel.queryState.value.limit)
-                                                limitSpinner.setSelection(if (limitIndex == -1) 0 else limitIndex)
-                                            }
-
-                                            animeHeaderAdapter.differ.submitList(data)
-                                        }
-                                    }
-                                }
-                            }
-
-                            is Resource.Error -> {
-                                animeHeaderAdapter.setLoading(false)
-                                tvError.visibility = View.VISIBLE
-                                updatePagination(null)
-                                "An error occurred: ${response.message}".also {
-                                    tvError.text = it
-                                }
-                                Toast.makeText(
-                                    requireContext(),
-                                    "An error occurred: ${response.message}",
-                                    Toast.LENGTH_LONG
-                                ).show()
-                            }
-
-                            is Resource.Loading -> {
-                                animeHeaderAdapter.setLoading(true)
-                                tvError.visibility = View.GONE
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
     private fun setupRefreshFloatingActionButton() {
         binding.fabRefresh.setOnClickListener {
             viewModel.applyFilters(viewModel.queryState.value)
-        }
-    }
-
-    private fun updatePagination(pagination: CompletePagination?) {
-        binding.apply {
-            Pagination.setPaginationButtons(
-                subMenuContainer.paginationButtonContainer,
-                pagination
-            ) { pageNumber ->
-                viewModel.applyFilters(viewModel.queryState.value.copy(page = pageNumber))
-            }
-            subMenuContainer.paginationButtonContainer.visibility =
-                if (pagination == null) View.GONE else View.VISIBLE
         }
     }
 
