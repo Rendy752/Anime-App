@@ -7,6 +7,8 @@ import com.example.animeapp.models.AnimeSearchQueryState
 import com.example.animeapp.models.AnimeSearchResponse
 import com.example.animeapp.models.CompletePagination
 import com.example.animeapp.models.GenresResponse
+import com.example.animeapp.models.ProducersResponse
+import com.example.animeapp.models.ProducersSearchQueryState
 import com.example.animeapp.repository.AnimeSearchRepository
 import com.example.animeapp.utils.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -33,12 +35,22 @@ class AnimeSearchViewModel @Inject constructor(
     private val _genres = MutableStateFlow<Resource<GenresResponse>>(Resource.Loading())
     val genres: StateFlow<Resource<GenresResponse>> = _genres.asStateFlow()
 
+    private val _producers = MutableStateFlow<Resource<ProducersResponse>>(Resource.Loading())
+    val producers: StateFlow<Resource<ProducersResponse>> = _producers.asStateFlow()
+
+    private val _producersQueryState = MutableStateFlow(ProducersSearchQueryState())
+    val producersQueryState: StateFlow<ProducersSearchQueryState> = _producersQueryState.asStateFlow()
+
     private val _selectedGenreId = MutableStateFlow<List<Int>>(emptyList())
     val selectedGenreId: StateFlow<List<Int>> = _selectedGenreId.asStateFlow()
+
+    private val _selectedProducerId = MutableStateFlow<List<Int>>(emptyList())
+    val selectedProducerId: StateFlow<List<Int>> = _selectedProducerId.asStateFlow()
 
     init {
         getRandomAnime()
         fetchGenres()
+        fetchProducers()
     }
 
     private fun searchAnime() = viewModelScope.launch {
@@ -92,6 +104,15 @@ class AnimeSearchViewModel @Inject constructor(
         _genres.value = handleGenresResponse(response)
     }
 
+    private fun handleGenresResponse(response: Response<GenresResponse>): Resource<GenresResponse> {
+        if (response.isSuccessful) {
+            response.body()?.let { resultResponse ->
+                return Resource.Success(resultResponse)
+            }
+        }
+        return Resource.Error(response.message())
+    }
+
     fun setSelectedGenreId(genreId: Int) {
         val currentList = _selectedGenreId.value.toMutableList()
         if (currentList.contains(genreId)) {
@@ -102,15 +123,6 @@ class AnimeSearchViewModel @Inject constructor(
         _selectedGenreId.value = currentList
     }
 
-    private fun handleGenresResponse(response: Response<GenresResponse>): Resource<GenresResponse> {
-        if (response.isSuccessful) {
-            response.body()?.let { resultResponse ->
-                return Resource.Success(resultResponse)
-            }
-        }
-        return Resource.Error(response.message())
-    }
-
     fun applyGenreFilters() {
         val genreIds = selectedGenreId.value.joinToString(",")
         applyFilters(queryState.value.defaultLimitAndPage().copy(genres = genreIds))
@@ -119,6 +131,46 @@ class AnimeSearchViewModel @Inject constructor(
     fun resetGenreSelection() {
         _selectedGenreId.value = emptyList()
         applyFilters(queryState.value.resetGenres())
+    }
+
+    fun applyProducersFilters(updatedQueryState: ProducersSearchQueryState) {
+        _producersQueryState.value = updatedQueryState
+        fetchProducers()
+    }
+
+    fun fetchProducers() = viewModelScope.launch {
+        _producers.value = Resource.Loading()
+        val response = animeSearchRepository.getProducers(producersQueryState.value)
+        _producers.value = handleProducersResponse(response)
+    }
+
+    private fun handleProducersResponse(response: Response<ProducersResponse>): Resource<ProducersResponse> {
+        if (response.isSuccessful) {
+            response.body()?.let { resultResponse ->
+                return Resource.Success(resultResponse)
+            }
+        }
+        return Resource.Error(response.message())
+    }
+
+    fun setSelectedProducerId(producerId: Int) {
+        val currentList = _selectedProducerId.value.toMutableList()
+        if (currentList.contains(producerId)) {
+            currentList.remove(producerId)
+        } else {
+            currentList.add(producerId)
+        }
+        _selectedProducerId.value = currentList
+    }
+
+    fun applyProducerFilters() {
+        val producerIds = selectedProducerId.value.joinToString(",")
+        applyFilters(queryState.value.defaultLimitAndPage().copy(producers = producerIds))
+    }
+
+    fun resetProducerSelection() {
+        _selectedProducerId.value = emptyList()
+        applyFilters(queryState.value.resetProducers())
     }
 
     fun resetBottomSheetFilters() {

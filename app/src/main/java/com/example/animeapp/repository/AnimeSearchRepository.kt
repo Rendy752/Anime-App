@@ -2,6 +2,7 @@ package com.example.animeapp.repository
 
 import com.example.animeapp.data.remote.api.AnimeAPI
 import com.example.animeapp.models.AnimeSearchQueryState
+import com.example.animeapp.models.ProducersSearchQueryState
 
 class AnimeSearchRepository(
     private val api: AnimeAPI
@@ -33,4 +34,15 @@ class AnimeSearchRepository(
     suspend fun getRandomAnime() = api.getRandomAnime()
 
     suspend fun getGenres() = api.getGenres()
+
+    suspend fun getProducers(
+        queryState: ProducersSearchQueryState
+    ) = api.getProducers(
+        page = queryState.page,
+        limit = queryState.limit,
+        q = queryState.query,
+        orderBy = queryState.orderBy,
+        sort = queryState.sort,
+        letter = queryState.letter
+    )
 }

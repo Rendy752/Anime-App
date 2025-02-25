@@ -18,8 +18,10 @@ import com.example.animeapp.R
 import com.example.animeapp.databinding.GenresFlowLayoutBinding
 import com.example.animeapp.databinding.ProducersFlowLayoutBinding
 import com.example.animeapp.databinding.FragmentFilterBinding
-import com.example.animeapp.models.Genres
+import com.example.animeapp.models.Genre
 import com.example.animeapp.models.GenresResponse
+import com.example.animeapp.models.Producer
+import com.example.animeapp.models.ProducersResponse
 import com.example.animeapp.ui.common.FlowLayout
 import com.example.animeapp.utils.Debounce
 import com.example.animeapp.utils.Resource
@@ -85,15 +87,14 @@ class FilterFragment : Fragment() {
             val genresFlowLayoutBinding =
                 GenresFlowLayoutBinding.inflate(layoutInflater, root, false)
             genresFlowLayoutBinding.apply {
-                genresPopupWindow.contentView = genresFlowLayoutBinding.root
-                val genreFlowLayout = genresFlowLayoutBinding.genreFlowLayout
-                genresFlowLayoutBinding.retryButton.setOnClickListener { viewModel.fetchGenres() }
+                genresPopupWindow.contentView = root
+                val genreFlowLayout = genreFlowLayout
+                retryButton.setOnClickListener { viewModel.fetchGenres() }
 
                 viewLifecycleOwner.lifecycleScope.launch {
                     repeatOnLifecycle(Lifecycle.State.STARTED) {
                         viewModel.genres.collect { response ->
                             handleGenreResponse(response, genresFlowLayoutBinding, genreFlowLayout)
-
                         }
                     }
                 }
@@ -138,8 +139,49 @@ class FilterFragment : Fragment() {
         binding.apply {
             val producersFlowLayoutBinding =
                 ProducersFlowLayoutBinding.inflate(layoutInflater, root, false)
-            producersPopupWindow.contentView = producersFlowLayoutBinding.root
-            val producerFlowLayout = producersFlowLayoutBinding.producerFlowLayout
+
+            producersFlowLayoutBinding.apply {
+                producersPopupWindow.contentView = root
+                val producerFlowLayout = producerFlowLayout
+                retryButton.setOnClickListener { viewModel.fetchProducers() }
+                viewLifecycleOwner.lifecycleScope.launch {
+                    repeatOnLifecycle(Lifecycle.State.STARTED) {
+                        viewModel.producers.collect { response ->
+                            handleProducersResponse(
+                                response,
+                                producersFlowLayoutBinding,
+                                producerFlowLayout
+                            )
+                        }
+                    }
+                }
+
+                resetButton.setOnClickListener {
+                    if (viewModel.queryState.value.isProducersDefault()) {
+                        Toast.makeText(
+                            requireContext(),
+                            "No producers filter applied yet",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    } else {
+                        viewModel.resetProducerSelection()
+                        producersPopupWindow.dismiss()
+                    }
+                }
+
+                applyButton.setOnClickListener {
+                    if (viewModel.selectedProducerId.value.isEmpty()) {
+                        Toast.makeText(
+                            requireContext(),
+                            "No producers filter applied",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    } else {
+                        viewModel.applyProducerFilters()
+                        producersPopupWindow.dismiss()
+                    }
+                }
+            }
 
             producersPopupWindow.setOnDismissListener {}
             producersField.setOnClickListener {
@@ -188,6 +230,47 @@ class FilterFragment : Fragment() {
         }
     }
 
+    private fun handleProducersResponse(
+        response: Resource<ProducersResponse>,
+        binding: ProducersFlowLayoutBinding,
+        producerFlowLayout: FlowLayout
+    ) {
+        binding.apply {
+            when (response) {
+                is Resource.Success -> {
+                    producerFlowLayout.setLoading(false)
+                    val producers = response.data?.data ?: emptyList()
+                    if (producers.isEmpty()) {
+                        emptyTextView.visibility = View.VISIBLE
+                        retryButton.visibility = View.VISIBLE
+                    } else {
+                        emptyTextView.visibility = View.GONE
+                        retryButton.visibility = View.GONE
+                        populateProducerChipGroup(producerFlowLayout, producers)
+                    }
+                }
+
+                is Resource.Loading -> {
+                    emptyTextView.visibility = View.GONE
+                    retryButton.visibility = View.GONE
+                    producerFlowLayout.setLoading(true)
+                }
+
+                is Resource.Error -> {
+                    producerFlowLayout.setLoading(false)
+                    emptyTextView.visibility = View.VISIBLE
+                    retryButton.visibility
+                    Toast.makeText(
+                        requireContext(),
+                        "An error occurred",
+                        Toast.LENGTH_LONG
+                    ).show()
+                }
+            }
+        }
+    }
+
+
     private fun createPopupWindow(): PopupWindow {
         return PopupWindow(requireContext()).apply {
             isOutsideTouchable = true
@@ -206,7 +289,7 @@ class FilterFragment : Fragment() {
         }
     }
 
-    private fun populateGenreChipGroup(flowLayout: FlowLayout, genres: List<Genres>) {
+    private fun populateGenreChipGroup(flowLayout: FlowLayout, genres: List<Genre>) {
         flowLayout.removeAllViews()
         for (genre in genres) {
             val chip = layoutInflater.inflate(R.layout.chip_layout, flowLayout, false) as Chip
@@ -222,6 +305,25 @@ class FilterFragment : Fragment() {
                 viewModel.setSelectedGenreId(genre.mal_id)
             }
 
+            flowLayout.addView(chip)
+        }
+    }
+
+    private fun populateProducerChipGroup(flowLayout: FlowLayout, producers: List<Producer>) {
+        flowLayout.removeAllViews()
+        for (producer in producers) {
+            val chip = layoutInflater.inflate(R.layout.chip_layout, flowLayout, false) as Chip
+            chip.text = producer.titles?.get(0)?.title ?: "Unknown"
+            lifecycleScope.launch {
+                repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    viewModel.selectedProducerId.collectLatest { selectedProducerIds ->
+                        chip.isChecked = selectedProducerIds.contains(producer.mal_id)
+                    }
+                }
+            }
+            chip.setOnClickListener {
+                viewModel.setSelectedProducerId(producer.mal_id)
+            }
             flowLayout.addView(chip)
         }
     }
