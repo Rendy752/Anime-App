@@ -1,7 +1,10 @@
 package com.example.animeapp.ui.animeSearch
 
+import android.content.Intent
 import android.graphics.Color
+import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -14,10 +17,11 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.bumptech.glide.Glide
 import com.example.animeapp.R
+import com.example.animeapp.databinding.FragmentFilterBinding
 import com.example.animeapp.databinding.GenresFlowLayoutBinding
 import com.example.animeapp.databinding.ProducersFlowLayoutBinding
-import com.example.animeapp.databinding.FragmentFilterBinding
 import com.example.animeapp.models.Genre
 import com.example.animeapp.models.GenresResponse
 import com.example.animeapp.models.Producer
@@ -29,8 +33,10 @@ import com.example.animeapp.utils.Theme
 import com.example.animeapp.utils.ViewUtils.toPx
 import com.google.android.material.chip.Chip
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @AndroidEntryPoint
 class FilterFragment : Fragment() {
@@ -293,19 +299,27 @@ class FilterFragment : Fragment() {
         flowLayout.removeAllViews()
         for (genre in genres) {
             val chip = layoutInflater.inflate(R.layout.chip_layout, flowLayout, false) as Chip
-            chip.text = genre.name
-            lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.STARTED) {
-                    viewModel.selectedGenreId.collectLatest { selectedGenreIds ->
-                        chip.isChecked = selectedGenreIds.contains(genre.mal_id)
+            chip.apply {
+                "${genre.name} (${genre.count})".also { text = it }
+                lifecycleScope.launch {
+                    repeatOnLifecycle(Lifecycle.State.STARTED) {
+                        viewModel.selectedGenreId.collectLatest { selectedGenreIds ->
+                            isChecked = selectedGenreIds.contains(genre.mal_id)
+                        }
                     }
                 }
-            }
-            chip.setOnClickListener {
-                viewModel.setSelectedGenreId(genre.mal_id)
-            }
+                setOnClickListener {
+                    viewModel.setSelectedGenreId(genre.mal_id)
+                }
+                setOnLongClickListener {
+                    startActivity(
+                        Intent(Intent.ACTION_VIEW, Uri.parse(genre.url))
+                    )
+                    true
+                }
 
-            flowLayout.addView(chip)
+                flowLayout.addView(this)
+            }
         }
     }
 
@@ -313,18 +327,53 @@ class FilterFragment : Fragment() {
         flowLayout.removeAllViews()
         for (producer in producers) {
             val chip = layoutInflater.inflate(R.layout.chip_layout, flowLayout, false) as Chip
-            chip.text = producer.titles?.get(0)?.title ?: "Unknown"
-            lifecycleScope.launch {
-                repeatOnLifecycle(Lifecycle.State.STARTED) {
-                    viewModel.selectedProducerId.collectLatest { selectedProducerIds ->
-                        chip.isChecked = selectedProducerIds.contains(producer.mal_id)
+            chip.apply {
+                "${producer.titles?.get(0)?.title ?: "Unknown"} (${producer.count})".also {
+                    text = it
+                }
+
+                val iconUrl = producer.images?.jpg?.image_url
+                if (!iconUrl.isNullOrEmpty()) {
+                    lifecycleScope.launch(Dispatchers.Main) {
+                        val drawable: Drawable? = try {
+                            withContext(Dispatchers.IO) {
+                                Glide.with(requireContext())
+                                    .load(iconUrl)
+                                    .circleCrop()
+                                    .submit()
+                                    .get()
+                            }
+                        } catch (e: Exception) {
+                            null
+                        }
+                        if (drawable != null) {
+                            chipIcon = drawable
+                        } else {
+                            setChipIconResource(R.drawable.ic_error_yellow_24dp)
+                        }
+                    }
+                } else {
+                    setChipIconResource(R.drawable.ic_error_yellow_24dp)
+                }
+
+                lifecycleScope.launch {
+                    repeatOnLifecycle(Lifecycle.State.STARTED) {
+                        viewModel.selectedProducerId.collectLatest { selectedProducerIds ->
+                            isChecked = selectedProducerIds.contains(producer.mal_id)
+                        }
                     }
                 }
+                setOnClickListener {
+                    viewModel.setSelectedProducerId(producer.mal_id)
+                }
+                setOnLongClickListener {
+                    startActivity(
+                        Intent(Intent.ACTION_VIEW, Uri.parse(producer.url))
+                    )
+                    true
+                }
+                flowLayout.addView(this)
             }
-            chip.setOnClickListener {
-                viewModel.setSelectedProducerId(producer.mal_id)
-            }
-            flowLayout.addView(chip)
         }
     }
 
