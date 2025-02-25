@@ -1,6 +1,7 @@
 package com.example.animeapp.ui.animeSearch
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuInflater
@@ -95,6 +96,11 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
             }
 
             applyButton.setOnClickListener {
+                Log.d("AnimeSearchFragmentFilterutils", FilterUtils.collectFilterValues(
+                    viewModel.queryState.value,
+                    this
+                ).toString())
+                Log.d("AnimeSearchFragmentquerystate", viewModel.queryState.value.toString())
                 if (FilterUtils.collectFilterValues(
                         viewModel.queryState.value,
                         this

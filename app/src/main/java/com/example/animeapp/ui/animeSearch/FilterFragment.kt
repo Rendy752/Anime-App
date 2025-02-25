@@ -27,6 +27,7 @@ import com.example.animeapp.utils.Theme
 import com.example.animeapp.utils.ViewUtils.toPx
 import com.google.android.material.chip.Chip
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
@@ -94,6 +95,32 @@ class FilterFragment : Fragment() {
                             handleGenreResponse(response, genresFlowLayoutBinding, genreFlowLayout)
 
                         }
+                    }
+                }
+
+                resetButton.setOnClickListener {
+                    if (viewModel.queryState.value.isGenresDefault()) {
+                        Toast.makeText(
+                            requireContext(),
+                            "No genres filter applied yet",
+                            Toast.LENGTH_SHORT
+                        )
+                            .show()
+                    } else {
+                        viewModel.resetGenreSelection()
+                        genresPopupWindow.dismiss()
+                    }
+                }
+                applyButton.setOnClickListener {
+                    if (viewModel.selectedGenreId.value.isEmpty()) {
+                        Toast.makeText(
+                            requireContext(),
+                            "No genres filter applied",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    } else {
+                        viewModel.applyGenreFilters()
+                        genresPopupWindow.dismiss()
                     }
                 }
             }
@@ -184,9 +211,17 @@ class FilterFragment : Fragment() {
         for (genre in genres) {
             val chip = layoutInflater.inflate(R.layout.chip_layout, flowLayout, false) as Chip
             chip.text = genre.name
-            chip.id = genre.mal_id
+            lifecycleScope.launch {
+                repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    viewModel.selectedGenreId.collectLatest { selectedGenreIds ->
+                        chip.isChecked = selectedGenreIds.contains(genre.mal_id)
+                    }
+                }
+            }
+            chip.setOnClickListener {
+                viewModel.setSelectedGenreId(genre.mal_id)
+            }
 
-            //... (Set other chip properties like onClickListener, etc.)...
             flowLayout.addView(chip)
         }
     }

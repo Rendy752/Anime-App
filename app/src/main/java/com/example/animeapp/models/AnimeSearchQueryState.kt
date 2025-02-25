@@ -15,12 +15,12 @@ data class AnimeSearchQueryState(
     val rating: String? = null,
     val sfw: Boolean? = null,
     val unapproved: Boolean? = null,
-    val genres: List<String>? = null,
-    val genresExclude: List<String>? = null,
+    val genres: String? = null,
+    val genresExclude: String? = null,
     val orderBy: String? = null,
     val sort: String? = null,
     val letter: String? = null,
-    val producers: List<String>? = null,
+    val producers: String? = null,
     val startDate: String? = null,
     val endDate: String? = null
 ) {
@@ -34,14 +34,23 @@ data class AnimeSearchQueryState(
                 rating == null &&
                 sfw == null &&
                 unapproved == null &&
-                genres == null &&
-                genresExclude == null &&
                 orderBy == null &&
                 sort == null &&
                 letter == null &&
-                producers == null &&
                 startDate == null &&
                 endDate == null
+    }
+
+    fun isGenresDefault(): Boolean {
+        return genres == null && genresExclude == null
+    }
+
+    fun isProducersDefault(): Boolean {
+        return producers == null
+    }
+
+    fun defaultLimitAndPage(): AnimeSearchQueryState {
+        return copy(page = 1, limit = Limit.DEFAULT_LIMIT)
     }
 
     fun resetGenres(): AnimeSearchQueryState {
@@ -57,9 +66,7 @@ data class AnimeSearchQueryState(
     }
 
     fun resetBottomSheetFilters(): AnimeSearchQueryState {
-        return copy(
-            page = 1,
-            limit = Limit.DEFAULT_LIMIT,
+        return defaultLimitAndPage().copy(
             type = null,
             status = null,
             rating = null,

@@ -33,13 +33,16 @@ class AnimeSearchViewModel @Inject constructor(
     private val _genres = MutableStateFlow<Resource<GenresResponse>>(Resource.Loading())
     val genres: StateFlow<Resource<GenresResponse>> = _genres.asStateFlow()
 
+    private val _selectedGenreId = MutableStateFlow<List<Int>>(emptyList())
+    val selectedGenreId: StateFlow<List<Int>> = _selectedGenreId.asStateFlow()
+
     init {
         getRandomAnime()
         fetchGenres()
     }
 
     private fun searchAnime() = viewModelScope.launch {
-        if (queryState.value.isDefault()) {
+        if (queryState.value.isDefault() && queryState.value.isGenresDefault() && queryState.value.isProducersDefault()) {
             getRandomAnime()
         } else {
             _animeSearchResults.value = Resource.Loading()
@@ -89,6 +92,16 @@ class AnimeSearchViewModel @Inject constructor(
         _genres.value = handleGenresResponse(response)
     }
 
+    fun setSelectedGenreId(genreId: Int) {
+        val currentList = _selectedGenreId.value.toMutableList()
+        if (currentList.contains(genreId)) {
+            currentList.remove(genreId)
+        } else {
+            currentList.add(genreId)
+        }
+        _selectedGenreId.value = currentList
+    }
+
     private fun handleGenresResponse(response: Response<GenresResponse>): Resource<GenresResponse> {
         if (response.isSuccessful) {
             response.body()?.let { resultResponse ->
@@ -96,6 +109,16 @@ class AnimeSearchViewModel @Inject constructor(
             }
         }
         return Resource.Error(response.message())
+    }
+
+    fun applyGenreFilters() {
+        val genreIds = selectedGenreId.value.joinToString(",")
+        applyFilters(queryState.value.defaultLimitAndPage().copy(genres = genreIds))
+    }
+
+    fun resetGenreSelection() {
+        _selectedGenreId.value = emptyList()
+        applyFilters(queryState.value.resetGenres())
     }
 
     fun resetBottomSheetFilters() {

@@ -53,9 +53,7 @@ object FilterUtils {
             val minScore = minScoreEditText.text.toString().toDoubleOrNull()
             val maxScore = maxScoreEditText.text.toString().toDoubleOrNull()
 
-            return currentState.copy(
-                page = 1,
-                limit = 10,
+            return currentState.defaultLimitAndPage().copy(
                 type = typeSpinner.text.toString().takeIf { it != "Any" },
                 score = if (minScore != null || maxScore != null) {
                     null

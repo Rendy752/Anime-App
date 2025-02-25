@@ -36,12 +36,12 @@ interface AnimeAPI {
         @Query("status") status: String? = null,
         @Query("rating") rating: String? = null,
         @Query("sfw") sfw: Boolean? = null,
-        @Query("genres") genres: List<String>? = null,
-        @Query("genres_exclude") genresExclude: List<String>? = null,
+        @Query("genres") genres: String? = null,
+        @Query("genres_exclude") genresExclude: String? = null,
         @Query("order_by") orderBy: String? = null,
         @Query("sort") sort: String? = null,
         @Query("letter") letter: String? = null,
-        @Query("producers") producers: List<String>? = null,
+        @Query("producers") producers: String? = null,
         @Query("start_date") startDate: String? = null,
         @Query("end_date") endDate: String? = null
     ): Response<AnimeSearchResponse>
