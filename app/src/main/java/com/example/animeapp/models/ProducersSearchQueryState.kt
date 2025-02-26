@@ -5,7 +5,7 @@ import com.example.animeapp.utils.Limit
 data class ProducersSearchQueryState(
     val query: String = "",
     val page: Int = 1,
-    val limit: Int? = 25,
+    val limit: Int? = Limit.DEFAULT_LIMIT,
 
     val orderBy: String? = null,
     val sort: String? = null,

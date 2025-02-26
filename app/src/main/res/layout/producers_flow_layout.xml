@@ -32,7 +32,7 @@
         android:id="@+id/emptyTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/no_genres_found"
+        android:text="@string/no_producers_found"
         android:textColor="@color/colorPrimary"
         android:textSize="18sp"
         android:visibility="gone"
@@ -51,17 +51,24 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/emptyTextView" />
 
-    <ScrollView
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/producerRecyclerView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:paddingVertical="48dp"
+        android:paddingHorizontal="8dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/applyButton">
+        app:layout_constraintTop_toBottomOf="@id/resetButton"
+        app:layout_constraintBottom_toTopOf="@id/limitAndPaginationFragment"/>
 
-        <com.example.animeapp.ui.common.FlowLayout
-            android:id="@+id/producerFlowLayout"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:paddingHorizontal="8dp" />
-    </ScrollView>
+    <include
+        android:id="@+id/limitAndPaginationFragment"
+        layout="@layout/fragment_limit_and_pagination"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/producerRecyclerView"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -98,11 +98,6 @@ class LimitAndPaginationFragment : Fragment() {
         )
         limitSpinner.adapter = limitAdapter
 
-        if (viewModel.queryState.value.limit == Limit.DEFAULT_LIMIT) {
-            val defaultLimitIndex = Limit.limitOptions.indexOf(10)
-            limitSpinner.setSelection(defaultLimitIndex)
-        }
-
         limitSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(
                 parent: AdapterView<*>?,

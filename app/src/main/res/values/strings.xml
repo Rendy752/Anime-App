@@ -69,6 +69,7 @@
     <string name="enable_date_range">Enable Date Range</string>
     <string name="chevron_down">Chevron Down</string>
     <string name="no_genres_found">No genres found</string>
+    <string name="no_producers_found">No procuders found</string>
     <string name="retry">Retry</string>
     <string name="reset">Reset</string>
 </resources>

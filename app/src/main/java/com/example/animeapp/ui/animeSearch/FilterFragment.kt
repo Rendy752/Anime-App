@@ -1,15 +1,16 @@
 package com.example.animeapp.ui.animeSearch
 
-import android.content.Intent
+import android.annotation.SuppressLint
 import android.graphics.Color
-import android.graphics.drawable.Drawable
 import android.graphics.drawable.GradientDrawable
-import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.PopupWindow
+import android.widget.Spinner
 import android.widget.Toast
 import androidx.appcompat.widget.SearchView.OnQueryTextListener
 import androidx.fragment.app.Fragment
@@ -17,32 +18,37 @@ import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import com.bumptech.glide.Glide
-import com.example.animeapp.R
+import androidx.recyclerview.widget.RecyclerView
 import com.example.animeapp.databinding.FragmentFilterBinding
 import com.example.animeapp.databinding.GenresFlowLayoutBinding
 import com.example.animeapp.databinding.ProducersFlowLayoutBinding
-import com.example.animeapp.models.Genre
+import com.example.animeapp.models.CompletePagination
 import com.example.animeapp.models.GenresResponse
-import com.example.animeapp.models.Producer
 import com.example.animeapp.models.ProducersResponse
-import com.example.animeapp.ui.common.FlowLayout
 import com.example.animeapp.utils.Debounce
+import com.example.animeapp.utils.Limit
+import com.example.animeapp.utils.Pagination
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.Theme
 import com.example.animeapp.utils.ViewUtils.toPx
-import com.google.android.material.chip.Chip
+import com.google.android.flexbox.AlignItems
+import com.google.android.flexbox.FlexDirection
+import com.google.android.flexbox.FlexWrap
+import com.google.android.flexbox.FlexboxLayoutManager
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 @AndroidEntryPoint
 class FilterFragment : Fragment() {
 
     private var _binding: FragmentFilterBinding? = null
     private val binding get() = _binding!!
+
+    private lateinit var genresFlowLayoutBinding: GenresFlowLayoutBinding
+    private lateinit var genreRecyclerView: RecyclerView
+    private lateinit var producersFlowLayoutBinding: ProducersFlowLayoutBinding
+    private lateinit var producerRecyclerView: RecyclerView
 
     private val viewModel: AnimeSearchViewModel by viewModels(ownerProducer = { requireParentFragment() })
 
@@ -59,7 +65,12 @@ class FilterFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         setupSearchView()
         setupGenresPopupWindow()
+        setupGenresRecyclerView()
         setupProducersPopupWindow()
+        setupProducersRecyclerView()
+        setupProducersObservers()
+        setupLimitSpinner(Limit.DEFAULT_LIMIT)
+        updatePagination(null)
     }
 
     private fun setupSearchView() {
@@ -90,17 +101,15 @@ class FilterFragment : Fragment() {
         val genresPopupWindow = createPopupWindow()
 
         binding.apply {
-            val genresFlowLayoutBinding =
-                GenresFlowLayoutBinding.inflate(layoutInflater, root, false)
+            genresFlowLayoutBinding = GenresFlowLayoutBinding.inflate(layoutInflater, root, false)
             genresFlowLayoutBinding.apply {
                 genresPopupWindow.contentView = root
-                val genreFlowLayout = genreFlowLayout
                 retryButton.setOnClickListener { viewModel.fetchGenres() }
 
                 viewLifecycleOwner.lifecycleScope.launch {
                     repeatOnLifecycle(Lifecycle.State.STARTED) {
                         viewModel.genres.collect { response ->
-                            handleGenreResponse(response, genresFlowLayoutBinding, genreFlowLayout)
+                            handleGenreResponse(response, genresFlowLayoutBinding)
                         }
                     }
                 }
@@ -132,7 +141,6 @@ class FilterFragment : Fragment() {
                 }
             }
 
-            genresPopupWindow.setOnDismissListener {}
             genresField.setOnClickListener {
                 genresPopupWindow.showAsDropDown(it, -it.width, 1.toPx())
             }
@@ -143,24 +151,11 @@ class FilterFragment : Fragment() {
         val producersPopupWindow = createPopupWindow()
 
         binding.apply {
-            val producersFlowLayoutBinding =
+            producersFlowLayoutBinding =
                 ProducersFlowLayoutBinding.inflate(layoutInflater, root, false)
-
             producersFlowLayoutBinding.apply {
                 producersPopupWindow.contentView = root
-                val producerFlowLayout = producerFlowLayout
                 retryButton.setOnClickListener { viewModel.fetchProducers() }
-                viewLifecycleOwner.lifecycleScope.launch {
-                    repeatOnLifecycle(Lifecycle.State.STARTED) {
-                        viewModel.producers.collect { response ->
-                            handleProducersResponse(
-                                response,
-                                producersFlowLayoutBinding,
-                                producerFlowLayout
-                            )
-                        }
-                    }
-                }
 
                 resetButton.setOnClickListener {
                     if (viewModel.queryState.value.isProducersDefault()) {
@@ -189,22 +184,20 @@ class FilterFragment : Fragment() {
                 }
             }
 
-            producersPopupWindow.setOnDismissListener {}
             producersField.setOnClickListener {
                 producersPopupWindow.showAsDropDown(it, it.width, 1.toPx())
             }
         }
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     private fun handleGenreResponse(
         response: Resource<GenresResponse>,
-        binding: GenresFlowLayoutBinding,
-        genreFlowLayout: FlowLayout
+        binding: GenresFlowLayoutBinding
     ) {
         binding.apply {
             when (response) {
                 is Resource.Success -> {
-                    genreFlowLayout.setLoading(false)
                     val genres = response.data?.data ?: emptyList()
                     if (genres.isEmpty()) {
                         emptyTextView.visibility = View.VISIBLE
@@ -212,18 +205,20 @@ class FilterFragment : Fragment() {
                     } else {
                         emptyTextView.visibility = View.GONE
                         retryButton.visibility = View.GONE
-                        populateGenreChipGroup(genreFlowLayout, genres)
+
+                        val adapter = genreRecyclerView.adapter as GenreChipAdapter
+                        adapter.items = genres
+                        adapter.selectedIds = viewModel.selectedGenreId.value
+                        adapter.notifyDataSetChanged()
                     }
                 }
 
                 is Resource.Loading -> {
                     emptyTextView.visibility = View.GONE
                     retryButton.visibility = View.GONE
-                    genreFlowLayout.setLoading(true)
                 }
 
                 is Resource.Error -> {
-                    genreFlowLayout.setLoading(false)
                     emptyTextView.visibility = View.VISIBLE
                     retryButton.visibility = View.VISIBLE
                     Toast.makeText(
@@ -236,15 +231,40 @@ class FilterFragment : Fragment() {
         }
     }
 
+    private fun setupGenresRecyclerView() {
+        genreRecyclerView = genresFlowLayoutBinding.genreRecyclerView
+        genreRecyclerView.apply {
+            adapter = GenreChipAdapter { genre -> viewModel.setSelectedGenreId(genre.mal_id) }
+            layoutManager = FlexboxLayoutManager(requireContext()).apply {
+                flexWrap = FlexWrap.WRAP
+                flexDirection = FlexDirection.ROW
+                alignItems = AlignItems.STRETCH
+            }
+        }
+    }
+
+    private fun setupProducersRecyclerView() {
+        producerRecyclerView = producersFlowLayoutBinding.producerRecyclerView
+        producerRecyclerView.apply {
+            adapter =
+                ProducerChipAdapter { producer -> viewModel.setSelectedProducerId(producer.mal_id) }
+
+            layoutManager = FlexboxLayoutManager(requireContext()).apply {
+                flexWrap = FlexWrap.WRAP
+                flexDirection = FlexDirection.ROW
+                alignItems = AlignItems.STRETCH
+            }
+        }
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
     private fun handleProducersResponse(
         response: Resource<ProducersResponse>,
-        binding: ProducersFlowLayoutBinding,
-        producerFlowLayout: FlowLayout
+        binding: ProducersFlowLayoutBinding
     ) {
         binding.apply {
             when (response) {
                 is Resource.Success -> {
-                    producerFlowLayout.setLoading(false)
                     val producers = response.data?.data ?: emptyList()
                     if (producers.isEmpty()) {
                         emptyTextView.visibility = View.VISIBLE
@@ -252,30 +272,53 @@ class FilterFragment : Fragment() {
                     } else {
                         emptyTextView.visibility = View.GONE
                         retryButton.visibility = View.GONE
-                        populateProducerChipGroup(producerFlowLayout, producers)
+
+                        val adapter = producerRecyclerView.adapter as ProducerChipAdapter
+                        adapter.items = producers
+                        adapter.selectedIds = viewModel.selectedProducerId.value
+                        adapter.notifyDataSetChanged()
+                    }
+
+                    response.data?.data?.let { data ->
+                        if (data.isEmpty()) {
+                            limitAndPaginationFragment.limitSpinner.visibility = View.GONE
+                            updatePagination(null)
+                        } else {
+                            updatePagination(response.data.pagination)
+
+                            if (data.size <= 4) {
+                                limitAndPaginationFragment.limitSpinner.visibility = View.GONE
+                            } else {
+                                limitAndPaginationFragment.limitSpinner.visibility = View.VISIBLE
+                                setupLimitSpinner(
+                                    viewModel.producersQueryState.value.limit ?: Limit.DEFAULT_LIMIT
+                                )
+                            }
+                        }
                     }
                 }
 
                 is Resource.Loading -> {
                     emptyTextView.visibility = View.GONE
                     retryButton.visibility = View.GONE
-                    producerFlowLayout.setLoading(true)
+                    limitAndPaginationFragment.limitSpinner.visibility = View.GONE
+                    updatePagination(null)
                 }
 
                 is Resource.Error -> {
-                    producerFlowLayout.setLoading(false)
                     emptyTextView.visibility = View.VISIBLE
-                    retryButton.visibility
+                    retryButton.visibility = View.VISIBLE
                     Toast.makeText(
                         requireContext(),
                         "An error occurred",
                         Toast.LENGTH_LONG
                     ).show()
+                    limitAndPaginationFragment.limitSpinner.visibility = View.GONE
+                    updatePagination(null)
                 }
             }
         }
     }
-
 
     private fun createPopupWindow(): PopupWindow {
         return PopupWindow(requireContext()).apply {
@@ -295,85 +338,102 @@ class FilterFragment : Fragment() {
         }
     }
 
-    private fun populateGenreChipGroup(flowLayout: FlowLayout, genres: List<Genre>) {
-        flowLayout.removeAllViews()
-        for (genre in genres) {
-            val chip = layoutInflater.inflate(R.layout.chip_layout, flowLayout, false) as Chip
-            chip.apply {
-                "${genre.name} (${genre.count})".also { text = it }
-                lifecycleScope.launch {
-                    repeatOnLifecycle(Lifecycle.State.STARTED) {
-                        viewModel.selectedGenreId.collectLatest { selectedGenreIds ->
-                            isChecked = selectedGenreIds.contains(genre.mal_id)
+    private fun setupProducersObservers() {
+        lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.producers.collectLatest { response ->
+                    handleProducersResponse(
+                        response,
+                        producersFlowLayoutBinding
+                    )
+                    producersFlowLayoutBinding.limitAndPaginationFragment.apply {
+                        when (response) {
+                            is Resource.Success -> {
+                                response.data?.data?.let { data ->
+                                    if (data.isEmpty()) {
+                                        limitSpinner.visibility = View.GONE
+                                        updatePagination(null)
+                                    } else {
+                                        updatePagination(response.data.pagination)
+
+                                        if (data.size <= 4) {
+                                            limitSpinner.visibility = View.GONE
+                                        } else {
+                                            limitSpinner.visibility =
+                                                View.VISIBLE
+                                            setupLimitSpinner(
+                                                viewModel.producersQueryState.value.limit
+                                                    ?: Limit.DEFAULT_LIMIT
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            is Resource.Error -> {
+                                limitSpinner.visibility = View.GONE
+                                updatePagination(null)
+                            }
+
+                            is Resource.Loading -> {
+                                limitSpinner.visibility = View.GONE
+                                updatePagination(null)
+                            }
                         }
                     }
                 }
-                setOnClickListener {
-                    viewModel.setSelectedGenreId(genre.mal_id)
-                }
-                setOnLongClickListener {
-                    startActivity(
-                        Intent(Intent.ACTION_VIEW, Uri.parse(genre.url))
-                    )
-                    true
-                }
-
-                flowLayout.addView(this)
             }
         }
     }
 
-    private fun populateProducerChipGroup(flowLayout: FlowLayout, producers: List<Producer>) {
-        flowLayout.removeAllViews()
-        for (producer in producers) {
-            val chip = layoutInflater.inflate(R.layout.chip_layout, flowLayout, false) as Chip
-            chip.apply {
-                "${producer.titles?.get(0)?.title ?: "Unknown"} (${producer.count})".also {
-                    text = it
-                }
+    private fun setupLimitSpinner(limit: Int) {
+        val limitSpinner: Spinner =
+            producersFlowLayoutBinding.limitAndPaginationFragment.limitSpinner
+        val limitAdapter = ArrayAdapter(
+            requireContext(),
+            android.R.layout.simple_spinner_dropdown_item,
+            Limit.limitOptions
+        )
+        limitSpinner.adapter = limitAdapter
+        limitSpinner.setSelection(Limit.limitOptions.indexOf(limit))
 
-                val iconUrl = producer.images?.jpg?.image_url
-                if (!iconUrl.isNullOrEmpty()) {
-                    lifecycleScope.launch(Dispatchers.Main) {
-                        val drawable: Drawable? = try {
-                            withContext(Dispatchers.IO) {
-                                Glide.with(requireContext())
-                                    .load(iconUrl)
-                                    .circleCrop()
-                                    .submit()
-                                    .get()
-                            }
-                        } catch (e: Exception) {
-                            null
-                        }
-                        if (drawable != null) {
-                            chipIcon = drawable
-                        } else {
-                            setChipIconResource(R.drawable.ic_error_yellow_24dp)
-                        }
-                    }
-                } else {
-                    setChipIconResource(R.drawable.ic_error_yellow_24dp)
-                }
-
-                lifecycleScope.launch {
-                    repeatOnLifecycle(Lifecycle.State.STARTED) {
-                        viewModel.selectedProducerId.collectLatest { selectedProducerIds ->
-                            isChecked = selectedProducerIds.contains(producer.mal_id)
-                        }
-                    }
-                }
-                setOnClickListener {
-                    viewModel.setSelectedProducerId(producer.mal_id)
-                }
-                setOnLongClickListener {
-                    startActivity(
-                        Intent(Intent.ACTION_VIEW, Uri.parse(producer.url))
+        limitSpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
+                val selectedLimit = Limit.getLimitValue(position)
+                if (viewModel.producersQueryState.value.limit != selectedLimit) {
+                    val updatedQueryState = viewModel.producersQueryState.value.copy(
+                        limit = selectedLimit, page = 1
                     )
-                    true
+                    viewModel.applyProducersFilters(updatedQueryState)
                 }
-                flowLayout.addView(this)
             }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+                viewModel.applyProducersFilters(
+                    viewModel.producersQueryState.value.copy(
+                        limit = Limit.DEFAULT_LIMIT,
+                        page = 1
+                    )
+                )
+            }
+        }
+    }
+
+    private fun updatePagination(pagination: CompletePagination?) {
+        producersFlowLayoutBinding.limitAndPaginationFragment.apply {
+            Pagination.setPaginationButtons(
+                paginationButtonContainer,
+                pagination
+            ) { pageNumber ->
+                viewModel.applyProducersFilters(viewModel.producersQueryState.value.copy(page = pageNumber))
+            }
+            paginationButtonContainer.visibility =
+                if (pagination == null) View.GONE else View.VISIBLE
         }
     }
 
