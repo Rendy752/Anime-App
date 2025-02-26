@@ -10,6 +10,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
+import android.widget.Button
+import android.widget.ImageView
 import android.widget.PopupWindow
 import android.widget.Spinner
 import android.widget.Toast
@@ -22,8 +24,8 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView
 import com.example.animeapp.R
 import com.example.animeapp.databinding.FragmentFilterBinding
-import com.example.animeapp.databinding.GenresFlowLayoutBinding
-import com.example.animeapp.databinding.ProducersFlowLayoutBinding
+import com.example.animeapp.databinding.GenresFilterLayoutBinding
+import com.example.animeapp.databinding.ProducersFilterLayoutBinding
 import com.example.animeapp.models.CompletePagination
 import com.example.animeapp.models.GenresResponse
 import com.example.animeapp.models.ProducersResponse
@@ -50,12 +52,10 @@ class FilterFragment : Fragment() {
     private val binding get() = _binding!!
 
     private lateinit var genresPopupWindow: PopupWindow
-    private lateinit var genresFlowLayoutBinding: GenresFlowLayoutBinding
-    private lateinit var genreRecyclerView: RecyclerView
+    private lateinit var genresFilterLayoutBinding: GenresFilterLayoutBinding
 
     private lateinit var producersPopupWindow: PopupWindow
-    private lateinit var producersFlowLayoutBinding: ProducersFlowLayoutBinding
-    private lateinit var producerRecyclerView: RecyclerView
+    private lateinit var producersFilterLayoutBinding: ProducersFilterLayoutBinding
 
     private val viewModel: AnimeSearchViewModel by viewModels(ownerProducer = { requireParentFragment() })
 
@@ -70,12 +70,19 @@ class FilterFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
         setupSearchView()
         setupGenresPopupWindow()
-        setupGenresRecyclerView()
         setupProducersPopupWindow()
-        setupProducersRecyclerView()
-        setupProducersObservers()
+        setupRecyclerView(
+            genresFilterLayoutBinding.genreRecyclerView,
+            GenreChipAdapter { genre -> viewModel.setSelectedGenreId(genre.mal_id) }
+        )
+        setupRecyclerView(
+            producersFilterLayoutBinding.producerRecyclerView,
+            ProducerChipAdapter { producer -> viewModel.setSelectedProducerId(producer.mal_id) }
+        )
+        setupFiltersObservers()
         setupLimitSpinner(Limit.DEFAULT_LIMIT)
         updatePagination(null)
     }
@@ -104,59 +111,94 @@ class FilterFragment : Fragment() {
         }
     }
 
-    private fun setupGenresPopupWindow() {
-        genresPopupWindow = createPopupWindow()
+    private fun setupFilterPopupWindow(
+        filterType: FilterType,
+        field: View,
+        fieldIcon: ImageView,
+        getFilterLayout: () -> View,
+        resetAction: () -> Unit,
+        applyAction: () -> Unit,
+        isEmptySelection: () -> Boolean,
+        isDefault: () -> Boolean,
+        fetchData: () -> Unit
+    ) {
+        val popupWindow = createPopupWindow()
+        val filterLayout = getFilterLayout()
 
-        binding.apply {
-            genresFlowLayoutBinding = GenresFlowLayoutBinding.inflate(layoutInflater, root, false)
-            genresFlowLayoutBinding.apply {
-                genresPopupWindow.contentView = root
-                retryButton.setOnClickListener { viewModel.fetchGenres() }
+        popupWindow.contentView = filterLayout
+        filterLayout.findViewById<Button>(R.id.retryButton).setOnClickListener { fetchData() }
 
-                viewLifecycleOwner.lifecycleScope.launch {
-                    repeatOnLifecycle(Lifecycle.State.STARTED) {
-                        viewModel.genres.collect { response ->
-                            handleGenreResponse(response)
-                        }
-                    }
-                }
-
-                resetButton.setOnClickListener {
-                    if (viewModel.queryState.value.isGenresDefault()) {
-                        Toast.makeText(
-                            requireContext(),
-                            "No genres filter applied yet",
-                            Toast.LENGTH_SHORT
-                        )
-                            .show()
-                    } else {
-                        viewModel.resetGenreSelection()
-                        genresPopupWindow.dismiss()
-                    }
-                }
-                applyButton.setOnClickListener {
-                    if (viewModel.selectedGenreId.value.isEmpty()) {
-                        Toast.makeText(
-                            requireContext(),
-                            "No genres filter applied",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    } else {
-                        viewModel.applyGenreFilters()
-                        genresPopupWindow.dismiss()
-                    }
-                }
-            }
-
-            genresField.setOnClickListener {
-                genresFieldIcon.setImageResource(R.drawable.ic_close_red_24dp)
-                genresPopupWindow.showAsDropDown(it, -it.width, 1.toPx())
-            }
-
-            genresPopupWindow.setOnDismissListener {
-                genresFieldIcon.setImageResource(R.drawable.ic_chevron_down_blue_24dp)
+        filterLayout.findViewById<Button>(R.id.resetButton).setOnClickListener {
+            if (isDefault()) {
+                Toast.makeText(
+                    requireContext(),
+                    "No ${filterType.displayName} filter applied yet",
+                    Toast.LENGTH_SHORT
+                ).show()
+            } else {
+                resetAction()
+                popupWindow.dismiss()
             }
         }
+
+        filterLayout.findViewById<Button>(R.id.applyButton).setOnClickListener {
+            if (isEmptySelection()) {
+                Toast.makeText(
+                    requireContext(),
+                    "No ${filterType.displayName} filter applied",
+                    Toast.LENGTH_SHORT
+                ).show()
+            } else {
+                applyAction()
+                popupWindow.dismiss()
+            }
+        }
+
+        field.setOnClickListener {
+            fieldIcon.setImageResource(R.drawable.ic_close_red_24dp)
+            popupWindow.showAsDropDown(it, -it.width, 1.toPx())
+        }
+
+        popupWindow.setOnDismissListener {
+            fieldIcon.setImageResource(R.drawable.ic_chevron_down_blue_24dp)
+        }
+    }
+
+    private fun setupGenresPopupWindow() {
+        genresFilterLayoutBinding =
+            GenresFilterLayoutBinding.inflate(layoutInflater, binding.root, false)
+        setupFilterPopupWindow(
+            filterType = FilterType.GENRES,
+            field = binding.genresField,
+            fieldIcon = binding.genresFieldIcon,
+            getFilterLayout = { genresFilterLayoutBinding.root },
+            resetAction = { viewModel.resetGenreSelection() },
+            applyAction = { viewModel.applyGenreFilters() },
+            isEmptySelection = { viewModel.selectedGenreId.value.isEmpty() },
+            isDefault = { viewModel.queryState.value.isGenresDefault() },
+            fetchData = { viewModel.fetchGenres() }
+        )
+    }
+
+    private fun setupProducersPopupWindow() {
+        producersFilterLayoutBinding =
+            ProducersFilterLayoutBinding.inflate(layoutInflater, binding.root, false)
+        setupFilterPopupWindow(
+            filterType = FilterType.PRODUCERS,
+            field = binding.producersField,
+            fieldIcon = binding.producersFieldIcon,
+            getFilterLayout = { producersFilterLayoutBinding.root },
+            resetAction = { viewModel.resetProducerSelection() },
+            applyAction = { viewModel.applyProducerFilters() },
+            isEmptySelection = { viewModel.selectedProducerId.value.isEmpty() },
+            isDefault = { viewModel.queryState.value.isProducersDefault() },
+            fetchData = { viewModel.fetchProducers() }
+        )
+    }
+
+    private enum class FilterType(val displayName: String) {
+        GENRES("genres"),
+        PRODUCERS("producers")
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -179,107 +221,13 @@ class FilterFragment : Fragment() {
             dismiss()
         }
 
-        producersFlowLayoutBinding.apply {
+        producersFilterLayoutBinding.apply {
             if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
                 producerRecyclerView.setPadding(8.toDp(), 24.toDp(), 8.toDp(), 24.toDp())
                 limitAndPaginationFragment.root.visibility = View.GONE
             } else {
                 producerRecyclerView.setPadding(8.toDp(), 0, 8.toDp(), 0)
                 limitAndPaginationFragment.root.visibility = View.VISIBLE
-            }
-        }
-    }
-
-    private fun setupProducersPopupWindow() {
-        producersPopupWindow = createPopupWindow()
-
-        binding.apply {
-            producersFlowLayoutBinding =
-                ProducersFlowLayoutBinding.inflate(layoutInflater, root, false)
-            producersFlowLayoutBinding.apply {
-                producersPopupWindow.contentView = root
-                retryButton.setOnClickListener { viewModel.fetchProducers() }
-
-                resetButton.setOnClickListener {
-                    if (viewModel.queryState.value.isProducersDefault()) {
-                        Toast.makeText(
-                            requireContext(),
-                            "No producers filter applied yet",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    } else {
-                        viewModel.resetProducerSelection()
-                        producersPopupWindow.dismiss()
-                    }
-                }
-
-                applyButton.setOnClickListener {
-                    if (viewModel.selectedProducerId.value.isEmpty()) {
-                        Toast.makeText(
-                            requireContext(),
-                            "No producers filter applied",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    } else {
-                        viewModel.applyProducerFilters()
-                        producersPopupWindow.dismiss()
-                    }
-                }
-            }
-
-            producersField.setOnClickListener {
-                producersFieldIcon.setImageResource(R.drawable.ic_close_red_24dp)
-                producersPopupWindow.showAsDropDown(it, it.width, 1.toPx())
-            }
-
-            producersPopupWindow.setOnDismissListener {
-                producersFieldIcon.setImageResource(R.drawable.ic_chevron_down_blue_24dp)
-            }
-        }
-    }
-
-    @SuppressLint("NotifyDataSetChanged")
-    private fun handleGenreResponse(
-        response: Resource<GenresResponse>
-    ) {
-        genresFlowLayoutBinding.apply {
-            when (response) {
-                is Resource.Success -> {
-                    progressBar.visibility = View.GONE
-                    genreRecyclerView.visibility = View.VISIBLE
-                    retryButton.visibility = View.GONE
-
-                    val genres = response.data?.data ?: emptyList()
-                    if (genres.isEmpty()) {
-                        emptyTextView.visibility = View.VISIBLE
-                    } else {
-                        emptyTextView.visibility = View.GONE
-
-                        val adapter = genreRecyclerView.adapter as GenreChipAdapter
-                        adapter.items = genres
-                        adapter.selectedIds = viewModel.selectedGenreId.value
-                        adapter.notifyDataSetChanged()
-                    }
-                }
-
-                is Resource.Loading -> {
-                    genreRecyclerView.visibility = View.GONE
-                    progressBar.visibility = View.VISIBLE
-                    emptyTextView.visibility = View.GONE
-                    retryButton.visibility = View.GONE
-                }
-
-                is Resource.Error -> {
-                    progressBar.visibility = View.GONE
-                    emptyTextView.text = response.message
-                    emptyTextView.visibility = View.VISIBLE
-                    retryButton.visibility = View.VISIBLE
-                    Toast.makeText(
-                        requireContext(),
-                        "An error occurred",
-                        Toast.LENGTH_LONG
-                    ).show()
-                }
             }
         }
     }
@@ -297,22 +245,6 @@ class FilterFragment : Fragment() {
                 justifyContent = JustifyContent.SPACE_AROUND
             }
         }
-    }
-
-    private fun setupGenresRecyclerView() {
-        genreRecyclerView = genresFlowLayoutBinding.genreRecyclerView
-        setupRecyclerView(
-            genreRecyclerView,
-            GenreChipAdapter { genre -> viewModel.setSelectedGenreId(genre.mal_id) }
-        )
-    }
-
-    private fun setupProducersRecyclerView() {
-        producerRecyclerView = producersFlowLayoutBinding.producerRecyclerView
-        setupRecyclerView(
-            producerRecyclerView,
-            ProducerChipAdapter { producer -> viewModel.setSelectedProducerId(producer.mal_id) }
-        )
     }
 
     private fun createPopupWindow(): PopupWindow {
@@ -333,60 +265,59 @@ class FilterFragment : Fragment() {
         }
     }
 
-    private fun setupProducersObservers() {
+    private fun setupFiltersObservers() {
         lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.producers.collectLatest { response ->
-                    handleProducersResponse(response)
-                    producersFlowLayoutBinding.apply {
-                        when (response) {
-                            is Resource.Success -> {
-                                progressBar.visibility = View.GONE
-                                producerRecyclerView.visibility = View.VISIBLE
-                                retryButton.visibility = View.GONE
-
-                                response.data?.data?.let { data ->
-                                    if (data.isEmpty()) {
-                                        emptyTextView.visibility = View.VISIBLE
-                                        limitAndPaginationFragment.limitSpinner.visibility = View.GONE
-                                        updatePagination(null)
-                                    } else {
-                                        emptyTextView.visibility = View.GONE
-                                        updatePagination(response.data.pagination)
-
-                                        if (data.size <= 4) {
-                                            limitAndPaginationFragment.limitSpinner.visibility = View.GONE
-                                        } else {
-                                            limitAndPaginationFragment.limitSpinner.visibility =
-                                                View.VISIBLE
-                                            setupLimitSpinner(
-                                                viewModel.producersQueryState.value.limit
-                                                    ?: Limit.DEFAULT_LIMIT
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-
-                            is Resource.Error -> {
-                                progressBar.visibility = View.GONE
-                                emptyTextView.text = response.message
-                                emptyTextView.visibility = View.VISIBLE
-                                retryButton.visibility = View.VISIBLE
-                                limitAndPaginationFragment.limitSpinner.visibility = View.GONE
-                                updatePagination(null)
-                            }
-
-                            is Resource.Loading -> {
-                                producerRecyclerView.visibility = View.GONE
-                                progressBar.visibility = View.VISIBLE
-                                emptyTextView.visibility = View.GONE
-                                retryButton.visibility = View.GONE
-                                limitAndPaginationFragment.limitSpinner.visibility = View.GONE
-                                updatePagination(null)
-                            }
-                        }
+                launch {
+                    viewModel.producers.collectLatest { response ->
+                        handleProducersResponse(response)
                     }
+                }
+                launch {
+                    viewModel.genres.collectLatest { response ->
+                        handleGenreResponse(response)
+                    }
+                }
+            }
+        }
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    private fun handleGenreResponse(
+        response: Resource<GenresResponse>
+    ) {
+        genresFilterLayoutBinding.apply {
+            when (response) {
+                is Resource.Success -> {
+                    progressBar.visibility = View.GONE
+                    genreRecyclerView.visibility = View.VISIBLE
+                    retryButton.visibility = View.GONE
+
+                    val genres = response.data?.data ?: emptyList()
+                    if (genres.isEmpty()) {
+                        emptyTextView.visibility = View.VISIBLE
+                    } else {
+                        emptyTextView.visibility = View.GONE
+
+                        val adapter = genreRecyclerView.adapter as GenreChipAdapter
+                        adapter.items = genres
+                        adapter.selectedIds = viewModel.selectedGenreId.value
+                        adapter.notifyDataSetChanged()
+                    }
+                }
+
+                is Resource.Error -> {
+                    progressBar.visibility = View.GONE
+                    emptyTextView.text = response.message
+                    emptyTextView.visibility = View.VISIBLE
+                    retryButton.visibility = View.VISIBLE
+                }
+
+                is Resource.Loading -> {
+                    genreRecyclerView.visibility = View.GONE
+                    progressBar.visibility = View.VISIBLE
+                    emptyTextView.visibility = View.GONE
+                    retryButton.visibility = View.GONE
                 }
             }
         }
@@ -396,57 +327,54 @@ class FilterFragment : Fragment() {
     private fun handleProducersResponse(
         response: Resource<ProducersResponse>
     ) {
-        producersFlowLayoutBinding.apply {
+        producersFilterLayoutBinding.apply {
             when (response) {
                 is Resource.Success -> {
+                    progressBar.visibility = View.GONE
+                    producerRecyclerView.visibility = View.VISIBLE
+                    retryButton.visibility = View.GONE
+
                     val producers = response.data?.data ?: emptyList()
                     if (producers.isEmpty()) {
                         emptyTextView.visibility = View.VISIBLE
-                        retryButton.visibility = View.VISIBLE
+                        limitAndPaginationFragment.limitSpinner.visibility = View.GONE
+                        updatePagination(null)
                     } else {
                         emptyTextView.visibility = View.GONE
                         retryButton.visibility = View.GONE
+                        updatePagination(response.data?.pagination)
 
                         val adapter = producerRecyclerView.adapter as ProducerChipAdapter
                         adapter.items = producers
                         adapter.selectedIds = viewModel.selectedProducerId.value
                         adapter.notifyDataSetChanged()
-                    }
 
-                    response.data?.data?.let { data ->
-                        if (data.isEmpty()) {
+                        if (producers.size <= 4) {
                             limitAndPaginationFragment.limitSpinner.visibility = View.GONE
-                            updatePagination(null)
                         } else {
-                            updatePagination(response.data.pagination)
-
-                            if (data.size <= 4) {
-                                limitAndPaginationFragment.limitSpinner.visibility = View.GONE
-                            } else {
-                                limitAndPaginationFragment.limitSpinner.visibility = View.VISIBLE
-                                setupLimitSpinner(
-                                    viewModel.producersQueryState.value.limit ?: Limit.DEFAULT_LIMIT
-                                )
-                            }
+                            limitAndPaginationFragment.limitSpinner.visibility = View.VISIBLE
+                            setupLimitSpinner(
+                                viewModel.producersQueryState.value.limit ?: Limit.DEFAULT_LIMIT
+                            )
                         }
                     }
                 }
 
-                is Resource.Loading -> {
-                    emptyTextView.visibility = View.GONE
-                    retryButton.visibility = View.GONE
+                is Resource.Error -> {
+                    producerRecyclerView.visibility = View.GONE
+                    progressBar.visibility = View.GONE
+                    emptyTextView.text = response.message
+                    emptyTextView.visibility = View.VISIBLE
+                    retryButton.visibility = View.VISIBLE
                     limitAndPaginationFragment.limitSpinner.visibility = View.GONE
                     updatePagination(null)
                 }
 
-                is Resource.Error -> {
-                    emptyTextView.visibility = View.VISIBLE
-                    retryButton.visibility = View.VISIBLE
-                    Toast.makeText(
-                        requireContext(),
-                        "An error occurred",
-                        Toast.LENGTH_LONG
-                    ).show()
+                is Resource.Loading -> {
+                    producerRecyclerView.visibility = View.GONE
+                    progressBar.visibility = View.VISIBLE
+                    emptyTextView.visibility = View.GONE
+                    retryButton.visibility = View.GONE
                     limitAndPaginationFragment.limitSpinner.visibility = View.GONE
                     updatePagination(null)
                 }
@@ -456,7 +384,7 @@ class FilterFragment : Fragment() {
 
     private fun setupLimitSpinner(limit: Int) {
         val limitSpinner: Spinner =
-            producersFlowLayoutBinding.limitAndPaginationFragment.limitSpinner
+            producersFilterLayoutBinding.limitAndPaginationFragment.limitSpinner
         val limitAdapter = ArrayAdapter(
             requireContext(),
             android.R.layout.simple_spinner_dropdown_item,
@@ -493,7 +421,7 @@ class FilterFragment : Fragment() {
     }
 
     private fun updatePagination(pagination: CompletePagination?) {
-        producersFlowLayoutBinding.limitAndPaginationFragment.apply {
+        producersFilterLayoutBinding.limitAndPaginationFragment.apply {
             Pagination.setPaginationButtons(
                 paginationButtonContainer,
                 pagination
