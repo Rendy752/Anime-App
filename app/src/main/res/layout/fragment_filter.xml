@@ -43,6 +43,7 @@
             android:text="@string/genres_field" />
 
         <ImageView
+            android:id="@+id/genres_field_icon"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:contentDescription="@string/chevron_down"
@@ -74,6 +75,7 @@
             android:text="@string/producers_field" />
 
         <ImageView
+            android:id="@+id/producers_field_icon"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:contentDescription="@string/chevron_down"

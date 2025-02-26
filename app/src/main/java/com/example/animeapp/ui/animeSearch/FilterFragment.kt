@@ -20,6 +20,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.RecyclerView
+import com.example.animeapp.R
 import com.example.animeapp.databinding.FragmentFilterBinding
 import com.example.animeapp.databinding.GenresFlowLayoutBinding
 import com.example.animeapp.databinding.ProducersFlowLayoutBinding
@@ -148,7 +149,12 @@ class FilterFragment : Fragment() {
             }
 
             genresField.setOnClickListener {
+                genresFieldIcon.setImageResource(R.drawable.ic_close_red_24dp)
                 genresPopupWindow.showAsDropDown(it, -it.width, 1.toPx())
+            }
+
+            genresPopupWindow.setOnDismissListener {
+                genresFieldIcon.setImageResource(R.drawable.ic_chevron_down_blue_24dp)
             }
         }
     }
@@ -222,7 +228,12 @@ class FilterFragment : Fragment() {
             }
 
             producersField.setOnClickListener {
+                producersFieldIcon.setImageResource(R.drawable.ic_close_red_24dp)
                 producersPopupWindow.showAsDropDown(it, it.width, 1.toPx())
+            }
+
+            producersPopupWindow.setOnDismissListener {
+                producersFieldIcon.setImageResource(R.drawable.ic_chevron_down_blue_24dp)
             }
         }
     }
