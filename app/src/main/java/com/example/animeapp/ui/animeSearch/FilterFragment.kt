@@ -234,13 +234,15 @@ class FilterFragment : Fragment() {
         genresFlowLayoutBinding.apply {
             when (response) {
                 is Resource.Success -> {
+                    progressBar.visibility = View.GONE
+                    genreRecyclerView.visibility = View.VISIBLE
+                    retryButton.visibility = View.GONE
+
                     val genres = response.data?.data ?: emptyList()
                     if (genres.isEmpty()) {
                         emptyTextView.visibility = View.VISIBLE
-                        retryButton.visibility = View.VISIBLE
                     } else {
                         emptyTextView.visibility = View.GONE
-                        retryButton.visibility = View.GONE
 
                         val adapter = genreRecyclerView.adapter as GenreChipAdapter
                         adapter.items = genres
@@ -250,11 +252,15 @@ class FilterFragment : Fragment() {
                 }
 
                 is Resource.Loading -> {
+                    genreRecyclerView.visibility = View.GONE
+                    progressBar.visibility = View.VISIBLE
                     emptyTextView.visibility = View.GONE
                     retryButton.visibility = View.GONE
                 }
 
                 is Resource.Error -> {
+                    progressBar.visibility = View.GONE
+                    emptyTextView.text = response.message
                     emptyTextView.visibility = View.VISIBLE
                     retryButton.visibility = View.VISIBLE
                     Toast.makeText(
@@ -321,20 +327,26 @@ class FilterFragment : Fragment() {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
                 viewModel.producers.collectLatest { response ->
                     handleProducersResponse(response)
-                    producersFlowLayoutBinding.limitAndPaginationFragment.apply {
+                    producersFlowLayoutBinding.apply {
                         when (response) {
                             is Resource.Success -> {
+                                progressBar.visibility = View.GONE
+                                producerRecyclerView.visibility = View.VISIBLE
+                                retryButton.visibility = View.GONE
+
                                 response.data?.data?.let { data ->
                                     if (data.isEmpty()) {
-                                        limitSpinner.visibility = View.GONE
+                                        emptyTextView.visibility = View.VISIBLE
+                                        limitAndPaginationFragment.limitSpinner.visibility = View.GONE
                                         updatePagination(null)
                                     } else {
+                                        emptyTextView.visibility = View.GONE
                                         updatePagination(response.data.pagination)
 
                                         if (data.size <= 4) {
-                                            limitSpinner.visibility = View.GONE
+                                            limitAndPaginationFragment.limitSpinner.visibility = View.GONE
                                         } else {
-                                            limitSpinner.visibility =
+                                            limitAndPaginationFragment.limitSpinner.visibility =
                                                 View.VISIBLE
                                             setupLimitSpinner(
                                                 viewModel.producersQueryState.value.limit
@@ -346,12 +358,20 @@ class FilterFragment : Fragment() {
                             }
 
                             is Resource.Error -> {
-                                limitSpinner.visibility = View.GONE
+                                progressBar.visibility = View.GONE
+                                emptyTextView.text = response.message
+                                emptyTextView.visibility = View.VISIBLE
+                                retryButton.visibility = View.VISIBLE
+                                limitAndPaginationFragment.limitSpinner.visibility = View.GONE
                                 updatePagination(null)
                             }
 
                             is Resource.Loading -> {
-                                limitSpinner.visibility = View.GONE
+                                producerRecyclerView.visibility = View.GONE
+                                progressBar.visibility = View.VISIBLE
+                                emptyTextView.visibility = View.GONE
+                                retryButton.visibility = View.GONE
+                                limitAndPaginationFragment.limitSpinner.visibility = View.GONE
                                 updatePagination(null)
                             }
                         }
