@@ -14,6 +14,9 @@ class ProducerChipAdapter(
 ) : RecyclerView.Adapter<ProducerChipAdapter.ChipViewHolder>() {
 
     var items: List<Producer> = emptyList()
+        set(value) {
+            field = value.distinctBy { it.mal_id }
+        }
     var selectedIds: List<Int> = emptyList()
 
     class ChipViewHolder(val chip: Chip) : RecyclerView.ViewHolder(chip)
@@ -27,7 +30,9 @@ class ProducerChipAdapter(
     override fun onBindViewHolder(holder: ChipViewHolder, position: Int) {
         val producer = items[position]
 
-        "${producer.titles?.get(0)?.title ?: "Unknown"} (${producer.count})".also { holder.chip.text = it }
+        "${producer.titles?.get(0)?.title ?: "Unknown"} (${producer.count})".also {
+            holder.chip.text = it
+        }
         holder.chip.isChecked = selectedIds.contains(producer.mal_id)
         // ... (Load producer icon as before)
 //                val iconUrl = producer.images?.jpg?.image_url

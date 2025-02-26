@@ -156,8 +156,22 @@ class FilterFragment : Fragment() {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
 
-        genresPopupWindow.dismiss()
-        producersPopupWindow.dismiss()
+        genresPopupWindow.apply {
+            width = if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                (resources.displayMetrics.widthPixels * 0.92).toInt()
+            } else {
+                ViewGroup.LayoutParams.MATCH_PARENT
+            }
+            dismiss()
+        }
+        producersPopupWindow.apply {
+            width = if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                (resources.displayMetrics.widthPixels * 0.92).toInt()
+            } else {
+                ViewGroup.LayoutParams.MATCH_PARENT
+            }
+            dismiss()
+        }
 
         producersFlowLayoutBinding.apply {
             if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {

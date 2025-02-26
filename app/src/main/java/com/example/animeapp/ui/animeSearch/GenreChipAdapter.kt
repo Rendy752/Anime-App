@@ -14,6 +14,9 @@ class GenreChipAdapter(
 ) : RecyclerView.Adapter<GenreChipAdapter.ChipViewHolder>() {
 
     var items: List<Genre> = emptyList()
+        set(value) {
+            field = value.distinctBy { it.mal_id }
+        }
     var selectedIds: List<Int> = emptyList()
 
     class ChipViewHolder(val chip: Chip) : RecyclerView.ViewHolder(chip)
