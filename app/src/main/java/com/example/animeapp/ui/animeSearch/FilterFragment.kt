@@ -13,7 +13,9 @@ import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.PopupWindow
+import android.widget.ProgressBar
 import android.widget.Spinner
+import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.widget.SearchView.OnQueryTextListener
 import androidx.fragment.app.Fragment
@@ -27,7 +29,9 @@ import com.example.animeapp.databinding.FragmentFilterBinding
 import com.example.animeapp.databinding.GenresFilterLayoutBinding
 import com.example.animeapp.databinding.ProducersFilterLayoutBinding
 import com.example.animeapp.models.CompletePagination
+import com.example.animeapp.models.Genre
 import com.example.animeapp.models.GenresResponse
+import com.example.animeapp.models.Producer
 import com.example.animeapp.models.ProducersResponse
 import com.example.animeapp.utils.Debounce
 import com.example.animeapp.utils.Limit
@@ -282,103 +286,112 @@ class FilterFragment : Fragment() {
         }
     }
 
-    @SuppressLint("NotifyDataSetChanged")
-    private fun handleGenreResponse(
-        response: Resource<GenresResponse>
+    private fun <T> handleFilterResponse(
+        response: Resource<T>,
+        recyclerView: RecyclerView,
+        progressBar: ProgressBar,
+        emptyTextView: TextView,
+        retryButton: Button,
+        updateAdapter: (List<Any>, List<Int>) -> Unit,
+        additionalSuccessHandling: (T?) -> Unit = {}
     ) {
-        genresFilterLayoutBinding.apply {
-            when (response) {
-                is Resource.Success -> {
-                    progressBar.visibility = View.GONE
-                    genreRecyclerView.visibility = View.VISIBLE
-                    retryButton.visibility = View.GONE
+        when (response) {
+            is Resource.Success -> {
+                progressBar.visibility = View.GONE
+                recyclerView.visibility = View.VISIBLE
+                retryButton.visibility = View.GONE
 
-                    val genres = response.data?.data ?: emptyList()
-                    if (genres.isEmpty()) {
-                        emptyTextView.visibility = View.VISIBLE
-                    } else {
-                        emptyTextView.visibility = View.GONE
-
-                        val adapter = genreRecyclerView.adapter as GenreChipAdapter
-                        adapter.items = genres
-                        adapter.selectedIds = viewModel.selectedGenreId.value
-                        adapter.notifyDataSetChanged()
-                    }
+                val dataList = when (response.data) {
+                    is GenresResponse -> (response.data as GenresResponse).data
+                    is ProducersResponse -> (response.data as ProducersResponse).data
+                    else -> emptyList()
                 }
 
-                is Resource.Error -> {
-                    progressBar.visibility = View.GONE
-                    emptyTextView.text = response.message
+                if (dataList.isEmpty()) {
                     emptyTextView.visibility = View.VISIBLE
-                    retryButton.visibility = View.VISIBLE
-                }
-
-                is Resource.Loading -> {
-                    genreRecyclerView.visibility = View.GONE
-                    progressBar.visibility = View.VISIBLE
+                    additionalSuccessHandling(null)
+                } else {
                     emptyTextView.visibility = View.GONE
-                    retryButton.visibility = View.GONE
+                    updateAdapter(
+                        dataList, when (response.data) {
+                            is GenresResponse -> viewModel.selectedGenreId.value
+                            is ProducersResponse -> viewModel.selectedProducerId.value
+                            else -> emptyList()
+                        }
+                    )
+                    additionalSuccessHandling(response.data)
                 }
+            }
+
+            is Resource.Error -> {
+                recyclerView.visibility = View.GONE
+                progressBar.visibility = View.GONE
+                emptyTextView.text = response.message
+                emptyTextView.visibility = View.VISIBLE
+                retryButton.visibility = View.VISIBLE
+                additionalSuccessHandling(null)
+            }
+
+            is Resource.Loading -> {
+                recyclerView.visibility = View.GONE
+                progressBar.visibility = View.VISIBLE
+                emptyTextView.visibility = View.GONE
+                retryButton.visibility = View.GONE
+                additionalSuccessHandling(null)
             }
         }
     }
 
     @SuppressLint("NotifyDataSetChanged")
-    private fun handleProducersResponse(
-        response: Resource<ProducersResponse>
-    ) {
-        producersFilterLayoutBinding.apply {
-            when (response) {
-                is Resource.Success -> {
-                    progressBar.visibility = View.GONE
-                    producerRecyclerView.visibility = View.VISIBLE
-                    retryButton.visibility = View.GONE
+    private fun handleGenreResponse(response: Resource<GenresResponse>) {
+        with(genresFilterLayoutBinding) {
+            handleFilterResponse(
+                response = response,
+                recyclerView = genreRecyclerView,
+                progressBar = progressBar,
+                emptyTextView = emptyTextView,
+                retryButton = retryButton,
+                updateAdapter = { dataList, selectedIds ->
+                    val adapter =
+                        genreRecyclerView.adapter as GenreChipAdapter
+                    adapter.items = dataList.filterIsInstance<Genre>()
+                    adapter.selectedIds = selectedIds
+                    adapter.notifyDataSetChanged()
+                }
+            )
+        }
+    }
 
-                    val producers = response.data?.data ?: emptyList()
-                    if (producers.isEmpty()) {
-                        emptyTextView.visibility = View.VISIBLE
-                        limitAndPaginationFragment.limitSpinner.visibility = View.GONE
-                        updatePagination(null)
+    @SuppressLint("NotifyDataSetChanged")
+    private fun handleProducersResponse(response: Resource<ProducersResponse>) {
+        with(producersFilterLayoutBinding) {
+            handleFilterResponse(
+                response = response,
+                recyclerView = producerRecyclerView,
+                progressBar = progressBar,
+                emptyTextView = emptyTextView,
+                retryButton = retryButton,
+                updateAdapter = { dataList, selectedIds ->
+                    val adapter =
+                        producerRecyclerView.adapter as ProducerChipAdapter
+                    adapter.items = dataList.filterIsInstance<Producer>()
+                    adapter.selectedIds = selectedIds
+                    adapter.notifyDataSetChanged()
+                },
+                additionalSuccessHandling = { responseData ->
+                    updatePagination(responseData?.pagination)
+                    if ((responseData?.data?.size ?: 0) <= 4) {
+                        limitAndPaginationFragment.limitSpinner.visibility =
+                            View.GONE
                     } else {
-                        emptyTextView.visibility = View.GONE
-                        retryButton.visibility = View.GONE
-                        updatePagination(response.data?.pagination)
-
-                        val adapter = producerRecyclerView.adapter as ProducerChipAdapter
-                        adapter.items = producers
-                        adapter.selectedIds = viewModel.selectedProducerId.value
-                        adapter.notifyDataSetChanged()
-
-                        if (producers.size <= 4) {
-                            limitAndPaginationFragment.limitSpinner.visibility = View.GONE
-                        } else {
-                            limitAndPaginationFragment.limitSpinner.visibility = View.VISIBLE
-                            setupLimitSpinner(
-                                viewModel.producersQueryState.value.limit ?: Limit.DEFAULT_LIMIT
-                            )
-                        }
+                        limitAndPaginationFragment.limitSpinner.visibility =
+                            View.VISIBLE
+                        setupLimitSpinner(
+                            viewModel.producersQueryState.value.limit ?: Limit.DEFAULT_LIMIT
+                        )
                     }
                 }
-
-                is Resource.Error -> {
-                    producerRecyclerView.visibility = View.GONE
-                    progressBar.visibility = View.GONE
-                    emptyTextView.text = response.message
-                    emptyTextView.visibility = View.VISIBLE
-                    retryButton.visibility = View.VISIBLE
-                    limitAndPaginationFragment.limitSpinner.visibility = View.GONE
-                    updatePagination(null)
-                }
-
-                is Resource.Loading -> {
-                    producerRecyclerView.visibility = View.GONE
-                    progressBar.visibility = View.VISIBLE
-                    emptyTextView.visibility = View.GONE
-                    retryButton.visibility = View.GONE
-                    limitAndPaginationFragment.limitSpinner.visibility = View.GONE
-                    updatePagination(null)
-                }
-            }
+            )
         }
     }
 
