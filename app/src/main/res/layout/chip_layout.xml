@@ -6,5 +6,6 @@
     android:background="@drawable/container_light"
     android:checkable="true"
     android:textSize="12sp"
+    android:layout_marginHorizontal="4dp"
     app:checkedIcon="@drawable/ic_check_blue_24dp"
     app:checkedIconVisible="true" />

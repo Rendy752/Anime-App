@@ -55,7 +55,6 @@
         android:id="@+id/producerRecyclerView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingVertical="48dp"
         android:paddingHorizontal="8dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

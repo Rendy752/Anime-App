@@ -1,6 +1,7 @@
 package com.example.animeapp.ui.animeSearch
 
 import android.annotation.SuppressLint
+import android.content.res.Configuration
 import android.graphics.Color
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
@@ -30,11 +31,13 @@ import com.example.animeapp.utils.Limit
 import com.example.animeapp.utils.Pagination
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.Theme
+import com.example.animeapp.utils.ViewUtils.toDp
 import com.example.animeapp.utils.ViewUtils.toPx
 import com.google.android.flexbox.AlignItems
 import com.google.android.flexbox.FlexDirection
 import com.google.android.flexbox.FlexWrap
 import com.google.android.flexbox.FlexboxLayoutManager
+import com.google.android.flexbox.JustifyContent
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -45,8 +48,11 @@ class FilterFragment : Fragment() {
     private var _binding: FragmentFilterBinding? = null
     private val binding get() = _binding!!
 
+    private lateinit var genresPopupWindow: PopupWindow
     private lateinit var genresFlowLayoutBinding: GenresFlowLayoutBinding
     private lateinit var genreRecyclerView: RecyclerView
+
+    private lateinit var producersPopupWindow: PopupWindow
     private lateinit var producersFlowLayoutBinding: ProducersFlowLayoutBinding
     private lateinit var producerRecyclerView: RecyclerView
 
@@ -98,7 +104,7 @@ class FilterFragment : Fragment() {
     }
 
     private fun setupGenresPopupWindow() {
-        val genresPopupWindow = createPopupWindow()
+        genresPopupWindow = createPopupWindow()
 
         binding.apply {
             genresFlowLayoutBinding = GenresFlowLayoutBinding.inflate(layoutInflater, root, false)
@@ -109,7 +115,7 @@ class FilterFragment : Fragment() {
                 viewLifecycleOwner.lifecycleScope.launch {
                     repeatOnLifecycle(Lifecycle.State.STARTED) {
                         viewModel.genres.collect { response ->
-                            handleGenreResponse(response, genresFlowLayoutBinding)
+                            handleGenreResponse(response)
                         }
                     }
                 }
@@ -147,8 +153,25 @@ class FilterFragment : Fragment() {
         }
     }
 
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+
+        genresPopupWindow.dismiss()
+        producersPopupWindow.dismiss()
+
+        producersFlowLayoutBinding.apply {
+            if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                producerRecyclerView.setPadding(8.toDp(), 24.toDp(), 8.toDp(), 24.toDp())
+                limitAndPaginationFragment.root.visibility = View.GONE
+            } else {
+                producerRecyclerView.setPadding(8.toDp(), 0, 8.toDp(), 0)
+                limitAndPaginationFragment.root.visibility = View.VISIBLE
+            }
+        }
+    }
+
     private fun setupProducersPopupWindow() {
-        val producersPopupWindow = createPopupWindow()
+        producersPopupWindow = createPopupWindow()
 
         binding.apply {
             producersFlowLayoutBinding =
@@ -192,10 +215,9 @@ class FilterFragment : Fragment() {
 
     @SuppressLint("NotifyDataSetChanged")
     private fun handleGenreResponse(
-        response: Resource<GenresResponse>,
-        binding: GenresFlowLayoutBinding
+        response: Resource<GenresResponse>
     ) {
-        binding.apply {
+        genresFlowLayoutBinding.apply {
             when (response) {
                 is Resource.Success -> {
                     val genres = response.data?.data ?: emptyList()
@@ -231,38 +253,105 @@ class FilterFragment : Fragment() {
         }
     }
 
-    private fun setupGenresRecyclerView() {
-        genreRecyclerView = genresFlowLayoutBinding.genreRecyclerView
-        genreRecyclerView.apply {
-            adapter = GenreChipAdapter { genre -> viewModel.setSelectedGenreId(genre.mal_id) }
+    private fun setupRecyclerView(
+        recyclerView: RecyclerView,
+        adapter: RecyclerView.Adapter<*>
+    ) {
+        recyclerView.apply {
+            this.adapter = adapter
             layoutManager = FlexboxLayoutManager(requireContext()).apply {
                 flexWrap = FlexWrap.WRAP
                 flexDirection = FlexDirection.ROW
                 alignItems = AlignItems.STRETCH
+                justifyContent = JustifyContent.SPACE_AROUND
             }
         }
     }
 
+    private fun setupGenresRecyclerView() {
+        genreRecyclerView = genresFlowLayoutBinding.genreRecyclerView
+        setupRecyclerView(
+            genreRecyclerView,
+            GenreChipAdapter { genre -> viewModel.setSelectedGenreId(genre.mal_id) }
+        )
+    }
+
     private fun setupProducersRecyclerView() {
         producerRecyclerView = producersFlowLayoutBinding.producerRecyclerView
-        producerRecyclerView.apply {
-            adapter =
-                ProducerChipAdapter { producer -> viewModel.setSelectedProducerId(producer.mal_id) }
+        setupRecyclerView(
+            producerRecyclerView,
+            ProducerChipAdapter { producer -> viewModel.setSelectedProducerId(producer.mal_id) }
+        )
+    }
 
-            layoutManager = FlexboxLayoutManager(requireContext()).apply {
-                flexWrap = FlexWrap.WRAP
-                flexDirection = FlexDirection.ROW
-                alignItems = AlignItems.STRETCH
+    private fun createPopupWindow(): PopupWindow {
+        return PopupWindow(requireContext()).apply {
+            isOutsideTouchable = true
+            isFocusable = true
+            elevation = 10f
+            width = ViewGroup.LayoutParams.MATCH_PARENT
+
+            val backgroundDrawable = GradientDrawable().apply {
+                shape = GradientDrawable.RECTANGLE
+                setColor(if (Theme.isDarkMode()) Color.WHITE else Color.BLACK)
+                cornerRadius = 20f
+                alpha = (255 * 0.7f).toInt()
+            }
+
+            setBackgroundDrawable(backgroundDrawable)
+        }
+    }
+
+    private fun setupProducersObservers() {
+        lifecycleScope.launch {
+            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.producers.collectLatest { response ->
+                    handleProducersResponse(response)
+                    producersFlowLayoutBinding.limitAndPaginationFragment.apply {
+                        when (response) {
+                            is Resource.Success -> {
+                                response.data?.data?.let { data ->
+                                    if (data.isEmpty()) {
+                                        limitSpinner.visibility = View.GONE
+                                        updatePagination(null)
+                                    } else {
+                                        updatePagination(response.data.pagination)
+
+                                        if (data.size <= 4) {
+                                            limitSpinner.visibility = View.GONE
+                                        } else {
+                                            limitSpinner.visibility =
+                                                View.VISIBLE
+                                            setupLimitSpinner(
+                                                viewModel.producersQueryState.value.limit
+                                                    ?: Limit.DEFAULT_LIMIT
+                                            )
+                                        }
+                                    }
+                                }
+                            }
+
+                            is Resource.Error -> {
+                                limitSpinner.visibility = View.GONE
+                                updatePagination(null)
+                            }
+
+                            is Resource.Loading -> {
+                                limitSpinner.visibility = View.GONE
+                                updatePagination(null)
+                            }
+                        }
+                    }
+                }
             }
         }
     }
 
     @SuppressLint("NotifyDataSetChanged")
     private fun handleProducersResponse(
-        response: Resource<ProducersResponse>,
-        binding: ProducersFlowLayoutBinding
+        response: Resource<ProducersResponse>
     ) {
-        binding.apply {
+        producersFlowLayoutBinding.apply {
             when (response) {
                 is Resource.Success -> {
                     val producers = response.data?.data ?: emptyList()
@@ -315,72 +404,6 @@ class FilterFragment : Fragment() {
                     ).show()
                     limitAndPaginationFragment.limitSpinner.visibility = View.GONE
                     updatePagination(null)
-                }
-            }
-        }
-    }
-
-    private fun createPopupWindow(): PopupWindow {
-        return PopupWindow(requireContext()).apply {
-            isOutsideTouchable = true
-            isFocusable = true
-            elevation = 10f
-            width = ViewGroup.LayoutParams.MATCH_PARENT
-
-            val backgroundDrawable = GradientDrawable().apply {
-                shape = GradientDrawable.RECTANGLE
-                setColor(if (Theme.isDarkMode()) Color.WHITE else Color.BLACK)
-                cornerRadius = 20f
-                alpha = (255 * 0.7f).toInt()
-            }
-
-            setBackgroundDrawable(backgroundDrawable)
-        }
-    }
-
-    private fun setupProducersObservers() {
-        lifecycleScope.launch {
-            viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.producers.collectLatest { response ->
-                    handleProducersResponse(
-                        response,
-                        producersFlowLayoutBinding
-                    )
-                    producersFlowLayoutBinding.limitAndPaginationFragment.apply {
-                        when (response) {
-                            is Resource.Success -> {
-                                response.data?.data?.let { data ->
-                                    if (data.isEmpty()) {
-                                        limitSpinner.visibility = View.GONE
-                                        updatePagination(null)
-                                    } else {
-                                        updatePagination(response.data.pagination)
-
-                                        if (data.size <= 4) {
-                                            limitSpinner.visibility = View.GONE
-                                        } else {
-                                            limitSpinner.visibility =
-                                                View.VISIBLE
-                                            setupLimitSpinner(
-                                                viewModel.producersQueryState.value.limit
-                                                    ?: Limit.DEFAULT_LIMIT
-                                            )
-                                        }
-                                    }
-                                }
-                            }
-
-                            is Resource.Error -> {
-                                limitSpinner.visibility = View.GONE
-                                updatePagination(null)
-                            }
-
-                            is Resource.Loading -> {
-                                limitSpinner.visibility = View.GONE
-                                updatePagination(null)
-                            }
-                        }
-                    }
                 }
             }
         }
