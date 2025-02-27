@@ -92,14 +92,12 @@ class FilterFragment : Fragment() {
     }
 
     private fun setupSearchView() {
-        val debounce = Debounce(
+        val debounce = Debounce<String>(
             lifecycleScope,
-            1000L,
-            { query ->
-                viewModel.applyFilters(viewModel.queryState.value.copy(query = query))
-            },
-            viewModel
-        )
+            1000L
+        ) { query ->
+            viewModel.applyFilters(viewModel.queryState.value.copy(query = query))
+        }
 
         binding.apply {
             searchView.setOnQueryTextListener(object : OnQueryTextListener {
@@ -108,7 +106,7 @@ class FilterFragment : Fragment() {
                 }
 
                 override fun onQueryTextChange(newText: String?): Boolean {
-                    newText?.let { debounce.query(it) }
+                    debounce.query(newText ?: "")
                     return true
                 }
             })
@@ -187,6 +185,26 @@ class FilterFragment : Fragment() {
     private fun setupProducersPopupWindow() {
         producersFilterLayoutBinding =
             ProducersFilterLayoutBinding.inflate(layoutInflater, binding.root, false)
+
+        val debounce = Debounce<String>(
+            lifecycleScope,
+            1000L
+        ) { query ->
+            viewModel.applyProducerQueryStateFilters(viewModel.producersQueryState.value.copy(query = query))
+        }
+
+        producersFilterLayoutBinding.searchView.setOnQueryTextListener(object :
+            OnQueryTextListener {
+            override fun onQueryTextSubmit(query: String?): Boolean {
+                return true
+            }
+
+            override fun onQueryTextChange(newText: String?): Boolean {
+                debounce.query(newText ?: "")
+                return true
+            }
+        })
+
         setupFilterPopupWindow(
             filterType = FilterType.PRODUCERS,
             field = binding.producersField,
@@ -269,6 +287,7 @@ class FilterFragment : Fragment() {
         }
     }
 
+    @SuppressLint("NotifyDataSetChanged")
     private fun setupFiltersObservers() {
         lifecycleScope.launch {
             viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
@@ -280,6 +299,26 @@ class FilterFragment : Fragment() {
                 launch {
                     viewModel.genres.collectLatest { response ->
                         handleGenreResponse(response)
+                    }
+                }
+                genresFilterLayoutBinding.genreRecyclerView.apply {
+                    launch {
+                        viewModel.selectedGenreId.collectLatest { selectedIds ->
+                            if (adapter != null) {
+                                (adapter as GenreChipAdapter).selectedIds = selectedIds
+                                adapter?.notifyDataSetChanged()
+                            }
+                        }
+                    }
+                }
+                producersFilterLayoutBinding.producerRecyclerView.apply {
+                    launch {
+                        viewModel.selectedProducerId.collectLatest { selectedIds ->
+                            if (adapter != null) {
+                                (adapter as ProducerChipAdapter).selectedIds = selectedIds
+                                adapter?.notifyDataSetChanged()
+                            }
+                        }
                     }
                 }
             }
@@ -418,12 +457,12 @@ class FilterFragment : Fragment() {
                     val updatedQueryState = viewModel.producersQueryState.value.copy(
                         limit = selectedLimit, page = 1
                     )
-                    viewModel.applyProducersFilters(updatedQueryState)
+                    viewModel.applyProducerQueryStateFilters(updatedQueryState)
                 }
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {
-                viewModel.applyProducersFilters(
+                viewModel.applyProducerQueryStateFilters(
                     viewModel.producersQueryState.value.copy(
                         limit = Limit.DEFAULT_LIMIT,
                         page = 1
@@ -439,7 +478,7 @@ class FilterFragment : Fragment() {
                 paginationButtonContainer,
                 pagination
             ) { pageNumber ->
-                viewModel.applyProducersFilters(viewModel.producersQueryState.value.copy(page = pageNumber))
+                viewModel.applyProducerQueryStateFilters(viewModel.producersQueryState.value.copy(page = pageNumber))
             }
             paginationButtonContainer.visibility =
                 if (pagination == null) View.GONE else View.VISIBLE

@@ -2,7 +2,7 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+    android:layout_height="match_parent">
 
     <Button
         android:id="@+id/resetButton"
@@ -28,6 +28,22 @@
         app:layout_constraintStart_toEndOf="@id/resetButton"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <androidx.appcompat.widget.SearchView
+        android:id="@+id/searchView"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:background="@drawable/search_view_background"
+        app:closeIcon="@drawable/ic_close_red_24dp"
+        app:iconifiedByDefault="false"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/resetButton"
+        app:layout_constraintBottom_toTopOf="@id/producerRecyclerView"
+        app:queryHint="@string/search_producer"
+        app:searchHintIcon="@null"
+        app:searchIcon="@drawable/ic_search_blue_24dp" />
+
     <ProgressBar
         android:id="@+id/progressBar"
         android:layout_width="wrap_content"
@@ -37,7 +53,7 @@
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/resetButton" />
+        app:layout_constraintTop_toBottomOf="@id/searchView" />
 
     <TextView
         android:id="@+id/emptyTextView"
@@ -49,7 +65,7 @@
         android:visibility="gone"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/resetButton" />
+        app:layout_constraintTop_toBottomOf="@id/searchView" />
 
     <Button
         android:id="@+id/retryButton"
@@ -70,15 +86,15 @@
         app:layout_constraintBottom_toTopOf="@id/limitAndPaginationFragment"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/resetButton" />
+        app:layout_constraintTop_toBottomOf="@id/searchView" />
 
     <include
         android:id="@+id/limitAndPaginationFragment"
         layout="@layout/fragment_limit_and_pagination"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
+        app:layout_constraintTop_toBottomOf="@id/producerRecyclerView"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/producerRecyclerView" />
+        app:layout_constraintStart_toStartOf="parent" />
 </androidx.constraintlayout.widget.ConstraintLayout>

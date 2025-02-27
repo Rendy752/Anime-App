@@ -39,7 +39,8 @@ class AnimeSearchViewModel @Inject constructor(
     val producers: StateFlow<Resource<ProducersResponse>> = _producers.asStateFlow()
 
     private val _producersQueryState = MutableStateFlow(ProducersSearchQueryState())
-    val producersQueryState: StateFlow<ProducersSearchQueryState> = _producersQueryState.asStateFlow()
+    val producersQueryState: StateFlow<ProducersSearchQueryState> =
+        _producersQueryState.asStateFlow()
 
     private val _selectedGenreId = MutableStateFlow<List<Int>>(emptyList())
     val selectedGenreId: StateFlow<List<Int>> = _selectedGenreId.asStateFlow()
@@ -133,7 +134,7 @@ class AnimeSearchViewModel @Inject constructor(
         applyFilters(queryState.value.resetGenres())
     }
 
-    fun applyProducersFilters(updatedQueryState: ProducersSearchQueryState) {
+    fun applyProducerQueryStateFilters(updatedQueryState: ProducersSearchQueryState) {
         _producersQueryState.value = updatedQueryState
         fetchProducers()
     }
@@ -170,6 +171,7 @@ class AnimeSearchViewModel @Inject constructor(
 
     fun resetProducerSelection() {
         _selectedProducerId.value = emptyList()
+        producersQueryState.value.resetProducers()
         applyFilters(queryState.value.resetProducers())
     }
 

@@ -72,4 +72,5 @@
     <string name="no_producers_found">No procuders found</string>
     <string name="retry">Retry</string>
     <string name="reset">Reset</string>
+    <string name="search_producer">Search Producer</string>
 </resources>
