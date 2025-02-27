@@ -10,16 +10,28 @@ class Debounce(
     private val coroutineScope: CoroutineScope,
     private val delayMillis: Long = 1000L,
     private val onDebounced: (String) -> Unit,
-    private val viewModel: AnimeSearchViewModel
+    private val viewModel: AnimeSearchViewModel,
+    private val stateType: StateType = StateType.ANIME_SEARCH
 ) {
 
     private var searchJob: Job? = null
 
+    enum class StateType {
+        ANIME_SEARCH,
+        PRODUCER_SEARCH
+    }
+
     fun query(text: String) {
-        if (text != viewModel.queryState.value.query) {
-            searchJob?.cancel()
-            searchJob = coroutineScope.launch {
-                delay(delayMillis)
+        searchJob?.cancel()
+        searchJob = coroutineScope.launch {
+            delay(delayMillis)
+
+            val shouldExecute = when (stateType) {
+                StateType.ANIME_SEARCH -> text != viewModel.queryState.value.query
+                StateType.PRODUCER_SEARCH -> text != viewModel.producersQueryState.value.query
+            }
+
+            if (shouldExecute) {
                 onDebounced(text)
             }
         }
