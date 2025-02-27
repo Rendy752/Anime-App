@@ -21,6 +21,7 @@ import com.bumptech.glide.Glide
 import com.example.animeapp.R
 import com.example.animeapp.data.remote.api.AnimeAPI
 import com.example.animeapp.databinding.FragmentDetailBinding
+import com.example.animeapp.di.JikanApi
 import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.ui.common.NameAndUrlAdapter
 import com.example.animeapp.ui.common.TitleSynonymsAdapter
@@ -36,6 +37,7 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class AnimeDetailFragment : Fragment(), MenuProvider {
     @Inject
+    @JikanApi
     lateinit var animeAPI: AnimeAPI
 
     private var _binding: FragmentDetailBinding? = null

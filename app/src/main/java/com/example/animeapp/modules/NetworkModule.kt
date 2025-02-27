@@ -6,6 +6,8 @@ import com.chuckerteam.chucker.api.ChuckerInterceptor
 import com.chuckerteam.chucker.api.RetentionManager
 import com.example.animeapp.data.remote.api.AnimeAPI
 import com.example.animeapp.data.remote.api.RetrofitInstance
+import com.example.animeapp.di.AnimeRunwayApi
+import com.example.animeapp.di.JikanApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -45,13 +47,21 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideRetrofitInstance(okHttpClient: OkHttpClient): RetrofitInstance {
-        return RetrofitInstance(okHttpClient)
+    fun provideRetrofitInstance(okHttpClient: OkHttpClient, @ApplicationContext context: Context): RetrofitInstance {
+        return RetrofitInstance(okHttpClient, context)
     }
 
     @Provides
     @Singleton
-    fun provideAnimeAPI(retrofitInstance: RetrofitInstance): AnimeAPI {
-        return retrofitInstance.api
+    @JikanApi
+    fun provideJikanAPI(retrofitInstance: RetrofitInstance): AnimeAPI {
+        return retrofitInstance.jikanApi
+    }
+
+    @Provides
+    @Singleton
+    @AnimeRunwayApi
+    fun provideAnimeRunwayAPI(retrofitInstance: RetrofitInstance): AnimeAPI {
+        return retrofitInstance.animeRunwayApi
     }
 }
