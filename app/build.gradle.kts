@@ -110,6 +110,12 @@ dependencies {
     //Commons text
     implementation(libs.commons.text)
 
+    //Exoplayer
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
+    implementation(libs.media3.exoplayer.hls)
+    implementation(libs.media3.datasource)
+
     //Chucker
     debugImplementation(libs.library)
     releaseImplementation(libs.library.no.op)

@@ -37,6 +37,7 @@ class RetrofitInstance @Inject constructor(
     private fun provideCachingOkHttpClient(cache: Cache): OkHttpClient {
         return OkHttpClient.Builder()
             .cache(cache)
+            .addInterceptor(EpisodeSourcesCacheInterceptor())
             .build()
     }
 

@@ -3,6 +3,7 @@ package com.example.animeapp.data.remote.api
 import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.models.AnimeRecommendationResponse
 import com.example.animeapp.models.AnimeSearchResponse
+import com.example.animeapp.models.EpisodeSourcesResponse
 import com.example.animeapp.models.GenresResponse
 import com.example.animeapp.models.ProducersResponse
 import retrofit2.Response
@@ -59,4 +60,11 @@ interface AnimeAPI {
         @Query("sort") sort: String? = null,
         @Query("letter") letter: String? = null
     ): Response<ProducersResponse>
+
+    @GET("/aniwatch/episode-srcs")
+    suspend fun getEpisodeSources(
+        @Query("id") episodeId: String,
+        @Query("server") server: String,
+        @Query("category") category: String
+    ): Response<EpisodeSourcesResponse>
 }
