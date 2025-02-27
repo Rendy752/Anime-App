@@ -87,7 +87,7 @@ class FilterFragment : Fragment() {
             ProducerChipAdapter { producer -> viewModel.setSelectedProducerId(producer.mal_id) }
         )
         setupFiltersObservers()
-        setupLimitSpinner(Limit.DEFAULT_LIMIT)
+        setupLimitSpinner(25)
         updatePagination(null)
     }
 
@@ -96,7 +96,7 @@ class FilterFragment : Fragment() {
             lifecycleScope,
             1000L,
             { query ->
-                viewModel.applyFilters(viewModel.queryState.value.copy(query = query))
+                viewModel.applyFilters(viewModel.queryState.value.copy(query = query, page = 1))
             },
             viewModel,
             Debounce.StateType.ANIME_SEARCH
@@ -198,7 +198,7 @@ class FilterFragment : Fragment() {
             { query ->
                 viewModel.applyProducerQueryStateFilters(
                     viewModel.producersQueryState.value.copy(
-                        query = query
+                        query = query, page = 1
                     )
                 )
             },
@@ -365,6 +365,7 @@ class FilterFragment : Fragment() {
                 }
 
                 if (dataList.isEmpty()) {
+                    recyclerView.visibility = View.GONE
                     emptyTextView.visibility = View.VISIBLE
                     additionalSuccessHandling(null)
                 } else {
@@ -444,7 +445,7 @@ class FilterFragment : Fragment() {
                         limitAndPaginationFragment.limitSpinner.visibility =
                             View.VISIBLE
                         setupLimitSpinner(
-                            viewModel.producersQueryState.value.limit ?: Limit.DEFAULT_LIMIT
+                            viewModel.producersQueryState.value.limit ?: 25
                         )
                     }
                 }
@@ -482,7 +483,7 @@ class FilterFragment : Fragment() {
             override fun onNothingSelected(parent: AdapterView<*>?) {
                 viewModel.applyProducerQueryStateFilters(
                     viewModel.producersQueryState.value.copy(
-                        limit = Limit.DEFAULT_LIMIT,
+                        limit = 25,
                         page = 1
                     )
                 )
