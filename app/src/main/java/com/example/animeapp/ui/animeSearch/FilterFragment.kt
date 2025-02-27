@@ -92,12 +92,15 @@ class FilterFragment : Fragment() {
     }
 
     private fun setupSearchView() {
-        val debounce = Debounce<String>(
+        val debounce = Debounce(
             lifecycleScope,
-            1000L
-        ) { query ->
-            viewModel.applyFilters(viewModel.queryState.value.copy(query = query))
-        }
+            1000L,
+            { query ->
+                viewModel.applyFilters(viewModel.queryState.value.copy(query = query))
+            },
+            viewModel,
+            Debounce.StateType.ANIME_SEARCH
+        )
 
         binding.apply {
             searchView.setOnQueryTextListener(object : OnQueryTextListener {
@@ -106,7 +109,7 @@ class FilterFragment : Fragment() {
                 }
 
                 override fun onQueryTextChange(newText: String?): Boolean {
-                    debounce.query(newText ?: "")
+                    newText?.let { debounce.query(it) }
                     return true
                 }
             })
@@ -114,6 +117,7 @@ class FilterFragment : Fragment() {
     }
 
     private fun setupFilterPopupWindow(
+        popupWindow: PopupWindow,
         filterType: FilterType,
         field: View,
         fieldIcon: ImageView,
@@ -124,7 +128,6 @@ class FilterFragment : Fragment() {
         isDefault: () -> Boolean,
         fetchData: () -> Unit
     ) {
-        val popupWindow = createPopupWindow()
         val filterLayout = getFilterLayout()
 
         popupWindow.contentView = filterLayout
@@ -169,7 +172,9 @@ class FilterFragment : Fragment() {
     private fun setupGenresPopupWindow() {
         genresFilterLayoutBinding =
             GenresFilterLayoutBinding.inflate(layoutInflater, binding.root, false)
+        genresPopupWindow = createPopupWindow()
         setupFilterPopupWindow(
+            popupWindow = genresPopupWindow,
             filterType = FilterType.GENRES,
             field = binding.genresField,
             fieldIcon = binding.genresFieldIcon,
@@ -185,13 +190,21 @@ class FilterFragment : Fragment() {
     private fun setupProducersPopupWindow() {
         producersFilterLayoutBinding =
             ProducersFilterLayoutBinding.inflate(layoutInflater, binding.root, false)
+        producersPopupWindow = createPopupWindow()
 
-        val debounce = Debounce<String>(
+        val debounce = Debounce(
             lifecycleScope,
-            1000L
-        ) { query ->
-            viewModel.applyProducerQueryStateFilters(viewModel.producersQueryState.value.copy(query = query))
-        }
+            1000L,
+            { query ->
+                viewModel.applyProducerQueryStateFilters(
+                    viewModel.producersQueryState.value.copy(
+                        query = query
+                    )
+                )
+            },
+            viewModel,
+            Debounce.StateType.PRODUCER_SEARCH
+        )
 
         producersFilterLayoutBinding.searchView.setOnQueryTextListener(object :
             OnQueryTextListener {
@@ -200,12 +213,13 @@ class FilterFragment : Fragment() {
             }
 
             override fun onQueryTextChange(newText: String?): Boolean {
-                debounce.query(newText ?: "")
+                newText?.let { debounce.query(it) }
                 return true
             }
         })
 
         setupFilterPopupWindow(
+            popupWindow = producersPopupWindow,
             filterType = FilterType.PRODUCERS,
             field = binding.producersField,
             fieldIcon = binding.producersFieldIcon,
@@ -223,35 +237,39 @@ class FilterFragment : Fragment() {
         PRODUCERS("producers")
     }
 
+    private fun adjustPopupWindowWidth(popupWindow: PopupWindow) {
+        val newWidth =
+            if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+                (resources.displayMetrics.widthPixels * 0.92).toInt()
+            } else {
+                ViewGroup.LayoutParams.MATCH_PARENT
+            }
+        popupWindow.apply {
+            dismiss()
+            width = newWidth
+        }
+    }
+
+    private fun adjustProducerFilterLayout() {
+        producersFilterLayoutBinding.apply {
+            producerRecyclerView.setPadding(
+                8.toDp(),
+                if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) 24.toDp() else 0,
+                8.toDp(),
+                if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) 24.toDp() else 0
+            )
+            searchView.visibility =
+                if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) View.GONE else View.VISIBLE
+            limitAndPaginationFragment.root.visibility =
+                if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) View.GONE else View.VISIBLE
+        }
+    }
+
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-
-        genresPopupWindow.apply {
-            width = if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                (resources.displayMetrics.widthPixels * 0.92).toInt()
-            } else {
-                ViewGroup.LayoutParams.MATCH_PARENT
-            }
-            dismiss()
-        }
-        producersPopupWindow.apply {
-            width = if (newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                (resources.displayMetrics.widthPixels * 0.92).toInt()
-            } else {
-                ViewGroup.LayoutParams.MATCH_PARENT
-            }
-            dismiss()
-        }
-
-        producersFilterLayoutBinding.apply {
-            if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-                producerRecyclerView.setPadding(8.toDp(), 24.toDp(), 8.toDp(), 24.toDp())
-                limitAndPaginationFragment.root.visibility = View.GONE
-            } else {
-                producerRecyclerView.setPadding(8.toDp(), 0, 8.toDp(), 0)
-                limitAndPaginationFragment.root.visibility = View.VISIBLE
-            }
-        }
+        adjustPopupWindowWidth(genresPopupWindow)
+        adjustPopupWindowWidth(producersPopupWindow)
+        adjustProducerFilterLayout()
     }
 
     private fun setupRecyclerView(
@@ -478,7 +496,11 @@ class FilterFragment : Fragment() {
                 paginationButtonContainer,
                 pagination
             ) { pageNumber ->
-                viewModel.applyProducerQueryStateFilters(viewModel.producersQueryState.value.copy(page = pageNumber))
+                viewModel.applyProducerQueryStateFilters(
+                    viewModel.producersQueryState.value.copy(
+                        page = pageNumber
+                    )
+                )
             }
             paginationButtonContainer.visibility =
                 if (pagination == null) View.GONE else View.VISIBLE

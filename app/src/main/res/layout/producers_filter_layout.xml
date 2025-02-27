@@ -36,10 +36,10 @@
         android:background="@drawable/search_view_background"
         app:closeIcon="@drawable/ic_close_red_24dp"
         app:iconifiedByDefault="false"
+        app:layout_constraintBottom_toTopOf="@id/producerRecyclerView"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/resetButton"
-        app:layout_constraintBottom_toTopOf="@id/producerRecyclerView"
         app:queryHint="@string/search_producer"
         app:searchHintIcon="@null"
         app:searchIcon="@drawable/ic_search_blue_24dp" />
@@ -48,6 +48,7 @@
         android:id="@+id/progressBar"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
         android:layout_gravity="center"
         android:indeterminate="true"
         android:visibility="gone"
@@ -59,6 +60,7 @@
         android:id="@+id/emptyTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
         android:text="@string/no_producers_found"
         android:textColor="@color/colorPrimary"
         android:textSize="18sp"
@@ -78,23 +80,30 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/emptyTextView" />
 
+    <androidx.constraintlayout.widget.Barrier
+        android:id="@+id/searchViewBarrier"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:barrierDirection="bottom"
+        app:constraint_referenced_ids="searchView" />
+
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/producerRecyclerView"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="200dp"
         android:paddingHorizontal="8dp"
         app:layout_constraintBottom_toTopOf="@id/limitAndPaginationFragment"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/searchView" />
+        app:layout_constraintTop_toBottomOf="@id/searchViewBarrier" />
 
     <include
         android:id="@+id/limitAndPaginationFragment"
         layout="@layout/fragment_limit_and_pagination"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
-        app:layout_constraintTop_toBottomOf="@id/producerRecyclerView"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/producerRecyclerView" />
 </androidx.constraintlayout.widget.ConstraintLayout>
