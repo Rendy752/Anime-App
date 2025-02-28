@@ -280,7 +280,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                             UnorderedListAdapter(it) { opening ->
                                 val encodedOpening = Uri.encode(opening)
                                 val youtubeSearchUrl =
-                                    "${YOUTUBE_URL}results?search_query=$encodedOpening"
+                                    "${YOUTUBE_URL}/results?search_query=$encodedOpening"
                                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(youtubeSearchUrl))
                                 startActivity(intent)
                             }
@@ -300,7 +300,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                             { ending ->
                                 val encodedEnding = Uri.encode(ending)
                                 val youtubeSearchUrl =
-                                    "${YOUTUBE_URL}results?search_query=$encodedEnding"
+                                    "${YOUTUBE_URL}/results?search_query=$encodedEnding"
                                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse(youtubeSearchUrl))
                                 startActivity(intent)
                                 startActivity(intent)

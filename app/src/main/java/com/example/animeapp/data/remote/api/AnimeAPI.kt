@@ -1,9 +1,12 @@
 package com.example.animeapp.data.remote.api
 
+import com.example.animeapp.models.AnimeAniwatchSearchResponse
 import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.models.AnimeRecommendationResponse
 import com.example.animeapp.models.AnimeSearchResponse
+import com.example.animeapp.models.EpisodeServersResponse
 import com.example.animeapp.models.EpisodeSourcesResponse
+import com.example.animeapp.models.EpisodesResponse
 import com.example.animeapp.models.GenresResponse
 import com.example.animeapp.models.ProducersResponse
 import retrofit2.Response
@@ -12,12 +15,12 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface AnimeAPI {
-    @GET("v4/recommendations/anime")
+    @GET("/v4/recommendations/anime")
     suspend fun getAnimeRecommendations(
         @Query("page") page: Int = 1,
     ): Response<AnimeRecommendationResponse>
 
-    @GET("v4/anime/{id}/full")
+    @GET("/v4/anime/{id}/full")
     suspend fun getAnimeDetail(
         @Path("id") id: Int
     ): Response<AnimeDetailResponse>
@@ -25,7 +28,7 @@ interface AnimeAPI {
     @GET("/v4/random/anime")
     suspend fun getRandomAnime(): Response<AnimeDetailResponse>
 
-    @GET("v4/anime")
+    @GET("/v4/anime")
     suspend fun getAnimeSearch(
         @Query("q") q: String,
         @Query("unapproved") unapproved: Boolean? = null,
@@ -48,10 +51,10 @@ interface AnimeAPI {
         @Query("end_date") endDate: String? = null
     ): Response<AnimeSearchResponse>
 
-    @GET("v4/genres/anime")
+    @GET("/v4/genres/anime")
     suspend fun getGenres(): Response<GenresResponse>
 
-    @GET("v4/producers")
+    @GET("/v4/producers")
     suspend fun getProducers(
         @Query("page") page: Int? = null,
         @Query("limit") limit: Int? = null,
@@ -60,6 +63,21 @@ interface AnimeAPI {
         @Query("sort") sort: String? = null,
         @Query("letter") letter: String? = null
     ): Response<ProducersResponse>
+
+    @GET("/aniwatch/search")
+    suspend fun getAnimeAniwatchSearch(
+        @Query("keyword") keyword: String
+    ): Response<AnimeAniwatchSearchResponse>
+
+    @GET("/aniwatch/episodes/{id}")
+    suspend fun getEpisodes(
+        @Path("id") id: String
+    ): Response<EpisodesResponse>
+
+    @GET("/aniwatch/servers")
+    suspend fun getEpisodeServers(
+        @Query("id") episodeId: String
+    ): Response<EpisodeServersResponse>
 
     @GET("/aniwatch/episode-srcs")
     suspend fun getEpisodeSources(
