@@ -11,6 +11,7 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
@@ -23,6 +24,7 @@ import com.example.animeapp.data.remote.api.AnimeAPI
 import com.example.animeapp.databinding.FragmentDetailBinding
 import com.example.animeapp.di.JikanApi
 import com.example.animeapp.models.AnimeDetailResponse
+import com.example.animeapp.models.EpisodesResponse
 import com.example.animeapp.ui.common.NameAndUrlAdapter
 import com.example.animeapp.ui.common.TitleSynonymsAdapter
 import com.example.animeapp.ui.common.UnorderedListAdapter
@@ -59,10 +61,20 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
     private fun observeAnimeDetail() {
         viewModel.animeDetail.observe(viewLifecycleOwner) { response ->
             when (response) {
-                is Resource.Success -> handleSuccess(response)
-                is Resource.Error -> handleError(response)
-                is Resource.Loading -> handleLoading()
-                else -> handleEmpty()
+                is Resource.Success -> {
+                    viewModel.getEpisodes()
+                    handleAnimeSuccess(response)
+                }
+                is Resource.Error -> handleAnimeError(response)
+                is Resource.Loading -> handleAnimeLoading()
+                else -> handleAnimeEmpty()
+            }
+        }
+        viewModel.episodes.observe(viewLifecycleOwner) { response ->
+            when (response) {
+                is Resource.Success -> handleEpisodesSuccess(response)
+                is Resource.Loading -> handleEpisodesLoading()
+                else -> handleEpisodesEmpty()
             }
         }
     }
@@ -146,7 +158,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
         return binding.root
     }
 
-    private fun handleSuccess(response: Resource.Success<AnimeDetailResponse>) {
+    private fun handleAnimeSuccess(response: Resource.Success<AnimeDetailResponse>) {
         binding.apply {
             shimmerViewContainer.stopShimmer()
             shimmerViewContainer.hideShimmer()
@@ -340,7 +352,37 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
         }
     }
 
-    private fun handleError(response: Resource.Error<AnimeDetailResponse>) {
+    private fun handleEpisodesSuccess(response: Resource.Success<EpisodesResponse>) {
+        binding.apply {
+            progressBar.visibility = View.GONE
+            if (response.data!!.episodes.isNotEmpty()) {
+                rvEpisodes.visibility = View.VISIBLE
+                episodesContainer.visibility = View.VISIBLE
+                with(rvEpisodes) {
+                    adapter =
+                        EpisodesAdapter(requireContext(), response.data.episodes) { episodeId ->
+//                Navigation.navigateToAnimeStreaming(
+//                    this@AnimeDetailFragment,
+//                    episodeId,
+//                    R.id.action_animeDetailFragment_to_animeStreamingFragment
+//                )
+                            Toast.makeText(
+                                requireContext(),
+                                "Episode clicked: $episodeId",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                        }
+                    layoutManager = LinearLayoutManager(
+                        requireContext()
+                    )
+                }
+            } else {
+                episodesContainer.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun handleAnimeError(response: Resource.Error<AnimeDetailResponse>) {
         binding.apply {
             shimmerViewContainer.stopShimmer()
             shimmerViewContainer.hideShimmer()
@@ -349,19 +391,34 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
         }
     }
 
-    private fun handleLoading() {
+    private fun handleAnimeLoading() {
         binding.apply {
             shimmerViewContainer.showShimmer(true)
             shimmerViewContainer.startShimmer()
         }
     }
 
-    private fun handleEmpty() {
+    private fun handleEpisodesLoading() {
+        binding.apply {
+            binding.progressBar.visibility = View.VISIBLE
+            binding.rvEpisodes.visibility = View.GONE
+        }
+    }
+
+    private fun handleAnimeEmpty() {
         binding.apply {
             shimmerViewContainer.stopShimmer()
             shimmerViewContainer.hideShimmer()
             tvError.visibility = View.VISIBLE
             "No results found".also { tvError.text = it }
+        }
+    }
+
+    private fun handleEpisodesEmpty() {
+        binding.apply {
+            episodesContainer.visibility = View.GONE
+            rvEpisodes.visibility = View.GONE
+            progressBar.visibility = View.GONE
         }
     }
 

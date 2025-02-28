@@ -29,14 +29,14 @@ class EntriesAdapter(
     override fun onBindViewHolder(holder: RelationItemViewHolder, position: Int) {
         val relationItem = relationItems.entry.getOrNull(position)
         relationItem?.let {
-            val animeDetail = getAnimeDetail(relationItem.mal_id)
+            val animeDetail = getAnimeDetail(it.mal_id)
             if (animeDetail != null) {
                 AnimeHeaderUtils.bindAnimeData(holder.binding, animeDetail)
                 holder.itemView.setOnClickListener {
                     onItemClickListener(animeDetail.mal_id)
                 }
             } else {
-                AnimeHeaderUtils.handleNullData(holder.binding, relationItem.name)
+                AnimeHeaderUtils.handleNullData(holder.binding, it.name)
             }
             holder.binding.apply {
                 shimmerViewContainer.stopShimmer()
