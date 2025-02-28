@@ -1,5 +1,7 @@
 package com.example.animeapp.utils
 
+import android.app.Activity
+import android.app.PictureInPictureParams
 import android.content.Context
 import android.net.Uri
 import android.os.Handler
@@ -16,6 +18,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.ui.PlayerView
 import androidx.media3.common.Player
+import android.util.Rational
 import com.example.animeapp.models.EpisodeSourcesResponse
 
 object HlsPlayerUtil {
@@ -46,7 +49,7 @@ object HlsPlayerUtil {
                 val subtitleConfiguration = SubtitleConfiguration.Builder(Uri.parse(track.file))
                     .setMimeType(MimeTypes.TEXT_VTT)
                     .setLanguage(track.label?.substringBefore("-")?.trim())
-                    .setLabel(track.label)
+                    .setLabel(track.label?.substringBefore("-")?.trim())
                     .build()
                 subtitleConfigurations.add(subtitleConfiguration)
             }
@@ -105,6 +108,16 @@ object HlsPlayerUtil {
                     if (playbackState == Player.STATE_ENDED) {
                         handler.removeCallbacks(runnable)
                     }
+                }
+
+                override fun onIsPlayingChanged(isPlaying: Boolean) {
+                    super.onIsPlayingChanged(isPlaying)
+                    (context as Activity).setPictureInPictureParams(
+                        PictureInPictureParams.Builder()
+                            .setAspectRatio(Rational(16, 9))
+                            .build()
+                    )
+
                 }
             })
         }

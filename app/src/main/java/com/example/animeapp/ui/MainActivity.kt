@@ -3,6 +3,7 @@ package com.example.animeapp.ui
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.view.View
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -23,6 +24,7 @@ import dagger.hilt.android.AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
+    private lateinit var navView: BottomNavigationView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,8 +52,9 @@ class MainActivity : AppCompatActivity() {
             )
             insets
         }
+        supportActionBar?.hide()
 
-        val navView: BottomNavigationView = binding.navView
+        navView = binding.navView
         val navController = findNavController(R.id.nav_host_fragment_activity_main)
         val appBarConfiguration = AppBarConfiguration(
             setOf(
@@ -94,6 +97,18 @@ class MainActivity : AppCompatActivity() {
             } else {
                 Toast.makeText(this, "Invalid URL", Toast.LENGTH_SHORT).show()
             }
+        }
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode)
+        if (isInPictureInPictureMode) {
+            navView.visibility = View.GONE
+            supportActionBar?.hide()
+        } else {
+            navView.visibility = View.VISIBLE
+            supportActionBar?.show()
         }
     }
 
