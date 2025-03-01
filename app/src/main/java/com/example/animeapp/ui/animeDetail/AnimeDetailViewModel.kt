@@ -44,14 +44,26 @@ class AnimeDetailViewModel @Inject constructor(
     }
 
     fun getEpisodes() = viewModelScope.launch {
+        val detailData = animeDetail.value?.data?.data ?: return@launch episodes.postValue(
+            Resource.Error("Anime data not available")
+        )
+        if (detailData.type == "Music") return@launch episodes.postValue(
+            Resource.Error("Anime is a music, no episodes available")
+        )
+        if (detailData.status == "Not yet aired") return@launch episodes.postValue(
+            Resource.Error("Anime not yet aired")
+        )
         episodes.postValue(Resource.Loading())
-        val title = animeDetail.value?.data?.data?.title ?: return@launch episodes.postValue(Resource.Error("Title not found"))
+        val title = detailData.title
         val englishTitle = animeDetail.value?.data?.data?.title_english ?: ""
         val searchTitle = when {
             englishTitle.isNotEmpty() -> englishTitle.lowercase()
             else -> title.lowercase()
         }
         val response = animeStreamingRepository.getAnimeAniwatchSearch(searchTitle)
+        if (!response.isSuccessful) {
+            return@launch episodes.postValue(Resource.Error(response.message()))
+        }
         handleAnimeSearchResponse(response)
     }
 
