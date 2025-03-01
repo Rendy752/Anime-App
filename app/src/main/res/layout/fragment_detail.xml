@@ -790,6 +790,7 @@
                     android:autofillHints="1"
                     android:hint="@string/ep_number"
                     android:inputType="number"
+                    android:visibility="gone"
                     app:layout_constraintHorizontal_weight="1"
                     app:layout_constraintEnd_toStartOf="@id/btnJumpToEpisode"
                     app:layout_constraintTop_toBottomOf="@id/tvListEpisodes" />
@@ -799,6 +800,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/jump"
+                    android:visibility="gone"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/tvListEpisodes" />
 

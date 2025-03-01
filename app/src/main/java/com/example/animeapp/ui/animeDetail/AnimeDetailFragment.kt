@@ -360,9 +360,14 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
             progressBar.visibility = View.GONE
             response.data?.episodes?.let { episodes ->
                 if (episodes.isNotEmpty()) {
-                    etEpisodeNumber.filters = arrayOf(MinMaxInputFilter.createInt(1, episodes.size))
-                    btnJumpToEpisode.setOnClickListener {
-                        handleJumpToEpisode(etEpisodeNumber.text.toString().toInt(), episodes)
+                    if (episodes.size >= 5) {
+                        etEpisodeNumber.visibility = View.VISIBLE
+                        btnJumpToEpisode.visibility = View.VISIBLE
+                        etEpisodeNumber.filters =
+                            arrayOf(MinMaxInputFilter.createInt(1, episodes.size))
+                        btnJumpToEpisode.setOnClickListener {
+                            handleJumpToEpisode(etEpisodeNumber.text.toString().toInt(), episodes)
+                        }
                     }
                     rvEpisodes.visibility = View.VISIBLE
                     episodesContainer.visibility = View.VISIBLE
@@ -394,7 +399,10 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
 
         if (foundEpisodeIndex != -1) {
             binding.rvEpisodes.apply {
-                (layoutManager as LinearLayoutManager).scrollToPositionWithOffset(foundEpisodeIndex, 0)
+                (layoutManager as LinearLayoutManager).scrollToPositionWithOffset(
+                    foundEpisodeIndex,
+                    0
+                )
             }
         }
     }
