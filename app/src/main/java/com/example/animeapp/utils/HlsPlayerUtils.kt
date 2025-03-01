@@ -1,8 +1,5 @@
 package com.example.animeapp.utils
 
-import android.app.Activity
-import android.app.PictureInPictureParams
-import android.content.Context
 import android.media.AudioAttributes
 import android.media.AudioManager
 import android.media.AudioManager.OnAudioFocusChangeListener
@@ -23,7 +20,6 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.ui.PlayerView
 import androidx.media3.common.Player
-import android.util.Rational
 import androidx.media3.common.C
 import com.example.animeapp.models.EpisodeSourcesResponse
 
@@ -35,13 +31,10 @@ object HlsPlayerUtil {
 
     @OptIn(UnstableApi::class)
     fun initializePlayer(
-        context: Context,
-        playerView: PlayerView,
+        player: ExoPlayer,
         skipButton: Button,
         videoData: EpisodeSourcesResponse
     ) {
-        val player = ExoPlayer.Builder(context).build()
-        playerView.player = player
 
         if (videoData.sources.isNotEmpty() && videoData.sources[0].type == "hls") {
             val dataSourceFactory = DefaultHttpDataSource.Factory()
@@ -69,7 +62,6 @@ object HlsPlayerUtil {
             player.setMediaItem(mediaItemBuilder.build())
             player.prepare()
 //            player.play()
-
 
             val handler = Handler(Looper.getMainLooper())
             val runnable = object : Runnable {
@@ -114,8 +106,6 @@ object HlsPlayerUtil {
             }
             handler.post(runnable)
 
-
-            val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
             audioFocusChangeListener = OnAudioFocusChangeListener { focusChange ->
                 when (focusChange) {
                     AudioManager.AUDIOFOCUS_GAIN -> {
@@ -137,33 +127,16 @@ object HlsPlayerUtil {
             }
 
             player.addListener(object : Player.Listener {
-
                 override fun onPlaybackStateChanged(playbackState: Int) {
                     if (playbackState == Player.STATE_ENDED) {
                         handler.removeCallbacks(runnable)
                     }
                 }
-
-                override fun onIsPlayingChanged(isPlaying: Boolean) {
-                    super.onIsPlayingChanged(isPlaying)
-
-                    if (isPlaying) {
-                        requestAudioFocus(audioManager)
-                    } else {
-                        abandonAudioFocus(audioManager)
-                    }
-
-                    (context as Activity).setPictureInPictureParams(
-                        PictureInPictureParams.Builder()
-                            .setAspectRatio(Rational(16, 9))
-                            .build()
-                    )
-                }
             })
         }
     }
 
-    private fun requestAudioFocus(audioManager: AudioManager) {
+    fun requestAudioFocus(audioManager: AudioManager) {
         if (!audioFocusRequested) {
             if (audioFocusRequest == null) {
                 Media3AudioAttributes.Builder()
@@ -190,7 +163,7 @@ object HlsPlayerUtil {
         }
     }
 
-    private fun abandonAudioFocus(audioManager: AudioManager) {
+    fun abandonAudioFocus(audioManager: AudioManager) {
         if (audioFocusRequested) {
             audioManager.abandonAudioFocusRequest(audioFocusRequest!!)
             audioFocusRequested = false
