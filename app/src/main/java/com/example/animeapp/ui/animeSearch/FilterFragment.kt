@@ -102,7 +102,18 @@ class FilterFragment : Fragment() {
             Debounce.StateType.ANIME_SEARCH
         )
 
+
         binding.apply {
+            lifecycleScope.launch {
+                viewLifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
+                    launch {
+                        viewModel.queryState.collectLatest { response ->
+                            searchView.setQuery(response.query, false)
+                        }
+                    }
+                }
+            }
+
             searchView.setOnQueryTextListener(object : OnQueryTextListener {
                 override fun onQueryTextSubmit(query: String?): Boolean {
                     return true

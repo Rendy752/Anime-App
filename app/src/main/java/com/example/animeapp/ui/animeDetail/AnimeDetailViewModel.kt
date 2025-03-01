@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.animeapp.models.AnimeAniwatchSearchResponse
 import com.example.animeapp.models.AnimeDetailResponse
+import com.example.animeapp.models.EpisodeSourcesQuery
+import com.example.animeapp.models.EpisodeSourcesResponse
 import com.example.animeapp.models.EpisodesResponse
 import com.example.animeapp.repository.AnimeDetailRepository
 import com.example.animeapp.repository.AnimeStreamingRepository
@@ -35,6 +37,25 @@ class AnimeDetailViewModel @Inject constructor(
         animeDetail.postValue(handleAnimeDetailResponse(response))
     }
 
+    private suspend fun handleAnimeDetailResponse(response: Response<AnimeDetailResponse>): Resource<AnimeDetailResponse> {
+        if (response.isSuccessful) {
+            response.body()?.let { resultResponse ->
+                animeDetailRepository.cacheAnimeDetail(resultResponse)
+                return Resource.Success(resultResponse)
+            }
+        }
+        return Resource.Error(response.message())
+    }
+
+    private suspend fun getCachedAnimeDetail(id: Int): Resource<AnimeDetailResponse>? {
+        val cachedAnimeDetail = animeDetailRepository.getCachedAnimeDetail(id)
+        return if (cachedAnimeDetail != null) {
+            Resource.Success(cachedAnimeDetail)
+        } else {
+            null
+        }
+    }
+
     fun getEpisodes() = viewModelScope.launch {
         episodes.postValue(Resource.Loading())
         val title = animeDetail.value?.data?.data?.title ?: ""
@@ -51,7 +72,8 @@ class AnimeDetailViewModel @Inject constructor(
     ) {
         if (response.isSuccessful) {
             response.body()?.let { resultResponse ->
-                val anime = FindAnimeTitle.findClosestAnime(resultResponse, animeDetail.value?.data?.data)
+                val anime =
+                    FindAnimeTitle.findClosestAnime(resultResponse, animeDetail.value?.data?.data)
 
                 if (anime != null) {
                     val animeId = anime.id.substringBefore("?").trim()
@@ -76,36 +98,64 @@ class AnimeDetailViewModel @Inject constructor(
         }
     }
 
-    private fun handleEpisodesResponse(response: Response<EpisodesResponse>): Resource<EpisodesResponse> {
-        return if (response.isSuccessful) {
-            response.body()?.let {
-                Resource.Success(it)
-            } ?: Resource.Error(response.message())
+    private suspend fun handleEpisodesResponse(response: Response<EpisodesResponse>): Resource<EpisodesResponse> {
+        if (!response.isSuccessful) {
+            return Resource.Error(response.message())
+        }
+        val episodesResponse = response.body() ?: return Resource.Error(response.message())
+        val episodeDefaultServers = getEpisodeDefaultServers(episodesResponse.episodes[0].episodeId)
+        return if (episodeDefaultServers == null) {
+            Resource.Error("Failed to fetch episode default servers")
+        } else if (fetchEpisodeSources(episodeDefaultServers)) {
+            Resource.Success(episodesResponse)
         } else {
             Resource.Error(response.message())
         }
     }
 
-    private suspend fun handleAnimeDetailResponse(response: Response<AnimeDetailResponse>): Resource<AnimeDetailResponse> {
-        if (response.isSuccessful) {
-            response.body()?.let { resultResponse ->
-                cacheAnimeDetail(resultResponse)
-                return Resource.Success(resultResponse)
+    private suspend fun getEpisodeDefaultServers(episodeId: String): EpisodeSourcesQuery? {
+        return try {
+            val episodeServersResponse = animeStreamingRepository.getEpisodeServers(episodeId)
+            if (episodeServersResponse.isSuccessful) {
+                val episodeServers = episodeServersResponse.body()
+                episodeServers?.let {
+                    if (episodeServers.sub.isNotEmpty()) {
+                        EpisodeSourcesQuery(episodeId, episodeServers.sub[0].serverName, "sub")
+                    } else if (episodeServers.dub.isNotEmpty()) {
+                        EpisodeSourcesQuery(episodeId, episodeServers.dub[0].serverName, "dub")
+                    } else if (episodeServers.raw.isNotEmpty()) {
+                        EpisodeSourcesQuery(episodeId, episodeServers.raw[0].serverName, "raw")
+                    } else {
+                        null
+                    }
+                }
+            } else {
+                null
             }
-        }
-        return Resource.Error(response.message())
-    }
-
-    private suspend fun getCachedAnimeDetail(id: Int): Resource<AnimeDetailResponse>? {
-        val cachedAnimeDetail = animeDetailRepository.getCachedAnimeDetail(id)
-        return if (cachedAnimeDetail != null) {
-            Resource.Success(cachedAnimeDetail)
-        } else {
+        } catch (e: Exception) {
             null
         }
     }
 
-    private suspend fun cacheAnimeDetail(animeDetailResponse: AnimeDetailResponse) {
-        animeDetailRepository.cacheAnimeDetail(animeDetailResponse)
+    private suspend fun fetchEpisodeSources(episodeSourcesQuery: EpisodeSourcesQuery): Boolean =
+        try {
+            val episodeSourceResponse = animeStreamingRepository.getEpisodeSources(
+                episodeSourcesQuery.id,
+                episodeSourcesQuery.server,
+                episodeSourcesQuery.category
+            )
+            checkEpisodeSourceMalId(episodeSourceResponse)
+        } catch (e: Exception) {
+            false
+        }
+
+    private fun checkEpisodeSourceMalId(episodeSourceResponse: Response<EpisodeSourcesResponse>): Boolean {
+        return if (episodeSourceResponse.isSuccessful) {
+            episodeSourceResponse.body()?.let {
+                animeDetail.value?.data?.data?.mal_id == it.malID
+            } ?: false
+        } else {
+            false
+        }
     }
 }
