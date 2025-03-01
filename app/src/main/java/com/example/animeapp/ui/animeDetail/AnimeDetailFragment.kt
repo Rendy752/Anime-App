@@ -24,11 +24,13 @@ import com.example.animeapp.data.remote.api.AnimeAPI
 import com.example.animeapp.databinding.FragmentDetailBinding
 import com.example.animeapp.di.JikanApi
 import com.example.animeapp.models.AnimeDetailResponse
+import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodesResponse
 import com.example.animeapp.ui.common.NameAndUrlAdapter
 import com.example.animeapp.ui.common.TitleSynonymsAdapter
 import com.example.animeapp.ui.common.UnorderedListAdapter
 import com.example.animeapp.utils.Const.Companion.YOUTUBE_URL
+import com.example.animeapp.utils.MinMaxInputFilter
 import com.example.animeapp.utils.Navigation
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.TextUtils.formatSynopsis
@@ -65,6 +67,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                     viewModel.getEpisodes()
                     handleAnimeSuccess(response)
                 }
+
                 is Resource.Error -> handleAnimeError(response)
                 is Resource.Loading -> handleAnimeLoading()
                 else -> handleAnimeEmpty()
@@ -355,29 +358,43 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
     private fun handleEpisodesSuccess(response: Resource.Success<EpisodesResponse>) {
         binding.apply {
             progressBar.visibility = View.GONE
-            if (response.data!!.episodes.isNotEmpty()) {
-                rvEpisodes.visibility = View.VISIBLE
-                episodesContainer.visibility = View.VISIBLE
-                with(rvEpisodes) {
-                    adapter =
-                        EpisodesAdapter(requireContext(), response.data.episodes) { episodeId ->
-//                Navigation.navigateToAnimeStreaming(
-//                    this@AnimeDetailFragment,
-//                    episodeId,
-//                    R.id.action_animeDetailFragment_to_animeStreamingFragment
-//                )
+            response.data?.episodes?.let { episodes ->
+                if (episodes.isNotEmpty()) {
+                    etEpisodeNumber.filters = arrayOf(MinMaxInputFilter.createInt(1, episodes.size))
+                    btnJumpToEpisode.setOnClickListener {
+                        handleJumpToEpisode(etEpisodeNumber.text.toString().toInt(), episodes)
+                    }
+                    rvEpisodes.visibility = View.VISIBLE
+                    episodesContainer.visibility = View.VISIBLE
+
+                    rvEpisodes.apply {
+                        adapter = EpisodesAdapter(requireContext(), episodes) { episodeId ->
+                            // Navigation.navigateToAnimeStreaming(
+                            //     this@AnimeDetailFragment,
+                            //     episodeId,
+                            //     R.id.action_animeDetailFragment_to_animeStreamingFragment
+                            // )
                             Toast.makeText(
                                 requireContext(),
                                 "Episode clicked: $episodeId",
                                 Toast.LENGTH_SHORT
                             ).show()
                         }
-                    layoutManager = LinearLayoutManager(
-                        requireContext()
-                    )
+                        layoutManager = LinearLayoutManager(requireContext())
+                    }
+                } else {
+                    episodesContainer.visibility = View.GONE
                 }
-            } else {
-                episodesContainer.visibility = View.GONE
+            }
+        }
+    }
+
+    private fun handleJumpToEpisode(episodeNumber: Int, episodes: List<Episode>) {
+        val foundEpisodeIndex = episodes.indexOfFirst { it.episodeNo == episodeNumber }
+
+        if (foundEpisodeIndex != -1) {
+            binding.rvEpisodes.apply {
+                (layoutManager as LinearLayoutManager).scrollToPositionWithOffset(foundEpisodeIndex, 0)
             }
         }
     }

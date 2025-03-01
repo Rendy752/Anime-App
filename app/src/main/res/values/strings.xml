@@ -75,4 +75,6 @@
     <string name="search_producer">Search Producer</string>
     <string name="skip">Skip</string>
     <string name="list_episodes">Episodes</string>
+    <string name="ep_number">Ep. number</string>
+    <string name="jump">Jump</string>
 </resources>
