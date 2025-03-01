@@ -9,98 +9,56 @@ object FindAnimeTitle {
         animeSearchData: AnimeAniwatchSearchResponse,
         animeDetail: AnimeDetail?
     ): AnimeAniwatch? {
-        val animeDetailData = animeDetail
-            ?: return animeSearchData.animes.minByOrNull { it.name.normalizeForComparison() }
-
-        val normalizedDetailTitle = animeDetailData.title.normalizeForComparison()
-        val normalizedDetailEnglishTitle = animeDetailData.title_english?.normalizeForComparison()
-        val normalizedDetailJapaneseTitle = animeDetailData.title_japanese?.normalizeForComparison()
-        val normalizedDetailSynonyms =
-            animeDetailData.title_synonyms?.map { it.normalizeForComparison() } ?: emptyList()
-        val normalizedOtherTitles = animeDetailData.titles.map { it.title.normalizeForComparison() }
-
-        return animeSearchData.animes.minByOrNull { anime ->
-            val normalizedAnimeName = anime.name.normalizeForComparison()
-
-            val detailTitleScore =
-                if (normalizedAnimeName.contains(normalizedDetailTitle, ignoreCase = true)) {
-                    if (normalizedAnimeName.equals(
-                            normalizedDetailTitle,
-                            ignoreCase = true
-                        )
-                    ) 0 else 1
-                } else {
-                    Int.MAX_VALUE
-                }
-
-            val englishTitleScore = normalizedDetailEnglishTitle?.let { et ->
-                if (normalizedAnimeName.contains(et, ignoreCase = true)) {
-                    if (normalizedAnimeName.equals(et, ignoreCase = true)) 0 else 2
-                } else {
-                    Int.MAX_VALUE
-                }
-            } ?: Int.MAX_VALUE
-
-            val japaneseTitleScore = normalizedDetailJapaneseTitle?.let { jt ->
-                if (normalizedAnimeName.contains(jt, ignoreCase = true)) {
-                    if (normalizedAnimeName.equals(jt, ignoreCase = true)) 0 else 3
-                } else {
-                    Int.MAX_VALUE
-                }
-            } ?: Int.MAX_VALUE
-
-            val synonymScore = normalizedDetailSynonyms.minOfOrNull { synonym ->
-                if (normalizedAnimeName.contains(synonym, ignoreCase = true)) {
-                    if (normalizedAnimeName.equals(synonym, ignoreCase = true)) 0 else 4
-                } else {
-                    Int.MAX_VALUE
-                }
-            } ?: Int.MAX_VALUE
-
-            val otherTitlesScore = normalizedOtherTitles.minOfOrNull { otherTitle ->
-                if (normalizedAnimeName.contains(otherTitle, ignoreCase = true)) {
-                    if (normalizedAnimeName.equals(otherTitle, ignoreCase = true)) 0 else 5
-                } else {
-                    Int.MAX_VALUE
-                }
-            } ?: Int.MAX_VALUE
-
-            minOf(
-                detailTitleScore,
-                englishTitleScore,
-                japaneseTitleScore,
-                synonymScore,
-                otherTitlesScore
-            )
-
-        }?.takeIf { anime ->
-            val normalizedAnimeName = anime.name.normalizeForComparison()
-            normalizedAnimeName.contains(normalizedDetailTitle, ignoreCase = true) ||
-                    normalizedDetailEnglishTitle?.let {
-                        normalizedAnimeName.contains(
-                            it,
-                            ignoreCase = true
-                        )
-                    } == true ||
-                    normalizedDetailJapaneseTitle?.let {
-                        normalizedAnimeName.contains(
-                            it,
-                            ignoreCase = true
-                        )
-                    } == true ||
-                    normalizedDetailSynonyms.any {
-                        normalizedAnimeName.contains(
-                            it,
-                            ignoreCase = true
-                        )
-                    } ||
-                    normalizedOtherTitles.any {
-                        normalizedAnimeName.contains(
-                            it,
-                            ignoreCase = true
-                        )
-                    }
+        if (animeDetail == null) {
+            return animeSearchData.animes.minByOrNull { it.name.normalizeForComparison() }
         }
+
+        val normalizedDetailTitle = animeDetail.title.normalizeForComparison()
+        val normalizedDetailEnglishTitle = animeDetail.title_english?.normalizeForComparison()
+        val normalizedDetailSynonyms =
+            animeDetail.title_synonyms?.map { it.normalizeForComparison() } ?: emptyList()
+
+        val allNormalizedTitles = listOfNotNull(
+            normalizedDetailTitle,
+            normalizedDetailEnglishTitle,
+            *normalizedDetailSynonyms.toTypedArray()
+        )
+
+        val closestMatches = animeSearchData.animes.mapNotNull { anime ->
+            val normalizedAnimeName = anime.name.normalizeForComparison()
+            val matchScore = allNormalizedTitles.minOfOrNull { title ->
+                levenshteinDistance(normalizedAnimeName, title)
+            } ?: Int.MAX_VALUE
+
+            if (matchScore <= 5) anime to matchScore else null
+        }.sortedBy { it.second }
+
+        return closestMatches.firstOrNull()?.first
+    }
+
+    private fun levenshteinDistance(s1: String, s2: String): Int {
+        val m = s1.length
+        val n = s2.length
+        val dp = Array(m + 1) { IntArray(n + 1) }
+
+        for (i in 0..m) {
+            dp[i][0] = i
+        }
+        for (j in 0..n) {
+            dp[0][j] = j
+        }
+
+        for (i in 1..m) {
+            for (j in 1..n) {
+                dp[i][j] = if (s1[i - 1] == s2[j - 1]) {
+                    dp[i - 1][j - 1]
+                } else {
+                    1 + minOf(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1])
+                }
+            }
+        }
+
+        return dp[m][n]
     }
 
     private fun String.normalizeForComparison(): String {
