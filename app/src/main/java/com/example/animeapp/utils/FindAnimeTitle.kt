@@ -3,8 +3,12 @@ package com.example.animeapp.utils
 import com.example.animeapp.models.AnimeAniwatch
 import com.example.animeapp.models.AnimeAniwatchSearchResponse
 import com.example.animeapp.models.AnimeDetail
+import org.apache.commons.text.similarity.LevenshteinDistance
 
 object FindAnimeTitle {
+    private val levenshteinDistance = LevenshteinDistance.getDefaultInstance()
+    private const val MIN_SIMILARITY_THRESHOLD = 0.6
+
     fun findClosestAnime(
         animeSearchData: AnimeAniwatchSearchResponse,
         animeDetail: AnimeDetail?
@@ -24,44 +28,26 @@ object FindAnimeTitle {
             *normalizedDetailSynonyms.toTypedArray()
         )
 
-        val closestMatches = animeSearchData.animes.mapNotNull { anime ->
+        val scoredMatches = animeSearchData.animes.map { anime ->
             val normalizedAnimeName = anime.name.normalizeForComparison()
-            val matchScore = allNormalizedTitles.minOfOrNull { title ->
-                levenshteinDistance(normalizedAnimeName, title)
-            } ?: Int.MAX_VALUE
+            val bestScore = allNormalizedTitles.maxOf { detailTitle ->
+                calculateSimilarity(normalizedAnimeName, detailTitle)
+            }
+            anime to bestScore
+        }
 
-            if (matchScore <= 5) anime to matchScore else null
-        }.sortedBy { it.second }
+        val bestMatch = scoredMatches.maxByOrNull { it.second }
 
-        return closestMatches.firstOrNull()?.first
+        return if (bestMatch != null && bestMatch.second >= MIN_SIMILARITY_THRESHOLD) bestMatch.first else null
     }
 
-    private fun levenshteinDistance(s1: String, s2: String): Int {
-        val m = s1.length
-        val n = s2.length
-        val dp = Array(m + 1) { IntArray(n + 1) }
-
-        for (i in 0..m) {
-            dp[i][0] = i
-        }
-        for (j in 0..n) {
-            dp[0][j] = j
-        }
-
-        for (i in 1..m) {
-            for (j in 1..n) {
-                dp[i][j] = if (s1[i - 1] == s2[j - 1]) {
-                    dp[i - 1][j - 1]
-                } else {
-                    1 + minOf(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1])
-                }
-            }
-        }
-
-        return dp[m][n]
+    private fun calculateSimilarity(s1: String, s2: String): Double {
+        val distance = levenshteinDistance.apply(s1, s2)
+        val maxLength = maxOf(s1.length, s2.length).toDouble()
+        return 1.0 - (distance / maxLength)
     }
 
     private fun String.normalizeForComparison(): String {
-        return this.replace(Regex("[^a-zA-Z0-9\\s]"), "").trim()
+        return this.replace(Regex("[^a-zA-Z0-9\\s]"), "").trim().lowercase()
     }
 }
