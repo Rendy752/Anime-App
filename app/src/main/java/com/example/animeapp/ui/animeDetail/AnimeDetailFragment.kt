@@ -76,6 +76,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
         viewModel.episodes.observe(viewLifecycleOwner) { response ->
             when (response) {
                 is Resource.Success -> handleEpisodesSuccess(response)
+                is Resource.Error -> handleEpisodesError(response)
                 is Resource.Loading -> handleEpisodesLoading()
                 else -> handleEpisodesEmpty()
             }
@@ -416,6 +417,16 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
         }
     }
 
+    private fun handleEpisodesError(response: Resource.Error<EpisodesResponse>) {
+        binding.apply {
+            episodesContainer.visibility = View.VISIBLE
+            rvEpisodes.visibility = View.GONE
+            progressBar.visibility = View.GONE
+            tvEpisodeError.visibility = View.VISIBLE
+            response.message.also { tvEpisodeError.text = it }
+        }
+    }
+
     private fun handleAnimeLoading() {
         binding.apply {
             shimmerViewContainer.showShimmer(true)
@@ -441,9 +452,11 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
 
     private fun handleEpisodesEmpty() {
         binding.apply {
-            episodesContainer.visibility = View.GONE
+            episodesContainer.visibility = View.VISIBLE
             rvEpisodes.visibility = View.GONE
             progressBar.visibility = View.GONE
+            tvEpisodeError.visibility = View.VISIBLE
+            "No episodes found".also { tvEpisodeError.text = it }
         }
     }
 

@@ -12,6 +12,7 @@ import com.example.animeapp.repository.AnimeDetailRepository
 import com.example.animeapp.repository.AnimeStreamingRepository
 import com.example.animeapp.utils.FindAnimeTitle
 import com.example.animeapp.utils.Resource
+import com.example.animeapp.utils.ResponseHandler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import retrofit2.Response
@@ -34,36 +35,23 @@ class AnimeDetailViewModel @Inject constructor(
 
         animeDetail.postValue(Resource.Loading())
         val response = animeDetailRepository.getAnimeDetail(id)
-        animeDetail.postValue(handleAnimeDetailResponse(response))
-    }
-
-    private suspend fun handleAnimeDetailResponse(response: Response<AnimeDetailResponse>): Resource<AnimeDetailResponse> {
-        if (response.isSuccessful) {
-            response.body()?.let { resultResponse ->
-                animeDetailRepository.cacheAnimeDetail(resultResponse)
-                return Resource.Success(resultResponse)
-            }
-        }
-        return Resource.Error(response.message())
+        animeDetail.postValue(ResponseHandler.handleCommonResponse(response))
     }
 
     private suspend fun getCachedAnimeDetail(id: Int): Resource<AnimeDetailResponse>? {
         val cachedAnimeDetail = animeDetailRepository.getCachedAnimeDetail(id)
-        return if (cachedAnimeDetail != null) {
-            Resource.Success(cachedAnimeDetail)
-        } else {
-            null
-        }
+        return if (cachedAnimeDetail != null) Resource.Success(cachedAnimeDetail) else null
     }
 
     fun getEpisodes() = viewModelScope.launch {
         episodes.postValue(Resource.Loading())
-        val title = animeDetail.value?.data?.data?.title ?: ""
-        val englishTitle = animeDetail.value?.data!!.data.title_english ?: ""
-        val searchTitle =
-            if (englishTitle.isNotEmpty()) englishTitle.lowercase() else title.lowercase()
-
-        val response = searchTitle.let { animeStreamingRepository.getAnimeAniwatchSearch(it) }
+        val title = animeDetail.value?.data?.data?.title ?: return@launch episodes.postValue(Resource.Error("Title not found"))
+        val englishTitle = animeDetail.value?.data?.data?.title_english ?: ""
+        val searchTitle = when {
+            englishTitle.isNotEmpty() -> englishTitle.lowercase()
+            else -> title.lowercase()
+        }
+        val response = animeStreamingRepository.getAnimeAniwatchSearch(searchTitle)
         handleAnimeSearchResponse(response)
     }
 
@@ -100,7 +88,7 @@ class AnimeDetailViewModel @Inject constructor(
 
     private suspend fun handleEpisodesResponse(response: Response<EpisodesResponse>): Resource<EpisodesResponse> {
         if (!response.isSuccessful) {
-            return Resource.Error(response.message())
+            return Resource.Error(response.message() ?: "Failed to fetch episodes")
         }
         val episodesResponse = response.body() ?: return Resource.Error(response.message())
         val episodeDefaultServers = getEpisodeDefaultServers(episodesResponse.episodes[0].episodeId)
@@ -109,7 +97,7 @@ class AnimeDetailViewModel @Inject constructor(
         } else if (fetchEpisodeSources(episodeDefaultServers)) {
             Resource.Success(episodesResponse)
         } else {
-            Resource.Error(response.message())
+            Resource.Error("No episode sources found")
         }
     }
 
