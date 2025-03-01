@@ -68,12 +68,13 @@ object HlsPlayerUtil {
 
             player.setMediaItem(mediaItemBuilder.build())
             player.prepare()
-            player.play()
+//            player.play()
+
 
             val handler = Handler(Looper.getMainLooper())
             val runnable = object : Runnable {
-                private var introSkipped = false
-                private var outroSkipped = false
+                private var introSkipped = true
+                private var outroSkipped = true
 
                 override fun run() {
                     val currentPositionSec = player.currentPosition / 1000
@@ -112,6 +113,7 @@ object HlsPlayerUtil {
                 }
             }
             handler.post(runnable)
+
 
             val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
             audioFocusChangeListener = OnAudioFocusChangeListener { focusChange ->
