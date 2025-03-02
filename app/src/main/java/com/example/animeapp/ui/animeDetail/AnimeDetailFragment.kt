@@ -423,7 +423,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
             rvEpisodes.visibility = View.GONE
             progressBar.visibility = View.GONE
             tvEpisodeError.visibility = View.VISIBLE
-            response.message.also { tvEpisodeError.text = it }
+            "An error occurred: ${response.message ?: "-"}".also { tvEpisodeError.text = it }
         }
     }
 

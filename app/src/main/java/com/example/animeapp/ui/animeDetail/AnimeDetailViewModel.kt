@@ -62,6 +62,10 @@ class AnimeDetailViewModel @Inject constructor(
         }
         val response = animeStreamingRepository.getAnimeAniwatchSearch(searchTitle)
         if (!response.isSuccessful) {
+            val tes = response
+            println(tes)
+            val tes2=response.message()
+            println(tes2)
             return@launch episodes.postValue(Resource.Error(response.message()))
         }
         handleAnimeSearchResponse(response)
