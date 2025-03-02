@@ -370,6 +370,27 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                             handleJumpToEpisode(etEpisodeNumber.text.toString().toInt(), episodes)
                         }
                     }
+
+                    viewModel.animeEpisodeInfo.value?.episodes?.let { episodeInfo ->
+                        episodesField.visibility = View.VISIBLE
+
+                        episodeInfo.sub?.let { sub ->
+                            sub.toString().also { tvSubNumber.text = it }
+                        } ?: run {
+                            subNumberContainer.visibility = View.GONE
+                        }
+                        episodeInfo.dub?.let { dub ->
+                            dub.toString().also { tvDubNumber.text = it }
+                        } ?: run {
+                            dubNumberContainer.visibility = View.GONE
+                        }
+                        episodeInfo.eps?.let { eps ->
+                            eps.toString().also { tvEpisodeNumber.text = it }
+                        } ?: run {
+                            episodeNumberContainer.visibility = View.GONE
+                        }
+                    }
+
                     rvEpisodes.visibility = View.VISIBLE
                     episodesContainer.visibility = View.VISIBLE
 

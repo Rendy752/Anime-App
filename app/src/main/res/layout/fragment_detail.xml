@@ -783,6 +783,89 @@
                     app:layout_constraintTop_toTopOf="parent"
                     app:layout_constraintEnd_toEndOf="parent" />
 
+                <LinearLayout
+                    android:id="@+id/episodesField"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginEnd="4dp"
+                    android:orientation="horizontal"
+                    android:layout_gravity="end"
+                    android:layout_marginTop="8dp"
+                    android:visibility="gone"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tvListEpisodes"
+                    app:layout_constraintEnd_toStartOf="@id/etEpisodeNumber">
+
+                    <LinearLayout
+                        android:id="@+id/subNumberContainer"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:orientation="horizontal"
+                        android:background="@drawable/rounded_corner_green"
+                        android:padding="4dp">
+
+                        <ImageView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:src="@drawable/ic_subtitles_blue_24dp"
+                            android:layout_marginEnd="4dp"/>
+
+                        <TextView
+                            android:id="@+id/tvSubNumber"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_vertical"
+                            android:text="@string/zero"
+                            android:textSize="14sp"/>
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/dubNumberContainer"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:orientation="horizontal"
+                        android:background="@drawable/rounded_corner_pink"
+                        android:padding="4dp"
+                        android:layout_marginStart="4dp">
+
+                        <ImageView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:src="@drawable/ic_mic_blue_24dp"
+                            android:layout_marginEnd="4dp"/>
+
+                        <TextView
+                            android:id="@+id/tvDubNumber"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_vertical"
+                            android:text="@string/zero"
+                            android:textSize="14sp"/>
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/episodeNumberContainer"
+                        style="@style/container"
+                        android:layout_width="wrap_content"
+                        android:layout_height="32dp"
+                        android:orientation="horizontal"
+                        android:padding="4dp"
+                        android:layout_marginStart="4dp">
+
+                        <TextView
+                            android:id="@+id/tvEpisodeNumber"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="center_vertical"
+                            android:text="@string/zero"
+                            android:textSize="14sp"/>
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
                 <EditText
                     android:id="@+id/etEpisodeNumber"
                     android:layout_width="0dp"
@@ -791,7 +874,9 @@
                     android:hint="@string/ep_number"
                     android:inputType="number"
                     android:visibility="gone"
+                    android:layout_marginStart="4dp"
                     app:layout_constraintHorizontal_weight="1"
+                    app:layout_constraintStart_toEndOf="@id/episodesField"
                     app:layout_constraintEnd_toStartOf="@id/btnJumpToEpisode"
                     app:layout_constraintTop_toBottomOf="@id/tvListEpisodes" />
 
