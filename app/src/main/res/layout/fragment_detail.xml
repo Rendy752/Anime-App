@@ -27,8 +27,7 @@
                 android:id="@+id/animeHeader"
                 layout="@layout/anime_header"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp" />
+                android:layout_height="wrap_content" />
 
             <include
                 android:id="@+id/animeNumberDetail"
@@ -59,53 +58,19 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp" />
 
-            <LinearLayout
-                android:id="@+id/llBackground"
-                style="@style/container"
+            <include
+                android:id="@+id/animeBackground"
+                layout="@layout/anime_background"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:orientation="vertical"
-                android:visibility="gone">
+                android:layout_marginTop="8dp" />
 
-                <TextView
-                    style="@style/AnimeTitle.Primary"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/bottom_border"
-                    android:text="@string/background" />
-
-                <TextView
-                    android:id="@+id/tvBackground"
-                    style="@style/RecommendationContent"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:justificationMode="inter_word" />
-            </LinearLayout>
-
-            <LinearLayout
-                style="@style/container"
+            <include
+                android:id="@+id/animeSynopsis"
+                layout="@layout/anime_synopsis"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:orientation="vertical">
-
-                <TextView
-                    style="@style/AnimeTitle.Primary"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/bottom_border"
-                    android:justificationMode="inter_word"
-                    android:text="@string/synopsis" />
-
-                <TextView
-                    android:id="@+id/tvSynopsis"
-                    style="@style/RecommendationContent"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp" />
-            </LinearLayout>
+                android:layout_marginTop="8dp" />
 
             <include
                 android:id="@+id/animeRelation"

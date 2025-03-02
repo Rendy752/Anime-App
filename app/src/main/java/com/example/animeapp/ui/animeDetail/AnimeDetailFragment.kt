@@ -266,16 +266,27 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                     detail.favorites.toString().also { tvFavorites.text = it }
                 }
 
-                detail.background?.let { background ->
-                    if (background.isNotBlank()) {
-                        llBackground.visibility = View.VISIBLE
-                        tvBackground.text = background
-                    } else {
-                        llBackground.visibility = View.GONE
+                with(animeBackground) {
+                    detail.background?.let { background ->
+                        if (background.isNotBlank()) {
+                            llBackground.visibility = View.VISIBLE
+                            tvBackground.text = background
+                        } else {
+                            llBackground.visibility = View.GONE
+                        }
                     }
                 }
 
-                tvSynopsis.text = detail.synopsis ?: "-"
+                with(animeSynopsis) {
+                    detail.synopsis?.let { synopsis ->
+                        if (synopsis.isNotBlank()) {
+                            tvSynopsis.visibility = View.VISIBLE
+                            tvSynopsis.text = synopsis
+                        } else {
+                            tvSynopsis.visibility = View.GONE
+                        }
+                    }
+                }
 
                 with(animeRelation) {
                     if (detail.relations?.size!! > 0) {

@@ -42,7 +42,18 @@
         <action
             android:id="@+id/action_animeDetailFragment_self"
             app:destination="@id/animeDetailFragment" />
+
+        <action
+            android:id="@+id/action_animeDetailFragment_to_animeWatchFragment"
+            app:destination="@id/animeWatchFragment" />
     </fragment>
+
+    <fragment
+        android:id="@+id/animeWatchFragment"
+        android:name="com.example.animeapp.ui.animeWatch.AnimeWatchFragment"
+        android:label="@string/title_watch"
+        tools:layout="@layout/fragment_anime_watch" />
+
 
     <action
         android:id="@+id/action_global_animeDetailFragment"
