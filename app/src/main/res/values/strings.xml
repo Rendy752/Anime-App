@@ -6,6 +6,7 @@
     <string name="dark_mode">Dark Mode</string>
     <string name="dark_mode_description">Enable dark mode</string>
     <string name="title_detail">Detail</string>
+    <string name="title_watch">Watch</string>
     <string name="title_logging">Logging</string>
     <string name="if_you_like">If you like…</string>
     <string name="then_you_might_like">…then you might like</string>
