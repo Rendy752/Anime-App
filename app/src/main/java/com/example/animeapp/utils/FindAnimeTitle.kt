@@ -17,16 +17,23 @@ object FindAnimeTitle {
     )
     private val numberRegex = Pattern.compile("\\d+")
 
-    fun findClosestAnime(animeSearchData: AnimeAniwatchSearchResponse, animeDetail: AnimeDetail?): AnimeAniwatch? {
+    fun findClosestAnime(
+        animeSearchData: AnimeAniwatchSearchResponse,
+        animeDetail: AnimeDetail?
+    ): AnimeAniwatch? {
         if (animeDetail == null) {
             return animeSearchData.animes.minByOrNull { it.name.normalizeForComparison() }
         }
 
         val normalizedDetailTitle = animeDetail.title.normalizeForComparison()
         val normalizedDetailEnglishTitle = animeDetail.title_english?.normalizeForComparison()
-        val normalizedDetailSynonyms = animeDetail.title_synonyms?.map { it.normalizeForComparison() } ?: emptyList()
+        val normalizedDetailSynonyms =
+            animeDetail.title_synonyms?.map { it.normalizeForComparison() } ?: emptyList()
 
-        val allNormalizedTitles = listOfNotNull(normalizedDetailTitle, normalizedDetailEnglishTitle) + normalizedDetailSynonyms
+        val allNormalizedTitles = listOfNotNull(
+            normalizedDetailTitle,
+            normalizedDetailEnglishTitle
+        ) + normalizedDetailSynonyms
 
         return animeSearchData.animes.map { anime ->
             val normalizedAnimeName = anime.name.normalizeForComparison()
@@ -55,7 +62,8 @@ object FindAnimeTitle {
             seasonNumber = (2..matcher.groupCount()).firstNotNullOfOrNull { index ->
                 matcher.group(index)?.toIntOrNull()
             }
-            part = modifiedTitle.replace(coreTitle, "").replace(seasonNumber?.toString() ?: "", "").trim()
+            part = modifiedTitle.replace(coreTitle, "").replace(seasonNumber?.toString() ?: "", "")
+                .trim()
             if (!part.lowercase().contains("part")) {
                 part = null
             }
@@ -69,12 +77,17 @@ object FindAnimeTitle {
         }
 
         if (seasonNumber == null) {
-            val numbers = numberRegex.toRegex().findAll(modifiedTitle).map { it.value.toInt() }.toList()
-            seasonNumber = numbers.lastOrNull()
+            val numbers =
+                numberRegex.toRegex().findAll(modifiedTitle).map { it.value.toInt() }.toList()
+            seasonNumber = if (numbers.isNotEmpty() && numbers.last() > 1900 && numbers.last() < 2100) {
+                null
+            } else {
+                numbers.lastOrNull()
+            }
             if (seasonNumber != null) {
                 coreTitle = modifiedTitle.replace(seasonNumber.toString(), "").trim()
             } else if (coreTitle.lowercase().contains("movie")) {
-                seasonNumber = 1 // Treat "Movie" without number as "Movie 1"
+                seasonNumber = 1
             }
         }
 
@@ -93,22 +106,26 @@ object FindAnimeTitle {
 
         val coreSimilarity = calculateCombinedSimilarity(coreTitle1, coreTitle2)
 
-        var score = coreSimilarity * 0.7 // Increased core similarity weight
+        var score = coreSimilarity * 0.7
         var numberScore = 0.0
 
         if (number1 != null && number2 != null) {
             if (number1 == number2) {
-                numberScore = 0.3 // Increased number match weight
-                if (part1 != null && part2 != null && part1 == part2){
+                numberScore = 0.3
+                if (part1 != null && part2 != null && part1 == part2) {
                     numberScore = 0.3
-                } else if (part1 != null || part2 != null){
+                } else if (part1 != null || part2 != null) {
                     score *= 0.95
                 }
+                println("NcoreSimilarity: $coreSimilarity")
+                if (coreSimilarity < MIN_SIMILARITY_THRESHOLD) { //0.2
+                    numberScore *= 0.5
+                }
             } else {
-                score *= 0.8 // slight penalty for different numbers
+                score *= 0.8
             }
         } else if (number1 != null || number2 != null) {
-            score *= 0.9 // slight penalty for one number missing
+            score *= 0.9
         }
 
         return (score + numberScore).coerceAtMost(1.0)
