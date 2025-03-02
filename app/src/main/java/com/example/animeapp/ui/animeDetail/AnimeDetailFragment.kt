@@ -64,7 +64,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
         viewModel.animeDetail.observe(viewLifecycleOwner) { response ->
             when (response) {
                 is Resource.Success -> {
-                    viewModel.getEpisodes()
+                    viewModel.handleEpisodes()
                     handleAnimeSuccess(response)
                 }
 

@@ -3,8 +3,10 @@ package com.example.animeapp.ui.animeDetail
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.animeapp.models.AnimeAniwatch
 import com.example.animeapp.models.AnimeAniwatchSearchResponse
 import com.example.animeapp.models.AnimeDetailResponse
+import com.example.animeapp.models.EpisodeServersResponse
 import com.example.animeapp.models.EpisodeSourcesQuery
 import com.example.animeapp.models.EpisodeSourcesResponse
 import com.example.animeapp.models.EpisodesResponse
@@ -14,6 +16,7 @@ import com.example.animeapp.utils.FindAnimeTitle
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ResponseHandler
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import retrofit2.Response
 import javax.inject.Inject
@@ -25,6 +28,9 @@ class AnimeDetailViewModel @Inject constructor(
 ) : ViewModel() {
     val animeDetail: MutableLiveData<Resource<AnimeDetailResponse>?> = MutableLiveData()
     val episodes: MutableLiveData<Resource<EpisodesResponse>?> = MutableLiveData()
+    val animeEpisodeInfo: MutableLiveData<AnimeAniwatch?> = MutableLiveData()
+    val defaultEpisodeServers: MutableLiveData<EpisodeServersResponse?> = MutableLiveData()
+    val defaultEpisodeSources: MutableLiveData<EpisodeSourcesResponse?> = MutableLiveData()
 
     fun getAnimeDetail(id: Int) = viewModelScope.launch {
         val cachedResponse = getCachedAnimeDetail(id)
@@ -43,7 +49,7 @@ class AnimeDetailViewModel @Inject constructor(
         return if (cachedAnimeDetail != null) Resource.Success(cachedAnimeDetail) else null
     }
 
-    fun getEpisodes() = viewModelScope.launch {
+    fun handleEpisodes() = viewModelScope.launch {
         val detailData = animeDetail.value?.data?.data ?: return@launch episodes.postValue(
             Resource.Error("Anime data not available")
         )
@@ -62,104 +68,120 @@ class AnimeDetailViewModel @Inject constructor(
         }
         val response = animeStreamingRepository.getAnimeAniwatchSearch(searchTitle)
         if (!response.isSuccessful) {
-            val tes = response
-            println(tes)
-            val tes2=response.message()
-            println(tes2)
             return@launch episodes.postValue(Resource.Error(response.message()))
         }
-        handleAnimeSearchResponse(response)
+        handleValidEpisode(response)
     }
 
-    private fun handleAnimeSearchResponse(
-        response: Response<AnimeAniwatchSearchResponse>
-    ) {
-        if (response.isSuccessful) {
-            response.body()?.let { resultResponse ->
-                val anime =
-                    FindAnimeTitle.findClosestAnime(resultResponse, animeDetail.value?.data?.data)
-
-                if (anime != null) {
-                    val animeId = anime.id.substringBefore("?").trim()
-                    fetchEpisodesForAnime(animeId)
-                } else {
-                    episodes.postValue(Resource.Error("No matching anime found"))
-                }
-            } ?: run {
+    private fun handleValidEpisode(response: Response<AnimeAniwatchSearchResponse>) =
+        viewModelScope.launch {
+            if (!response.isSuccessful) {
                 episodes.postValue(Resource.Error(response.message()))
+                return@launch
             }
-        } else {
-            episodes.postValue(Resource.Error(response.message()))
-        }
-    }
 
-    private fun fetchEpisodesForAnime(animeId: String) = viewModelScope.launch {
-        try {
-            val episodesResponse = animeStreamingRepository.getEpisodes(animeId)
-            episodes.postValue(handleEpisodesResponse(episodesResponse))
-        } catch (e: Exception) {
-            episodes.postValue(Resource.Error(e.message ?: "Failed to fetch episodes"))
-        }
-    }
+            val resultResponse = response.body() ?: run {
+                episodes.postValue(Resource.Error(response.message()))
+                return@launch
+            }
 
-    private suspend fun handleEpisodesResponse(response: Response<EpisodesResponse>): Resource<EpisodesResponse> {
-        if (!response.isSuccessful) {
-            return Resource.Error(response.message() ?: "Failed to fetch episodes")
-        }
-        val episodesResponse = response.body() ?: return Resource.Error(response.message())
-        val episodeDefaultServers = getEpisodeDefaultServers(episodesResponse.episodes[0].episodeId)
-        return if (episodeDefaultServers == null) {
-            Resource.Error("Failed to fetch episode default servers")
-        } else if (fetchEpisodeSources(episodeDefaultServers)) {
-            Resource.Success(episodesResponse)
-        } else {
-            Resource.Error("No episode sources found")
-        }
-    }
-
-    private suspend fun getEpisodeDefaultServers(episodeId: String): EpisodeSourcesQuery? {
-        return try {
-            val episodeServersResponse = animeStreamingRepository.getEpisodeServers(episodeId)
-            if (episodeServersResponse.isSuccessful) {
-                val episodeServers = episodeServersResponse.body()
-                episodeServers?.let {
-                    if (episodeServers.sub.isNotEmpty()) {
-                        EpisodeSourcesQuery(episodeId, episodeServers.sub[0].serverName, "sub")
-                    } else if (episodeServers.dub.isNotEmpty()) {
-                        EpisodeSourcesQuery(episodeId, episodeServers.dub[0].serverName, "dub")
-                    } else if (episodeServers.raw.isNotEmpty()) {
-                        EpisodeSourcesQuery(episodeId, episodeServers.raw[0].serverName, "raw")
-                    } else {
-                        null
+            val anime =
+                FindAnimeTitle.findClosestAnime(resultResponse, animeDetail.value?.data?.data)
+                    ?: run {
+                        episodes.postValue(Resource.Error("No matching anime found"))
+                        return@launch
                     }
-                }
-            } else {
-                null
+
+            val animeId = anime.id.substringBefore("?").trim()
+            val episodesResponse = getEpisodes(animeId)
+
+            if (episodesResponse !is Resource.Success) {
+                episodes.postValue(Resource.Error("Failed to fetch episodes"))
+                return@launch
             }
-        } catch (e: Exception) {
-            null
-        }
-    }
 
-    private suspend fun fetchEpisodeSources(episodeSourcesQuery: EpisodeSourcesQuery): Boolean =
-        try {
-            val episodeSourceResponse = animeStreamingRepository.getEpisodeSources(
-                episodeSourcesQuery.id,
-                episodeSourcesQuery.server,
-                episodeSourcesQuery.category
+            val defaultEpisodeServersResponse = getDefaultEpisodeServers(episodesResponse)
+
+            if (defaultEpisodeServersResponse !is Resource.Success) {
+                episodes.postValue(Resource.Error("Failed to fetch episode servers"))
+                return@launch
+            }
+
+            val defaultEpisodeSourcesResponse =
+                getDefaultEpisodeSources(defaultEpisodeServersResponse)
+
+            if (defaultEpisodeSourcesResponse !is Resource.Success || !checkEpisodeSourceMalId(
+                    defaultEpisodeSourcesResponse
+                )
+            ) {
+                episodes.postValue(Resource.Error("No matching anime found"))
+                return@launch
+            }
+
+            animeEpisodeInfo.postValue(anime)
+            episodes.postValue(episodesResponse)
+            defaultEpisodeServers.postValue(defaultEpisodeServersResponse.data)
+            defaultEpisodeSources.postValue(defaultEpisodeSourcesResponse.data)
+        }
+
+    private suspend fun getEpisodes(animeId: String): Resource<EpisodesResponse> =
+        viewModelScope.async {
+            ResponseHandler.handleCommonResponse(animeStreamingRepository.getEpisodes(animeId))
+        }.await()
+
+    private suspend fun getDefaultEpisodeServers(response: Resource<EpisodesResponse>): Resource<EpisodeServersResponse> =
+        viewModelScope.async {
+            val defaultEpisodeId = response.data?.episodes?.firstOrNull()?.episodeId
+                ?: return@async Resource.Error("No default episode found")
+            ResponseHandler.handleCommonResponse(
+                animeStreamingRepository.getEpisodeServers(
+                    defaultEpisodeId
+                )
             )
-            checkEpisodeSourceMalId(episodeSourceResponse)
-        } catch (e: Exception) {
-            false
-        }
+        }.await()
 
-    private fun checkEpisodeSourceMalId(episodeSourceResponse: Response<EpisodeSourcesResponse>): Boolean {
-        return if (episodeSourceResponse.isSuccessful) {
-            episodeSourceResponse.body()?.let {
-                animeDetail.value?.data?.data?.mal_id == it.malID
-            } ?: false
-        } else {
-            false
+    private suspend fun getDefaultEpisodeSources(response: Resource<EpisodeServersResponse>): Resource<EpisodeSourcesResponse> {
+        val episodeServers = response.data
+        val episodeDefaultId = episodeServers?.episodeId
+            ?: return Resource.Error("No default episode found")
+
+        val episodeSourcesQuery = episodeServers.let {
+            when {
+                it.sub.isNotEmpty() -> EpisodeSourcesQuery(
+                    episodeDefaultId,
+                    it.sub.first().serverName,
+                    "sub"
+                )
+
+                it.dub.isNotEmpty() -> EpisodeSourcesQuery(
+                    episodeDefaultId,
+                    it.dub.first().serverName,
+                    "dub"
+                )
+
+                it.raw.isNotEmpty() -> EpisodeSourcesQuery(
+                    episodeDefaultId,
+                    it.raw.first().serverName,
+                    "raw"
+                )
+
+                else -> null
+            }
+        } ?: return Resource.Error("No episode servers found")
+
+        return try {
+            ResponseHandler.handleCommonResponse(
+                animeStreamingRepository.getEpisodeSources(
+                    episodeSourcesQuery.id,
+                    episodeSourcesQuery.server,
+                    episodeSourcesQuery.category
+                )
+            )
+        } catch (e: Exception) {
+            Resource.Error(e.message ?: "An error occurred")
         }
     }
+
+    private fun checkEpisodeSourceMalId(response: Resource<EpisodeSourcesResponse>): Boolean =
+        animeDetail.value?.data?.data?.mal_id == response.data?.malID
 }
