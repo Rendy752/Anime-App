@@ -8,7 +8,11 @@ import com.example.animeapp.databinding.AnimeSearchItemBinding
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.Relation
 import com.example.animeapp.utils.AnimeHeaderUtils
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.launch
 
 class EntriesAdapter(
     private val animeAPI: AnimeAPI,
@@ -26,35 +30,48 @@ class EntriesAdapter(
         return RelationItemViewHolder(binding)
     }
 
+    private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+
     override fun onBindViewHolder(holder: RelationItemViewHolder, position: Int) {
         val relationItem = relationItems.entry.getOrNull(position)
         relationItem?.let {
-            val animeDetail = getAnimeDetail(it.mal_id)
-            if (animeDetail != null) {
-                AnimeHeaderUtils.bindAnimeData(holder.binding, animeDetail)
-                holder.itemView.setOnClickListener {
-                    onItemClickListener(animeDetail.mal_id)
-                }
-            } else {
-                AnimeHeaderUtils.handleNullData(holder.binding, it.name)
-            }
             holder.binding.apply {
-                shimmerViewContainer.stopShimmer()
-                shimmerViewContainer.hideShimmer()
+                shimmerViewContainer.startShimmer()
             }
+
+            coroutineScope.launch {
+                val animeDetail = getAnimeDetail(it.mal_id)
+                if (animeDetail != null) {
+                    AnimeHeaderUtils.bindAnimeData(holder.binding, animeDetail)
+                    holder.itemView.setOnClickListener {
+                        onItemClickListener(animeDetail.mal_id)
+                    }
+                } else {
+                    AnimeHeaderUtils.handleNullData(holder.binding, it.name)
+                }
+                holder.binding.apply {
+                    shimmerViewContainer.stopShimmer()
+                    shimmerViewContainer.hideShimmer()
+                }
+            }
+        }
+    }
+
+    override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
+        super.onDetachedFromRecyclerView(recyclerView)
+        coroutineScope.coroutineContext.cancelChildren()
+    }
+
+    private suspend fun getAnimeDetail(animeId: Int): AnimeDetail? {
+        val response = animeAPI.getAnimeDetail(animeId)
+        return if (response.isSuccessful) {
+            response.body()?.data
+        } else {
+            null
         }
     }
 
     override fun getItemCount(): Int {
         return relationItems.entry.size
-    }
-
-    private fun getAnimeDetail(animeId: Int): AnimeDetail? {
-        var detail: AnimeDetail? = null
-        val response = runBlocking { animeAPI.getAnimeDetail(animeId) }
-        if (response.isSuccessful) {
-            detail = response.body()?.data
-        }
-        return detail
     }
 }
