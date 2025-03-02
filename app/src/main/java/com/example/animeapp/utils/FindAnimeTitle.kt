@@ -25,21 +25,16 @@ object FindAnimeTitle {
             return animeSearchData.animes.minByOrNull { it.name.normalizeForComparison() }
         }
 
-        val normalizedDetailTitle = animeDetail.title.normalizeForComparison()
-        val normalizedDetailEnglishTitle = animeDetail.title_english?.normalizeForComparison()
-        val normalizedDetailSynonyms =
-            animeDetail.title_synonyms?.map { it.normalizeForComparison() } ?: emptyList()
-
-        val allNormalizedTitles = listOfNotNull(
-            normalizedDetailTitle,
-            normalizedDetailEnglishTitle
-        ) + normalizedDetailSynonyms
+        val normalizedDetailTitles = listOfNotNull(
+            animeDetail.title.normalizeForComparison(),
+            animeDetail.title_english?.normalizeForComparison()
+        ) + (animeDetail.title_synonyms?.map { it.normalizeForComparison() } ?: emptyList())
 
         return animeSearchData.animes.map { anime ->
             val normalizedAnimeName = anime.name.normalizeForComparison()
             Log.d("FindAnimeTitle", "Comparing '${anime.name}' with '${animeDetail.title}'")
 
-            val bestScore = allNormalizedTitles.maxOf { detailTitle ->
+            val bestScore = normalizedDetailTitles.maxOf { detailTitle ->
                 calculateEnhancedSimilarity(normalizedAnimeName, detailTitle)
             }
 
@@ -59,15 +54,12 @@ object FindAnimeTitle {
 
         if (matcher.find()) {
             coreTitle = matcher.group(1)?.trim() ?: ""
-            seasonNumber = (2..matcher.groupCount()).firstNotNullOfOrNull { index ->
-                matcher.group(index)?.toIntOrNull()
+            seasonNumber = (2..matcher.groupCount()).firstNotNullOfOrNull {
+                matcher.group(it)?.toIntOrNull()
             }
             part = modifiedTitle.replace(coreTitle, "").replace(seasonNumber?.toString() ?: "", "")
                 .trim()
-            if (!part.lowercase().contains("part")) {
-                part = null
-            }
-
+                .takeIf { it.lowercase().contains("part") }
         } else {
             val numberMatcher = numberRegex.matcher(modifiedTitle)
             if (numberMatcher.find()) {
@@ -79,28 +71,26 @@ object FindAnimeTitle {
         if (seasonNumber == null) {
             val numbers =
                 numberRegex.toRegex().findAll(modifiedTitle).map { it.value.toInt() }.toList()
-            seasonNumber = if (numbers.isNotEmpty() && numbers.last() > 1900 && numbers.last() < 2100) {
+            seasonNumber = if (numbers.isNotEmpty() && numbers.last() in 1900..2100) {
                 null
             } else {
-                numbers.lastOrNull()
+                numbers.lastOrNull()?.also {
+                    coreTitle = modifiedTitle.replace(it.toString(), "").trim()
+                }
             }
-            if (seasonNumber != null) {
-                coreTitle = modifiedTitle.replace(seasonNumber.toString(), "").trim()
-            } else if (coreTitle.lowercase().contains("movie")) {
+            if (seasonNumber == null && coreTitle.lowercase().contains("movie")) {
                 seasonNumber = 1
             }
         }
 
-        return Pair(coreTitle, Pair(seasonNumber, part))
+        return coreTitle to (seasonNumber to part)
     }
 
     private fun calculateEnhancedSimilarity(s1: String, s2: String): Double {
         val (coreTitle1, numberPair1) = extractCoreTitleAndNumber(s1)
         val (coreTitle2, numberPair2) = extractCoreTitleAndNumber(s2)
-        val number1 = numberPair1.first
-        val number2 = numberPair2.first
-        val part1 = numberPair1.second
-        val part2 = numberPair2.second
+        val (number1, part1) = numberPair1
+        val (number2, part2) = numberPair2
 
         println("Core titles: '$coreTitle1' <=> '$coreTitle2', Numbers: $number1 <=> $number2, Parts: $part1 <=> $part2")
 
@@ -109,20 +99,15 @@ object FindAnimeTitle {
         var score = coreSimilarity * 0.7
         var numberScore = 0.0
 
-        if (number1 != null && number2 != null) {
-            if (number1 == number2) {
+        if (number1 != null && number2 != null && number1 == number2) {
+            numberScore = 0.3
+            if (part1 != null && part2 != null && part1 == part2) {
                 numberScore = 0.3
-                if (part1 != null && part2 != null && part1 == part2) {
-                    numberScore = 0.3
-                } else if (part1 != null || part2 != null) {
-                    score *= 0.95
-                }
-                println("NcoreSimilarity: $coreSimilarity")
-                if (coreSimilarity < MIN_SIMILARITY_THRESHOLD) { //0.2
-                    numberScore *= 0.5
-                }
-            } else {
-                score *= 0.8
+            } else if (part1 != null || part2 != null) {
+                score *= 0.95
+            }
+            if (coreSimilarity < MIN_SIMILARITY_THRESHOLD) {
+                numberScore *= 0.5
             }
         } else if (number1 != null || number2 != null) {
             score *= 0.9
@@ -131,12 +116,9 @@ object FindAnimeTitle {
         return (score + numberScore).coerceAtMost(1.0)
     }
 
-    private fun calculateCombinedSimilarity(s1: String, s2: String): Double {
-        val levenshteinScore = calculateLevenshteinSimilarity(s1, s2)
-        val jaccardScore = calculateJaccardSimilarity(s1, s2)
-
-        return (levenshteinScore * 0.7 + jaccardScore * 0.3).coerceAtMost(1.0)
-    }
+    private fun calculateCombinedSimilarity(s1: String, s2: String): Double =
+        (calculateLevenshteinSimilarity(s1, s2) * 0.7 + calculateJaccardSimilarity(s1, s2) * 0.3)
+            .coerceAtMost(1.0)
 
     private fun calculateLevenshteinSimilarity(s1: String, s2: String): Double {
         val distance = levenshteinDistance.apply(s1, s2)
@@ -154,7 +136,6 @@ object FindAnimeTitle {
 
     private data class ScoredAnime(val anime: AnimeAniwatch, val score: Double)
 
-    private fun String.normalizeForComparison(): String {
-        return replace(Regex("[^a-zA-Z0-9\\s]"), "").trim().lowercase()
-    }
+    private fun String.normalizeForComparison(): String =
+        replace(Regex("[^a-zA-Z0-9\\s]"), "").trim().lowercase()
 }
