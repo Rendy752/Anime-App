@@ -61,11 +61,10 @@ object HlsPlayerUtil {
 
             player.setMediaItem(mediaItemBuilder.build())
             player.prepare()
-//            player.play()
 
             val handler = Handler(Looper.getMainLooper())
             val runnable = object : Runnable {
-                private var introSkipped = true
+                private var introSkipped = false
                 private var outroSkipped = true
 
                 override fun run() {

@@ -16,6 +16,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
+import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView.OnQueryTextListener
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.Player
@@ -68,6 +69,11 @@ class AnimeWatchFragment : Fragment() {
         mListener = null
     }
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        setupInitialData()
+    }
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -80,7 +86,6 @@ class AnimeWatchFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        setupInitialData()
         setupObservers()
     }
 
@@ -93,6 +98,7 @@ class AnimeWatchFragment : Fragment() {
         val defaultEpisodeSources: EpisodeSourcesResponse? =
             getParcelableArgument("defaultEpisodeSources")
 
+        (requireActivity() as AppCompatActivity).supportActionBar?.title = animeDetail.title
         viewModel.setInitialState(
             animeDetail,
             episodes,
@@ -136,6 +142,8 @@ class AnimeWatchFragment : Fragment() {
                         "Total Episode: ${episodes?.totalEpisodes}".also {
                             tvTotalEpisodes.text = it
                         }
+                        "Eps. ${servers.episodeNo}".also { tvCurrentEpisode.text = it }
+
 
                         val debounce = Debounce(
                             lifecycleScope,
@@ -161,7 +169,6 @@ class AnimeWatchFragment : Fragment() {
                             }
                         })
                     }
-                    "Eps. ${servers.episodeNo}".also { tvCurrentEpisode.text = it }
 
                     //server adapter
 
@@ -315,6 +322,10 @@ class AnimeWatchFragment : Fragment() {
                 )
             }
         }
+    }
+
+    override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean) {
+        binding.playerViewContainer.playerView.useController = !isInPictureInPictureMode
     }
 
     override fun onDestroyView() {
