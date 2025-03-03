@@ -35,6 +35,7 @@
     <string name="members">Members</string>
     <string name="favorites">Favorites</string>
     <string name="share">Share</string>
+    <string name="watch">Watch</string>
     <string name="scored_by_users">%d Users</string>
     <string name="ranked_number">#%d</string>
     <string name="popularity_number">#%d</string>
@@ -79,4 +80,7 @@
     <string name="ep_number">Ep. number</string>
     <string name="jump">Jump</string>
     <string name="zero">0</string>
+    <string name="total_episodes_0">Total Episodes: 0</string>
+    <string name="search_episode">Search Episode</string>
+    <string name="episode_title">Episode Title</string>
 </resources>

@@ -11,7 +11,6 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
@@ -61,6 +60,11 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
         requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
     }
 
+    override fun onPrepareMenu(menu: Menu) {
+        val watchItem = menu.findItem(R.id.action_watch)
+        watchItem?.isVisible = viewModel.episodes.value is Resource.Success
+    }
+
     private fun observeAnimeDetail() {
         viewModel.animeDetail.observe(viewLifecycleOwner) { response ->
             when (response) {
@@ -97,6 +101,17 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
 
     override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
         return when (menuItem.itemId) {
+            R.id.action_watch -> {
+                Navigation.navigateToAnimeWatch(
+                    this,
+                    R.id.action_animeDetailFragment_to_animeWatchFragment,
+                    viewModel.animeDetail.value!!.data!!.data,
+                    viewModel.defaultEpisodeServers.value!!,
+                    viewModel.defaultEpisodeSources.value!!
+                )
+                true
+            }
+
             R.id.action_share -> {
                 viewModel.animeDetail.value?.data?.data?.let { detail ->
                     val animeUrl = detail.url
@@ -391,6 +406,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
     }
 
     private fun handleEpisodesSuccess(response: Resource.Success<EpisodesResponse>) {
+        requireActivity().invalidateMenu()
         binding.animeDetailEpisodes.apply {
             progressBar.visibility = View.GONE
             response.data?.episodes?.let { episodes ->
@@ -430,16 +446,14 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
 
                     rvEpisodes.apply {
                         adapter = EpisodesAdapter(requireContext(), episodes) { episodeId ->
-//                             Navigation.navigateToAnimeDetail(
-//                                 this@AnimeDetailFragment,
-//                                 episodeId,
-//                                 R.id.action_animeDetailFragment_to_animeStreamingFragment
-//                             )
-                            Toast.makeText(
-                                requireContext(),
-                                "Episode clicked: $episodeId",
-                                Toast.LENGTH_SHORT
-                            ).show()
+                            Navigation.navigateToAnimeWatch(
+                                this@AnimeDetailFragment,
+                                R.id.action_animeDetailFragment_to_animeWatchFragment,
+                                viewModel.animeDetail.value!!.data!!.data,
+                                viewModel.defaultEpisodeServers.value!!,
+                                viewModel.defaultEpisodeSources.value!!,
+                                episodeId,
+                            )
                         }
                         layoutManager = LinearLayoutManager(requireContext())
                     }
