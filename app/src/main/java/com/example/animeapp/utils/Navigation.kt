@@ -8,6 +8,7 @@ import com.example.animeapp.R
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.EpisodeServersResponse
 import com.example.animeapp.models.EpisodeSourcesResponse
+import com.example.animeapp.models.EpisodesResponse
 
 object Navigation {
     fun navigateToAnimeDetail(fragment: Fragment, animeId: Int, actionId: Int) {
@@ -33,17 +34,17 @@ object Navigation {
         fragment: Fragment,
         actionId: Int,
         animeDetail: AnimeDetail,
+        episodeId: String,
+        episodes: EpisodesResponse,
         defaultEpisodeServers: EpisodeServersResponse,
-        defaultEpisodeSources: EpisodeSourcesResponse,
-        episodeId: String? = null
+        defaultEpisodeSources: EpisodeSourcesResponse
     ) {
         val bundle = Bundle().apply {
             putParcelable("animeDetail", animeDetail)
+            putString("episodeId", episodeId)
+            putParcelable("episodes", episodes)
             putParcelable("defaultEpisodeServers", defaultEpisodeServers)
             putParcelable("defaultEpisodeSources", defaultEpisodeSources)
-            if (episodeId != null) {
-                putString("episodeId", episodeId)
-            }
         }
 
         val navOptions = NavOptions.Builder()

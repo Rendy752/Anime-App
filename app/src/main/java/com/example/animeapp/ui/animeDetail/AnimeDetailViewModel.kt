@@ -7,7 +7,6 @@ import com.example.animeapp.models.AnimeAniwatch
 import com.example.animeapp.models.AnimeAniwatchSearchResponse
 import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.models.EpisodeServersResponse
-import com.example.animeapp.models.EpisodeSourcesQuery
 import com.example.animeapp.models.EpisodeSourcesResponse
 import com.example.animeapp.models.EpisodesResponse
 import com.example.animeapp.repository.AnimeDetailRepository
@@ -15,6 +14,7 @@ import com.example.animeapp.repository.AnimeStreamingRepository
 import com.example.animeapp.utils.FindAnimeTitle
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ResponseHandler
+import com.example.animeapp.utils.StreamingUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
@@ -108,7 +108,10 @@ class AnimeDetailViewModel @Inject constructor(
             }
 
             val defaultEpisodeSourcesResponse =
-                getDefaultEpisodeSources(defaultEpisodeServersResponse)
+                StreamingUtils.getDefaultEpisodeSources(
+                    defaultEpisodeServersResponse,
+                    animeStreamingRepository
+                )
 
             if (defaultEpisodeSourcesResponse !is Resource.Success || !checkEpisodeSourceMalId(
                     defaultEpisodeSourcesResponse
@@ -139,48 +142,6 @@ class AnimeDetailViewModel @Inject constructor(
                 )
             )
         }.await()
-
-    private suspend fun getDefaultEpisodeSources(response: Resource<EpisodeServersResponse>): Resource<EpisodeSourcesResponse> {
-        val episodeServers = response.data
-        val episodeDefaultId = episodeServers?.episodeId
-            ?: return Resource.Error("No default episode found")
-
-        val episodeSourcesQuery = episodeServers.let {
-            when {
-                it.sub.isNotEmpty() -> EpisodeSourcesQuery(
-                    episodeDefaultId,
-                    it.sub.first().serverName,
-                    "sub"
-                )
-
-                it.dub.isNotEmpty() -> EpisodeSourcesQuery(
-                    episodeDefaultId,
-                    it.dub.first().serverName,
-                    "dub"
-                )
-
-                it.raw.isNotEmpty() -> EpisodeSourcesQuery(
-                    episodeDefaultId,
-                    it.raw.first().serverName,
-                    "raw"
-                )
-
-                else -> null
-            }
-        } ?: return Resource.Error("No episode servers found")
-
-        return try {
-            ResponseHandler.handleCommonResponse(
-                animeStreamingRepository.getEpisodeSources(
-                    episodeSourcesQuery.id,
-                    episodeSourcesQuery.server,
-                    episodeSourcesQuery.category
-                )
-            )
-        } catch (e: Exception) {
-            Resource.Error(e.message ?: "An error occurred")
-        }
-    }
 
     private fun checkEpisodeSourceMalId(response: Resource<EpisodeSourcesResponse>): Boolean =
         animeDetail.value?.data?.data?.mal_id == response.data?.malID

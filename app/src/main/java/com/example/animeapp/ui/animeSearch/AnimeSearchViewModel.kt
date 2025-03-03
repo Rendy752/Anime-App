@@ -77,12 +77,14 @@ class AnimeSearchViewModel @Inject constructor(
     }
 
     private fun handleAnimeRandomResponse(response: Response<AnimeDetailResponse>): Resource<AnimeSearchResponse> {
-        return ResponseHandler.handleResponse(response) { resultResponse ->
-            AnimeSearchResponse(
-                data = listOf(resultResponse.data),
-                pagination = CompletePagination.default()
-            )
-        }
+        return ResponseHandler.handleResponse(response,
+            onSuccess = { resultResponse ->
+                AnimeSearchResponse(
+                    data = listOf(resultResponse.data),
+                    pagination = CompletePagination.default()
+                )
+            }
+        )
     }
 
     fun fetchGenres() = viewModelScope.launch {

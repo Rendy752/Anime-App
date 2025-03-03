@@ -13,7 +13,8 @@ object ResponseHandler {
 
     fun <T, R> handleResponse(
         response: Response<T>,
-        onSuccess: (T) -> R?
+        onSuccess: (T) -> R?,
+        onError: ((String?) -> String?)? = null
     ): Resource<R> {
         if (response.isSuccessful) {
             val responseBody = response.body()
@@ -22,13 +23,16 @@ object ResponseHandler {
                 return if (result != null) {
                     Resource.Success(result)
                 } else {
-                    Resource.Error("Failed to process response body")
+                    val errorMessage = onError?.invoke("Failed to process response body") ?: "Failed to process response body"
+                    Resource.Error(errorMessage)
                 }
             } else {
-                return Resource.Error("Response body is null")
+                val errorMessage = onError?.invoke("Response body is null") ?: "Response body is null"
+                return Resource.Error(errorMessage)
             }
         } else {
-            return Resource.Error(response.message())
+            val errorMessage = onError?.invoke(response.message()) ?: response.message()
+            return Resource.Error(errorMessage)
         }
     }
 }

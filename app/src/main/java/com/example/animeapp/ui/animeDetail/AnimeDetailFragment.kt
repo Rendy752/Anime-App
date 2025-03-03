@@ -51,9 +51,19 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
         setupMenu()
         observeAnimeDetail()
         fetchAnimeDetail()
+    }
+
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        _binding = FragmentDetailBinding.inflate(inflater, container, false)
+        return binding.root
     }
 
     private fun setupMenu() {
@@ -106,6 +116,8 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                     this,
                     R.id.action_animeDetailFragment_to_animeWatchFragment,
                     viewModel.animeDetail.value!!.data!!.data,
+                    viewModel.episodes.value!!.data!!.episodes[0].episodeId,
+                    viewModel.episodes.value!!.data!!,
                     viewModel.defaultEpisodeServers.value!!,
                     viewModel.defaultEpisodeSources.value!!
                 )
@@ -167,15 +179,6 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
 
             else -> false
         }
-    }
-
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        _binding = FragmentDetailBinding.inflate(inflater, container, false)
-        return binding.root
     }
 
     private fun handleAnimeSuccess(response: Resource.Success<AnimeDetailResponse>) {
@@ -450,9 +453,10 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                                 this@AnimeDetailFragment,
                                 R.id.action_animeDetailFragment_to_animeWatchFragment,
                                 viewModel.animeDetail.value!!.data!!.data,
-                                viewModel.defaultEpisodeServers.value!!,
-                                viewModel.defaultEpisodeSources.value!!,
                                 episodeId,
+                                viewModel.episodes.value!!.data!!,
+                                viewModel.defaultEpisodeServers.value!!,
+                                viewModel.defaultEpisodeSources.value!!
                             )
                         }
                         layoutManager = LinearLayoutManager(requireContext())
