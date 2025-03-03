@@ -4,6 +4,7 @@ import android.app.PictureInPictureParams
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
+import android.content.res.Configuration
 import android.media.AudioManager
 import android.net.Uri
 import android.os.Build
@@ -14,6 +15,7 @@ import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import androidx.appcompat.widget.SearchView.OnQueryTextListener
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.Player
@@ -219,13 +221,14 @@ class AnimeWatchFragment : Fragment() {
                 sources
             )
 
-            var isFullscreen = false
-
             player.addListener(object : Player.Listener {
                 override fun onIsPlayingChanged(isPlaying: Boolean) {
                     super.onIsPlayingChanged(isPlaying)
 
                     if (isPlaying) {
+                        requireActivity().window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+
+
                         requestAudioFocus(audioManager)
                     } else {
                         abandonAudioFocus(audioManager)
@@ -239,12 +242,9 @@ class AnimeWatchFragment : Fragment() {
                 }
             })
             expandButton.setOnClickListener {
-                if (isFullscreen) {
-                    handleExitFullscreen()
-                } else {
-                    handleEnterFullscreen()
-                }
-                isFullscreen = !isFullscreen
+                val currentFullscreenState = isFullscreen
+                isFullscreen = !currentFullscreenState
+
             }
 
             playerView.setControllerVisibilityListener(
@@ -265,27 +265,41 @@ class AnimeWatchFragment : Fragment() {
         }
     }
 
-    private fun handleExitFullscreen() {
-        mListener?.onFullscreenRequested(false)
-        ActivityInfo.SCREEN_ORIENTATION_PORTRAIT.also {
-            requireActivity().requestedOrientation = it
+    private var isFullscreen = false
+        set(value) {
+            field = value
+            if (value) {
+                handleEnterFullscreen()
+            } else {
+                handleExitFullscreen()
+            }
         }
-        binding.playerViewContainer.apply {
-            playerView.layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT
-            playerView.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
-            expandButton.setImageResource(R.drawable.ic_fullscreen_black_24dp)
+
+    private fun handleExitFullscreen() {
+        if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            mListener?.onFullscreenRequested(false)
+            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT.also {
+                requireActivity().requestedOrientation = it
+            }
+            binding.playerViewContainer.apply {
+                playerView.layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT
+                playerView.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                expandButton.setImageResource(R.drawable.ic_fullscreen_black_24dp)
+            }
         }
     }
 
     private fun handleEnterFullscreen() {
-        mListener?.onFullscreenRequested(true)
-        ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE.also {
-            requireActivity().requestedOrientation = it
-        }
-        binding.playerViewContainer.apply {
-            playerView.layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT
-            playerView.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
-            expandButton.setImageResource(R.drawable.ic_fullscreen_exit_black_24dp)
+        if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
+            mListener?.onFullscreenRequested(true)
+            ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE.also {
+                requireActivity().requestedOrientation = it
+            }
+            binding.playerViewContainer.apply {
+                playerView.layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT
+                playerView.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
+                expandButton.setImageResource(R.drawable.ic_fullscreen_exit_black_24dp)
+            }
         }
     }
 
