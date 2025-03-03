@@ -7,7 +7,7 @@ import com.example.animeapp.data.remote.api.AnimeAPI
 import com.example.animeapp.databinding.AnimeSearchItemBinding
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.Relation
-import com.example.animeapp.utils.AnimeHeaderUtils
+import com.example.animeapp.utils.BindAnimeUtils
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -42,12 +42,12 @@ class EntriesAdapter(
             coroutineScope.launch {
                 val animeDetail = getAnimeDetail(it.mal_id)
                 if (animeDetail != null) {
-                    AnimeHeaderUtils.bindAnimeData(holder.binding, animeDetail)
+                    BindAnimeUtils.bindAnimeData(holder.binding, animeDetail)
                     holder.itemView.setOnClickListener {
                         onItemClickListener(animeDetail.mal_id)
                     }
                 } else {
-                    AnimeHeaderUtils.handleNullData(holder.binding, it.name)
+                    BindAnimeUtils.handleNullData(holder.binding, it.name)
                 }
                 holder.binding.apply {
                     shimmerViewContainer.stopShimmer()

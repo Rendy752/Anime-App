@@ -8,7 +8,7 @@ import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import com.example.animeapp.databinding.AnimeSearchItemBinding
 import com.example.animeapp.models.AnimeDetail
-import com.example.animeapp.utils.AnimeHeaderUtils
+import com.example.animeapp.utils.BindAnimeUtils
 
 class AnimeHeaderAdapter : RecyclerView.Adapter<AnimeHeaderAdapter.AnimeSearchViewHolder>() {
 
@@ -29,7 +29,7 @@ class AnimeHeaderAdapter : RecyclerView.Adapter<AnimeHeaderAdapter.AnimeSearchVi
                     shimmerViewContainer.hideShimmer()
 
                     anime?.let { data ->
-                        AnimeHeaderUtils.bindAnimeData(binding, data)
+                        BindAnimeUtils.bindAnimeData(binding, data)
                         setupClickListeners(data)
                     }
                 }

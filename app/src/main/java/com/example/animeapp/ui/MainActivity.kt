@@ -19,13 +19,13 @@ import androidx.navigation.ui.setupActionBarWithNavController
 import androidx.navigation.ui.setupWithNavController
 import com.example.animeapp.R
 import com.example.animeapp.databinding.ActivityMainBinding
-import com.example.animeapp.ui.animeRecommendations.AnimeRecommendationsFragment
+import com.example.animeapp.ui.animeWatch.AnimeWatchFragment
 import com.example.animeapp.utils.Navigation
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
-class MainActivity : AppCompatActivity(), AnimeRecommendationsFragment.OnFullscreenRequestListener {
+class MainActivity : AppCompatActivity(), AnimeWatchFragment.OnFullscreenRequestListener {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var navView: BottomNavigationView

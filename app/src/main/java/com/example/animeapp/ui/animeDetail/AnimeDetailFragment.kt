@@ -1,7 +1,5 @@
 package com.example.animeapp.ui.animeDetail
 
-import android.content.ClipData
-import android.content.ClipboardManager
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -11,14 +9,12 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
-import androidx.core.content.ContextCompat
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
 import com.example.animeapp.R
 import com.example.animeapp.data.remote.api.AnimeAPI
 import com.example.animeapp.databinding.FragmentDetailBinding
@@ -27,8 +23,8 @@ import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodesResponse
 import com.example.animeapp.ui.common.NameAndUrlAdapter
-import com.example.animeapp.ui.common.TitleSynonymsAdapter
 import com.example.animeapp.ui.common.UnorderedListAdapter
+import com.example.animeapp.utils.BindAnimeUtils
 import com.example.animeapp.utils.Const.Companion.YOUTUBE_URL
 import com.example.animeapp.utils.MinMaxInputFilter
 import com.example.animeapp.utils.Navigation
@@ -188,65 +184,15 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
             tvError.visibility = View.GONE
 
             response.data?.data?.let { detail ->
-                with(animeHeader) {
-                    Glide.with(requireContext()).load(detail.images.jpg.large_image_url)
-                        .into(ivAnimeImage)
-                    tvTitle.text = detail.title
-                    tvTitle.setOnClickListener {
-                        viewModel.animeDetail.value?.data?.data?.let { detail ->
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(detail.url))
-                            startActivity(intent)
-                        }
-                    }
-                    tvTitle.setOnLongClickListener {
-                        val clipboard =
-                            ContextCompat.getSystemService(
-                                requireContext(),
-                                ClipboardManager::class.java
-                            )
-                        val clip = ClipData.newPlainText("Anime Title", tvTitle.text.toString())
-                        clipboard?.setPrimaryClip(clip)
-                        true
-                    }
-                    tvEnglishTitle.text = detail.title_english
-                    tvJapaneseTitle.text = detail.title_japanese
-                    rvTitleSynonyms.apply {
-                        adapter = detail.title_synonyms?.let { TitleSynonymsAdapter(it.toList()) }
-                        layoutManager = LinearLayoutManager(
-                            requireContext(), LinearLayoutManager.HORIZONTAL, false
-                        )
-                    }
-
-                    when (detail.approved) {
-                        true -> {
-                            ivApproved.visibility = View.VISIBLE
-                        }
-
-                        false -> {
-                            ivApproved.visibility = View.GONE
-                        }
-                    }
-
-                    when (detail.airing) {
-                        true -> {
-                            tvAiredStatus.setCompoundDrawablesWithIntrinsicBounds(
-                                0,
-                                0,
-                                R.drawable.ic_notifications_active_24dp,
-                                0
-                            )
-                        }
-
-                        false -> {
-                            tvAiredStatus.setCompoundDrawablesWithIntrinsicBounds(
-                                0,
-                                0,
-                                R.drawable.ic_done_24dp,
-                                0
-                            )
-                        }
-                    }
-                }
+                BindAnimeUtils.bindAnimeHeader(
+                    requireContext(),
+                    animeHeader,
+                    { url ->
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                        startActivity(intent)
+                    },
+                    detail
+                )
 
                 with(animeBody) {
                     tvStatus.text = detail.status

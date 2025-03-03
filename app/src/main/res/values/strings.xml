@@ -83,4 +83,10 @@
     <string name="total_episodes_0">Total Episodes: 0</string>
     <string name="search_episode">Search Episode</string>
     <string name="episode_title">Episode Title</string>
+    <string name="pip_button">PIP Button</string>
+    <string name="expand_button">Expand Button</string>
+    <string name="current_episode">Eps. 0</string>
+    <string name="sub">Sub :</string>
+    <string name="dub">Dub :</string>
+    <string name="raw">Raw :</string>
 </resources>
