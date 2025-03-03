@@ -124,6 +124,18 @@ class MainActivity : AppCompatActivity(), AnimeWatchFragment.OnFullscreenRequest
         }
     }
 
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+
+        val navHostFragment =
+            supportFragmentManager.findFragmentById(R.id.nav_host_fragment_activity_main)
+        val currentFragment = navHostFragment?.childFragmentManager?.fragments?.get(0)
+
+        if (currentFragment is AnimeWatchFragment && currentFragment.isVisible) {
+            currentFragment.handleEnterPictureInPictureMode()
+        }
+    }
+
     override fun onFullscreenRequested(fullscreen: Boolean) {
         isFullscreen = fullscreen
         if (fullscreen) {

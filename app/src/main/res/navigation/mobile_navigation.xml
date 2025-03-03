@@ -54,7 +54,6 @@
         android:label="@string/title_watch"
         tools:layout="@layout/fragment_anime_watch" />
 
-
     <action
         android:id="@+id/action_global_animeDetailFragment"
         app:destination="@id/animeDetailFragment" />

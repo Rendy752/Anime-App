@@ -141,10 +141,12 @@ class AnimeWatchFragment : Fragment() {
                             lifecycleScope,
                             1000L,
                             { query ->
-                                handleJumpToEpisode(
-                                    query.toInt(),
-                                    episodes?.episodes ?: emptyList()
-                                )
+                                if (query.isNotEmpty()) {
+                                    handleJumpToEpisode(
+                                        query.toInt(),
+                                        episodes?.episodes ?: emptyList()
+                                    )
+                                }
                             }
                         )
 
@@ -227,18 +229,10 @@ class AnimeWatchFragment : Fragment() {
 
                     if (isPlaying) {
                         requireActivity().window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-
-
                         requestAudioFocus(audioManager)
                     } else {
                         abandonAudioFocus(audioManager)
                     }
-
-                    requireActivity().setPictureInPictureParams(
-                        PictureInPictureParams.Builder()
-                            .setAspectRatio(Rational(16, 9))
-                            .build()
-                    )
                 }
             })
             expandButton.setOnClickListener {
@@ -303,39 +297,11 @@ class AnimeWatchFragment : Fragment() {
         }
     }
 
-    override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean) {
-        super.onPictureInPictureModeChanged(isInPictureInPictureMode)
-
-        binding.apply {
-            if (isInPictureInPictureMode) {
-                hideUiPictureInPictureMode()
-            } else {
-                restoreUiPictureInPictureMode()
-            }
-        }
-    }
-
-    private fun handleEnterPictureInPictureMode() {
+    fun handleEnterPictureInPictureMode() {
         val pipParams = PictureInPictureParams.Builder()
             .setAspectRatio(Rational(16, 9))
             .build()
         requireActivity().enterPictureInPictureMode(pipParams)
-    }
-
-    private fun restoreUiPictureInPictureMode() {
-        binding.apply {
-            playerViewContainer.skipButton.visibility = View.VISIBLE
-            playerViewContainer.pipButton.visibility = View.VISIBLE
-            playerViewContainer.expandButton.visibility = View.VISIBLE
-        }
-    }
-
-    private fun hideUiPictureInPictureMode() {
-        binding.apply {
-            playerViewContainer.skipButton.visibility = View.GONE
-            playerViewContainer.pipButton.visibility = View.GONE
-            playerViewContainer.expandButton.visibility = View.GONE
-        }
     }
 
     private fun handleJumpToEpisode(episodeNumber: Int, episodes: List<Episode>) {

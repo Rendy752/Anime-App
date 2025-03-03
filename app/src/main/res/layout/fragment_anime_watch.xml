@@ -180,6 +180,7 @@
                     app:layout_constraintStart_toEndOf="@id/guideline"
                     app:layout_constraintTop_toTopOf="parent"
                     app:queryHint="@string/search_episode"
+                    android:inputType="number"
                     app:searchHintIcon="@null"
                     app:searchIcon="@drawable/ic_search_blue_24dp" />
             </androidx.constraintlayout.widget.ConstraintLayout>
