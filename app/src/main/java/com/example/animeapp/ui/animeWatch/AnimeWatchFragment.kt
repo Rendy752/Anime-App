@@ -4,7 +4,6 @@ import android.app.PictureInPictureParams
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
-import android.content.res.Configuration
 import android.media.AudioManager
 import android.net.Uri
 import android.os.Build
@@ -12,18 +11,21 @@ import androidx.fragment.app.viewModels
 import android.os.Bundle
 import android.util.Rational
 import androidx.fragment.app.Fragment
+import android.support.v4.media.session.PlaybackStateCompat
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
+import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView.OnQueryTextListener
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.session.MediaSession
 import androidx.media3.ui.PlayerView
 import androidx.recyclerview.widget.LinearLayoutManager
-import com.example.animeapp.R
 import com.example.animeapp.databinding.FragmentAnimeWatchBinding
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.Episode
@@ -54,6 +56,7 @@ class AnimeWatchFragment : Fragment() {
 
     private var mListener: OnFullscreenRequestListener? = null
     private lateinit var audioManager: AudioManager
+    private var mediaSession: MediaSession? = null
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -74,6 +77,7 @@ class AnimeWatchFragment : Fragment() {
 
         setupInitialData()
     }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -218,19 +222,41 @@ class AnimeWatchFragment : Fragment() {
 
     }
 
+    @OptIn(UnstableApi::class)
     private fun setupVideoPlayer(sources: EpisodeSourcesResponse) {
         audioManager = requireActivity().getSystemService(Context.AUDIO_SERVICE) as AudioManager
         binding.playerViewContainer.apply {
-            val player = ExoPlayer.Builder(requireActivity()).build()
-            playerView.player = player
+            val exoPlayer = ExoPlayer.Builder(requireActivity()).build()
+            with(playerView) {
+                player = exoPlayer
+                setShowPreviousButton(false)
+                setShowNextButton(false)
 
+                setFullscreenButtonState(true)
+                setFullscreenButtonClickListener {
+                    val currentFullscreenState = isFullscreen
+                    isFullscreen = !currentFullscreenState
+                }
+
+                setControllerVisibilityListener(
+                    PlayerView.ControllerVisibilityListener { visibility ->
+                        if (visibility == View.VISIBLE) {
+                            pipButton.visibility = View.VISIBLE
+                        } else {
+                            pipButton.visibility = View.GONE
+                        }
+                    }
+                )
+            }
             HlsPlayerUtil.initializePlayer(
-                player,
+                exoPlayer,
                 skipButton,
                 sources
             )
 
-            player.addListener(object : Player.Listener {
+            mediaSession = MediaSession.Builder(requireActivity(), exoPlayer).build()
+
+            exoPlayer.addListener(object : Player.Listener {
                 override fun onIsPlayingChanged(isPlaying: Boolean) {
                     super.onIsPlayingChanged(isPlaying)
 
@@ -240,30 +266,35 @@ class AnimeWatchFragment : Fragment() {
                     } else {
                         abandonAudioFocus(audioManager)
                     }
+                    updateMediaSessionPlaybackState(exoPlayer)
+                }
+
+                override fun onPlaybackStateChanged(playbackState: Int) {
+                    super.onPlaybackStateChanged(playbackState)
+                    updateMediaSessionPlaybackState(exoPlayer)
                 }
             })
-            expandButton.setOnClickListener {
-                val currentFullscreenState = isFullscreen
-                isFullscreen = !currentFullscreenState
-
-            }
-
-            playerView.setControllerVisibilityListener(
-                PlayerView.ControllerVisibilityListener { visibility ->
-                    if (visibility == View.VISIBLE) {
-                        pipButton.visibility = View.VISIBLE
-                        expandButton.visibility = View.VISIBLE
-                    } else {
-                        pipButton.visibility = View.GONE
-                        expandButton.visibility = View.GONE
-                    }
-                }
-            )
 
             pipButton.setOnClickListener {
                 handleEnterPictureInPictureMode()
             }
         }
+    }
+
+    private fun updateMediaSessionPlaybackState(player: Player) {
+        val playbackState = when (player.playbackState) {
+            Player.STATE_IDLE -> PlaybackStateCompat.STATE_NONE
+            Player.STATE_BUFFERING -> PlaybackStateCompat.STATE_BUFFERING
+            Player.STATE_READY -> if (player.isPlaying) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_PAUSED
+            Player.STATE_ENDED -> PlaybackStateCompat.STATE_STOPPED
+            else -> PlaybackStateCompat.STATE_NONE
+        }
+
+        PlaybackStateCompat.Builder()
+            .setState(playbackState, player.currentPosition, 1f, System.currentTimeMillis())
+            .setActions(PlaybackStateCompat.ACTION_PLAY or PlaybackStateCompat.ACTION_PAUSE)
+
+        mediaSession?.setPlayer(player)
     }
 
     private var isFullscreen = false
@@ -277,30 +308,22 @@ class AnimeWatchFragment : Fragment() {
         }
 
     private fun handleExitFullscreen() {
-        if (resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
-            mListener?.onFullscreenRequested(false)
-            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT.also {
-                requireActivity().requestedOrientation = it
-            }
-            binding.playerViewContainer.apply {
-                playerView.layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT
-                playerView.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
-                expandButton.setImageResource(R.drawable.ic_fullscreen_black_24dp)
-            }
+        mListener?.onFullscreenRequested(false)
+        requireActivity().requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        binding.svContent.visibility = View.VISIBLE
+        binding.playerViewContainer.apply {
+            root.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+            playerView.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
         }
     }
 
     private fun handleEnterFullscreen() {
-        if (resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT) {
-            mListener?.onFullscreenRequested(true)
-            ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE.also {
-                requireActivity().requestedOrientation = it
-            }
-            binding.playerViewContainer.apply {
-                playerView.layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT
-                playerView.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
-                expandButton.setImageResource(R.drawable.ic_fullscreen_exit_black_24dp)
-            }
+        mListener?.onFullscreenRequested(true)
+        requireActivity().requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        binding.svContent.visibility = View.GONE
+        binding.playerViewContainer.apply {
+            root.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
+            playerView.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
         }
     }
 
@@ -331,6 +354,8 @@ class AnimeWatchFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         HlsPlayerUtil.releasePlayer(binding.playerViewContainer.playerView)
+        mediaSession?.release()
+        mediaSession = null
         _binding = null
     }
 }

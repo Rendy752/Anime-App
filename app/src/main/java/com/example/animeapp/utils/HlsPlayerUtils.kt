@@ -15,9 +15,7 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaItem.SubtitleConfiguration
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.ui.PlayerView
 import androidx.media3.common.Player
 import androidx.media3.common.C
@@ -37,14 +35,10 @@ object HlsPlayerUtil {
     ) {
 
         if (videoData.sources.isNotEmpty() && videoData.sources[0].type == "hls") {
-            val dataSourceFactory = DefaultHttpDataSource.Factory()
-                .setUserAgent("AnimeApp")
 
-            val mediaItem = MediaItem.fromUri(Uri.parse(videoData.sources[0].url))
-            HlsMediaSource.Factory(dataSourceFactory)
-                .createMediaSource(mediaItem)
-
-            val mediaItemBuilder = mediaItem.buildUpon()
+            val mediaItemUri = Uri.parse(videoData.sources[0].url)
+            val mediaItemBuilder = MediaItem.Builder()
+                .setUri(mediaItemUri)
 
             val subtitleConfigurations = mutableListOf<SubtitleConfiguration>()
 
