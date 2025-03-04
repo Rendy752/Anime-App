@@ -141,7 +141,8 @@ class AnimeWatchFragment : Fragment() {
                         val episodeName = episodes?.episodes?.find { episode ->
                             episode.episodeId == servers.episodeId
                         }?.name
-                        tvEpisodeTitle.text = episodeName ?: "Episode Title"
+                        tvEpisodeTitle.text =
+                            if (episodeName != "Full") episodeName else viewModel.animeDetail.value?.title
                         "Total Episode: ${episodes?.totalEpisodes}".also {
                             tvTotalEpisodes.text = it
                         }
@@ -270,7 +271,9 @@ class AnimeWatchFragment : Fragment() {
 
                 override fun onPlaybackStateChanged(playbackState: Int) {
                     super.onPlaybackStateChanged(playbackState)
-                    updateMediaSessionPlaybackState(exoPlayer)
+                    if (playbackState == Player.STATE_READY) {
+                        this@apply.root.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                    }
                 }
             })
 

@@ -9,7 +9,7 @@
         android:id="@+id/playerViewContainer"
         layout="@layout/player_view"
         android:layout_width="0dp"
-        android:layout_height="wrap_content"
+        android:layout_height="300dp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -36,16 +36,27 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toTopOf="parent">
 
+                <androidx.constraintlayout.widget.Guideline
+                    android:id="@+id/episodeInfoGuideline"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    app:layout_constraintGuide_percent="0.8" />
+
                 <TextView
                     android:id="@+id/tvEpisodeTitle"
                     android:layout_width="0dp"
-                    android:layout_height="wrap_content"
+                    android:layout_height="match_parent"
+                    android:layout_marginEnd="16dp"
                     android:maxLines="2"
                     android:text="@string/episode_title"
+                    android:textAlignment="center"
+                    android:textColor="@color/colorAccent"
                     android:textSize="16sp"
+                    android:textStyle="bold"
                     app:layout_constrainedWidth="true"
-                    android:layout_marginEnd="8dp"
-                    app:layout_constraintEnd_toStartOf="@id/tvCurrentEpisode"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@id/episodeInfoGuideline"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent" />
 
@@ -53,15 +64,16 @@
                     android:id="@+id/tvCurrentEpisode"
                     android:layout_width="0dp"
                     android:layout_height="match_parent"
+                    android:layout_marginStart="16dp"
                     android:text="@string/current_episode"
                     android:textAlignment="textEnd"
-                    android:textSize="16sp"
-                    android:layout_marginStart="8dp"
+                    android:textColor="@color/colorPrimary"
+                    android:textSize="14sp"
                     app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintHorizontal_bias="1"
-                    app:layout_constraintStart_toEndOf="@id/tvEpisodeTitle"
-                    app:layout_constraintWidth_default="wrap"
-                    app:layout_constraintTop_toTopOf="parent" />
+                    app:layout_constraintStart_toEndOf="@id/episodeInfoGuideline"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintWidth_default="wrap" />
             </androidx.constraintlayout.widget.ConstraintLayout>
 
             <HorizontalScrollView
@@ -175,13 +187,14 @@
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
                     android:background="@drawable/search_view_background"
+                    android:inputType="number"
                     app:closeIcon="@drawable/ic_close_red_24dp"
                     app:iconifiedByDefault="false"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toEndOf="@id/guideline"
                     app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintBottom_toBottomOf="parent"
                     app:queryHint="@string/search_episode"
-                    android:inputType="number"
                     app:searchHintIcon="@null"
                     app:searchIcon="@drawable/ic_search_blue_24dp" />
             </androidx.constraintlayout.widget.ConstraintLayout>
