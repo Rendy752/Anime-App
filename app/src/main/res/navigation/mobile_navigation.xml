@@ -45,7 +45,9 @@
 
         <action
             android:id="@+id/action_animeDetailFragment_to_animeWatchFragment"
-            app:destination="@id/animeWatchFragment" />
+            app:destination="@id/animeWatchFragment"
+            app:popUpTo="@id/animeDetailFragment"
+            app:popUpToInclusive="false" />
     </fragment>
 
     <fragment

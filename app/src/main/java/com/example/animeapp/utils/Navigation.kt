@@ -52,7 +52,7 @@ object Navigation {
             .setExitAnim(R.anim.slide_out_right)
             .setPopEnterAnim(R.anim.slide_in_right)
             .setPopExitAnim(R.anim.slide_out_left)
-            .setPopUpTo(R.id.animeWatchFragment, true)
+            .setPopUpTo(R.id.animeDetailFragment, false)
             .build()
 
         fragment.findNavController().navigate(

@@ -108,16 +108,25 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
     override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
         return when (menuItem.itemId) {
             R.id.action_watch -> {
-                Navigation.navigateToAnimeWatch(
-                    this,
-                    R.id.action_animeDetailFragment_to_animeWatchFragment,
-                    viewModel.animeDetail.value!!.data!!.data,
-                    viewModel.episodes.value!!.data!!.episodes[0].episodeId,
-                    viewModel.episodes.value!!.data!!,
-                    viewModel.defaultEpisodeServers.value!!,
-                    viewModel.defaultEpisodeSources.value!!
-                )
-                true
+                val animeDetailData = viewModel.animeDetail.value?.data?.data
+                val episodesData = viewModel.episodes.value?.data
+                val defaultEpisodeServers = viewModel.defaultEpisodeServers.value
+                val defaultEpisodeSources = viewModel.defaultEpisodeSources.value
+
+                if (animeDetailData != null && episodesData != null && episodesData.episodes.isNotEmpty() && defaultEpisodeServers != null && defaultEpisodeSources != null) {
+                    Navigation.navigateToAnimeWatch(
+                        this,
+                        R.id.action_animeDetailFragment_to_animeWatchFragment,
+                        animeDetailData,
+                        episodesData.episodes[0].episodeId,
+                        episodesData,
+                        defaultEpisodeServers,
+                        defaultEpisodeSources
+                    )
+                    true
+                } else {
+                    false
+                }
             }
 
             R.id.action_share -> {
@@ -366,7 +375,13 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                         etEpisodeNumber.filters =
                             arrayOf(MinMaxInputFilter.createInt(1, episodes.size))
                         btnJumpToEpisode.setOnClickListener {
-                            handleJumpToEpisode(etEpisodeNumber.text.toString().toInt(), episodes)
+                            val episodeNumberText = etEpisodeNumber.text.toString()
+                            if (episodeNumberText.isNotEmpty()) {
+                                val episodeNumber = episodeNumberText.toInt()
+                                handleJumpToEpisode(episodeNumber, episodes)
+                            } else {
+                                handleJumpToEpisode(1, episodes)
+                            }
                         }
                     }
 
