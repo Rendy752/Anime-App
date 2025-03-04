@@ -89,4 +89,6 @@
     <string name="sub">Sub :</string>
     <string name="dub">Dub :</string>
     <string name="raw">Raw :</string>
+    <string name="subtitle_icon">Subtitle Icon</string>
+    <string name="dubbing_icon">Dubbing Icon</string>
 </resources>

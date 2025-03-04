@@ -3,7 +3,6 @@ package com.example.animeapp.ui.animeWatch
 import android.app.PictureInPictureParams
 import android.content.Context
 import android.content.Intent
-import android.content.pm.ActivityInfo
 import android.media.AudioManager
 import android.net.Uri
 import android.os.Build
@@ -309,7 +308,6 @@ class AnimeWatchFragment : Fragment() {
 
     private fun handleExitFullscreen() {
         mListener?.onFullscreenRequested(false)
-        requireActivity().requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         binding.svContent.visibility = View.VISIBLE
         binding.playerViewContainer.apply {
             root.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
@@ -319,7 +317,6 @@ class AnimeWatchFragment : Fragment() {
 
     private fun handleEnterFullscreen() {
         mListener?.onFullscreenRequested(true)
-        requireActivity().requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
         binding.svContent.visibility = View.GONE
         binding.playerViewContainer.apply {
             root.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT

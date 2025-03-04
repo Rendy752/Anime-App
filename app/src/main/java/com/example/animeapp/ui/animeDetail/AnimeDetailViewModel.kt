@@ -33,15 +33,14 @@ class AnimeDetailViewModel @Inject constructor(
     val defaultEpisodeSources: MutableLiveData<EpisodeSourcesResponse?> = MutableLiveData()
 
     fun getAnimeDetail(id: Int) = viewModelScope.launch {
-        val cachedResponse = getCachedAnimeDetail(id)
-        if (cachedResponse != null) {
-            animeDetail.postValue(cachedResponse)
-            return@launch
-        }
-
         animeDetail.postValue(Resource.Loading())
-        val response = animeDetailRepository.getAnimeDetail(id)
-        animeDetail.postValue(ResponseHandler.handleCommonResponse(response))
+
+        val cachedResponse = getCachedAnimeDetail(id)
+        animeDetail.postValue(
+            cachedResponse ?: ResponseHandler.handleCommonResponse(
+                animeDetailRepository.getAnimeDetail(id)
+            )
+        )
     }
 
     private suspend fun getCachedAnimeDetail(id: Int): Resource<AnimeDetailResponse>? {
@@ -68,7 +67,11 @@ class AnimeDetailViewModel @Inject constructor(
         }
         val response = animeStreamingRepository.getAnimeAniwatchSearch(searchTitle)
         if (!response.isSuccessful) {
-            return@launch episodes.postValue(Resource.Error(response.errorBody()?.string() ?: "Unknown error"))
+            return@launch episodes.postValue(
+                Resource.Error(
+                    response.errorBody()?.string() ?: "Unknown error"
+                )
+            )
         }
         handleValidEpisode(response)
     }
@@ -76,7 +79,11 @@ class AnimeDetailViewModel @Inject constructor(
     private fun handleValidEpisode(response: Response<AnimeAniwatchSearchResponse>) =
         viewModelScope.launch {
             if (!response.isSuccessful) {
-                episodes.postValue(Resource.Error(response.errorBody()?.string() ?: "Unknown error"))
+                episodes.postValue(
+                    Resource.Error(
+                        response.errorBody()?.string() ?: "Unknown error"
+                    )
+                )
                 return@launch
             }
 

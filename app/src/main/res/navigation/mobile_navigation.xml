@@ -40,10 +40,6 @@
         android:label="@string/title_detail"
         tools:layout="@layout/fragment_detail">
         <action
-            android:id="@+id/action_animeDetailFragment_self"
-            app:destination="@id/animeDetailFragment" />
-
-        <action
             android:id="@+id/action_animeDetailFragment_to_animeWatchFragment"
             app:destination="@id/animeWatchFragment"
             app:popUpTo="@id/animeDetailFragment"

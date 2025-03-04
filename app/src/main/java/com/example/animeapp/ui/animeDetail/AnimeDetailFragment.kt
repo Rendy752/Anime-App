@@ -1,5 +1,6 @@
 package com.example.animeapp.ui.animeDetail
 
+import android.animation.ObjectAnimator
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -87,15 +88,15 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
         viewModel.episodes.observe(viewLifecycleOwner) { response ->
             when (response) {
                 is Resource.Success -> handleEpisodesSuccess(response)
-                is Resource.Error -> handleEpisodesError(response)
                 is Resource.Loading -> handleEpisodesLoading()
+                is Resource.Error -> handleEpisodesError(response)
                 else -> handleEpisodesEmpty()
             }
         }
     }
 
-    private fun fetchAnimeDetail() {
-        val animeId = arguments?.getInt("id")
+    private fun fetchAnimeDetail(id: Int? = null) {
+        val animeId = id ?: arguments?.getInt("id")
         if (animeId != null) {
             viewModel.getAnimeDetail(animeId)
         }
@@ -186,6 +187,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
         }
     }
 
+    //Anime Detail
     private fun handleAnimeSuccess(response: Resource.Success<AnimeDetailResponse>) {
         binding.apply {
             shimmerViewContainer.stopShimmer()
@@ -203,6 +205,24 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                     detail
                 )
 
+                with(animeNumberDetail) {
+                    tvScore.text = detail.score?.toString() ?: "0"
+                    tvScoredBy.text =
+                        resources.getString(R.string.scored_by_users, detail.scored_by ?: 0)
+                    tvRanked.text =
+                        resources.getString(R.string.ranked_number, detail.rank ?: 0)
+                    tvPopularity.text =
+                        resources.getString(R.string.popularity_number, detail.popularity)
+                    detail.members.toString().also { tvMembers.text = it }
+                    detail.favorites.toString().also { tvFavorites.text = it }
+                }
+
+                val embedUrl = detail.trailer.embed_url ?: ""
+                if (embedUrl.isNotEmpty()) {
+                    llYoutubePreview.visibility = View.VISIBLE
+                    youtubePlayerView.playVideo(embedUrl)
+                }
+
                 with(animeBody) {
                     tvStatus.text = detail.status
                     tvType.text = detail.type
@@ -219,24 +239,6 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                     tvLicensors.text = joinOrNA(detail.licensors) { it.name }
                     tvBroadcast.text = detail.broadcast.string ?: "-"
                     tvDuration.text = detail.duration
-                }
-
-                val embedUrl = detail.trailer.embed_url ?: ""
-                if (embedUrl.isNotEmpty()) {
-                    llYoutubePreview.visibility = View.VISIBLE
-                    youtubePlayerView.playVideo(embedUrl)
-                }
-
-                with(animeNumberDetail) {
-                    tvScore.text = detail.score?.toString() ?: "0"
-                    tvScoredBy.text =
-                        resources.getString(R.string.scored_by_users, detail.scored_by ?: 0)
-                    tvRanked.text =
-                        resources.getString(R.string.ranked_number, detail.rank ?: 0)
-                    tvPopularity.text =
-                        resources.getString(R.string.popularity_number, detail.popularity)
-                    detail.members.toString().also { tvMembers.text = it }
-                    detail.favorites.toString().also { tvFavorites.text = it }
                 }
 
                 with(animeBackground) {
@@ -268,11 +270,12 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                         }
                         rvRelations.apply {
                             adapter = RelationsAdapter(animeAPI, detail.relations) { animeId ->
-                                Navigation.navigateToAnimeDetail(
-                                    this@AnimeDetailFragment,
-                                    animeId,
-                                    R.id.action_animeDetailFragment_self
-                                )
+                                scrollView.post {
+                                    ObjectAnimator.ofInt(scrollView, "scrollY", 0)
+                                        .setDuration(1000)
+                                        .start()
+                                }
+                                fetchAnimeDetail(animeId)
                             }
                             layoutManager = LinearLayoutManager(
                                 requireContext(), LinearLayoutManager.HORIZONTAL, false
@@ -285,6 +288,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
 
                 with(animeOpening) {
                     if (detail.theme.openings?.size!! > 0) {
+                        openingContainer.visibility = View.VISIBLE
                         rvOpening.apply {
                             adapter = detail.theme.openings.let {
                                 UnorderedListAdapter(it) { opening ->
@@ -308,6 +312,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
 
                 with(animeEnding) {
                     if (detail.theme.endings?.size!! > 0) {
+                        endingContainer.visibility = View.VISIBLE
                         rvEnding.apply {
                             adapter = detail.theme.endings.let {
                                 UnorderedListAdapter(it)
@@ -333,6 +338,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
 
                 with(animeExternal) {
                     if (detail.external?.size!! > 0) {
+                        externalContainer.visibility = View.VISIBLE
                         rvExternal.apply {
                             adapter = NameAndUrlAdapter(detail.external)
                             layoutManager = LinearLayoutManager(
@@ -347,6 +353,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
 
                 with(animeStreaming) {
                     if (detail.streaming?.size!! > 0) {
+                        streamingContainer.visibility = View.VISIBLE
                         rvStreaming.apply {
                             adapter =
                                 NameAndUrlAdapter(detail.streaming)
@@ -363,10 +370,61 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
         }
     }
 
+    private fun handleAnimeLoading() {
+        binding.apply {
+            shimmerViewContainer.showShimmer(true)
+            shimmerViewContainer.startShimmer()
+
+            tvError.visibility = View.GONE
+
+            hideAnimeDetailContent()
+        }
+    }
+
+    private fun handleAnimeError(response: Resource.Error<AnimeDetailResponse>) {
+        binding.apply {
+            shimmerViewContainer.stopShimmer()
+            shimmerViewContainer.hideShimmer()
+
+            tvError.visibility = View.VISIBLE
+
+            hideAnimeDetailContent()
+
+            response.message.also { tvError.text = it }
+        }
+    }
+
+    private fun handleAnimeEmpty() {
+        binding.apply {
+            shimmerViewContainer.stopShimmer()
+            shimmerViewContainer.hideShimmer()
+
+            tvError.visibility = View.VISIBLE
+
+            hideAnimeDetailContent()
+            "No results found".also { tvError.text = it }
+        }
+    }
+
+    private fun hideAnimeDetailContent() {
+        binding.apply {
+            llYoutubePreview.visibility = View.GONE
+            animeBackground.llBackground.visibility = View.GONE
+            animeSynopsis.tvSynopsis.visibility = View.GONE
+
+            animeOpening.openingContainer.visibility = View.GONE
+            animeEnding.endingContainer.visibility = View.GONE
+            animeExternal.externalContainer.visibility = View.GONE
+            animeStreaming.streamingContainer.visibility = View.GONE
+        }
+    }
+
+    //Episodes
     private fun handleEpisodesSuccess(response: Resource.Success<EpisodesResponse>) {
         requireActivity().invalidateMenu()
         binding.animeDetailEpisodes.apply {
             progressBar.visibility = View.GONE
+            tvEpisodeError.visibility = View.GONE
             response.data?.episodes?.let { episodes ->
                 if (episodes.isNotEmpty()) {
                     if (episodes.size >= 5) {
@@ -406,7 +464,6 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                     }
 
                     rvEpisodes.visibility = View.VISIBLE
-                    episodesContainer.visibility = View.VISIBLE
 
                     rvEpisodes.apply {
                         adapter = EpisodesAdapter(requireContext(), episodes) { episodeId ->
@@ -422,8 +479,6 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                         }
                         layoutManager = LinearLayoutManager(requireContext())
                     }
-                } else {
-                    episodesContainer.visibility = View.GONE
                 }
             }
         }
@@ -442,55 +497,42 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
         }
     }
 
-    private fun handleAnimeError(response: Resource.Error<AnimeDetailResponse>) {
-        binding.apply {
-            shimmerViewContainer.stopShimmer()
-            shimmerViewContainer.hideShimmer()
-            tvError.visibility = View.VISIBLE
-            response.message.also { tvError.text = it }
-        }
-    }
-
     private fun handleEpisodesError(response: Resource.Error<EpisodesResponse>) {
         binding.animeDetailEpisodes.apply {
-            episodesContainer.visibility = View.VISIBLE
-            rvEpisodes.visibility = View.GONE
             progressBar.visibility = View.GONE
             tvEpisodeError.visibility = View.VISIBLE
-            response.message.also { tvEpisodeError.text = it }
-        }
-    }
 
-    private fun handleAnimeLoading() {
-        binding.apply {
-            shimmerViewContainer.showShimmer(true)
-            shimmerViewContainer.startShimmer()
+            hideEpisodesContent()
+
+            response.message.also { tvEpisodeError.text = it }
         }
     }
 
     private fun handleEpisodesLoading() {
         binding.animeDetailEpisodes.apply {
             progressBar.visibility = View.VISIBLE
-            rvEpisodes.visibility = View.GONE
-        }
-    }
+            tvEpisodeError.visibility = View.GONE
 
-    private fun handleAnimeEmpty() {
-        binding.apply {
-            shimmerViewContainer.stopShimmer()
-            shimmerViewContainer.hideShimmer()
-            tvError.visibility = View.VISIBLE
-            "No results found".also { tvError.text = it }
+            hideEpisodesContent()
         }
     }
 
     private fun handleEpisodesEmpty() {
         binding.animeDetailEpisodes.apply {
-            episodesContainer.visibility = View.VISIBLE
-            rvEpisodes.visibility = View.GONE
             progressBar.visibility = View.GONE
             tvEpisodeError.visibility = View.VISIBLE
+
+            hideEpisodesContent()
             "No episodes found".also { tvEpisodeError.text = it }
+        }
+    }
+
+    private fun hideEpisodesContent() {
+        binding.animeDetailEpisodes.apply {
+            episodesField.visibility = View.GONE
+            etEpisodeNumber.visibility = View.GONE
+            btnJumpToEpisode.visibility = View.GONE
+            rvEpisodes.visibility = View.GONE
         }
     }
 
