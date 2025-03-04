@@ -447,7 +447,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
             shimmerViewContainer.stopShimmer()
             shimmerViewContainer.hideShimmer()
             tvError.visibility = View.VISIBLE
-            "An error occurred: ${response.message}".also { tvError.text = it }
+            response.message.also { tvError.text = it }
         }
     }
 
@@ -457,7 +457,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
             rvEpisodes.visibility = View.GONE
             progressBar.visibility = View.GONE
             tvEpisodeError.visibility = View.VISIBLE
-            "An error occurred: ${response.message ?: "-"}".also { tvEpisodeError.text = it }
+            response.message.also { tvEpisodeError.text = it }
         }
     }
 

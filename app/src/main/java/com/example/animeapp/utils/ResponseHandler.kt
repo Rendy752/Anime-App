@@ -8,7 +8,7 @@ object ResponseHandler {
             response.body()?.let { return Resource.Success(it) }
                 ?: return Resource.Error("Response body is null")
         }
-        return Resource.Error(response.message())
+        return Resource.Error(response.errorBody()?.string() ?: "Unknown error")
     }
 
     fun <T, R> handleResponse(
@@ -23,15 +23,18 @@ object ResponseHandler {
                 return if (result != null) {
                     Resource.Success(result)
                 } else {
-                    val errorMessage = onError?.invoke("Failed to process response body") ?: "Failed to process response body"
+                    val errorMessage = onError?.invoke("Failed to process response body")
+                        ?: "Failed to process response body"
                     Resource.Error(errorMessage)
                 }
             } else {
-                val errorMessage = onError?.invoke("Response body is null") ?: "Response body is null"
+                val errorMessage =
+                    onError?.invoke("Response body is null") ?: "Response body is null"
                 return Resource.Error(errorMessage)
             }
         } else {
-            val errorMessage = onError?.invoke(response.message()) ?: response.message()
+            val errorMessage = onError?.invoke(response.errorBody()?.string() ?: "Unknown error")
+                ?: response.errorBody()?.string() ?: "Unknown error"
             return Resource.Error(errorMessage)
         }
     }

@@ -68,7 +68,7 @@ class AnimeDetailViewModel @Inject constructor(
         }
         val response = animeStreamingRepository.getAnimeAniwatchSearch(searchTitle)
         if (!response.isSuccessful) {
-            return@launch episodes.postValue(Resource.Error(response.message()))
+            return@launch episodes.postValue(Resource.Error(response.errorBody()?.string() ?: "Unknown error"))
         }
         handleValidEpisode(response)
     }
@@ -76,12 +76,12 @@ class AnimeDetailViewModel @Inject constructor(
     private fun handleValidEpisode(response: Response<AnimeAniwatchSearchResponse>) =
         viewModelScope.launch {
             if (!response.isSuccessful) {
-                episodes.postValue(Resource.Error(response.message()))
+                episodes.postValue(Resource.Error(response.errorBody()?.string() ?: "Unknown error"))
                 return@launch
             }
 
             val resultResponse = response.body() ?: run {
-                episodes.postValue(Resource.Error(response.message()))
+                episodes.postValue(Resource.Error(response.errorBody()?.string() ?: "Unknown error"))
                 return@launch
             }
 
