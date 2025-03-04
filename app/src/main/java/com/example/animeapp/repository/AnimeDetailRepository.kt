@@ -13,29 +13,30 @@ class AnimeDetailRepository(
 ) {
     suspend fun getAnimeDetail(id: Int): Response<AnimeDetailResponse> =
         withContext(Dispatchers.IO) {
-            val cachedAnimeDetail = animeDetailDao.getAnimeDetailById(id)
-            if (cachedAnimeDetail!= null) {
-                val animeDetailResponse = AnimeDetailResponse(cachedAnimeDetail)
-                Response.success(animeDetailResponse)
-            } else {
-                val response = animeAPI.getAnimeDetail(id)
-                if (response.isSuccessful) {
-                    response.body()?.let { animeDetailResponse ->
-                        animeDetailDao.insertAnimeDetail(animeDetailResponse.data)
-                    }
-                }
-                response
+            getCachedAnimeDetailResponse(id) ?: getRemoteAnimeDetail(id)
+        }
+
+    private fun getCachedAnimeDetailResponse(id: Int): Response<AnimeDetailResponse>? {
+        val cachedAnimeDetail = animeDetailDao.getAnimeDetailById(id)
+        return cachedAnimeDetail?.let {
+            Response.success(AnimeDetailResponse(it))
+        }
+    }
+
+    private suspend fun getRemoteAnimeDetail(id: Int): Response<AnimeDetailResponse> {
+        val response = animeAPI.getAnimeDetail(id)
+        if (response.isSuccessful) {
+            response.body()?.let { animeDetailResponse ->
+                animeDetailDao.insertAnimeDetail(animeDetailResponse.data)
             }
         }
+        return response
+    }
 
     suspend fun getCachedAnimeDetail(id: Int): AnimeDetailResponse? {
         return withContext(Dispatchers.IO) {
             val cachedAnimeDetail = animeDetailDao.getAnimeDetailById(id)
             cachedAnimeDetail?.let { AnimeDetailResponse(it) }
         }
-    }
-
-    suspend fun cacheAnimeDetail(animeDetailResponse: AnimeDetailResponse) {
-        animeDetailDao.insertAnimeDetail(animeDetailResponse.data)
     }
 }
