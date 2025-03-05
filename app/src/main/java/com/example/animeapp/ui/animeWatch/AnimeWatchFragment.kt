@@ -145,7 +145,7 @@ class AnimeWatchFragment : Fragment() {
             viewModel.episodeWatch.collect { response ->
                 when (response) {
                     is Resource.Success -> handleEpisodeWatchSuccess(response)
-                    is Resource.Error -> handleEpisodeWatchError(response)
+                    is Resource.Error -> handleEpisodeWatchError()
                     is Resource.Loading -> handleEpisodeWatchLoading()
                 }
             }
@@ -180,6 +180,10 @@ class AnimeWatchFragment : Fragment() {
     private fun handleEpisodeWatchSuccess(response: Resource.Success<EpisodeWatch>) {
         response.data?.let { episodeWatch ->
             binding.apply {
+                episodeInfoProgressBar.visibility = View.GONE
+                tvEpisodeTitle.visibility = View.VISIBLE
+                tvCurrentEpisode.visibility = View.VISIBLE
+                serverScrollView.visibility = View.VISIBLE
                 episodeWatch.servers.let { servers ->
                     viewModel.episodes.value.let { episodes ->
                         val episodeName = episodes?.episodes?.find { episode ->
@@ -222,9 +226,7 @@ class AnimeWatchFragment : Fragment() {
                     setupServerRecyclerView(tvDub,rvDubServer, servers.dub, "dub", servers.episodeId)
                     setupServerRecyclerView(tvRaw, rvRawServer, servers.raw, "raw", servers.episodeId)
                 }
-                episodeWatch.sources.let { sources ->
-                    setupVideoPlayer(sources)
-                }
+                setupVideoPlayer(episodeWatch.sources)
 
                 viewModel.animeDetail.value.let { animeDetail ->
                     BindAnimeUtils.bindAnimeHeader(
@@ -258,12 +260,17 @@ class AnimeWatchFragment : Fragment() {
         }
     }
 
-    private fun handleEpisodeWatchError(response: Resource.Error<EpisodeWatch>) {
-        // Handle error
+    private fun handleEpisodeWatchError() {
+        viewModel.handleSelectedEpisodeServer(viewModel.episodes.value!!.episodes.first().episodeId)
     }
 
     private fun handleEpisodeWatchLoading() {
-
+        binding.apply {
+            episodeInfoProgressBar.visibility = View.VISIBLE
+            tvEpisodeTitle.visibility = View.GONE
+            tvCurrentEpisode.visibility = View.GONE
+            serverScrollView.visibility = View.GONE
+        }
     }
 
     @OptIn(UnstableApi::class)
