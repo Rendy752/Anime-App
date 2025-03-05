@@ -19,6 +19,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SearchView.OnQueryTextListener
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -28,6 +29,7 @@ import androidx.media3.ui.PlayerView
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.animeapp.R
 import com.example.animeapp.databinding.FragmentAnimeWatchBinding
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.Episode
@@ -211,6 +213,20 @@ class AnimeWatchFragment : Fragment() {
                         }?.name
                         tvEpisodeTitle.text =
                             if (episodeName != "Full") episodeName else viewModel.animeDetail.value?.title
+                                ?: ""
+                        episodes?.episodes?.find { it.episodeId == servers.episodeId }
+                            ?.let { episode ->
+                                val backgroundColor = if (episode.filler) {
+                                    ContextCompat.getColor(requireContext(), R.color.filler_episode)
+                                } else {
+                                    ContextCompat.getColor(
+                                        requireContext(),
+                                        R.color.default_episode
+                                    )
+                                }
+                                tvEpisodeTitle.setTextColor(backgroundColor)
+                            }
+
                         "Total Episode: ${episodes?.totalEpisodes}".also {
                             tvTotalEpisodes.text = it
                         }
@@ -319,6 +335,11 @@ class AnimeWatchFragment : Fragment() {
     @OptIn(UnstableApi::class)
     private fun setupVideoPlayer(sources: EpisodeSourcesResponse) {
         audioManager = requireActivity().getSystemService(Context.AUDIO_SERVICE) as AudioManager
+
+        mediaSession?.release()
+        mediaSession = null
+        HlsPlayerUtil.releasePlayer(binding.playerViewContainer.playerView)
+
         binding.playerViewContainer.apply {
             val exoPlayer = ExoPlayer.Builder(requireActivity()).build()
             with(playerView) {
@@ -348,7 +369,10 @@ class AnimeWatchFragment : Fragment() {
                 sources
             )
 
-            mediaSession = MediaSession.Builder(requireActivity(), exoPlayer).build()
+            val sessionId = "episode_${System.currentTimeMillis()}"
+            mediaSession = MediaSession.Builder(requireActivity(), exoPlayer)
+                .setId(sessionId)
+                .build()
 
             exoPlayer.addListener(object : Player.Listener {
                 override fun onIsPlayingChanged(isPlaying: Boolean) {
