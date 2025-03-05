@@ -6,41 +6,54 @@ import com.example.animeapp.models.EpisodeSourcesResponse
 import com.example.animeapp.repository.AnimeStreamingRepository
 
 object StreamingUtils {
-    suspend fun getDefaultEpisodeSources(response: Resource<EpisodeServersResponse>, animeStreamingRepository: AnimeStreamingRepository): Resource<EpisodeSourcesResponse> {
-        val episodeServers = response.data
-        val episodeDefaultId = episodeServers?.episodeId
-            ?: return Resource.Error("No default episode found")
-
-        val episodeSourcesQuery = episodeServers.let {
+    fun getEpisodeQuery(
+        response: Resource<EpisodeServersResponse>,
+        episodeId: String
+    ): EpisodeSourcesQuery? {
+        val episodeServers = response.data ?: return null
+        return episodeServers.let {
             when {
                 it.sub.isNotEmpty() -> EpisodeSourcesQuery(
-                    episodeDefaultId,
+                    episodeId,
                     it.sub.first().serverName,
                     "sub"
                 )
 
                 it.dub.isNotEmpty() -> EpisodeSourcesQuery(
-                    episodeDefaultId,
+                    episodeId,
                     it.dub.first().serverName,
                     "dub"
                 )
 
                 it.raw.isNotEmpty() -> EpisodeSourcesQuery(
-                    episodeDefaultId,
+                    episodeId,
                     it.raw.first().serverName,
                     "raw"
                 )
 
                 else -> null
             }
-        } ?: return Resource.Error("No episode servers found")
+        }
+    }
+
+    suspend fun getEpisodeSources(
+        response: Resource<EpisodeServersResponse>,
+        animeStreamingRepository: AnimeStreamingRepository,
+        episodeSourcesQuery: EpisodeSourcesQuery? = null
+    ): Resource<EpisodeSourcesResponse> {
+        val episodeServers = response.data
+        val episodeDefaultId = episodeServers?.episodeId
+            ?: return Resource.Error("No default episode found")
+
+        val episodeQuery = episodeSourcesQuery ?: getEpisodeQuery(response, episodeDefaultId)
+        ?: return Resource.Error("No episode servers found")
 
         return try {
             ResponseHandler.handleCommonResponse(
                 animeStreamingRepository.getEpisodeSources(
-                    episodeSourcesQuery.id,
-                    episodeSourcesQuery.server,
-                    episodeSourcesQuery.category
+                    episodeQuery.id,
+                    episodeQuery.server,
+                    episodeQuery.category
                 )
             )
         } catch (e: Exception) {

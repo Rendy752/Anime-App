@@ -91,4 +91,5 @@
     <string name="raw">Raw :</string>
     <string name="subtitle_icon">Subtitle Icon</string>
     <string name="dubbing_icon">Dubbing Icon</string>
+    <string name="server_name">Server Name</string>
 </resources>

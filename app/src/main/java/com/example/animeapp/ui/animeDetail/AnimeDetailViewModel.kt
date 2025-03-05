@@ -88,7 +88,11 @@ class AnimeDetailViewModel @Inject constructor(
             }
 
             val resultResponse = response.body() ?: run {
-                episodes.postValue(Resource.Error(response.errorBody()?.string() ?: "Unknown error"))
+                episodes.postValue(
+                    Resource.Error(
+                        response.errorBody()?.string() ?: "Unknown error"
+                    )
+                )
                 return@launch
             }
 
@@ -115,7 +119,7 @@ class AnimeDetailViewModel @Inject constructor(
             }
 
             val defaultEpisodeSourcesResponse =
-                StreamingUtils.getDefaultEpisodeSources(
+                StreamingUtils.getEpisodeSources(
                     defaultEpisodeServersResponse,
                     animeStreamingRepository
                 )

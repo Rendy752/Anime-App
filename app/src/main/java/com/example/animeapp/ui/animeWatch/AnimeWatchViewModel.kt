@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.EpisodeServersResponse
+import com.example.animeapp.models.EpisodeSourcesQuery
 import com.example.animeapp.models.EpisodeSourcesResponse
 import com.example.animeapp.models.EpisodeWatch
 import com.example.animeapp.models.EpisodesResponse
@@ -34,6 +35,9 @@ class AnimeWatchViewModel @Inject constructor(
     private val _episodeWatch = MutableStateFlow<Resource<EpisodeWatch>>(Resource.Loading())
     val episodeWatch: StateFlow<Resource<EpisodeWatch>> = _episodeWatch.asStateFlow()
 
+    private val _episodeSourcesQuery = MutableStateFlow<EpisodeSourcesQuery?>(null)
+    val episodeSourcesQuery: StateFlow<EpisodeSourcesQuery?> = _episodeSourcesQuery.asStateFlow()
+
     fun setInitialState(
         animeDetail: AnimeDetail,
         episodes: EpisodesResponse,
@@ -44,11 +48,13 @@ class AnimeWatchViewModel @Inject constructor(
         _episodes.value = episodes
         _defaultEpisodeServers.value = defaultEpisodeServers
         _defaultEpisodeSources.value = defaultEpisodeSources
-        _episodeWatch.value =
-            Resource.Success(EpisodeWatch(defaultEpisodeServers!!, defaultEpisodeSources!!))
+        restoreDefaultValues()
     }
 
-    fun handleSelectedEpisode(episodeId: String) = viewModelScope.launch {
+    fun handleSelectedEpisodeServer(
+        episodeId: String,
+        episodeSourcesQuery: EpisodeSourcesQuery? = null
+    ) = viewModelScope.launch {
         _episodeWatch.value = Resource.Loading()
 
         if (episodeId == _defaultEpisodeServers.value?.episodeId) {
@@ -64,15 +70,19 @@ class AnimeWatchViewModel @Inject constructor(
             return@launch
         }
 
-        val episodeSourcesResource = StreamingUtils.getDefaultEpisodeSources(
+        val episodeSourcesResource = StreamingUtils.getEpisodeSources(
             episodeServerResource,
-            animeStreamingRepository
+            animeStreamingRepository,
+            episodeSourcesQuery
         )
 
         if (episodeSourcesResource !is Resource.Success) {
             restoreDefaultValues()
             return@launch
         }
+
+        _episodeSourcesQuery.value =
+            episodeSourcesQuery ?: StreamingUtils.getEpisodeQuery(episodeServerResource, episodeId)
 
         _episodeWatch.value = Resource.Success(
             EpisodeWatch(
@@ -88,6 +98,10 @@ class AnimeWatchViewModel @Inject constructor(
                 _defaultEpisodeServers.value!!,
                 _defaultEpisodeSources.value!!
             )
+        )
+        _episodeSourcesQuery.value = StreamingUtils.getEpisodeQuery(
+            Resource.Success(_defaultEpisodeServers.value!!),
+            _defaultEpisodeServers.value!!.episodeId
         )
     }
 }

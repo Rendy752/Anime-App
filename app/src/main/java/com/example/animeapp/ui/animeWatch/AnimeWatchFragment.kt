@@ -26,13 +26,16 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.ui.PlayerView
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
 import com.example.animeapp.databinding.FragmentAnimeWatchBinding
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeServersResponse
+import com.example.animeapp.models.EpisodeSourcesQuery
 import com.example.animeapp.models.EpisodeSourcesResponse
 import com.example.animeapp.models.EpisodeWatch
 import com.example.animeapp.models.EpisodesResponse
+import com.example.animeapp.models.Server
 import com.example.animeapp.utils.BindAnimeUtils
 import com.example.animeapp.utils.Debounce
 import com.example.animeapp.utils.HlsPlayerUtil
@@ -110,7 +113,7 @@ class AnimeWatchFragment : Fragment() {
             defaultEpisodeServers,
             defaultEpisodeSources
         )
-        viewModel.handleSelectedEpisode(episodeId)
+        viewModel.handleSelectedEpisodeServer(episodeId)
     }
 
     private inline fun <reified T : Any> getParcelableArgument(key: String): T? {
@@ -146,6 +149,31 @@ class AnimeWatchFragment : Fragment() {
                     is Resource.Loading -> handleEpisodeWatchLoading()
                 }
             }
+        }
+    }
+
+    private fun setupServerRecyclerView(
+        textView: View,
+        recyclerView: RecyclerView,
+        servers: List<Server>,
+        category: String,
+        episodeId: String
+    ) {
+        if (servers.isNotEmpty()) {
+            textView.visibility = View.VISIBLE
+            val serverQueries = servers.map { server ->
+                EpisodeSourcesQuery(episodeId, server.serverName, category)
+            }
+            recyclerView.apply {
+                layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
+                adapter = viewModel.episodeSourcesQuery.value?.let {
+                    ServerAdapter(serverQueries, it) { episodeSourcesQuery ->
+                        viewModel.handleSelectedEpisodeServer(episodeId, episodeSourcesQuery)
+                    }
+                }
+            }
+        } else {
+            textView.visibility = View.GONE
         }
     }
 
@@ -190,9 +218,9 @@ class AnimeWatchFragment : Fragment() {
                         })
                     }
 
-                    //server adapter
-
-
+                    setupServerRecyclerView(tvSub, rvSubServer, servers.sub, "sub", servers.episodeId)
+                    setupServerRecyclerView(tvDub,rvDubServer, servers.dub, "dub", servers.episodeId)
+                    setupServerRecyclerView(tvRaw, rvRawServer, servers.raw, "raw", servers.episodeId)
                 }
                 episodeWatch.sources.let { sources ->
                     setupVideoPlayer(sources)
