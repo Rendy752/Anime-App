@@ -178,6 +178,18 @@
                 app:layout_constraintStart_toStartOf="parent"
                 app:layout_constraintTop_toBottomOf="@id/episodeInfoContainer">
 
+                <ProgressBar
+                    android:id="@+id/episodeProgressBar"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:layout_marginTop="8dp"
+                    android:indeterminate="true"
+                    android:visibility="gone"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
                 <androidx.constraintlayout.widget.Guideline
                     android:id="@+id/guideline"
                     android:layout_width="wrap_content"
@@ -214,13 +226,15 @@
 
                 <androidx.recyclerview.widget.RecyclerView
                     android:id="@+id/rvEpisodes"
-                    style="@style/container.withMargin"
                     android:layout_width="0dp"
                     android:layout_height="0dp"
+                    android:layout_marginTop="8dp"
                     app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintHeight_default="wrap"
+                    app:layout_constraintHeight_max="300dp"
                     app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toBottomOf="@id/tvTotalEpisodes" />
+                    app:layout_constraintTop_toBottomOf="@id/svEpisodeSearch" />
             </androidx.constraintlayout.widget.ConstraintLayout>
 
             <include

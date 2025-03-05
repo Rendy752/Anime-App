@@ -25,6 +25,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.ui.PlayerView
+import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.animeapp.databinding.FragmentAnimeWatchBinding
@@ -177,13 +178,32 @@ class AnimeWatchFragment : Fragment() {
         }
     }
 
+    private fun setupEpisodeRecyclerView(episodes: List<Episode>) {
+        binding.apply {
+            episodeSearchContainer.visibility = if (episodes.size > 1) View.VISIBLE else View.GONE
+            rvEpisodes.apply {
+                visibility = if (episodes.isNotEmpty()) View.VISIBLE else View.GONE
+                if (episodes.isNotEmpty()) {
+                    layoutManager = GridLayoutManager(context, 4)
+                    adapter = EpisodesWatchAdapter(requireContext(), episodes) {
+                        viewModel.handleSelectedEpisodeServer(it)
+                    }
+                }
+            }
+        }
+    }
+
     private fun handleEpisodeWatchSuccess(response: Resource.Success<EpisodeWatch>) {
         response.data?.let { episodeWatch ->
             binding.apply {
                 episodeInfoProgressBar.visibility = View.GONE
+                episodeProgressBar.visibility = View.GONE
                 tvEpisodeTitle.visibility = View.VISIBLE
                 tvCurrentEpisode.visibility = View.VISIBLE
                 serverScrollView.visibility = View.VISIBLE
+                tvTotalEpisodes.visibility = View.VISIBLE
+                svEpisodeSearch.visibility = View.VISIBLE
+
                 episodeWatch.servers.let { servers ->
                     viewModel.episodes.value.let { episodes ->
                         val episodeName = episodes?.episodes?.find { episode ->
@@ -220,11 +240,30 @@ class AnimeWatchFragment : Fragment() {
                                 return true
                             }
                         })
-                    }
 
-                    setupServerRecyclerView(tvSub, rvSubServer, servers.sub, "sub", servers.episodeId)
-                    setupServerRecyclerView(tvDub,rvDubServer, servers.dub, "dub", servers.episodeId)
-                    setupServerRecyclerView(tvRaw, rvRawServer, servers.raw, "raw", servers.episodeId)
+                        setupEpisodeRecyclerView(episodes?.episodes ?: emptyList())
+                    }
+                    setupServerRecyclerView(
+                        tvSub,
+                        rvSubServer,
+                        servers.sub,
+                        "sub",
+                        servers.episodeId
+                    )
+                    setupServerRecyclerView(
+                        tvDub,
+                        rvDubServer,
+                        servers.dub,
+                        "dub",
+                        servers.episodeId
+                    )
+                    setupServerRecyclerView(
+                        tvRaw,
+                        rvRawServer,
+                        servers.raw,
+                        "raw",
+                        servers.episodeId
+                    )
                 }
                 setupVideoPlayer(episodeWatch.sources)
 
@@ -267,9 +306,13 @@ class AnimeWatchFragment : Fragment() {
     private fun handleEpisodeWatchLoading() {
         binding.apply {
             episodeInfoProgressBar.visibility = View.VISIBLE
+            episodeProgressBar.visibility = View.VISIBLE
             tvEpisodeTitle.visibility = View.GONE
             tvCurrentEpisode.visibility = View.GONE
             serverScrollView.visibility = View.GONE
+            tvTotalEpisodes.visibility = View.GONE
+            svEpisodeSearch.visibility = View.GONE
+            rvEpisodes.visibility = View.GONE
         }
     }
 
