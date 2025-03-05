@@ -97,6 +97,7 @@ class AnimeWatchFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         setupBackButtonListener()
+        handleStaticAnimeDetailData()
         setupObservers()
     }
 
@@ -126,6 +127,39 @@ class AnimeWatchFragment : Fragment() {
             @Suppress("DEPRECATION")
             arguments?.getParcelable("defaultEpisodeSources")
 
+        }
+    }
+
+    private fun handleStaticAnimeDetailData() {
+        binding.apply {
+            viewModel.animeDetail.value.let { animeDetail ->
+                BindAnimeUtils.bindAnimeHeader(
+                    requireContext(),
+                    animeHeader,
+                    { url ->
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                        startActivity(intent)
+                    },
+                    animeDetail!!
+                )
+
+                val embedUrl = animeDetail.trailer.embed_url ?: ""
+                if (embedUrl.isNotEmpty()) {
+                    llYoutubePreview.visibility = View.VISIBLE
+                    youtubePlayerView.playVideo(embedUrl)
+                }
+
+                with(animeSynopsis) {
+                    animeDetail.synopsis?.let { synopsis ->
+                        if (synopsis.isNotBlank()) {
+                            tvSynopsis.visibility = View.VISIBLE
+                            tvSynopsis.text = synopsis
+                        } else {
+                            tvSynopsis.visibility = View.GONE
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -198,6 +232,7 @@ class AnimeWatchFragment : Fragment() {
     private fun handleEpisodeWatchSuccess(response: Resource.Success<EpisodeWatch>) {
         response.data?.let { episodeWatch ->
             binding.apply {
+                setupVideoPlayer(episodeWatch.sources)
                 episodeInfoProgressBar.visibility = View.GONE
                 episodeProgressBar.visibility = View.GONE
                 tvEpisodeTitle.visibility = View.VISIBLE
@@ -280,36 +315,6 @@ class AnimeWatchFragment : Fragment() {
                         "raw",
                         servers.episodeId
                     )
-                }
-                setupVideoPlayer(episodeWatch.sources)
-
-                viewModel.animeDetail.value.let { animeDetail ->
-                    BindAnimeUtils.bindAnimeHeader(
-                        requireContext(),
-                        animeHeader,
-                        { url ->
-                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                            startActivity(intent)
-                        },
-                        animeDetail!!
-                    )
-
-                    val embedUrl = animeDetail.trailer.embed_url ?: ""
-                    if (embedUrl.isNotEmpty()) {
-                        llYoutubePreview.visibility = View.VISIBLE
-                        youtubePlayerView.playVideo(embedUrl)
-                    }
-
-                    with(animeSynopsis) {
-                        animeDetail.synopsis?.let { synopsis ->
-                            if (synopsis.isNotBlank()) {
-                                tvSynopsis.visibility = View.VISIBLE
-                                tvSynopsis.text = synopsis
-                            } else {
-                                tvSynopsis.visibility = View.GONE
-                            }
-                        }
-                    }
                 }
             }
         }

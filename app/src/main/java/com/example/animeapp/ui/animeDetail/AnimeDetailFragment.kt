@@ -466,7 +466,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                     rvEpisodes.visibility = View.VISIBLE
 
                     rvEpisodes.apply {
-                        adapter = EpisodesDetailAdapter(requireContext(), episodes) { episodeId ->
+                        adapter = EpisodesDetailAdapter(requireContext(), episodes.reversed()) { episodeId ->
                             Navigation.navigateToAnimeWatch(
                                 this@AnimeDetailFragment,
                                 R.id.action_animeDetailFragment_to_animeWatchFragment,
