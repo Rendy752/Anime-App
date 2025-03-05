@@ -67,7 +67,7 @@
                     android:layout_marginStart="16dp"
                     android:text="@string/current_episode"
                     android:textAlignment="textEnd"
-                    android:textColor="@color/colorPrimary"
+                    android:textColor="@color/colorAccent"
                     android:textSize="14sp"
                     app:layout_constraintEnd_toEndOf="parent"
                     app:layout_constraintStart_toEndOf="@id/episodeInfoGuideline"
