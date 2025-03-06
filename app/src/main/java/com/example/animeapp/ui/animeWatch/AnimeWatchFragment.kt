@@ -49,6 +49,7 @@ import com.example.animeapp.utils.Debounce
 import com.example.animeapp.utils.HlsPlayerUtil
 import com.example.animeapp.utils.HlsPlayerUtil.abandonAudioFocus
 import com.example.animeapp.utils.HlsPlayerUtil.requestAudioFocus
+import com.example.animeapp.utils.IntroOutroHandler
 import com.example.animeapp.utils.Resource
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
@@ -536,6 +537,15 @@ class AnimeWatchFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        binding.playerViewContainer.apply {
+            val introOutroHandler = IntroOutroHandler(
+                playerView.player as ExoPlayer,
+                introButton,
+                outroButton,
+                EpisodeSourcesResponse(emptyList(), null, null, emptyList(), 0, 0)
+            )
+            introOutroHandler.releaseButtons()
+        }
         HlsPlayerUtil.releasePlayer(binding.playerViewContainer.playerView)
         mediaSession?.release()
         mediaSession = null
