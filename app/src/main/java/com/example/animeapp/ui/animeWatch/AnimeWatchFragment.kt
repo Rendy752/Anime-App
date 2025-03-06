@@ -137,6 +137,37 @@ class AnimeWatchFragment : Fragment() {
 
     private fun handleStaticAnimeDetailData() {
         binding.apply {
+            viewModel.episodes.value.let { episodes ->
+                "Total Episode: ${episodes?.totalEpisodes}".also {
+                    tvTotalEpisodes.text = it
+                }
+
+                val debounce = Debounce(
+                    lifecycleScope,
+                    1000L,
+                    { query ->
+                        if (query.isNotEmpty()) {
+                            handleJumpToEpisode(
+                                query.toInt(),
+                                episodes?.episodes ?: emptyList()
+                            )
+                        }
+                    }
+                )
+
+                svEpisodeSearch.setOnQueryTextListener(object : OnQueryTextListener {
+                    override fun onQueryTextSubmit(query: String?): Boolean {
+                        return true
+                    }
+
+                    override fun onQueryTextChange(newText: String?): Boolean {
+                        newText?.let { debounce.query(it) }
+                        return true
+                    }
+                })
+
+                setupEpisodeRecyclerView(episodes?.episodes ?: emptyList())
+            }
             viewModel.animeDetail.value.let { animeDetail ->
                 BindAnimeUtils.bindAnimeHeader(
                     requireContext(),
@@ -219,17 +250,25 @@ class AnimeWatchFragment : Fragment() {
         }
     }
 
-    private fun setupEpisodeRecyclerView(episodes: List<Episode>, episodeNo: Int) {
+    private fun setupEpisodeRecyclerView(episodes: List<Episode>) {
         binding.apply {
             episodeSearchContainer.visibility = if (episodes.size > 1) View.VISIBLE else View.GONE
             rvEpisodes.apply {
-                visibility = if (episodes.isNotEmpty()) View.VISIBLE else View.GONE
                 if (episodes.isNotEmpty()) {
                     layoutManager = GridLayoutManager(context, 4)
-                    adapter = EpisodesWatchAdapter(requireContext(), episodes, episodeNo) {
+                    adapter = EpisodesWatchAdapter(requireContext(), episodes) {
                         viewModel.handleSelectedEpisodeServer(it)
                     }
-                    handleJumpToEpisode(episodeNo, episodes)
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        viewModel.episodeWatch.collect { response ->
+                            if (response is Resource.Success) {
+                                response.data!!.servers.episodeNo.let {
+                                    (adapter as EpisodesWatchAdapter).updateSelectedEpisode(it)
+                                    handleJumpToEpisode(it, episodes)
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -240,12 +279,9 @@ class AnimeWatchFragment : Fragment() {
             binding.apply {
                 setupVideoPlayer(episodeWatch.sources)
                 episodeInfoProgressBar.visibility = View.GONE
-                episodeProgressBar.visibility = View.GONE
                 tvEpisodeTitle.visibility = View.VISIBLE
                 tvCurrentEpisode.visibility = View.VISIBLE
                 serverScrollView.visibility = View.VISIBLE
-                tvTotalEpisodes.visibility = View.VISIBLE
-                svEpisodeSearch.visibility = View.VISIBLE
 
                 episodeWatch.servers.let { servers ->
                     viewModel.episodes.value.let { episodes ->
@@ -267,41 +303,7 @@ class AnimeWatchFragment : Fragment() {
                                 }
                                 tvEpisodeTitle.setTextColor(backgroundColor)
                             }
-
-                        "Total Episode: ${episodes?.totalEpisodes}".also {
-                            tvTotalEpisodes.text = it
-                        }
                         "Eps. ${servers.episodeNo}".also { tvCurrentEpisode.text = it }
-
-
-                        val debounce = Debounce(
-                            lifecycleScope,
-                            1000L,
-                            { query ->
-                                if (query.isNotEmpty()) {
-                                    handleJumpToEpisode(
-                                        query.toInt(),
-                                        episodes?.episodes ?: emptyList()
-                                    )
-                                }
-                            }
-                        )
-
-                        svEpisodeSearch.setOnQueryTextListener(object : OnQueryTextListener {
-                            override fun onQueryTextSubmit(query: String?): Boolean {
-                                return true
-                            }
-
-                            override fun onQueryTextChange(newText: String?): Boolean {
-                                newText?.let { debounce.query(it) }
-                                return true
-                            }
-                        })
-
-                        setupEpisodeRecyclerView(
-                            episodes?.episodes ?: emptyList(),
-                            servers.episodeNo
-                        )
                     }
                     setupServerRecyclerView(
                         tvSub,
@@ -336,13 +338,9 @@ class AnimeWatchFragment : Fragment() {
     private fun handleEpisodeWatchLoading() {
         binding.apply {
             episodeInfoProgressBar.visibility = View.VISIBLE
-            episodeProgressBar.visibility = View.VISIBLE
             tvEpisodeTitle.visibility = View.GONE
             tvCurrentEpisode.visibility = View.GONE
             serverScrollView.visibility = View.GONE
-            tvTotalEpisodes.visibility = View.GONE
-            svEpisodeSearch.visibility = View.GONE
-            rvEpisodes.visibility = View.GONE
         }
     }
 
