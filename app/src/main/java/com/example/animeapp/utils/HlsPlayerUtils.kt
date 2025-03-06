@@ -7,7 +7,6 @@ import android.media.AudioFocusRequest
 import android.net.Uri
 import android.os.Handler
 import android.os.Looper
-import android.view.View
 import android.widget.Button
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes as Media3AudioAttributes
@@ -56,48 +55,8 @@ object HlsPlayerUtil {
             player.setMediaItem(mediaItemBuilder.build())
             player.prepare()
 
-            val handler = Handler(Looper.getMainLooper())
-            val runnable = object : Runnable {
-                private var introSkipped = false
-                private var outroSkipped = true
-
-                override fun run() {
-                    val currentPositionSec = player.currentPosition / 1000
-                    val intro = videoData.intro
-                    val outro = videoData.outro
-
-                    if (intro != null && currentPositionSec >= intro.start && currentPositionSec <= intro.end && !introSkipped) {
-                        skipButton.visibility = View.VISIBLE
-                        "Skip Intro".also { skipButton.text = it }
-                        skipButton.setOnClickListener {
-                            player.seekTo(intro.end * 1000L)
-                            skipButton.visibility = View.GONE
-                            introSkipped = true
-                        }
-                    } else if (outro != null && currentPositionSec >= outro.start && currentPositionSec <= outro.end && !outroSkipped) {
-                        skipButton.visibility = View.VISIBLE
-                        "Skip Outro".also { skipButton.text = it }
-                        skipButton.setOnClickListener {
-                            player.seekTo(outro.end * 1000L)
-                            skipButton.visibility = View.GONE
-                            outroSkipped = true
-                        }
-                    } else {
-                        skipButton.visibility = View.GONE
-                    }
-
-                    if (intro != null && (currentPositionSec < intro.start || currentPositionSec > intro.end)) {
-                        introSkipped = false
-                    }
-
-                    if (outro != null && (currentPositionSec < outro.start || currentPositionSec > outro.end)) {
-                        outroSkipped = false
-                    }
-
-                    handler.postDelayed(this, 1000)
-                }
-            }
-            handler.post(runnable)
+            val introOutroHandler = IntroOutroHandler(player, skipButton, videoData)
+            Handler(Looper.getMainLooper()).post(introOutroHandler)
 
             audioFocusChangeListener = OnAudioFocusChangeListener { focusChange ->
                 when (focusChange) {
@@ -118,14 +77,6 @@ object HlsPlayerUtil {
                     }
                 }
             }
-
-            player.addListener(object : Player.Listener {
-                override fun onPlaybackStateChanged(playbackState: Int) {
-                    if (playbackState == Player.STATE_ENDED) {
-                        handler.removeCallbacks(runnable)
-                    }
-                }
-            })
         }
     }
 
