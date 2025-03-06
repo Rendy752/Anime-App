@@ -29,7 +29,8 @@ object HlsPlayerUtil {
     @OptIn(UnstableApi::class)
     fun initializePlayer(
         player: ExoPlayer,
-        skipButton: Button,
+        introButton: Button,
+        outroButton: Button,
         videoData: EpisodeSourcesResponse
     ) {
 
@@ -55,7 +56,7 @@ object HlsPlayerUtil {
             player.setMediaItem(mediaItemBuilder.build())
             player.prepare()
 
-            val introOutroHandler = IntroOutroHandler(player, skipButton, videoData)
+            val introOutroHandler = IntroOutroHandler(player, introButton, outroButton, videoData)
             Handler(Looper.getMainLooper()).post(introOutroHandler)
 
             audioFocusChangeListener = OnAudioFocusChangeListener { focusChange ->

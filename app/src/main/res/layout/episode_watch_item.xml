@@ -10,6 +10,7 @@
         android:id="@+id/tvEpisodeNumber"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:background="@drawable/default_episode_background"
         android:gravity="center"
         android:padding="16dp"
         android:text="@string/zero"

@@ -9,7 +9,8 @@ import com.example.animeapp.models.EpisodeSourcesResponse
 
 class IntroOutroHandler(
     private val player: ExoPlayer,
-    private val skipButton: Button,
+    private val introButton: Button,
+    private val outroButton: Button,
     private val videoData: EpisodeSourcesResponse
 ) : Runnable {
 
@@ -22,20 +23,24 @@ class IntroOutroHandler(
         val outro = videoData.outro
 
         if (intro != null && currentPositionSec in intro.start..intro.end && !introSkipped) {
-            if (skipButton.visibility != View.VISIBLE) {
-                skipButton.visibility = View.VISIBLE
-                "Skip Intro".also { skipButton.text = it }
+            if (introButton.visibility != View.VISIBLE) {
+                introButton.visibility = View.VISIBLE
                 setupIntroSkipButton(intro.end.toLong())
             }
-        } else if (outro != null && currentPositionSec in outro.start..outro.end && !outroSkipped) {
-            if (skipButton.visibility != View.VISIBLE) {
-                skipButton.visibility = View.VISIBLE
-                "Skip Outro".also { skipButton.text = it }
+        } else {
+            if (introButton.visibility == View.VISIBLE) {
+                introButton.visibility = View.GONE
+            }
+        }
+
+        if (outro != null && currentPositionSec in outro.start..outro.end && !outroSkipped) {
+            if (outroButton.visibility != View.VISIBLE) {
+                outroButton.visibility = View.VISIBLE
                 setupOutroSkipButton(outro.end.toLong())
             }
         } else {
-            if (skipButton.visibility == View.VISIBLE) {
-                skipButton.visibility = View.GONE
+            if (outroButton.visibility == View.VISIBLE) {
+                outroButton.visibility = View.GONE
             }
         }
 
@@ -51,17 +56,17 @@ class IntroOutroHandler(
     }
 
     private fun setupIntroSkipButton(endTime: Long) {
-        skipButton.setOnClickListener {
+        introButton.setOnClickListener {
             player.seekTo(endTime * 1000L)
-            skipButton.visibility = View.GONE
+            introButton.visibility = View.GONE
             introSkipped = true
         }
     }
 
     private fun setupOutroSkipButton(endTime: Long) {
-        skipButton.setOnClickListener {
+        outroButton.setOnClickListener {
             player.seekTo(endTime * 1000L)
-            skipButton.visibility = View.GONE
+            outroButton.visibility = View.GONE
             outroSkipped = true
         }
     }

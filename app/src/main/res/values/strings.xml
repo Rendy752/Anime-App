@@ -75,7 +75,8 @@
     <string name="retry">Retry</string>
     <string name="reset">Reset</string>
     <string name="search_producer">Search Producer</string>
-    <string name="skip">Skip</string>
+    <string name="skip_intro">Skip Intro</string>
+    <string name="skip_outro">Skip Outro</string>
     <string name="list_episodes">Episodes</string>
     <string name="ep_number">Ep. number</string>
     <string name="jump">Jump</string>

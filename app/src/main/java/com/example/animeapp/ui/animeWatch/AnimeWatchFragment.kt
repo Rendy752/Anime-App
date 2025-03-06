@@ -423,7 +423,8 @@ class AnimeWatchFragment : Fragment() {
 
             HlsPlayerUtil.initializePlayer(
                 exoPlayer,
-                skipButton,
+                introButton,
+                outroButton,
                 sources
             )
 
