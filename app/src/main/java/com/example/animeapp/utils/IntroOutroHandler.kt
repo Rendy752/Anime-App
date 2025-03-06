@@ -15,7 +15,7 @@ class IntroOutroHandler(
 ) : Runnable {
 
     private var introSkipped = false
-    private var outroSkipped = false
+    private var outroSkipped = true
     private val handler = Handler(Looper.getMainLooper())
     private var lastIntroVisibility: Int? = null
     private var lastOutroVisibility: Int? = null

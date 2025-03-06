@@ -167,8 +167,12 @@ class AnimeWatchFragment : Fragment() {
                     }
                 })
 
-                previousEpisodeButton.setOnClickListener { handlePreviousEpisode() }
-                nextEpisodeButton.setOnClickListener { handleNextEpisode() }
+                previousEpisodeButton.setOnClickListener {
+                    handleEpisodeNavigation(-1, binding.previousEpisodeButton)
+                }
+                nextEpisodeButton.setOnClickListener {
+                    handleEpisodeNavigation(1, binding.nextEpisodeButton)
+                }
                 setupEpisodeRecyclerView(episodes?.episodes ?: emptyList())
             }
 
@@ -203,38 +207,17 @@ class AnimeWatchFragment : Fragment() {
         }
     }
 
-    private fun handlePreviousEpisode() {
-        viewModel.episodeWatch.value.let { episodeWatch ->
-            episodeWatch.data?.servers?.let {
-                viewModel.episodes.value.let { episodes ->
-                    if (episodes?.episodes?.isNotEmpty() == true) {
-                        binding.previousEpisodeButton.isEnabled = true
-                        val currentEpisode = it.episodeNo
-                        val previousEpisode =
-                            episodes.episodes.find { it.episodeNo == currentEpisode.minus(1) }
-                        previousEpisode?.let { viewModel.handleSelectedEpisodeServer(it.episodeId) }
-                    } else {
-                        binding.previousEpisodeButton.isEnabled = false
+    private fun handleEpisodeNavigation(direction: Int, button: android.widget.Button) {
+        viewModel.episodeWatch.value.data?.servers?.let { currentServer ->
+            viewModel.episodes.value?.episodes?.let { episodes ->
+                if (episodes.isNotEmpty()) {
+                    button.isEnabled = true
+                    val targetEpisodeNo = currentServer.episodeNo + direction
+                    episodes.find { it.episodeNo == targetEpisodeNo }?.let { targetEpisode ->
+                        viewModel.handleSelectedEpisodeServer(targetEpisode.episodeId)
                     }
-                }
-            }
-        }
-    }
-
-    private fun handleNextEpisode() {
-        viewModel.episodeWatch.value.let { episodeWatch ->
-            episodeWatch.data?.servers?.let {
-                viewModel.episodes.value.let { episodes ->
-                    if (episodes?.episodes?.isNotEmpty() == true) {
-                        binding.nextEpisodeButton.isEnabled = true
-                        val currentEpisode = it.episodeNo
-                        val nextEpisode = episodes.episodes.find {
-                            it.episodeNo == (currentEpisode.plus(1))
-                        }
-                        nextEpisode?.let { viewModel.handleSelectedEpisodeServer(it.episodeId) }
-                    } else {
-                        binding.nextEpisodeButton.isEnabled = false
-                    }
+                } else {
+                    button.isEnabled = false
                 }
             }
         }
@@ -570,8 +553,7 @@ class AnimeWatchFragment : Fragment() {
             }
         }
 
-    private fun handleExitFullscreen() {
-        mListener?.onFullscreenRequested(false)
+    private fun showContent() {
         binding.svContent.visibility = View.VISIBLE
         binding.playerViewContainer.apply {
             root.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
@@ -579,13 +561,22 @@ class AnimeWatchFragment : Fragment() {
         }
     }
 
-    private fun handleEnterFullscreen() {
-        mListener?.onFullscreenRequested(true)
+    private fun hideContent() {
         binding.svContent.visibility = View.GONE
         binding.playerViewContainer.apply {
             root.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
             playerView.layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
         }
+    }
+
+    private fun handleExitFullscreen() {
+        mListener?.onFullscreenRequested(false)
+        showContent()
+    }
+
+    private fun handleEnterFullscreen() {
+        mListener?.onFullscreenRequested(true)
+        hideContent()
     }
 
     fun handleEnterPictureInPictureMode() {
@@ -609,7 +600,14 @@ class AnimeWatchFragment : Fragment() {
     }
 
     override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean) {
-        binding.playerViewContainer.playerView.useController = !isInPictureInPictureMode
+        binding.playerViewContainer.playerView.apply {
+            useController = !isInPictureInPictureMode
+            if (isInPictureInPictureMode) {
+                if (!isFullscreen) hideContent()
+            } else {
+                if (!isFullscreen) showContent()
+            }
+        }
     }
 
     override fun onDestroyView() {

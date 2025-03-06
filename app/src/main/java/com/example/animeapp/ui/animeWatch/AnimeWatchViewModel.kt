@@ -57,7 +57,7 @@ class AnimeWatchViewModel @Inject constructor(
     ) = viewModelScope.launch {
         _episodeWatch.value = Resource.Loading()
 
-        if (episodeId == _defaultEpisodeServers.value?.episodeId) {
+        if (episodeSourcesQuery == _episodeSourcesQuery.value) {
             restoreDefaultValues()
             return@launch
         }
