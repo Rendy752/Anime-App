@@ -1,6 +1,7 @@
 package com.example.animeapp.ui.animeWatch
 
 import android.app.PictureInPictureParams
+import android.content.res.Configuration
 import android.content.Context
 import android.content.Intent
 import android.media.AudioManager
@@ -30,6 +31,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.animeapp.R
+import androidx.media3.ui.R as RMedia3
 import com.example.animeapp.databinding.FragmentAnimeWatchBinding
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.Episode
@@ -360,14 +362,22 @@ class AnimeWatchFragment : Fragment() {
 
                 setControllerVisibilityListener(
                     PlayerView.ControllerVisibilityListener { visibility ->
-                        if (visibility == View.VISIBLE) {
-                            pipButton.visibility = View.VISIBLE
-                        } else {
-                            pipButton.visibility = View.GONE
+                        val subtitleView = playerView.subtitleView
+                        val bottomBar =
+                            playerView.findViewById<ViewGroup>(RMedia3.id.exo_bottom_bar)
+                        val orientation = playerView.resources.configuration.orientation
+                        pipButton.visibility = when (visibility) {
+                            View.VISIBLE -> View.VISIBLE
+                            else -> View.GONE
                         }
+                        subtitleView?.setPadding(
+                            0, 0, 0,
+                            if (visibility == View.VISIBLE && orientation == Configuration.ORIENTATION_LANDSCAPE || (visibility == View.VISIBLE && !isFullscreen)) bottomBar.height else 0
+                        )
                     }
                 )
             }
+
             HlsPlayerUtil.initializePlayer(
                 exoPlayer,
                 skipButton,
@@ -395,7 +405,13 @@ class AnimeWatchFragment : Fragment() {
                 override fun onPlaybackStateChanged(playbackState: Int) {
                     super.onPlaybackStateChanged(playbackState)
                     if (playbackState == Player.STATE_READY) {
-                        this@apply.root.layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
+                        if (!isFullscreen) {
+                            this@apply.root.layoutParams.height =
+                                ViewGroup.LayoutParams.WRAP_CONTENT
+                        } else {
+                            this@apply.root.layoutParams.height =
+                                ViewGroup.LayoutParams.MATCH_PARENT
+                        }
                     }
                 }
             })
