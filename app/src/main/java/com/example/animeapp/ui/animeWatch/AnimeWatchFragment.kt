@@ -167,8 +167,11 @@ class AnimeWatchFragment : Fragment() {
                     }
                 })
 
+                previousEpisodeButton.setOnClickListener { handlePreviousEpisode() }
+                nextEpisodeButton.setOnClickListener { handleNextEpisode() }
                 setupEpisodeRecyclerView(episodes?.episodes ?: emptyList())
             }
+
             viewModel.animeDetail.value.let { animeDetail ->
                 BindAnimeUtils.bindAnimeHeader(
                     requireContext(),
@@ -200,6 +203,43 @@ class AnimeWatchFragment : Fragment() {
         }
     }
 
+    private fun handlePreviousEpisode() {
+        viewModel.episodeWatch.value.let { episodeWatch ->
+            episodeWatch.data?.servers?.let {
+                viewModel.episodes.value.let { episodes ->
+                    if (episodes?.episodes?.isNotEmpty() == true) {
+                        binding.previousEpisodeButton.isEnabled = true
+                        val currentEpisode = it.episodeNo
+                        val previousEpisode =
+                            episodes.episodes.find { it.episodeNo == currentEpisode.minus(1) }
+                        previousEpisode?.let { viewModel.handleSelectedEpisodeServer(it.episodeId) }
+                    } else {
+                        binding.previousEpisodeButton.isEnabled = false
+                    }
+                }
+            }
+        }
+    }
+
+    private fun handleNextEpisode() {
+        viewModel.episodeWatch.value.let { episodeWatch ->
+            episodeWatch.data?.servers?.let {
+                viewModel.episodes.value.let { episodes ->
+                    if (episodes?.episodes?.isNotEmpty() == true) {
+                        binding.nextEpisodeButton.isEnabled = true
+                        val currentEpisode = it.episodeNo
+                        val nextEpisode = episodes.episodes.find {
+                            it.episodeNo == (currentEpisode.plus(1))
+                        }
+                        nextEpisode?.let { viewModel.handleSelectedEpisodeServer(it.episodeId) }
+                    } else {
+                        binding.nextEpisodeButton.isEnabled = false
+                    }
+                }
+            }
+        }
+    }
+
     private fun setupBackButtonListener() {
         val callback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -219,6 +259,7 @@ class AnimeWatchFragment : Fragment() {
             viewModel.episodeWatch.collect { response ->
                 when (response) {
                     is Resource.Success -> handleEpisodeWatchSuccess(response)
+
                     is Resource.Error -> handleEpisodeWatchError()
                     is Resource.Loading -> handleEpisodeWatchLoading()
                 }
@@ -288,6 +329,7 @@ class AnimeWatchFragment : Fragment() {
                     viewModel.episodes.value.let { episodes ->
                         val episodeName = episodes?.episodes?.find { episode ->
                             episode.episodeId == servers.episodeId
+
                         }?.name
                         tvEpisodeTitle.text =
                             if (episodeName != "Full") episodeName else viewModel.animeDetail.value?.title
@@ -468,7 +510,7 @@ class AnimeWatchFragment : Fragment() {
                                             exoPlayer.play()
                                             nextEpisodeContainer.visibility = View.GONE
                                         }
-                                        nextEpisodeButton.setOnClickListener {
+                                        skipNextEpisodeButton.setOnClickListener {
                                             viewModel.handleSelectedEpisodeServer(
                                                 nextEpisode.episodeId
                                             )
