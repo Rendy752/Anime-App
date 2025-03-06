@@ -68,7 +68,9 @@
             android:layout_gravity="bottom|end"
             android:layout_marginEnd="76dp"
             android:layout_marginBottom="60dp"
+            android:background="@drawable/rounded_corner_black_transparent"
             android:text="@string/skip_intro"
+            android:textColor="@color/colorWhite"
             android:visibility="gone" />
 
         <Button
@@ -78,8 +80,72 @@
             android:layout_gravity="bottom|end"
             android:layout_marginEnd="76dp"
             android:layout_marginBottom="60dp"
+            android:background="@drawable/rounded_corner_black_transparent"
             android:text="@string/skip_outro"
+            android:textColor="@color/colorWhite"
             android:visibility="gone" />
 
+        <FrameLayout
+            android:id="@+id/nextEpisodeContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_margin="32dp"
+            android:background="@drawable/rounded_corner_black_transparent"
+            android:padding="8dp"
+            android:visibility="gone">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/tvNextEpisode"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textAlignment="center"
+                    android:text="@string/next_episode"
+                    android:textColor="@color/colorWhite"
+                    android:textSize="20sp"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <ImageButton
+                    android:id="@+id/restartButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:backgroundTint="#3F51B5"
+                    android:contentDescription="@string/restart_icon"
+                    android:src="@drawable/ic_restart_white_24dp"
+                    android:textColor="@color/colorWhite"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toStartOf="@id/nextEpisodeButton"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toBottomOf="@id/tvNextEpisode" />
+
+                <ImageButton
+                    android:id="@+id/nextEpisodeButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginTop="8dp"
+                    android:backgroundTint="#3F51B5"
+                    android:contentDescription="@string/skip_next_icon"
+                    android:src="@drawable/ic_skip_next_white_24dp"
+                    android:textColor="@color/colorWhite"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toEndOf="@id/restartButton"
+                    app:layout_constraintTop_toBottomOf="@id/tvNextEpisode" />
+
+            </androidx.constraintlayout.widget.ConstraintLayout>
+
+        </FrameLayout>
+
     </androidx.media3.ui.PlayerView>
+
 </androidx.constraintlayout.widget.ConstraintLayout>

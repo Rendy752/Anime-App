@@ -94,4 +94,7 @@
     <string name="dubbing_icon">Dubbing Icon</string>
     <string name="server_name">Server Name</string>
     <string name="speed_up_icon">Speed Up Icon</string>
+    <string name="next_episode">Next Episode</string>
+    <string name="restart_icon">Restart Icon</string>
+    <string name="skip_next_icon">Skip Next Icon</string>
 </resources>

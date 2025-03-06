@@ -449,6 +449,41 @@ class AnimeWatchFragment : Fragment() {
 
                 override fun onPlaybackStateChanged(playbackState: Int) {
                     super.onPlaybackStateChanged(playbackState)
+                    viewModel.episodeWatch.value.data?.servers.let { servers ->
+                        viewModel.episodes.value.let { episodes ->
+                            if (playbackState == Player.STATE_ENDED) {
+                                playerView.hideController()
+                                if (episodes?.episodes?.isNotEmpty() == true) {
+                                    val currentEpisode = servers?.episodeNo
+                                    val nextEpisode = episodes.episodes.find {
+                                        it.episodeNo == (currentEpisode?.plus(1) ?: 0)
+                                    }
+                                    if (nextEpisode == null) {
+                                        nextEpisodeContainer.visibility = View.GONE
+                                    } else {
+                                        nextEpisodeContainer.visibility = View.VISIBLE
+                                        tvNextEpisode.text = nextEpisode.name
+                                        restartButton.setOnClickListener {
+                                            exoPlayer.seekTo(0)
+                                            exoPlayer.play()
+                                            nextEpisodeContainer.visibility = View.GONE
+                                        }
+                                        nextEpisodeButton.setOnClickListener {
+                                            viewModel.handleSelectedEpisodeServer(
+                                                nextEpisode.episodeId
+                                            )
+                                            nextEpisodeContainer.visibility = View.GONE
+                                        }
+                                    }
+                                } else {
+                                    nextEpisodeContainer.visibility = View.GONE
+                                }
+                            } else {
+                                nextEpisodeContainer.visibility = View.GONE
+                            }
+                        }
+                    }
+
                     if (playbackState == Player.STATE_READY) {
                         if (!isFullscreen) {
                             this@apply.root.layoutParams.height =
