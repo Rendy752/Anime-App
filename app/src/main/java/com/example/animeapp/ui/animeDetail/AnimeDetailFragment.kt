@@ -436,9 +436,9 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                             val episodeNumberText = etEpisodeNumber.text.toString()
                             if (episodeNumberText.isNotEmpty()) {
                                 val episodeNumber = episodeNumberText.toInt()
-                                handleJumpToEpisode(episodeNumber, episodes)
+                                handleJumpToEpisode(episodeNumber, episodes.reversed())
                             } else {
-                                handleJumpToEpisode(1, episodes)
+                                handleJumpToEpisode(1, episodes.reversed())
                             }
                         }
                     }

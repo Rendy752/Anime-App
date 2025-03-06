@@ -11,6 +11,7 @@ import com.example.animeapp.utils.StreamingUtils
 class EpisodesWatchAdapter(
     private val context: Context,
     private val episodes: List<Episode>,
+    private val selectedEpisodeNo: Int,
     private val onEpisodeClick: (String) -> Unit
 ) : RecyclerView.Adapter<EpisodesWatchAdapter.EpisodeViewHolder>() {
 
@@ -27,15 +28,18 @@ class EpisodesWatchAdapter(
         val episode = episodes[position]
         bindEpisodeData(holder.binding, episode)
 
-        holder.itemView.setOnClickListener {
-            onEpisodeClick(episode.episodeId)
+        if (episode.episodeNo != selectedEpisodeNo) {
+            holder.itemView.setOnClickListener {
+                onEpisodeClick(episode.episodeId)
+            }
         }
     }
 
     private fun bindEpisodeData(binding: EpisodeWatchItemBinding, episode: Episode) {
         binding.apply {
             episode.episodeNo.toString().also { tvEpisodeNumber.text = it }
-            tvEpisodeNumber.background = StreamingUtils.getEpisodeBackground(context, episode)
+            tvEpisodeNumber.background =
+                StreamingUtils.getEpisodeBackground(context, episode, selectedEpisodeNo)
         }
     }
 

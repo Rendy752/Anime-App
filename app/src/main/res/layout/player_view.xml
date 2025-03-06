@@ -28,6 +28,39 @@
             android:src="@drawable/ic_pip_black_24dp"
             android:visibility="gone" />
 
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:id="@+id/speedUpContainer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="top|center"
+            android:layout_margin="16dp"
+            android:paddingHorizontal="8dp"
+            android:background="@drawable/rounded_corner_white"
+            android:visibility="gone">
+
+            <ImageButton
+                android:id="@+id/speedUpIcon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:backgroundTint="#FFF"
+                android:contentDescription="@string/speed_up_icon"
+                android:src="@drawable/ic_speed_black_24dp"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintStart_toEndOf="@id/tvSpeedUp"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintTop_toTopOf="parent" />
+
+            <TextView
+                android:id="@+id/tvSpeedUp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textColor="#000"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintStart_toEndOf="@id/speedUpIcon"
+                app:layout_constraintTop_toTopOf="parent" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
         <Button
             android:id="@+id/skipButton"
             android:layout_width="wrap_content"

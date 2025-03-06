@@ -37,8 +37,11 @@ class ServerAdapter(
                 holder.tvServerName.background = it
                 holder.tvServerName.setTextColor(Color.WHITE)
             }
+            holder.tvServerName.isClickable = false
+        } else {
+            holder.tvServerName.setOnClickListener { onClick(currentItem) }
+            holder.tvServerName.isClickable = true
         }
-        holder.tvServerName.setOnClickListener { onClick(currentItem) }
     }
 
     override fun getItemCount() = serverItems.size

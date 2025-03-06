@@ -13,9 +13,12 @@ import android.util.Rational
 import androidx.fragment.app.Fragment
 import android.support.v4.media.session.PlaybackStateCompat
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
+import android.os.Handler
+import android.os.Looper
 import androidx.activity.OnBackPressedCallback
 import androidx.annotation.OptIn
 import androidx.appcompat.app.AppCompatActivity
@@ -216,16 +219,17 @@ class AnimeWatchFragment : Fragment() {
         }
     }
 
-    private fun setupEpisodeRecyclerView(episodes: List<Episode>) {
+    private fun setupEpisodeRecyclerView(episodes: List<Episode>, episodeNo: Int) {
         binding.apply {
             episodeSearchContainer.visibility = if (episodes.size > 1) View.VISIBLE else View.GONE
             rvEpisodes.apply {
                 visibility = if (episodes.isNotEmpty()) View.VISIBLE else View.GONE
                 if (episodes.isNotEmpty()) {
                     layoutManager = GridLayoutManager(context, 4)
-                    adapter = EpisodesWatchAdapter(requireContext(), episodes) {
+                    adapter = EpisodesWatchAdapter(requireContext(), episodes, episodeNo) {
                         viewModel.handleSelectedEpisodeServer(it)
                     }
+                    handleJumpToEpisode(episodeNo, episodes)
                 }
             }
         }
@@ -294,7 +298,10 @@ class AnimeWatchFragment : Fragment() {
                             }
                         })
 
-                        setupEpisodeRecyclerView(episodes?.episodes ?: emptyList())
+                        setupEpisodeRecyclerView(
+                            episodes?.episodes ?: emptyList(),
+                            servers.episodeNo
+                        )
                     }
                     setupServerRecyclerView(
                         tvSub,
@@ -358,6 +365,44 @@ class AnimeWatchFragment : Fragment() {
                 setFullscreenButtonClickListener {
                     val currentFullscreenState = isFullscreen
                     isFullscreen = !currentFullscreenState
+                }
+
+                var isHolding = false
+                val handler = Handler(Looper.getMainLooper())
+                val holdRunnable = Runnable {
+                    if (isHolding) {
+                        exoPlayer.playbackParameters =
+                            exoPlayer.playbackParameters.withSpeed(2f)
+                        useController = false
+                        pipButton.visibility = View.GONE
+                        speedUpContainer.visibility = View.VISIBLE
+                        "2x speed".also { tvSpeedUp.text = it }
+                    }
+                }
+
+                playerView.setOnTouchListener { _, event ->
+                    when (event.action) {
+                        MotionEvent.ACTION_DOWN -> {
+                            isHolding = true
+                            handler.postDelayed(holdRunnable, 1000)
+                        }
+
+                        MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                            handler.removeCallbacks(holdRunnable)
+                            exoPlayer.playbackParameters =
+                                exoPlayer.playbackParameters.withSpeed(1f)
+                            useController = true
+                            speedUpContainer.visibility = View.GONE
+                            "1x speed".also { tvSpeedUp.text = it }
+                            isHolding = false
+                        }
+
+                    }
+
+                    if (!isHolding) {
+                        playerView.performClick()
+                    }
+                    true
                 }
 
                 setControllerVisibilityListener(
