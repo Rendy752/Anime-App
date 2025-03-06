@@ -1,9 +1,16 @@
 package com.example.animeapp.ui.animeWatch
 
 import android.content.Context
+import android.os.Handler
+import android.os.Looper
+import android.view.Gravity
 import android.view.LayoutInflater
+import android.view.MotionEvent
+import android.view.View
 import android.view.ViewGroup
+import android.widget.PopupWindow
 import androidx.recyclerview.widget.RecyclerView
+import com.example.animeapp.databinding.TooltipLayoutBinding
 import com.example.animeapp.databinding.EpisodeWatchItemBinding
 import com.example.animeapp.models.Episode
 import com.example.animeapp.utils.Debounce
@@ -19,6 +26,8 @@ class EpisodesWatchAdapter(
 ) : RecyclerView.Adapter<EpisodesWatchAdapter.EpisodeViewHolder>() {
 
     private var selectedEpisodeNo: Int? = null
+    private val handler = Handler(Looper.getMainLooper())
+    private var tooltipPopupWindow: PopupWindow? = null
 
     class EpisodeViewHolder(val binding: EpisodeWatchItemBinding) :
         RecyclerView.ViewHolder(binding.root)
@@ -73,8 +82,51 @@ class EpisodesWatchAdapter(
                     episodeDebounce.query(episode.episodeId)
                 }
             }
+
+            holder.itemView.setOnTouchListener { v, event ->
+                when (event.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                        handler.postDelayed({
+                            showTooltip(v, episode.name)
+                        }, 500)
+                    }
+
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                        handler.removeCallbacksAndMessages(null)
+                        hideTooltip()
+                        if (event.action == MotionEvent.ACTION_UP) {
+                            v.performClick()
+                        }
+                    }
+                }
+                false
+            }
         }
     }
 
     override fun getItemCount(): Int = episodes.size
+
+    private fun showTooltip(anchorView: View, episodeName: String) {
+        val tooltipView = TooltipLayoutBinding.inflate(
+            LayoutInflater.from(context),
+            null,
+            false
+        ).apply {
+            tooltipText.text = episodeName
+        }.root
+
+        tooltipPopupWindow = PopupWindow(
+            tooltipView,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+            false
+        )
+
+        tooltipPopupWindow?.showAsDropDown(anchorView, 0, -anchorView.height * 2 + 10, Gravity.CENTER)
+    }
+
+    private fun hideTooltip() {
+        tooltipPopupWindow?.dismiss()
+        tooltipPopupWindow = null
+    }
 }
