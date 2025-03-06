@@ -1,6 +1,5 @@
 package com.example.animeapp.ui.animeWatch
 
-import android.annotation.SuppressLint
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -19,6 +18,8 @@ class EpisodesWatchAdapter(
     private val onEpisodeClick: (String) -> Unit
 ) : RecyclerView.Adapter<EpisodesWatchAdapter.EpisodeViewHolder>() {
 
+    private var selectedEpisodeNo: Int? = null
+
     class EpisodeViewHolder(val binding: EpisodeWatchItemBinding) :
         RecyclerView.ViewHolder(binding.root)
 
@@ -28,12 +29,15 @@ class EpisodesWatchAdapter(
         return EpisodeViewHolder(binding)
     }
 
-    private var selectedEpisodeNo: Int? = null
-
-    @SuppressLint("NotifyDataSetChanged")
     fun updateSelectedEpisode(selectedEpisodeNo: Int) {
+        val oldSelectedPosition =
+            this.selectedEpisodeNo?.let { episodes.indexOfFirst { episode -> episode.episodeNo == it } }
+        val newSelectedPosition = episodes.indexOfFirst { it.episodeNo == selectedEpisodeNo }
+
         this.selectedEpisodeNo = selectedEpisodeNo
-        notifyDataSetChanged()
+
+        oldSelectedPosition?.let { notifyItemChanged(it) }
+        notifyItemChanged(newSelectedPosition)
     }
 
     override fun onBindViewHolder(holder: EpisodeViewHolder, position: Int) {
@@ -52,12 +56,22 @@ class EpisodesWatchAdapter(
     ) {
         holder.binding.apply {
             episode.episodeNo.toString().also { tvEpisodeNumber.text = it }
-            selectedEpisodeNo?.let { StreamingUtils.getEpisodeBackground(context, episode, it) }
-                ?.let { tvEpisodeNumber.background = it }
+
+            val isSelected = selectedEpisodeNo == episode.episodeNo
+
+            StreamingUtils.getEpisodeBackground(
+                context, episode, if (isSelected) {
+                    selectedEpisodeNo!!
+                } else {
+                    -1
+                }
+            ).let { tvEpisodeNumber.background = it }
 
             holder.itemView.setOnClickListener {
-                updateSelectedEpisode(episode.episodeNo)
-                episodeDebounce.query(episode.episodeId)
+                if (episode.episodeNo != selectedEpisodeNo) {
+                    updateSelectedEpisode(episode.episodeNo)
+                    episodeDebounce.query(episode.episodeId)
+                }
             }
         }
     }
