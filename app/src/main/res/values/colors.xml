@@ -16,7 +16,6 @@
 
     <color name="shimmer_placeholder">#dddddd</color>
 
-    <color name="selected_episode">#03DAC5</color>
     <color name="default_episode">#646464</color>
     <color name="watched_episode">#484848</color>
     <color name="watching_episode">#FFD700</color>

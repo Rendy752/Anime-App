@@ -7,6 +7,6 @@ import kotlinx.serialization.Serializable
 @Parcelize
 @Serializable
 data class TimeRange(
-    val start: Int,
-    val end: Int
+    val start: Long,
+    val end: Long
 ): Parcelable

@@ -74,7 +74,7 @@ object StreamingUtils {
         selectedEpisodeNo: Int? = null
     ): Drawable {
         val backgroundColor = if (episode.episodeNo == selectedEpisodeNo) {
-            ContextCompat.getColor(context, R.color.selected_episode)
+            ContextCompat.getColor(context, R.color.watching_episode)
         } else if (episode.filler) {
             ContextCompat.getColor(context, R.color.filler_episode)
         } else {

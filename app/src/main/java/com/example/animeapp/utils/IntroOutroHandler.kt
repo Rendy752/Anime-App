@@ -30,7 +30,7 @@ class IntroOutroHandler(
                 if(lastIntroVisibility != View.VISIBLE) {
                     introButton?.visibility = View.VISIBLE
                     lastIntroVisibility = View.VISIBLE
-                    setupIntroSkipButton(intro.end.toLong())
+                    setupIntroSkipButton(intro.end)
                 }
             }
         } else {
@@ -47,7 +47,7 @@ class IntroOutroHandler(
                 if (lastOutroVisibility != View.VISIBLE) {
                     outroButton?.visibility = View.VISIBLE
                     lastOutroVisibility = View.VISIBLE
-                    setupOutroSkipButton(outro.end.toLong())
+                    setupOutroSkipButton(outro.end)
                 }
             }
         } else {
