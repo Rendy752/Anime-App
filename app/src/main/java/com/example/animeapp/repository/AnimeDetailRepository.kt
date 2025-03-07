@@ -1,7 +1,9 @@
 package com.example.animeapp.repository
 
 import com.example.animeapp.data.local.dao.AnimeDetailDao
+import com.example.animeapp.data.local.dao.AnimeDetailComplementDao
 import com.example.animeapp.data.remote.api.AnimeAPI
+import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.AnimeDetailResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -12,6 +14,7 @@ import java.io.IOException
 
 class AnimeDetailRepository(
     private val animeDetailDao: AnimeDetailDao,
+    private val animeDetailComplementDao: AnimeDetailComplementDao,
     private val animeAPI: AnimeAPI
 ) {
     suspend fun getAnimeDetail(id: Int): Response<AnimeDetailResponse> =
@@ -47,5 +50,17 @@ class AnimeDetailRepository(
         } catch (e: Exception) {
             return Response.error(500, "Unknown error".toResponseBody())
         }
+    }
+
+    suspend fun getCachedAnimeDetailComplement(id: String): AnimeDetailComplement? = withContext(Dispatchers.IO) {
+        animeDetailComplementDao.getAnimeDetailComplementById(id)
+    }
+
+    suspend fun getCachedAnimeDetailComplementByMalId(mal_id: Int): AnimeDetailComplement? = withContext(Dispatchers.IO) {
+        animeDetailComplementDao.getAnimeDetailComplementByMalId(mal_id)
+    }
+
+    suspend fun insertCachedAnimeDetailComplement(animeDetailComplement: AnimeDetailComplement) = withContext(Dispatchers.IO) {
+        animeDetailComplementDao.insertAnimeDetailComplement(animeDetailComplement)
     }
 }

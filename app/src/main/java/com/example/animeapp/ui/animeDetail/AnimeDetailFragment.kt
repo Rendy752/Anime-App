@@ -18,9 +18,9 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.animeapp.R
 import com.example.animeapp.databinding.FragmentDetailBinding
+import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.models.Episode
-import com.example.animeapp.models.EpisodesResponse
 import com.example.animeapp.ui.common.NameAndUrlAdapter
 import com.example.animeapp.ui.common.UnorderedListAdapter
 import com.example.animeapp.utils.BindAnimeUtils
@@ -62,7 +62,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
 
     override fun onPrepareMenu(menu: Menu) {
         val watchItem = menu.findItem(R.id.action_watch)
-        watchItem?.isVisible = viewModel.episodes.value is Resource.Success
+        watchItem?.isVisible = viewModel.animeDetailComplement.value is Resource.Success
     }
 
     private fun observeAnimeDetail() {
@@ -78,7 +78,8 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                 else -> handleAnimeEmpty()
             }
         }
-        viewModel.episodes.observe(viewLifecycleOwner) { response ->
+        viewModel.animeDetailComplement.observe(viewLifecycleOwner) { response ->
+            requireActivity().invalidateMenu()
             when (response) {
                 is Resource.Success -> handleEpisodesSuccess(response)
                 is Resource.Loading -> handleEpisodesLoading()
@@ -103,16 +104,16 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
         return when (menuItem.itemId) {
             R.id.action_watch -> {
                 val animeDetailData = viewModel.animeDetail.value?.data?.data
-                val episodesData = viewModel.episodes.value?.data
+                val episodesData = viewModel.animeDetailComplement.value?.data?.episodes
                 val defaultEpisodeServers = viewModel.defaultEpisodeServers.value
                 val defaultEpisodeSources = viewModel.defaultEpisodeSources.value
 
-                if (animeDetailData != null && episodesData != null && episodesData.episodes.isNotEmpty() && defaultEpisodeServers != null && defaultEpisodeSources != null) {
+                if (animeDetailData != null && !episodesData.isNullOrEmpty() && defaultEpisodeServers != null && defaultEpisodeSources != null) {
                     Navigation.navigateToAnimeWatch(
                         this,
                         R.id.action_animeDetailFragment_to_animeWatchFragment,
                         animeDetailData,
-                        episodesData.episodes[0].episodeId,
+                        episodesData[0].episodeId,
                         episodesData,
                         defaultEpisodeServers,
                         defaultEpisodeSources
@@ -417,67 +418,65 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
     }
 
     //Episodes
-    private fun handleEpisodesSuccess(response: Resource.Success<EpisodesResponse>) {
-        requireActivity().invalidateMenu()
+    private fun handleEpisodesSuccess(response: Resource.Success<AnimeDetailComplement?>) {
         binding.animeDetailEpisodes.apply {
             progressBar.visibility = View.GONE
             tvEpisodeError.visibility = View.GONE
-            response.data?.episodes?.let { episodes ->
-                if (episodes.isNotEmpty()) {
-                    if (episodes.size >= 5) {
-                        etEpisodeNumber.visibility = View.VISIBLE
-                        btnJumpToEpisode.visibility = View.VISIBLE
-                        etEpisodeNumber.filters =
-                            arrayOf(MinMaxInputFilter.createInt(1, episodes.size))
-                        btnJumpToEpisode.setOnClickListener {
-                            val episodeNumberText = etEpisodeNumber.text.toString()
-                            if (episodeNumberText.isNotEmpty()) {
-                                val episodeNumber = episodeNumberText.toInt()
-                                handleJumpToEpisode(episodeNumber, episodes.reversed())
-                            } else {
-                                handleJumpToEpisode(1, episodes.reversed())
+            response.data?.let { data ->
+                data.episodes.let { episodes ->
+                    if (episodes.isNotEmpty()) {
+                        if (episodes.size >= 5) {
+                            etEpisodeNumber.visibility = View.VISIBLE
+                            btnJumpToEpisode.visibility = View.VISIBLE
+                            etEpisodeNumber.filters =
+                                arrayOf(MinMaxInputFilter.createInt(1, episodes.size))
+                            btnJumpToEpisode.setOnClickListener {
+                                val episodeNumberText = etEpisodeNumber.text.toString()
+                                if (episodeNumberText.isNotEmpty()) {
+                                    val episodeNumber = episodeNumberText.toInt()
+                                    handleJumpToEpisode(episodeNumber, episodes.reversed())
+                                } else {
+                                    handleJumpToEpisode(1, episodes.reversed())
+                                }
                             }
                         }
-                    }
 
-                    viewModel.animeEpisodeInfo.value?.episodes?.let { episodeInfo ->
                         episodesField.visibility = View.VISIBLE
-
-                        episodeInfo.sub?.let { sub ->
+                        data.sub?.let { sub ->
                             sub.toString().also { tvSubNumber.text = it }
                         } ?: run {
                             subNumberContainer.visibility = View.GONE
                         }
-                        episodeInfo.dub?.let { dub ->
+                        data.dub?.let { dub ->
                             dub.toString().also { tvDubNumber.text = it }
                         } ?: run {
                             dubNumberContainer.visibility = View.GONE
                         }
-                        episodeInfo.eps?.let { eps ->
+                        data.eps?.let { eps ->
                             eps.toString().also { tvEpisodeNumber.text = it }
                         } ?: run {
                             episodeNumberContainer.visibility = View.GONE
                         }
-                    }
 
-                    rvEpisodes.visibility = View.VISIBLE
+                        rvEpisodes.visibility = View.VISIBLE
 
-                    rvEpisodes.apply {
-                        adapter = EpisodesDetailAdapter(
-                            requireContext(),
-                            episodes.reversed()
-                        ) { episodeId ->
-                            Navigation.navigateToAnimeWatch(
-                                this@AnimeDetailFragment,
-                                R.id.action_animeDetailFragment_to_animeWatchFragment,
-                                viewModel.animeDetail.value!!.data!!.data,
-                                episodeId,
-                                viewModel.episodes.value!!.data!!,
-                                viewModel.defaultEpisodeServers.value!!,
-                                viewModel.defaultEpisodeSources.value!!
-                            )
+                        rvEpisodes.apply {
+                            adapter = EpisodesDetailAdapter(
+                                requireContext(),
+                                episodes.reversed()
+                            ) { episodeId ->
+                                Navigation.navigateToAnimeWatch(
+                                    this@AnimeDetailFragment,
+                                    R.id.action_animeDetailFragment_to_animeWatchFragment,
+                                    viewModel.animeDetail.value!!.data!!.data,
+                                    episodeId,
+                                    viewModel.animeDetailComplement.value!!.data!!.episodes,
+                                    viewModel.defaultEpisodeServers.value!!,
+                                    viewModel.defaultEpisodeSources.value!!
+                                )
+                            }
+                            layoutManager = LinearLayoutManager(requireContext())
                         }
-                        layoutManager = LinearLayoutManager(requireContext())
                     }
                 }
             }
@@ -497,8 +496,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
         }
     }
 
-    private fun handleEpisodesError(response: Resource.Error<EpisodesResponse>) {
-        requireActivity().invalidateMenu()
+    private fun handleEpisodesError(response: Resource.Error<AnimeDetailComplement?>) {
         binding.animeDetailEpisodes.apply {
             progressBar.visibility = View.GONE
             tvEpisodeError.visibility = View.VISIBLE
@@ -510,7 +508,6 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
     }
 
     private fun handleEpisodesLoading() {
-        requireActivity().invalidateMenu()
         binding.animeDetailEpisodes.apply {
             progressBar.visibility = View.VISIBLE
             tvEpisodeError.visibility = View.GONE
@@ -520,7 +517,6 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
     }
 
     private fun handleEpisodesEmpty() {
-        requireActivity().invalidateMenu()
         binding.animeDetailEpisodes.apply {
             progressBar.visibility = View.GONE
             tvEpisodeError.visibility = View.VISIBLE

@@ -42,7 +42,6 @@ import com.example.animeapp.models.EpisodeServersResponse
 import com.example.animeapp.models.EpisodeSourcesQuery
 import com.example.animeapp.models.EpisodeSourcesResponse
 import com.example.animeapp.models.EpisodeWatch
-import com.example.animeapp.models.EpisodesResponse
 import com.example.animeapp.models.Server
 import com.example.animeapp.utils.BindAnimeUtils
 import com.example.animeapp.utils.Debounce
@@ -110,7 +109,15 @@ class AnimeWatchFragment : Fragment() {
     private fun setupInitialData() {
         val episodeId = arguments?.getString("episodeId") ?: return
         val animeDetail: AnimeDetail = getParcelableArgument("animeDetail") ?: return
-        val episodes: EpisodesResponse = getParcelableArgument("episodes") ?: return
+        val episodes: List<Episode> = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            arguments?.getParcelableArrayList("episodes", Episode::class.java)
+                ?: emptyList()
+        } else {
+            @Suppress("DEPRECATION")
+            arguments?.getParcelableArrayList("episodes")
+                ?: emptyList()
+        }
+
         val defaultEpisodeServers: EpisodeServersResponse? =
             getParcelableArgument("defaultEpisodeServers")
         val defaultEpisodeSources: EpisodeSourcesResponse? =
@@ -139,7 +146,7 @@ class AnimeWatchFragment : Fragment() {
     private fun handleStaticAnimeDetailData() {
         binding.apply {
             viewModel.episodes.value.let { episodes ->
-                "Total Episode: ${episodes?.totalEpisodes}".also {
+                "Total Episode: ${viewModel.animeDetail.value?.episodes}".also {
                     tvTotalEpisodes.text = it
                 }
 
@@ -150,7 +157,7 @@ class AnimeWatchFragment : Fragment() {
                         if (query.isNotEmpty()) {
                             handleJumpToEpisode(
                                 query.toInt(),
-                                episodes?.episodes ?: emptyList()
+                                episodes ?: emptyList()
                             )
                         }
                     }
@@ -173,10 +180,10 @@ class AnimeWatchFragment : Fragment() {
                 nextEpisodeButton.setOnClickListener {
                     handleEpisodeNavigation(1, binding.nextEpisodeButton)
                 }
-                setupEpisodeRecyclerView(episodes?.episodes ?: emptyList())
+                setupEpisodeRecyclerView(episodes ?: emptyList())
             }
 
-            viewModel.animeDetail.value.let { animeDetail ->
+            viewModel.animeDetail.value?.let { animeDetail ->
                 BindAnimeUtils.bindAnimeHeader(
                     requireContext(),
                     animeHeader,
@@ -184,7 +191,7 @@ class AnimeWatchFragment : Fragment() {
                         val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
                         startActivity(intent)
                     },
-                    animeDetail!!
+                    animeDetail
                 )
 
                 val embedUrl = animeDetail.trailer.embed_url ?: ""
@@ -209,7 +216,7 @@ class AnimeWatchFragment : Fragment() {
 
     private fun handleEpisodeNavigation(direction: Int, button: android.widget.Button) {
         viewModel.episodeWatch.value.data?.servers?.let { currentServer ->
-            viewModel.episodes.value?.episodes?.let { episodes ->
+            viewModel.episodes.value?.let { episodes ->
                 if (episodes.isNotEmpty()) {
                     button.isEnabled = true
                     val targetEpisodeNo = currentServer.episodeNo + direction
@@ -312,14 +319,14 @@ class AnimeWatchFragment : Fragment() {
 
                 episodeWatch.servers.let { servers ->
                     viewModel.episodes.value.let { episodes ->
-                        val episodeName = episodes?.episodes?.find { episode ->
+                        val episodeName = episodes?.find { episode ->
                             episode.episodeId == servers.episodeId
 
                         }?.name
                         tvEpisodeTitle.text =
                             if (episodeName != "Full") episodeName else viewModel.animeDetail.value?.title
                                 ?: ""
-                        episodes?.episodes?.find { it.episodeId == servers.episodeId }
+                        episodes?.find { it.episodeId == servers.episodeId }
                             ?.let { episode ->
                                 val backgroundColor = if (episode.filler) {
                                     ContextCompat.getColor(requireContext(), R.color.filler_episode)
@@ -360,7 +367,7 @@ class AnimeWatchFragment : Fragment() {
     }
 
     private fun handleEpisodeWatchError() {
-        viewModel.handleSelectedEpisodeServer(viewModel.episodes.value!!.episodes.first().episodeId)
+        viewModel.handleSelectedEpisodeServer(viewModel.episodes.value!!.first().episodeId)
     }
 
     private fun handleEpisodeWatchLoading() {
@@ -477,12 +484,12 @@ class AnimeWatchFragment : Fragment() {
                 override fun onPlaybackStateChanged(playbackState: Int) {
                     super.onPlaybackStateChanged(playbackState)
                     viewModel.episodeWatch.value.data?.servers.let { servers ->
-                        viewModel.episodes.value.let { episodes ->
+                        viewModel.episodes.value?.let { episodes ->
                             if (playbackState == Player.STATE_ENDED) {
                                 playerView.hideController()
-                                if (episodes?.episodes?.isNotEmpty() == true) {
+                                if (episodes.isNotEmpty()) {
                                     val currentEpisode = servers?.episodeNo
-                                    val nextEpisode = episodes.episodes.find {
+                                    val nextEpisode = episodes.find {
                                         it.episodeNo == (currentEpisode?.plus(1) ?: 0)
                                     }
                                     if (nextEpisode == null) {

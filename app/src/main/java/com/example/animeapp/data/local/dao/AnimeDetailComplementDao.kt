@@ -16,6 +16,9 @@ interface AnimeDetailComplementDao {
     @Query("SELECT * FROM anime_detail_complement WHERE id = :id")
     fun getAnimeDetailComplementById(id: String): AnimeDetailComplement?
 
+    @Query("SELECT * FROM anime_detail_complement WHERE mal_id = :mal_id")
+    fun getAnimeDetailComplementByMalId(mal_id: Int): AnimeDetailComplement?
+
     @Delete
     suspend fun deleteAnimeDetailComplement(animeDetailComplement: AnimeDetailComplement)
 

@@ -3,11 +3,11 @@ package com.example.animeapp.ui.animeWatch
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.animeapp.models.AnimeDetail
+import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeServersResponse
 import com.example.animeapp.models.EpisodeSourcesQuery
 import com.example.animeapp.models.EpisodeSourcesResponse
 import com.example.animeapp.models.EpisodeWatch
-import com.example.animeapp.models.EpisodesResponse
 import com.example.animeapp.repository.AnimeStreamingRepository
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ResponseHandler
@@ -26,8 +26,8 @@ class AnimeWatchViewModel @Inject constructor(
     private val _animeDetail = MutableStateFlow<AnimeDetail?>(null)
     val animeDetail: StateFlow<AnimeDetail?> = _animeDetail.asStateFlow()
 
-    private val _episodes = MutableStateFlow<EpisodesResponse?>(null)
-    val episodes: StateFlow<EpisodesResponse?> = _episodes.asStateFlow()
+    private val _episodes = MutableStateFlow<List<Episode>?>(null)
+    val episodes: StateFlow<List<Episode>?> = _episodes.asStateFlow()
 
     private val _defaultEpisodeServers = MutableStateFlow<EpisodeServersResponse?>(null)
     private val _defaultEpisodeSources = MutableStateFlow<EpisodeSourcesResponse?>(null)
@@ -40,7 +40,7 @@ class AnimeWatchViewModel @Inject constructor(
 
     fun setInitialState(
         animeDetail: AnimeDetail,
-        episodes: EpisodesResponse,
+        episodes: List<Episode>,
         defaultEpisodeServers: EpisodeServersResponse?,
         defaultEpisodeSources: EpisodeSourcesResponse?
     ) {
@@ -56,6 +56,11 @@ class AnimeWatchViewModel @Inject constructor(
         episodeSourcesQuery: EpisodeSourcesQuery? = null
     ) = viewModelScope.launch {
         _episodeWatch.value = Resource.Loading()
+
+        if (episodeId == _defaultEpisodeServers.value?.episodeId) {
+            restoreDefaultValues()
+            return@launch
+        }
 
         if (episodeSourcesQuery == _episodeSourcesQuery.value) {
             restoreDefaultValues()

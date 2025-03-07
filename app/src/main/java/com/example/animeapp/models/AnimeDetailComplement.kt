@@ -13,12 +13,16 @@ import kotlinx.serialization.Serializable
 @Parcelize
 @Serializable
 data class AnimeDetailComplement(
-    val id: String,
+    var id: String,
     val mal_id: Int,
-    val is_favorite: Boolean,
+    val is_favorite: Boolean = false,
     val eps: Int? = null,
     val sub: Int? = null,
     val dub: Int? = null,
     val last_episode_watched: Int? = null,
     val episodes: List<Episode>
-): Parcelable
+) : Parcelable {
+    init {
+        this.id = id.substringBefore("?").trim()
+    }
+}
