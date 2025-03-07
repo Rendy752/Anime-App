@@ -32,20 +32,14 @@ class AnimeDetailViewModel @Inject constructor(
     val defaultEpisodeServers: MutableLiveData<EpisodeServersResponse?> = MutableLiveData()
     val defaultEpisodeSources: MutableLiveData<EpisodeSourcesResponse?> = MutableLiveData()
 
-    fun getAnimeDetail(id: Int) = viewModelScope.launch {
+    fun handleAnimeDetail(id: Int) = viewModelScope.launch {
         animeDetail.postValue(Resource.Loading())
 
-        val cachedResponse = getCachedAnimeDetail(id)
-        animeDetail.postValue(
-            cachedResponse ?: ResponseHandler.handleCommonResponse(
-                animeDetailRepository.getAnimeDetail(id)
-            )
-        )
+        animeDetail.postValue(getAnimeDetail(id))
     }
 
-    private suspend fun getCachedAnimeDetail(id: Int): Resource<AnimeDetailResponse>? {
-        val cachedAnimeDetail = animeDetailRepository.getCachedAnimeDetail(id)
-        return if (cachedAnimeDetail != null) Resource.Success(cachedAnimeDetail) else null
+    suspend fun getAnimeDetail(id: Int): Resource<AnimeDetailResponse> {
+        return ResponseHandler.handleCommonResponse(animeDetailRepository.getAnimeDetail(id))
     }
 
     fun handleEpisodes() = viewModelScope.launch {

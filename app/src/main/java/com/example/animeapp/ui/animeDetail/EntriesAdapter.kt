@@ -3,20 +3,21 @@ package com.example.animeapp.ui.animeDetail
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.example.animeapp.data.remote.api.AnimeAPI
 import com.example.animeapp.databinding.AnimeSearchItemBinding
-import com.example.animeapp.models.AnimeDetail
+import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.models.Relation
 import com.example.animeapp.utils.BindAnimeUtils
+import com.example.animeapp.utils.Resource
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class EntriesAdapter(
-    private val animeAPI: AnimeAPI,
     private val relationItems: Relation,
+    private val getAnimeDetail: suspend (Int) -> Resource<AnimeDetailResponse>,
     private val onItemClickListener: (Int) -> Unit
 ) :
     RecyclerView.Adapter<EntriesAdapter.RelationItemViewHolder>() {
@@ -41,17 +42,33 @@ class EntriesAdapter(
 
             coroutineScope.launch {
                 val animeDetail = getAnimeDetail(it.mal_id)
-                if (animeDetail != null) {
-                    BindAnimeUtils.bindAnimeData(holder.binding, animeDetail)
-                    holder.itemView.setOnClickListener {
-                        onItemClickListener(animeDetail.mal_id)
+                withContext(Dispatchers.Main) {
+                    holder.binding.apply {
+                        when (animeDetail) {
+                            is Resource.Success -> {
+                                shimmerViewContainer.stopShimmer()
+                                shimmerViewContainer.hideShimmer()
+                                animeDetail.data?.data?.let { animeDetailData ->
+                                    BindAnimeUtils.bindAnimeData(holder.binding, animeDetailData)
+                                    holder.itemView.setOnClickListener {
+                                        onItemClickListener(animeDetailData.mal_id)
+                                    }
+                                } ?: run {
+                                    BindAnimeUtils.handleNullData(holder.binding, it.name)
+                                }
+                            }
+
+                            is Resource.Error -> {
+                                shimmerViewContainer.stopShimmer()
+                                shimmerViewContainer.hideShimmer()
+                                BindAnimeUtils.handleNullData(holder.binding, it.name)
+                            }
+
+                            is Resource.Loading -> {
+                                shimmerViewContainer.startShimmer()
+                            }
+                        }
                     }
-                } else {
-                    BindAnimeUtils.handleNullData(holder.binding, it.name)
-                }
-                holder.binding.apply {
-                    shimmerViewContainer.stopShimmer()
-                    shimmerViewContainer.hideShimmer()
                 }
             }
         }
@@ -60,15 +77,6 @@ class EntriesAdapter(
     override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
         super.onDetachedFromRecyclerView(recyclerView)
         coroutineScope.coroutineContext.cancelChildren()
-    }
-
-    private suspend fun getAnimeDetail(animeId: Int): AnimeDetail? {
-        val response = animeAPI.getAnimeDetail(animeId)
-        return if (response.isSuccessful) {
-            response.body()?.data
-        } else {
-            null
-        }
     }
 
     override fun getItemCount(): Int {

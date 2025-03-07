@@ -5,7 +5,10 @@ import com.example.animeapp.data.remote.api.AnimeAPI
 import com.example.animeapp.models.AnimeDetailResponse
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.ResponseBody.Companion.toResponseBody
+import retrofit2.HttpException
 import retrofit2.Response
+import java.io.IOException
 
 class AnimeDetailRepository(
     private val animeDetailDao: AnimeDetailDao,
@@ -24,19 +27,25 @@ class AnimeDetailRepository(
     }
 
     private suspend fun getRemoteAnimeDetail(id: Int): Response<AnimeDetailResponse> {
-        val response = animeAPI.getAnimeDetail(id)
-        if (response.isSuccessful) {
-            response.body()?.let { animeDetailResponse ->
-                animeDetailDao.insertAnimeDetail(animeDetailResponse.data)
+        try {
+            val response = animeAPI.getAnimeDetail(id)
+            if (response.isSuccessful) {
+                val animeDetailData = response.body()?.data
+                if (animeDetailData != null) {
+                    animeDetailDao.insertAnimeDetail(animeDetailData)
+                    return response
+                } else {
+                    return Response.success(null)
+                }
+            } else {
+                return response
             }
-        }
-        return response
-    }
-
-    suspend fun getCachedAnimeDetail(id: Int): AnimeDetailResponse? {
-        return withContext(Dispatchers.IO) {
-            val cachedAnimeDetail = animeDetailDao.getAnimeDetailById(id)
-            cachedAnimeDetail?.let { AnimeDetailResponse(it) }
+        } catch (e: IOException) {
+            return Response.error(500, "Network error".toResponseBody())
+        } catch (e: HttpException) {
+            return Response.error(e.code(), "HTTP error".toResponseBody())
+        } catch (e: Exception) {
+            return Response.error(500, "Unknown error".toResponseBody())
         }
     }
 }

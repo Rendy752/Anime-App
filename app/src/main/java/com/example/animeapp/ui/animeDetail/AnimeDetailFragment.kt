@@ -17,9 +17,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.animeapp.R
-import com.example.animeapp.data.remote.api.AnimeAPI
 import com.example.animeapp.databinding.FragmentDetailBinding
-import com.example.animeapp.di.JikanApi
 import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodesResponse
@@ -33,14 +31,9 @@ import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.TextUtils.formatSynopsis
 import com.example.animeapp.utils.TextUtils.joinOrNA
 import dagger.hilt.android.AndroidEntryPoint
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class AnimeDetailFragment : Fragment(), MenuProvider {
-    @Inject
-    @JikanApi
-    lateinit var animeAPI: AnimeAPI
-
     private var _binding: FragmentDetailBinding? = null
     private val binding get() = _binding!!
 
@@ -98,7 +91,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
     private fun fetchAnimeDetail(id: Int? = null) {
         val animeId = id ?: arguments?.getInt("id")
         if (animeId != null) {
-            viewModel.getAnimeDetail(animeId)
+            viewModel.handleAnimeDetail(animeId)
         }
     }
 
@@ -267,16 +260,21 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                     if (detail.relations?.size!! > 0) {
                         if (detail.relations.size > 1) "${detail.relations.size} Relations".also {
                             tvRelation.text = it
+                        } else {
+                            "Relation".also { tvRelation.text = it }
                         }
                         rvRelations.apply {
-                            adapter = RelationsAdapter(animeAPI, detail.relations) { animeId ->
-                                scrollView.post {
-                                    ObjectAnimator.ofInt(scrollView, "scrollY", 0)
-                                        .setDuration(1000)
-                                        .start()
-                                }
-                                fetchAnimeDetail(animeId)
-                            }
+                            adapter = RelationsAdapter(
+                                detail.relations,
+                                { animeId -> viewModel.getAnimeDetail(animeId) },
+                                { animeId ->
+                                    scrollView.post {
+                                        ObjectAnimator.ofInt(scrollView, "scrollY", 0)
+                                            .setDuration(1000)
+                                            .start()
+                                    }
+                                    fetchAnimeDetail(animeId)
+                                })
                             layoutManager = LinearLayoutManager(
                                 requireContext(), LinearLayoutManager.HORIZONTAL, false
                             )
@@ -466,7 +464,10 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                     rvEpisodes.visibility = View.VISIBLE
 
                     rvEpisodes.apply {
-                        adapter = EpisodesDetailAdapter(requireContext(), episodes.reversed()) { episodeId ->
+                        adapter = EpisodesDetailAdapter(
+                            requireContext(),
+                            episodes.reversed()
+                        ) { episodeId ->
                             Navigation.navigateToAnimeWatch(
                                 this@AnimeDetailFragment,
                                 R.id.action_animeDetailFragment_to_animeWatchFragment,
