@@ -259,6 +259,7 @@ class AnimeWatchFragment : Fragment() {
     ) {
         if (servers.isNotEmpty()) {
             textView.visibility = View.VISIBLE
+            recyclerView.visibility = View.VISIBLE
             val serverQueries = servers.map { server ->
                 EpisodeSourcesQuery(episodeId, server.serverName, category)
             }
@@ -271,6 +272,7 @@ class AnimeWatchFragment : Fragment() {
                 }
             }
         } else {
+            recyclerView.visibility = View.GONE
             textView.visibility = View.GONE
         }
     }

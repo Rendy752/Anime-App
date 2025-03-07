@@ -56,6 +56,7 @@ object HlsPlayerUtil {
                 val subtitleConfiguration = SubtitleConfiguration.Builder(Uri.parse(track.file))
                     .setMimeType(MimeTypes.TEXT_VTT)
                     .setLanguage(track.label?.substringBefore("-")?.trim())
+                    .setSelectionFlags(if (track.default == true) C.SELECTION_FLAG_DEFAULT else 0)
                     .setLabel(track.label?.substringBefore("-")?.trim())
                     .build()
                 subtitleConfigurations.add(subtitleConfiguration)

@@ -96,10 +96,9 @@
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toBottomOf="@id/tvEpisodeTitle">
 
-                    <LinearLayout
+                    <androidx.constraintlayout.widget.ConstraintLayout
                         android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal">
+                        android:layout_height="wrap_content">
 
                         <TextView
                             android:id="@+id/tvSub"
@@ -108,8 +107,10 @@
                             android:layout_gravity="center"
                             android:text="@string/sub"
                             android:textStyle="bold"
+                            android:visibility="gone"
                             app:layout_constraintBottom_toBottomOf="parent"
-                            app:layout_constraintEnd_toEndOf="@id/rvSubServer"
+                            app:layout_constraintHorizontal_bias="0.0"
+                            app:layout_constraintHorizontal_chainStyle="packed"
                             app:layout_constraintStart_toStartOf="parent"
                             app:layout_constraintTop_toTopOf="parent" />
 
@@ -117,8 +118,8 @@
                             android:id="@+id/rvSubServer"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:visibility="gone"
                             app:layout_constraintBottom_toBottomOf="parent"
-                            app:layout_constraintEnd_toStartOf="@id/tvDub"
                             app:layout_constraintStart_toEndOf="@id/tvSub"
                             app:layout_constraintTop_toTopOf="parent" />
 
@@ -130,8 +131,8 @@
                             android:layout_marginStart="8dp"
                             android:text="@string/dub"
                             android:textStyle="bold"
+                            android:visibility="gone"
                             app:layout_constraintBottom_toBottomOf="parent"
-                            app:layout_constraintEnd_toStartOf="@id/rvDubServer"
                             app:layout_constraintStart_toEndOf="@id/rvSubServer"
                             app:layout_constraintTop_toTopOf="parent" />
 
@@ -139,8 +140,8 @@
                             android:id="@+id/rvDubServer"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:visibility="gone"
                             app:layout_constraintBottom_toBottomOf="parent"
-                            app:layout_constraintEnd_toStartOf="@id/tvRaw"
                             app:layout_constraintStart_toEndOf="@id/tvDub"
                             app:layout_constraintTop_toTopOf="parent" />
 
@@ -152,8 +153,8 @@
                             android:layout_marginStart="8dp"
                             android:text="@string/raw"
                             android:textStyle="bold"
+                            android:visibility="gone"
                             app:layout_constraintBottom_toBottomOf="parent"
-                            app:layout_constraintEnd_toStartOf="@id/rvRawServer"
                             app:layout_constraintStart_toEndOf="@id/rvDubServer"
                             app:layout_constraintTop_toTopOf="parent" />
 
@@ -161,11 +162,12 @@
                             android:id="@+id/rvRawServer"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
+                            android:visibility="gone"
                             app:layout_constraintBottom_toBottomOf="parent"
                             app:layout_constraintEnd_toEndOf="parent"
                             app:layout_constraintStart_toEndOf="@id/tvRaw"
                             app:layout_constraintTop_toTopOf="parent" />
-                    </LinearLayout>
+                    </androidx.constraintlayout.widget.ConstraintLayout>
                 </HorizontalScrollView>
             </androidx.constraintlayout.widget.ConstraintLayout>
 
