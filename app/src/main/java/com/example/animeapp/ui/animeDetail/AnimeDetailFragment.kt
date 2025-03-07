@@ -321,7 +321,6 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                                     val intent =
                                         Intent(Intent.ACTION_VIEW, Uri.parse(youtubeSearchUrl))
                                     startActivity(intent)
-                                    startActivity(intent)
                                 }
                             }
                             layoutManager = LinearLayoutManager(
@@ -499,6 +498,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
     }
 
     private fun handleEpisodesError(response: Resource.Error<EpisodesResponse>) {
+        requireActivity().invalidateMenu()
         binding.animeDetailEpisodes.apply {
             progressBar.visibility = View.GONE
             tvEpisodeError.visibility = View.VISIBLE
@@ -510,6 +510,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
     }
 
     private fun handleEpisodesLoading() {
+        requireActivity().invalidateMenu()
         binding.animeDetailEpisodes.apply {
             progressBar.visibility = View.VISIBLE
             tvEpisodeError.visibility = View.GONE
@@ -519,6 +520,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
     }
 
     private fun handleEpisodesEmpty() {
+        requireActivity().invalidateMenu()
         binding.animeDetailEpisodes.apply {
             progressBar.visibility = View.GONE
             tvEpisodeError.visibility = View.VISIBLE
