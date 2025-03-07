@@ -10,9 +10,9 @@ import java.util.regex.Pattern
 object FindAnimeTitle {
 
     private val levenshteinDistance = LevenshteinDistance.getDefaultInstance()
-    private const val MIN_SIMILARITY_THRESHOLD = 0.3
+    private const val MIN_SIMILARITY_THRESHOLD = 0.25
     private val titleRegex = Pattern.compile(
-        "^(.*?)(?:\\s+(?:(?:Season|Movie)\\s*(\\d+)|(\\d+)(?:st|nd|rd|th)?\\s*(?:Season)?|(\\d+)))?\\s*$",
+        "^(.*?)(?:\\s+(?:(?:Season|Movie)\\s*(\\d+)|(\\d+)(?:st|nd|rd|th)?\\s*(?:Season)?|(\\d+)))?\\s*(?:\\(?(Part\\s*\\d+)\\)?)?\\s*$",
         Pattern.CASE_INSENSITIVE
     )
     private val numberRegex = Pattern.compile("\\d+")
@@ -54,12 +54,10 @@ object FindAnimeTitle {
 
         if (matcher.find()) {
             coreTitle = matcher.group(1)?.trim() ?: ""
-            seasonNumber = (2..matcher.groupCount()).firstNotNullOfOrNull {
+            seasonNumber = (2..4).firstNotNullOfOrNull {
                 matcher.group(it)?.toIntOrNull()
             }
-            part = modifiedTitle.replace(coreTitle, "").replace(seasonNumber?.toString() ?: "", "")
-                .trim()
-                .takeIf { it.lowercase().contains("part") }
+            part = matcher.group(5)?.trim()
         } else {
             val numberMatcher = numberRegex.matcher(modifiedTitle)
             if (numberMatcher.find()) {
@@ -96,24 +94,26 @@ object FindAnimeTitle {
 
         val coreSimilarity = calculateCombinedSimilarity(coreTitle1, coreTitle2)
 
-        var score = coreSimilarity * 0.7
+        var score = coreSimilarity * 0.6
         var numberScore = 0.0
+        var partScore = 0.0
 
         if (number1 != null && number2 != null && number1 == number2) {
-            numberScore = 0.3
+            numberScore = 0.2
             if (part1 != null && part2 != null && part1 == part2) {
-                numberScore = 0.3
+                partScore = 0.2
             } else if (part1 != null || part2 != null) {
                 score *= 0.95
             }
             if (coreSimilarity < MIN_SIMILARITY_THRESHOLD) {
                 numberScore *= 0.5
+                partScore *= 0.5
             }
         } else if (number1 != null || number2 != null) {
             score *= 0.9
         }
 
-        return (score + numberScore).coerceAtMost(1.0)
+        return (score + numberScore + partScore).coerceAtMost(1.0)
     }
 
     private fun calculateCombinedSimilarity(s1: String, s2: String): Double =
