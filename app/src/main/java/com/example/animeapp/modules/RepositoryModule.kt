@@ -2,6 +2,7 @@ package com.example.animeapp.modules
 
 import com.example.animeapp.data.local.dao.AnimeDetailComplementDao
 import com.example.animeapp.data.local.dao.AnimeDetailDao
+import com.example.animeapp.data.local.dao.EpisodeDetailComplementDao
 import com.example.animeapp.data.remote.api.AnimeAPI
 import com.example.animeapp.di.AnimeRunwayApi
 import com.example.animeapp.di.JikanApi
@@ -22,9 +23,15 @@ object RepositoryModule {
     fun provideAnimeDetailRepository(
         animeDetailDao: AnimeDetailDao,
         animeDetailComplementDao: AnimeDetailComplementDao,
+        episodeDetailComplementDao: EpisodeDetailComplementDao,
         @JikanApi animeAPI: AnimeAPI
     ): AnimeDetailRepository {
-        return AnimeDetailRepository(animeDetailDao, animeDetailComplementDao, animeAPI)
+        return AnimeDetailRepository(
+            animeDetailDao,
+            animeDetailComplementDao,
+            episodeDetailComplementDao,
+            animeAPI
+        )
     }
 
     @Provides

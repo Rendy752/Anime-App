@@ -2,9 +2,13 @@ package com.example.animeapp.repository
 
 import com.example.animeapp.data.local.dao.AnimeDetailDao
 import com.example.animeapp.data.local.dao.AnimeDetailComplementDao
+import com.example.animeapp.data.local.dao.EpisodeDetailComplementDao
 import com.example.animeapp.data.remote.api.AnimeAPI
 import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.AnimeDetailResponse
+import com.example.animeapp.models.EpisodeDetailComplement
+import com.example.animeapp.utils.Resource
+import com.example.animeapp.utils.ResponseHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.ResponseBody.Companion.toResponseBody
@@ -15,6 +19,7 @@ import java.io.IOException
 class AnimeDetailRepository(
     private val animeDetailDao: AnimeDetailDao,
     private val animeDetailComplementDao: AnimeDetailComplementDao,
+    private val episodeDetailComplementDao: EpisodeDetailComplementDao,
     private val animeAPI: AnimeAPI
 ) {
     suspend fun getAnimeDetail(id: Int): Response<AnimeDetailResponse> =
@@ -22,10 +27,18 @@ class AnimeDetailRepository(
             getCachedAnimeDetailResponse(id) ?: getRemoteAnimeDetail(id)
         }
 
-    private fun getCachedAnimeDetailResponse(id: Int): Response<AnimeDetailResponse>? {
+    private suspend fun getCachedAnimeDetailResponse(id: Int): Response<AnimeDetailResponse>? {
         val cachedAnimeDetail = animeDetailDao.getAnimeDetailById(id)
-        return cachedAnimeDetail?.let {
-            Response.success(AnimeDetailResponse(it))
+        return cachedAnimeDetail?.let { cache ->
+            cache.airing.let { isAiring ->
+                val remoteData =
+                    ResponseHandler.handleCommonResponse(getRemoteAnimeDetail(cache.mal_id))
+                if (remoteData is Resource.Success && remoteData.data!!.data.airing != isAiring) {
+                    animeDetailDao.updateAnimeDetail(remoteData.data.data)
+                    return Response.success(remoteData.data)
+                }
+            }
+            Response.success(AnimeDetailResponse(cache))
         }
     }
 
@@ -52,15 +65,28 @@ class AnimeDetailRepository(
         }
     }
 
-    suspend fun getCachedAnimeDetailComplement(id: String): AnimeDetailComplement? = withContext(Dispatchers.IO) {
-        animeDetailComplementDao.getAnimeDetailComplementById(id)
-    }
+    suspend fun getCachedAnimeDetailComplementByMalId(mal_id: Int): AnimeDetailComplement? =
+        withContext(Dispatchers.IO) {
+            animeDetailComplementDao.getAnimeDetailComplementByMalId(mal_id)
+        }
 
-    suspend fun getCachedAnimeDetailComplementByMalId(mal_id: Int): AnimeDetailComplement? = withContext(Dispatchers.IO) {
-        animeDetailComplementDao.getAnimeDetailComplementByMalId(mal_id)
-    }
+    suspend fun insertCachedAnimeDetailComplement(animeDetailComplement: AnimeDetailComplement) =
+        withContext(Dispatchers.IO) {
+            animeDetailComplementDao.insertAnimeDetailComplement(animeDetailComplement)
+        }
 
-    suspend fun insertCachedAnimeDetailComplement(animeDetailComplement: AnimeDetailComplement) = withContext(Dispatchers.IO) {
-        animeDetailComplementDao.insertAnimeDetailComplement(animeDetailComplement)
-    }
+    suspend fun updateCachedAnimeDetailComplement(animeDetailComplement: AnimeDetailComplement) =
+        withContext(Dispatchers.IO) {
+            animeDetailComplementDao.updateAnimeDetailComplement(animeDetailComplement)
+        }
+
+    suspend fun getCachedEpisodeDetailComplement(id: String): EpisodeDetailComplement? =
+        withContext(Dispatchers.IO) {
+            episodeDetailComplementDao.getEpisodeDetailComplementById(id)
+        }
+
+    suspend fun insertCachedEpisodeDetailComplement(episodeDetailComplement: EpisodeDetailComplement) =
+        withContext(Dispatchers.IO) {
+            episodeDetailComplementDao.insertEpisodeDetailComplement(episodeDetailComplement)
+        }
 }

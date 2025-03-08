@@ -4,9 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.Episode
-import com.example.animeapp.models.EpisodeServersResponse
+import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.EpisodeSourcesQuery
-import com.example.animeapp.models.EpisodeSourcesResponse
 import com.example.animeapp.models.EpisodeWatch
 import com.example.animeapp.repository.AnimeStreamingRepository
 import com.example.animeapp.utils.Resource
@@ -29,8 +28,7 @@ class AnimeWatchViewModel @Inject constructor(
     private val _episodes = MutableStateFlow<List<Episode>?>(null)
     val episodes: StateFlow<List<Episode>?> = _episodes.asStateFlow()
 
-    private val _defaultEpisodeServers = MutableStateFlow<EpisodeServersResponse?>(null)
-    private val _defaultEpisodeSources = MutableStateFlow<EpisodeSourcesResponse?>(null)
+    private val _defaultEpisode = MutableStateFlow<EpisodeDetailComplement?>(null)
 
     private val _episodeWatch = MutableStateFlow<Resource<EpisodeWatch>>(Resource.Loading())
     val episodeWatch: StateFlow<Resource<EpisodeWatch>> = _episodeWatch.asStateFlow()
@@ -41,13 +39,11 @@ class AnimeWatchViewModel @Inject constructor(
     fun setInitialState(
         animeDetail: AnimeDetail,
         episodes: List<Episode>,
-        defaultEpisodeServers: EpisodeServersResponse?,
-        defaultEpisodeSources: EpisodeSourcesResponse?
+        defaultEpisode: EpisodeDetailComplement?,
     ) {
         _animeDetail.value = animeDetail
         _episodes.value = episodes
-        _defaultEpisodeServers.value = defaultEpisodeServers
-        _defaultEpisodeSources.value = defaultEpisodeSources
+        _defaultEpisode.value = defaultEpisode
         restoreDefaultValues()
     }
 
@@ -57,7 +53,7 @@ class AnimeWatchViewModel @Inject constructor(
     ) = viewModelScope.launch {
         _episodeWatch.value = Resource.Loading()
 
-        if (episodeId == _defaultEpisodeServers.value?.episodeId) {
+        if (episodeId == _defaultEpisode.value?.id) {
             restoreDefaultValues()
             return@launch
         }
@@ -100,13 +96,13 @@ class AnimeWatchViewModel @Inject constructor(
     private fun restoreDefaultValues() {
         _episodeWatch.value = Resource.Success(
             EpisodeWatch(
-                _defaultEpisodeServers.value!!,
-                _defaultEpisodeSources.value!!
+                _defaultEpisode.value!!.servers,
+                _defaultEpisode.value!!.sources
             )
         )
         _episodeSourcesQuery.value = StreamingUtils.getEpisodeQuery(
-            Resource.Success(_defaultEpisodeServers.value!!),
-            _defaultEpisodeServers.value!!.episodeId
+            Resource.Success(_defaultEpisode.value!!.servers),
+            _defaultEpisode.value!!.id
         )
     }
 }

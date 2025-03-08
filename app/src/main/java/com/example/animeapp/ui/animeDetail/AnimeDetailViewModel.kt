@@ -6,11 +6,13 @@ import androidx.lifecycle.viewModelScope
 import com.example.animeapp.models.AnimeAniwatchSearchResponse
 import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.AnimeDetailResponse
+import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.EpisodeServersResponse
 import com.example.animeapp.models.EpisodeSourcesResponse
 import com.example.animeapp.models.EpisodesResponse
 import com.example.animeapp.repository.AnimeDetailRepository
 import com.example.animeapp.repository.AnimeStreamingRepository
+import com.example.animeapp.utils.CompareUtils
 import com.example.animeapp.utils.FindAnimeTitle
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ResponseHandler
@@ -28,8 +30,7 @@ class AnimeDetailViewModel @Inject constructor(
 ) : ViewModel() {
     val animeDetail: MutableLiveData<Resource<AnimeDetailResponse>?> = MutableLiveData()
     val animeDetailComplement: MutableLiveData<Resource<AnimeDetailComplement?>> = MutableLiveData()
-    val defaultEpisodeServers: MutableLiveData<EpisodeServersResponse?> = MutableLiveData()
-    val defaultEpisodeSources: MutableLiveData<EpisodeSourcesResponse?> = MutableLiveData()
+    val defaultEpisode: MutableLiveData<EpisodeDetailComplement?> = MutableLiveData()
 
     fun handleAnimeDetail(id: Int) = viewModelScope.launch {
         animeDetail.postValue(Resource.Loading())
@@ -50,31 +51,37 @@ class AnimeDetailViewModel @Inject constructor(
         val cachedAnimeDetailComplement =
             animeDetailRepository.getCachedAnimeDetailComplementByMalId(detailData.mal_id)
 
-        if (cachedAnimeDetailComplement != null) {
-            animeDetailComplement.postValue(Resource.Success(cachedAnimeDetailComplement))
-            val defaultEpisodeServersResponse =
-                getDefaultEpisodeServers(cachedAnimeDetailComplement.episodes.firstOrNull()?.episodeId)
+        cachedAnimeDetailComplement?.let { cachedAnimeDetail ->
+            val defaultEpisodeId = cachedAnimeDetail.episodes.firstOrNull()?.episodeId
 
-            if (defaultEpisodeServersResponse !is Resource.Success) {
-                animeDetailComplement.postValue(Resource.Error("Failed to fetch episode servers"))
-                return@launch
+            if (detailData.airing) {
+                val episodesResponse = getEpisodes(cachedAnimeDetail.id)
+
+                if (episodesResponse !is Resource.Success) {
+                    animeDetailComplement.postValue(Resource.Error("Failed to fetch episodes"))
+                } else {
+                    if (CompareUtils.areDataClassesEqual(
+                            episodesResponse.data!!.episodes,
+                            cachedAnimeDetail.episodes
+                        )
+                    ) {
+                        animeDetailComplement.postValue(Resource.Success(cachedAnimeDetail))
+                    } else {
+                        val updatedCachedAnimeDetail =
+                            cachedAnimeDetail.copy(episodes = episodesResponse.data.episodes)
+                        animeDetailRepository.updateCachedAnimeDetailComplement(
+                            updatedCachedAnimeDetail
+                        )
+                        animeDetailComplement.postValue(Resource.Success(updatedCachedAnimeDetail))
+                    }
+                }
+            } else {
+                animeDetailComplement.postValue(Resource.Success(cachedAnimeDetail))
             }
 
-            val defaultEpisodeSourcesResponse =
-                StreamingUtils.getEpisodeSources(
-                    defaultEpisodeServersResponse,
-                    animeStreamingRepository
-                )
-
-            if (defaultEpisodeSourcesResponse !is Resource.Success || !checkEpisodeSourceMalId(
-                    defaultEpisodeSourcesResponse
-                )
-            ) {
-                animeDetailComplement.postValue(Resource.Error("No matching anime found"))
-                return@launch
-            }
-            defaultEpisodeServers.postValue(defaultEpisodeServersResponse.data)
-            defaultEpisodeSources.postValue(defaultEpisodeSourcesResponse.data)
+            val cachedEpisodeDetailComplement =
+                animeDetailRepository.getCachedEpisodeDetailComplement(defaultEpisodeId!!)
+            defaultEpisode.postValue(cachedEpisodeDetailComplement)
             return@launch
         }
 
@@ -158,7 +165,7 @@ class AnimeDetailViewModel @Inject constructor(
                 return@launch
             }
 
-            val cachedData = AnimeDetailComplement(
+            val cachedAnimeDetailComplement = AnimeDetailComplement(
                 id = anime.id,
                 mal_id = animeDetail.value?.data?.data!!.mal_id,
                 episodes = episodesResponse.data!!.episodes,
@@ -166,12 +173,24 @@ class AnimeDetailViewModel @Inject constructor(
                 sub = anime.episodes?.sub,
                 dub = anime.episodes?.dub,
             )
-            animeDetailRepository.insertCachedAnimeDetailComplement(cachedData)
+            animeDetailRepository.insertCachedAnimeDetailComplement(cachedAnimeDetailComplement)
             animeDetailComplement.postValue(
-                Resource.Success(cachedData)
+                Resource.Success(cachedAnimeDetailComplement)
             )
-            defaultEpisodeServers.postValue(defaultEpisodeServersResponse.data)
-            defaultEpisodeSources.postValue(defaultEpisodeSourcesResponse.data)
+
+            defaultEpisodeServersResponse.data?.let { servers ->
+                defaultEpisodeSourcesResponse.data?.let { sources ->
+                    val cachedEpisodeDetailComplement = EpisodeDetailComplement(
+                        id = servers.episodeId,
+                        servers = servers,
+                        sources = sources
+                    )
+                    animeDetailRepository.insertCachedEpisodeDetailComplement(
+                        cachedEpisodeDetailComplement
+                    )
+                    defaultEpisode.postValue(cachedEpisodeDetailComplement)
+                }
+            }
         }
 
     private suspend fun getEpisodes(animeId: String): Resource<EpisodesResponse> =

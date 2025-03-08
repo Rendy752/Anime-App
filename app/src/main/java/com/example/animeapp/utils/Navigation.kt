@@ -7,8 +7,7 @@ import androidx.navigation.fragment.findNavController
 import com.example.animeapp.R
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.Episode
-import com.example.animeapp.models.EpisodeServersResponse
-import com.example.animeapp.models.EpisodeSourcesResponse
+import com.example.animeapp.models.EpisodeDetailComplement
 
 object Navigation {
     fun navigateToAnimeDetail(fragment: Fragment, animeId: Int, actionId: Int) {
@@ -36,15 +35,13 @@ object Navigation {
         animeDetail: AnimeDetail,
         episodeId: String,
         episodes: List<Episode>,
-        defaultEpisodeServers: EpisodeServersResponse,
-        defaultEpisodeSources: EpisodeSourcesResponse
+        defaultEpisode: EpisodeDetailComplement
     ) {
         val bundle = Bundle().apply {
             putParcelable("animeDetail", animeDetail)
             putString("episodeId", episodeId)
             putParcelableArrayList("episodes", ArrayList(episodes))
-            putParcelable("defaultEpisodeServers", defaultEpisodeServers)
-            putParcelable("defaultEpisodeSources", defaultEpisodeSources)
+            putParcelable("defaultEpisode", defaultEpisode)
         }
 
         val navOptions = NavOptions.Builder()

@@ -38,7 +38,7 @@ import androidx.media3.ui.R as RMedia3
 import com.example.animeapp.databinding.FragmentAnimeWatchBinding
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.Episode
-import com.example.animeapp.models.EpisodeServersResponse
+import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.EpisodeSourcesQuery
 import com.example.animeapp.models.EpisodeSourcesResponse
 import com.example.animeapp.models.EpisodeWatch
@@ -118,17 +118,14 @@ class AnimeWatchFragment : Fragment() {
                 ?: emptyList()
         }
 
-        val defaultEpisodeServers: EpisodeServersResponse? =
-            getParcelableArgument("defaultEpisodeServers")
-        val defaultEpisodeSources: EpisodeSourcesResponse? =
-            getParcelableArgument("defaultEpisodeSources")
+        val defaultEpisode: EpisodeDetailComplement? =
+            getParcelableArgument("defaultEpisode")
 
         (requireActivity() as AppCompatActivity).supportActionBar?.title = animeDetail.title
         viewModel.setInitialState(
             animeDetail,
             episodes,
-            defaultEpisodeServers,
-            defaultEpisodeSources
+            defaultEpisode,
         )
         viewModel.handleSelectedEpisodeServer(episodeId)
     }

@@ -105,18 +105,16 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
             R.id.action_watch -> {
                 val animeDetailData = viewModel.animeDetail.value?.data?.data
                 val episodesData = viewModel.animeDetailComplement.value?.data?.episodes
-                val defaultEpisodeServers = viewModel.defaultEpisodeServers.value
-                val defaultEpisodeSources = viewModel.defaultEpisodeSources.value
+                val defaultEpisode = viewModel.defaultEpisode.value
 
-                if (animeDetailData != null && !episodesData.isNullOrEmpty() && defaultEpisodeServers != null && defaultEpisodeSources != null) {
+                if (animeDetailData != null && !episodesData.isNullOrEmpty() && defaultEpisode != null) {
                     Navigation.navigateToAnimeWatch(
                         this,
                         R.id.action_animeDetailFragment_to_animeWatchFragment,
                         animeDetailData,
                         episodesData[0].episodeId,
                         episodesData,
-                        defaultEpisodeServers,
-                        defaultEpisodeSources
+                        defaultEpisode
                     )
                     true
                 } else {
@@ -471,8 +469,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                                     viewModel.animeDetail.value!!.data!!.data,
                                     episodeId,
                                     viewModel.animeDetailComplement.value!!.data!!.episodes,
-                                    viewModel.defaultEpisodeServers.value!!,
-                                    viewModel.defaultEpisodeSources.value!!
+                                    viewModel.defaultEpisode.value!!,
                                 )
                             }
                             layoutManager = LinearLayoutManager(requireContext())

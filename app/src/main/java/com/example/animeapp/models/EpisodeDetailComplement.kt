@@ -16,8 +16,8 @@ data class EpisodeDetailComplement(
     val id: String,
     val servers: EpisodeServersResponse,
     val sources: EpisodeSourcesResponse,
-    val is_favorite: Boolean,
-    val is_watched: Boolean,
-    val last_watched: String,
-    val last_timestamp: Long,
-): Parcelable
+    val is_favorite: Boolean = false,
+    val is_watched: Boolean = false,
+    val last_watched: String? = null,
+    val last_timestamp: Long? = null,
+) : Parcelable
