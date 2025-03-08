@@ -5,13 +5,18 @@ import com.chuckerteam.chucker.api.ChuckerCollector
 import com.chuckerteam.chucker.api.ChuckerInterceptor
 import com.chuckerteam.chucker.api.RetentionManager
 import com.example.animeapp.data.remote.api.AnimeAPI
+import com.example.animeapp.data.remote.api.EpisodeSourcesCacheInterceptor
 import com.example.animeapp.data.remote.api.RetrofitInstance
+import com.example.animeapp.di.AnimeRunwayApi
+import com.example.animeapp.di.JikanApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
+import okhttp3.Cache
 import okhttp3.OkHttpClient
+import java.io.File
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
@@ -39,8 +44,16 @@ object NetworkModule {
         return OkHttpClient.Builder()
             .readTimeout(30, TimeUnit.SECONDS)
             .connectTimeout(30, TimeUnit.SECONDS)
+            .cache(provideCache(context))
+            .addInterceptor(EpisodeSourcesCacheInterceptor())
             .addInterceptor(chuckerInterceptor)
             .build()
+    }
+
+    private fun provideCache(context: Context): Cache {
+        val cacheSize = 10 * 1024 * 1024
+        val httpCacheDirectory = File(context.cacheDir, "http-cache")
+        return Cache(httpCacheDirectory, cacheSize.toLong())
     }
 
     @Provides
@@ -51,7 +64,15 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideAnimeAPI(retrofitInstance: RetrofitInstance): AnimeAPI {
-        return retrofitInstance.api
+    @JikanApi
+    fun provideJikanAPI(retrofitInstance: RetrofitInstance): AnimeAPI {
+        return retrofitInstance.jikanApi
+    }
+
+    @Provides
+    @Singleton
+    @AnimeRunwayApi
+    fun provideAnimeRunwayAPI(retrofitInstance: RetrofitInstance): AnimeAPI {
+        return retrofitInstance.animeRunwayApi
     }
 }

@@ -63,6 +63,8 @@ dependencies {
 
     // Room
     implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.legacy.support.v4)
+    implementation(libs.androidx.fragment.ktx)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)
 
@@ -109,6 +111,13 @@ dependencies {
 
     //Commons text
     implementation(libs.commons.text)
+
+    //Exoplayer
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
+    implementation(libs.media3.exoplayer.hls)
+    implementation(libs.androidx.media3.session)
+    implementation(libs.media3.datasource)
 
     //Chucker
     debugImplementation(libs.library)

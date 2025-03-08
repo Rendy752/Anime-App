@@ -5,6 +5,7 @@ import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import com.example.animeapp.models.AnimeDetail
 
 @Dao
@@ -14,6 +15,9 @@ interface AnimeDetailDao {
 
     @Query("SELECT * FROM anime_detail WHERE mal_id = :id")
     fun getAnimeDetailById(id: Int): AnimeDetail?
+
+    @Update
+    suspend fun updateAnimeDetail(animeDetail: AnimeDetail)
 
     @Delete
     suspend fun deleteAnimeDetail(animeDetail: AnimeDetail)

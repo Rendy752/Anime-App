@@ -24,7 +24,7 @@ abstract class AnimeDetailDatabase : RoomDatabase() {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AnimeDetailDatabase::class.java,
-                    "anime_detail_db.db"
+                    "anime_detail.db"
                 ).fallbackToDestructiveMigration().build()
                 INSTANCE = instance
                 instance

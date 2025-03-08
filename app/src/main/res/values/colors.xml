@@ -2,6 +2,7 @@
 <resources>
     <color name="colorWhite">#FFFFFF</color>
     <color name="colorPrimary">#0000FF</color>
+    <color name="colorSecondary">#3F51B5</color>
     <color name="colorPrimaryDark">#FFFFFF</color>
     <color name="colorAccent">#03DAC5</color>
     <color name="windowBackground">#FFFFFF</color>
@@ -14,4 +15,9 @@
     <color name="nightTextColorSecondary">#BDBDBD</color>
 
     <color name="shimmer_placeholder">#dddddd</color>
+
+    <color name="default_episode">#646464</color>
+    <color name="watched_episode">#484848</color>
+    <color name="watching_episode">#FFD700</color>
+    <color name="filler_episode">#FF8C00</color>
 </resources>

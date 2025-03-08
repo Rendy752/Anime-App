@@ -159,7 +159,7 @@ class AnimeSearchFragment : Fragment(), MenuProvider {
                 )
             )
 
-            val minMaxFilter = MinMaxInputFilter(1.0, 10.0)
+            val minMaxFilter = MinMaxInputFilter.createDouble(1.0, 10.0)
             scoreEditText.filters = arrayOf(minMaxFilter)
             scoreEditText.setText(currentFilterState.score.toString())
             minScoreEditText.filters = arrayOf(minMaxFilter)

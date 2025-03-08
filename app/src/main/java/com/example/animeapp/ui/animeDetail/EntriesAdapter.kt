@@ -3,16 +3,21 @@ package com.example.animeapp.ui.animeDetail
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
-import com.example.animeapp.data.remote.api.AnimeAPI
 import com.example.animeapp.databinding.AnimeSearchItemBinding
-import com.example.animeapp.models.AnimeDetail
+import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.models.Relation
-import com.example.animeapp.utils.AnimeHeaderUtils
-import kotlinx.coroutines.runBlocking
+import com.example.animeapp.utils.BindAnimeUtils
+import com.example.animeapp.utils.Resource
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelChildren
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class EntriesAdapter(
-    private val animeAPI: AnimeAPI,
     private val relationItems: Relation,
+    private val getAnimeDetail: suspend (Int) -> Resource<AnimeDetailResponse>,
     private val onItemClickListener: (Int) -> Unit
 ) :
     RecyclerView.Adapter<EntriesAdapter.RelationItemViewHolder>() {
@@ -26,35 +31,55 @@ class EntriesAdapter(
         return RelationItemViewHolder(binding)
     }
 
+    private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+
     override fun onBindViewHolder(holder: RelationItemViewHolder, position: Int) {
         val relationItem = relationItems.entry.getOrNull(position)
         relationItem?.let {
-            val animeDetail = getAnimeDetail(relationItem.mal_id)
-            if (animeDetail != null) {
-                AnimeHeaderUtils.bindAnimeData(holder.binding, animeDetail)
-                holder.itemView.setOnClickListener {
-                    onItemClickListener(animeDetail.mal_id)
-                }
-            } else {
-                AnimeHeaderUtils.handleNullData(holder.binding, relationItem.name)
-            }
             holder.binding.apply {
-                shimmerViewContainer.stopShimmer()
-                shimmerViewContainer.hideShimmer()
+                shimmerViewContainer.startShimmer()
+            }
+
+            coroutineScope.launch {
+                val animeDetail = getAnimeDetail(it.mal_id)
+                withContext(Dispatchers.Main) {
+                    holder.binding.apply {
+                        when (animeDetail) {
+                            is Resource.Success -> {
+                                shimmerViewContainer.stopShimmer()
+                                shimmerViewContainer.hideShimmer()
+                                animeDetail.data?.data?.let { animeDetailData ->
+                                    BindAnimeUtils.bindAnimeData(holder.binding, animeDetailData)
+                                    holder.itemView.setOnClickListener {
+                                        onItemClickListener(animeDetailData.mal_id)
+                                    }
+                                } ?: run {
+                                    BindAnimeUtils.handleNullData(holder.binding, it.name)
+                                }
+                            }
+
+                            is Resource.Error -> {
+                                shimmerViewContainer.stopShimmer()
+                                shimmerViewContainer.hideShimmer()
+                                BindAnimeUtils.handleNullData(holder.binding, it.name)
+                            }
+
+                            is Resource.Loading -> {
+                                shimmerViewContainer.startShimmer()
+                            }
+                        }
+                    }
+                }
             }
         }
+    }
+
+    override fun onDetachedFromRecyclerView(recyclerView: RecyclerView) {
+        super.onDetachedFromRecyclerView(recyclerView)
+        coroutineScope.coroutineContext.cancelChildren()
     }
 
     override fun getItemCount(): Int {
         return relationItems.entry.size
-    }
-
-    private fun getAnimeDetail(animeId: Int): AnimeDetail? {
-        var detail: AnimeDetail? = null
-        val response = runBlocking { animeAPI.getAnimeDetail(animeId) }
-        if (response.isSuccessful) {
-            detail = response.body()?.data
-        }
-        return detail
     }
 }

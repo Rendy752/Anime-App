@@ -1,6 +1,8 @@
 package com.example.animeapp.models
 
+import android.os.Parcelable
 import androidx.room.Entity
+import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
 
 @Entity(
@@ -8,6 +10,7 @@ import kotlinx.serialization.Serializable
     primaryKeys = ["mal_id"]
 )
 
+@Parcelize
 @Serializable
 data class AnimeDetail(
     val mal_id: Int,
@@ -50,5 +53,5 @@ data class AnimeDetail(
     val theme: Theme,
     val external: List<NameAndUrl>?,
     val streaming: List<NameAndUrl>?
-)
+): Parcelable
 

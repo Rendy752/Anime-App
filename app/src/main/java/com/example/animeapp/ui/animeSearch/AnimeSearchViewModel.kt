@@ -11,6 +11,7 @@ import com.example.animeapp.models.ProducersResponse
 import com.example.animeapp.models.ProducersSearchQueryState
 import com.example.animeapp.repository.AnimeSearchRepository
 import com.example.animeapp.utils.Resource
+import com.example.animeapp.utils.ResponseHandler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -60,7 +61,7 @@ class AnimeSearchViewModel @Inject constructor(
         } else {
             _animeSearchResults.value = Resource.Loading()
             val response = animeSearchRepository.searchAnime(queryState.value)
-            _animeSearchResults.value = handleAnimeSearchResponse(response)
+            _animeSearchResults.value = ResponseHandler.handleCommonResponse(response)
         }
     }
 
@@ -75,43 +76,21 @@ class AnimeSearchViewModel @Inject constructor(
         _animeSearchResults.value = handleAnimeRandomResponse(response)
     }
 
-    private fun handleAnimeSearchResponse(response: Response<AnimeSearchResponse>): Resource<AnimeSearchResponse> {
-        return if (response.isSuccessful) {
-            response.body()?.let { resultResponse ->
-                Resource.Success(resultResponse)
-            } ?: Resource.Error("Response body is null")
-        } else {
-            Resource.Error(response.message())
-        }
-    }
-
     private fun handleAnimeRandomResponse(response: Response<AnimeDetailResponse>): Resource<AnimeSearchResponse> {
-        if (response.isSuccessful) {
-            response.body()?.let { resultResponse ->
-                val searchResponse = AnimeSearchResponse(
+        return ResponseHandler.handleResponse(response,
+            onSuccess = { resultResponse ->
+                AnimeSearchResponse(
                     data = listOf(resultResponse.data),
                     pagination = CompletePagination.default()
                 )
-                return Resource.Success(searchResponse)
-            } ?: return Resource.Error("Response body is null")
-        } else {
-            return Resource.Error(response.message())
-        }
+            }
+        )
     }
 
     fun fetchGenres() = viewModelScope.launch {
         _genres.value = Resource.Loading()
         val response = animeSearchRepository.getGenres()
-        _genres.value = handleGenresResponse(response)
-    }
-
-    private fun handleGenresResponse(response: Response<GenresResponse>): Resource<GenresResponse> {
-        if (response.isSuccessful) {
-            response.body()?.let { resultResponse ->
-                return Resource.Success(resultResponse)
-            }
-        }
-        return Resource.Error(response.message())
+        _genres.value = ResponseHandler.handleCommonResponse(response)
     }
 
     fun setSelectedGenreId(genreId: Int) {
@@ -142,16 +121,7 @@ class AnimeSearchViewModel @Inject constructor(
     fun fetchProducers() = viewModelScope.launch {
         _producers.value = Resource.Loading()
         val response = animeSearchRepository.getProducers(producersQueryState.value)
-        _producers.value = handleProducersResponse(response)
-    }
-
-    private fun handleProducersResponse(response: Response<ProducersResponse>): Resource<ProducersResponse> {
-        if (response.isSuccessful) {
-            response.body()?.let { resultResponse ->
-                return Resource.Success(resultResponse)
-            }
-        }
-        return Resource.Error(response.message())
+        _producers.value = ResponseHandler.handleCommonResponse(response)
     }
 
     fun setSelectedProducerId(producerId: Int) {
