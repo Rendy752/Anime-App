@@ -4,6 +4,7 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.animeapp.models.AnimeAniwatchSearchResponse
+import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.models.EpisodeDetailComplement
@@ -44,46 +45,9 @@ class AnimeDetailViewModel @Inject constructor(
     fun handleEpisodes() = viewModelScope.launch {
         animeDetailComplement.postValue(Resource.Loading())
         val detailData =
-            animeDetail.value?.data?.data ?: return@launch animeDetailComplement.postValue(
-                Resource.Error("Anime data not available")
-            )
-
-        val cachedAnimeDetailComplement =
-            animeDetailRepository.getCachedAnimeDetailComplementByMalId(detailData.mal_id)
-
-        cachedAnimeDetailComplement?.let { cachedAnimeDetail ->
-            val defaultEpisodeId = cachedAnimeDetail.episodes.firstOrNull()?.episodeId
-
-            if (detailData.airing) {
-                val episodesResponse = getEpisodes(cachedAnimeDetail.id)
-
-                if (episodesResponse !is Resource.Success) {
-                    animeDetailComplement.postValue(Resource.Error("Failed to fetch episodes"))
-                } else {
-                    if (CompareUtils.areDataClassesEqual(
-                            episodesResponse.data!!.episodes,
-                            cachedAnimeDetail.episodes
-                        )
-                    ) {
-                        animeDetailComplement.postValue(Resource.Success(cachedAnimeDetail))
-                    } else {
-                        val updatedCachedAnimeDetail =
-                            cachedAnimeDetail.copy(episodes = episodesResponse.data.episodes)
-                        animeDetailRepository.updateCachedAnimeDetailComplement(
-                            updatedCachedAnimeDetail
-                        )
-                        animeDetailComplement.postValue(Resource.Success(updatedCachedAnimeDetail))
-                    }
-                }
-            } else {
-                animeDetailComplement.postValue(Resource.Success(cachedAnimeDetail))
-            }
-
-            val cachedEpisodeDetailComplement =
-                animeDetailRepository.getCachedEpisodeDetailComplement(defaultEpisodeId!!)
-            defaultEpisode.postValue(cachedEpisodeDetailComplement)
-            return@launch
-        }
+            animeDetail.value?.data?.data
+                ?: return@launch animeDetailComplement.postValue(Resource.Error("Anime data not available"))
+        if (handleCachedAnimeDetail(detailData)) return@launch
 
         if (detailData.type == "Music") return@launch animeDetailComplement.postValue(
             Resource.Error("Anime is a music, no episodes available")
@@ -106,6 +70,46 @@ class AnimeDetailViewModel @Inject constructor(
             )
         }
         handleValidEpisode(response)
+    }
+
+    private suspend fun handleCachedAnimeDetail(detailData: AnimeDetail): Boolean {
+        val cachedAnimeDetailComplement =
+            animeDetailRepository.getCachedAnimeDetailComplementByMalId(detailData.mal_id)
+        cachedAnimeDetailComplement?.let { cachedAnimeDetail ->
+            val defaultEpisodeId = cachedAnimeDetail.episodes.firstOrNull()?.episodeId
+            if (detailData.airing) {
+                val episodesResponse = getEpisodes(cachedAnimeDetail.id)
+                if (episodesResponse !is Resource.Success) {
+                    animeDetailComplement.postValue(Resource.Error("Failed to fetch episodes"))
+                } else {
+                    if (CompareUtils.areDataClassesEqual(
+                            episodesResponse.data?.episodes,
+                            cachedAnimeDetail.episodes
+                        )
+                    ) {
+                        animeDetailComplement.postValue(Resource.Success(cachedAnimeDetail))
+                    } else {
+                        val updatedCachedAnimeDetail =
+                            episodesResponse.data?.let { cachedAnimeDetail.copy(episodes = it.episodes) }
+                        updatedCachedAnimeDetail?.let {
+                            animeDetailRepository.updateCachedAnimeDetailComplement(
+                                it
+                            )
+                        }
+                        animeDetailComplement.postValue(Resource.Success(updatedCachedAnimeDetail))
+                    }
+                }
+            } else {
+                animeDetailComplement.postValue(Resource.Success(cachedAnimeDetail))
+            }
+            defaultEpisodeId?.let {
+                val cachedEpisodeDetailComplement =
+                    animeDetailRepository.getCachedEpisodeDetailComplement(it)
+                defaultEpisode.postValue(cachedEpisodeDetailComplement)
+            }
+            return true
+        }
+        return false
     }
 
     private fun handleValidEpisode(response: Response<AnimeAniwatchSearchResponse>) =
@@ -165,15 +169,19 @@ class AnimeDetailViewModel @Inject constructor(
                 return@launch
             }
 
-            val cachedAnimeDetailComplement = AnimeDetailComplement(
-                id = anime.id,
-                mal_id = animeDetail.value?.data?.data!!.mal_id,
-                episodes = episodesResponse.data!!.episodes,
-                eps = anime.episodes?.eps,
-                sub = anime.episodes?.sub,
-                dub = anime.episodes?.dub,
-            )
-            animeDetailRepository.insertCachedAnimeDetailComplement(cachedAnimeDetailComplement)
+            val cachedAnimeDetailComplement = animeDetail.value?.data?.data?.mal_id?.let {
+                AnimeDetailComplement(
+                    id = anime.id,
+                    mal_id = it,
+                    episodes = episodesResponse.data?.episodes ?: emptyList(),
+                    eps = anime.episodes?.eps,
+                    sub = anime.episodes?.sub,
+                    dub = anime.episodes?.dub,
+                )
+            }
+            cachedAnimeDetailComplement?.let {
+                animeDetailRepository.insertCachedAnimeDetailComplement(it)
+            }
             animeDetailComplement.postValue(
                 Resource.Success(cachedAnimeDetailComplement)
             )

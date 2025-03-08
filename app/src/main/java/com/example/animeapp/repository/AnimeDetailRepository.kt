@@ -30,29 +30,29 @@ class AnimeDetailRepository(
     private suspend fun getCachedAnimeDetailResponse(id: Int): Response<AnimeDetailResponse>? {
         val cachedAnimeDetail = animeDetailDao.getAnimeDetailById(id)
         return cachedAnimeDetail?.let { cache ->
-            cache.airing.let { isAiring ->
-                val remoteData =
-                    ResponseHandler.handleCommonResponse(getRemoteAnimeDetail(cache.mal_id))
-                if (remoteData is Resource.Success && remoteData.data!!.data.airing != isAiring) {
-                    animeDetailDao.updateAnimeDetail(remoteData.data.data)
+            val remoteData =
+                ResponseHandler.handleCommonResponse(animeAPI.getAnimeDetail(cache.mal_id))
+            if (remoteData is Resource.Success && remoteData.data?.data?.airing != cache.airing) {
+                remoteData.data?.data?.let {
+                    animeDetailDao.updateAnimeDetail(it)
                     return Response.success(remoteData.data)
                 }
             }
             Response.success(AnimeDetailResponse(cache))
-        }
+        } ?: getRemoteAnimeDetail(id)
     }
 
     private suspend fun getRemoteAnimeDetail(id: Int): Response<AnimeDetailResponse> {
         try {
             val response = animeAPI.getAnimeDetail(id)
-            if (response.isSuccessful) {
-                val animeDetailData = response.body()?.data
-                if (animeDetailData != null) {
-                    animeDetailDao.insertAnimeDetail(animeDetailData)
-                    return response
-                } else {
-                    return Response.success(null)
+            val body = response.body()
+            return if (response.isSuccessful && body != null) {
+                body.data.let {
+                    animeDetailDao.insertAnimeDetail(it)
                 }
+                Response.success(body)
+            } else if (response.isSuccessful) {
+                Response.success(null)
             } else {
                 return response
             }

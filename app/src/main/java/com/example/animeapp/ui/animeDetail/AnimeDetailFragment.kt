@@ -256,39 +256,41 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                 }
 
                 with(animeRelation) {
-                    if (detail.relations?.size!! > 0) {
-                        if (detail.relations.size > 1) "${detail.relations.size} Relations".also {
-                            tvRelation.text = it
+                    detail.relations?.let { relations ->
+                        if (relations.isNotEmpty()) {
+                            if (relations.size > 1) "${relations.size} Relations".also {
+                                tvRelation.text = it
+                            } else {
+                                "Relation".also { tvRelation.text = it }
+                            }
+                            rvRelations.apply {
+                                adapter = RelationsAdapter(
+                                    relations,
+                                    { animeId -> viewModel.getAnimeDetail(animeId) },
+                                    { animeId ->
+                                        scrollView.post {
+                                            ObjectAnimator.ofInt(scrollView, "scrollY", 0)
+                                                .setDuration(1000)
+                                                .start()
+                                        }
+                                        fetchAnimeDetail(animeId)
+                                    })
+                                layoutManager = LinearLayoutManager(
+                                    requireContext(), LinearLayoutManager.HORIZONTAL, false
+                                )
+                            }
                         } else {
-                            "Relation".also { tvRelation.text = it }
+                            relationContainer.visibility = View.GONE
                         }
-                        rvRelations.apply {
-                            adapter = RelationsAdapter(
-                                detail.relations,
-                                { animeId -> viewModel.getAnimeDetail(animeId) },
-                                { animeId ->
-                                    scrollView.post {
-                                        ObjectAnimator.ofInt(scrollView, "scrollY", 0)
-                                            .setDuration(1000)
-                                            .start()
-                                    }
-                                    fetchAnimeDetail(animeId)
-                                })
-                            layoutManager = LinearLayoutManager(
-                                requireContext(), LinearLayoutManager.HORIZONTAL, false
-                            )
-                        }
-                    } else {
-                        relationContainer.visibility = View.GONE
                     }
                 }
 
                 with(animeOpening) {
-                    if (detail.theme.openings?.size!! > 0) {
-                        openingContainer.visibility = View.VISIBLE
-                        rvOpening.apply {
-                            adapter = detail.theme.openings.let {
-                                UnorderedListAdapter(it) { opening ->
+                    detail.theme.openings?.let { openings ->
+                        if (openings.isNotEmpty()) {
+                            openingContainer.visibility = View.VISIBLE
+                            rvOpening.apply {
+                                adapter = UnorderedListAdapter(openings) { opening ->
                                     val encodedOpening = Uri.encode(opening)
                                     val youtubeSearchUrl =
                                         "${YOUTUBE_URL}/results?search_query=$encodedOpening"
@@ -296,23 +298,23 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                                         Intent(Intent.ACTION_VIEW, Uri.parse(youtubeSearchUrl))
                                     startActivity(intent)
                                 }
+                                layoutManager = LinearLayoutManager(
+                                    requireContext()
+                                )
+                                overScrollMode = RecyclerView.OVER_SCROLL_NEVER
                             }
-                            layoutManager = LinearLayoutManager(
-                                requireContext()
-                            )
-                            overScrollMode = RecyclerView.OVER_SCROLL_NEVER
+                        } else {
+                            openingContainer.visibility = View.GONE
                         }
-                    } else {
-                        openingContainer.visibility = View.GONE
                     }
                 }
 
                 with(animeEnding) {
-                    if (detail.theme.endings?.size!! > 0) {
-                        endingContainer.visibility = View.VISIBLE
-                        rvEnding.apply {
-                            adapter = detail.theme.endings.let {
-                                UnorderedListAdapter(it)
+                    detail.theme.endings?.let { endings ->
+                        if (endings.isNotEmpty()) {
+                            endingContainer.visibility = View.VISIBLE
+                            rvEnding.apply {
+                                adapter = UnorderedListAdapter(endings)
                                 { ending ->
                                     val encodedEnding = Uri.encode(ending)
                                     val youtubeSearchUrl =
@@ -321,45 +323,49 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                                         Intent(Intent.ACTION_VIEW, Uri.parse(youtubeSearchUrl))
                                     startActivity(intent)
                                 }
+                                layoutManager = LinearLayoutManager(
+                                    requireContext()
+                                )
+                                overScrollMode = RecyclerView.OVER_SCROLL_NEVER
                             }
-                            layoutManager = LinearLayoutManager(
-                                requireContext()
-                            )
-                            overScrollMode = RecyclerView.OVER_SCROLL_NEVER
+                        } else {
+                            endingContainer.visibility = View.GONE
                         }
-                    } else {
-                        endingContainer.visibility = View.GONE
                     }
                 }
 
                 with(animeExternal) {
-                    if (detail.external?.size!! > 0) {
-                        externalContainer.visibility = View.VISIBLE
-                        rvExternal.apply {
-                            adapter = NameAndUrlAdapter(detail.external)
-                            layoutManager = LinearLayoutManager(
-                                requireContext()
-                            )
-                            overScrollMode = RecyclerView.OVER_SCROLL_NEVER
+                    detail.external?.let { external ->
+                        if (external.isNotEmpty()) {
+                            externalContainer.visibility = View.VISIBLE
+                            rvExternal.apply {
+                                adapter = NameAndUrlAdapter(external)
+                                layoutManager = LinearLayoutManager(
+                                    requireContext()
+                                )
+                                overScrollMode = RecyclerView.OVER_SCROLL_NEVER
+                            }
+                        } else {
+                            externalContainer.visibility = View.GONE
                         }
-                    } else {
-                        externalContainer.visibility = View.GONE
                     }
                 }
 
                 with(animeStreaming) {
-                    if (detail.streaming?.size!! > 0) {
-                        streamingContainer.visibility = View.VISIBLE
-                        rvStreaming.apply {
-                            adapter =
-                                NameAndUrlAdapter(detail.streaming)
-                            layoutManager = LinearLayoutManager(
-                                requireContext()
-                            )
-                            overScrollMode = RecyclerView.OVER_SCROLL_NEVER
+                    detail.streaming?.let { streaming ->
+                        if (streaming.isNotEmpty()) {
+                            streamingContainer.visibility = View.VISIBLE
+                            rvStreaming.apply {
+                                adapter =
+                                    NameAndUrlAdapter(streaming)
+                                layoutManager = LinearLayoutManager(
+                                    requireContext()
+                                )
+                                overScrollMode = RecyclerView.OVER_SCROLL_NEVER
+                            }
+                        } else {
+                            streamingContainer.visibility = View.GONE
                         }
-                    } else {
-                        streamingContainer.visibility = View.GONE
                     }
                 }
             }
@@ -466,9 +472,9 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                                 Navigation.navigateToAnimeWatch(
                                     this@AnimeDetailFragment,
                                     R.id.action_animeDetailFragment_to_animeWatchFragment,
-                                    viewModel.animeDetail.value!!.data!!.data,
+                                    viewModel.animeDetail.value?.data!!.data,
                                     episodeId,
-                                    viewModel.animeDetailComplement.value!!.data!!.episodes,
+                                    viewModel.animeDetailComplement.value?.data!!.episodes,
                                     viewModel.defaultEpisode.value!!,
                                 )
                             }

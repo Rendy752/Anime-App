@@ -8,7 +8,7 @@ object DateUtils {
     fun formatDateToAgo(dateString: String): String {
         val prettyTime = PrettyTime(Locale.getDefault())
         val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.getDefault())
-        val date: Date = sdf.parse(dateString)!!
+        val date: Date? = sdf.parse(dateString)
         return prettyTime.format(date)
     }
 
