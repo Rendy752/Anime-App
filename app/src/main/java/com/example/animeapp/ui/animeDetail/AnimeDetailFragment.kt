@@ -24,7 +24,7 @@ import com.example.animeapp.models.Episode
 import com.example.animeapp.ui.common.NameAndUrlAdapter
 import com.example.animeapp.ui.common.UnorderedListAdapter
 import com.example.animeapp.utils.BindAnimeUtils
-import com.example.animeapp.utils.Const.Companion.YOUTUBE_URL
+import com.example.animeapp.BuildConfig.YOUTUBE_URL
 import com.example.animeapp.utils.MinMaxInputFilter
 import com.example.animeapp.utils.Navigation
 import com.example.animeapp.utils.Resource
