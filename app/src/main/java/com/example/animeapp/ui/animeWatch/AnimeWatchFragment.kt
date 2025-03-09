@@ -453,11 +453,13 @@ class AnimeWatchFragment : Fragment() {
                 )
             }
 
+            val cacheDir = requireContext().cacheDir
             HlsPlayerUtil.initializePlayer(
                 exoPlayer,
                 introButton,
                 outroButton,
-                sources
+                sources,
+                cacheDir
             )
 
             val sessionId = "episode_${System.currentTimeMillis()}"
