@@ -15,17 +15,11 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaItem.SubtitleConfiguration
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.datasource.DefaultHttpDataSource
-import androidx.media3.datasource.cache.CacheDataSource
-import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
-import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.ui.PlayerView
 import androidx.media3.common.Player
 import androidx.media3.common.C
 import com.example.animeapp.models.EpisodeSourcesResponse
-import java.io.File
 
 object HlsPlayerUtil {
 
@@ -36,15 +30,11 @@ object HlsPlayerUtil {
     private var handler: Handler? = null
 
     @OptIn(UnstableApi::class)
-    private var simpleCache: SimpleCache? = null
-
-    @OptIn(UnstableApi::class)
     fun initializePlayer(
         player: ExoPlayer,
         introButton: Button,
         outroButton: Button,
-        videoData: EpisodeSourcesResponse,
-        cacheDir: File
+        videoData: EpisodeSourcesResponse
     ) {
         introButton.visibility = View.GONE
         outroButton.visibility = View.GONE
@@ -74,22 +64,7 @@ object HlsPlayerUtil {
 
             mediaItemBuilder.setSubtitleConfigurations(subtitleConfigurations)
 
-            if (simpleCache == null) {
-                val cacheSize: Long = 1024 * 1024 * 1024
-                val leastRecentlyUsedCacheEvictor = LeastRecentlyUsedCacheEvictor(cacheSize)
-                simpleCache = SimpleCache(cacheDir, leastRecentlyUsedCacheEvictor)
-            }
-
-            val httpDataSourceFactory = DefaultHttpDataSource.Factory()
-            val cacheDataSourceFactory = CacheDataSource.Factory()
-                .setCache(simpleCache!!)
-                .setUpstreamDataSourceFactory(httpDataSourceFactory)
-                .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
-
-            val hlsMediaSource = HlsMediaSource.Factory(cacheDataSourceFactory)
-                .createMediaSource(mediaItemBuilder.build())
-
-            player.setMediaSource(hlsMediaSource)
+            player.setMediaItem(mediaItemBuilder.build())
             player.prepare()
 
             handler = Handler(Looper.getMainLooper())
@@ -151,14 +126,9 @@ object HlsPlayerUtil {
         }
     }
 
-    @OptIn(UnstableApi::class)
     fun releasePlayer(playerView: PlayerView) {
         playerView.player?.release()
         playerView.player = null
-        simpleCache?.let {
-            it.release()
-            simpleCache = null
-        }
         handler?.removeCallbacksAndMessages(null)
         handler = null
     }
