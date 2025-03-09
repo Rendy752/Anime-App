@@ -247,10 +247,10 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                 with(animeSynopsis) {
                     detail.synopsis?.let { synopsis ->
                         if (synopsis.isNotBlank()) {
-                            tvSynopsis.visibility = View.VISIBLE
+                            llBackground.visibility = View.VISIBLE
                             tvSynopsis.text = synopsis
                         } else {
-                            tvSynopsis.visibility = View.GONE
+                            llBackground.visibility = View.GONE
                         }
                     }
                 }
@@ -412,7 +412,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
         binding.apply {
             llYoutubePreview.visibility = View.GONE
             animeBackground.llBackground.visibility = View.GONE
-            animeSynopsis.tvSynopsis.visibility = View.GONE
+            animeSynopsis.llBackground.visibility = View.GONE
 
             animeOpening.openingContainer.visibility = View.GONE
             animeEnding.endingContainer.visibility = View.GONE
