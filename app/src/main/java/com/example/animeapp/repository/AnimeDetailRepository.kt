@@ -53,7 +53,7 @@ class AnimeDetailRepository(
     }
 
     private suspend fun isDataNeedUpdate(data: AnimeDetail): Boolean {
-        return data.airing && !DateUtils.isBroadcastThisWeekPassed(
+        return data.airing && !DateUtils.isEpisodeAreUpToDate(
             data.broadcast.time,
             data.broadcast.timezone,
             data.broadcast.day,

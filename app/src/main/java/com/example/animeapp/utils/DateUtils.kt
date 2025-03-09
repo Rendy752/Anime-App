@@ -23,7 +23,7 @@ object DateUtils {
         return String.format(Locale.getDefault(), "%04d-%02d-%02d", year, month + 1, dayOfMonth)
     }
 
-    fun isBroadcastThisWeekPassed(
+    fun isEpisodeAreUpToDate(
         broadcastTime: String?,
         broadcastTimezone: String?,
         broadcastDay: String?,
@@ -48,15 +48,30 @@ object DateUtils {
 
             val broadcastDateTime =
                 ZonedDateTime.of(broadcastDateThisWeek, broadcastLocalTime, broadcastZone)
-            val userBroadcastDateTime = broadcastDateTime.withZoneSameInstant(userZone)
+            val thisWeekBroadcastDateTime = broadcastDateTime.withZoneSameInstant(userZone)
 
             val lastUpdateDateTime = Instant.ofEpochSecond(lastEpisodeUpdatedAt).atZone(userZone)
 
             println("lastUpdateDateTime: $lastUpdateDateTime")
-            println("userBroadcastDateTime: $userBroadcastDateTime")
-            println("isBroadcastThisWeekPassed: ${lastUpdateDateTime.isAfter(userBroadcastDateTime)}")
+            println("thisWeekBroadcastDateTime: $thisWeekBroadcastDateTime")
+            val isBroadcastThisWeekPassed = lastUpdateDateTime.isAfter(thisWeekBroadcastDateTime)
+            println("isBroadcastThisWeekPassed: $isBroadcastThisWeekPassed")
 
-            return lastUpdateDateTime.isAfter(userBroadcastDateTime)
+            if (isBroadcastThisWeekPassed) {
+                return true
+            } else {
+                val lastDayOfWeek =
+                    firstDayOfWeek.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY))
+                        .atTime(LocalTime.MAX).atZone(broadcastZone).withZoneSameInstant(userZone)
+                println("lastDayOfWeek: $lastDayOfWeek")
+                val isWithinThisWeek =
+                    lastUpdateDateTime.isAfter(thisWeekBroadcastDateTime) && lastUpdateDateTime.isBefore(
+                        lastDayOfWeek
+                    )
+                println("isWithinThisWeek: $isWithinThisWeek")
+                return !isWithinThisWeek
+            }
+
         } catch (e: Exception) {
             println("Error parsing broadcast time: ${e.message}")
             return false
