@@ -31,6 +31,11 @@ import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.TextUtils.formatSynopsis
 import com.example.animeapp.utils.TextUtils.joinOrNA
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @AndroidEntryPoint
 class AnimeDetailFragment : Fragment(), MenuProvider {
@@ -38,6 +43,9 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
     private val binding get() = _binding!!
 
     private val viewModel: AnimeDetailViewModel by viewModels()
+
+    private val job = SupervisorJob()
+    private val scope = CoroutineScope(Dispatchers.Main + job)
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -464,22 +472,56 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
 
                         rvEpisodes.visibility = View.VISIBLE
 
-                        rvEpisodes.apply {
-                            adapter = EpisodesDetailAdapter(
-                                requireContext(),
-                                episodes.reversed()
-                            ) { episodeId ->
-                                Navigation.navigateToAnimeWatch(
-                                    this@AnimeDetailFragment,
-                                    R.id.action_animeDetailFragment_to_animeWatchFragment,
-                                    viewModel.animeDetail.value?.data!!.data,
-                                    episodeId,
-                                    viewModel.animeDetailComplement.value?.data!!.episodes,
-                                    viewModel.defaultEpisode.value!!,
-                                )
-                            }
-                            layoutManager = LinearLayoutManager(requireContext())
+                        val reversedEpisodes = episodes.reversed()
+                        val initialLoadCount = 12
+                        val initialEpisodes = if (reversedEpisodes.size > initialLoadCount) {
+                            reversedEpisodes.subList(0, initialLoadCount)
+                        } else {
+                            reversedEpisodes
                         }
+
+                        val adapter = EpisodesDetailAdapter(
+                            requireContext(),
+                            initialEpisodes.toMutableList()
+                        ) { episodeId ->
+                            Navigation.navigateToAnimeWatch(
+                                this@AnimeDetailFragment,
+                                R.id.action_animeDetailFragment_to_animeWatchFragment,
+                                viewModel.animeDetail.value?.data!!.data,
+                                episodeId,
+                                viewModel.animeDetailComplement.value?.data!!.episodes,
+                                viewModel.defaultEpisode.value!!,
+                            )
+                        }
+
+                        rvEpisodes.adapter = adapter
+                        rvEpisodes.layoutManager = LinearLayoutManager(requireContext())
+
+                        rvEpisodes.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+                            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                                super.onScrolled(recyclerView, dx, dy)
+
+                                val layoutManager =
+                                    recyclerView.layoutManager as LinearLayoutManager
+                                val visibleItemCount = layoutManager.childCount
+                                val totalItemCount = layoutManager.itemCount
+                                val firstVisibleItemPosition =
+                                    layoutManager.findFirstVisibleItemPosition()
+
+                                if (visibleItemCount + firstVisibleItemPosition >= totalItemCount && firstVisibleItemPosition >= 0 && totalItemCount >= initialLoadCount) {
+                                    val nextLoadCount = 12
+                                    val currentSize = adapter.itemCount
+                                    val end =
+                                        minOf(currentSize + nextLoadCount, reversedEpisodes.size)
+
+                                    if (currentSize < reversedEpisodes.size) {
+                                        val newData = reversedEpisodes.subList(currentSize, end)
+                                        adapter.addData(newData)
+                                        adapter.notifyItemRangeInserted(currentSize, newData.size)
+                                    }
+                                }
+                            }
+                        })
                     }
                 }
             }
@@ -487,14 +529,41 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
     }
 
     private fun handleJumpToEpisode(episodeNumber: Int, episodes: List<Episode>) {
-        val foundEpisodeIndex = episodes.indexOfFirst { it.episodeNo == episodeNumber }
+        scope.launch(Dispatchers.IO) {
+            val adapter = withContext(Dispatchers.Main) {
+                binding.animeDetailEpisodes.rvEpisodes.adapter as? EpisodesDetailAdapter
+            }
+            val layoutManager = withContext(Dispatchers.Main) {
+                binding.animeDetailEpisodes.rvEpisodes.layoutManager as? LinearLayoutManager
+            }
 
-        if (foundEpisodeIndex != -1) {
-            binding.animeDetailEpisodes.rvEpisodes.apply {
-                (layoutManager as LinearLayoutManager).scrollToPositionWithOffset(
-                    foundEpisodeIndex,
-                    0
-                )
+            if (adapter != null && layoutManager != null) {
+                val foundEpisodeIndex = withContext(Dispatchers.Main) {
+                    adapter.episodes.indexOfFirst { it.episodeNo == episodeNumber }
+                }
+
+                if (foundEpisodeIndex != -1) {
+                    withContext(Dispatchers.Main) {
+                        layoutManager.scrollToPositionWithOffset(foundEpisodeIndex, 0)
+                    }
+                } else {
+                    val reversedEpisodes = episodes.reversed()
+
+                    val targetEpisodeIndex =
+                        reversedEpisodes.indexOfFirst { it.episodeNo == episodeNumber }
+
+                    if (targetEpisodeIndex != -1) {
+                        val itemsToLoad = targetEpisodeIndex + 1
+
+                        val newData = reversedEpisodes.subList(0, itemsToLoad)
+
+                        withContext(Dispatchers.Main) {
+                            adapter.replaceData(newData)
+                            layoutManager.scrollToPositionWithOffset(targetEpisodeIndex, 0)
+                        }
+
+                    }
+                }
             }
         }
     }
@@ -540,6 +609,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        job.cancel()
         _binding = null
     }
 }
