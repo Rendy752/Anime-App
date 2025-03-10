@@ -13,10 +13,8 @@ import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ResponseHandler
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.ResponseBody.Companion.toResponseBody
-import retrofit2.HttpException
+import com.example.animeapp.utils.ResponseHandler.safeApiCall
 import retrofit2.Response
-import java.io.IOException
 
 class AnimeDetailRepository(
     private val animeDetailDao: AnimeDetailDao,
@@ -62,25 +60,13 @@ class AnimeDetailRepository(
     }
 
     private suspend fun getRemoteAnimeDetail(id: Int): Response<AnimeDetailResponse> {
-        try {
-            val response = jikanAPI.getAnimeDetail(id)
-            val body = response.body()
-            return if (response.isSuccessful && body != null) {
-                body.data.let {
+        return safeApiCall { jikanAPI.getAnimeDetail(id) }.let { response ->
+            if (response.isSuccessful && response.body() != null) {
+                response.body()?.data?.let {
                     animeDetailDao.insertAnimeDetail(it)
                 }
-                Response.success(body)
-            } else if (response.isSuccessful) {
-                Response.success(null)
-            } else {
-                return response
             }
-        } catch (e: IOException) {
-            return Response.error(500, "Network error".toResponseBody())
-        } catch (e: HttpException) {
-            return Response.error(e.code(), "HTTP error".toResponseBody())
-        } catch (e: Exception) {
-            return Response.error(500, "Unknown error".toResponseBody())
+            response
         }
     }
 

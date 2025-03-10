@@ -105,7 +105,7 @@ class AnimeRecommendationsFragment : Fragment(), MenuProvider {
                     setupRefreshFloatingActionButton()
                 } else {
                     tvError.visibility = View.VISIBLE
-                    "No internet connection.".also { tvError.text = it }
+                    "No internet connection".also { tvError.text = it }
                     fabRefresh.visibility = View.GONE
                 }
             }
