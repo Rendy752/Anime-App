@@ -106,7 +106,6 @@ class AnimeRecommendationsFragment : Fragment(), MenuProvider {
                 } else {
                     tvError.visibility = View.VISIBLE
                     "No internet connection.".also { tvError.text = it }
-                    rvAnimeRecommendations.visibility = View.GONE
                     fabRefresh.visibility = View.GONE
                 }
             }
@@ -116,7 +115,6 @@ class AnimeRecommendationsFragment : Fragment(), MenuProvider {
     private fun setupRecyclerView() {
         animeRecommendationsAdapter = AnimeRecommendationsAdapter()
         binding.rvAnimeRecommendations.apply {
-            visibility = View.VISIBLE
             adapter = animeRecommendationsAdapter
             layoutManager = LinearLayoutManager(activity)
         }
