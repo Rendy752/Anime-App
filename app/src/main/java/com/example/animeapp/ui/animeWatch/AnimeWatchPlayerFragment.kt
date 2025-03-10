@@ -1,13 +1,11 @@
 package com.example.animeapp.ui.animeWatch
 
-import android.app.PictureInPictureParams
 import android.content.Context
 import android.content.res.Configuration
 import android.media.AudioManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.util.Rational
 import android.view.LayoutInflater
 import android.view.MotionEvent
 import android.view.View
@@ -258,11 +256,8 @@ class AnimeWatchPlayerFragment : Fragment() {
         (parentFragment as AnimeWatchFragment).handleEnterFullscreen()
     }
 
-    fun handleEnterPictureInPictureMode() {
-        val pipParams = PictureInPictureParams.Builder()
-            .setAspectRatio(Rational(16, 9))
-            .build()
-        requireActivity().enterPictureInPictureMode(pipParams)
+    private fun handleEnterPictureInPictureMode() {
+        (parentFragment as AnimeWatchFragment).handleEnterPictureInPictureMode()
     }
 
     override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean) {

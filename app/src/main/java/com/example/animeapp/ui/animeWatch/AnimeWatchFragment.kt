@@ -1,8 +1,10 @@
 package com.example.animeapp.ui.animeWatch
 
+import android.app.PictureInPictureParams
 import android.content.Context
 import android.os.Build
 import android.os.Bundle
+import android.util.Rational
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -119,6 +121,13 @@ class AnimeWatchFragment : Fragment() {
             if (value) handleEnterFullscreen()
             else handleExitFullscreen()
         }
+
+    fun handleEnterPictureInPictureMode() {
+        val pipParams = PictureInPictureParams.Builder()
+            .setAspectRatio(Rational(16, 9))
+            .build()
+        requireActivity().enterPictureInPictureMode(pipParams)
+    }
 
     fun showContent() {
         binding.svContent.visibility = View.VISIBLE
