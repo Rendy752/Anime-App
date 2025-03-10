@@ -79,11 +79,6 @@ object HlsPlayerUtil {
                         }
                     }
 
-                    AudioManager.AUDIOFOCUS_LOSS,
-                    AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
-                        player.pause()
-                    }
-
                     AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
                         player.volume = 0.5f
                     }

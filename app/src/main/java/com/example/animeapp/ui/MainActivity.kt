@@ -20,6 +20,7 @@ import androidx.navigation.ui.setupWithNavController
 import com.example.animeapp.R
 import com.example.animeapp.databinding.ActivityMainBinding
 import com.example.animeapp.ui.animeWatch.AnimeWatchFragment
+import com.example.animeapp.ui.animeWatch.AnimeWatchPlayerFragment
 import com.example.animeapp.utils.Navigation
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import dagger.hilt.android.AndroidEntryPoint
@@ -131,7 +132,7 @@ class MainActivity : AppCompatActivity(), AnimeWatchFragment.OnFullscreenRequest
             supportFragmentManager.findFragmentById(R.id.nav_host_fragment_activity_main)
         val currentFragment = navHostFragment?.childFragmentManager?.fragments?.get(0)
 
-        if (currentFragment is AnimeWatchFragment && currentFragment.isVisible) {
+        if (currentFragment is AnimeWatchPlayerFragment && currentFragment.isVisible) {
             currentFragment.handleEnterPictureInPictureMode()
         }
     }
