@@ -210,10 +210,6 @@ class AnimeWatchPlayerFragment : Fragment() {
                             }
                         }
                     }
-
-                    if (playbackState == Player.STATE_READY) {
-                        if (!(parentFragment as AnimeWatchFragment).isFullscreen) showContent() else hideContent()
-                    }
                 }
             })
 
