@@ -76,16 +76,20 @@ class AnimeDetailViewModel @Inject constructor(
             animeDetailRepository.getCachedAnimeDetailComplementByMalId(detailData.mal_id)
 
         cachedAnimeDetailComplement?.let { cachedAnimeDetail ->
-            val updatedAnimeDetail = animeDetailRepository.updateAnimeDetailComplementWithEpisodes(detailData, cachedAnimeDetail)
+            val updatedAnimeDetail = animeDetailRepository.updateAnimeDetailComplementWithEpisodes(
+                detailData,
+                cachedAnimeDetail
+            )
 
-            if (updatedAnimeDetail == null){
+            if (updatedAnimeDetail == null) {
                 animeDetailComplement.postValue(Resource.Error("Failed to fetch or update episodes"))
             } else {
                 animeDetailComplement.postValue(Resource.Success(updatedAnimeDetail))
             }
 
             cachedAnimeDetail.episodes.firstOrNull()?.episodeId?.let { episodeId ->
-                val cachedEpisodeDetailComplement = animeDetailRepository.getCachedEpisodeDetailComplement(episodeId)
+                val cachedEpisodeDetailComplement =
+                    animeDetailRepository.getCachedEpisodeDetailComplement(episodeId)
                 defaultEpisode.postValue(cachedEpisodeDetailComplement)
             }
 
@@ -115,74 +119,74 @@ class AnimeDetailViewModel @Inject constructor(
             }
 
             animeDetail.value?.data?.data?.let { animeDetail ->
-                val anime =
-                    FindAnimeTitle.findClosestAnime(resultResponse, animeDetail)
-                        ?: run {
-                            animeDetailComplement.postValue(Resource.Error("No matching anime found"))
-                            return@launch
-                        }
+                val animes = FindAnimeTitle.findClosestAnimes(resultResponse, animeDetail)
 
-                val animeId = anime.id.substringBefore("?").trim()
-                val episodesResponse = getEpisodes(animeId)
-
-                if (episodesResponse !is Resource.Success) {
-                    animeDetailComplement.postValue(Resource.Error("Failed to fetch episodes"))
-                    return@launch
-                }
-
-                val defaultEpisodeServersResponse =
-                    getDefaultEpisodeServers(episodesResponse.data?.episodes?.firstOrNull()?.episodeId)
-
-                if (defaultEpisodeServersResponse !is Resource.Success) {
-                    animeDetailComplement.postValue(Resource.Error("Failed to fetch episode servers"))
-                    return@launch
-                }
-
-                val defaultEpisodeSourcesResponse =
-                    StreamingUtils.getEpisodeSources(
-                        defaultEpisodeServersResponse,
-                        animeStreamingRepository
-                    )
-
-                if (defaultEpisodeSourcesResponse !is Resource.Success || !checkEpisodeSourceMalId(
-                        defaultEpisodeSourcesResponse
-                    )
-                ) {
+                if (animes.isEmpty()) {
                     animeDetailComplement.postValue(Resource.Error("No matching anime found"))
                     return@launch
                 }
 
-                val cachedAnimeDetailComplement = AnimeDetailComplement(
-                    id = anime.id,
-                    malId = animeDetail.mal_id,
-                    episodes = episodesResponse.data?.episodes ?: emptyList(),
-                    eps = anime.episodes?.eps,
-                    sub = anime.episodes?.sub,
-                    dub = anime.episodes?.dub,
-                )
+                for (anime in animes) {
+                    val animeId = anime.id.substringBefore("?").trim()
+                    val episodesResponse = getEpisodes(animeId)
 
-                cachedAnimeDetailComplement.let {
-                    animeDetailRepository.insertCachedAnimeDetailComplement(it)
-                }
-                animeDetailComplement.postValue(
-                    Resource.Success(cachedAnimeDetailComplement)
-                )
+                    if (episodesResponse !is Resource.Success) {
+                        continue
+                    }
 
-                defaultEpisodeServersResponse.data?.let { servers ->
-                    defaultEpisodeSourcesResponse.data?.let { sources ->
-                        val cachedEpisodeDetailComplement = EpisodeDetailComplement(
-                            id = servers.episodeId,
-                            title = animeDetail.title,
-                            imageUrl = animeDetail.images.jpg.image_url,
-                            servers = servers,
-                            sources = sources
+                    val defaultEpisodeServersResponse =
+                        getDefaultEpisodeServers(episodesResponse.data?.episodes?.firstOrNull()?.episodeId)
+
+                    if (defaultEpisodeServersResponse !is Resource.Success) {
+                        continue
+                    }
+
+                    val defaultEpisodeSourcesResponse =
+                        StreamingUtils.getEpisodeSources(
+                            defaultEpisodeServersResponse,
+                            animeStreamingRepository
                         )
-                        animeDetailRepository.insertCachedEpisodeDetailComplement(
-                            cachedEpisodeDetailComplement
+
+                    if (defaultEpisodeSourcesResponse is Resource.Success && checkEpisodeSourceMalId(
+                            defaultEpisodeSourcesResponse
                         )
-                        defaultEpisode.postValue(cachedEpisodeDetailComplement)
+                    ) {
+                        val cachedAnimeDetailComplement = AnimeDetailComplement(
+                            id = anime.id,
+                            malId = animeDetail.mal_id,
+                            episodes = episodesResponse.data?.episodes ?: emptyList(),
+                            eps = anime.episodes?.eps,
+                            sub = anime.episodes?.sub,
+                            dub = anime.episodes?.dub,
+                        )
+
+                        cachedAnimeDetailComplement.let {
+                            animeDetailRepository.insertCachedAnimeDetailComplement(it)
+                        }
+                        animeDetailComplement.postValue(
+                            Resource.Success(cachedAnimeDetailComplement)
+                        )
+
+                        defaultEpisodeServersResponse.data?.let { servers ->
+                            defaultEpisodeSourcesResponse.data?.let { sources ->
+                                val cachedEpisodeDetailComplement = EpisodeDetailComplement(
+                                    id = servers.episodeId,
+                                    title = animeDetail.title,
+                                    imageUrl = animeDetail.images.jpg.image_url,
+                                    servers = servers,
+                                    sources = sources
+                                )
+                                animeDetailRepository.insertCachedEpisodeDetailComplement(
+                                    cachedEpisodeDetailComplement
+                                )
+                                defaultEpisode.postValue(cachedEpisodeDetailComplement)
+                            }
+                        }
+                        return@launch
                     }
                 }
+
+                animeDetailComplement.postValue(Resource.Error("No matching anime found"))
             }
         }
 
