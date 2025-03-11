@@ -21,6 +21,7 @@ import com.example.animeapp.R
 import com.example.animeapp.databinding.ActivityMainBinding
 import com.example.animeapp.ui.animeWatch.AnimeWatchFragment
 import com.example.animeapp.utils.Navigation
+import com.example.animeapp.utils.Theme
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -37,6 +38,7 @@ class MainActivity : AppCompatActivity(), AnimeWatchFragment.OnFullscreenRequest
         setupSplashScreen()
         setupViewBinding()
         setupNavigation()
+        Theme.setTheme(this, Theme.isDarkMode())
     }
 
     private fun setupSplashScreen() {
