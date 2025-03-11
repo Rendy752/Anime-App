@@ -225,7 +225,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
 
                 with(animeBody) {
                     tvStatus.text = detail.status
-                    tvType.text = detail.type
+                    tvType.text = detail.type ?: "Unknown"
                     tvSource.text = detail.source
                     tvSeason.text = detail.season ?: "-"
                     tvReleased.text = detail.year?.toString() ?: "-"

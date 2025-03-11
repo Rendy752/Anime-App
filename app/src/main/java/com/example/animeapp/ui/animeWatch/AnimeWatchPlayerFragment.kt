@@ -31,6 +31,8 @@ import com.example.animeapp.utils.Resource
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import android.support.v4.media.session.PlaybackStateCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 
 @AndroidEntryPoint
 class AnimeWatchPlayerFragment : Fragment() {
@@ -59,11 +61,13 @@ class AnimeWatchPlayerFragment : Fragment() {
 
     private fun setupObservers() {
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.episodeWatch.collect { response ->
-                when (response) {
-                    is Resource.Success -> response.data?.let { setupVideoPlayer(it.sources) }
-                    is Resource.Loading -> handleEpisodeWatchLoading()
-                    is Resource.Error -> handleEpisodeWatchError()
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.episodeWatch.collect { response ->
+                    when (response) {
+                        is Resource.Success -> response.data?.let { setupVideoPlayer(it.sources) }
+                        is Resource.Loading -> handleEpisodeWatchLoading()
+                        is Resource.Error -> handleEpisodeWatchError()
+                    }
                 }
             }
         }
@@ -93,8 +97,7 @@ class AnimeWatchPlayerFragment : Fragment() {
                 setShowNextButton(false)
                 setFullscreenButtonState(true)
                 setFullscreenButtonClickListener {
-                    val currentFullscreenState = isFullscreen
-                    isFullscreen = !currentFullscreenState
+                    (parentFragment as? AnimeWatchFragment)?.toggleFullscreen()
                 }
                 var isHolding = false
                 val handler = Handler(Looper.getMainLooper())
@@ -142,7 +145,9 @@ class AnimeWatchPlayerFragment : Fragment() {
                         }
                         subtitleView?.setPadding(
                             0, 0, 0,
-                            if (visibility == View.VISIBLE && orientation == Configuration.ORIENTATION_LANDSCAPE || (visibility == View.VISIBLE && !isFullscreen)) bottomBar.height else 0
+                            if (visibility == View.VISIBLE && orientation == Configuration.ORIENTATION_LANDSCAPE ||
+                                (visibility == View.VISIBLE && !(parentFragment as AnimeWatchFragment).isFullscreen)
+                            ) bottomBar.height else 0
                         )
                     }
                 )
@@ -207,7 +212,7 @@ class AnimeWatchPlayerFragment : Fragment() {
                     }
 
                     if (playbackState == Player.STATE_READY) {
-                        if (!isFullscreen) showContent() else hideContent()
+                        if (!(parentFragment as AnimeWatchFragment).isFullscreen) showContent() else hideContent()
                     }
                 }
             })
@@ -234,12 +239,6 @@ class AnimeWatchPlayerFragment : Fragment() {
         mediaSession?.setPlayer(player)
     }
 
-    private var isFullscreen = false
-        set(value) {
-            field = value
-            if (value) handleEnterFullscreen() else handleExitFullscreen()
-        }
-
     private fun showContent() {
         (parentFragment as AnimeWatchFragment).showContent()
     }
@@ -248,34 +247,29 @@ class AnimeWatchPlayerFragment : Fragment() {
         (parentFragment as AnimeWatchFragment).hideContent()
     }
 
-    private fun handleExitFullscreen() {
-        (parentFragment as AnimeWatchFragment).handleExitFullscreen()
-    }
-
-    private fun handleEnterFullscreen() {
-        (parentFragment as AnimeWatchFragment).handleEnterFullscreen()
-    }
-
     private fun handleEnterPictureInPictureMode() {
         (parentFragment as AnimeWatchFragment).handleEnterPictureInPictureMode()
     }
 
     override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean) {
         binding.playerView.useController = !isInPictureInPictureMode
-        if (isInPictureInPictureMode && !isFullscreen) hideContent()
-        else if (!isInPictureInPictureMode && !isFullscreen) showContent()
+        if (isInPictureInPictureMode && !(parentFragment as AnimeWatchFragment).isFullscreen) hideContent()
+        else if (!isInPictureInPictureMode && !(parentFragment as AnimeWatchFragment).isFullscreen) showContent()
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
         binding.apply {
-            val introOutroHandler = IntroOutroHandler(
-                playerView.player as ExoPlayer,
-                introButton,
-                outroButton,
-                EpisodeSourcesResponse(emptyList(), null, null, emptyList(), 0, 0)
-            )
-            introOutroHandler.releaseButtons()
+            if (playerView.player != null) {
+                val introOutroHandler = IntroOutroHandler(
+                    playerView.player as ExoPlayer,
+                    introButton,
+                    outroButton,
+                    viewModel.episodeWatch.value.data?.sources
+                        ?: EpisodeSourcesResponse(emptyList(), null, null, emptyList(), 0, 0)
+                )
+                introOutroHandler.releaseButtons()
+            }
         }
         HlsPlayerUtil.releasePlayer(binding.playerView)
         mediaSession?.release()

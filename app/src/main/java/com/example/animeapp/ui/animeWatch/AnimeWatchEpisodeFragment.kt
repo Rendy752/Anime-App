@@ -7,7 +7,9 @@ import android.view.ViewGroup
 import androidx.appcompat.widget.SearchView.OnQueryTextListener
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.example.animeapp.databinding.FragmentAnimeWatchEpisodeBinding
@@ -113,11 +115,13 @@ class AnimeWatchEpisodeFragment : Fragment() {
                         viewModel.handleSelectedEpisodeServer(it)
                     }
                     viewLifecycleOwner.lifecycleScope.launch {
-                        viewModel.episodeWatch.collect { response ->
-                            if (response is Resource.Success) {
-                                response.data?.servers?.episodeNo?.let {
-                                    (adapter as EpisodesWatchAdapter).updateSelectedEpisode(it)
-                                    handleJumpToEpisode(it, episodes)
+                        repeatOnLifecycle(Lifecycle.State.STARTED) {
+                            viewModel.episodeWatch.collect { response ->
+                                if (response is Resource.Success) {
+                                    response.data?.servers?.episodeNo?.let {
+                                        (adapter as EpisodesWatchAdapter).updateSelectedEpisode(it)
+                                        handleJumpToEpisode(it, episodes)
+                                    }
                                 }
                             }
                         }

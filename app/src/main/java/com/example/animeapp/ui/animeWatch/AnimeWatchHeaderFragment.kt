@@ -7,7 +7,9 @@ import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.animeapp.R
@@ -43,11 +45,13 @@ class AnimeWatchHeaderFragment : Fragment() {
 
     private fun setupObservers() {
         viewLifecycleOwner.lifecycleScope.launch {
-            viewModel.episodeWatch.collect { response ->
-                when (response) {
-                    is Resource.Success -> handleEpisodeWatchSuccess(response)
-                    is Resource.Error -> handleEpisodeWatchError()
-                    is Resource.Loading -> handleEpisodeWatchLoading()
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                viewModel.episodeWatch.collect { response ->
+                    when (response) {
+                        is Resource.Success -> handleEpisodeWatchSuccess(response)
+                        is Resource.Error -> handleEpisodeWatchError()
+                        is Resource.Loading -> handleEpisodeWatchLoading()
+                    }
                 }
             }
         }

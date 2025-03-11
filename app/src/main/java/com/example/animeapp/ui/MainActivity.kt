@@ -78,9 +78,7 @@ class MainActivity : AppCompatActivity(), AnimeWatchFragment.OnFullscreenRequest
         if (intent?.action == Intent.ACTION_VIEW &&
             intent.scheme == "animeapp" &&
             intent.data != null
-        ) {
-            handleAnimeUrl(intent.data)
-        }
+        ) handleAnimeUrl(intent.data)
     }
 
     private fun handleAnimeUrl(uri: Uri?) {
@@ -99,9 +97,7 @@ class MainActivity : AppCompatActivity(), AnimeWatchFragment.OnFullscreenRequest
                         )
                     }
                 }
-            } else {
-                Toast.makeText(this, "Invalid URL", Toast.LENGTH_SHORT).show()
-            }
+            } else Toast.makeText(this, "Invalid URL", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -113,14 +109,10 @@ class MainActivity : AppCompatActivity(), AnimeWatchFragment.OnFullscreenRequest
     @Deprecated("Deprecated in Java")
     override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode)
-        if (isInPictureInPictureMode) {
-            hideActionAndBottomNavBar()
-        } else {
-            if (isFullscreen) {
-                hideActionAndBottomNavBar()
-            } else {
-                showActionAndBottomNavBar()
-            }
+        if (isInPictureInPictureMode) hideActionAndBottomNavBar()
+        else {
+            if (isFullscreen) hideActionAndBottomNavBar()
+            else showActionAndBottomNavBar()
         }
     }
 
@@ -131,18 +123,13 @@ class MainActivity : AppCompatActivity(), AnimeWatchFragment.OnFullscreenRequest
             supportFragmentManager.findFragmentById(R.id.nav_host_fragment_activity_main)
         val currentFragment = navHostFragment?.childFragmentManager?.fragments?.get(0)
 
-        if (currentFragment is AnimeWatchFragment && currentFragment.isVisible) {
-            currentFragment.handleEnterPictureInPictureMode()
-        }
+        if (currentFragment is AnimeWatchFragment && currentFragment.isVisible) currentFragment.handleEnterPictureInPictureMode()
     }
 
     override fun onFullscreenRequested(fullscreen: Boolean) {
         isFullscreen = fullscreen
-        if (fullscreen) {
-            enterFullscreen()
-        } else {
-            exitFullscreen()
-        }
+        if (fullscreen) enterFullscreen()
+        else exitFullscreen()
     }
 
     private fun enterFullscreen() {
@@ -153,20 +140,17 @@ class MainActivity : AppCompatActivity(), AnimeWatchFragment.OnFullscreenRequest
                 WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         } else {
             window.decorView.systemUiVisibility = (
-                    View.SYSTEM_UI_FLAG_FULLSCREEN
-                            or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                            or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
+                    View.SYSTEM_UI_FLAG_FULLSCREEN or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
                     )
         }
     }
 
     private fun exitFullscreen() {
         showActionAndBottomNavBar()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            window.insetsController?.show(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
-        } else {
-            window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
-        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) window.insetsController?.show(
+            WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars()
+        )
+        else window.decorView.systemUiVisibility = View.SYSTEM_UI_FLAG_VISIBLE
     }
 
     private fun hideActionAndBottomNavBar() {

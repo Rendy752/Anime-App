@@ -2,6 +2,7 @@ package com.example.animeapp.ui.animeWatch
 
 import android.app.PictureInPictureParams
 import android.content.Context
+import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.util.Rational
@@ -10,6 +11,7 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
+import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import com.example.animeapp.R
@@ -26,6 +28,8 @@ class AnimeWatchFragment : Fragment() {
     private val binding get() = _binding!!
 
     private val viewModel: AnimeWatchViewModel by viewModels()
+
+    var isFullscreen = false
 
     interface OnFullscreenRequestListener {
         fun onFullscreenRequested(fullscreen: Boolean)
@@ -62,6 +66,7 @@ class AnimeWatchFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         setupBackButtonListener()
         setupFragments()
+        updateLayoutForOrientation()
     }
 
     private fun setupInitialData() {
@@ -102,11 +107,18 @@ class AnimeWatchFragment : Fragment() {
             .commit()
     }
 
+    fun toggleFullscreen() {
+        isFullscreen = !isFullscreen
+        if (isFullscreen) handleEnterFullscreen()
+        else handleExitFullscreen()
+    }
+
     private fun setupBackButtonListener() {
         val callback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                if (isFullscreen) isFullscreen = false
-                else {
+                if (isFullscreen) {
+                    toggleFullscreen()
+                } else {
                     isEnabled = false
                     requireActivity().onBackPressedDispatcher.onBackPressed()
                 }
@@ -115,14 +127,9 @@ class AnimeWatchFragment : Fragment() {
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, callback)
     }
 
-    private var isFullscreen = false
-        set(value) {
-            field = value
-            if (value) handleEnterFullscreen()
-            else handleExitFullscreen()
-        }
-
     fun handleEnterPictureInPictureMode() {
+        isFullscreen = true
+
         val pipParams = PictureInPictureParams.Builder()
             .setAspectRatio(Rational(16, 9))
             .build()
@@ -133,7 +140,6 @@ class AnimeWatchFragment : Fragment() {
         binding.svContent.visibility = View.VISIBLE
         binding.playerFragmentContainer.apply {
             layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
-
         }
     }
 
@@ -144,14 +150,79 @@ class AnimeWatchFragment : Fragment() {
         }
     }
 
-    fun handleExitFullscreen() {
+    private fun handleExitFullscreen() {
         mListener?.onFullscreenRequested(false)
         showContent()
+        updateLayoutForOrientation()
     }
 
-    fun handleEnterFullscreen() {
+    private fun handleEnterFullscreen() {
         mListener?.onFullscreenRequested(true)
         hideContent()
+        updateLayoutForOrientation()
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        updateLayoutForOrientation()
+    }
+
+    fun updateLayoutForOrientation() {
+        val orientation = resources.configuration.orientation
+        val layoutParamsPlayer =
+            binding.playerFragmentContainer.layoutParams as ConstraintLayout.LayoutParams
+        val layoutParamsSvContent = binding.svContent.layoutParams as ConstraintLayout.LayoutParams
+
+        if (isFullscreen) {
+            // Fullscreen mode: player takes up the entire screen
+            layoutParamsPlayer.width = ViewGroup.LayoutParams.MATCH_PARENT
+            layoutParamsPlayer.height = ViewGroup.LayoutParams.MATCH_PARENT
+            layoutParamsPlayer.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+            layoutParamsPlayer.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+            layoutParamsPlayer.topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+            layoutParamsPlayer.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+
+            layoutParamsSvContent.width = 0
+            layoutParamsSvContent.height = 0
+            binding.svContent.visibility = View.GONE
+        } else if (orientation == Configuration.ORIENTATION_LANDSCAPE) {
+            // Landscape, non fullscreen mode, side by side
+            layoutParamsPlayer.width = 0
+            layoutParamsPlayer.height = ViewGroup.LayoutParams.MATCH_PARENT
+            layoutParamsPlayer.endToStart = binding.guidelineVertical.id
+            layoutParamsPlayer.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+            layoutParamsPlayer.topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+            layoutParamsPlayer.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+
+            layoutParamsSvContent.width = 0
+            layoutParamsSvContent.height = 0
+            layoutParamsSvContent.startToStart = binding.guidelineVertical.id
+            layoutParamsSvContent.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+            layoutParamsSvContent.topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+            layoutParamsSvContent.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+            binding.svContent.visibility = View.VISIBLE
+        } else {
+            // Portrait mode, non fullscreen mode, up and down
+            layoutParamsPlayer.width = ViewGroup.LayoutParams.MATCH_PARENT
+            layoutParamsPlayer.height = resources.getDimensionPixelSize(R.dimen.player_height)
+            layoutParamsPlayer.endToStart = ConstraintLayout.LayoutParams.UNSET
+            layoutParamsPlayer.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+            layoutParamsPlayer.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+            layoutParamsPlayer.topToTop = ConstraintLayout.LayoutParams.PARENT_ID
+            layoutParamsPlayer.bottomToBottom = ConstraintLayout.LayoutParams.UNSET
+
+            layoutParamsSvContent.width = ViewGroup.LayoutParams.MATCH_PARENT
+            layoutParamsSvContent.height = 0
+            layoutParamsSvContent.startToStart = ConstraintLayout.LayoutParams.PARENT_ID
+            layoutParamsSvContent.endToEnd = ConstraintLayout.LayoutParams.PARENT_ID
+            layoutParamsSvContent.topToTop = ConstraintLayout.LayoutParams.UNSET
+            layoutParamsSvContent.topToBottom = binding.playerFragmentContainer.id
+            layoutParamsSvContent.bottomToBottom = ConstraintLayout.LayoutParams.PARENT_ID
+            binding.svContent.visibility = View.VISIBLE
+        }
+
+        binding.playerFragmentContainer.layoutParams = layoutParamsPlayer
+        binding.svContent.layoutParams = layoutParamsSvContent
     }
 
     override fun onDestroyView() {
