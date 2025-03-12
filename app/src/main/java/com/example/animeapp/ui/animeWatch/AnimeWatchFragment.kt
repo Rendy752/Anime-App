@@ -7,22 +7,30 @@ import android.os.Build
 import android.os.Bundle
 import android.util.Rational
 import android.view.LayoutInflater
+import android.view.Menu
+import android.view.MenuInflater
+import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.content.ContextCompat
+import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.lifecycle.Lifecycle
 import com.example.animeapp.R
 import com.example.animeapp.databinding.FragmentAnimeWatchBinding
+import com.example.animeapp.databinding.NetworkStatusLayoutBinding
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
+import com.example.animeapp.utils.NetworkStateMonitor
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
-class AnimeWatchFragment : Fragment() {
+class AnimeWatchFragment : Fragment(), MenuProvider {
 
     private var _binding: FragmentAnimeWatchBinding? = null
     private val binding get() = _binding!!
@@ -30,6 +38,48 @@ class AnimeWatchFragment : Fragment() {
     private val viewModel: AnimeWatchViewModel by viewModels()
 
     var isFullscreen = false
+    private var menuInstance: Menu? = null
+    private lateinit var networkStateMonitor: NetworkStateMonitor
+    private var networkStatusBinding: NetworkStatusLayoutBinding? = null
+
+    private fun setupMenu() {
+        requireActivity().addMenuProvider(this, viewLifecycleOwner, Lifecycle.State.RESUMED)
+    }
+
+    override fun onPrepareMenu(menu: Menu) {
+        val networkStatusItem = menu.findItem(R.id.network_status_item)
+        networkStatusBinding = networkStatusItem.actionView?.let {
+            NetworkStatusLayoutBinding.bind(
+                it
+            )
+        }
+
+        networkStateMonitor.networkStatus.value?.let { status ->
+            networkStatusBinding?.networkStatusIcon?.setImageDrawable(
+                ContextCompat.getDrawable(
+                    requireContext(),
+                    status.iconResId
+                )
+            )
+            networkStatusBinding?.networkStatusText?.text = status.text
+        }
+
+    }
+
+    override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
+        menuInflater.inflate(R.menu.recommendation_fragment_menu, menu)
+        menuInstance = menu
+    }
+
+    override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
+        return when (menuItem.itemId) {
+            R.id.network_status_item -> {
+                true
+            }
+
+            else -> false
+        }
+    }
 
     interface OnFullscreenRequestListener {
         fun onFullscreenRequested(fullscreen: Boolean)
@@ -64,6 +114,13 @@ class AnimeWatchFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        setupMenu()
+        networkStateMonitor = NetworkStateMonitor(requireContext())
+        networkStateMonitor.startMonitoring(requireContext())
+        networkStateMonitor.networkStatus.observe(viewLifecycleOwner) {
+            requireActivity().invalidateMenu()
+        }
         setupBackButtonListener()
         setupFragments()
         updateLayoutForOrientation()
@@ -227,6 +284,7 @@ class AnimeWatchFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        networkStateMonitor.stopMonitoring()
         _binding = null
     }
 }
