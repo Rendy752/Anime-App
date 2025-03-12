@@ -67,12 +67,21 @@ class AnimeWatchFragment : Fragment(), MenuProvider {
     }
 
     override fun onCreateMenu(menu: Menu, menuInflater: MenuInflater) {
-        menuInflater.inflate(R.menu.recommendation_fragment_menu, menu)
+        menuInflater.inflate(R.menu.watch_fragment_menu, menu)
         menuInstance = menu
     }
 
     override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
         return when (menuItem.itemId) {
+            R.id.action_refresh -> {
+                viewModel.handleSelectedEpisodeServer(
+                    viewModel.episodeDetailComplement.value.data?.id ?: "",
+                    viewModel.episodeSourcesQuery.value,
+                    true
+                )
+                true
+            }
+
             R.id.network_status_item -> {
                 true
             }
