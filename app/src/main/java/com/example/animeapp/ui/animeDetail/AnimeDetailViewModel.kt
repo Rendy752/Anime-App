@@ -152,7 +152,7 @@ class AnimeDetailViewModel @Inject constructor(
                         )
                     ) {
                         val cachedAnimeDetailComplement = AnimeDetailComplement(
-                            id = anime.id,
+                            _id = anime.id,
                             malId = animeDetail.mal_id,
                             episodes = episodesResponse.data?.episodes ?: emptyList(),
                             eps = anime.episodes?.eps,

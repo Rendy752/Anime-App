@@ -1,6 +1,7 @@
 package com.example.animeapp.models
 
 import android.os.Parcelable
+import androidx.room.ColumnInfo
 import androidx.room.Entity
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
@@ -14,7 +15,7 @@ import java.time.Instant
 @Parcelize
 @Serializable
 data class AnimeDetailComplement(
-    var id: String,
+    @ColumnInfo(name = "id") private var _id: String,
     val malId: Int,
     val isFavorite: Boolean = false,
     val eps: Int? = null,
@@ -26,7 +27,9 @@ data class AnimeDetailComplement(
     val createdAt: Long = Instant.now().epochSecond,
     var updatedAt: Long = Instant.now().epochSecond
 ) : Parcelable {
-    init {
-        this.id = id.substringBefore("?").trim()
-    }
+    var id: String
+        get() = _id
+        set(value) {
+            _id = value.substringBefore("?").trim()
+        }
 }

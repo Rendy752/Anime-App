@@ -24,14 +24,14 @@ interface AnimeDetailComplementDao {
     suspend fun deleteAnimeDetailComplement(animeDetailComplement: AnimeDetailComplement)
 
     @Update
-    suspend fun updateAnimeDetailComplement(animeDetail: AnimeDetailComplement) {
-        val updatedAnime = animeDetail.copy(updatedAt = Instant.now().epochSecond)
-        updateAnimeDetailComplement(updatedAnime)
-    }
+    suspend fun updateAnimeDetailComplement(animeDetail: AnimeDetailComplement)
 
     @Update
     suspend fun updateEpisodeAnimeDetailComplement(animeDetail: AnimeDetailComplement) {
-        val updatedAnime = animeDetail.copy(lastEpisodeUpdatedAt = Instant.now().epochSecond)
+        val updatedAnime = animeDetail.copy(
+            lastEpisodeUpdatedAt = Instant.now().epochSecond,
+            updatedAt = Instant.now().epochSecond
+        )
         updateAnimeDetailComplement(updatedAnime)
     }
 }

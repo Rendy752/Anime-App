@@ -51,26 +51,26 @@ object DateUtils {
             val thisWeekBroadcastDateTime = broadcastDateTime.withZoneSameInstant(userZone)
 
             val lastUpdateDateTime = Instant.ofEpochSecond(lastEpisodeUpdatedAt).atZone(userZone)
+            val currentTime = ZonedDateTime.now(userZone)
 
             println("lastUpdateDateTime: $lastUpdateDateTime")
             println("thisWeekBroadcastDateTime: $thisWeekBroadcastDateTime")
-            val isBroadcastThisWeekPassed = lastUpdateDateTime.isAfter(thisWeekBroadcastDateTime)
-            println("isBroadcastThisWeekPassed: $isBroadcastThisWeekPassed")
+            println("currentTime: $currentTime")
 
-            if (isBroadcastThisWeekPassed) {
-                return true
-            } else {
-                val lastDayOfWeek =
-                    firstDayOfWeek.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY))
-                        .atTime(LocalTime.MAX).atZone(broadcastZone).withZoneSameInstant(userZone)
-                println("lastDayOfWeek: $lastDayOfWeek")
-                val isWithinThisWeek =
-                    lastUpdateDateTime.isAfter(thisWeekBroadcastDateTime) && lastUpdateDateTime.isBefore(
-                        lastDayOfWeek
-                    )
-                println("isWithinThisWeek: $isWithinThisWeek")
-                return !isWithinThisWeek
-            }
+            val lastDayOfWeek =
+                firstDayOfWeek.with(TemporalAdjusters.nextOrSame(DayOfWeek.SUNDAY))
+                    .atTime(LocalTime.MAX).atZone(broadcastZone).withZoneSameInstant(userZone)
+            println("lastDayOfWeek: $lastDayOfWeek")
+
+            val isUpdatedAfterBroadcast = lastUpdateDateTime.isAfter(thisWeekBroadcastDateTime)
+            val isCurrentTimeWithinBroadcastWindow =
+                currentTime.isAfter(thisWeekBroadcastDateTime) && currentTime.isBefore(lastDayOfWeek)
+
+            println("isUpdatedAfterBroadcast: $isUpdatedAfterBroadcast")
+            println("isCurrentTimeWithinBroadcastWindow: $isCurrentTimeWithinBroadcastWindow")
+
+            return if (isUpdatedAfterBroadcast) true
+            else !isCurrentTimeWithinBroadcastWindow
 
         } catch (e: Exception) {
             println("Error parsing broadcast time: ${e.message}")
