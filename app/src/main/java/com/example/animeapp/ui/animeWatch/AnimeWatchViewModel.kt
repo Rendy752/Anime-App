@@ -112,11 +112,23 @@ class AnimeWatchViewModel @Inject constructor(
                     val cachedEpisodeDetailComplement =
                         animeStreamingRepository.getCachedEpisodeDetailComplement(episodeId)
 
-                    if (cachedEpisodeDetailComplement == null || cachedEpisodeDetailComplement.servers != remoteEpisodeDetailComplement.servers || cachedEpisodeDetailComplement.sources != remoteEpisodeDetailComplement.sources) {
-                        animeStreamingRepository.insertCachedEpisodeDetailComplement(
-                            remoteEpisodeDetailComplement
-                        )
+                    if (isRefreshed) {
+                        if (cachedEpisodeDetailComplement == null ||
+                            cachedEpisodeDetailComplement.servers != remoteEpisodeDetailComplement.servers ||
+                            cachedEpisodeDetailComplement.sources != remoteEpisodeDetailComplement.sources
+                        ) {
+                            animeStreamingRepository.updateEpisodeDetailComplement(
+                                remoteEpisodeDetailComplement
+                            )
+                        }
+                    } else {
+                        if (cachedEpisodeDetailComplement == null) {
+                            animeStreamingRepository.insertCachedEpisodeDetailComplement(
+                                remoteEpisodeDetailComplement
+                            )
+                        }
                     }
+
                     _episodeDetailComplement.value = Resource.Success(remoteEpisodeDetailComplement)
                 }
             }
