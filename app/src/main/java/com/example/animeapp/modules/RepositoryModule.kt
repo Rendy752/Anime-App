@@ -47,7 +47,10 @@ object RepositoryModule {
     }
 
     @Provides
-    fun provideAnimeStreamingRepository(@AnimeRunwayApi animeAPI: AnimeAPI): AnimeStreamingRepository {
-        return AnimeStreamingRepository(animeAPI)
+    fun provideAnimeStreamingRepository(
+        episodeDetailComplementDao: EpisodeDetailComplementDao,
+        @AnimeRunwayApi animeAPI: AnimeAPI
+    ): AnimeStreamingRepository {
+        return AnimeStreamingRepository(episodeDetailComplementDao, animeAPI)
     }
 }

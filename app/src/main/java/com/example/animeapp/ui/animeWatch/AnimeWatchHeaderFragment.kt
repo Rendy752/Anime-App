@@ -14,8 +14,8 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.animeapp.R
 import com.example.animeapp.databinding.FragmentAnimeWatchHeaderBinding
+import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.EpisodeSourcesQuery
-import com.example.animeapp.models.EpisodeWatch
 import com.example.animeapp.models.Server
 import com.example.animeapp.utils.Resource
 import dagger.hilt.android.AndroidEntryPoint
@@ -84,7 +84,7 @@ class AnimeWatchHeaderFragment : Fragment() {
         }
     }
 
-    private fun handleEpisodeWatchSuccess(response: Resource.Success<EpisodeWatch>) {
+    private fun handleEpisodeWatchSuccess(response: Resource.Success<EpisodeDetailComplement>) {
         response.data?.let { episodeWatch ->
             binding.apply {
                 episodeInfoProgressBar.visibility = View.GONE

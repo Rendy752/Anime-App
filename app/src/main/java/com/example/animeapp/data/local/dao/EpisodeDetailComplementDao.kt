@@ -23,6 +23,9 @@ interface EpisodeDetailComplementDao {
     @Update
     suspend fun updateEpisodeDetailComplement(episodeDetailComplement: EpisodeDetailComplement) {
         val updatedEpisode = episodeDetailComplement.copy(updatedAt = Instant.now().epochSecond)
-        updateEpisodeDetailComplement(updatedEpisode)
+        updateEpisodeDetailComplementWithoutUpdateTimestamp(updatedEpisode)
     }
+
+    @Update
+    suspend fun updateEpisodeDetailComplementWithoutUpdateTimestamp(episodeDetailComplement: EpisodeDetailComplement)
 }
