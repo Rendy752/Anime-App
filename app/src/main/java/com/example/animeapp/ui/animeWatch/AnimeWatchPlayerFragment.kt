@@ -62,7 +62,7 @@ class AnimeWatchPlayerFragment : Fragment() {
     private fun setupObservers() {
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.episodeWatch.collect { response ->
+                viewModel.episodeDetailComplement.collect { response ->
                     when (response) {
                         is Resource.Success -> response.data?.let { setupVideoPlayer(it.sources) }
                         is Resource.Loading -> handleEpisodeWatchLoading()
@@ -176,7 +176,7 @@ class AnimeWatchPlayerFragment : Fragment() {
 
                 override fun onPlaybackStateChanged(playbackState: Int) {
                     super.onPlaybackStateChanged(playbackState)
-                    viewModel.episodeWatch.value.data?.servers.let { servers ->
+                    viewModel.episodeDetailComplement.value.data?.servers.let { servers ->
                         viewModel.episodes.value?.let { episodes ->
                             if (playbackState == Player.STATE_ENDED) {
                                 playerView.hideController()
@@ -261,7 +261,7 @@ class AnimeWatchPlayerFragment : Fragment() {
                     playerView.player as ExoPlayer,
                     introButton,
                     outroButton,
-                    viewModel.episodeWatch.value.data?.sources
+                    viewModel.episodeDetailComplement.value.data?.sources
                         ?: EpisodeSourcesResponse(emptyList(), null, null, emptyList(), 0, 0)
                 )
                 introOutroHandler.releaseButtons()

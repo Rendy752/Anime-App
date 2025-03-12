@@ -46,7 +46,7 @@ class AnimeWatchHeaderFragment : Fragment() {
     private fun setupObservers() {
         viewLifecycleOwner.lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                viewModel.episodeWatch.collect { response ->
+                viewModel.episodeDetailComplement.collect { response ->
                     when (response) {
                         is Resource.Success -> handleEpisodeWatchSuccess(response)
                         is Resource.Error -> handleEpisodeWatchError()

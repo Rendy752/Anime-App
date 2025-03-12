@@ -167,7 +167,7 @@ class AnimeWatchFragment : Fragment() {
         updateLayoutForOrientation()
     }
 
-    fun updateLayoutForOrientation() {
+    private fun updateLayoutForOrientation() {
         val orientation = resources.configuration.orientation
         val layoutParamsPlayer =
             binding.playerFragmentContainer.layoutParams as ConstraintLayout.LayoutParams

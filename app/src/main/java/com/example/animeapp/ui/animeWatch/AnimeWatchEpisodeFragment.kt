@@ -54,7 +54,7 @@ class AnimeWatchEpisodeFragment : Fragment() {
     }
 
     private fun handleEpisodeNavigation(direction: Int, button: android.widget.Button) {
-        viewModel.episodeWatch.value.data?.servers?.let { currentServer ->
+        viewModel.episodeDetailComplement.value.data?.servers?.let { currentServer ->
             viewModel.episodes.value?.let { episodes ->
                 if (episodes.isNotEmpty()) {
                     button.isEnabled = true
@@ -116,7 +116,7 @@ class AnimeWatchEpisodeFragment : Fragment() {
                     }
                     viewLifecycleOwner.lifecycleScope.launch {
                         repeatOnLifecycle(Lifecycle.State.STARTED) {
-                            viewModel.episodeWatch.collect { response ->
+                            viewModel.episodeDetailComplement.collect { response ->
                                 if (response is Resource.Success) {
                                     response.data?.servers?.episodeNo?.let {
                                         (adapter as EpisodesWatchAdapter).updateSelectedEpisode(it)
