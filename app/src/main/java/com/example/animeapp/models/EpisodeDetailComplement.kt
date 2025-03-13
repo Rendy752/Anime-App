@@ -19,6 +19,7 @@ data class EpisodeDetailComplement(
     val imageUrl: String?,
     val servers: EpisodeServersResponse,
     val sources: EpisodeSourcesResponse,
+    val sourcesQuery: EpisodeSourcesQuery,
     val isFavorite: Boolean = false,
     val isWatched: Boolean = false,
     val lastWatched: String? = null,

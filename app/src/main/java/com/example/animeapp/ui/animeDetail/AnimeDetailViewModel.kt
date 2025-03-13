@@ -169,17 +169,24 @@ class AnimeDetailViewModel @Inject constructor(
 
                         defaultEpisodeServersResponse.data?.let { servers ->
                             defaultEpisodeSourcesResponse.data?.let { sources ->
-                                val cachedEpisodeDetailComplement = EpisodeDetailComplement(
-                                    id = servers.episodeId,
-                                    title = animeDetail.title,
-                                    imageUrl = animeDetail.images.jpg.image_url,
-                                    servers = servers,
-                                    sources = sources
-                                )
-                                animeDetailRepository.insertCachedEpisodeDetailComplement(
-                                    cachedEpisodeDetailComplement
-                                )
-                                defaultEpisode.postValue(cachedEpisodeDetailComplement)
+                                val cachedEpisodeDetailComplement =
+                                    StreamingUtils.getEpisodeQuery(
+                                        Resource.Success(servers),
+                                        servers.episodeId
+                                    )?.let { query ->
+                                        EpisodeDetailComplement(
+                                            id = servers.episodeId,
+                                            title = animeDetail.title,
+                                            imageUrl = animeDetail.images.jpg.image_url,
+                                            servers = servers,
+                                            sources = sources,
+                                            sourcesQuery = query
+                                        )
+                                    }
+                                cachedEpisodeDetailComplement?.let {
+                                    animeDetailRepository.insertCachedEpisodeDetailComplement(it)
+                                    defaultEpisode.postValue(cachedEpisodeDetailComplement)
+                                }
                             }
                         }
                         return@launch
