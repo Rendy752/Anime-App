@@ -31,8 +31,11 @@ import com.example.animeapp.utils.Resource
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
 import android.support.v4.media.session.PlaybackStateCompat
+import android.widget.Toast
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.media3.common.PlaybackException
+import androidx.media3.exoplayer.ExoPlaybackException
 
 @AndroidEntryPoint
 class AnimeWatchPlayerFragment : Fragment() {
@@ -164,6 +167,17 @@ class AnimeWatchPlayerFragment : Fragment() {
                 .build()
 
             exoPlayer.addListener(object : Player.Listener {
+                override fun onPlayerError(error: PlaybackException) {
+                    super.onPlayerError(error)
+                    if (error is ExoPlaybackException && error.type == ExoPlaybackException.TYPE_SOURCE) {
+                        Toast.makeText(
+                            context,
+                            "Playback error, try a different server.",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+
                 override fun onIsPlayingChanged(isPlaying: Boolean) {
                     super.onIsPlayingChanged(isPlaying)
 
