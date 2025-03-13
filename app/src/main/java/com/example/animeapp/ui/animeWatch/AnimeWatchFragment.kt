@@ -38,6 +38,8 @@ class AnimeWatchFragment : Fragment(), MenuProvider {
     private val viewModel: AnimeWatchViewModel by viewModels()
 
     var isFullscreen = false
+    private var isFullscreenBeforePip = false
+
     private var menuInstance: Menu? = null
     private lateinit var networkStateMonitor: NetworkStateMonitor
     private var networkStatusBinding: NetworkStatusLayoutBinding? = null
@@ -175,8 +177,8 @@ class AnimeWatchFragment : Fragment(), MenuProvider {
 
     fun toggleFullscreen() {
         isFullscreen = !isFullscreen
-        if (isFullscreen) handleEnterFullscreen()
-        else handleExitFullscreen()
+        mListener?.onFullscreenRequested(isFullscreen)
+        updateLayoutForOrientation()
     }
 
     private fun setupBackButtonListener() {
@@ -194,38 +196,24 @@ class AnimeWatchFragment : Fragment(), MenuProvider {
     }
 
     fun handleEnterPictureInPictureMode() {
+        isFullscreenBeforePip = isFullscreen
         isFullscreen = true
-
         val pipParams = PictureInPictureParams.Builder()
             .setAspectRatio(Rational(16, 9))
             .build()
         requireActivity().enterPictureInPictureMode(pipParams)
     }
 
-    fun showContent() {
-        binding.svContent.visibility = View.VISIBLE
-        binding.playerFragmentContainer.apply {
-            layoutParams.height = ViewGroup.LayoutParams.WRAP_CONTENT
-        }
-    }
-
-    fun hideContent() {
-        binding.svContent.visibility = View.GONE
-        binding.playerFragmentContainer.apply {
-            layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
-        }
-    }
-
-    private fun handleExitFullscreen() {
-        mListener?.onFullscreenRequested(false)
-        showContent()
+    private fun handleExitPictureInPictureMode() {
+        isFullscreen = isFullscreenBeforePip
+        mListener?.onFullscreenRequested(isFullscreenBeforePip)
         updateLayoutForOrientation()
     }
 
-    private fun handleEnterFullscreen() {
-        mListener?.onFullscreenRequested(true)
-        hideContent()
-        updateLayoutForOrientation()
+    override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean) {
+        if (!isInPictureInPictureMode) {
+            handleExitPictureInPictureMode()
+        }
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {

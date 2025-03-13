@@ -214,7 +214,7 @@ class AnimeWatchPlayerFragment : Fragment() {
             })
 
             pipButton.setOnClickListener {
-                handleEnterPictureInPictureMode()
+                (parentFragment as AnimeWatchFragment).handleEnterPictureInPictureMode()
             }
         }
     }
@@ -235,22 +235,8 @@ class AnimeWatchPlayerFragment : Fragment() {
         mediaSession?.setPlayer(player)
     }
 
-    private fun showContent() {
-        (parentFragment as AnimeWatchFragment).showContent()
-    }
-
-    private fun hideContent() {
-        (parentFragment as AnimeWatchFragment).hideContent()
-    }
-
-    private fun handleEnterPictureInPictureMode() {
-        (parentFragment as AnimeWatchFragment).handleEnterPictureInPictureMode()
-    }
-
     override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean) {
         binding.playerView.useController = !isInPictureInPictureMode
-        if (isInPictureInPictureMode && !(parentFragment as AnimeWatchFragment).isFullscreen) hideContent()
-        else if (!isInPictureInPictureMode && !(parentFragment as AnimeWatchFragment).isFullscreen) showContent()
     }
 
     override fun onDestroyView() {
