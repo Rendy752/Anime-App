@@ -1,7 +1,6 @@
 package com.example.animeapp.ui.animeWatch
 
 import android.content.Intent
-import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -11,6 +10,7 @@ import androidx.fragment.app.viewModels
 import com.example.animeapp.databinding.FragmentAnimeWatchInfoBinding
 import com.example.animeapp.utils.BindAnimeUtils
 import dagger.hilt.android.AndroidEntryPoint
+import androidx.core.net.toUri
 
 @AndroidEntryPoint
 class AnimeWatchInfoFragment : Fragment() {
@@ -41,7 +41,7 @@ class AnimeWatchInfoFragment : Fragment() {
                     requireContext(),
                     animeHeader,
                     { url ->
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                        val intent = Intent(Intent.ACTION_VIEW, url.toUri())
                         startActivity(intent)
                     },
                     animeDetail

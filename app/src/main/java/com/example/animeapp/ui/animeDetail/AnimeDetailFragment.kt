@@ -36,6 +36,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.core.net.toUri
 
 @AndroidEntryPoint
 class AnimeDetailFragment : Fragment(), MenuProvider {
@@ -199,7 +200,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                     requireContext(),
                     animeHeader,
                     { url ->
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                        val intent = Intent(Intent.ACTION_VIEW, url.toUri())
                         startActivity(intent)
                     },
                     detail
@@ -303,7 +304,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                                     val youtubeSearchUrl =
                                         "${YOUTUBE_URL}/results?search_query=$encodedOpening"
                                     val intent =
-                                        Intent(Intent.ACTION_VIEW, Uri.parse(youtubeSearchUrl))
+                                        Intent(Intent.ACTION_VIEW, youtubeSearchUrl.toUri())
                                     startActivity(intent)
                                 }
                                 layoutManager = LinearLayoutManager(
@@ -328,7 +329,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                                     val youtubeSearchUrl =
                                         "${YOUTUBE_URL}/results?search_query=$encodedEnding"
                                     val intent =
-                                        Intent(Intent.ACTION_VIEW, Uri.parse(youtubeSearchUrl))
+                                        Intent(Intent.ACTION_VIEW, youtubeSearchUrl.toUri())
                                     startActivity(intent)
                                 }
                                 layoutManager = LinearLayoutManager(
