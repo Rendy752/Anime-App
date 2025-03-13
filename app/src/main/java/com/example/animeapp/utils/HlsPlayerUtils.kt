@@ -4,7 +4,6 @@ import android.media.AudioAttributes
 import android.media.AudioManager
 import android.media.AudioManager.OnAudioFocusChangeListener
 import android.media.AudioFocusRequest
-import android.net.Uri
 import android.os.Handler
 import android.os.Looper
 import android.view.View
@@ -20,6 +19,7 @@ import androidx.media3.ui.PlayerView
 import androidx.media3.common.Player
 import androidx.media3.common.C
 import com.example.animeapp.models.EpisodeSourcesResponse
+import androidx.core.net.toUri
 
 object HlsPlayerUtil {
 
@@ -46,14 +46,14 @@ object HlsPlayerUtil {
 
         if (videoData.sources.isNotEmpty() && videoData.sources[0].type == "hls") {
 
-            val mediaItemUri = Uri.parse(videoData.sources[0].url)
+            val mediaItemUri = videoData.sources[0].url.toUri()
             val mediaItemBuilder = MediaItem.Builder()
                 .setUri(mediaItemUri)
 
             val subtitleConfigurations = mutableListOf<SubtitleConfiguration>()
 
             videoData.tracks.filter { it.kind == "captions" }.forEach { track ->
-                val subtitleConfiguration = SubtitleConfiguration.Builder(Uri.parse(track.file))
+                val subtitleConfiguration = SubtitleConfiguration.Builder(track.file.toUri())
                     .setMimeType(MimeTypes.TEXT_VTT)
                     .setLanguage(track.label?.substringBefore("-")?.trim())
                     .setSelectionFlags(if (track.default == true) C.SELECTION_FLAG_DEFAULT else 0)
@@ -77,6 +77,11 @@ object HlsPlayerUtil {
                         if (player.playbackState == Player.STATE_READY) {
                             player.play()
                         }
+                    }
+
+                    AudioManager.AUDIOFOCUS_LOSS,
+                    AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
+                        player.pause()
                     }
 
                     AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
