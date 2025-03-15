@@ -84,7 +84,16 @@ class AnimeWatchPlayerFragment : Fragment() {
 
     private fun handleEpisodeWatchError() {
         binding.progressBar.visibility = View.GONE
-        viewModel.episodes.value?.first()?.episodeId?.let { viewModel.handleSelectedEpisodeServer(it) }
+        Toast.makeText(
+            context,
+            "Failed to fetch episode sources, return back to first episode",
+            Toast.LENGTH_SHORT
+        ).show()
+        viewModel.episodes.value?.first()?.episodeId?.let { episodeId ->
+            viewModel.episodeSourcesQuery.value?.let { query ->
+                viewModel.handleSelectedEpisodeServer(query.copy(id = episodeId))
+            }
+        }
     }
 
     @OptIn(UnstableApi::class)
@@ -217,9 +226,11 @@ class AnimeWatchPlayerFragment : Fragment() {
                                             nextEpisodeContainer.visibility = View.GONE
                                         }
                                         skipNextEpisodeButton.setOnClickListener {
-                                            viewModel.handleSelectedEpisodeServer(
-                                                nextEpisode.episodeId
-                                            )
+                                            viewModel.episodeSourcesQuery.value?.let { query ->
+                                                viewModel.handleSelectedEpisodeServer(
+                                                    query.copy(id = nextEpisode.episodeId)
+                                                )
+                                            }
                                             nextEpisodeContainer.visibility = View.GONE
                                         }
                                     }

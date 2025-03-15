@@ -74,7 +74,7 @@ class AnimeWatchHeaderFragment : Fragment() {
                 layoutManager = LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
                 adapter = viewModel.episodeSourcesQuery.value?.let {
                     ServerAdapter(serverQueries, it) { episodeSourcesQuery ->
-                        viewModel.handleSelectedEpisodeServer(episodeId, episodeSourcesQuery)
+                        viewModel.handleSelectedEpisodeServer(episodeSourcesQuery)
                     }
                 }
             }
@@ -142,7 +142,11 @@ class AnimeWatchHeaderFragment : Fragment() {
     }
 
     private fun handleEpisodeWatchError() {
-        viewModel.episodes.value?.first()?.episodeId?.let { viewModel.handleSelectedEpisodeServer(it) }
+        viewModel.episodes.value?.first()?.episodeId?.let { episodeId ->
+            viewModel.episodeSourcesQuery.value?.let { query ->
+                viewModel.handleSelectedEpisodeServer(query.copy(id = episodeId))
+            }
+        }
     }
 
     private fun handleEpisodeWatchLoading() {

@@ -60,7 +60,9 @@ class AnimeWatchEpisodeFragment : Fragment() {
                     button.isEnabled = true
                     val targetEpisodeNo = currentServer.episodeNo + direction
                     episodes.find { it.episodeNo == targetEpisodeNo }?.let { targetEpisode ->
-                        viewModel.handleSelectedEpisodeServer(targetEpisode.episodeId)
+                        viewModel.episodeSourcesQuery.value?.let { query ->
+                            viewModel.handleSelectedEpisodeServer(query.copy(id = targetEpisode.episodeId))
+                        }
                     }
                 } else {
                     button.isEnabled = false
@@ -111,8 +113,10 @@ class AnimeWatchEpisodeFragment : Fragment() {
             rvEpisodes.apply {
                 if (episodes.isNotEmpty()) {
                     layoutManager = GridLayoutManager(context, 4)
-                    adapter = EpisodesWatchAdapter(requireContext(), episodes) {
-                        viewModel.handleSelectedEpisodeServer(it)
+                    adapter = EpisodesWatchAdapter(requireContext(), episodes) { episodeId ->
+                        viewModel.episodeSourcesQuery.value?.let { query ->
+                            viewModel.handleSelectedEpisodeServer(query.copy(id = episodeId))
+                        }
                     }
                     viewLifecycleOwner.lifecycleScope.launch {
                         repeatOnLifecycle(Lifecycle.State.STARTED) {

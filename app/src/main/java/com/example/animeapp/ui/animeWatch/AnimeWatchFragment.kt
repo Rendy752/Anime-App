@@ -76,11 +76,9 @@ class AnimeWatchFragment : Fragment(), MenuProvider {
     override fun onMenuItemSelected(menuItem: MenuItem): Boolean {
         return when (menuItem.itemId) {
             R.id.action_refresh -> {
-                viewModel.handleSelectedEpisodeServer(
-                    viewModel.episodeDetailComplement.value.data?.id ?: "",
-                    viewModel.episodeSourcesQuery.value,
-                    true
-                )
+                viewModel.episodeSourcesQuery.value?.let { query ->
+                    viewModel.handleSelectedEpisodeServer(query, true)
+                }
                 true
             }
 
@@ -154,7 +152,9 @@ class AnimeWatchFragment : Fragment(), MenuProvider {
 
         (requireActivity() as AppCompatActivity).supportActionBar?.title = animeDetail.title
         viewModel.setInitialState(animeDetail, episodes, defaultEpisode)
-        viewModel.handleSelectedEpisodeServer(episodeId)
+        viewModel.episodeSourcesQuery.value?.let { query ->
+            viewModel.handleSelectedEpisodeServer(query.copy(id = episodeId))
+        }
     }
 
     private inline fun <reified T : Any> getParcelableArgument(key: String): T? {
