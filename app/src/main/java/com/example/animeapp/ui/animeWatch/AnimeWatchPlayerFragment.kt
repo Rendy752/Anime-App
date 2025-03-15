@@ -114,15 +114,17 @@ class AnimeWatchPlayerFragment : Fragment() {
                     (parentFragment as? AnimeWatchFragment)?.toggleFullscreen()
                 }
                 var isHolding = false
+                var isFromHolding = false
                 val handler = Handler(Looper.getMainLooper())
                 val holdRunnable = Runnable {
-                    if (isHolding) {
+                    if (isHolding && exoPlayer.playbackParameters.speed != 2f) {
                         exoPlayer.playbackParameters =
                             exoPlayer.playbackParameters.withSpeed(2f)
                         useController = false
                         pipButton.visibility = View.GONE
                         speedUpContainer.visibility = View.VISIBLE
                         "2x speed".also { tvSpeedUp.text = it }
+                        isFromHolding = true
                     }
                 }
                 playerView.setOnTouchListener { _, event ->
@@ -134,12 +136,15 @@ class AnimeWatchPlayerFragment : Fragment() {
 
                         MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                             handler.removeCallbacks(holdRunnable)
-                            exoPlayer.playbackParameters =
-                                exoPlayer.playbackParameters.withSpeed(1f)
-                            useController = true
-                            speedUpContainer.visibility = View.GONE
-                            "1x speed".also { tvSpeedUp.text = it }
+                            if (isFromHolding) {
+                                exoPlayer.playbackParameters =
+                                    exoPlayer.playbackParameters.withSpeed(1f)
+                                useController = true
+                                speedUpContainer.visibility = View.GONE
+                                "1x speed".also { tvSpeedUp.text = it }
+                            }
                             isHolding = false
+                            isFromHolding = false
                         }
                     }
                     if (!isHolding) {
