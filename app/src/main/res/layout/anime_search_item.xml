@@ -76,8 +76,8 @@
                 android:visibility="gone" />
         </LinearLayout>
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/rvTitleSynonyms"
+        <androidx.compose.ui.platform.ComposeView
+            android:id="@+id/synonymsComposeView"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
@@ -95,7 +95,7 @@
             android:background="@color/shimmer_placeholder"
             app:layout_constraintStart_toStartOf="@id/contentLayout"
             app:layout_constraintEnd_toEndOf="@id/contentLayout"
-            app:layout_constraintTop_toBottomOf="@id/rvTitleSynonyms" />
+            app:layout_constraintTop_toBottomOf="@id/synonymsComposeView" />
 
         <TextView
             android:id="@+id/tvAnimeScore"

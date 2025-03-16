@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animeSearch
+package com.example.animeapp.ui.animeSearch.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -81,7 +81,7 @@ class AnimeSearchViewModel @Inject constructor(
             onSuccess = { resultResponse ->
                 AnimeSearchResponse(
                     data = listOf(resultResponse.data),
-                    pagination = CompletePagination.default()
+                    pagination = CompletePagination.Companion.default()
                 )
             }
         )

@@ -1,6 +1,6 @@
 package com.example.animeapp.utils
 
-import com.example.animeapp.ui.animeSearch.AnimeSearchViewModel
+import com.example.animeapp.ui.animeSearch.viewmodel.AnimeSearchViewModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch

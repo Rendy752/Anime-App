@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animeRecommendations
+package com.example.animeapp.ui.animeRecommendations.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -17,13 +17,16 @@ import javax.inject.Inject
 class AnimeRecommendationsViewModel @Inject constructor(
     private val animeRecommendationsRepository: AnimeRecommendationsRepository
 ) : ViewModel() {
-
     private val _animeRecommendations =
         MutableStateFlow<Resource<AnimeRecommendationResponse>>(Resource.Loading())
     val animeRecommendations: StateFlow<Resource<AnimeRecommendationResponse>> =
         _animeRecommendations.asStateFlow()
 
     private var animeRecommendationsPage = 1
+
+    init {
+        getAnimeRecommendations()
+    }
 
     fun getAnimeRecommendations() = viewModelScope.launch {
         _animeRecommendations.value = Resource.Loading()

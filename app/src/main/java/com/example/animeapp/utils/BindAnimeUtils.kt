@@ -5,13 +5,12 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.view.View
 import androidx.core.content.ContextCompat
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.bumptech.glide.Glide
 import com.example.animeapp.R
 import com.example.animeapp.databinding.AnimeHeaderBinding
 import com.example.animeapp.databinding.AnimeSearchItemBinding
+import com.example.animeapp.ui.common_ui.TitleSynonymsList
 import com.example.animeapp.models.AnimeDetail
-import com.example.animeapp.ui.common.TitleSynonymsAdapter
 
 object BindAnimeUtils {
     fun bindAnimeData(binding: AnimeSearchItemBinding, data: AnimeDetail) {
@@ -46,10 +45,12 @@ object BindAnimeUtils {
             }
 
             tvAnimeTitle.text = data.title
-            rvTitleSynonyms.apply {
-                adapter = data.title_synonyms?.let { TitleSynonymsAdapter(it.toList()) }
-                layoutManager =
-                    LinearLayoutManager(root.context, LinearLayoutManager.HORIZONTAL, false)
+
+            synonymsComposeView.apply {
+                setContent {
+                    data.title_synonyms?.let { TitleSynonymsList(synonyms = it.toList()) }
+                }
+                visibility = if (data.title_synonyms.isNullOrEmpty()) View.GONE else View.VISIBLE
             }
             "${data.type ?: "Unknown"} (${data.episodes} eps)".also { tvAnimeType.text = it }
             "Ranked #${data.rank ?: 0}".also { tvAnimeRanked.text = it }
@@ -71,11 +72,13 @@ object BindAnimeUtils {
                 .into(ivAnimeImage)
 
             tvAnimeTitle.text = title ?: "Unknown Title"
-            rvTitleSynonyms.apply {
-                adapter = TitleSynonymsAdapter(emptyList())
-                layoutManager =
-                    LinearLayoutManager(root.context, LinearLayoutManager.HORIZONTAL, false)
+
+            synonymsComposeView.apply {
+                setContent {
+                    TitleSynonymsList(synonyms = emptyList())
+                }
             }
+
             "Unknown Type (Unknown Episodes)".also { tvAnimeType.text = it }
             "Ranked #Unknown".also { tvAnimeRanked.text = it }
             "Popularity #Unknown".also { tvAnimePopularity.text = it }
@@ -90,7 +93,7 @@ object BindAnimeUtils {
         binding.apply {
             ivAnimeImage.background = null
             contentLayout.background = null
-            rvTitleSynonyms.background = null
+            synonymsComposeView.background = null
             tvAnimeType.background = null
             tvAnimeRanked.background = null
             tvAnimePopularity.background = null
@@ -125,11 +128,12 @@ object BindAnimeUtils {
             }
             tvEnglishTitle.text = detail.title_english
             tvJapaneseTitle.text = detail.title_japanese
-            rvTitleSynonyms.apply {
-                adapter = detail.title_synonyms?.let { TitleSynonymsAdapter(it.toList()) }
-                layoutManager = LinearLayoutManager(
-                    context, LinearLayoutManager.HORIZONTAL, false
-                )
+
+            synonymsComposeView.apply {
+                setContent {
+                    detail.title_synonyms?.let { TitleSynonymsList(synonyms = it.toList()) }
+                }
+                visibility = if (detail.title_synonyms.isNullOrEmpty()) View.GONE else View.VISIBLE
             }
 
             when (detail.approved) {

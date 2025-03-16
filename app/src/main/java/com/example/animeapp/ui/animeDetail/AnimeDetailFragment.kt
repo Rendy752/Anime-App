@@ -21,14 +21,14 @@ import com.example.animeapp.databinding.FragmentDetailBinding
 import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.models.Episode
-import com.example.animeapp.ui.common.NameAndUrlAdapter
-import com.example.animeapp.ui.common.UnorderedListAdapter
 import com.example.animeapp.utils.BindAnimeUtils
 import com.example.animeapp.BuildConfig.YOUTUBE_URL
 import com.example.animeapp.utils.MinMaxInputFilter
 import com.example.animeapp.utils.Navigation
+import com.example.animeapp.ui.common_ui.NameAndUrlList
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.TextUtils.formatSynopsis
+import com.example.animeapp.ui.common_ui.UnorderedList
 import com.example.animeapp.utils.TextUtils.joinOrNA
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -297,9 +297,9 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                 with(animeOpening) {
                     detail.theme.openings?.let { openings ->
                         if (openings.isNotEmpty()) {
-                            openingContainer.visibility = View.VISIBLE
-                            rvOpening.apply {
-                                adapter = UnorderedListAdapter(openings) { opening ->
+                            openingComposeView.visibility = View.VISIBLE
+                            openingComposeView.setContent {
+                                UnorderedList(items = openings) { opening ->
                                     val encodedOpening = Uri.encode(opening)
                                     val youtubeSearchUrl =
                                         "${YOUTUBE_URL}/results?search_query=$encodedOpening"
@@ -307,10 +307,6 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                                         Intent(Intent.ACTION_VIEW, youtubeSearchUrl.toUri())
                                     startActivity(intent)
                                 }
-                                layoutManager = LinearLayoutManager(
-                                    requireContext()
-                                )
-                                overScrollMode = RecyclerView.OVER_SCROLL_NEVER
                             }
                         } else {
                             openingContainer.visibility = View.GONE
@@ -321,10 +317,9 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                 with(animeEnding) {
                     detail.theme.endings?.let { endings ->
                         if (endings.isNotEmpty()) {
-                            endingContainer.visibility = View.VISIBLE
-                            rvEnding.apply {
-                                adapter = UnorderedListAdapter(endings)
-                                { ending ->
+                            endingComposeView.visibility = View.VISIBLE
+                            endingComposeView.setContent {
+                                UnorderedList(items = endings) { ending ->
                                     val encodedEnding = Uri.encode(ending)
                                     val youtubeSearchUrl =
                                         "${YOUTUBE_URL}/results?search_query=$encodedEnding"
@@ -332,10 +327,6 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                                         Intent(Intent.ACTION_VIEW, youtubeSearchUrl.toUri())
                                     startActivity(intent)
                                 }
-                                layoutManager = LinearLayoutManager(
-                                    requireContext()
-                                )
-                                overScrollMode = RecyclerView.OVER_SCROLL_NEVER
                             }
                         } else {
                             endingContainer.visibility = View.GONE
@@ -347,12 +338,9 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                     detail.external?.let { external ->
                         if (external.isNotEmpty()) {
                             externalContainer.visibility = View.VISIBLE
-                            rvExternal.apply {
-                                adapter = NameAndUrlAdapter(external)
-                                layoutManager = LinearLayoutManager(
-                                    requireContext()
-                                )
-                                overScrollMode = RecyclerView.OVER_SCROLL_NEVER
+                            externalComposeView.visibility = View.VISIBLE
+                            externalComposeView.setContent {
+                                NameAndUrlList(items = external)
                             }
                         } else {
                             externalContainer.visibility = View.GONE
@@ -364,13 +352,10 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                     detail.streaming?.let { streaming ->
                         if (streaming.isNotEmpty()) {
                             streamingContainer.visibility = View.VISIBLE
-                            rvStreaming.apply {
-                                adapter =
-                                    NameAndUrlAdapter(streaming)
-                                layoutManager = LinearLayoutManager(
-                                    requireContext()
-                                )
-                                overScrollMode = RecyclerView.OVER_SCROLL_NEVER
+                            streamingComposeView.visibility = View.VISIBLE
+                            streamingComposeView.setContent {
+                                NameAndUrlList(items = streaming)
+
                             }
                         } else {
                             streamingContainer.visibility = View.GONE

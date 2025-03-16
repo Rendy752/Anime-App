@@ -8,6 +8,7 @@ plugins {
     id("kotlin-parcelize")
     id("kotlinx-serialization")
     id("com.google.devtools.ksp")
+    kotlin("plugin.compose")
 }
 
 android {
@@ -48,8 +49,12 @@ android {
         jvmTarget = "17"
     }
     buildFeatures {
+        compose = true
         viewBinding = true
         buildConfig = true
+    }
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.15"
     }
     hilt {
         enableAggregatingTask = true
@@ -66,6 +71,21 @@ dependencies {
     implementation(libs.androidx.navigation.fragment.ktx)
     implementation(libs.androidx.navigation.ui.ktx)
 
+    //Compose
+    implementation("androidx.compose.ui:ui:1.7.8")
+    implementation("androidx.compose.material3:material3:1.3.1")
+    implementation("androidx.compose.material3:material3-window-size-class:1.3.1")
+    implementation("androidx.compose.material3:material3-adaptive-navigation-suite:1.4.0-alpha10")
+    implementation("androidx.compose.ui:ui-tooling-preview:1.7.8")
+    implementation("androidx.activity:activity-compose:1.10.1")
+    implementation("androidx.navigation:navigation-compose:2.8.9")
+    implementation("androidx.compose.ui:ui-text-google-fonts:1.7.8")
+    implementation("androidx.compose.material:material-icons-extended:1.7.8")
+    implementation("androidx.compose.material:material:1.7.8")
+    debugImplementation("androidx.compose.ui:ui-tooling:1.7.8")
+    debugImplementation("androidx.compose.ui:ui-test-manifest:1.7.8")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.7.8")
+
     // ViewModel
     implementation(libs.androidx.lifecycle.viewmodel.ktx.v286)
     implementation(libs.androidx.lifecycle.runtime.ktx)
@@ -73,7 +93,6 @@ dependencies {
     // Room
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.legacy.support.v4)
-    implementation(libs.androidx.fragment.ktx)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)
 
@@ -95,11 +114,15 @@ dependencies {
     implementation(libs.glide)
     ksp(libs.compiler)
 
+    // Coil
+    implementation("io.coil-kt:coil-compose:2.5.0")
+
     //PrettyTime
     implementation(libs.prettytime)
 
     //Hilt
     implementation(libs.hilt.android)
+    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
     kapt(libs.hilt.android.compiler)
 
     //Flexbox
@@ -107,7 +130,6 @@ dependencies {
 
     //ViewModel injection
     kapt(libs.androidx.hilt.compiler)
-    implementation(libs.androidx.hilt.navigation.fragment)
 
     //Kotlinx Serialization
     implementation(libs.kotlinx.serialization.json)
