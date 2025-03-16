@@ -55,3 +55,14 @@ AnimeApp is a comprehensive, anime-themed Android application designed to provid
 * **Streaming:** ExoPlayer for video playback.
 * **Network inspection:** Chucker Interceptor.
 * **Retrofit2:** for api interaction.
+
+## Next Update
+
+I'm actively working on enhancing AnimeApp with the following features and improvements:
+
+* **Recent Watched Episode Tracking:** Easily pick up where you left off with a dedicated section for recently watched episodes.
+* **Homepage for Recent Releases:** Stay up-to-date with the latest anime releases directly from the app's homepage.
+* **Migration to Jetpack Compose:** Experience a more modern and performant UI with our ongoing migration to Jetpack Compose.
+* **Favorite Anime and Episode Management:** Mark your favorite anime and episodes for quick access.
+* **Enhanced Horizontal Layout Handling:** Enjoy a seamless experience in horizontal orientation with improved layout adjustments.
+* **Multiplatform Conversion:** We're exploring the possibility of expanding AnimeApp to other platforms.
