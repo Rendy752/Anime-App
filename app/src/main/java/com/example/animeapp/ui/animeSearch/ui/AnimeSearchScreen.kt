@@ -11,11 +11,17 @@ import androidx.navigation.NavController
 import com.example.animeapp.R
 import com.example.animeapp.ui.animeSearch.viewmodel.AnimeSearchViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnimeSearchScreen(navController: NavController) {
     val viewModel: AnimeSearchViewModel = hiltViewModel()
 
     Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(text = stringResource(id = R.string.title_search)) },
+            )
+        },
         floatingActionButton = {
             FloatingActionButton(onClick = { viewModel.applyFilters(viewModel.queryState.value) }) {
                 Icon(

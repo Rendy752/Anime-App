@@ -9,7 +9,10 @@ import android.provider.Settings
 import android.telephony.TelephonyManager
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import com.example.animeapp.R
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import com.example.animeapp.models.NetworkStatus
 
 class NetworkStateMonitor(context: Context) {
@@ -82,81 +85,92 @@ class NetworkStateMonitor(context: Context) {
         ) != 0
 
         val telephonyManager =
-            context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager
+            context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager?
         val isCellularDataEnabled =
-            telephonyManager.dataState == TelephonyManager.DATA_CONNECTED || telephonyManager.dataState == TelephonyManager.DATA_CONNECTING
-
+            if (telephonyManager != null) {
+                telephonyManager.dataState == TelephonyManager.DATA_CONNECTED || telephonyManager.dataState == TelephonyManager.DATA_CONNECTING
+            } else {
+                false
+            }
+        var icon: ImageVector = Icons.Filled.WifiOff
+        var iconColor: Color = Color.Gray
+        var label = "Offline"
         if (isAirplaneModeOn) {
+            icon = Icons.Filled.AirplanemodeActive
+            iconColor = Color.Gray
+            label = "Airplane"
+        } else if (networkInfo == null || !networkInfo.isConnected) {
             _networkStatus.postValue(
-                NetworkStatus(
-                    R.drawable.ic_airplanemode_blue_24dp,
-                    "Airplane"
-                )
+                NetworkStatus(Icons.Filled.SignalCellularOff, "No signal", Color.Gray)
             )
             return
-        }
-
-        if (networkInfo == null || !networkInfo.isConnected) {
-            if (!isCellularDataEnabled) {
-                _networkStatus.postValue(
-                    NetworkStatus(
-                        R.drawable.ic_cellular_off_red_24dp,
-                        "Cellular Off"
-                    )
-                )
-            } else {
-                _networkStatus.postValue(NetworkStatus(R.drawable.ic_wifi_off_red_24dp, "Offline"))
-            }
         } else if (activeNetwork != null) {
-            if (activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+             if (activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
                 when (speed) {
-                    in 1..1000 -> _networkStatus.postValue(
-                        NetworkStatus(R.drawable.ic_wifi_1_bar_orange_24dp, "$speed Kbps")
-                    )
+                    in 1..5000 -> {
+                        icon = Icons.Filled.Wifi1Bar
+                        iconColor = Color.Red
+                        label = "$speed Kbps"
 
-                    in 1001..2000 -> _networkStatus.postValue(
-                        NetworkStatus(R.drawable.ic_wifi_2_bar_yellow_24dp, "$speed Kbps")
-                    )
+                    }
 
-                    else -> _networkStatus.postValue(
-                        NetworkStatus(R.drawable.ic_wifi_3_bar_green_24dp, "$speed Kbps")
-                    )
+                    in 5001..10000 -> {
+                        icon = Icons.Filled.Wifi2Bar
+                        iconColor = Color.Yellow
+                        label = "$speed Kbps"
+
+                    }
+
+                    else -> {
+                        icon = Icons.Filled.Wifi
+                        iconColor = Color.Green
+                        label = "$speed Kbps"
+                    }
                 }
             } else if (activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
                 when (speed) {
-                    in 1..1000 -> _networkStatus.postValue(
-                        NetworkStatus(
-                            R.drawable.ic_cellular_1_bar_orange_24dp, "$speed Kbps"
-                        )
-                    )
+                    in 1..5000 -> {
+                        icon = Icons.Filled.SignalCellularAlt1Bar
+                        iconColor = Color.Red
+                        label = "$speed Kbps"
+                    }
 
-                    in 1001..2000 -> _networkStatus.postValue(
-                        NetworkStatus(
-                            R.drawable.ic_cellular_2_bar_yellow_24dp, "$speed Kbps"
-                        )
-                    )
+                    in 5001..10000 -> {
+                        icon = Icons.Filled.SignalCellularAlt2Bar
+                        iconColor = Color.Yellow
+                        label = "$speed Kbps"
+                    }
 
-                    else -> _networkStatus.postValue(
-                        NetworkStatus(
-                            R.drawable.ic_cellular_3_bar_green_24dp, "$speed Kbps"
-                        )
-                    )
+                    else -> {
+                        icon = Icons.Filled.SignalCellularAlt
+                        iconColor = Color.Green
+                        label = "$speed Kbps"
+                    }
                 }
             } else {
-                _networkStatus.postValue(NetworkStatus(R.drawable.ic_wifi_off_red_24dp, "Unknown"))
+                icon = Icons.Filled.WifiOff
+                iconColor = Color.Red
+                label = "Unknown"
             }
         } else {
             if (!isCellularDataEnabled) {
+                icon = Icons.Filled.SignalCellularOff
+                iconColor = Color.Gray
+                label = "Cellular Off"
                 _networkStatus.postValue(
                     NetworkStatus(
-                        R.drawable.ic_cellular_off_red_24dp,
-                        "Cellular Off"
+                        Icons.Filled.SignalCellularOff,
+                        "Cellular Off",
+                        iconColor
                     )
                 )
             } else {
-                _networkStatus.postValue(NetworkStatus(R.drawable.ic_wifi_off_red_24dp, "Offline"))
+                icon = Icons.Filled.WifiOff
+                iconColor = Color.Gray
+                label = "Offline"
             }
         }
+        _networkStatus.postValue(NetworkStatus(icon, label, iconColor))
     }
 
     fun startMonitoring(context: Context) {

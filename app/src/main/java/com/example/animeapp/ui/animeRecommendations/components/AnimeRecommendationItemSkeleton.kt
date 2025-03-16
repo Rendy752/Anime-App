@@ -39,8 +39,8 @@ fun AnimeRecommendationItemSkeleton() {
                 .padding(16.dp)
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth().wrapContentWidth(Alignment.CenterHorizontally),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 repeat(2) {
                     Column {

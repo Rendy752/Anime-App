@@ -15,7 +15,6 @@ import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
-import androidx.core.content.ContextCompat
 import androidx.core.view.MenuProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -57,13 +56,13 @@ class AnimeWatchFragment : Fragment(), MenuProvider {
         }
 
         networkStateMonitor.networkStatus.value?.let { status ->
-            networkStatusBinding?.networkStatusIcon?.setImageDrawable(
-                ContextCompat.getDrawable(
-                    requireContext(),
-                    status.iconResId
-                )
-            )
-            networkStatusBinding?.networkStatusText?.text = status.text
+//            networkStatusBinding?.networkStatusIcon?.setImageDrawable(
+//                ContextCompat.getDrawable(
+//                    requireContext(),
+//                    status.iconResId
+//                )
+//            )
+//            networkStatusBinding?.networkStatusText?.text = status.text
         }
 
     }

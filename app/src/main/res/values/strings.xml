@@ -103,4 +103,5 @@
     <string name="cellular_off">Cellular Off</string>
     <string name="network_status_icon">Network Status Icon</string>
     <string name="no_internet_connection">No internet connection</string>
+    <string name="error_loading_data">Error Loading Data</string>
 </resources>

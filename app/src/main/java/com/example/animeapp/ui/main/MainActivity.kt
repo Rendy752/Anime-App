@@ -32,7 +32,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
-        WindowCompat.setDecorFitsSystemWindows(window, false)
+
         val themePrefs = getSharedPreferences("theme_prefs", MODE_PRIVATE)
         val isDarkMode = themePrefs.getBoolean("is_dark_mode", false)
 
