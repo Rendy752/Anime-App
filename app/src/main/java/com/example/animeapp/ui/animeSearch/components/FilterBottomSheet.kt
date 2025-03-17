@@ -2,7 +2,7 @@ package com.example.animeapp.ui.animeSearch.components
 
 import android.content.Context
 import android.widget.Toast
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -17,7 +17,6 @@ import com.example.animeapp.R
 import com.example.animeapp.ui.animeSearch.viewmodel.AnimeSearchViewModel
 import com.example.animeapp.ui.common_ui.*
 import com.example.animeapp.utils.FilterUtils
-import java.time.LocalDate
 
 @Composable
 fun FilterBottomSheet(
@@ -25,244 +24,262 @@ fun FilterBottomSheet(
     onDismiss: () -> Unit
 ) {
     val queryState by viewModel.queryState.collectAsState()
-
     val context = LocalContext.current
     val scrollState = rememberScrollState()
-    var type by remember { mutableStateOf(queryState.type ?: "Any") }
-    var score by remember { mutableStateOf(queryState.score?.toString() ?: "") }
-    var minScore by remember { mutableStateOf(queryState.minScore?.toString() ?: "") }
-    var maxScore by remember { mutableStateOf(queryState.maxScore?.toString() ?: "") }
-    var status by remember { mutableStateOf(queryState.status ?: "Any") }
-    var rating by remember { mutableStateOf(queryState.rating ?: "Any") }
-    var sfw by remember { mutableStateOf(queryState.sfw == true) }
-    var unapproved by remember { mutableStateOf(queryState.unapproved == true) }
-    var orderBy by remember { mutableStateOf(queryState.orderBy ?: "Any") }
-    var sort by remember { mutableStateOf(queryState.sort ?: "Any") }
-    var startDate by remember {
-        mutableStateOf<LocalDate?>(queryState.startDate?.let {
-            LocalDate.parse(
-                it
-            )
-        })
-    }
-    var endDate by remember {
-        mutableStateOf<LocalDate?>(viewModel.queryState.value.endDate?.let {
-            LocalDate.parse(
-                it
-            )
-        })
-    }
+
+    val filterState = remember { mutableStateOf(FilterUtils.FilterState(queryState)) }
 
     Column(
-        modifier = Modifier
+        Modifier
             .fillMaxWidth()
             .padding(8.dp)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = stringResource(id = R.string.filter_anime),
-                style = MaterialTheme.typography.titleLarge,
-                color = MaterialTheme.colorScheme.primary
-            )
-            Row {
-                Button(
-                    onClick = {
-                        if (queryState.isDefault()) {
-                            showToast(context, "Filters are already default")
-                        } else {
-                            viewModel.resetBottomSheetFilters()
-                            onDismiss()
-                        }
-                    },
-                    enabled = !queryState.isDefault(),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                    )
-                ) {
-                    Text(stringResource(id = R.string.reset))
-                }
-                Spacer(modifier = Modifier.width(4.dp))
-                Button(
-                    onClick = {
-                        val updatedQueryState = FilterUtils.collectFilterValues(
-                            currentState = queryState,
-                            type = type,
-                            score = score.toDoubleOrNull(),
-                            minScore = minScore.toDoubleOrNull(),
-                            maxScore = maxScore.toDoubleOrNull(),
-                            status = status,
-                            rating = rating,
-                            sfw = sfw,
-                            unapproved = unapproved,
-                            orderBy = orderBy,
-                            sort = sort,
-                            startDate = startDate,
-                            endDate = endDate
-                        )
-                        val defaultQueryState = queryState.resetBottomSheetFilters()
-                        if (updatedQueryState == defaultQueryState) {
-                            showToast(context, "No filters applied, you can reset")
-                        } else {
-                            viewModel.applyFilters(updatedQueryState)
-                            onDismiss()
-                        }
-                    },
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    )
-                ) {
-                    Text(stringResource(id = R.string.apply))
-                }
-            }
-        }
+        FilterHeader(viewModel, filterState, context, onDismiss)
         HorizontalDivider()
+        FilterContent(scrollState, filterState)
+    }
+}
 
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .verticalScroll(scrollState)
-        ) {
-            Row(modifier = Modifier.fillMaxWidth()) {
-                DropdownInputField(
-                    label = "Type",
-                    options = FilterUtils.TYPE_OPTIONS,
-                    selectedValue = type,
-                    onValueChange = { type = it },
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 4.dp)
-                )
-                DropdownInputField(
-                    label = "Status",
-                    options = FilterUtils.STATUS_OPTIONS,
-                    selectedValue = status,
-                    onValueChange = { status = it },
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(start = 4.dp)
-                )
-            }
-
-            Row(modifier = Modifier.fillMaxWidth()) {
-                val selectedRatingDescription = FilterUtils.getRatingDescription(rating)
-                var ratingDescription by remember { mutableStateOf(selectedRatingDescription) }
-                DropdownInputField(
-                    label = "Rating",
-                    options = FilterUtils.RATING_OPTIONS.map { FilterUtils.getRatingDescription(it) },
-                    selectedValue = ratingDescription,
-                    onValueChange = { selectedRating ->
-                        ratingDescription = selectedRating
-                        rating = FilterUtils.RATING_OPTIONS.firstOrNull {
-                            FilterUtils.getRatingDescription(it) == selectedRating
-                        } ?: "Any"
-                    },
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 4.dp)
-                )
-                NumberInputField(
-                    label = "Score",
-                    value = score,
-                    onValueChange = { score = it },
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(start = 4.dp),
-                    minValue = 0.0,
-                    maxValue = 10.0
-                )
-            }
-
-            Row(modifier = Modifier.fillMaxWidth()) {
-                NumberInputField(
-                    label = "Min Score",
-                    value = minScore,
-                    onValueChange = { minScore = it },
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 4.dp),
-                    minValue = 0.0,
-                    maxValue = 10.0
-                )
-                NumberInputField(
-                    label = "Max Score",
-                    value = maxScore,
-                    onValueChange = { maxScore = it },
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(start = 4.dp),
-                    minValue = 0.0,
-                    maxValue = 10.0
-                )
-            }
-
-            Row(modifier = Modifier.fillMaxWidth()) {
-                DropdownInputField(
-                    label = "Order By",
-                    options = FilterUtils.ORDER_BY_OPTIONS,
-                    selectedValue = orderBy,
-                    onValueChange = { orderBy = it },
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 4.dp)
-                )
-                DropdownInputField(
-                    label = "Sort",
-                    options = FilterUtils.SORT_OPTIONS,
-                    selectedValue = sort,
-                    onValueChange = { sort = it },
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(start = 4.dp)
-                )
-            }
-
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Text("Date Range")
-                Row {
-                    Text(
-                        text = startDate?.toString() ?: "Start Date",
-                        modifier = Modifier.clickable { /* Implement date picker */ }
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = endDate?.toString() ?: "End Date",
-                        modifier = Modifier.clickable { /* Implement date picker */ }
-                    )
-                }
-            }
-
-            Row(modifier = Modifier.fillMaxWidth()) {
-                CheckboxInputField(
-                    label = "Include Unapproved",
-                    checked = unapproved,
-                    onCheckedChange = { unapproved = it },
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(end = 4.dp)
-
-                )
-                CheckboxInputField(
-                    label = "SFW Only",
-                    checked = sfw,
-                    onCheckedChange = { sfw = it },
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(start = 4.dp)
-                )
-            }
+@Composable
+private fun FilterHeader(
+    viewModel: AnimeSearchViewModel,
+    filterState: MutableState<FilterUtils.FilterState>,
+    context: Context,
+    onDismiss: () -> Unit
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            stringResource(R.string.filter_anime),
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.primary
+        )
+        Row {
+            ResetButton(viewModel, filterState, context, onDismiss)
+            Spacer(Modifier.width(4.dp))
+            ApplyButton(viewModel, filterState, context, onDismiss)
         }
     }
 }
 
-private fun showToast(context: Context, message: String) {
-    Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+@Composable
+private fun ResetButton(
+    viewModel: AnimeSearchViewModel,
+    filterState: MutableState<FilterUtils.FilterState>,
+    context: Context,
+    onDismiss: () -> Unit
+) {
+    Button(
+        onClick = {
+            if (filterState.value.queryState.isDefault()) {
+                Toast.makeText(context, "Filters are already default", Toast.LENGTH_SHORT).show()
+            } else {
+                viewModel.resetBottomSheetFilters()
+                filterState.value =
+                    FilterUtils.FilterState(filterState.value.queryState.resetBottomSheetFilters())
+                onDismiss()
+            }
+        },
+        enabled = !filterState.value.queryState.isDefault(),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
+        )
+    ) { Text(stringResource(R.string.reset)) }
+}
+
+@Composable
+private fun ApplyButton(
+    viewModel: AnimeSearchViewModel,
+    filterState: MutableState<FilterUtils.FilterState>,
+    context: Context,
+    onDismiss: () -> Unit
+) {
+    Button(
+        onClick = {
+            val updatedQueryState = FilterUtils.collectFilterValues(
+                currentState = filterState.value.queryState,
+                type = filterState.value.type,
+                score = filterState.value.score?.toDoubleOrNull(),
+                minScore = filterState.value.minScore?.toDoubleOrNull(),
+                maxScore = filterState.value.maxScore?.toDoubleOrNull(),
+                status = filterState.value.status,
+                rating = filterState.value.rating,
+                sfw = filterState.value.sfw,
+                unapproved = filterState.value.unapproved,
+                orderBy = filterState.value.orderBy,
+                sort = filterState.value.sort,
+                enableDateRange = filterState.value.enableDateRange,
+                startDate = filterState.value.startDate,
+                endDate = filterState.value.endDate
+            )
+            val defaultQueryState = filterState.value.queryState.resetBottomSheetFilters()
+            if (updatedQueryState == defaultQueryState) {
+                Toast.makeText(context, "No filters applied, you can reset", Toast.LENGTH_SHORT)
+                    .show()
+            } else {
+                viewModel.applyFilters(updatedQueryState)
+                onDismiss()
+            }
+        },
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary
+        )
+    ) { Text(stringResource(R.string.apply)) }
+}
+
+@Composable
+private fun FilterContent(
+    scrollState: ScrollState,
+    filterState: MutableState<FilterUtils.FilterState>,
+) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .verticalScroll(scrollState)
+    ) {
+        Row(Modifier.fillMaxWidth()) {
+            DropdownInputField(
+                "Type",
+                FilterUtils.TYPE_OPTIONS,
+                filterState.value.type,
+                { filterState.value = filterState.value.copy(type = it) },
+                Modifier
+                    .weight(1f)
+                    .padding(end = 4.dp)
+            )
+            DropdownInputField(
+                "Status",
+                FilterUtils.STATUS_OPTIONS,
+                filterState.value.status,
+                { filterState.value = filterState.value.copy(status = it) },
+                Modifier
+                    .weight(1f)
+                    .padding(start = 4.dp)
+            )
+        }
+        Row(Modifier.fillMaxWidth()) {
+            val selectedRatingDescription by remember {
+                mutableStateOf(
+                    FilterUtils.getRatingDescription(
+                        filterState.value.rating
+                    )
+                )
+            }
+            DropdownInputField(
+                "Rating",
+                FilterUtils.RATING_OPTIONS.map { FilterUtils.getRatingDescription(it) },
+                selectedRatingDescription,
+                { selectedRating ->
+                    filterState.value =
+                        filterState.value.copy(rating = FilterUtils.RATING_OPTIONS.firstOrNull {
+                            FilterUtils.getRatingDescription(it) == selectedRating
+                        } ?: "Any")
+                },
+                Modifier
+                    .weight(1f)
+                    .padding(end = 4.dp)
+            )
+            NumberInputField(
+                "Score",
+                filterState.value.score ?: "",
+                { filterState.value = filterState.value.copy(score = it) },
+                Modifier
+                    .weight(1f)
+                    .padding(start = 4.dp),
+                minValue = 0.0,
+                maxValue = 10.0
+            )
+        }
+        Row(Modifier.fillMaxWidth()) {
+            NumberInputField(
+                "Min Score",
+                filterState.value.minScore ?: "",
+                { filterState.value = filterState.value.copy(minScore = it) },
+                Modifier
+                    .weight(1f)
+                    .padding(end = 4.dp),
+                minValue = 0.0,
+                maxValue = 10.0
+            )
+            NumberInputField(
+                "Max Score",
+                filterState.value.maxScore ?: "",
+                { filterState.value = filterState.value.copy(maxScore = it) },
+                Modifier
+                    .weight(1f)
+                    .padding(start = 4.dp),
+                minValue = 0.0,
+                maxValue = 10.0
+            )
+        }
+        Row(Modifier.fillMaxWidth()) {
+            DropdownInputField(
+                "Order By",
+                FilterUtils.ORDER_BY_OPTIONS,
+                filterState.value.orderBy,
+                { filterState.value = filterState.value.copy(orderBy = it) },
+                Modifier
+                    .weight(1f)
+                    .padding(end = 4.dp)
+            )
+            DropdownInputField(
+                "Sort",
+                FilterUtils.SORT_OPTIONS,
+                filterState.value.sort,
+                { filterState.value = filterState.value.copy(sort = it) },
+                Modifier
+                    .weight(1f)
+                    .padding(start = 4.dp)
+            )
+        }
+        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(
+                    checked = filterState.value.enableDateRange,
+                    onCheckedChange = {
+                        filterState.value = filterState.value.copy(enableDateRange = it)
+                    })
+                Text("Enable Date Range")
+            }
+            if (filterState.value.enableDateRange) {
+                DateRangePickerInline(
+                    filterState.value.startDate,
+                    filterState.value.endDate,
+                    { newDateRange ->
+                        filterState.value = filterState.value.copy(
+                            startDate = newDateRange.first,
+                            endDate = newDateRange.second
+                        )
+                    },
+                    {
+                        filterState.value = filterState.value.copy(startDate = null, endDate = null)
+                    })
+            }
+        }
+        Row(Modifier.fillMaxWidth()) {
+            CheckboxInputField(
+                "Include Unapproved",
+                filterState.value.unapproved,
+                { filterState.value = filterState.value.copy(unapproved = it) },
+                Modifier
+                    .weight(1f)
+                    .padding(end = 4.dp)
+            )
+            CheckboxInputField(
+                "SFW Only",
+                filterState.value.sfw,
+                { filterState.value = filterState.value.copy(sfw = it) },
+                Modifier
+                    .weight(1f)
+                    .padding(start = 4.dp)
+            )
+        }
+    }
 }

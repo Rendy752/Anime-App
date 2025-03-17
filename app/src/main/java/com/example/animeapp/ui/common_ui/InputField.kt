@@ -1,6 +1,5 @@
 package com.example.animeapp.ui.common_ui
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -8,22 +7,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.unit.dp
 import java.time.LocalDate
-
-@Composable
-fun TextInputField(
-    label: String,
-    value: String,
-    onValueChange: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = onValueChange,
-        label = { Text(label) },
-        modifier = modifier.fillMaxWidth()
-    )
-}
 
 @Composable
 fun NumberInputField(
@@ -129,25 +114,42 @@ fun CheckboxInputField(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun DateRangeInputField(
+fun DateRangePickerInline(
     startDate: LocalDate?,
     endDate: LocalDate?,
-    onStartDateChange: (LocalDate?) -> Unit,
-    onEndDateChange: (LocalDate?) -> Unit,
-    modifier: Modifier = Modifier
+    onDateRangeSelected: (Pair<LocalDate?, LocalDate?>) -> Unit,
+    onReset: () -> Unit
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        Text("Date Range")
-        Row {
-            Text(
-                text = startDate?.toString() ?: "Start Date",
-                modifier = Modifier.clickable { /* Implement date picker */ }
-            )
-            Text(
-                text = endDate?.toString() ?: "End Date",
-                modifier = Modifier.clickable { /* Implement date picker */ }
-            )
+    val dateRangePickerState = rememberDateRangePickerState(
+        initialSelectedStartDateMillis = startDate?.toEpochDay()?.let { it * 86400000 },
+        initialSelectedEndDateMillis = endDate?.toEpochDay()?.let { it * 86400000 }
+    )
+
+    Column(Modifier.fillMaxWidth()) {
+        DateRangePicker(
+            state = dateRangePickerState,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(400.dp)
+        )
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            TextButton(
+                onClick = {
+                    dateRangePickerState.setSelection(null, null)
+                    onReset()
+                }
+            ) { Text("Reset") }
+        }
+    }
+
+    LaunchedEffect(dateRangePickerState.selectedStartDateMillis, dateRangePickerState.selectedEndDateMillis) {
+        val newStartDate = dateRangePickerState.selectedStartDateMillis?.let { LocalDate.ofEpochDay(it / 86400000) }
+        val newEndDate = dateRangePickerState.selectedEndDateMillis?.let { LocalDate.ofEpochDay(it / 86400000) }
+
+        if (newStartDate != startDate || newEndDate != endDate) {
+            onDateRangeSelected(Pair(newStartDate, newEndDate))
         }
     }
 }
