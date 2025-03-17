@@ -12,7 +12,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.animeapp.R
+import com.example.animeapp.ui.animeSearch.components.FilterBottomSheet
 import com.example.animeapp.ui.animeSearch.viewmodel.AnimeSearchViewModel
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FilterList
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -20,11 +23,22 @@ fun AnimeSearchScreen(navController: NavController) {
     val viewModel: AnimeSearchViewModel = hiltViewModel()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val state = rememberPullToRefreshState()
+    var showBottomSheet by remember { mutableStateOf(false) }
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
 
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(text = stringResource(id = R.string.title_search)) },
+                actions = {
+                    IconButton(onClick = { showBottomSheet = true }) {
+                        Icon(
+                            imageVector = Icons.Filled.FilterList,
+                            tint = MaterialTheme.colorScheme.primary,
+                            contentDescription = stringResource(id = R.string.filter)
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surfaceContainer,
                     titleContentColor = MaterialTheme.colorScheme.primary
@@ -58,6 +72,15 @@ fun AnimeSearchScreen(navController: NavController) {
                     ResultsSection(navController, viewModel)
                 }
                 LimitAndPaginationSection(viewModel)
+            }
+        }
+        if (showBottomSheet) {
+            ModalBottomSheet(
+                modifier = Modifier.fillMaxHeight(),
+                sheetState = sheetState,
+                onDismissRequest = { showBottomSheet = false }
+            ) {
+                FilterBottomSheet(viewModel = viewModel, onDismiss = { showBottomSheet = false })
             }
         }
     }

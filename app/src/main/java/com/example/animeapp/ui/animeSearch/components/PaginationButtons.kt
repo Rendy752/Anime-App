@@ -5,23 +5,21 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.CompletePagination
-import com.example.animeapp.ui.animeSearch.viewmodel.AnimeSearchViewModel
 import com.example.animeapp.ui.common_ui.PaginationButton
 import com.example.animeapp.ui.common_ui.PaginationDot
 
 @Composable
-fun PaginationButtons(pagination: CompletePagination, viewModel: AnimeSearchViewModel) {
+fun PaginationButtons(pagination: CompletePagination, onClickListener: (Int) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 8.dp),
         horizontalArrangement = Arrangement.Center
     ) {
-        val currentPage = viewModel.producersQueryState.collectAsState().value.page
+        val currentPage = pagination.current_page
         val lastPage = pagination.last_visible_page
         val hasNextPage = pagination.has_next_page
 
@@ -31,9 +29,7 @@ fun PaginationButtons(pagination: CompletePagination, viewModel: AnimeSearchView
                 pageNumber = currentPage - 1,
                 currentPage = currentPage,
                 onPaginationClick = {
-                    viewModel.applyProducerQueryStateFilters(
-                        viewModel.producersQueryState.value.copy(page = it)
-                    )
+                    onClickListener(it)
                 }
             )
         }
@@ -45,9 +41,7 @@ fun PaginationButtons(pagination: CompletePagination, viewModel: AnimeSearchView
                     pageNumber = i,
                     currentPage = currentPage,
                     onPaginationClick = {
-                        viewModel.applyProducerQueryStateFilters(
-                            viewModel.producersQueryState.value.copy(page = it)
-                        )
+                        onClickListener(it)
                     }
                 )
             }
@@ -57,9 +51,7 @@ fun PaginationButtons(pagination: CompletePagination, viewModel: AnimeSearchView
                 pageNumber = 1,
                 currentPage = currentPage,
                 onPaginationClick = {
-                    viewModel.applyProducerQueryStateFilters(
-                        viewModel.producersQueryState.value.copy(page = it)
-                    )
+                    onClickListener(it)
                 }
             )
             PaginationButton(
@@ -67,9 +59,7 @@ fun PaginationButtons(pagination: CompletePagination, viewModel: AnimeSearchView
                 pageNumber = 2,
                 currentPage = currentPage,
                 onPaginationClick = {
-                    viewModel.applyProducerQueryStateFilters(
-                        viewModel.producersQueryState.value.copy(page = it)
-                    )
+                    onClickListener(it)
                 }
             )
 
@@ -81,9 +71,7 @@ fun PaginationButtons(pagination: CompletePagination, viewModel: AnimeSearchView
                     pageNumber = currentPage,
                     currentPage = currentPage,
                     onPaginationClick = {
-                        viewModel.applyProducerQueryStateFilters(
-                            viewModel.producersQueryState.value.copy(page = it)
-                        )
+                        onClickListener(it)
                     }
                 )
             }
@@ -95,9 +83,7 @@ fun PaginationButtons(pagination: CompletePagination, viewModel: AnimeSearchView
                 pageNumber = lastPage - 1,
                 currentPage = currentPage,
                 onPaginationClick = {
-                    viewModel.applyProducerQueryStateFilters(
-                        viewModel.producersQueryState.value.copy(page = it)
-                    )
+                    onClickListener(it)
                 }
             )
             PaginationButton(
@@ -105,9 +91,7 @@ fun PaginationButtons(pagination: CompletePagination, viewModel: AnimeSearchView
                 pageNumber = lastPage,
                 currentPage = currentPage,
                 onPaginationClick = {
-                    viewModel.applyProducerQueryStateFilters(
-                        viewModel.producersQueryState.value.copy(page = it)
-                    )
+                    onClickListener(it)
                 }
             )
         }
@@ -118,9 +102,7 @@ fun PaginationButtons(pagination: CompletePagination, viewModel: AnimeSearchView
                 pageNumber = currentPage + 1,
                 currentPage = currentPage,
                 onPaginationClick = {
-                    viewModel.applyProducerQueryStateFilters(
-                        viewModel.producersQueryState.value.copy(page = it)
-                    )
+                    onClickListener(it)
                 }
             )
         }

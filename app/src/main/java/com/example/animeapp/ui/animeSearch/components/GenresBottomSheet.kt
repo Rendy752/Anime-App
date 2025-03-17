@@ -25,6 +25,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.R
 import com.example.animeapp.ui.animeSearch.viewmodel.AnimeSearchViewModel
+import com.example.animeapp.utils.Resource
 
 @Composable
 fun GenresBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit) {
@@ -38,10 +39,10 @@ fun GenresBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit) {
             title = { Text("Select Genres") },
             text = {
                 when (genres) {
-                    is com.example.animeapp.utils.Resource.Loading -> {
+                    is Resource.Loading -> {
                         CircularProgressIndicator()
                     }
-                    is com.example.animeapp.utils.Resource.Success -> {
+                    is Resource.Success -> {
                         val genreList = genres.data?.data ?: emptyList()
                         LazyColumn {
                             items(genreList) { genre ->
@@ -63,7 +64,7 @@ fun GenresBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit) {
                             }
                         }
                     }
-                    is com.example.animeapp.utils.Resource.Error -> {
+                    is Resource.Error -> {
                         Text(genres.message ?: "Error loading genres")
                     }
                 }

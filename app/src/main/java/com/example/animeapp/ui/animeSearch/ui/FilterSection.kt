@@ -190,7 +190,11 @@ fun FilterSection(viewModel: AnimeSearchViewModel) {
 
         val paginationState = viewModel.producers.collectAsState().value.data?.pagination
         if (paginationState != null) {
-            PaginationButtons(paginationState, viewModel)
+            PaginationButtons(paginationState) { pageNumber ->
+                viewModel.applyProducerQueryStateFilters(
+                    viewModel.producersQueryState.value.copy(page = pageNumber)
+                )
+            }
         }
     }
 }

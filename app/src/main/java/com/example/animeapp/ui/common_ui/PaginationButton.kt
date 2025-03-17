@@ -10,10 +10,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import com.example.animeapp.ui.theme.primaryLight
-import com.example.animeapp.ui.theme.onPrimaryLight
-import com.example.animeapp.ui.theme.surfaceLight
-import com.example.animeapp.ui.theme.onSurfaceLight
 
 @Composable
 fun PaginationButton(
@@ -24,14 +20,14 @@ fun PaginationButton(
 ) {
     val isCurrentPage = currentPage == pageNumber
     val backgroundColor = if (isCurrentPage) {
-        primaryLight
+        MaterialTheme.colorScheme.primaryContainer
     } else {
-        surfaceLight
+        MaterialTheme.colorScheme.surfaceVariant
     }
     val textColor = if (isCurrentPage) {
-        onPrimaryLight
+        MaterialTheme.colorScheme.onPrimaryContainer
     } else {
-        onSurfaceLight
+        MaterialTheme.colorScheme.onSurfaceVariant
     }
 
     Text(
