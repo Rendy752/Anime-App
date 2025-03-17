@@ -30,11 +30,38 @@ fun NumberInputField(
     label: String,
     value: String,
     onValueChange: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
+    modifier: Modifier = Modifier,
+    minValue: Double? = null,
+    maxValue: Double? = null
+){
+    var isError by remember { mutableStateOf(false) }
+
     OutlinedTextField(
         value = value,
-        onValueChange = onValueChange,
+        isError = isError,
+        supportingText = {
+            if (isError && minValue != null && maxValue != null)
+                Text(text = "Value must be between $minValue and $maxValue")
+        },
+        onValueChange = { newValue ->
+            isError = false
+            val doubleValue = newValue.toDoubleOrNull()
+            if (doubleValue != null) {
+                if ((minValue == null || doubleValue >= minValue) &&
+                    (maxValue == null || doubleValue <= maxValue)
+                ) {
+                    onValueChange(newValue)
+                } else {
+                    isError = true
+                }
+            } else if (newValue.isEmpty()) {
+                onValueChange(newValue)
+            } else {
+                isError = true
+            }
+
+
+        },
         label = { Text(label) },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         modifier = modifier.fillMaxWidth()

@@ -16,6 +16,10 @@ import com.example.animeapp.ui.animeSearch.components.FilterBottomSheet
 import com.example.animeapp.ui.animeSearch.viewmodel.AnimeSearchViewModel
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -24,7 +28,7 @@ fun AnimeSearchScreen(navController: NavController) {
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val state = rememberPullToRefreshState()
     var showBottomSheet by remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     Scaffold(
         topBar = {
@@ -46,42 +50,61 @@ fun AnimeSearchScreen(navController: NavController) {
             )
         }
     ) { paddingValues ->
-        PullToRefreshBox(
-            isRefreshing = isRefreshing,
-            onRefresh = { viewModel.applyFilters(viewModel.queryState.value) },
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            state = state,
-            indicator = {
-                PullToRefreshDefaults.Indicator(
-                    isRefreshing = isRefreshing,
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.align(Alignment.TopCenter),
-                    state = state
-                )
-            },
-        ) {
-            Column(
-                modifier = Modifier.fillMaxSize()
+        Box(modifier = Modifier.fillMaxSize()){
+            PullToRefreshBox(
+                isRefreshing = isRefreshing,
+                onRefresh = { viewModel.applyFilters(viewModel.queryState.value) },
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues),
+                state = state,
+                indicator = {
+                    PullToRefreshDefaults.Indicator(
+                        isRefreshing = isRefreshing,
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        color = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.align(Alignment.TopCenter),
+                        state = state
+                    )
+                },
             ) {
-                FilterSection(viewModel)
-                HorizontalDivider()
-                Column(modifier = Modifier.weight(1f)) {
-                    ResultsSection(navController, viewModel)
+                Column(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    FilterSection(viewModel)
+                    HorizontalDivider()
+                    Column(modifier = Modifier.weight(1f)) {
+                        ResultsSection(navController, viewModel)
+                    }
+                    LimitAndPaginationSection(viewModel)
                 }
-                LimitAndPaginationSection(viewModel)
+            }
+            if (showBottomSheet) {
+                val configuration = LocalConfiguration.current
+                val screenWidth = configuration.screenWidthDp.dp
+                val screenHeight = configuration.screenHeightDp.dp
+                val bottomSheetWidth = screenWidth * 0.9f
+                val bottomSheetHeight = screenHeight * 0.6f
+                val bottomSheetPadding: Dp = 48.dp
+                val shape = MaterialTheme.shapes.extraLarge
+
+                ModalBottomSheet(
+                    modifier = Modifier
+                        .height(bottomSheetHeight)
+                        .width(bottomSheetWidth)
+                        .padding(bottom = bottomSheetPadding)
+                        .align(Alignment.BottomCenter),
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    sheetState = sheetState,
+                    onDismissRequest = { showBottomSheet = false },
+                    shape = shape
+                ) {
+                    Column(modifier = Modifier.clip(shape)) {
+                        FilterBottomSheet(viewModel = viewModel, onDismiss = { showBottomSheet = false })
+                    }
+                }
             }
         }
-        if (showBottomSheet) {
-            ModalBottomSheet(
-                modifier = Modifier.fillMaxHeight(),
-                sheetState = sheetState,
-                onDismissRequest = { showBottomSheet = false }
-            ) {
-                FilterBottomSheet(viewModel = viewModel, onDismiss = { showBottomSheet = false })
-            }
-        }
+
     }
 }
