@@ -13,12 +13,9 @@ fun TitleSynonymsList(
 ) {
     Row(
         modifier = Modifier
-            .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 8.dp),
+            .horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        synonyms.forEach { synonym ->
-            ChipView(text = synonym)
-        }
+        synonyms.forEach { synonym -> FilterChipView(synonym) }
     }
 }

@@ -1,7 +1,10 @@
 package com.example.animeapp.ui.animeSearch.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Recommend
 import androidx.compose.material3.Icon
@@ -10,11 +13,26 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.animeapp.models.AnimeDetail
+import com.example.animeapp.models.animeDetailPlaceholder
 import com.example.animeapp.ui.common_ui.AsyncImageWithPlaceholder
 import com.example.animeapp.ui.common_ui.TitleSynonymsList
+
+@Preview
+@Composable
+fun AnimeSearchItemPreview() {
+    AnimeSearchItem(
+        anime = animeDetailPlaceholder,
+        onItemClick = {}
+    )
+}
 
 @Composable
 fun AnimeSearchItem(
@@ -23,10 +41,28 @@ fun AnimeSearchItem(
 ) {
     anime?.let { data ->
         Column(
-            modifier = Modifier.fillMaxWidth()
-                .padding(16.dp).clickable { onItemClick?.invoke(data.mal_id) }
+            modifier = Modifier
+                .padding(8.dp)
+                .clip(RoundedCornerShape(16.dp))
+                .border(
+                    width = 1.dp,
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+
+                    shape = RoundedCornerShape(16.dp)
+                )
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.surfaceContainerHigh,
+                            MaterialTheme.colorScheme.surfaceContainerLowest
+                        )
+                    )
+                ).clickable { onItemClick?.invoke(data.mal_id) }
+                .fillMaxWidth()
+               .padding(16.dp)
         ) {
             Row(
+                verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 AsyncImageWithPlaceholder(
@@ -35,21 +71,25 @@ fun AnimeSearchItem(
                     isAiring = data.airing
                 )
                 Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 16.dp),
                 ) {
                     Text(
                         text = data.title,
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 14.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                     Row(
+                        modifier = Modifier.padding(top = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
-                            text = data.type.toString(),
+                            text = "${data.type} - ${data.year ?: "Unknown"}",
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.weight(1f),
                             maxLines = 1,
@@ -79,5 +119,11 @@ fun AnimeSearchItem(
 
 @Composable
 private fun DataText(label: String, value: String) {
-    Text(text = "$label: $value", style = MaterialTheme.typography.bodyMedium)
+    Text(
+        text = "$label: $value",
+        style = MaterialTheme.typography.bodyMedium,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp)
+    )
 }

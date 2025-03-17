@@ -19,13 +19,13 @@ import android.widget.ArrayAdapter
 import android.widget.Spinner
 import com.example.animeapp.utils.Debounce
 import com.example.animeapp.utils.Limit
-import com.example.animeapp.ui.common_ui.ChipView
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import com.example.animeapp.ui.animeSearch.components.FilterField
 import com.example.animeapp.ui.animeSearch.components.GenresBottomSheet
 import com.example.animeapp.ui.animeSearch.components.PaginationButtons
 import com.example.animeapp.ui.animeSearch.components.ProducersBottomSheet
+import com.example.animeapp.ui.common_ui.FilterChipView
 import com.example.animeapp.ui.theme.surfaceVariantLight
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
@@ -100,28 +100,32 @@ fun FilterSection(viewModel: AnimeSearchViewModel) {
 
         // Display selected Genres
         FlowRow(modifier = Modifier.padding(top = 8.dp)) {
-            viewModel.selectedGenreId.collectAsState().value.forEach { genreId ->
+            val selectedGenresId = viewModel.selectedGenreId.collectAsState().value
+            selectedGenresId.forEach { genreId ->
                 val genre =
                     viewModel.genres.collectAsState().value.data?.data?.find { it.mal_id == genreId }
                 genre?.let {
-                    ChipView(text = "${it.name} (${it.count})", onClick = {
-                        viewModel.setSelectedGenreId(it.mal_id)
-                    })
+                    FilterChipView (
+                        text = "${it.name} (${it.count})",
+                        checked = it.mal_id in selectedGenresId,
+                        onCheckedChange = { viewModel.setSelectedGenreId(it.mal_id) }
+                    )
                 }
             }
         }
 
         // Display selected Producers
         FlowRow(modifier = Modifier.padding(top = 8.dp)) {
-            viewModel.selectedProducerId.collectAsState().value.forEach { producerId ->
+            val selectedProducersId = viewModel.selectedProducerId.collectAsState().value
+            selectedProducersId.forEach { producerId ->
                 val producer =
                     viewModel.producers.collectAsState().value.data?.data?.find { it.mal_id == producerId }
                 producer?.let {
-                    ChipView(
+                    FilterChipView (
                         text = "${it.titles?.get(0)?.title ?: "Unknown"} (${it.count})",
-                        onClick = {
-                            viewModel.setSelectedProducerId(it.mal_id)
-                        })
+                        checked = it.mal_id in selectedProducersId,
+                        onCheckedChange = { viewModel.setSelectedProducerId(it.mal_id) }
+                    )
                 }
             }
         }

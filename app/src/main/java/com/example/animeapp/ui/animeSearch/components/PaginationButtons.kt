@@ -32,11 +32,10 @@ fun PaginationButtons(pagination: CompletePagination, viewModel: AnimeSearchView
                 currentPage = currentPage,
                 onPaginationClick = {
                     viewModel.applyProducerQueryStateFilters(
-                        viewModel.producersQueryState.value.copy(
-                            page = it
-                        )
+                        viewModel.producersQueryState.value.copy(page = it)
                     )
-                })
+                }
+            )
         }
 
         if (lastPage <= 4) {
@@ -47,11 +46,10 @@ fun PaginationButtons(pagination: CompletePagination, viewModel: AnimeSearchView
                     currentPage = currentPage,
                     onPaginationClick = {
                         viewModel.applyProducerQueryStateFilters(
-                            viewModel.producersQueryState.value.copy(
-                                page = it
-                            )
+                            viewModel.producersQueryState.value.copy(page = it)
                         )
-                    })
+                    }
+                )
             }
         } else {
             PaginationButton(
@@ -60,26 +58,22 @@ fun PaginationButtons(pagination: CompletePagination, viewModel: AnimeSearchView
                 currentPage = currentPage,
                 onPaginationClick = {
                     viewModel.applyProducerQueryStateFilters(
-                        viewModel.producersQueryState.value.copy(
-                            page = it
-                        )
+                        viewModel.producersQueryState.value.copy(page = it)
                     )
-                })
+                }
+            )
             PaginationButton(
                 text = "2",
                 pageNumber = 2,
                 currentPage = currentPage,
                 onPaginationClick = {
                     viewModel.applyProducerQueryStateFilters(
-                        viewModel.producersQueryState.value.copy(
-                            page = it
-                        )
+                        viewModel.producersQueryState.value.copy(page = it)
                     )
-                })
+                }
+            )
 
-            if (currentPage > 3) {
-                PaginationDot()
-            }
+            if (currentPage > 3) PaginationDot()
 
             if (currentPage > 2 && currentPage < lastPage - 1) {
                 PaginationButton(
@@ -88,16 +82,13 @@ fun PaginationButtons(pagination: CompletePagination, viewModel: AnimeSearchView
                     currentPage = currentPage,
                     onPaginationClick = {
                         viewModel.applyProducerQueryStateFilters(
-                            viewModel.producersQueryState.value.copy(
-                                page = it
-                            )
+                            viewModel.producersQueryState.value.copy(page = it)
                         )
-                    })
+                    }
+                )
             }
 
-            if (currentPage < lastPage - 2) {
-                PaginationDot()
-            }
+            if (currentPage < lastPage - 2) PaginationDot()
 
             PaginationButton(
                 text = "${lastPage - 1}",
@@ -105,22 +96,20 @@ fun PaginationButtons(pagination: CompletePagination, viewModel: AnimeSearchView
                 currentPage = currentPage,
                 onPaginationClick = {
                     viewModel.applyProducerQueryStateFilters(
-                        viewModel.producersQueryState.value.copy(
-                            page = it
-                        )
+                        viewModel.producersQueryState.value.copy(page = it)
                     )
-                })
+                }
+            )
             PaginationButton(
                 text = "$lastPage",
                 pageNumber = lastPage,
                 currentPage = currentPage,
                 onPaginationClick = {
                     viewModel.applyProducerQueryStateFilters(
-                        viewModel.producersQueryState.value.copy(
-                            page = it
-                        )
+                        viewModel.producersQueryState.value.copy(page = it)
                     )
-                })
+                }
+            )
         }
 
         if (hasNextPage) {
@@ -130,11 +119,10 @@ fun PaginationButtons(pagination: CompletePagination, viewModel: AnimeSearchView
                 currentPage = currentPage,
                 onPaginationClick = {
                     viewModel.applyProducerQueryStateFilters(
-                        viewModel.producersQueryState.value.copy(
-                            page = it
-                        )
+                        viewModel.producersQueryState.value.copy(page = it)
                     )
-                })
+                }
+            )
         }
     }
 }

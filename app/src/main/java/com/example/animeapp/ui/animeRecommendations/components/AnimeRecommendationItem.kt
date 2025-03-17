@@ -53,7 +53,7 @@ fun AnimeRecommendationItem(
                     brush = Brush.verticalGradient(
                         colors = listOf(
                             MaterialTheme.colorScheme.surfaceContainerHigh,
-                            MaterialTheme.colorScheme.surfaceContainerLow
+                            MaterialTheme.colorScheme.surfaceContainerLowest
                         )
                     )
                 )

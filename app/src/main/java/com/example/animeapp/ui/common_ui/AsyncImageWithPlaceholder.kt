@@ -58,7 +58,7 @@ fun AsyncImageWithPlaceholder(
         } else {
             if (isAiring != null) {
                 val icon = if (isAiring) Icons.Filled.NotificationsActive else Icons.Filled.Done
-                val tint = if (isAiring) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.tertiaryContainer
+                val tint = if (isAiring) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
 
                 Icon(
                     imageVector = icon,

@@ -42,8 +42,9 @@ fun AnimeSearchScreen(navController: NavController) {
         ) {
             FilterSection(viewModel)
             HorizontalDivider()
-            ResultsSection(navController, viewModel)
-            Spacer(modifier = Modifier.weight(1f))
+            Column(modifier = Modifier.weight(1f)) {
+                ResultsSection(navController, viewModel)
+            }
             LimitAndPaginationSection(viewModel)
         }
     }
