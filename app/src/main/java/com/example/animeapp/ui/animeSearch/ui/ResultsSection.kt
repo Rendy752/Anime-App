@@ -13,7 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.animeapp.ui.animeSearch.viewmodel.AnimeSearchViewModel
-import com.example.animeapp.ui.common_ui.AnimeListItem
+import com.example.animeapp.ui.animeSearch.components.AnimeSearchItem
 import com.example.animeapp.utils.Resource
 
 @Composable
@@ -31,6 +31,7 @@ fun ResultsSection(navController: NavController, viewModel: AnimeSearchViewModel
                     CircularProgressIndicator()
                 }
             }
+
             is Resource.Success -> {
                 if (animeList.data?.data.isNullOrEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -42,11 +43,14 @@ fun ResultsSection(navController: NavController, viewModel: AnimeSearchViewModel
                 } else {
                     LazyColumn {
                         items(animeList.data.data) { anime ->
-                            AnimeListItem(anime = anime, navController = navController)
+                            AnimeSearchItem(anime = anime) { animeId ->
+                                navController.navigate("animeDetail/$animeId")
+                            }
                         }
                     }
                 }
             }
+
             is Resource.Error -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                     Text(

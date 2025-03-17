@@ -20,6 +20,10 @@ fun AnimeSearchScreen(navController: NavController) {
         topBar = {
             TopAppBar(
                 title = { Text(text = stringResource(id = R.string.title_search)) },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    titleContentColor = MaterialTheme.colorScheme.primary
+                )
             )
         },
         floatingActionButton = {

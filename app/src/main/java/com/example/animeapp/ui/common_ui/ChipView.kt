@@ -2,37 +2,50 @@ package com.example.animeapp.ui.common_ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.padding
 
 @Composable
 fun ChipView(
     text: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    backgroundColor: Color = MaterialTheme.colorScheme.surfaceVariant,
-    contentColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-    borderColor: Color = MaterialTheme.colorScheme.outlineVariant,
+    onClick: (() -> Unit)? = null,
 ) {
+    var isClicked by remember { mutableStateOf(false) }
+    val shape = RoundedCornerShape(16.dp)
+    val containerColor = MaterialTheme.colorScheme.surfaceVariant
+    val contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val borderColor = MaterialTheme.colorScheme.outlineVariant
+    val borderStroke = BorderStroke(1.dp, borderColor)
+    val textPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp)
+
+    val modifier = if (onClick != null) {
+        Modifier.clickable {
+            onClick()
+        }
+    } else Modifier
+
     Surface(
-        modifier = modifier
-            .padding(4.dp)
-            .clickable { onClick() },
-        shape = RoundedCornerShape(16.dp),
-        color = backgroundColor,
+        modifier = modifier,
+        onClick = {
+            if (onClick != null) {
+                isClicked = !isClicked
+            }
+        },
+        shape = shape,
+        color = containerColor,
         contentColor = contentColor,
-        border = BorderStroke(1.dp, borderColor)
+        border = borderStroke
     ) {
         Text(
             text = text,
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier.padding(textPadding),
             style = MaterialTheme.typography.bodyMedium
         )
     }

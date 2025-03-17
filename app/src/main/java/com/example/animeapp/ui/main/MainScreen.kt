@@ -18,7 +18,7 @@ import com.example.animeapp.ui.settings.ui.SettingsScreen
 fun MainScreen() {
     val navController = rememberNavController()
     Surface(
-        color = MaterialTheme.colorScheme.background,
+        color = MaterialTheme.colorScheme.surface,
         modifier = Modifier.fillMaxSize()
     ) {
         Column(

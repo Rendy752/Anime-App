@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -13,19 +12,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
 import com.example.animeapp.models.AnimeHeader
 import com.example.animeapp.models.AnimeRecommendation
-import androidx.compose.material.icons.filled.Image
-import androidx.compose.material3.Icon
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.animeapp.models.animeRecommendationPlaceholder
+import com.example.animeapp.ui.common_ui.AsyncImageWithPlaceholder
 import com.example.animeapp.utils.DateUtils
 
 @Preview
@@ -94,7 +89,6 @@ private fun AnimePair(
     onItemClick: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var isImageLoading by remember { mutableStateOf(true) }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
@@ -109,32 +103,10 @@ private fun AnimePair(
             modifier = Modifier.padding(bottom = 4.dp)
         )
 
-        Box(
-            modifier = Modifier.size(100.dp, 150.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            AsyncImage(
-                model = anime.images.jpg.image_url,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(8.dp)),
-                contentDescription = anime.title,
-                contentScale = ContentScale.Crop,
-                onSuccess = { isImageLoading = false },
-                onError = { isImageLoading = false }
-            )
-
-            if (isImageLoading) {
-                Icon(
-                    imageVector = Icons.Filled.Image,
-                    contentDescription = "Placeholder",
-                    tint = Color.Gray,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(30.dp)
-                )
-            }
-        }
+        AsyncImageWithPlaceholder(
+            model = anime.images.jpg.image_url,
+            contentDescription = anime.title,
+        )
 
         Text(
             text = anime.title,

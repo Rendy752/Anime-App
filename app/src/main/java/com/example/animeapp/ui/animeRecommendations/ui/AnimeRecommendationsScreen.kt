@@ -8,7 +8,6 @@ import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -62,7 +61,7 @@ fun AnimeRecommendationsScreen(navController: NavController) {
                         Row {
                             Text(
                                 text = it.label,
-                                color = if (it.color == Color.Red) Color.Red
+                                color = if (it.color == MaterialTheme.colorScheme.onError) MaterialTheme.colorScheme.onError
                                 else MaterialTheme.colorScheme.onSurface
                             )
                             Icon(
@@ -72,7 +71,11 @@ fun AnimeRecommendationsScreen(navController: NavController) {
                             )
                         }
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    titleContentColor = MaterialTheme.colorScheme.primary
+                )
             )
         },
         floatingActionButton = {
@@ -97,7 +100,7 @@ fun AnimeRecommendationsScreen(navController: NavController) {
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp),
-                    color = Color.Red,
+                    color = MaterialTheme.colorScheme.onError,
                     style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center
                 )
@@ -127,7 +130,7 @@ fun AnimeRecommendationsScreen(navController: NavController) {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(16.dp),
-                            color = Color.Red,
+                            color = MaterialTheme.colorScheme.onError,
                             style = MaterialTheme.typography.bodyLarge,
                             textAlign = TextAlign.Center
                         )

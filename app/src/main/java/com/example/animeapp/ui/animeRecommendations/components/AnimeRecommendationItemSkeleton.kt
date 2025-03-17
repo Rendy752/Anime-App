@@ -12,7 +12,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.animeapp.utils.SkeletonBox
+import com.example.animeapp.ui.common_ui.SkeletonBox
 
 @Preview
 @Composable
