@@ -49,6 +49,9 @@ class AnimeSearchViewModel @Inject constructor(
     private val _selectedProducerId = MutableStateFlow<List<Int>>(emptyList())
     val selectedProducerId: StateFlow<List<Int>> = _selectedProducerId.asStateFlow()
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
     init {
         getRandomAnime()
         fetchGenres()
@@ -67,7 +70,11 @@ class AnimeSearchViewModel @Inject constructor(
 
     fun applyFilters(updatedQueryState: AnimeSearchQueryState) {
         _queryState.value = updatedQueryState
-        searchAnime()
+        _isRefreshing.value = true
+        viewModelScope.launch {
+            searchAnime()
+            _isRefreshing.value = false
+        }
     }
 
     private fun getRandomAnime() = viewModelScope.launch {

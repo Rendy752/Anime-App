@@ -2,9 +2,12 @@ package com.example.animeapp.ui.animeSearch.ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -15,6 +18,8 @@ import com.example.animeapp.ui.animeSearch.viewmodel.AnimeSearchViewModel
 @Composable
 fun AnimeSearchScreen(navController: NavController) {
     val viewModel: AnimeSearchViewModel = hiltViewModel()
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
+    val state = rememberPullToRefreshState()
 
     Scaffold(
         topBar = {
@@ -25,27 +30,35 @@ fun AnimeSearchScreen(navController: NavController) {
                     titleContentColor = MaterialTheme.colorScheme.primary
                 )
             )
-        },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { viewModel.applyFilters(viewModel.queryState.value) }) {
-                Icon(
-                    painterResource(id = R.drawable.ic_refresh_blue_24dp),
-                    contentDescription = stringResource(id = R.string.refresh_button)
-                )
-            }
         }
     ) { paddingValues ->
-        Column(
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = { viewModel.applyFilters(viewModel.queryState.value) },
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(paddingValues),
+            state = state,
+            indicator = {
+                PullToRefreshDefaults.Indicator(
+                    isRefreshing = isRefreshing,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.align(Alignment.TopCenter),
+                    state = state
+                )
+            },
         ) {
-            FilterSection(viewModel)
-            HorizontalDivider()
-            Column(modifier = Modifier.weight(1f)) {
-                ResultsSection(navController, viewModel)
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                FilterSection(viewModel)
+                HorizontalDivider()
+                Column(modifier = Modifier.weight(1f)) {
+                    ResultsSection(navController, viewModel)
+                }
+                LimitAndPaginationSection(viewModel)
             }
-            LimitAndPaginationSection(viewModel)
         }
     }
 }
