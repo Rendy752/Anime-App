@@ -16,7 +16,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.R
-import com.example.animeapp.ui.theme.surfaceVariantLight
 
 @Composable
 fun FilterField(
@@ -26,23 +25,23 @@ fun FilterField(
     onClick: () -> Unit
 ) {
     Row(
-        modifier = modifier.then(
-            Modifier
-                .clip(RoundedCornerShape(8.dp))
-                .background(surfaceVariantLight)
-                .clickable { onClick() }
-                .padding(12.dp)
-        ),
+        modifier = modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(MaterialTheme.colorScheme.primary)
+            .clickable { onClick() }
+            .padding(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = label,
             modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyMedium
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onPrimary
         )
         Icon(
             painterResource(id = icon),
-            contentDescription = stringResource(id = R.string.chevron_down)
+            contentDescription = stringResource(id = R.string.chevron_down),
+            tint = MaterialTheme.colorScheme.onPrimary
         )
     }
 }

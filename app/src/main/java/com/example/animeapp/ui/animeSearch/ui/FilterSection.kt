@@ -1,15 +1,9 @@
 package com.example.animeapp.ui.animeSearch.ui
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.R
@@ -26,7 +20,7 @@ import com.example.animeapp.ui.animeSearch.components.GenresBottomSheet
 import com.example.animeapp.ui.animeSearch.components.PaginationButtons
 import com.example.animeapp.ui.animeSearch.components.ProducersBottomSheet
 import com.example.animeapp.ui.common_ui.FilterChipView
-import com.example.animeapp.ui.theme.surfaceVariantLight
+import com.example.animeapp.ui.common_ui.SearchView
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -47,33 +41,14 @@ fun FilterSection(viewModel: AnimeSearchViewModel) {
             .fillMaxWidth()
             .padding(8.dp)
     ) {
-        OutlinedTextField(
-            value = query,
-            onValueChange = {
+        SearchView(
+            query = query,
+            onQueryChange = {
                 query = it
                 debounce.query(it)
             },
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(8.dp))
-                .background(surfaceVariantLight),
-            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
-            trailingIcon = {
-                if (query.isNotEmpty()) {
-                    IconButton(onClick = { query = "" }) {
-                        Icon(Icons.Filled.Close, contentDescription = "Clear")
-                    }
-                }
-            },
-            placeholder = { Text(stringResource(id = R.string.search_anime)) },
-            singleLine = true,
-            shape = RoundedCornerShape(8.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = surfaceVariantLight,
-                unfocusedContainerColor = surfaceVariantLight,
-                focusedBorderColor = MaterialTheme.colorScheme.outline,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-            )
+            placeholder = stringResource(id = R.string.search_anime),
+            modifier = Modifier.fillMaxWidth()
         )
 
         Row(
@@ -105,7 +80,7 @@ fun FilterSection(viewModel: AnimeSearchViewModel) {
                 val genre =
                     viewModel.genres.collectAsState().value.data?.data?.find { it.mal_id == genreId }
                 genre?.let {
-                    FilterChipView (
+                    FilterChipView(
                         text = "${it.name} (${it.count})",
                         checked = it.mal_id in selectedGenresId,
                         onCheckedChange = { viewModel.setSelectedGenreId(it.mal_id) }
@@ -121,7 +96,7 @@ fun FilterSection(viewModel: AnimeSearchViewModel) {
                 val producer =
                     viewModel.producers.collectAsState().value.data?.data?.find { it.mal_id == producerId }
                 producer?.let {
-                    FilterChipView (
+                    FilterChipView(
                         text = "${it.titles?.get(0)?.title ?: "Unknown"} (${it.count})",
                         checked = it.mal_id in selectedProducersId,
                         onCheckedChange = { viewModel.setSelectedProducerId(it.mal_id) }
