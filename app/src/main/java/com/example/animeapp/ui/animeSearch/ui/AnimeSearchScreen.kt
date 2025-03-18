@@ -1,5 +1,6 @@
 package com.example.animeapp.ui.animeSearch.ui
 
+import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -29,28 +30,33 @@ fun AnimeSearchScreen(navController: NavController) {
     val state = rememberPullToRefreshState()
     var showBottomSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(text = stringResource(id = R.string.title_search)) },
-                actions = {
-                    IconButton(onClick = { showBottomSheet = true }) {
-                        Icon(
-                            imageVector = Icons.Filled.FilterList,
-                            tint = MaterialTheme.colorScheme.primary,
-                            contentDescription = stringResource(id = R.string.filter)
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    titleContentColor = MaterialTheme.colorScheme.primary
+            if (!isLandscape) {
+                TopAppBar(
+                    title = { Text(text = stringResource(id = R.string.title_search)) },
+                    actions = {
+                        IconButton(onClick = { showBottomSheet = true }) {
+                            Icon(
+                                imageVector = Icons.Filled.FilterList,
+                                tint = MaterialTheme.colorScheme.primary,
+                                contentDescription = stringResource(id = R.string.filter)
+                            )
+                        }
+                    },
+
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                        titleContentColor = MaterialTheme.colorScheme.primary
+                    )
                 )
-            )
+            }
         }
     ) { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize()){
+        Box(modifier = Modifier.fillMaxSize()) {
             PullToRefreshBox(
                 isRefreshing = isRefreshing,
                 onRefresh = { viewModel.applyFilters(viewModel.queryState.value) },
@@ -68,18 +74,44 @@ fun AnimeSearchScreen(navController: NavController) {
                     )
                 },
             ) {
-                Column(
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    FilterSection(viewModel)
-                    HorizontalDivider()
-                    Column(modifier = Modifier.weight(1f)) {
-                        ResultsSection(navController, viewModel)
+                if (isLandscape) {
+                    Row {
+                        Column(
+                            modifier = Modifier
+                                .weight(0.5f)
+                                .clip(MaterialTheme.shapes.extraLarge)
+                        ) {
+                            FilterSection(viewModel, true)
+                            FilterBottomSheet(
+                                viewModel = viewModel,
+                                onDismiss = {}
+                            )
+                        }
+                        Column(
+                            modifier = Modifier
+                                .weight(0.5f)
+                                .fillMaxHeight()
+                        ) {
+                            Column(modifier = Modifier.weight(1f)) {
+                                ResultsSection(navController, viewModel)
+                            }
+                            LimitAndPaginationSection(viewModel)
+                        }
                     }
-                    LimitAndPaginationSection(viewModel)
+                } else {
+                    Column(
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        FilterSection(viewModel)
+                        HorizontalDivider()
+                        Column(modifier = Modifier.weight(1f)) {
+                            ResultsSection(navController, viewModel)
+                        }
+                        LimitAndPaginationSection(viewModel)
+                    }
                 }
             }
-            if (showBottomSheet) {
+            if (showBottomSheet && !isLandscape) {
                 val configuration = LocalConfiguration.current
                 val screenWidth = configuration.screenWidthDp.dp
                 val screenHeight = configuration.screenHeightDp.dp
@@ -100,11 +132,12 @@ fun AnimeSearchScreen(navController: NavController) {
                     shape = shape
                 ) {
                     Column(modifier = Modifier.clip(shape)) {
-                        FilterBottomSheet(viewModel = viewModel, onDismiss = { showBottomSheet = false })
+                        FilterBottomSheet(
+                            viewModel = viewModel,
+                            onDismiss = { showBottomSheet = false })
                     }
                 }
             }
         }
-
     }
 }

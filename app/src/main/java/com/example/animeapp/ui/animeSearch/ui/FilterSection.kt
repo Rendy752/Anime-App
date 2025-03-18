@@ -16,9 +16,9 @@ import com.example.animeapp.utils.Debounce
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun FilterSection(viewModel: AnimeSearchViewModel) {
+fun FilterSection(viewModel: AnimeSearchViewModel, hideGenresAndProducers: Boolean = false) {
     val scope = rememberCoroutineScope()
-    var query by remember { mutableStateOf("") }
+    var query by remember { mutableStateOf(viewModel.queryState.value.query) }
     val debounce = remember {
         Debounce(scope, 1000L, { newQuery ->
             viewModel.applyFilters(viewModel.queryState.value.copy(query = newQuery, page = 1))
@@ -43,41 +43,43 @@ fun FilterSection(viewModel: AnimeSearchViewModel) {
             modifier = Modifier.fillMaxWidth()
         )
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
-        ) {
-            FilterField(
-                label = stringResource(id = R.string.genres_field),
-                icon = R.drawable.ic_chevron_down_blue_24dp,
-                modifier = Modifier.weight(1f),
-                onClick = {
-                    showGenresDropdown = !showGenresDropdown
-                    showProducersDropdown = false
-                }
-            )
-            FilterField(
-                label = stringResource(id = R.string.producers_field),
-                icon = R.drawable.ic_chevron_down_blue_24dp,
-                modifier = Modifier.weight(1f),
-                onClick = {
-                    showProducersDropdown = !showProducersDropdown
-                    showGenresDropdown = false
-                }
-            )
-        }
-
-        if (showGenresDropdown) {
-            DropdownContainer {
-                GenresDropdown(viewModel, onDismiss = { showGenresDropdown = false })
+        if (!hideGenresAndProducers) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                FilterField(
+                    label = stringResource(id = R.string.genres_field),
+                    icon = R.drawable.ic_chevron_down_blue_24dp,
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        showGenresDropdown = !showGenresDropdown
+                        showProducersDropdown = false
+                    }
+                )
+                FilterField(
+                    label = stringResource(id = R.string.producers_field),
+                    icon = R.drawable.ic_chevron_down_blue_24dp,
+                    modifier = Modifier.weight(1f),
+                    onClick = {
+                        showProducersDropdown = !showProducersDropdown
+                        showGenresDropdown = false
+                    }
+                )
             }
-        }
 
-        if (showProducersDropdown) {
-            DropdownContainer {
-                ProducersDropdown(viewModel, onDismiss = { showProducersDropdown = false })
+            if (showGenresDropdown) {
+                DropdownContainer {
+                    GenresDropdown(viewModel, onDismiss = { showGenresDropdown = false })
+                }
+            }
+
+            if (showProducersDropdown) {
+                DropdownContainer {
+                    ProducersDropdown(viewModel, onDismiss = { showProducersDropdown = false })
+                }
             }
         }
 
