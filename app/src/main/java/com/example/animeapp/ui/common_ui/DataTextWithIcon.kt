@@ -14,24 +14,26 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 
 @Composable
-internal fun DataTextWithIcon(label: String, value: String, icon: ImageVector) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 2.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+internal fun DataTextWithIcon(label: String, value: String?, icon: ImageVector) {
+    if (!value.isNullOrBlank() && value.lowercase() != "null") {
+        Row(
             modifier = Modifier
-                .size(20.dp)
-                .padding(end = 8.dp)
-        )
-        Text(
-            text = "$label: $value",
-            style = MaterialTheme.typography.bodyMedium,
-        )
+                .fillMaxWidth()
+                .padding(vertical = 2.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = label,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .size(20.dp)
+                    .padding(end = 8.dp)
+            )
+            Text(
+                text = "$label: $value",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
     }
 }

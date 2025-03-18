@@ -49,7 +49,7 @@ fun AnimeSearchItem(
     anime?.let { data ->
         Column(
             modifier = Modifier
-                .padding(8.dp)
+                .padding(4.dp)
                 .clip(RoundedCornerShape(16.dp))
                 .border(
                     width = 1.dp,
@@ -91,7 +91,7 @@ fun AnimeSearchItem(
                         overflow = TextOverflow.Ellipsis
                     )
                     Row(
-                        modifier = Modifier.padding(top = 4.dp),
+                        modifier = Modifier.padding(top = 2.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {

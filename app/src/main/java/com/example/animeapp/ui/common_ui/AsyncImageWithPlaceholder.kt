@@ -66,7 +66,7 @@ fun AsyncImageWithPlaceholder(
                     .align(Alignment.TopStart)
                     .padding(4.dp)
                     .background(
-                        color = Color.Black.copy(alpha = 0.3f),
+                        color = Color.Black.copy(alpha = 0.4f),
                         shape = RoundedCornerShape(50)
                     )
                     .padding(4.dp)){

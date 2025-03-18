@@ -14,6 +14,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -25,6 +26,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import com.example.animeapp.ui.animeSearch.viewmodel.AnimeSearchViewModel
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import com.example.animeapp.models.Genre
 import com.example.animeapp.ui.common_ui.RetryButton
 import com.example.animeapp.utils.Resource
@@ -78,9 +81,7 @@ fun GenresDropdown(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit) {
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 }
                 Column(
-                    modifier = Modifier
-                        .padding(top = 8.dp)
-                        .heightIn(max = screenHeight * 0.5f)
+                    modifier = Modifier.heightIn(max = screenHeight * 0.5f)
                 ) {
                     when (genres) {
                         is Resource.Loading -> {
@@ -97,14 +98,31 @@ fun GenresDropdown(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit) {
                             val selectedList = genreList.filter { it.mal_id in selectedGenres }
                             val unselectedList = genreList.filter { it.mal_id !in selectedGenres }
 
+                            if (selectedGenres.isNotEmpty()) {
+                                FilterChipFlow(
+                                    itemList = selectedList,
+                                    onSetSelectedId = { viewModel.setSelectedGenreId(it) },
+                                    itemName = { "${(it as Genre).name} (${it.count})" },
+                                    getItemId = { (it as Genre).mal_id },
+                                    isHorizontal = true,
+                                    isChecked = true
+                                )
+                            } else {
+                                Text(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    textAlign = TextAlign.Center,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                    text = "No selected genres"
+                                )
+                            }
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                             FilterChipFlow(
-                                selectedList = selectedList,
-                                unselectedList = unselectedList,
-                                selectedIds = selectedGenres,
+                                itemList = unselectedList,
                                 onSetSelectedId = { viewModel.setSelectedGenreId(it) },
                                 itemName = { "${(it as Genre).name} (${it.count})" },
                                 getItemId = { (it as Genre).mal_id },
-                                noSelectedItemMessage = "No selected genres"
                             )
                         }
 

@@ -92,6 +92,8 @@ fun AnimeSearchScreen(navController: NavController) {
                                 .weight(0.5f)
                                 .fillMaxHeight()
                         ) {
+                            FilterFieldSection(viewModel)
+                            HorizontalDivider()
                             Column(modifier = Modifier.weight(1f)) {
                                 ResultsSection(navController, viewModel)
                             }

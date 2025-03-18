@@ -11,8 +11,10 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -21,6 +23,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import com.example.animeapp.models.Producer
@@ -77,11 +81,10 @@ fun ProducersDropdown(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit) {
                             Modifier.weight(1f)
                         )
                     }
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                 }
                 Column(
-                    modifier = Modifier
-                        .padding(top = 8.dp)
-                        .heightIn(max = screenHeight * 0.5f)
+                    modifier = Modifier.heightIn(max = screenHeight * 0.5f)
                 ) {
                     when (producers) {
                         is Resource.Loading -> {
@@ -100,14 +103,31 @@ fun ProducersDropdown(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit) {
                             val unselectedList =
                                 producerList.filter { it.mal_id !in selectedProducers }
 
+                            if (selectedProducers.isNotEmpty()) {
+                                FilterChipFlow(
+                                    itemList = selectedList,
+                                    onSetSelectedId = { viewModel.setSelectedProducerId(it) },
+                                    itemName = { "${(it as Producer).titles?.get(0)?.title ?: "Unknown"} (${it.count})" },
+                                    getItemId = { (it as Producer).mal_id },
+                                    isHorizontal = true,
+                                    isChecked = true
+                                )
+                            } else {
+                                Text(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    textAlign = TextAlign.Center,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.tertiary,
+                                    text = "No selected producers"
+                                )
+                            }
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                             FilterChipFlow(
-                                selectedList = selectedList,
-                                unselectedList = unselectedList,
-                                selectedIds = selectedProducers,
+                                itemList = unselectedList,
                                 onSetSelectedId = { viewModel.setSelectedProducerId(it) },
                                 itemName = { "${(it as Producer).titles?.get(0)?.title ?: "Unknown"} (${it.count})" },
                                 getItemId = { (it as Producer).mal_id },
-                                noSelectedItemMessage = "No selected producers"
                             )
                         }
 
