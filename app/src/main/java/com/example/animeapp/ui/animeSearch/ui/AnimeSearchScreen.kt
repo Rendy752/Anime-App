@@ -139,12 +139,13 @@ fun AnimeSearchScreen(navController: NavController) {
             val bottomPadding = 48.dp
             val containerColor = MaterialTheme.colorScheme.surfaceContainer
             val shape = MaterialTheme.shapes.extraLarge
-            if (isFilterBottomSheetShow && !isLandscape) {
+
+            if (isFilterBottomSheetShow) {
                 ModalBottomSheet(
                     modifier = Modifier
-                        .height(screenHeight * 0.6f)
-                        .width(screenWidth * 0.95f)
-                        .padding(bottom = bottomPadding)
+                        .fillMaxHeight()
+                        .width(if (isLandscape) screenWidth * 0.4f else screenWidth * 0.95f)
+                        .padding(bottom = if (isLandscape) 0.dp else bottomPadding)
                         .align(Alignment.BottomCenter),
                     containerColor = containerColor,
                     sheetState = sheetState,
@@ -163,9 +164,9 @@ fun AnimeSearchScreen(navController: NavController) {
             if (isGenresBottomSheetShow) {
                 ModalBottomSheet(
                     modifier = Modifier
-                        .height(screenHeight * 0.6f)
-                        .width(screenWidth * 0.95f)
-                        .padding(bottom = bottomPadding)
+                        .height(if (isLandscape) screenHeight * 0.95f else screenHeight * 0.6f)
+                        .width(if (isLandscape) screenWidth * 0.9f else screenWidth * 0.95f)
+                        .padding(bottom = if (isLandscape) 0.dp else bottomPadding)
                         .align(Alignment.BottomCenter),
                     containerColor = containerColor,
                     sheetState = sheetState,
@@ -183,9 +184,9 @@ fun AnimeSearchScreen(navController: NavController) {
             if (isProducersBottomSheetShow) {
                 ModalBottomSheet(
                     modifier = Modifier
-                        .height(screenHeight * 0.6f)
-                        .width(screenWidth * 0.95f)
-                        .padding(bottom = bottomPadding)
+                        .height(if (isLandscape) screenHeight * 0.95f else screenHeight * 0.6f)
+                        .width(if (isLandscape) screenWidth * 0.9f else screenWidth * 0.95f)
+                        .padding(bottom = if (isLandscape) 0.dp else bottomPadding)
                         .align(Alignment.BottomCenter),
                     containerColor = containerColor,
                     sheetState = sheetState,

@@ -25,7 +25,7 @@ fun SearchFieldSection(viewModel: AnimeSearchViewModel) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp)
+            .padding(start = 8.dp, end = 8.dp, top = 8.dp)
     ) {
         SearchView(
             query = query,

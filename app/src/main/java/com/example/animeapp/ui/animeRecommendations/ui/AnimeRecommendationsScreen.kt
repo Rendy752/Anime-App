@@ -4,10 +4,12 @@ import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -29,6 +31,8 @@ fun AnimeRecommendationsScreen(navController: NavController) {
     val viewModel: AnimeRecommendationsViewModel = hiltViewModel()
     val animeRecommendationsState by viewModel.animeRecommendations.collectAsState()
     val context = LocalContext.current
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
+    val state = rememberPullToRefreshState()
     val networkStateMonitor = remember { NetworkStateMonitor(context) }
     var networkStatus by remember { mutableStateOf(networkStateMonitor.networkStatus.value) }
     var isConnected by remember { mutableStateOf(networkStateMonitor.isConnected.value != false) }
@@ -81,63 +85,71 @@ fun AnimeRecommendationsScreen(navController: NavController) {
                 )
             )
         },
-        floatingActionButton = {
-            if (animeRecommendationsState is Resource.Success && isConnected) {
-                FloatingActionButton(onClick = { viewModel.getAnimeRecommendations() }) {
-                    Icon(
-                        imageVector = Icons.Filled.Refresh,
-                        contentDescription = stringResource(id = R.string.refresh_button)
-                    )
-                }
-            }
-        }
     ) { paddingValues ->
-        Column(
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = { viewModel.getAnimeRecommendations() },
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(paddingValues),
+            state = state,
+            indicator = {
+                PullToRefreshDefaults.Indicator(
+                    isRefreshing = isRefreshing,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.align(Alignment.TopCenter),
+                    state = state
+                )
+            },
         ) {
-            if (!isConnected) ErrorMessage(message = stringResource(R.string.no_internet_connection))
+            Column(
+                modifier = Modifier.fillMaxSize()
+            ) {
+                if (!isConnected) ErrorMessage(message = stringResource(R.string.no_internet_connection))
 
-            when (animeRecommendationsState) {
-                is Resource.Loading -> {
-                    repeat(3) { AnimeRecommendationItemSkeleton() }
-                }
+                when (animeRecommendationsState) {
+                    is Resource.Loading -> {
+                        repeat(3) { AnimeRecommendationItemSkeleton() }
+                    }
 
-                is Resource.Success -> {
-                    val animeRecommendations =
-                        (animeRecommendationsState as Resource.Success).data?.data ?: emptyList()
-                    if (!isLandscape) {
-                        LazyColumn {
-                            items(animeRecommendations) {
-                                AnimeRecommendationItem(
-                                    recommendation = it,
-                                    onItemClick = { animeId -> navController.navigate("animeDetail/$animeId") })
+                    is Resource.Success -> {
+                        val animeRecommendations =
+                            (animeRecommendationsState as Resource.Success).data?.data
+                                ?: emptyList()
+                        if (!isLandscape) {
+                            LazyColumn {
+                                items(animeRecommendations) {
+                                    AnimeRecommendationItem(
+                                        recommendation = it,
+                                        onItemClick = { animeId -> navController.navigate("animeDetail/$animeId") })
+                                }
                             }
-                        }
-                    } else {
-                        val listSize = animeRecommendations.size
-                        val itemsPerColumn = (listSize + 1) / 2
-                        Row(modifier = Modifier.fillMaxSize()) {
-                            repeat(2) { columnIndex ->
-                                val startIndex = columnIndex * itemsPerColumn
-                                val endIndex = minOf(startIndex + itemsPerColumn, listSize)
-                                val columnItems = animeRecommendations.subList(startIndex, endIndex)
-                                LazyColumn(modifier = Modifier.weight(1f)) {
-                                    items(columnItems) {
-                                        AnimeRecommendationItem(
-                                            recommendation = it,
-                                            onItemClick = { animeId -> navController.navigate("animeDetail/$animeId") })
+                        } else {
+                            val listSize = animeRecommendations.size
+                            val itemsPerColumn = (listSize + 1) / 2
+                            Row(modifier = Modifier.fillMaxSize()) {
+                                repeat(2) { columnIndex ->
+                                    val startIndex = columnIndex * itemsPerColumn
+                                    val endIndex = minOf(startIndex + itemsPerColumn, listSize)
+                                    val columnItems =
+                                        animeRecommendations.subList(startIndex, endIndex)
+                                    LazyColumn(modifier = Modifier.weight(1f)) {
+                                        items(columnItems) {
+                                            AnimeRecommendationItem(
+                                                recommendation = it,
+                                                onItemClick = { animeId -> navController.navigate("animeDetail/$animeId") })
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
 
-                is Resource.Error -> {
-                    if (isConnected) ErrorMessage(stringResource(R.string.error_loading_data))
-                    else ErrorMessage(stringResource(R.string.no_internet_connection))
+                    is Resource.Error -> {
+                        if (isConnected) ErrorMessage(stringResource(R.string.error_loading_data))
+                        else ErrorMessage(stringResource(R.string.no_internet_connection))
+                    }
                 }
             }
         }

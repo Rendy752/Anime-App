@@ -62,25 +62,27 @@ class AnimeSearchViewModel @Inject constructor(
         if (queryState.value.query.isBlank() && queryState.value.isDefault() && queryState.value.isGenresDefault() && queryState.value.isProducersDefault()) {
             getRandomAnime()
         } else {
+            _isRefreshing.value = true
             _animeSearchResults.value = Resource.Loading()
             val response = animeSearchRepository.searchAnime(queryState.value)
             _animeSearchResults.value = ResponseHandler.handleCommonResponse(response)
+            _isRefreshing.value = false
         }
     }
 
     fun applyFilters(updatedQueryState: AnimeSearchQueryState) {
         _queryState.value = updatedQueryState
-        _isRefreshing.value = true
         viewModelScope.launch {
             searchAnime()
-            _isRefreshing.value = false
         }
     }
 
     private fun getRandomAnime() = viewModelScope.launch {
+        _isRefreshing.value = true
         _animeSearchResults.value = Resource.Loading()
         val response = animeSearchRepository.getRandomAnime()
         _animeSearchResults.value = handleAnimeRandomResponse(response)
+        _isRefreshing.value = false
     }
 
     private fun handleAnimeRandomResponse(response: Response<AnimeDetailResponse>): Resource<AnimeSearchResponse> {
