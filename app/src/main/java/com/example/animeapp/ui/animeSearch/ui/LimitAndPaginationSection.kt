@@ -16,48 +16,84 @@ import com.example.animeapp.ui.common_ui.DropdownInputField
 
 @Composable
 @OptIn(ExperimentalFoundationApi::class)
-fun LimitAndPaginationSection(viewModel: AnimeSearchViewModel) {
+fun LimitAndPaginationSection(
+    viewModel: AnimeSearchViewModel,
+    useHorizontalPager: Boolean = true
+) {
     val animeSearchQueryState by viewModel.queryState.collectAsState()
     val animeSearchData by viewModel.animeSearchResults.collectAsState()
     var selectedLimit by remember { mutableIntStateOf(animeSearchQueryState.limit ?: 10) }
     val pagerState = rememberPagerState { 2 }
     val paginationState = animeSearchData.data?.pagination
 
-    if (paginationState != null) HorizontalDivider()
-    HorizontalPager(state = pagerState, Modifier.padding(8.dp)) { page ->
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (page == 0) {
-                Row(
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    if (paginationState != null) {
-                        PaginationButtons(paginationState) { pageNumber ->
-                            viewModel.applyFilters(animeSearchQueryState.copy(page = pageNumber))
+    if (paginationState != null && useHorizontalPager) HorizontalDivider()
+
+    if (useHorizontalPager) {
+        HorizontalPager(state = pagerState, Modifier.padding(8.dp)) { page ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (page == 0) {
+                    Row(
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (paginationState != null) {
+                            PaginationButtons(paginationState) { pageNumber ->
+                                viewModel.applyFilters(animeSearchQueryState.copy(page = pageNumber))
+                            }
                         }
                     }
+                } else {
+                    DropdownInputField(
+                        label = "Limit",
+                        options = Limit.limitOptions.map { it.toString() },
+                        selectedValue = selectedLimit.toString(),
+                        onValueChange = {
+                            selectedLimit = it.toInt()
+                            if (animeSearchQueryState.limit != selectedLimit) {
+                                val updatedQueryState = animeSearchQueryState.copy(
+                                    limit = selectedLimit, page = 1
+                                )
+                                viewModel.applyFilters(updatedQueryState)
+                            }
+                        },
+                        modifier = Modifier.wrapContentSize()
+                    )
                 }
-            } else {
-                DropdownInputField(
-                    label = "Limit",
-                    options = Limit.limitOptions.map { it.toString() },
-                    selectedValue = selectedLimit.toString(),
-                    onValueChange = {
-                        selectedLimit = it.toInt()
-                        if (animeSearchQueryState.limit != selectedLimit) {
-                            val updatedQueryState = animeSearchQueryState.copy(
-                                limit = selectedLimit, page = 1
-                            )
-                            viewModel.applyFilters(updatedQueryState)
-                        }
-                    },
-                    modifier = Modifier.wrapContentSize()
-                )
             }
+        }
+    } else {
+        Column(Modifier.padding(8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (paginationState != null) {
+                    PaginationButtons(paginationState) { pageNumber ->
+                        viewModel.applyFilters(animeSearchQueryState.copy(page = pageNumber))
+                    }
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            DropdownInputField(
+                label = "Limit",
+                options = Limit.limitOptions.map { it.toString() },
+                selectedValue = selectedLimit.toString(),
+                onValueChange = {
+                    selectedLimit = it.toInt()
+                    if (animeSearchQueryState.limit != selectedLimit) {
+                        val updatedQueryState = animeSearchQueryState.copy(
+                            limit = selectedLimit, page = 1
+                        )
+                        viewModel.applyFilters(updatedQueryState)
+                    }
+                },
+                modifier = Modifier.wrapContentSize()
+            )
         }
     }
 }

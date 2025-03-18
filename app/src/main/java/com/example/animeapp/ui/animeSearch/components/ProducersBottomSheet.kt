@@ -110,12 +110,12 @@ fun ProducersBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit)
         ) {
             when (producers) {
                 is Resource.Loading -> {
-                    Column(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        CircularProgressIndicator()
-                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) { CircularProgressIndicator() }
                 }
 
                 is Resource.Success -> {
@@ -154,7 +154,12 @@ fun ProducersBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit)
                 }
 
                 is Resource.Error -> {
-                    Column(modifier = Modifier.padding(horizontal = 8.dp)) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
                         RetryButton(
                             message = producers.message ?: "Error loading producers",
                             onClick = { viewModel.fetchProducers() }

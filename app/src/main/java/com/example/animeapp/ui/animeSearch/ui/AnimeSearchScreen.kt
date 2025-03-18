@@ -82,20 +82,14 @@ fun AnimeSearchScreen(navController: NavController) {
                     Row {
                         Column(
                             modifier = Modifier
-                                .weight(0.5f)
-                                .clip(MaterialTheme.shapes.extraLarge)
+                                .weight(0.5f).fillMaxHeight()
+                                .clip(MaterialTheme.shapes.extraLarge),
+                            verticalArrangement = Arrangement.SpaceBetween
                         ) {
-                            SearchFieldSection(viewModel)
-                            FilterBottomSheet(
-                                viewModel = viewModel,
-                                onDismiss = {}
-                            )
-                        }
-                        Column(
-                            modifier = Modifier
-                                .weight(0.5f)
-                                .fillMaxHeight()
-                        ) {
+                            SearchFieldSection(viewModel, true, isFilterBottomSheetShow) {
+                                isFilterBottomSheetShow = true
+                            }
+                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                             FilterFieldSection(
                                 viewModel,
                                 isGenresBottomSheetShow,
@@ -105,16 +99,23 @@ fun AnimeSearchScreen(navController: NavController) {
                                 },
                                 setProducersBottomSheet = { isProducersBottomSheetShow = it }
                             )
-                            HorizontalDivider()
-                            Column(modifier = Modifier.weight(1f)) {
-                                ResultsSection(navController, viewModel)
-                            }
-                            LimitAndPaginationSection(viewModel)
+                            HorizontalDivider(modifier = Modifier.padding(bottom = 8.dp))
+                            LimitAndPaginationSection(viewModel, false)
+                        }
+                        VerticalDivider()
+                        Box(
+                            modifier = Modifier
+                                .weight(0.5f)
+                                .fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            ResultsSection(navController, viewModel)
                         }
                     }
                 } else {
                     Column(modifier = Modifier.fillMaxSize()) {
                         SearchFieldSection(viewModel)
+                        Spacer(modifier = Modifier.height(8.dp))
                         FilterFieldSection(
                             viewModel,
                             isGenresBottomSheetShow,
@@ -143,8 +144,8 @@ fun AnimeSearchScreen(navController: NavController) {
             if (isFilterBottomSheetShow) {
                 ModalBottomSheet(
                     modifier = Modifier
-                        .fillMaxHeight()
-                        .width(if (isLandscape) screenWidth * 0.4f else screenWidth * 0.95f)
+                        .height(if (isLandscape) screenHeight * 0.95f else screenHeight * 0.6f)
+                        .width(if (isLandscape) screenWidth * 0.7f else screenWidth * 0.95f)
                         .padding(bottom = if (isLandscape) 0.dp else bottomPadding)
                         .align(Alignment.BottomCenter),
                     containerColor = containerColor,

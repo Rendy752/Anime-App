@@ -28,10 +28,7 @@ fun AnimeRecommendationItemSkeleton() {
                             MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.5f)
                                 .let { low ->
                                     Brush.verticalGradient(
-                                        colors = listOf(
-                                            high,
-                                            low
-                                        )
+                                        colors = listOf(high, low)
                                     )
                                 }
                         }
@@ -46,7 +43,11 @@ fun AnimeRecommendationItemSkeleton() {
                     Column {
                         SkeletonBox(width = 120.dp, height = 20.dp)
                         Spacer(modifier = Modifier.height(4.dp))
-                        SkeletonBox(modifier = Modifier.align(Alignment.CenterHorizontally), width = 100.dp, height = 150.dp)
+                        SkeletonBox(
+                            modifier = Modifier.align(Alignment.CenterHorizontally),
+                            width = 100.dp,
+                            height = 150.dp
+                        )
                         Spacer(modifier = Modifier.height(4.dp))
                         SkeletonBox(width = 120.dp, height = 20.dp)
                     }
