@@ -29,14 +29,13 @@ fun FilterChipFlow(
         Modifier
             .fillMaxWidth()
             .horizontalScroll(itemScrollState)
-            .padding(end = 10.dp)
     } else {
         Modifier
             .fillMaxWidth()
             .verticalScroll(itemScrollState)
     }
     FlowRow(
-        modifier = modifier,
+        modifier = modifier.padding(horizontal = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(
             4.dp,
             alignment = Alignment.CenterHorizontally

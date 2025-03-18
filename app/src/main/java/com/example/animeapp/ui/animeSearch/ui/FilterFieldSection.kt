@@ -1,11 +1,13 @@
 package com.example.animeapp.ui.animeSearch.ui
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -17,20 +19,22 @@ import com.example.animeapp.R
 import com.example.animeapp.models.Genre
 import com.example.animeapp.models.Producer
 import com.example.animeapp.ui.animeSearch.components.FilterChipFlow
-import com.example.animeapp.ui.animeSearch.components.GenresDropdown
-import com.example.animeapp.ui.animeSearch.components.ProducersDropdown
 import com.example.animeapp.ui.animeSearch.viewmodel.AnimeSearchViewModel
 import com.example.animeapp.utils.Resource
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun FilterFieldSection(viewModel: AnimeSearchViewModel) {
+fun FilterFieldSection(
+    viewModel: AnimeSearchViewModel,
+    isGenresBottomSheetShow: Boolean,
+    isProducersBottomSheetShow: Boolean,
+    setGenresBottomSheet: (Boolean) -> Unit,
+    setProducersBottomSheet: (Boolean) -> Unit
+) {
     val selectedGenresIds by viewModel.selectedGenreId.collectAsState()
     val selectedProducersIds by viewModel.selectedProducerId.collectAsState()
     val genresResource by viewModel.genres.collectAsState()
     val producersResource by viewModel.producers.collectAsState()
-    var showGenresDropdown by remember { mutableStateOf(false) }
-    var showProducersDropdown by remember { mutableStateOf(false) }
 
     Row(
         modifier = Modifier
@@ -43,16 +47,18 @@ fun FilterFieldSection(viewModel: AnimeSearchViewModel) {
             modifier = Modifier
                 .weight(1f)
                 .clip(RoundedCornerShape(8.dp))
-                .background(MaterialTheme.colorScheme.primaryContainer)
+                .background(if (isGenresBottomSheetShow) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer)
+                .border(2.dp, MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(8.dp))
                 .clickable {
-                    showGenresDropdown = !showGenresDropdown
-                    showProducersDropdown = false
+                    setGenresBottomSheet(true)
+                    setProducersBottomSheet(false)
                 }
-                .padding(12.dp),
+                .padding(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             val selectedGenres = if (genresResource is Resource.Success) {
-                genresResource.data?.data?.filter { it.mal_id in selectedGenresIds } ?: emptyList()
+                genresResource.data?.data?.filter { it.mal_id in selectedGenresIds }
+                    ?: emptyList()
             } else {
                 emptyList()
             }
@@ -83,7 +89,7 @@ fun FilterFieldSection(viewModel: AnimeSearchViewModel) {
             }
 
             Icon(
-                imageVector = Icons.Filled.KeyboardArrowDown,
+                imageVector = if (isGenresBottomSheetShow) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
                 contentDescription = stringResource(id = R.string.chevron_down),
                 tint = MaterialTheme.colorScheme.onPrimary
             )
@@ -93,12 +99,13 @@ fun FilterFieldSection(viewModel: AnimeSearchViewModel) {
             modifier = Modifier
                 .weight(1f)
                 .clip(RoundedCornerShape(8.dp))
-                .background(MaterialTheme.colorScheme.primaryContainer)
+                .background(if (isProducersBottomSheetShow) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer)
+                .border(2.dp, MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(8.dp))
                 .clickable {
-                    showProducersDropdown = !showProducersDropdown
-                    showGenresDropdown = false
+                    setProducersBottomSheet(true)
+                    setGenresBottomSheet(false)
                 }
-                .padding(12.dp),
+                .padding(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             val selectedProducers = if (producersResource is Resource.Success) {
@@ -134,29 +141,10 @@ fun FilterFieldSection(viewModel: AnimeSearchViewModel) {
             }
 
             Icon(
-                imageVector = Icons.Filled.KeyboardArrowDown,
+                imageVector = if (isProducersBottomSheetShow) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
                 contentDescription = stringResource(id = R.string.chevron_down),
                 tint = MaterialTheme.colorScheme.onPrimary
             )
         }
-    }
-
-    if (showGenresDropdown) {
-        DropdownContainer {
-            GenresDropdown(viewModel, onDismiss = { showGenresDropdown = false })
-        }
-    }
-
-    if (showProducersDropdown) {
-        DropdownContainer {
-            ProducersDropdown(viewModel, onDismiss = { showProducersDropdown = false })
-        }
-    }
-}
-
-@Composable
-fun DropdownContainer(content: @Composable () -> Unit) {
-    Box(modifier = Modifier.fillMaxWidth()) {
-        content()
     }
 }

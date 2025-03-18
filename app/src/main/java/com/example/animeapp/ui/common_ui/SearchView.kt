@@ -38,7 +38,7 @@ fun SearchView(
                     Icon(
                         Icons.Filled.Close,
                         contentDescription = "Clear",
-                        tint = MaterialTheme.colorScheme.errorContainer
+                        tint = MaterialTheme.colorScheme.error
                     )
                 }
             }

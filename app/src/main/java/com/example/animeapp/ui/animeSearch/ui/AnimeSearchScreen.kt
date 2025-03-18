@@ -19,8 +19,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.animeapp.ui.animeSearch.components.GenresBottomSheet
+import com.example.animeapp.ui.animeSearch.components.ProducersBottomSheet
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,8 +29,11 @@ fun AnimeSearchScreen(navController: NavController) {
     val viewModel: AnimeSearchViewModel = hiltViewModel()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val state = rememberPullToRefreshState()
-    var showBottomSheet by remember { mutableStateOf(false) }
+    var isFilterBottomSheetShow by remember { mutableStateOf(false) }
+    var isGenresBottomSheetShow by remember { mutableStateOf(false) }
+    var isProducersBottomSheetShow by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
@@ -39,7 +43,7 @@ fun AnimeSearchScreen(navController: NavController) {
                 TopAppBar(
                     title = { Text(text = stringResource(id = R.string.title_search)) },
                     actions = {
-                        IconButton(onClick = { showBottomSheet = true }) {
+                        IconButton(onClick = { isFilterBottomSheetShow = true }) {
                             Icon(
                                 imageVector = Icons.Filled.FilterList,
                                 tint = MaterialTheme.colorScheme.primary,
@@ -92,7 +96,15 @@ fun AnimeSearchScreen(navController: NavController) {
                                 .weight(0.5f)
                                 .fillMaxHeight()
                         ) {
-                            FilterFieldSection(viewModel)
+                            FilterFieldSection(
+                                viewModel,
+                                isGenresBottomSheetShow,
+                                isProducersBottomSheetShow,
+                                setGenresBottomSheet = {
+                                    isGenresBottomSheetShow = it
+                                },
+                                setProducersBottomSheet = { isProducersBottomSheetShow = it }
+                            )
                             HorizontalDivider()
                             Column(modifier = Modifier.weight(1f)) {
                                 ResultsSection(navController, viewModel)
@@ -105,7 +117,15 @@ fun AnimeSearchScreen(navController: NavController) {
                         modifier = Modifier.fillMaxSize()
                     ) {
                         SearchFieldSection(viewModel)
-                        FilterFieldSection(viewModel)
+                        FilterFieldSection(
+                            viewModel,
+                            isGenresBottomSheetShow,
+                            isProducersBottomSheetShow,
+                            setGenresBottomSheet = {
+                                isGenresBottomSheetShow = it
+                            },
+                            setProducersBottomSheet = { isProducersBottomSheetShow = it }
+                        )
                         HorizontalDivider()
                         Column(modifier = Modifier.weight(1f)) {
                             ResultsSection(navController, viewModel)
@@ -114,30 +134,69 @@ fun AnimeSearchScreen(navController: NavController) {
                     }
                 }
             }
-            if (showBottomSheet && !isLandscape) {
-                val configuration = LocalConfiguration.current
-                val screenWidth = configuration.screenWidthDp.dp
-                val screenHeight = configuration.screenHeightDp.dp
-                val bottomSheetWidth = screenWidth * 0.9f
-                val bottomSheetHeight = screenHeight * 0.6f
-                val bottomSheetPadding: Dp = 48.dp
-                val shape = MaterialTheme.shapes.extraLarge
 
+
+            val configuration = LocalConfiguration.current
+            val screenWidth = configuration.screenWidthDp.dp
+            val screenHeight = configuration.screenHeightDp.dp
+            val bottomPadding = 48.dp
+            val containerColor = MaterialTheme.colorScheme.surfaceContainer
+            val shape = MaterialTheme.shapes.extraLarge
+            if (isFilterBottomSheetShow && !isLandscape) {
                 ModalBottomSheet(
                     modifier = Modifier
-                        .height(bottomSheetHeight)
-                        .width(bottomSheetWidth)
-                        .padding(bottom = bottomSheetPadding)
+                        .height(screenHeight * 0.6f)
+                        .width(screenWidth * 0.95f)
+                        .padding(bottom = bottomPadding)
                         .align(Alignment.BottomCenter),
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    containerColor = containerColor,
                     sheetState = sheetState,
-                    onDismissRequest = { showBottomSheet = false },
+                    onDismissRequest = { isFilterBottomSheetShow = false },
                     shape = shape
                 ) {
                     Column(modifier = Modifier.clip(shape)) {
                         FilterBottomSheet(
                             viewModel = viewModel,
-                            onDismiss = { showBottomSheet = false }
+                            onDismiss = { isFilterBottomSheetShow = false }
+                        )
+                    }
+                }
+            }
+
+            if (isGenresBottomSheetShow) {
+                ModalBottomSheet(
+                    modifier = Modifier
+                        .height(screenHeight * 0.6f)
+                        .width(screenWidth * 0.95f)
+                        .padding(bottom = bottomPadding)
+                        .align(Alignment.BottomCenter),
+                    containerColor = containerColor,
+                    sheetState = sheetState,
+                    onDismissRequest = { isGenresBottomSheetShow = false },
+                    shape = shape
+                ) {
+                    Column(modifier = Modifier.clip(shape)) {
+                        GenresBottomSheet(viewModel, onDismiss = { isGenresBottomSheetShow = false })
+                    }
+                }
+            }
+
+            if (isProducersBottomSheetShow) {
+                ModalBottomSheet(
+                    modifier = Modifier
+                        .height(screenHeight * 0.6f)
+                        .width(screenWidth * 0.95f)
+                        .padding(bottom = bottomPadding)
+                        .align(Alignment.BottomCenter),
+                    containerColor = containerColor,
+                    sheetState = sheetState,
+                    onDismissRequest = { isProducersBottomSheetShow = false },
+                    shape = shape
+                ) {
+                    Column(modifier = Modifier.clip(shape)) {
+                        ProducersBottomSheet(
+                            viewModel,
+                            onDismiss = { isProducersBottomSheetShow = false }
                         )
                     }
                 }

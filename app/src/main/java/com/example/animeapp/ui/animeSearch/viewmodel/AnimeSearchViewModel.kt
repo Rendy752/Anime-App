@@ -113,6 +113,10 @@ class AnimeSearchViewModel @Inject constructor(
 
     fun applyGenreFilters() {
         val genreIds = selectedGenreId.value.joinToString(",")
+        if (genreIds.isBlank()) {
+            resetGenreSelection()
+            return
+        }
         applyFilters(queryState.value.defaultLimitAndPage().copy(genres = genreIds))
     }
 
@@ -144,6 +148,10 @@ class AnimeSearchViewModel @Inject constructor(
 
     fun applyProducerFilters() {
         val producerIds = selectedProducerId.value.joinToString(",")
+        if (producerIds.isBlank()) {
+            resetProducerSelection()
+            return
+        }
         applyFilters(queryState.value.defaultLimitAndPage().copy(producers = producerIds))
     }
 
