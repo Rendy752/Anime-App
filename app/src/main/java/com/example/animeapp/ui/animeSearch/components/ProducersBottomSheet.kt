@@ -35,6 +35,7 @@ import com.example.animeapp.utils.Resource
 @Composable
 fun ProducersBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit) {
     val producers by viewModel.producers.collectAsState()
+    val queryState by viewModel.queryState.collectAsState()
     val selectedProducers by viewModel.selectedProducerId.collectAsState()
     val producersQueryState by viewModel.producersQueryState.collectAsState()
 
@@ -57,57 +58,78 @@ fun ProducersBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit)
     val paginationState = producers.data?.pagination
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        if (producers !is Resource.Error && producers !is Resource.Loading) {
-            Row(
-                modifier = Modifier.padding(horizontal = 8.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                CancelButton(
-                    cancelAction = onDismiss,
-                    Modifier.weight(1f)
-                )
-                Spacer(Modifier.width(4.dp))
-                ResetButton(
-                    context,
-                    { viewModel.queryState.value.isProducersDefault() },
-                    {
-                        viewModel.resetProducerSelection()
-                        onDismiss()
-                    },
-                    Modifier.weight(1f)
-                )
-                Spacer(Modifier.width(4.dp))
-                ApplyButton(
-                    context,
-                    { viewModel.selectedProducerId.value.isEmpty() },
-                    {
-                        viewModel.applyProducerFilters()
-                        onDismiss()
-                    },
-                    Modifier.weight(1f)
-                )
-            }
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp)
-            ) {
-                SearchView(
-                    query = query,
-                    onQueryChange = {
-                        query = it
-                        debounce.query(it)
-                    },
-                    placeholder = stringResource(id = R.string.search_producer),
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            CancelButton(
+                cancelAction = onDismiss,
+                Modifier.weight(1f)
+            )
+            Spacer(Modifier.width(4.dp))
+            ResetButton(
+                context,
+                { queryState.isProducersDefault() },
+                {
+                    viewModel.resetProducerSelection()
+                    onDismiss()
+                },
+                Modifier.weight(1f)
+            )
+            Spacer(Modifier.width(4.dp))
+            ApplyButton(
+                context,
+                { selectedProducers.isEmpty() },
+                {
+                    viewModel.applyProducerFilters()
+                    onDismiss()
+                },
+                Modifier.weight(1f)
+            )
         }
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp)
+        ) {
+            SearchView(
+                query = query,
+                onQueryChange = {
+                    query = it
+                    debounce.query(it)
+                },
+                placeholder = stringResource(id = R.string.search_producer),
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
         Column(
             modifier = Modifier.weight(1f)
         ) {
+            val producerList = producers.data?.data ?: emptyList()
+            val selectedList =
+                producerList.filter { it.mal_id in selectedProducers }
+            if (selectedProducers.isNotEmpty()) {
+                FilterChipFlow(
+                    itemList = selectedList,
+                    onSetSelectedId = { viewModel.setSelectedProducerId(it) },
+                    itemName = { "${(it as Producer).titles?.get(0)?.title ?: "Unknown"} (${it.count})" },
+                    getItemId = { (it as Producer).mal_id },
+                    isHorizontal = true,
+                    isChecked = true
+                )
+            } else {
+                Text(
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.tertiary,
+                    text = "No selected producers"
+                )
+            }
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             when (producers) {
                 is Resource.Loading -> {
                     Box(
@@ -119,32 +141,9 @@ fun ProducersBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit)
                 }
 
                 is Resource.Success -> {
-                    val producerList = producers.data?.data ?: emptyList()
-                    val selectedList =
-                        producerList.filter { it.mal_id in selectedProducers }
                     val unselectedList =
                         producerList.filter { it.mal_id !in selectedProducers }
 
-                    if (selectedProducers.isNotEmpty()) {
-                        FilterChipFlow(
-                            itemList = selectedList,
-                            onSetSelectedId = { viewModel.setSelectedProducerId(it) },
-                            itemName = { "${(it as Producer).titles?.get(0)?.title ?: "Unknown"} (${it.count})" },
-                            getItemId = { (it as Producer).mal_id },
-                            isHorizontal = true,
-                            isChecked = true
-                        )
-                    } else {
-                        Text(
-                            modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.tertiary,
-                            text = "No selected producers"
-                        )
-                    }
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     FilterChipFlow(
                         itemList = unselectedList,
                         onSetSelectedId = { viewModel.setSelectedProducerId(it) },

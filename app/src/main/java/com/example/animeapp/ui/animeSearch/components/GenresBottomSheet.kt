@@ -33,45 +33,67 @@ import com.example.animeapp.utils.Resource
 @Composable
 fun GenresBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit) {
     val genres by viewModel.genres.collectAsState()
+    val queryState by viewModel.queryState.collectAsState()
     val selectedGenres by viewModel.selectedGenreId.collectAsState()
     val context = LocalContext.current
 
     Column(modifier = Modifier.fillMaxWidth()) {
-        if (genres !is Resource.Error && genres !is Resource.Loading) {
-            Row(
-                modifier = Modifier.padding(horizontal = 8.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                CancelButton(
-                    cancelAction = onDismiss,
-                    Modifier.weight(1f)
-                )
-                Spacer(Modifier.width(4.dp))
-                ResetButton(
-                    context,
-                    { viewModel.queryState.value.isGenresDefault() },
-                    {
-                        viewModel.resetGenreSelection()
-                        onDismiss()
-                    },
-                    Modifier.weight(1f)
-                )
-                Spacer(Modifier.width(4.dp))
-                ApplyButton(
-                    context,
-                    { viewModel.selectedGenreId.value.isEmpty() },
-                    {
-                        viewModel.applyGenreFilters()
-                        onDismiss()
-                    },
-                    Modifier.weight(1f)
-                )
-            }
-            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            CancelButton(
+                cancelAction = onDismiss,
+                Modifier.weight(1f)
+            )
+            Spacer(Modifier.width(4.dp))
+            ResetButton(
+                context,
+                { queryState.isGenresDefault() },
+                {
+                    viewModel.resetGenreSelection()
+                    onDismiss()
+                },
+                Modifier.weight(1f)
+            )
+            Spacer(Modifier.width(4.dp))
+            ApplyButton(
+                context,
+                { selectedGenres.isEmpty() },
+                {
+                    viewModel.applyGenreFilters()
+                    onDismiss()
+                },
+                Modifier.weight(1f)
+            )
         }
+        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+
         Column(
             modifier = Modifier.weight(1f)
         ) {
+            val genreList = genres.data?.data ?: emptyList()
+            val selectedList = genreList.filter { it.mal_id in selectedGenres }
+            if (selectedGenres.isNotEmpty()) {
+                FilterChipFlow(
+                    itemList = selectedList,
+                    onSetSelectedId = { viewModel.setSelectedGenreId(it) },
+                    itemName = { "${(it as Genre).name} (${it.count})" },
+                    getItemId = { (it as Genre).mal_id },
+                    isHorizontal = true,
+                    isChecked = true
+                )
+            } else {
+                Text(
+                    modifier = Modifier.fillMaxWidth(),
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.tertiary,
+                    text = "No selected genres"
+                )
+            }
+            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             when (genres) {
                 is Resource.Loading -> {
                     Box(
@@ -83,30 +105,8 @@ fun GenresBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit) {
                 }
 
                 is Resource.Success -> {
-                    val genreList = genres.data?.data ?: emptyList()
-                    val selectedList = genreList.filter { it.mal_id in selectedGenres }
                     val unselectedList = genreList.filter { it.mal_id !in selectedGenres }
 
-                    if (selectedGenres.isNotEmpty()) {
-                        FilterChipFlow(
-                            itemList = selectedList,
-                            onSetSelectedId = { viewModel.setSelectedGenreId(it) },
-                            itemName = { "${(it as Genre).name} (${it.count})" },
-                            getItemId = { (it as Genre).mal_id },
-                            isHorizontal = true,
-                            isChecked = true
-                        )
-                    } else {
-                        Text(
-                            modifier = Modifier.fillMaxWidth(),
-                            textAlign = TextAlign.Center,
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.tertiary,
-                            text = "No selected genres"
-                        )
-                    }
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     FilterChipFlow(
                         itemList = unselectedList,
                         onSetSelectedId = { viewModel.setSelectedGenreId(it) },

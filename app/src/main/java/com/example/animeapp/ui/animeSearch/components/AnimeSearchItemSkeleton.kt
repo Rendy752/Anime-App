@@ -57,7 +57,7 @@ fun AnimeSearchItemSkeleton() {
                     .padding(end = 16.dp),
             ) {
                 SkeletonBox(width = 150.dp, height = 20.dp)
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(2.dp))
                 SkeletonBox(width = 100.dp, height = 16.dp)
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(
@@ -70,13 +70,13 @@ fun AnimeSearchItemSkeleton() {
                     }
                 }
                 Spacer(modifier = Modifier.height(8.dp))
-                SkeletonBox(width = 80.dp, height = 16.dp)
+                SkeletonBox(width = 90.dp, height = 16.dp)
                 Spacer(modifier = Modifier.height(4.dp))
-                SkeletonBox(width = 80.dp, height = 16.dp)
+                SkeletonBox(width = 85.dp, height = 16.dp)
                 Spacer(modifier = Modifier.height(4.dp))
-                SkeletonBox(width = 80.dp, height = 16.dp)
+                SkeletonBox(width = 100.dp, height = 16.dp)
                 Spacer(modifier = Modifier.height(4.dp))
-                SkeletonBox(width = 80.dp, height = 16.dp)
+                SkeletonBox(width = 110.dp, height = 16.dp)
             }
         }
     }
