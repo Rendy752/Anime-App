@@ -58,6 +58,11 @@ fun GenresDropdown(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit) {
             ) {
                 if (genres !is Resource.Error && genres !is Resource.Loading) {
                     Row(horizontalArrangement = Arrangement.SpaceEvenly) {
+                        CancelButton(
+                            cancelAction = onDismiss,
+                            Modifier.weight(1f)
+                        )
+                        Spacer(Modifier.width(4.dp))
                         ResetButton(
                             context,
                             { viewModel.queryState.value.isGenresDefault() },

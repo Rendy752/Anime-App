@@ -61,6 +61,10 @@ fun ProducersDropdown(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit) {
                             .fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
+                        CancelButton(
+                            cancelAction = onDismiss,
+                            Modifier.weight(1f)
+                        )
                         ResetButton(
                             context,
                             { viewModel.queryState.value.isProducersDefault() },

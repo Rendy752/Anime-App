@@ -68,7 +68,7 @@ fun FilterFieldSection(viewModel: AnimeSearchViewModel) {
                             viewModel.setSelectedGenreId(it)
                             viewModel.applyGenreFilters()
                         },
-                        itemName = { "${(it as Genre).name} (${it.count})" },
+                        itemName = { (it as Genre).name },
                         getItemId = { (it as Genre).mal_id },
                         isHorizontal = true,
                         isChecked = true
@@ -119,7 +119,7 @@ fun FilterFieldSection(viewModel: AnimeSearchViewModel) {
                             viewModel.setSelectedProducerId(it)
                             viewModel.applyProducerFilters()
                         },
-                        itemName = { "${(it as Producer).titles?.get(0)?.title ?: "Unknown"} (${it.count})" },
+                        itemName = { (it as Producer).titles?.get(0)?.title ?: "Unknown" },
                         getItemId = { (it as Producer).mal_id },
                         isHorizontal = true,
                         isChecked = true

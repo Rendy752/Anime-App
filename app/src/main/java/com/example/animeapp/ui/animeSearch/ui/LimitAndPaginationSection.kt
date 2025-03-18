@@ -21,7 +21,9 @@ fun LimitAndPaginationSection(viewModel: AnimeSearchViewModel) {
     val animeSearchData by viewModel.animeSearchResults.collectAsState()
     var selectedLimit by remember { mutableIntStateOf(animeSearchQueryState.limit ?: 10) }
     val pagerState = rememberPagerState { 2 }
-    HorizontalDivider()
+    val paginationState = animeSearchData.data?.pagination
+
+    if (paginationState != null) HorizontalDivider()
     HorizontalPager(state = pagerState, Modifier.padding(8.dp)) { page ->
         Row(
             modifier = Modifier
@@ -30,7 +32,6 @@ fun LimitAndPaginationSection(viewModel: AnimeSearchViewModel) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (page == 0) {
-                val paginationState = animeSearchData.data?.pagination
                 Row(
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically

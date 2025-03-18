@@ -12,6 +12,23 @@ import androidx.compose.ui.res.stringResource
 import com.example.animeapp.R
 
 @Composable
+internal fun CancelButton(
+    cancelAction: () -> Unit,
+    modifier: Modifier? = Modifier
+) {
+    Button(
+        modifier = modifier ?: Modifier,
+        onClick = cancelAction,
+        colors = ButtonDefaults.buttonColors(
+            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+            contentColor = MaterialTheme.colorScheme.onSecondaryContainer
+        )
+    ) {
+        Text(text = stringResource(id = R.string.cancel))
+    }
+}
+
+@Composable
 internal fun ResetButton(
     context: Context,
     isDefault: () -> Boolean,

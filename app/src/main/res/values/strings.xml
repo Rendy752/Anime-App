@@ -105,4 +105,5 @@
     <string name="no_internet_connection">No internet connection</string>
     <string name="error_loading_data">Error Loading Data</string>
     <string name="no_results_found">No results found.</string>
+    <string name="cancel">Cancel</string>
 </resources>
