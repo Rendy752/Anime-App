@@ -8,14 +8,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.runtime.Composable
 
 @Composable
-fun TitleSynonymsList(
-    synonyms: List<String>,
+fun HorizontalScrollChipList(
+    dataList: List<String>,
 ) {
     Row(
         modifier = Modifier
             .horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        synonyms.forEach { synonym -> FilterChipView(synonym) }
+        dataList.forEach { data -> FilterChipView(data) }
     }
 }

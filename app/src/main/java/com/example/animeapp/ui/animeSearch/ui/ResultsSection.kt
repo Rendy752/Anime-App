@@ -41,7 +41,13 @@ fun ResultsSection(navController: NavController, viewModel: AnimeSearchViewModel
                 } else {
                     LazyColumn {
                         items(animeList.data.data) { anime ->
-                            AnimeSearchItem(anime = anime) { animeId ->
+                            AnimeSearchItem(anime = anime, onGenreClick = { genre ->
+                                val genreMalId = anime.genres?.find { it.name == genre }?.mal_id
+                                genreMalId?.let {
+                                    viewModel.setSelectedGenreId(it)
+                                    viewModel.applyGenreFilters()
+                                }
+                            }) { animeId ->
                                 navController.navigate("animeDetail/$animeId")
                             }
                         }

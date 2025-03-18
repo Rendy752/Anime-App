@@ -81,7 +81,7 @@ fun AnimeSearchScreen(navController: NavController) {
                                 .weight(0.5f)
                                 .clip(MaterialTheme.shapes.extraLarge)
                         ) {
-                            FilterSection(viewModel, true)
+                            SearchFieldSection(viewModel)
                             FilterBottomSheet(
                                 viewModel = viewModel,
                                 onDismiss = {}
@@ -102,7 +102,8 @@ fun AnimeSearchScreen(navController: NavController) {
                     Column(
                         modifier = Modifier.fillMaxSize()
                     ) {
-                        FilterSection(viewModel)
+                        SearchFieldSection(viewModel)
+                        FilterFieldSection(viewModel)
                         HorizontalDivider()
                         Column(modifier = Modifier.weight(1f)) {
                             ResultsSection(navController, viewModel)
@@ -134,7 +135,8 @@ fun AnimeSearchScreen(navController: NavController) {
                     Column(modifier = Modifier.clip(shape)) {
                         FilterBottomSheet(
                             viewModel = viewModel,
-                            onDismiss = { showBottomSheet = false })
+                            onDismiss = { showBottomSheet = false }
+                        )
                     }
                 }
             }

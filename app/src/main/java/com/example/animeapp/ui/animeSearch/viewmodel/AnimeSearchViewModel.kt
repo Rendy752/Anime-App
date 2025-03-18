@@ -59,7 +59,7 @@ class AnimeSearchViewModel @Inject constructor(
     }
 
     private fun searchAnime() = viewModelScope.launch {
-        if (queryState.value.isDefault() && queryState.value.isGenresDefault() && queryState.value.isProducersDefault()) {
+        if (queryState.value.query.isBlank() && queryState.value.isDefault() && queryState.value.isGenresDefault() && queryState.value.isProducersDefault()) {
             getRandomAnime()
         } else {
             _animeSearchResults.value = Resource.Loading()
@@ -84,7 +84,8 @@ class AnimeSearchViewModel @Inject constructor(
     }
 
     private fun handleAnimeRandomResponse(response: Response<AnimeDetailResponse>): Resource<AnimeSearchResponse> {
-        return ResponseHandler.handleResponse(response,
+        return ResponseHandler.handleResponse(
+            response,
             onSuccess = { resultResponse ->
                 AnimeSearchResponse(
                     data = listOf(resultResponse.data),

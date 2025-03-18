@@ -3,7 +3,9 @@ package com.example.animeapp.ui.animeSearch.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.People
@@ -18,7 +20,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -27,7 +28,8 @@ import androidx.compose.ui.unit.sp
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.animeDetailPlaceholder
 import com.example.animeapp.ui.common_ui.AsyncImageWithPlaceholder
-import com.example.animeapp.ui.common_ui.TitleSynonymsList
+import com.example.animeapp.ui.common_ui.DataTextWithIcon
+import com.example.animeapp.ui.common_ui.FilterChipView
 
 @Preview
 @Composable
@@ -41,6 +43,7 @@ fun AnimeSearchItemPreview() {
 @Composable
 fun AnimeSearchItem(
     anime: AnimeDetail?,
+    onGenreClick: ((String) -> Unit)? = null,
     onItemClick: ((Int) -> Unit)? = null,
 ) {
     anime?.let { data ->
@@ -93,7 +96,7 @@ fun AnimeSearchItem(
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
-                            text = "${data.type ?: "Unknown Type"} - ${data.year ?: "Unknown Year"}",
+                            text = "${data.type ?: "Unknown Type"} - ${data.aired.prop.from.year ?: "Unknown Year"}",
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.weight(1f),
                             maxLines = 1,
@@ -108,21 +111,35 @@ fun AnimeSearchItem(
                             )
                         }
                     }
-                    TitleSynonymsList(
-                        synonyms = data.title_synonyms?.toList() ?: emptyList(),
-                    )
-                    DataText(
+                    data.genres?.let { genres ->
+                        Row(
+                            modifier = Modifier
+                                .horizontalScroll(rememberScrollState()),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            genres.map { it.name }.toList().forEach { data ->
+                                FilterChipView(data) {
+                                    onGenreClick?.invoke(data)
+                                }
+                            }
+                        }
+                    }
+                    DataTextWithIcon(
                         label = "Score",
                         value = data.score.toString(),
                         icon = Icons.Filled.Score
                     )
-                    DataText(label = "Rank", value = data.rank.toString(), icon = Icons.Filled.Star)
-                    DataText(
+                    DataTextWithIcon(
+                        label = "Rank",
+                        value = data.rank.toString(),
+                        icon = Icons.Filled.Star
+                    )
+                    DataTextWithIcon(
                         label = "Popularity",
                         value = data.popularity.toString(),
                         icon = Icons.Filled.People
                     )
-                    DataText(
+                    DataTextWithIcon(
                         label = "Members",
                         value = data.members.toString(),
                         icon = Icons.Filled.People
@@ -130,28 +147,5 @@ fun AnimeSearchItem(
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun DataText(label: String, value: String, icon: ImageVector) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 2.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier
-                .size(20.dp)
-                .padding(end = 8.dp)
-        )
-        Text(
-            text = "$label: $value",
-            style = MaterialTheme.typography.bodyMedium,
-        )
     }
 }

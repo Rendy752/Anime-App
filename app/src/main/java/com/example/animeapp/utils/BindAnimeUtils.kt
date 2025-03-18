@@ -9,7 +9,7 @@ import com.bumptech.glide.Glide
 import com.example.animeapp.R
 import com.example.animeapp.databinding.AnimeHeaderBinding
 import com.example.animeapp.databinding.AnimeSearchItemBinding
-import com.example.animeapp.ui.common_ui.TitleSynonymsList
+import com.example.animeapp.ui.common_ui.HorizontalScrollChipList
 import com.example.animeapp.models.AnimeDetail
 
 object BindAnimeUtils {
@@ -48,7 +48,7 @@ object BindAnimeUtils {
 
             synonymsComposeView.apply {
                 setContent {
-                    data.title_synonyms?.let { TitleSynonymsList(synonyms = it.toList()) }
+                    data.title_synonyms?.let { HorizontalScrollChipList(dataList = it.toList()) }
                 }
                 visibility = if (data.title_synonyms.isNullOrEmpty()) View.GONE else View.VISIBLE
             }
@@ -75,7 +75,7 @@ object BindAnimeUtils {
 
             synonymsComposeView.apply {
                 setContent {
-                    TitleSynonymsList(synonyms = emptyList())
+                    HorizontalScrollChipList(dataList = emptyList())
                 }
             }
 
@@ -131,7 +131,7 @@ object BindAnimeUtils {
 
             synonymsComposeView.apply {
                 setContent {
-                    detail.title_synonyms?.let { TitleSynonymsList(synonyms = it.toList()) }
+                    detail.title_synonyms?.let { HorizontalScrollChipList(dataList = it.toList()) }
                 }
                 visibility = if (detail.title_synonyms.isNullOrEmpty()) View.GONE else View.VISIBLE
             }
