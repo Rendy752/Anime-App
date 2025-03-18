@@ -60,24 +60,24 @@ fun AnimeSearchScreen(navController: NavController) {
             }
         }
     ) { paddingValues ->
-        Box(modifier = Modifier.fillMaxSize()) {
-            PullToRefreshBox(
-                isRefreshing = isRefreshing,
-                onRefresh = { viewModel.applyFilters(viewModel.queryState.value) },
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                state = state,
-                indicator = {
-                    PullToRefreshDefaults.Indicator(
-                        isRefreshing = isRefreshing,
-                        containerColor = MaterialTheme.colorScheme.primary,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.align(Alignment.TopCenter),
-                        state = state
-                    )
-                },
-            ) {
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = { viewModel.applyFilters(viewModel.queryState.value) },
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+            state = state,
+            indicator = {
+                PullToRefreshDefaults.Indicator(
+                    isRefreshing = isRefreshing,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.align(Alignment.TopCenter),
+                    state = state
+                )
+            },
+        ) {
+            Box(modifier = Modifier.fillMaxSize()) {
                 if (isLandscape) {
                     Row {
                         Column(
@@ -113,9 +113,7 @@ fun AnimeSearchScreen(navController: NavController) {
                         }
                     }
                 } else {
-                    Column(
-                        modifier = Modifier.fillMaxSize()
-                    ) {
+                    Column(modifier = Modifier.fillMaxSize()) {
                         SearchFieldSection(viewModel)
                         FilterFieldSection(
                             viewModel,
@@ -134,7 +132,6 @@ fun AnimeSearchScreen(navController: NavController) {
                     }
                 }
             }
-
 
             val configuration = LocalConfiguration.current
             val screenWidth = configuration.screenWidthDp.dp
@@ -176,7 +173,9 @@ fun AnimeSearchScreen(navController: NavController) {
                     shape = shape
                 ) {
                     Column(modifier = Modifier.clip(shape)) {
-                        GenresBottomSheet(viewModel, onDismiss = { isGenresBottomSheetShow = false })
+                        GenresBottomSheet(
+                            viewModel,
+                            onDismiss = { isGenresBottomSheetShow = false })
                     }
                 }
             }

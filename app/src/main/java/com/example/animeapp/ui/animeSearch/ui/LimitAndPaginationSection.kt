@@ -26,8 +26,7 @@ fun LimitAndPaginationSection(viewModel: AnimeSearchViewModel) {
     if (paginationState != null) HorizontalDivider()
     HorizontalPager(state = pagerState, Modifier.padding(8.dp)) { page ->
         Row(
-            modifier = Modifier
-                .fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -56,8 +55,7 @@ fun LimitAndPaginationSection(viewModel: AnimeSearchViewModel) {
                             viewModel.applyFilters(updatedQueryState)
                         }
                     },
-                    modifier = Modifier
-                        .wrapContentSize()
+                    modifier = Modifier.wrapContentSize()
                 )
             }
         }
