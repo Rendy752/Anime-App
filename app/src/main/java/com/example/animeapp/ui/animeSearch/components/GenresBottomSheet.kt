@@ -34,7 +34,7 @@ import com.example.animeapp.utils.Resource
 fun GenresBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit) {
     val genres by viewModel.genres.collectAsState()
     val queryState by viewModel.queryState.collectAsState()
-    val selectedGenres by viewModel.selectedGenreId.collectAsState()
+    val selectedGenres by viewModel.selectedGenres.collectAsState()
     val context = LocalContext.current
 
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -72,14 +72,16 @@ fun GenresBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit) {
         Column(
             modifier = Modifier.weight(1f)
         ) {
-            val genreList = genres.data?.data ?: emptyList()
-            val selectedList = genreList.filter { it.mal_id in selectedGenres }
             if (selectedGenres.isNotEmpty()) {
                 FilterChipFlow(
-                    itemList = selectedList,
-                    onSetSelectedId = { viewModel.setSelectedGenreId(it) },
-                    itemName = { "${(it as Genre).name} (${it.count})" },
-                    getItemId = { (it as Genre).mal_id },
+                    itemList = selectedGenres,
+                    onSetSelectedId = { viewModel.setSelectedGenre(it as Genre) },
+                    itemName = {
+                        val name = (it as Genre).name
+                        if (it.count > 0) "$name (${it.count})"
+                        else name
+                    },
+                    getItemId = { it },
                     isHorizontal = true,
                     isChecked = true
                 )
@@ -105,13 +107,16 @@ fun GenresBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit) {
                 }
 
                 is Resource.Success -> {
-                    val unselectedList = genreList.filter { it.mal_id !in selectedGenres }
-
+                    val genreList = genres.data?.data ?: emptyList()
                     FilterChipFlow(
-                        itemList = unselectedList,
-                        onSetSelectedId = { viewModel.setSelectedGenreId(it) },
-                        itemName = { "${(it as Genre).name} (${it.count})" },
-                        getItemId = { (it as Genre).mal_id },
+                        itemList = genreList.filter { it !in selectedGenres },
+                        onSetSelectedId = { viewModel.setSelectedGenre(it as Genre) },
+                        itemName = {
+                            val name = (it as Genre).name
+                            if (it.count > 0) "$name (${it.count})"
+                            else name
+                        },
+                        getItemId = { it },
                     )
                 }
 

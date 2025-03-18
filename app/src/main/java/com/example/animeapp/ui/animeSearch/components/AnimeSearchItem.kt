@@ -26,6 +26,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.animeapp.models.AnimeDetail
+import com.example.animeapp.models.Genre
 import com.example.animeapp.models.animeDetailPlaceholder
 import com.example.animeapp.ui.common_ui.AsyncImageWithPlaceholder
 import com.example.animeapp.ui.common_ui.DataTextWithIcon
@@ -43,7 +44,7 @@ fun AnimeSearchItemPreview() {
 @Composable
 fun AnimeSearchItem(
     anime: AnimeDetail?,
-    onGenreClick: ((String) -> Unit)? = null,
+    onGenreClick: ((Genre) -> Unit)? = null,
     onItemClick: ((Int) -> Unit)? = null,
 ) {
     anime?.let { data ->
@@ -117,9 +118,16 @@ fun AnimeSearchItem(
                                 .horizontalScroll(rememberScrollState()),
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            genres.map { it.name }.toList().forEach { data ->
-                                FilterChipView(data) {
-                                    onGenreClick?.invoke(data)
+                            genres.map { it }.toList().forEach { data ->
+                                FilterChipView(data.name) {
+                                    onGenreClick?.invoke(
+                                        Genre(
+                                            mal_id = data.mal_id,
+                                            name = data.name,
+                                            url = data.url,
+                                            count = 0,
+                                        )
+                                    )
                                 }
                             }
                         }

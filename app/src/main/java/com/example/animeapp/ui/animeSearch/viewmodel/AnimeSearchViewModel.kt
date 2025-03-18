@@ -6,7 +6,9 @@ import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.models.AnimeSearchQueryState
 import com.example.animeapp.models.AnimeSearchResponse
 import com.example.animeapp.models.CompletePagination
+import com.example.animeapp.models.Genre
 import com.example.animeapp.models.GenresResponse
+import com.example.animeapp.models.Producer
 import com.example.animeapp.models.ProducersResponse
 import com.example.animeapp.models.ProducersSearchQueryState
 import com.example.animeapp.repository.AnimeSearchRepository
@@ -16,6 +18,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import retrofit2.Response
 import javax.inject.Inject
@@ -43,11 +46,11 @@ class AnimeSearchViewModel @Inject constructor(
     val producersQueryState: StateFlow<ProducersSearchQueryState> =
         _producersQueryState.asStateFlow()
 
-    private val _selectedGenreId = MutableStateFlow<List<Int>>(emptyList())
-    val selectedGenreId: StateFlow<List<Int>> = _selectedGenreId.asStateFlow()
+    private val _selectedGenres = MutableStateFlow<List<Genre>>(emptyList())
+    val selectedGenres: StateFlow<List<Genre>> = _selectedGenres.asStateFlow()
 
-    private val _selectedProducerId = MutableStateFlow<List<Int>>(emptyList())
-    val selectedProducerId: StateFlow<List<Int>> = _selectedProducerId.asStateFlow()
+    private val _selectedProducers = MutableStateFlow<List<Producer>>(emptyList())
+    val selectedProducers: StateFlow<List<Producer>> = _selectedProducers.asStateFlow()
 
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
@@ -103,18 +106,18 @@ class AnimeSearchViewModel @Inject constructor(
         _genres.value = ResponseHandler.handleCommonResponse(response)
     }
 
-    fun setSelectedGenreId(genreId: Int) {
-        val currentList = _selectedGenreId.value.toMutableList()
-        if (currentList.contains(genreId)) {
-            currentList.remove(genreId)
-        } else {
-            currentList.add(genreId)
+    fun setSelectedGenre(genre: Genre) {
+        _selectedGenres.update { currentList ->
+            if (currentList.contains(genre)) {
+                currentList.filter { it != genre }
+            } else {
+                currentList + genre
+            }
         }
-        _selectedGenreId.value = currentList
     }
 
     fun applyGenreFilters() {
-        val genreIds = selectedGenreId.value.joinToString(",")
+        val genreIds = selectedGenres.value.joinToString(",") { it.mal_id.toString() }
         if (genreIds.isBlank()) {
             resetGenreSelection()
             return
@@ -123,7 +126,7 @@ class AnimeSearchViewModel @Inject constructor(
     }
 
     fun resetGenreSelection() {
-        _selectedGenreId.value = emptyList()
+        _selectedGenres.value = emptyList()
         applyFilters(queryState.value.resetGenres())
     }
 
@@ -138,18 +141,18 @@ class AnimeSearchViewModel @Inject constructor(
         _producers.value = ResponseHandler.handleCommonResponse(response)
     }
 
-    fun setSelectedProducerId(producerId: Int) {
-        val currentList = _selectedProducerId.value.toMutableList()
-        if (currentList.contains(producerId)) {
-            currentList.remove(producerId)
-        } else {
-            currentList.add(producerId)
+    fun setSelectedProducer(producer: Producer) {
+        _selectedProducers.update { currentList ->
+            if (currentList.contains(producer)) {
+                currentList.filter { it != producer }
+            } else {
+                currentList + producer
+            }
         }
-        _selectedProducerId.value = currentList
     }
 
     fun applyProducerFilters() {
-        val producerIds = selectedProducerId.value.joinToString(",")
+        val producerIds = selectedProducers.value.joinToString(",") { it.mal_id.toString() }
         if (producerIds.isBlank()) {
             resetProducerSelection()
             return
@@ -158,7 +161,7 @@ class AnimeSearchViewModel @Inject constructor(
     }
 
     fun resetProducerSelection() {
-        _selectedProducerId.value = emptyList()
+        _selectedProducers.value = emptyList()
         producersQueryState.value.resetProducers()
         applyFilters(queryState.value.resetProducers())
     }

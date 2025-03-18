@@ -18,9 +18,9 @@ import com.example.animeapp.ui.common_ui.FilterChipView
 @Composable
 fun FilterChipFlow(
     itemList: List<Any>,
-    onSetSelectedId: (Int) -> Unit,
+    onSetSelectedId: (Any) -> Unit,
     itemName: (Any) -> String,
-    getItemId: (Any) -> Int,
+    getItemId: (Any) -> Any,
     isHorizontal: Boolean = false,
     isChecked: Boolean = false
 ) {

@@ -20,7 +20,6 @@ import com.example.animeapp.models.Genre
 import com.example.animeapp.models.Producer
 import com.example.animeapp.ui.animeSearch.components.FilterChipFlow
 import com.example.animeapp.ui.animeSearch.viewmodel.AnimeSearchViewModel
-import com.example.animeapp.utils.Resource
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
@@ -31,10 +30,8 @@ fun FilterFieldSection(
     setGenresBottomSheet: (Boolean) -> Unit,
     setProducersBottomSheet: (Boolean) -> Unit
 ) {
-    val selectedGenresIds by viewModel.selectedGenreId.collectAsState()
-    val selectedProducersIds by viewModel.selectedProducerId.collectAsState()
-    val genresResource by viewModel.genres.collectAsState()
-    val producersResource by viewModel.producers.collectAsState()
+    val selectedGenres by viewModel.selectedGenres.collectAsState()
+    val selectedProducers by viewModel.selectedProducers.collectAsState()
 
     Row(
         modifier = Modifier
@@ -56,13 +53,6 @@ fun FilterFieldSection(
                 .padding(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val selectedGenres = if (genresResource is Resource.Success) {
-                genresResource.data?.data?.filter { it.mal_id in selectedGenresIds }
-                    ?: emptyList()
-            } else {
-                emptyList()
-            }
-
             Row(
                 modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.CenterVertically
@@ -71,11 +61,11 @@ fun FilterFieldSection(
                     FilterChipFlow(
                         itemList = selectedGenres,
                         onSetSelectedId = {
-                            viewModel.setSelectedGenreId(it)
+                            viewModel.setSelectedGenre(it as Genre)
                             viewModel.applyGenreFilters()
                         },
                         itemName = { (it as Genre).name },
-                        getItemId = { (it as Genre).mal_id },
+                        getItemId = { it },
                         isHorizontal = true,
                         isChecked = true
                     )
@@ -108,13 +98,6 @@ fun FilterFieldSection(
                 .padding(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            val selectedProducers = if (producersResource is Resource.Success) {
-                producersResource.data?.data?.filter { it.mal_id in selectedProducersIds }
-                    ?: emptyList()
-            } else {
-                emptyList()
-            }
-
             Row(
                 modifier = Modifier.weight(1f),
                 verticalAlignment = Alignment.CenterVertically
@@ -123,11 +106,11 @@ fun FilterFieldSection(
                     FilterChipFlow(
                         itemList = selectedProducers,
                         onSetSelectedId = {
-                            viewModel.setSelectedProducerId(it)
+                            viewModel.setSelectedProducer(it as Producer)
                             viewModel.applyProducerFilters()
                         },
                         itemName = { (it as Producer).titles?.get(0)?.title ?: "Unknown" },
-                        getItemId = { (it as Producer).mal_id },
+                        getItemId = { it },
                         isHorizontal = true,
                         isChecked = true
                     )

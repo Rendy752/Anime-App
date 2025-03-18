@@ -36,7 +36,7 @@ import com.example.animeapp.utils.Resource
 fun ProducersBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit) {
     val producers by viewModel.producers.collectAsState()
     val queryState by viewModel.queryState.collectAsState()
-    val selectedProducers by viewModel.selectedProducerId.collectAsState()
+    val selectedProducers by viewModel.selectedProducers.collectAsState()
     val producersQueryState by viewModel.producersQueryState.collectAsState()
 
     val scope = rememberCoroutineScope()
@@ -107,15 +107,16 @@ fun ProducersBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit)
         Column(
             modifier = Modifier.weight(1f)
         ) {
-            val producerList = producers.data?.data ?: emptyList()
-            val selectedList =
-                producerList.filter { it.mal_id in selectedProducers }
             if (selectedProducers.isNotEmpty()) {
                 FilterChipFlow(
-                    itemList = selectedList,
-                    onSetSelectedId = { viewModel.setSelectedProducerId(it) },
-                    itemName = { "${(it as Producer).titles?.get(0)?.title ?: "Unknown"} (${it.count})" },
-                    getItemId = { (it as Producer).mal_id },
+                    itemList = selectedProducers,
+                    onSetSelectedId = { viewModel.setSelectedProducer(it as Producer) },
+                    itemName = {
+                        val title = (it as Producer).titles?.get(0)?.title ?: "Unknown"
+                        if (it.count > 0) "$title (${it.count})"
+                        else title
+                    },
+                    getItemId = { it },
                     isHorizontal = true,
                     isChecked = true
                 )
@@ -141,14 +142,16 @@ fun ProducersBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit)
                 }
 
                 is Resource.Success -> {
-                    val unselectedList =
-                        producerList.filter { it.mal_id !in selectedProducers }
-
+                    val producerList = producers.data?.data ?: emptyList()
                     FilterChipFlow(
-                        itemList = unselectedList,
-                        onSetSelectedId = { viewModel.setSelectedProducerId(it) },
-                        itemName = { "${(it as Producer).titles?.get(0)?.title ?: "Unknown"} (${it.count})" },
-                        getItemId = { (it as Producer).mal_id },
+                        itemList = producerList.filter { it !in selectedProducers },
+                        onSetSelectedId = { viewModel.setSelectedProducer(it as Producer) },
+                        itemName = {
+                            val title = (it as Producer).titles?.get(0)?.title ?: "Unknown"
+                            if (it.count > 0) "$title (${it.count})"
+                            else title
+                        },
+                        getItemId = { it },
                     )
                 }
 
