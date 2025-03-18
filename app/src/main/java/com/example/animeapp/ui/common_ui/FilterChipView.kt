@@ -29,6 +29,9 @@ fun FilterChipView(
                 )
             }
         },
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+        ),
         border = FilterChipDefaults.filterChipBorder(
             selectedBorderColor = MaterialTheme.colorScheme.surfaceContainerHighest,
             borderColor = MaterialTheme.colorScheme.surfaceContainerHighest,

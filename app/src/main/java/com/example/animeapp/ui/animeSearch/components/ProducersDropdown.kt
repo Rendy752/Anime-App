@@ -7,26 +7,24 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
+import com.example.animeapp.models.Producer
 import com.example.animeapp.ui.animeSearch.viewmodel.AnimeSearchViewModel
-import com.example.animeapp.ui.common_ui.FilterChipView
 import com.example.animeapp.ui.common_ui.RetryButton
 import com.example.animeapp.utils.Resource
 
@@ -36,8 +34,8 @@ fun ProducersDropdown(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit) {
     val producers by viewModel.producers.collectAsState()
     val selectedProducers by viewModel.selectedProducerId.collectAsState()
     val context = LocalContext.current
-    val scrollState = rememberScrollState()
-    val retryCount = remember { mutableIntStateOf(0) }
+    val configuration = LocalConfiguration.current
+    val screenHeight = configuration.screenHeightDp.dp
 
     Popup(
         alignment = Alignment.BottomStart,
@@ -46,14 +44,14 @@ fun ProducersDropdown(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit) {
             modifier = Modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)),
-            color = MaterialTheme.colorScheme.surface
+            color = MaterialTheme.colorScheme.surfaceContainerHighest
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(8.dp)
             ) {
-                if (producers !is Resource.Error) {
+                if (producers !is Resource.Error && producers !is Resource.Loading) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth(),
@@ -83,7 +81,7 @@ fun ProducersDropdown(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit) {
                 Column(
                     modifier = Modifier
                         .padding(top = 8.dp)
-                        .verticalScroll(scrollState)
+                        .heightIn(max = screenHeight * 0.5f)
                 ) {
                     when (producers) {
                         is Resource.Loading -> {
@@ -102,29 +100,21 @@ fun ProducersDropdown(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit) {
                             val unselectedList =
                                 producerList.filter { it.mal_id !in selectedProducers }
 
-                            selectedList.forEach { producer ->
-                                FilterChipView(
-                                    text = "${producer.titles?.get(0)?.title ?: "Unknown"} (${producer.count})",
-                                    checked = true,
-                                    onCheckedChange = { viewModel.setSelectedProducerId(producer.mal_id) }
-                                )
-                            }
-                            unselectedList.forEach { producer ->
-                                FilterChipView(
-                                    text = "${producer.titles?.get(0)?.title ?: "Unknown"} (${producer.count})",
-                                    checked = false,
-                                    onCheckedChange = { viewModel.setSelectedProducerId(producer.mal_id) }
-                                )
-                            }
+                            FilterChipFlow(
+                                selectedList = selectedList,
+                                unselectedList = unselectedList,
+                                selectedIds = selectedProducers,
+                                onSetSelectedId = { viewModel.setSelectedProducerId(it) },
+                                itemName = { "${(it as Producer).titles?.get(0)?.title ?: "Unknown"} (${it.count})" },
+                                getItemId = { (it as Producer).mal_id },
+                                noSelectedItemMessage = "No selected producers"
+                            )
                         }
 
                         is Resource.Error -> {
                             RetryButton(
-                                message = producers.message ?: "Error loading genres",
-                                onClick = {
-                                    viewModel.fetchProducers()
-                                    retryCount.intValue++
-                                }
+                                message = producers.message ?: "Error loading producers",
+                                onClick = { viewModel.fetchProducers() }
                             )
                         }
                     }
