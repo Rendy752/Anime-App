@@ -1,7 +1,6 @@
 package com.example.animeapp.ui.animeSearch.components
 
 import android.content.Context
-import android.widget.Toast
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -60,48 +59,17 @@ private fun FilterHeader(
             color = MaterialTheme.colorScheme.primary
         )
         Row {
-            ResetButton(viewModel, filterState, context, onDismiss)
+            ResetButton(
+                context,
+                { viewModel.queryState.value.isDefault() },
+                {
+                    viewModel.resetBottomSheetFilters()
+                    filterState.value =
+                        FilterUtils.FilterState(filterState.value.queryState.resetBottomSheetFilters())
+                    onDismiss()
+                }
+            )
             Spacer(Modifier.width(4.dp))
-            ApplyButton(viewModel, filterState, context, onDismiss)
-        }
-    }
-}
-
-@Composable
-private fun ResetButton(
-    viewModel: AnimeSearchViewModel,
-    filterState: MutableState<FilterUtils.FilterState>,
-    context: Context,
-    onDismiss: () -> Unit
-) {
-    Button(
-        onClick = {
-            if (filterState.value.queryState.isDefault()) {
-                Toast.makeText(context, "Filters are already default", Toast.LENGTH_SHORT).show()
-            } else {
-                viewModel.resetBottomSheetFilters()
-                filterState.value =
-                    FilterUtils.FilterState(filterState.value.queryState.resetBottomSheetFilters())
-                onDismiss()
-            }
-        },
-        enabled = !filterState.value.queryState.isDefault(),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-            contentColor = MaterialTheme.colorScheme.onTertiaryContainer
-        )
-    ) { Text(stringResource(R.string.reset)) }
-}
-
-@Composable
-private fun ApplyButton(
-    viewModel: AnimeSearchViewModel,
-    filterState: MutableState<FilterUtils.FilterState>,
-    context: Context,
-    onDismiss: () -> Unit
-) {
-    Button(
-        onClick = {
             val updatedQueryState = FilterUtils.collectFilterValues(
                 currentState = filterState.value.queryState,
                 type = filterState.value.type,
@@ -119,19 +87,16 @@ private fun ApplyButton(
                 endDate = filterState.value.endDate
             )
             val defaultQueryState = filterState.value.queryState.resetBottomSheetFilters()
-            if (updatedQueryState == defaultQueryState) {
-                Toast.makeText(context, "No filters applied, you can reset", Toast.LENGTH_SHORT)
-                    .show()
-            } else {
-                viewModel.applyFilters(updatedQueryState)
-                onDismiss()
-            }
-        },
-        colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary
-        )
-    ) { Text(stringResource(R.string.apply)) }
+            ApplyButton(
+                context,
+                { updatedQueryState == defaultQueryState },
+                {
+                    viewModel.applyFilters(updatedQueryState)
+                    onDismiss()
+                }
+            )
+        }
+    }
 }
 
 @Composable

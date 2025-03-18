@@ -1,5 +1,6 @@
 package com.example.animeapp.ui.common_ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -19,6 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -60,15 +62,21 @@ fun AsyncImageWithPlaceholder(
                 val icon = if (isAiring) Icons.Filled.NotificationsActive else Icons.Filled.Done
                 val tint = if (isAiring) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
 
-                Icon(
-                    imageVector = icon,
-                    contentDescription = if (isAiring) "Airing" else "Finished",
-                    tint = tint,
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(4.dp)
-                        .size(24.dp)
-                )
+                Box(modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(4.dp)
+                    .background(
+                        color = Color.Black.copy(alpha = 0.3f),
+                        shape = RoundedCornerShape(50)
+                    )
+                    .padding(4.dp)){
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = if (isAiring) "Airing" else "Finished",
+                        tint = tint,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
             }
         }
     }
