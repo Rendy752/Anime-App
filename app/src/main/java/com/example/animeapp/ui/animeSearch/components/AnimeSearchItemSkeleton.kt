@@ -1,7 +1,5 @@
 package com.example.animeapp.ui.animeSearch.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -12,39 +10,21 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.ui.common_ui.SkeletonBox
+import com.example.animeapp.utils.shimmerContainer
 
 @Preview
 @Composable
 fun AnimeSearchItemSkeleton() {
     Column(
         modifier = Modifier
-            .padding(4.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                shape = RoundedCornerShape(16.dp)
-            )
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f),
-                        MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha = 0.5f)
-                    )
-                )
-            )
+            .shimmerContainer()
             .fillMaxWidth()
-            .padding(16.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,

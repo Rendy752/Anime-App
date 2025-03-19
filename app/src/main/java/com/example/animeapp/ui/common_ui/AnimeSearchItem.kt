@@ -1,12 +1,8 @@
 package com.example.animeapp.ui.common_ui
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Recommend
@@ -18,8 +14,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -28,6 +22,7 @@ import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.Genre
 import com.example.animeapp.models.animeDetailPlaceholder
 import com.example.animeapp.utils.TextUtils.formatNumber
+import com.example.animeapp.utils.basicContainer
 
 @Preview
 @Composable
@@ -47,25 +42,7 @@ fun AnimeSearchItem(
 ) {
     anime?.let { data ->
         Column(
-            modifier = Modifier
-                .padding(4.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .border(
-                    width = 1.dp,
-                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    shape = RoundedCornerShape(16.dp)
-                )
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.surfaceContainerHigh,
-                            MaterialTheme.colorScheme.surfaceContainerLowest
-                        )
-                    )
-                )
-                .clickable { onItemClick?.invoke(data.mal_id) }
-                .fillMaxWidth()
-                .padding(16.dp)
+            modifier = Modifier.basicContainer(onItemClick = { onItemClick?.invoke(data.mal_id) })
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,

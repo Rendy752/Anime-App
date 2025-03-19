@@ -1,40 +1,20 @@
 package com.example.animeapp.ui.animeRecommendations.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.ui.common_ui.SkeletonBox
+import com.example.animeapp.utils.shimmerContainer
 
 @Preview
 @Composable
 fun AnimeRecommendationItemSkeleton() {
     Column(modifier = Modifier.fillMaxWidth()) {
-        Column(
-            modifier = Modifier
-                .padding(8.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(
-                    brush = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f)
-                        .let { high ->
-                            MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.5f)
-                                .let { low ->
-                                    Brush.verticalGradient(
-                                        colors = listOf(high, low)
-                                    )
-                                }
-                        }
-                )
-                .padding(16.dp)
-        ) {
+        Column(modifier = Modifier.shimmerContainer()) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly

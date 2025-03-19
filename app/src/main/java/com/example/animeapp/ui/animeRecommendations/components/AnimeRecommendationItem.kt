@@ -1,7 +1,5 @@
 package com.example.animeapp.ui.animeRecommendations.components
 
-import androidx.compose.foundation.border
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -11,7 +9,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -21,6 +18,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.example.animeapp.models.animeRecommendationPlaceholder
 import com.example.animeapp.ui.common_ui.AsyncImageWithPlaceholder
 import com.example.animeapp.utils.DateUtils
+import com.example.animeapp.utils.basicContainer
 
 @Preview
 @Composable
@@ -36,48 +34,26 @@ fun AnimeRecommendationItem(
     recommendation: AnimeRecommendation,
     onItemClick: (AnimeHeader) -> Unit
 ) {
-    Column(
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier
-                .padding(8.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .border(
-                    width = 1.dp,
-                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                    shape = RoundedCornerShape(16.dp)
-                )
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.surfaceContainerHigh,
-                            MaterialTheme.colorScheme.surfaceContainerLowest
-                        )
-                    )
-                )
-                .padding(16.dp)
+    Column(modifier = Modifier.basicContainer()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceEvenly
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly
-            ) {
-                AnimePair(
-                    anime = recommendation.entry[0],
-                    isFirst = true,
-                    onItemClick = onItemClick,
-                    modifier = Modifier.weight(0.5f)
-                )
-                AnimePair(
-                    anime = recommendation.entry[1],
-                    isFirst = false,
-                    onItemClick = onItemClick,
-                    modifier = Modifier.weight(0.5f)
-                )
-            }
-            RecommendationContent(recommendation.content)
-            RecommendationDetails(recommendation)
+            AnimePair(
+                anime = recommendation.entry[0],
+                isFirst = true,
+                onItemClick = onItemClick,
+                modifier = Modifier.weight(0.5f)
+            )
+            AnimePair(
+                anime = recommendation.entry[1],
+                isFirst = false,
+                onItemClick = onItemClick,
+                modifier = Modifier.weight(0.5f)
+            )
         }
+        RecommendationContent(recommendation.content)
+        RecommendationDetails(recommendation)
     }
 }
 
@@ -91,6 +67,7 @@ private fun AnimePair(
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
+            .clip(RoundedCornerShape(16.dp))
             .fillMaxWidth()
             .clickable { onItemClick(anime) }
     ) {

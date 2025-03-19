@@ -9,7 +9,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.animeapp.R
 import com.example.animeapp.ui.animeSearch.viewmodel.AnimeSearchViewModel
@@ -25,9 +24,7 @@ fun ResultsSection(navController: NavController, viewModel: AnimeSearchViewModel
     val genres = viewModel.genres.collectAsState().value
 
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = 8.dp),
+        modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {

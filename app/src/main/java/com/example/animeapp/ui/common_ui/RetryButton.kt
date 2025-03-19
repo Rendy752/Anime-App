@@ -1,8 +1,5 @@
 package com.example.animeapp.ui.common_ui
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
@@ -16,25 +13,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
+import com.example.animeapp.utils.basicContainer
 
 @Composable
 fun RetryButton(message: String, onClick: () -> Unit) {
     Row(
         horizontalArrangement = Arrangement.Center,
         modifier = Modifier
+            .basicContainer(isPrimary = true, onItemClick = onClick)
             .wrapContentSize()
-            .clickable { onClick() }
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.primary,
-                        MaterialTheme.colorScheme.primaryContainer
-                    )
-                ), shape = RoundedCornerShape(8.dp)
-            )
-            .padding(8.dp).fillMaxWidth(),
+            .fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
