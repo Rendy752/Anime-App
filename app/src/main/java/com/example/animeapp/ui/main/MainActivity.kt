@@ -1,7 +1,5 @@
 package com.example.animeapp.ui.main
 
-import android.hardware.Sensor
-import android.hardware.SensorManager
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.compose.setContent
@@ -19,16 +17,11 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import com.example.animeapp.ui.theme.AppTheme
-import com.example.animeapp.utils.ShakeDetector
-import com.example.animeapp.BuildConfig.DEBUG
-import com.chuckerteam.chucker.api.Chucker
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
 
-    private lateinit var sensorManager: SensorManager
-    private lateinit var shakeDetector: ShakeDetector
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -38,6 +31,7 @@ class MainActivity : AppCompatActivity() {
 
         if (isDarkMode) {
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+
         } else {
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
         }
@@ -63,7 +57,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-        if (DEBUG) setupSensor()
     }
 
     private fun setStatusBarColor(color: Color) {
@@ -78,21 +71,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        if (DEBUG) sensorManager.registerListener(
-            shakeDetector,
-            sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
-            SensorManager.SENSOR_DELAY_NORMAL
-        )
     }
 
     override fun onPause() {
         super.onPause()
-        if (DEBUG) sensorManager.unregisterListener(shakeDetector)
-    }
-
-    private fun setupSensor() {
-        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
-        shakeDetector = ShakeDetector { startActivity(Chucker.getLaunchIntent(this)) }
     }
 
 //    override fun onNewIntent(intent: Intent) {

@@ -1,6 +1,7 @@
 package com.example.animeapp.modules
 
 import android.content.Context
+import com.example.animeapp.BuildConfig.DEBUG
 import com.chuckerteam.chucker.api.ChuckerCollector
 import com.chuckerteam.chucker.api.ChuckerInterceptor
 import com.chuckerteam.chucker.api.RetentionManager
@@ -27,27 +28,25 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideOkHttpClient(@ApplicationContext context: Context): OkHttpClient {
-        val chuckerCollector = ChuckerCollector(
-            context = context,
-            showNotification = true,
-            retentionPeriod = RetentionManager.Period.ONE_HOUR
-        )
-
-        val chuckerInterceptor = ChuckerInterceptor.Builder(context)
-            .collector(chuckerCollector)
-            .maxContentLength(250_000L)
-            .redactHeaders("Auth-Token", "Bearer")
-            .alwaysReadResponseBody(true)
-            .createShortcut(true)
-            .build()
-
-        return OkHttpClient.Builder()
+        val builder = OkHttpClient.Builder()
             .readTimeout(30, TimeUnit.SECONDS)
             .connectTimeout(30, TimeUnit.SECONDS)
             .cache(provideCache(context))
             .addInterceptor(EpisodeSourcesCacheInterceptor())
-            .addInterceptor(chuckerInterceptor)
-            .build()
+
+        if (DEBUG) {
+            val chuckerCollector = ChuckerCollector(
+                context = context,
+                showNotification = true,
+                retentionPeriod = RetentionManager.Period.ONE_HOUR
+            )
+            val chuckerInterceptor = ChuckerInterceptor.Builder(context).collector(chuckerCollector)
+                .maxContentLength(250_000L).redactHeaders("Auth-Token", "Bearer")
+                .alwaysReadResponseBody(true).createShortcut(true).build()
+            builder.addInterceptor(chuckerInterceptor)
+        }
+
+        return builder.build()
     }
 
     private fun provideCache(context: Context): Cache {
