@@ -27,7 +27,6 @@ import com.example.animeapp.utils.MinMaxInputFilter
 import com.example.animeapp.utils.Navigation
 import com.example.animeapp.ui.common_ui.NameAndUrlList
 import com.example.animeapp.utils.Resource
-import com.example.animeapp.utils.TextUtils.formatSynopsis
 import com.example.animeapp.ui.common_ui.UnorderedList
 import com.example.animeapp.utils.TextUtils.joinOrNA
 import dagger.hilt.android.AndroidEntryPoint
@@ -37,6 +36,10 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.core.net.toUri
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
+import com.example.animeapp.utils.ShareUtils
+import kotlinx.coroutines.flow.collectLatest
 
 @AndroidEntryPoint
 class AnimeDetailFragment : Fragment(), MenuProvider {
@@ -75,25 +78,38 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
     }
 
     private fun observeAnimeDetail() {
-        viewModel.animeDetail.observe(viewLifecycleOwner) { response ->
-            when (response) {
-                is Resource.Success -> {
-                    viewModel.handleEpisodes()
-                    handleAnimeSuccess(response)
-                }
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                launch {
+                    viewModel.animeDetail.collectLatest { response ->
+                        withContext(Dispatchers.Main) {
+                            when (response) {
+                                is Resource.Success -> {
+                                    viewModel.handleEpisodes()
+                                    handleAnimeSuccess(response)
+                                }
 
-                is Resource.Error -> handleAnimeError(response)
-                is Resource.Loading -> handleAnimeLoading()
-                else -> handleAnimeEmpty()
-            }
-        }
-        viewModel.animeDetailComplement.observe(viewLifecycleOwner) { response ->
-            requireActivity().invalidateMenu()
-            when (response) {
-                is Resource.Success -> handleEpisodesSuccess(response)
-                is Resource.Loading -> handleEpisodesLoading()
-                is Resource.Error -> handleEpisodesError(response)
-                else -> handleEpisodesEmpty()
+                                is Resource.Error -> handleAnimeError(response)
+                                is Resource.Loading -> handleAnimeLoading()
+                                else -> handleAnimeEmpty()
+                            }
+                        }
+                    }
+                }
+                launch {
+                    viewModel.animeDetailComplement.collectLatest { response ->
+                        if(response is Resource.Loading) {
+                            handleEpisodesLoading()
+                        }
+                        requireActivity().invalidateMenu()
+                        when (response) {
+                            is Resource.Success -> handleEpisodesSuccess(response)
+                            is Resource.Loading -> handleEpisodesLoading()
+                            is Resource.Error -> handleEpisodesError(response)
+                            else -> handleEpisodesEmpty()
+                        }
+                    }
+                }
             }
         }
     }
@@ -133,53 +149,7 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
 
             R.id.action_share -> {
                 viewModel.animeDetail.value?.data?.data?.let { detail ->
-                    val animeUrl = detail.url
-                    val animeTitle = detail.title
-                    val animeScore = detail.score ?: "0"
-                    val animeGenres = detail.genres?.joinToString(", ") { it.name }
-
-                    val animeSynopsis = formatSynopsis(detail.synopsis ?: "-")
-                    val animeTrailerUrl = detail.trailer.url ?: ""
-                    val malId = detail.mal_id
-                    val customUrl = "animeapp://anime/detail/$malId"
-
-                    val trailerSection = if (animeTrailerUrl.isNotEmpty()) {
-                        """
-                            
-                    -------
-                    Trailer
-                    -------
-                    $animeTrailerUrl
-                    """
-                    } else {
-                        ""
-                    }
-
-                    val sharedText = """
-                    Check out this anime on AnimeApp!
-
-                    Title: $animeTitle
-                    Score: $animeScore
-                    Genres: $animeGenres
-
-                    --------
-                    Synopsis
-                    --------
-                    $animeSynopsis
-                    $trailerSection
-
-                    Web URL: $animeUrl
-                    App URL: $customUrl
-                    Download the app now: https://play.google.com/store/apps/details?id=com.example.animeapp
-                """.trimIndent()
-
-                    val sendIntent: Intent = Intent().apply {
-                        action = Intent.ACTION_SEND
-                        putExtra(Intent.EXTRA_TEXT, sharedText)
-                        type = "text/plain"
-                    }
-                    val shareIntent = Intent.createChooser(sendIntent, null)
-                    startActivity(shareIntent)
+                    ShareUtils.shareAnimeDetail(requireContext(), detail)
                 }
                 true
             }

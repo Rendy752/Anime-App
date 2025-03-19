@@ -35,7 +35,7 @@ fun AnimeRecommendationItemPreview() {
 @Composable
 fun AnimeRecommendationItem(
     recommendation: AnimeRecommendation,
-    onItemClick: (Int) -> Unit
+    onItemClick: (AnimeHeader) -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxWidth()
@@ -86,14 +86,14 @@ fun AnimeRecommendationItem(
 private fun AnimePair(
     anime: AnimeHeader,
     isFirst: Boolean,
-    onItemClick: (Int) -> Unit,
+    onItemClick: (AnimeHeader) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier
             .fillMaxWidth()
-            .clickable { onItemClick(anime.mal_id) }
+            .clickable { onItemClick(anime) }
     ) {
         Text(
             text = if (isFirst) "If you like" else "Then you might like",

@@ -128,7 +128,8 @@ fun AnimeRecommendationsScreen(navController: NavController) {
                                 items(animeRecommendations) {
                                     AnimeRecommendationItem(
                                         recommendation = it,
-                                        onItemClick = { animeId -> navController.navigate("animeDetail/$animeId") })
+                                        onItemClick = { anime -> navController.navigate("animeDetail/${anime.title}/${anime.mal_id}") }
+                                    )
                                 }
                             }
                         } else {
@@ -144,7 +145,8 @@ fun AnimeRecommendationsScreen(navController: NavController) {
                                         items(columnItems) {
                                             AnimeRecommendationItem(
                                                 recommendation = it,
-                                                onItemClick = { animeId -> navController.navigate("animeDetail/$animeId") })
+                                                onItemClick = { anime -> navController.navigate("animeDetail/${anime.title}/${anime.mal_id}") }
+                                            )
                                         }
                                     }
                                 }

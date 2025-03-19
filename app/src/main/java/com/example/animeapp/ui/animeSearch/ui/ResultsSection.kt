@@ -51,7 +51,7 @@ fun ResultsSection(navController: NavController, viewModel: AnimeSearchViewModel
                                     viewModel.applyGenreFilters()
                                 }
                             }) { animeId ->
-                                navController.navigate("animeDetail/$animeId")
+                                navController.navigate("animeDetail/${anime.title}/$animeId")
                             }
                         }
                     }
