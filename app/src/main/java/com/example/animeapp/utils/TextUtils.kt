@@ -1,6 +1,8 @@
 package com.example.animeapp.utils
 
 import org.apache.commons.text.StringEscapeUtils
+import java.text.NumberFormat
+import java.util.Locale
 
 object TextUtils {
     fun formatSynopsis(synopsis: String): String {
@@ -17,5 +19,10 @@ object TextUtils {
                 "-"
             }
         } ?: "-"
+    }
+
+    fun formatNumber(number: Int): String {
+        val numberFormat = NumberFormat.getInstance(Locale.getDefault())
+        return numberFormat.format(number).replace(",", ".")
     }
 }

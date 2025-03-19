@@ -12,7 +12,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -98,7 +97,6 @@ private fun AnimePair(
         Text(
             text = if (isFirst) "If you like" else "Then you might like",
             style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
             fontSize = 14.sp,
             modifier = Modifier.padding(bottom = 4.dp)
         )
@@ -112,7 +110,6 @@ private fun AnimePair(
             text = anime.title,
             style = MaterialTheme.typography.titleLarge,
             textAlign = TextAlign.Center,
-            fontWeight = FontWeight.Bold,
             maxLines = 2,
             fontSize = 14.sp,
             modifier = Modifier.padding(top = 4.dp)

@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animeSearch.components
+package com.example.animeapp.ui.common_ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -20,7 +20,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -28,9 +27,7 @@ import androidx.compose.ui.unit.sp
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.Genre
 import com.example.animeapp.models.animeDetailPlaceholder
-import com.example.animeapp.ui.common_ui.AsyncImageWithPlaceholder
-import com.example.animeapp.ui.common_ui.DataTextWithIcon
-import com.example.animeapp.ui.common_ui.FilterChipView
+import com.example.animeapp.utils.TextUtils.formatNumber
 
 @Preview
 @Composable
@@ -87,7 +84,6 @@ fun AnimeSearchItem(
                     Text(
                         text = data.title,
                         style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
                         fontSize = 14.sp,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
@@ -98,7 +94,7 @@ fun AnimeSearchItem(
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
-                            text = "${data.type ?: "Unknown Type"} - ${data.aired.prop.from.year ?: "Unknown Year"}",
+                            text = "${data.type ?: "Unknown Type"} (${data.episodes} eps) - ${data.aired.prop.from.year ?: "Unknown Year"}",
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.weight(1f),
                             maxLines = 1,
@@ -134,17 +130,17 @@ fun AnimeSearchItem(
                     )
                     DataTextWithIcon(
                         label = "Rank",
-                        value = data.rank.toString(),
+                        value = data.rank?.let { formatNumber(it) },
                         icon = Icons.Filled.Star
                     )
                     DataTextWithIcon(
                         label = "Popularity",
-                        value = data.popularity.toString(),
+                        value = formatNumber(data.popularity),
                         icon = Icons.Filled.People
                     )
                     DataTextWithIcon(
                         label = "Members",
-                        value = data.members.toString(),
+                        value = formatNumber(data.members),
                         icon = Icons.Filled.People
                     )
                 }

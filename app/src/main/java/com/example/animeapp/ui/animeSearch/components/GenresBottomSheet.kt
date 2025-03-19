@@ -23,7 +23,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.ui.animeSearch.viewmodel.AnimeSearchViewModel
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import com.example.animeapp.models.Genre
 import com.example.animeapp.ui.common_ui.RetryButton
@@ -90,7 +89,6 @@ fun GenresBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit) {
                     modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.tertiary,
                     text = "No selected genres"
                 )

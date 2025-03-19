@@ -1,18 +1,18 @@
 package com.example.animeapp.ui.animeDetail.ui
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -24,20 +24,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ShareUtils
-import com.example.animeapp.BuildConfig.YOUTUBE_URL
-import com.example.animeapp.R
 import com.example.animeapp.ui.animeDetail.AnimeDetailViewModel
 import com.example.animeapp.ui.common_ui.AnimeHeader
-import com.example.animeapp.utils.BindAnimeUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,6 +55,11 @@ fun AnimeDetailScreen(
         topBar = {
             Column {
                 TopAppBar(
+                    navigationIcon = {
+                        IconButton(onClick = { navController.popBackStack() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                    },
                     title = {
                         Text(
                             text = animeTitle,
@@ -91,7 +91,9 @@ fun AnimeDetailScreen(
 
                 is Resource.Success -> {
                     (animeDetail as Resource.Success<AnimeDetailResponse>).data?.data?.let { animeDetailData ->
-                        Column {
+                        Column(
+                            modifier = Modifier.padding(8.dp)
+                        ) {
                             AnimeHeader(animeDetailData)
 //                        AnimeNumberDetail(animeDetailData)
 //                        YoutubePreview(animeDetailData.trailer.embed_url)

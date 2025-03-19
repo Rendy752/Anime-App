@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
 @Composable
@@ -31,8 +32,13 @@ internal fun DataTextWithIcon(label: String, value: String?, icon: ImageVector) 
                     .padding(end = 8.dp)
             )
             Text(
-                text = "$label: $value",
+                text = "$label: ",
                 style = MaterialTheme.typography.bodyMedium,
+            )
+            Text(
+                text = value,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Bold
             )
         }
     }

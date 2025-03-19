@@ -13,7 +13,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.animeapp.R
 import com.example.animeapp.ui.animeSearch.viewmodel.AnimeSearchViewModel
-import com.example.animeapp.ui.animeSearch.components.AnimeSearchItem
+import com.example.animeapp.ui.common_ui.AnimeSearchItem
 import com.example.animeapp.ui.animeSearch.components.AnimeSearchItemSkeleton
 import com.example.animeapp.ui.common_ui.ErrorMessage
 import com.example.animeapp.utils.Resource
