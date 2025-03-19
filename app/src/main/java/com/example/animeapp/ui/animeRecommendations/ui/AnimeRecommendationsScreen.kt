@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.animeapp.R
@@ -61,29 +62,34 @@ fun AnimeRecommendationsScreen(navController: NavController) {
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(text = stringResource(R.string.title_recommendation)) },
-                actions = {
-                    networkStatus?.let {
-                        Row {
-                            Text(
-                                text = it.label,
-                                color = if (it.color == MaterialTheme.colorScheme.onError) MaterialTheme.colorScheme.onError
-                                else MaterialTheme.colorScheme.onSurface
-                            )
-                            Icon(
-                                imageVector = it.icon,
-                                contentDescription = it.label,
-                                tint = it.color
-                            )
+            Column {
+                TopAppBar(
+                    title = { Text(text = stringResource(R.string.title_recommendation)) },
+                    actions = {
+                        networkStatus?.let {
+                            Row {
+                                Text(
+                                    text = it.label,
+                                    color = if (it.color == MaterialTheme.colorScheme.onError) MaterialTheme.colorScheme.onError
+                                    else MaterialTheme.colorScheme.onSurface
+                                )
+                                Icon(
+                                    imageVector = it.icon,
+                                    contentDescription = it.label,
+                                    tint = it.color
+                                )
+                            }
                         }
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    titleContentColor = MaterialTheme.colorScheme.primary
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        titleContentColor = MaterialTheme.colorScheme.primary
+                    )
                 )
-            )
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.surfaceContainer,
+                    thickness = 2.dp
+                )
+            }
         },
     ) { paddingValues ->
         PullToRefreshBox(

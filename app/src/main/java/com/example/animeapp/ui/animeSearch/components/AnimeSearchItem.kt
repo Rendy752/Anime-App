@@ -44,7 +44,8 @@ fun AnimeSearchItemPreview() {
 @Composable
 fun AnimeSearchItem(
     anime: AnimeDetail?,
-    onGenreClick: ((Genre) -> Unit)? = null,
+    selectedGenres: List<Genre> = emptyList(),
+    onGenreClick: ((Int) -> Unit)? = null,
     onItemClick: ((Int) -> Unit)? = null,
 ) {
     anime?.let { data ->
@@ -119,15 +120,9 @@ fun AnimeSearchItem(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             genres.map { it }.toList().forEach { data ->
-                                FilterChipView(data.name) {
-                                    onGenreClick?.invoke(
-                                        Genre(
-                                            mal_id = data.mal_id,
-                                            name = data.name,
-                                            url = data.url,
-                                            count = 0,
-                                        )
-                                    )
+                                val isSelected = selectedGenres.any { it.mal_id == data.mal_id }
+                                FilterChipView(data.name, isSelected) {
+                                    onGenreClick?.invoke(data.mal_id)
                                 }
                             }
                         }

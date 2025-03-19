@@ -21,6 +21,8 @@ import com.example.animeapp.utils.Resource
 @Composable
 fun ResultsSection(navController: NavController, viewModel: AnimeSearchViewModel) {
     val animeList = viewModel.animeSearchResults.collectAsState().value
+    val selectedGenres = viewModel.selectedGenres.collectAsState().value
+    val genres = viewModel.genres.collectAsState().value
 
     Column(
         modifier = Modifier
@@ -42,9 +44,12 @@ fun ResultsSection(navController: NavController, viewModel: AnimeSearchViewModel
                 } else {
                     LazyColumn {
                         items(animeList.data.data) { anime ->
-                            AnimeSearchItem(anime = anime, onGenreClick = { genre ->
-                                viewModel.setSelectedGenre(genre)
-                                viewModel.applyGenreFilters()
+                            AnimeSearchItem(anime = anime, selectedGenres = selectedGenres, onGenreClick = { genreMalId ->
+                                val genre = genres.data?.data?.find { it.mal_id == genreMalId }
+                                genre?.let {
+                                    viewModel.setSelectedGenre(it)
+                                    viewModel.applyGenreFilters()
+                                }
                             }) { animeId ->
                                 navController.navigate("animeDetail/$animeId")
                             }

@@ -40,23 +40,28 @@ fun AnimeSearchScreen(navController: NavController) {
     Scaffold(
         topBar = {
             if (!isLandscape) {
-                TopAppBar(
-                    title = { Text(text = stringResource(id = R.string.title_search)) },
-                    actions = {
-                        IconButton(onClick = { isFilterBottomSheetShow = true }) {
-                            Icon(
-                                imageVector = Icons.Filled.FilterList,
-                                tint = MaterialTheme.colorScheme.primary,
-                                contentDescription = stringResource(id = R.string.filter)
-                            )
-                        }
-                    },
+                Column {
+                    TopAppBar(
+                        title = { Text(text = stringResource(id = R.string.title_search)) },
+                        actions = {
+                            IconButton(onClick = { isFilterBottomSheetShow = true }) {
+                                Icon(
+                                    imageVector = Icons.Filled.FilterList,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    contentDescription = stringResource(id = R.string.filter)
+                                )
+                            }
+                        },
 
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainer,
-                        titleContentColor = MaterialTheme.colorScheme.primary
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            titleContentColor = MaterialTheme.colorScheme.primary
+                        )
                     )
-                )
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.surfaceContainer,
+                        thickness = 2.dp
+                    )
+                }
             }
         }
     ) { paddingValues ->
@@ -82,7 +87,8 @@ fun AnimeSearchScreen(navController: NavController) {
                     Row {
                         Column(
                             modifier = Modifier
-                                .weight(0.5f).fillMaxHeight()
+                                .weight(0.5f)
+                                .fillMaxHeight()
                                 .clip(MaterialTheme.shapes.extraLarge),
                             verticalArrangement = Arrangement.SpaceBetween
                         ) {
