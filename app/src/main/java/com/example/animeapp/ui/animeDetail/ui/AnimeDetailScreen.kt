@@ -1,5 +1,6 @@
 package com.example.animeapp.ui.animeDetail.ui
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -22,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
@@ -86,7 +88,12 @@ fun AnimeDetailScreen(
         ) {
             when (animeDetail) {
                 is Resource.Loading -> {
-                    CircularProgressIndicator()
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(16.dp),
+                        contentAlignment = Alignment.Center
+                    ) { CircularProgressIndicator() }
                 }
 
                 is Resource.Success -> {
@@ -95,7 +102,7 @@ fun AnimeDetailScreen(
                             modifier = Modifier.padding(8.dp)
                         ) {
                             AnimeHeader(animeDetailData)
-//                        AnimeNumberDetail(animeDetailData)
+                            NumberDetailSection(animeDetailData)
 //                        YoutubePreview(animeDetailData.trailer.embed_url)
 //                        AnimeBody(animeDetailData)
 //                        AnimeBackground(animeDetailData.background)

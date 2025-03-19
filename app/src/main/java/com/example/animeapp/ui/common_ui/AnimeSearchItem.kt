@@ -4,7 +4,8 @@ import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.People
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Recommend
 import androidx.compose.material.icons.filled.Score
 import androidx.compose.material.icons.filled.Star
@@ -113,12 +114,12 @@ fun AnimeSearchItem(
                     DataTextWithIcon(
                         label = "Popularity",
                         value = formatNumber(data.popularity),
-                        icon = Icons.Filled.People
+                        icon = Icons.AutoMirrored.Filled.TrendingUp
                     )
                     DataTextWithIcon(
                         label = "Members",
                         value = formatNumber(data.members),
-                        icon = Icons.Filled.People
+                        icon = Icons.Filled.Groups
                     )
                 }
             }
