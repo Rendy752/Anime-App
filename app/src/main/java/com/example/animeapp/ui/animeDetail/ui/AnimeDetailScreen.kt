@@ -8,7 +8,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -26,11 +27,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.animeapp.models.AnimeDetailResponse
+import com.example.animeapp.R
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ShareUtils
 import com.example.animeapp.ui.animeDetail.AnimeDetailViewModel
@@ -69,6 +71,40 @@ fun AnimeDetailScreen(
                             overflow = TextOverflow.Ellipsis
                         )
                     },
+                    actions = {
+                        animeDetail?.data?.data?.let { animeDetailData ->
+                            if (animeDetailComplement is Resource.Success &&
+                                (animeDetailComplement as Resource.Success).data?.episodes?.isNotEmpty() == true &&
+                                defaultEpisode != null
+                            ) {
+                                IconButton(onClick = {
+                                    navController.navigate(
+                                        "animeWatch/${animeDetailData.mal_id}/${
+                                            (animeDetailComplement as Resource.Success).data?.episodes?.get(
+                                                0
+                                            )?.episodeId
+                                        }/${defaultEpisode!!.id}"
+                                    )
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Tv,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        contentDescription = stringResource(id = R.string.watch)
+                                    )
+                                }
+                            }
+                            IconButton(onClick = {
+                                ShareUtils.shareAnimeDetail(context, animeDetailData)
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Filled.Share,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    contentDescription = stringResource(id = R.string.filter)
+                                )
+                            }
+                        }
+                    },
+
                     colors = TopAppBarDefaults.topAppBarColors(
                         titleContentColor = MaterialTheme.colorScheme.primary
                     )
@@ -97,7 +133,7 @@ fun AnimeDetailScreen(
                 }
 
                 is Resource.Success -> {
-                    (animeDetail as Resource.Success<AnimeDetailResponse>).data?.data?.let { animeDetailData ->
+                    animeDetail?.data?.data?.let { animeDetailData ->
                         Column(
                             modifier = Modifier.padding(8.dp)
                         ) {
@@ -127,28 +163,6 @@ fun AnimeDetailScreen(
 //                        AnimeExternal(animeDetailData.external)
 //                        AnimeStreaming(animeDetailData.streaming)
 //                        AnimeEpisodes(animeDetailComplement)
-                            Button(onClick = {
-                                if (animeDetailComplement is Resource.Success &&
-                                    (animeDetailComplement as Resource.Success).data?.episodes?.isNotEmpty() == true &&
-                                    defaultEpisode != null
-                                ) {
-                                    // Navigate using Compose Navigation
-                                    navController.navigate(
-                                        "animeWatch/${animeDetailData.mal_id}/${
-                                            (animeDetailComplement as Resource.Success).data?.episodes?.get(
-                                                0
-                                            )?.episodeId
-                                        }/${defaultEpisode!!.id}"
-                                    )
-                                }
-                            }) {
-                                Text("Watch Now")
-                            }
-                            Button(onClick = {
-                                ShareUtils.shareAnimeDetail(context, animeDetailData)
-                            }) {
-                                Text("Share")
-                            }
                         }
                     }
                 }
