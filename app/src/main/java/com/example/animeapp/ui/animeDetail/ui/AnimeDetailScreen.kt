@@ -37,6 +37,7 @@ import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ShareUtils
 import com.example.animeapp.ui.animeDetail.AnimeDetailViewModel
 import com.example.animeapp.ui.common_ui.AnimeHeader
+import com.example.animeapp.ui.common_ui.YoutubePreview
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -139,7 +140,7 @@ fun AnimeDetailScreen(
                         ) {
                             AnimeHeader(animeDetailData)
                             NumberDetailSection(animeDetailData)
-//                        YoutubePreview(animeDetailData.trailer.embed_url)
+                            YoutubePreview(animeDetailData.trailer.embed_url)
 //                        AnimeBody(animeDetailData)
 //                        AnimeBackground(animeDetailData.background)
 //                        AnimeSynopsis(animeDetailData.synopsis)
