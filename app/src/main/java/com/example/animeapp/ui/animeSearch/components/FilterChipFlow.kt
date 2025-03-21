@@ -12,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.example.animeapp.models.Producer
 import com.example.animeapp.ui.common_ui.FilterChipView
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -46,6 +47,7 @@ fun FilterChipFlow(
             FilterChipView(
                 text = itemName(item),
                 checked = isChecked,
+                imageUrl = if (item is Producer) item.images?.jpg?.image_url else null,
                 onCheckedChange = { onSetSelectedId(getItemId(item)) }
             )
         }
