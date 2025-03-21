@@ -20,6 +20,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -38,6 +39,7 @@ import com.example.animeapp.utils.ShareUtils
 import com.example.animeapp.ui.animeDetail.AnimeDetailViewModel
 import com.example.animeapp.ui.common_ui.AnimeHeader
 import com.example.animeapp.ui.common_ui.DetailCommonBody
+import kotlinx.coroutines.launch
 import com.example.animeapp.ui.common_ui.YoutubePreview
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -52,6 +54,8 @@ fun AnimeDetailScreen(
     val animeDetailComplement by viewModel.animeDetailComplement.collectAsState()
     val defaultEpisode by viewModel.defaultEpisode.collectAsState()
     val context = LocalContext.current
+    val scrollView = rememberScrollState()
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(animeId) {
         viewModel.handleAnimeDetail(animeId)
@@ -122,7 +126,7 @@ fun AnimeDetailScreen(
             modifier = Modifier
                 .padding(paddingValues)
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollView)
         ) {
             when (animeDetail) {
                 is Resource.Loading -> {
@@ -145,9 +149,19 @@ fun AnimeDetailScreen(
                             DetailBodySection(animeDetailData, navController)
                             DetailCommonBody("Background", animeDetailData.background)
                             DetailCommonBody("Synopsis", animeDetailData.synopsis)
-//                        AnimeRelation(animeDetailData.relations, { relatedAnimeId ->
-//                            viewModel.handleAnimeDetail(relatedAnimeId)
-//                        })
+                            RelationSection(
+                                navController,
+                                animeDetailData.relations,
+                                { animeId -> viewModel.getAnimeDetail(animeId) },
+                                { animeId ->
+                                    scope.launch {
+                                        scrollView.animateScrollTo(0)
+                                    }
+                                    viewModel.handleAnimeDetail(animeId)
+                                })
+//                            ) { relatedAnimeId ->
+//                                viewModel.handleAnimeDetail(relatedAnimeId)
+//                            }
 //                        AnimeEpisodes(animeDetailComplement)
 //                        AnimeOpening(animeDetailData.theme.openings, { opening ->
 //                            val encodedOpening = Uri.encode(opening)

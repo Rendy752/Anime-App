@@ -1,6 +1,5 @@
 package com.example.animeapp.ui.animeDetail.ui
 
-import android.net.Uri
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,25 +20,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavController
 import com.example.animeapp.models.AnimeDetail
-import com.example.animeapp.models.CommonIdentity
 import com.example.animeapp.ui.common_ui.ClickableDataTextWithIcon
 import com.example.animeapp.ui.common_ui.ClickableItem
 import com.example.animeapp.ui.common_ui.DataTextWithIcon
 import com.example.animeapp.utils.basicContainer
-import com.google.gson.Gson
-
-private fun navigateWithFilter(
-    navController: NavController,
-    data: CommonIdentity?,
-    genreFilter: Boolean = false
-) {
-    val gson = Gson()
-    val commonIdentityString = data?.let { Uri.encode(gson.toJson(it)) }
-    val genrePart = if (genreFilter) commonIdentityString ?: "null" else "null"
-    val producerPart = if (!genreFilter) commonIdentityString ?: "null" else "null"
-
-    navController.navigate("search/${genrePart}/${producerPart}")
-}
+import com.example.animeapp.utils.Navigation.navigateWithFilter
 
 @Composable
 fun DetailBodySection(animeDetail: AnimeDetail, navController: NavController) {

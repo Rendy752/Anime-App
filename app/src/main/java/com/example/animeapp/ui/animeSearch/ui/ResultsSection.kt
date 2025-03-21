@@ -41,13 +41,17 @@ fun ResultsSection(navController: NavController, viewModel: AnimeSearchViewModel
                 } else {
                     LazyColumn {
                         items(animeList.data.data) { anime ->
-                            AnimeSearchItem(anime = anime, selectedGenres = selectedGenres, onGenreClick = { genreMalId ->
-                                val genre = genres.data?.data?.find { it.mal_id == genreMalId }
-                                genre?.let {
-                                    viewModel.setSelectedGenre(it)
-                                    viewModel.applyGenreFilters()
-                                }
-                            }) { animeId ->
+                            AnimeSearchItem(
+                                anime = anime,
+                                selectedGenres = selectedGenres,
+                                onGenreClick = { genre ->
+                                    val genre =
+                                        genres.data?.data?.find { it.mal_id == genre.mal_id }
+                                    genre?.let {
+                                        viewModel.setSelectedGenre(it)
+                                        viewModel.applyGenreFilters()
+                                    }
+                                }) { animeId ->
                                 navController.navigate("animeDetail/${anime.title}/$animeId")
                             }
                         }

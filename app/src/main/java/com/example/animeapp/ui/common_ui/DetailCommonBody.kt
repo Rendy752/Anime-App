@@ -16,7 +16,7 @@ import com.example.animeapp.utils.basicContainer
 
 @Composable
 fun DetailCommonBody(title: String, body: String?) {
-    if (body != null) {
+    if (body != null && body.isNotBlank()) {
         Column(
             modifier = Modifier
                 .basicContainer()
