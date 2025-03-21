@@ -141,7 +141,7 @@ fun AnimeDetailScreen(
                             AnimeHeader(animeDetailData)
                             NumberDetailSection(animeDetailData)
                             YoutubePreview(animeDetailData.trailer.embed_url)
-//                        AnimeBody(animeDetailData)
+                            DetailBodySection(animeDetailData, navController)
 //                        AnimeBackground(animeDetailData.background)
 //                        AnimeSynopsis(animeDetailData.synopsis)
 //                        AnimeRelation(animeDetailData.relations, { relatedAnimeId ->

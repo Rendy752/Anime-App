@@ -7,8 +7,18 @@ import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 
-sealed class Screen(val route: String, val label: String, val icon: @Composable () -> Unit) {
-    object Recommendations : Screen("recommendations", "Recommendations", { Icon(Icons.Filled.Home, contentDescription = null) })
-    object Search : Screen("search", "Search", { Icon(Icons.Filled.Search, contentDescription = null) })
-    object Settings : Screen("settings", "Settings", { Icon(Icons.Filled.Settings, contentDescription = null) })
+enum class Screen(
+    val route: String,
+    val label: String,
+    val icon: @Composable () -> Unit,
+) {
+    Recommendations(
+        "recommendations",
+        "Recommendations",
+        { Icon(Icons.Filled.Home, contentDescription = null) }),
+    Search(
+        "search/{genreIdentity}/{producerIdentity}",
+        "Search",
+        { Icon(Icons.Filled.Search, contentDescription = null) }),
+    Settings("settings", "Settings", { Icon(Icons.Filled.Settings, contentDescription = null) });
 }

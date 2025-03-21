@@ -13,20 +13,21 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 
 @Composable
 fun BottomNavigationBar(navController: NavHostController) {
-    val items = listOf(Screen.Recommendations, Screen.Search, Screen.Settings)
     NavigationBar(
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
         contentColor = MaterialTheme.colorScheme.onSurface
     ) {
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = navBackStackEntry?.destination?.route
-        items.forEach { screen ->
+        Screen.entries.forEach { screen ->
             NavigationBarItem(
                 icon = screen.icon,
                 label = { Text(screen.label) },
                 selected = currentRoute == screen.route,
                 onClick = {
-                    navController.navigate(screen.route) {
+                    val route = if (screen == Screen.Search) "search/null/null" else screen.route
+
+                    navController.navigate(route) {
                         popUpTo(navController.graph.findStartDestination().id) {
                             saveState = true
                         }

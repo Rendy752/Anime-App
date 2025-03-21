@@ -16,16 +16,24 @@ import com.example.animeapp.R
 import com.example.animeapp.ui.animeSearch.components.FilterBottomSheet
 import com.example.animeapp.ui.animeSearch.viewmodel.AnimeSearchViewModel
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
+import com.example.animeapp.models.Genre
+import com.example.animeapp.models.Producer
 import com.example.animeapp.ui.animeSearch.components.GenresBottomSheet
 import com.example.animeapp.ui.animeSearch.components.ProducersBottomSheet
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AnimeSearchScreen(navController: NavController) {
+fun AnimeSearchScreen(
+    navController: NavController,
+    genre: Genre?,
+    producer: Producer?,
+    setBottomNavVisible: (Boolean) -> Unit
+) {
     val viewModel: AnimeSearchViewModel = hiltViewModel()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val state = rememberPullToRefreshState()
@@ -37,12 +45,43 @@ fun AnimeSearchScreen(navController: NavController) {
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
+    LaunchedEffect(genre, producer) {
+        if (genre != null) {
+            viewModel.setSelectedGenre(genre)
+            viewModel.applyGenreFilters()
+            setBottomNavVisible(false)
+        } else if (producer != null) {
+            viewModel.setSelectedProducer(producer)
+            viewModel.applyProducerFilters()
+            setBottomNavVisible(false)
+        } else {
+            viewModel.getRandomAnime()
+            setBottomNavVisible(true)
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            setBottomNavVisible(true)
+        }
+    }
+
     Scaffold(
         topBar = {
             if (!isLandscape) {
                 Column {
                     TopAppBar(
                         title = { Text(text = stringResource(id = R.string.title_search)) },
+                        navigationIcon = {
+                            if (genre != null || producer != null) {
+                                IconButton(onClick = { navController.popBackStack() }) {
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = "Back"
+                                    )
+                                }
+                            }
+                        },
                         actions = {
                             IconButton(onClick = { isFilterBottomSheetShow = true }) {
                                 Icon(
@@ -52,7 +91,6 @@ fun AnimeSearchScreen(navController: NavController) {
                                 )
                             }
                         },
-
                         colors = TopAppBarDefaults.topAppBarColors(
                             titleContentColor = MaterialTheme.colorScheme.primary
                         )

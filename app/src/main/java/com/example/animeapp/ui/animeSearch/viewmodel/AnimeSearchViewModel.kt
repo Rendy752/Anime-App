@@ -56,7 +56,6 @@ class AnimeSearchViewModel @Inject constructor(
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
     init {
-        getRandomAnime()
         fetchGenres()
         fetchProducers()
     }
@@ -80,7 +79,7 @@ class AnimeSearchViewModel @Inject constructor(
         }
     }
 
-    private fun getRandomAnime() = viewModelScope.launch {
+    internal fun getRandomAnime() = viewModelScope.launch {
         _isRefreshing.value = true
         _animeSearchResults.value = Resource.Loading()
         val response = animeSearchRepository.getRandomAnime()

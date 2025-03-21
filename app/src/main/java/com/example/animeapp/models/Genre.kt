@@ -1,11 +1,14 @@
 package com.example.animeapp.models
 
+import android.os.Parcelable
+import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
 
 @Serializable
+@Parcelize
 data class Genre(
     val mal_id: Int,
     val name: String,
     val url: String,
     val count: Int
-)
+): Parcelable
