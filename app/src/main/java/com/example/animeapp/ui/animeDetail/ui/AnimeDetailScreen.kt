@@ -37,6 +37,7 @@ import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ShareUtils
 import com.example.animeapp.ui.animeDetail.AnimeDetailViewModel
 import com.example.animeapp.ui.common_ui.AnimeHeader
+import com.example.animeapp.ui.common_ui.DetailCommonBody
 import com.example.animeapp.ui.common_ui.YoutubePreview
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -142,11 +143,12 @@ fun AnimeDetailScreen(
                             NumberDetailSection(animeDetailData)
                             YoutubePreview(animeDetailData.trailer.embed_url)
                             DetailBodySection(animeDetailData, navController)
-//                        AnimeBackground(animeDetailData.background)
-//                        AnimeSynopsis(animeDetailData.synopsis)
+                            DetailCommonBody("Background", animeDetailData.background)
+                            DetailCommonBody("Synopsis", animeDetailData.synopsis)
 //                        AnimeRelation(animeDetailData.relations, { relatedAnimeId ->
 //                            viewModel.handleAnimeDetail(relatedAnimeId)
 //                        })
+//                        AnimeEpisodes(animeDetailComplement)
 //                        AnimeOpening(animeDetailData.theme.openings, { opening ->
 //                            val encodedOpening = Uri.encode(opening)
 //                            val youtubeSearchUrl =
@@ -163,7 +165,6 @@ fun AnimeDetailScreen(
 //                        })
 //                        AnimeExternal(animeDetailData.external)
 //                        AnimeStreaming(animeDetailData.streaming)
-//                        AnimeEpisodes(animeDetailComplement)
                         }
                     }
                 }

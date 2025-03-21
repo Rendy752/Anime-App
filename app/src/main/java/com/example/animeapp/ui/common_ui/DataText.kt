@@ -97,6 +97,7 @@ private fun ClickableItems(items: List<ClickableItem>) {
     items.forEachIndexed { index, item ->
         val annotatedString = createAnnotatedString(item.text, index < items.size - 1)
         Text(
+            style = MaterialTheme.typography.bodyMedium,
             text = annotatedString,
             modifier = Modifier.clickable { item.onClick() },
         )
