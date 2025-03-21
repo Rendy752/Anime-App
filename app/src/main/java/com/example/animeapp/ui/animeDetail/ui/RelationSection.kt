@@ -15,6 +15,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -36,20 +37,22 @@ fun RelationSection(
     if (relations != null && relations.isNotEmpty()) {
         Column(
             modifier = Modifier
+                .basicContainer()
                 .fillMaxWidth()
         ) {
             Text(
                 text = if (relations.size > 1) "${relations.size} Relations" else "Relation",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(start = 8.dp, top = 8.dp, end = 8.dp)
             )
-
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            HorizontalDivider(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .basicContainer()
+                    .padding(bottom = 8.dp)
+            )
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth()
             ) {
                 items(relations) { relation ->
                     Column {

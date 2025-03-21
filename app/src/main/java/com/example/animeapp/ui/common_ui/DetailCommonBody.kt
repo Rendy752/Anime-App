@@ -27,7 +27,6 @@ fun DetailCommonBody(title: String, body: String?) {
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(bottom = 8.dp)
             )
             HorizontalDivider(
                 modifier = Modifier

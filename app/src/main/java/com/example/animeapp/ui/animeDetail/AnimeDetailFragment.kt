@@ -25,7 +25,6 @@ import com.example.animeapp.utils.BindAnimeUtils
 import com.example.animeapp.BuildConfig.YOUTUBE_URL
 import com.example.animeapp.utils.MinMaxInputFilter
 import com.example.animeapp.utils.Navigation
-import com.example.animeapp.ui.common_ui.NameAndUrlList
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.ui.common_ui.UnorderedList
 import com.example.animeapp.utils.TextUtils.joinOrNA
@@ -304,34 +303,34 @@ class AnimeDetailFragment : Fragment(), MenuProvider {
                     }
                 }
 
-                with(animeExternal) {
-                    detail.external?.let { external ->
-                        if (external.isNotEmpty()) {
-                            externalContainer.visibility = View.VISIBLE
-                            externalComposeView.visibility = View.VISIBLE
-                            externalComposeView.setContent {
-                                NameAndUrlList(items = external)
-                            }
-                        } else {
-                            externalContainer.visibility = View.GONE
-                        }
-                    }
-                }
-
-                with(animeStreaming) {
-                    detail.streaming?.let { streaming ->
-                        if (streaming.isNotEmpty()) {
-                            streamingContainer.visibility = View.VISIBLE
-                            streamingComposeView.visibility = View.VISIBLE
-                            streamingComposeView.setContent {
-                                NameAndUrlList(items = streaming)
-
-                            }
-                        } else {
-                            streamingContainer.visibility = View.GONE
-                        }
-                    }
-                }
+//                with(animeExternal) {
+//                    detail.external?.let { external ->
+//                        if (external.isNotEmpty()) {
+//                            externalContainer.visibility = View.VISIBLE
+//                            externalComposeView.visibility = View.VISIBLE
+//                            externalComposeView.setContent {
+//                                NameAndUrlList(items = external)
+//                            }
+//                        } else {
+//                            externalContainer.visibility = View.GONE
+//                        }
+//                    }
+//                }
+//
+//                with(animeStreaming) {
+//                    detail.streaming?.let { streaming ->
+//                        if (streaming.isNotEmpty()) {
+//                            streamingContainer.visibility = View.VISIBLE
+//                            streamingComposeView.visibility = View.VISIBLE
+//                            streamingComposeView.setContent {
+//                                NameAndUrlList(items = streaming)
+//
+//                            }
+//                        } else {
+//                            streamingContainer.visibility = View.GONE
+//                        }
+//                    }
+//                }
             }
         }
     }

@@ -1,11 +1,12 @@
 package com.example.animeapp.ui.animeDetail.ui
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Share
@@ -20,7 +21,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -31,6 +31,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.animeapp.BuildConfig.YOUTUBE_URL
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.animeapp.R
@@ -39,8 +40,19 @@ import com.example.animeapp.utils.ShareUtils
 import com.example.animeapp.ui.animeDetail.AnimeDetailViewModel
 import com.example.animeapp.ui.common_ui.AnimeHeader
 import com.example.animeapp.ui.common_ui.DetailCommonBody
-import kotlinx.coroutines.launch
 import com.example.animeapp.ui.common_ui.YoutubePreview
+import androidx.core.net.toUri
+import com.example.animeapp.models.NameAndUrl
+import com.example.animeapp.ui.common_ui.ErrorMessage
+
+
+fun convertToNameAndUrl(list: List<String>?): List<NameAndUrl>? {
+    return list?.map { item ->
+        val encodedItem = Uri.encode(item)
+        val youtubeSearchUrl = "${YOUTUBE_URL}/results?search_query=$encodedItem"
+        NameAndUrl(name = item, url = youtubeSearchUrl)
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -54,8 +66,6 @@ fun AnimeDetailScreen(
     val animeDetailComplement by viewModel.animeDetailComplement.collectAsState()
     val defaultEpisode by viewModel.defaultEpisode.collectAsState()
     val context = LocalContext.current
-    val scrollView = rememberScrollState()
-    val scope = rememberCoroutineScope()
 
     LaunchedEffect(animeId) {
         viewModel.handleAnimeDetail(animeId)
@@ -122,73 +132,104 @@ fun AnimeDetailScreen(
             }
         },
     ) { paddingValues ->
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .padding(paddingValues)
                 .fillMaxSize()
-                .verticalScroll(scrollView)
         ) {
-            when (animeDetail) {
-                is Resource.Loading -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        contentAlignment = Alignment.Center
-                    ) { CircularProgressIndicator() }
-                }
+            item {
+                when (animeDetail) {
+                    is Resource.Loading -> {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) { CircularProgressIndicator() }
+                    }
 
-                is Resource.Success -> {
-                    animeDetail?.data?.data?.let { animeDetailData ->
-                        Column(
-                            modifier = Modifier.padding(8.dp)
-                        ) {
-                            AnimeHeader(animeDetailData)
-                            NumberDetailSection(animeDetailData)
-                            YoutubePreview(animeDetailData.trailer.embed_url)
-                            DetailBodySection(animeDetailData, navController)
-                            DetailCommonBody("Background", animeDetailData.background)
-                            DetailCommonBody("Synopsis", animeDetailData.synopsis)
-                            RelationSection(
-                                navController,
-                                animeDetailData.relations,
-                                { animeId -> viewModel.getAnimeDetail(animeId) },
-                                { animeId ->
-                                    scope.launch {
-                                        scrollView.animateScrollTo(0)
-                                    }
-                                    viewModel.handleAnimeDetail(animeId)
-                                })
-//                            ) { relatedAnimeId ->
-//                                viewModel.handleAnimeDetail(relatedAnimeId)
-//                            }
+                    is Resource.Success -> {
+                        animeDetail?.data?.data?.let { animeDetailData ->
+                            Column(
+                                modifier = Modifier.padding(8.dp)
+                            ) {
+                                AnimeHeader(animeDetailData)
+                                NumberDetailSection(animeDetailData)
+                                YoutubePreview(animeDetailData.trailer.embed_url)
+                                DetailBodySection(animeDetailData, navController)
+                                DetailCommonBody("Background", animeDetailData.background)
+                                DetailCommonBody("Synopsis", animeDetailData.synopsis)
+                                RelationSection(
+                                    navController,
+                                    animeDetailData.relations,
+                                    { animeId -> viewModel.getAnimeDetail(animeId) },
+                                    { animeId -> viewModel.handleAnimeDetail(animeId) })
 //                        AnimeEpisodes(animeDetailComplement)
-//                        AnimeOpening(animeDetailData.theme.openings, { opening ->
-//                            val encodedOpening = Uri.encode(opening)
-//                            val youtubeSearchUrl =
-//                                "${YOUTUBE_URL}/results?search_query=$encodedOpening"
-//                            val intent = Intent(Intent.ACTION_VIEW, youtubeSearchUrl.toUri())
-//                            context.startActivity(intent)
-//                        })
-//                        AnimeEnding(animeDetailData.theme.endings, { ending ->
-//                            val encodedEnding = Uri.encode(ending)
-//                            val youtubeSearchUrl =
-//                                "${YOUTUBE_URL}/results?search_query=$encodedEnding"
-//                            val intent = Intent(Intent.ACTION_VIEW, youtubeSearchUrl.toUri())
-//                            context.startActivity(intent)
-//                        })
-//                        AnimeExternal(animeDetailData.external)
-//                        AnimeStreaming(animeDetailData.streaming)
+
+                                val openingNameAndUrls =
+                                    convertToNameAndUrl(animeDetailData.theme.openings)
+                                ClickableListSection(
+                                    title = "Openings",
+                                    items = openingNameAndUrls,
+                                    onClick = { url ->
+                                        val intent = Intent(Intent.ACTION_VIEW, url.toUri())
+                                        context.startActivity(intent)
+                                    },
+                                )
+
+                                val endingNameAndUrls =
+                                    convertToNameAndUrl(animeDetailData.theme.endings)
+                                ClickableListSection(
+                                    title = "Endings",
+                                    items = endingNameAndUrls,
+                                    onClick = { url ->
+                                        val intent = Intent(Intent.ACTION_VIEW, url.toUri())
+                                        context.startActivity(intent)
+                                    },
+                                )
+
+                                ClickableListSection(
+                                    title = "Externals",
+                                    items = animeDetailData.external,
+                                    onClick = { external ->
+                                        val intent =
+                                            Intent(Intent.ACTION_VIEW, external.toUri())
+                                        context.startActivity(intent)
+                                    },
+                                )
+
+                                ClickableListSection(
+                                    title = "Streamings",
+                                    items = animeDetailData.streaming,
+                                    onClick = { streaming ->
+                                        val intent =
+                                            Intent(Intent.ACTION_VIEW, streaming.toUri())
+                                        context.startActivity(intent)
+                                    },
+                                )
+                            }
                         }
                     }
-                }
 
-                is Resource.Error -> {
-                    Text(text = (animeDetail as Resource.Error).message ?: "Error")
-                }
+                    is Resource.Error -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            ErrorMessage(
+                                message = (animeDetail as Resource.Error).message ?: "Error"
+                            )
+                        }
+                    }
 
-                else -> {
-                    Text(text = "Empty")
+                    else -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            ErrorMessage(message = "Empty")
+                        }
+                    }
                 }
             }
         }
