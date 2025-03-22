@@ -34,6 +34,7 @@ import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.ui.common_ui.SkeletonBox
+import com.example.animeapp.utils.Navigation.navigateToAnimeWatch
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ShareUtils
 
@@ -142,21 +143,24 @@ fun AnimeDetailTopBar(
             actions = {
                 animeDetail?.data?.data?.let { animeDetailData ->
                     if (animeDetailComplement is Resource.Success &&
-                        (animeDetailComplement).data?.episodes?.isNotEmpty() == true &&
+                        animeDetailComplement.data?.episodes?.isNotEmpty() == true &&
                         defaultEpisode != null
                     ) {
-                        IconButton(onClick = {
-                            navController.navigate(
-                                "animeWatch/${animeDetailData.mal_id}/${
-                                    (animeDetailComplement).data.episodes[0].episodeId
-                                }/${defaultEpisode.id}"
-                            )
-                        }) {
-                            Icon(
-                                imageVector = Icons.Filled.LiveTv,
-                                tint = MaterialTheme.colorScheme.primary,
-                                contentDescription = stringResource(id = R.string.watch)
-                            )
+                        animeDetailComplement.data.let { animeDetailComplementData ->
+                            IconButton(onClick = {
+                                navController.navigateToAnimeWatch(
+                                    animeDetail = animeDetailData,
+                                    episodeId = animeDetailComplementData.episodes[0].episodeId,
+                                    episodes = animeDetailComplementData.episodes,
+                                    defaultEpisode = defaultEpisode
+                                )
+                            }) {
+                                Icon(
+                                    imageVector = Icons.Filled.LiveTv,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    contentDescription = stringResource(id = R.string.watch)
+                                )
+                            }
                         }
                     }
                     IconButton(onClick = {

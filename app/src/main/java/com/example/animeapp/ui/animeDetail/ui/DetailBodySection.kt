@@ -60,7 +60,7 @@ fun DetailBodySection(animeDetail: AnimeDetail, navController: NavController) {
 
                 val genreItems = animeDetail.genres?.map { genre ->
                     ClickableItem(genre.name) {
-                        navigateWithFilter(navController, genre, genreFilter = true)
+                        navController.navigateWithFilter(genre, genreFilter = true)
                     }
                 }
                 ClickableDataTextWithIcon("Genres", genreItems, Icons.AutoMirrored.Filled.Label)
@@ -71,21 +71,21 @@ fun DetailBodySection(animeDetail: AnimeDetail, navController: NavController) {
             ) {
                 val studioItems = animeDetail.studios?.map { studio ->
                     ClickableItem(studio.name) {
-                        navigateWithFilter(navController, studio)
+                        navController.navigateWithFilter(studio)
                     }
                 }
                 ClickableDataTextWithIcon("Studios", studioItems, Icons.Default.Apartment)
 
                 val producerItems = animeDetail.producers?.map { producer ->
                     ClickableItem(producer.name) {
-                        navigateWithFilter(navController, producer)
+                        navController.navigateWithFilter(producer)
                     }
                 }
                 ClickableDataTextWithIcon("Producers", producerItems, Icons.Default.Apartment)
 
                 val licensorItems = animeDetail.licensors?.map { licensor ->
                     ClickableItem(licensor.name) {
-                        navigateWithFilter(navController, licensor)
+                        navController.navigateWithFilter(licensor)
                     }
                 }
                 ClickableDataTextWithIcon("Licensors", licensorItems, Icons.Default.Apartment)

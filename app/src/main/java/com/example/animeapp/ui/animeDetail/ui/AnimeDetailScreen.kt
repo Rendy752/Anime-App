@@ -38,6 +38,7 @@ import com.example.animeapp.ui.common_ui.DetailCommonBody
 import com.example.animeapp.ui.common_ui.DetailCommonBodySkeleton
 import com.example.animeapp.ui.common_ui.YoutubePreview
 import com.example.animeapp.ui.common_ui.YoutubePreviewSkeleton
+import com.example.animeapp.utils.Navigation.navigateToAnimeWatch
 import com.example.animeapp.utils.Resource
 
 private fun convertToNameAndUrl(list: List<String>?): List<NameAndUrl>? =
@@ -234,7 +235,16 @@ private fun RightColumnContent(
             { animeId -> viewModel.getAnimeDetail(animeId) },
             { animeId -> viewModel.handleAnimeDetail(animeId) })
         EpisodesDetailSection(animeDetailComplement, { episodeId ->
-            navController.navigate("animeWatch/${data.mal_id}/$episodeId/$defaultEpisode")
+            defaultEpisode?.let { defaultEpisode ->
+                animeDetailComplement?.data?.episodes?.let { episodes ->
+                    navController.navigateToAnimeWatch(
+                        animeDetail = data,
+                        episodeId = episodeId,
+                        episodes = episodes,
+                        defaultEpisode = defaultEpisode
+                    )
+                }
+            }
         })
         CommonListContent(data, context)
     }

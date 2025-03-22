@@ -104,8 +104,7 @@ fun RelationSection(
                                     AnimeSearchItem(
                                         anime = animeDetail,
                                         onGenreClick = { genre ->
-                                            navigateWithFilter(
-                                                navController,
+                                            navController.navigateWithFilter(
                                                 genre,
                                                 genreFilter = true
                                             )

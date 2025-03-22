@@ -37,6 +37,9 @@ class AnimeWatchViewModel @Inject constructor(
     private val _episodeSourcesQuery = MutableStateFlow<EpisodeSourcesQuery?>(null)
     val episodeSourcesQuery: StateFlow<EpisodeSourcesQuery?> = _episodeSourcesQuery.asStateFlow()
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
     fun setInitialState(
         animeDetail: AnimeDetail,
         episodes: List<Episode>,
@@ -53,6 +56,7 @@ class AnimeWatchViewModel @Inject constructor(
         isRefreshed: Boolean = false
     ) = viewModelScope.launch {
         try {
+            _isRefreshing.value = true
             _episodeDetailComplement.value = Resource.Loading()
             _episodeSourcesQuery.value = episodeSourcesQuery
             if (!isRefreshed) {
@@ -65,9 +69,8 @@ class AnimeWatchViewModel @Inject constructor(
                             Resource.Success(cachedEpisodeDetailComplement)
                         return@launch
                     } else {
-                        // Cached data exists, but query has changed, fetch new sources
                         val episodeServersResource =
-                            Resource.Success(cachedEpisodeDetailComplement.servers) // Use cached servers
+                            Resource.Success(cachedEpisodeDetailComplement.servers)
 
                         val episodeSourcesResource = StreamingUtils.getEpisodeSources(
                             episodeServersResource,
@@ -175,6 +178,8 @@ class AnimeWatchViewModel @Inject constructor(
             restoreDefaultValues()
             _episodeDetailComplement.value =
                 Resource.Error(e.message ?: "An unexpected error occurred")
+        } finally {
+            _isRefreshing.value = false
         }
     }
 

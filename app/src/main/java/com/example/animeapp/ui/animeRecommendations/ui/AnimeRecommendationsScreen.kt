@@ -16,6 +16,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Observer
 import androidx.navigation.NavController
 import com.example.animeapp.R
 import com.example.animeapp.models.NetworkStatus
@@ -42,10 +43,10 @@ fun AnimeRecommendationsScreen(navController: NavController) {
 
     DisposableEffect(Unit) {
         networkStateMonitor.startMonitoring(context)
-        val networkObserver = androidx.lifecycle.Observer<NetworkStatus> {
+        val networkObserver = Observer<NetworkStatus> {
             networkStatus = it
         }
-        val connectionObserver = androidx.lifecycle.Observer<Boolean> {
+        val connectionObserver = Observer<Boolean> {
             isConnected = it
             if (isConnected && animeRecommendationsState is Resource.Error) {
                 viewModel.getAnimeRecommendations()
