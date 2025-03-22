@@ -1,6 +1,7 @@
 package com.example.animeapp.utils
 
 import com.example.animeapp.models.AnimeSearchQueryState
+import com.example.animeapp.models.Episode
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -84,5 +85,16 @@ object FilterUtils {
     private fun formatDate(date: LocalDate): String {
         val formatter = DateTimeFormatter.ISO_LOCAL_DATE
         return date.format(formatter)
+    }
+
+    fun filterEpisodes(episodes: List<Episode>, query: String): List<Episode> {
+        return if (query.isBlank()) {
+            episodes
+        } else {
+            episodes.filter { episode ->
+                episode.episodeNo.toString().contains(query, ignoreCase = true) ||
+                        episode.name.contains(query, ignoreCase = true)
+            }
+        }
     }
 }

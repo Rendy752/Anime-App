@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.animeapp.models.CommonIdentity
@@ -28,6 +29,16 @@ fun MainScreen() {
     val navController = rememberNavController()
     val gson = Gson()
     var isBottomBarVisible by remember { mutableStateOf(true) }
+
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
+    isBottomBarVisible = when (currentRoute) {
+        "recommendations",
+        "search/{genreIdentity}/{producerIdentity}",
+        "settings" -> true
+        else -> false
+    }
 
     Surface(
         color = MaterialTheme.colorScheme.surface,

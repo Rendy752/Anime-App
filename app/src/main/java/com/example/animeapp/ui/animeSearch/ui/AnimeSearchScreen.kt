@@ -60,12 +60,6 @@ fun AnimeSearchScreen(
         }
     }
 
-    DisposableEffect(Unit) {
-        onDispose {
-            setBottomNavVisible(true)
-        }
-    }
-
     Scaffold(
         topBar = {
             if (!isLandscape) {

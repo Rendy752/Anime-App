@@ -5,6 +5,7 @@ import android.content.ClipboardManager
 import android.content.Intent
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -46,7 +47,10 @@ fun AnimeHeader(animeDetail: AnimeDetail) {
                 .padding(start = 8.dp)
                 .weight(1f)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
                 Text(
                     text = animeDetail.title,
                     style = MaterialTheme.typography.titleLarge,

@@ -12,7 +12,7 @@ import androidx.compose.ui.res.stringResource
 import com.example.animeapp.R
 
 @Composable
-internal fun CancelButton(
+fun CancelButton(
     cancelAction: () -> Unit,
     modifier: Modifier? = Modifier
 ) {
@@ -29,7 +29,7 @@ internal fun CancelButton(
 }
 
 @Composable
-internal fun ResetButton(
+fun ResetButton(
     context: Context,
     isDefault: () -> Boolean,
     resetAction: () -> Unit,
@@ -55,7 +55,7 @@ internal fun ResetButton(
 }
 
 @Composable
-internal fun ApplyButton(
+fun ApplyButton(
     context: Context,
     isEmptySelection: () -> Boolean,
     applyAction: () -> Unit,

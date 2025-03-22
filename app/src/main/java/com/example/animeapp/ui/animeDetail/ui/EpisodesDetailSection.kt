@@ -12,11 +12,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.AnimeDetailComplement
-import com.example.animeapp.models.Episode
 import com.example.animeapp.ui.animeDetail.components.EpisodeInfoRow
 import com.example.animeapp.ui.animeDetail.components.EpisodeItem
 import com.example.animeapp.ui.common_ui.ErrorMessage
 import com.example.animeapp.ui.common_ui.SearchView
+import com.example.animeapp.utils.FilterUtils
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.basicContainer
 
@@ -77,7 +77,7 @@ fun EpisodesDetailSection(
                         val reversedEpisodes = data.episodes.reversed()
 
                         val filteredEpisodes by remember(reversedEpisodes, searchQuery) {
-                            derivedStateOf { filterEpisodes(reversedEpisodes, searchQuery) }
+                            derivedStateOf { FilterUtils.filterEpisodes(reversedEpisodes, searchQuery) }
                         }
 
                         SearchView(
@@ -124,17 +124,6 @@ fun EpisodesDetailSection(
             else -> {
                 ErrorMessage(message = "Episode data not available")
             }
-        }
-    }
-}
-
-private fun filterEpisodes(episodes: List<Episode>, query: String): List<Episode> {
-    return if (query.isBlank()) {
-        episodes
-    } else {
-        episodes.filter { episode ->
-            episode.episodeNo.toString().contains(query, ignoreCase = true) ||
-                    episode.name.contains(query, ignoreCase = true)
         }
     }
 }
