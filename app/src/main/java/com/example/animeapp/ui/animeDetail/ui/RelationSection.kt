@@ -16,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -38,7 +39,8 @@ fun RelationSection(
         Column(
             modifier = Modifier
                 .basicContainer()
-                .fillMaxWidth()
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = if (relations.size > 1) "${relations.size} Relations" else "Relation",

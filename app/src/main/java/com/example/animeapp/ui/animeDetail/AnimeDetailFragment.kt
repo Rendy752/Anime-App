@@ -37,6 +37,7 @@ import kotlinx.coroutines.withContext
 import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import com.example.animeapp.ui.animeDetail.viewmodel.AnimeDetailViewModel
 import com.example.animeapp.utils.ShareUtils
 import kotlinx.coroutines.flow.collectLatest
 

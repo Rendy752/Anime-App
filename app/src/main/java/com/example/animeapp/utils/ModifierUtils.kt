@@ -17,7 +17,8 @@ import androidx.compose.ui.unit.dp
 fun Modifier.basicContainer(
     isError: Boolean = false,
     isPrimary: Boolean = false,
-    onItemClick: (() -> Unit)? = null
+    onItemClick: (() -> Unit)? = null,
+    backgroundBrush: Brush? = null
 ): Modifier {
     var modifier = this
         .padding(8.dp)
@@ -28,7 +29,9 @@ fun Modifier.basicContainer(
             shape = RoundedCornerShape(16.dp)
         )
         .then(
-            if (isError) {
+            if (backgroundBrush != null) {
+                Modifier.background(brush = backgroundBrush)
+            } else if (isError) {
                 Modifier.background(
                     brush = Brush.verticalGradient(
                         colors = listOf(

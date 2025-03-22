@@ -27,7 +27,8 @@ fun ClickableListSection(
         Column(
             modifier = Modifier
                 .basicContainer()
-                .fillMaxWidth()
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
                 text = title,

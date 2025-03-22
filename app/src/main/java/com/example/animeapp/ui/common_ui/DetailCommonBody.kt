@@ -12,6 +12,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.ui.Alignment
 import com.example.animeapp.utils.basicContainer
 
 @Composable
@@ -20,9 +21,9 @@ fun DetailCommonBody(title: String, body: String?) {
         Column(
             modifier = Modifier
                 .basicContainer()
-                .fillMaxWidth()
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,

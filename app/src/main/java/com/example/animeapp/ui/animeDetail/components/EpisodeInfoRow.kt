@@ -16,6 +16,7 @@ fun EpisodeInfoRow(
     subCount: Int?,
     dubCount: Int?,
     epsCount: Int?,
+    modifier: Modifier = Modifier,
 ) {
     val counts = listOf(subCount, dubCount, epsCount)
     val colors = listOf(subColor, dubColor, epsColor)
@@ -25,8 +26,8 @@ fun EpisodeInfoRow(
 
     if (nonNullCounts.isNotEmpty()) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Start,
+            modifier = modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.End,
         ) {
             var firstNonNullIndex = -1
             var lastNonNullIndex = -1
