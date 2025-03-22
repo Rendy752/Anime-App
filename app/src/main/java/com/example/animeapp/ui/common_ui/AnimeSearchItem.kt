@@ -26,6 +26,7 @@ import com.example.animeapp.models.Genre
 import com.example.animeapp.models.animeDetailPlaceholder
 import com.example.animeapp.utils.TextUtils.formatNumber
 import com.example.animeapp.utils.basicContainer
+import com.example.animeapp.utils.shimmerContainer
 
 @Preview
 @Composable
@@ -139,6 +140,50 @@ fun AnimeSearchItem(
                         icon = Icons.Filled.Groups
                     )
                 }
+            }
+        }
+    }
+}
+
+@Preview
+@Composable
+fun AnimeSearchItemSkeleton() {
+    Column(
+        modifier = Modifier
+            .shimmerContainer()
+            .fillMaxWidth()
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            SkeletonBox(width = 80.dp, height = 120.dp)
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 16.dp),
+            ) {
+                SkeletonBox(width = 150.dp, height = 20.dp)
+                Spacer(modifier = Modifier.height(2.dp))
+                SkeletonBox(width = 100.dp, height = 16.dp)
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    repeat(3) {
+                        SkeletonBox(width = 60.dp, height = 24.dp)
+                        Spacer(modifier = Modifier.width(4.dp))
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+                SkeletonBox(width = 90.dp, height = 16.dp)
+                Spacer(modifier = Modifier.height(4.dp))
+                SkeletonBox(width = 85.dp, height = 16.dp)
+                Spacer(modifier = Modifier.height(4.dp))
+                SkeletonBox(width = 100.dp, height = 16.dp)
+                Spacer(modifier = Modifier.height(4.dp))
+                SkeletonBox(width = 110.dp, height = 16.dp)
             }
         }
     }

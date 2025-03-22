@@ -7,6 +7,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import android.webkit.WebView
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import com.example.animeapp.utils.basicContainer
 
@@ -55,9 +58,26 @@ fun YoutubePreview(embedUrl: String?) {
     }
 }
 
-
 private fun extractVideoId(embedUrl: String): String? {
     val pattern = "(?<=embed/)([a-zA-Z0-9_-]+)".toRegex()
     val match = pattern.find(embedUrl)
     return match?.value
+}
+
+@Preview
+@Composable
+fun YoutubePreviewSkeleton() {
+    Column(
+        modifier = Modifier
+            .basicContainer()
+            .fillMaxWidth()
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+        ) {
+            SkeletonBox(modifier = Modifier.fillMaxWidth(), height = 200.dp)
+        }
+    }
 }

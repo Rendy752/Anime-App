@@ -13,8 +13,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.NameAndUrl
+import com.example.animeapp.ui.common_ui.SkeletonBox
 import com.example.animeapp.utils.basicContainer
 
 @Composable
@@ -66,6 +68,51 @@ fun ClickableListSection(
                             modifier = Modifier.size(20.dp)
                         )
                     }
+                }
+            }
+        }
+    }
+}
+
+@Preview
+@Composable
+fun ClickableListSectionSkeleton(title: String? = "Title") {
+    Column(
+        modifier = Modifier
+            .basicContainer()
+            .fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = title ?: "Title",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+        )
+        HorizontalDivider(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 8.dp)
+        )
+        Column(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            repeat(3) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    SkeletonBox(
+                        modifier = Modifier.weight(1f),
+                        height = 20.dp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    SkeletonBox(
+                        modifier = Modifier.size(20.dp),
+                        width = 20.dp,
+                        height = 20.dp
+                    )
                 }
             }
         }

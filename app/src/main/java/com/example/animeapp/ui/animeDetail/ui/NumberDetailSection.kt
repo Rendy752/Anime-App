@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
@@ -24,10 +25,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.animeapp.R
 import com.example.animeapp.models.AnimeDetail
+import com.example.animeapp.ui.common_ui.SkeletonBox
 import com.example.animeapp.utils.TextUtils.formatNumber
 import com.example.animeapp.utils.basicContainer
 
@@ -68,7 +71,12 @@ fun NumberDetailSection(animeDetail: AnimeDetail) {
 }
 
 @Composable
-private fun NumberDetailItem(title: String, value: String, subValue: String? = null, icon: androidx.compose.ui.graphics.vector.ImageVector) {
+private fun NumberDetailItem(
+    title: String,
+    value: String,
+    subValue: String? = null,
+    icon: androidx.compose.ui.graphics.vector.ImageVector
+) {
     Column(
         modifier = Modifier
             .basicContainer()
@@ -107,5 +115,47 @@ private fun NumberDetailItem(title: String, value: String, subValue: String? = n
                 modifier = Modifier.fillMaxWidth()
             )
         }
+    }
+}
+
+@Preview
+@Composable
+fun NumberDetailSectionSkeleton() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState()),
+    ) {
+        repeat(5) {
+            NumberDetailItemSkeleton()
+        }
+    }
+}
+
+@Composable
+private fun NumberDetailItemSkeleton() {
+    Column(
+        modifier = Modifier
+            .basicContainer()
+            .width(60.dp)
+            .height(60.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        SkeletonBox(width = 24.dp, height = 24.dp)
+        Spacer(modifier = Modifier.height(4.dp))
+        SkeletonBox(
+            modifier = Modifier.fillMaxWidth(0.8f),
+            height = 20.dp
+        )
+        SkeletonBox(
+            modifier = Modifier.fillMaxWidth(0.6f),
+            height = 30.dp
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        SkeletonBox(
+            modifier = Modifier.fillMaxWidth(0.7f),
+            height = 16.dp
+        )
     }
 }

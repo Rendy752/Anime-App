@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.models.Relation
-import com.example.animeapp.ui.animeSearch.components.AnimeSearchItemSkeleton
+import com.example.animeapp.ui.common_ui.AnimeSearchItemSkeleton
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.basicContainer
 import com.example.animeapp.utils.Navigation.navigateWithFilter

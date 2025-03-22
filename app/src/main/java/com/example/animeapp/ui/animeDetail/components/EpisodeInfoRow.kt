@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import com.example.animeapp.ui.theme.dubColor
 import com.example.animeapp.ui.theme.epsColor
 import com.example.animeapp.ui.theme.subColor
@@ -53,6 +54,23 @@ fun EpisodeInfoRow(
                     )
                 }
             }
+        }
+    }
+}
+
+@Preview
+@Composable
+fun EpisodeInfoRowSkeleton(modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.End,
+    ) {
+        repeat(3) {
+            EpisodeInfoItemSkeleton(
+                isFirst = it == 0,
+                isLast = it == 2,
+                hasRight = it < 2
+            )
         }
     }
 }

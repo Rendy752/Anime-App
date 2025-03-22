@@ -3,6 +3,7 @@ package com.example.animeapp.ui.animeDetail.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -12,8 +13,10 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.Episode
+import com.example.animeapp.ui.common_ui.SkeletonBox
 import com.example.animeapp.ui.theme.defaultEpisode
 import com.example.animeapp.ui.theme.fillerEpisode
 import com.example.animeapp.utils.basicContainer
@@ -62,4 +65,26 @@ fun highlightText(text: String, query: String): AnnotatedString {
         }
     }
     return annotatedString.toAnnotatedString()
+}
+
+@Preview
+@Composable
+fun EpisodeItemSkeleton() {
+    Row(
+        modifier = Modifier
+            .basicContainer()
+            .fillMaxWidth()
+            .height(56.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        SkeletonBox(
+            width = 60.dp,
+            height = 24.dp
+        )
+        SkeletonBox(
+            modifier = Modifier.fillMaxWidth(),
+            height = 24.dp
+        )
+    }
 }

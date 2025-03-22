@@ -2,6 +2,7 @@ package com.example.animeapp.ui.animeDetail.ui
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Label
@@ -18,11 +19,13 @@ import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.ui.common_ui.ClickableDataTextWithIcon
 import com.example.animeapp.ui.common_ui.ClickableItem
 import com.example.animeapp.ui.common_ui.DataTextWithIcon
+import com.example.animeapp.ui.common_ui.DataTextWithIconSkeleton
 import com.example.animeapp.utils.basicContainer
 import com.example.animeapp.utils.Navigation.navigateWithFilter
 
@@ -93,6 +96,36 @@ fun DetailBodySection(animeDetail: AnimeDetail, navController: NavController) {
                     Icons.Default.NotificationsActive
                 )
                 DataTextWithIcon("Duration", animeDetail.duration, Icons.Default.AccessTime)
+            }
+        }
+    }
+}
+
+@Preview
+@Composable
+fun DetailBodySectionSkeleton() {
+    Column(
+        modifier = Modifier
+            .basicContainer()
+            .fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                repeat(8) {
+                    DataTextWithIconSkeleton()
+                }
+            }
+            Spacer(modifier = Modifier.weight(0.1f))
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
+                repeat(5) {
+                    DataTextWithIconSkeleton()
+                }
             }
         }
     }

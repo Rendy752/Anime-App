@@ -13,9 +13,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.ui.animeDetail.components.EpisodeInfoRow
+import com.example.animeapp.ui.animeDetail.components.EpisodeInfoRowSkeleton
 import com.example.animeapp.ui.animeDetail.components.EpisodeItem
+import com.example.animeapp.ui.animeDetail.components.EpisodeItemSkeleton
 import com.example.animeapp.ui.common_ui.ErrorMessage
 import com.example.animeapp.ui.common_ui.SearchView
+import com.example.animeapp.ui.common_ui.SearchViewSkeleton
 import com.example.animeapp.utils.FilterUtils
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.basicContainer
@@ -53,6 +56,8 @@ fun EpisodesDetailSection(
                         )
                     }
                 }
+            } else if (animeDetailComplement is Resource.Loading) {
+                EpisodeInfoRowSkeleton()
             }
         }
         HorizontalDivider(
@@ -62,11 +67,15 @@ fun EpisodesDetailSection(
         )
         when (animeDetailComplement) {
             is Resource.Loading -> {
-                Box(
-                    modifier = Modifier.fillMaxWidth(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    SearchViewSkeleton(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp)
+                    )
+                    repeat(5) {
+                        EpisodeItemSkeleton()
+                    }
                 }
             }
 
@@ -77,9 +86,13 @@ fun EpisodesDetailSection(
                         val reversedEpisodes = data.episodes.reversed()
 
                         val filteredEpisodes by remember(reversedEpisodes, searchQuery) {
-                            derivedStateOf { FilterUtils.filterEpisodes(reversedEpisodes, searchQuery) }
+                            derivedStateOf {
+                                FilterUtils.filterEpisodes(
+                                    reversedEpisodes,
+                                    searchQuery
+                                )
+                            }
                         }
-
                         SearchView(
                             query = searchQuery,
                             onQueryChange = {

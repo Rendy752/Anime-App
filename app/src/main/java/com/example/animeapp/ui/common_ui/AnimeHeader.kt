@@ -8,7 +8,9 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -20,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
@@ -99,6 +102,62 @@ fun AnimeHeader(animeDetail: AnimeDetail) {
 
             if (!animeDetail.title_synonyms.isNullOrEmpty()) {
                 HorizontalScrollChipList(dataList = animeDetail.title_synonyms.toList())
+            }
+        }
+    }
+}
+
+@Preview
+@Composable
+fun AnimeHeaderSkeleton() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        SkeletonBox(width = 200.dp, height = 300.dp)
+
+        Column(
+            modifier = Modifier
+                .padding(start = 8.dp)
+                .weight(1f)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                SkeletonBox(
+                    modifier = Modifier
+                        .weight(1f),
+                    height = 24.dp
+                )
+
+                SkeletonBox(
+                    modifier = Modifier.size(24.dp),
+                    height = 24.dp
+                )
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+            SkeletonBox(
+                modifier = Modifier.fillMaxWidth(0.8f),
+                height = 20.dp
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+            SkeletonBox(
+                modifier = Modifier.fillMaxWidth(0.6f),
+                height = 20.dp
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                repeat(3) {
+                    SkeletonBox(width = 60.dp, height = 24.dp)
+                }
             }
         }
     }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -19,10 +20,11 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
 @Composable
-internal fun DataTextWithIcon(label: String, value: String?, icon: ImageVector) {
+fun DataTextWithIcon(label: String, value: String?, icon: ImageVector) {
     if (!value.isNullOrBlank() && value.lowercase() != "null") {
         Row(
             modifier = Modifier
@@ -51,11 +53,38 @@ internal fun DataTextWithIcon(label: String, value: String?, icon: ImageVector) 
     }
 }
 
+@Preview
+@Composable
+fun DataTextWithIconSkeleton() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        SkeletonBox(
+            modifier = Modifier.size(20.dp),
+            width = 20.dp,
+            height = 20.dp
+        )
+        Spacer(modifier = Modifier.padding(end = 8.dp))
+        SkeletonBox(
+            modifier = Modifier.weight(0.3f),
+            height = 16.dp
+        )
+        Spacer(modifier = Modifier.weight(0.05f))
+        SkeletonBox(
+            modifier = Modifier.weight(0.65f),
+            height = 16.dp
+        )
+    }
+}
+
 data class ClickableItem(val text: String, val onClick: () -> Unit)
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-internal fun ClickableDataTextWithIcon(
+fun ClickableDataTextWithIcon(
     label: String,
     items: List<ClickableItem>?,
     icon: ImageVector

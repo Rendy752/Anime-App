@@ -12,7 +12,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -26,6 +25,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -44,7 +44,11 @@ import com.example.animeapp.ui.common_ui.DetailCommonBody
 import com.example.animeapp.ui.common_ui.YoutubePreview
 import androidx.core.net.toUri
 import com.example.animeapp.models.NameAndUrl
+import com.example.animeapp.ui.common_ui.AnimeHeaderSkeleton
+import com.example.animeapp.ui.common_ui.DetailCommonBodySkeleton
 import com.example.animeapp.ui.common_ui.ErrorMessage
+import com.example.animeapp.ui.common_ui.YoutubePreviewSkeleton
+import kotlinx.coroutines.launch
 
 
 private fun convertToNameAndUrl(list: List<String>?): List<NameAndUrl>? {
@@ -68,10 +72,16 @@ fun AnimeDetailScreen(
     val defaultEpisode by viewModel.defaultEpisode.collectAsState()
     val context = LocalContext.current
     val scrollState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(animeId) {
         viewModel.handleAnimeDetail(animeId)
-        scrollState.animateScrollToItem(0)
+    }
+
+    LaunchedEffect(Unit) {
+        coroutineScope.launch {
+            scrollState.animateScrollToItem(0)
+        }
     }
 
     Scaffold(
@@ -144,12 +154,18 @@ fun AnimeDetailScreen(
             item {
                 when (animeDetail) {
                     is Resource.Loading -> {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(16.dp),
-                            contentAlignment = Alignment.Center
-                        ) { CircularProgressIndicator() }
+                        Column(modifier = Modifier.padding(8.dp)) {
+                            AnimeHeaderSkeleton()
+                            NumberDetailSectionSkeleton()
+                            YoutubePreviewSkeleton()
+                            DetailBodySectionSkeleton()
+                            DetailCommonBodySkeleton("Background")
+                            DetailCommonBodySkeleton("Synopsis")
+                            ClickableListSectionSkeleton("Openings")
+                            ClickableListSectionSkeleton("Endings")
+                            ClickableListSectionSkeleton("Externals")
+                            ClickableListSectionSkeleton("Streamings")
+                        }
                     }
 
                     is Resource.Success -> {
@@ -164,12 +180,12 @@ fun AnimeDetailScreen(
                                 DetailBodySection(animeDetailData, navController)
                                 DetailCommonBody("Background", animeDetailData.background)
                                 DetailCommonBody("Synopsis", animeDetailData.synopsis)
+
                                 RelationSection(
                                     navController,
                                     animeDetailData.relations,
                                     { animeId -> viewModel.getAnimeDetail(animeId) },
                                     { animeId -> viewModel.handleAnimeDetail(animeId) })
-
 
                                 EpisodesDetailSection(
                                     animeDetailComplement = animeDetailComplement,

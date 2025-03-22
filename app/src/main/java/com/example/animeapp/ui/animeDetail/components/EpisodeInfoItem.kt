@@ -10,10 +10,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.animeapp.ui.common_ui.SkeletonBox
 
 @Composable
 fun EpisodeInfoItem(
@@ -55,6 +57,38 @@ fun EpisodeInfoItem(
                     style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold)
                 )
             }
+        }
+    }
+}
+
+@Composable
+fun EpisodeInfoItemSkeleton(
+    isFirst: Boolean,
+    isLast: Boolean,
+    hasRight: Boolean
+) {
+    val width = 60.dp
+    val height = 32.dp
+
+    val leftShape = if (isFirst) RoundedCornerShape(percent = 50) else RoundedCornerShape(0.dp)
+    val rightShape =
+        if (isLast || !hasRight) RoundedCornerShape(percent = 50) else RoundedCornerShape(0.dp)
+
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        SkeletonBox(
+            modifier = Modifier.clip(
+                RoundedCornerShape(
+                    topStart = leftShape.topStart,
+                    topEnd = rightShape.topEnd,
+                    bottomStart = leftShape.bottomStart,
+                    bottomEnd = rightShape.bottomEnd
+                )
+            ),
+            width = width,
+            height = height,
+        )
+        if (hasRight) {
+            Spacer(modifier = Modifier.width(4.dp))
         }
     }
 }
