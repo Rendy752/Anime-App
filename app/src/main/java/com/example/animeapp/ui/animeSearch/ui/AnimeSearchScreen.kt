@@ -30,9 +30,8 @@ import com.example.animeapp.ui.animeSearch.components.ProducersBottomSheet
 @Composable
 fun AnimeSearchScreen(
     navController: NavController,
-    genre: Genre?,
-    producer: Producer?,
-    setBottomNavVisible: (Boolean) -> Unit
+    genre: Genre? = null,
+    producer: Producer? = null,
 ) {
     val viewModel: AnimeSearchViewModel = hiltViewModel()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
@@ -49,14 +48,11 @@ fun AnimeSearchScreen(
         if (genre != null) {
             viewModel.setSelectedGenre(genre)
             viewModel.applyGenreFilters()
-            setBottomNavVisible(false)
         } else if (producer != null) {
             viewModel.setSelectedProducer(producer)
             viewModel.applyProducerFilters()
-            setBottomNavVisible(false)
         } else {
-            viewModel.getRandomAnime()
-            setBottomNavVisible(true)
+            viewModel.searchAnime()
         }
     }
 

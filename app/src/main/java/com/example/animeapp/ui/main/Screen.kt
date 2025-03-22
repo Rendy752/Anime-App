@@ -16,9 +16,6 @@ enum class Screen(
         "recommendations",
         "Recommendations",
         { Icon(Icons.Filled.Home, contentDescription = null) }),
-    Search(
-        "search/{genreIdentity}/{producerIdentity}",
-        "Search",
-        { Icon(Icons.Filled.Search, contentDescription = null) }),
+    Search("search", "Search", { Icon(Icons.Filled.Search, contentDescription = null) }),
     Settings("settings", "Settings", { Icon(Icons.Filled.Settings, contentDescription = null) });
 }

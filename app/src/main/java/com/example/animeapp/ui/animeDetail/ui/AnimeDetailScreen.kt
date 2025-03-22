@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.LiveTv
@@ -66,8 +67,12 @@ fun AnimeDetailScreen(
     val animeDetailComplement by viewModel.animeDetailComplement.collectAsState()
     val defaultEpisode by viewModel.defaultEpisode.collectAsState()
     val context = LocalContext.current
+    val scrollState = rememberLazyListState()
 
-    LaunchedEffect(animeId) { viewModel.handleAnimeDetail(animeId) }
+    LaunchedEffect(animeId) {
+        viewModel.handleAnimeDetail(animeId)
+        scrollState.animateScrollToItem(0)
+    }
 
     Scaffold(
         topBar = {
@@ -133,7 +138,8 @@ fun AnimeDetailScreen(
         LazyColumn(
             modifier = Modifier
                 .padding(paddingValues)
-                .fillMaxSize()
+                .fillMaxSize(),
+            state = scrollState
         ) {
             item {
                 when (animeDetail) {
@@ -168,7 +174,7 @@ fun AnimeDetailScreen(
                                 EpisodesDetailSection(
                                     animeDetailComplement = animeDetailComplement,
                                     onEpisodeClick = { episodeId ->
-                                        navController.navigate("animeWatch/$animeId/$episodeId")
+                                        navController.navigate("animeWatch/$animeId/$episodeId/$defaultEpisode")
                                     }
                                 )
 

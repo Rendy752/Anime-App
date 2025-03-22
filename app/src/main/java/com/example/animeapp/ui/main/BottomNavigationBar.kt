@@ -25,9 +25,7 @@ fun BottomNavigationBar(navController: NavHostController) {
                 label = { Text(screen.label) },
                 selected = currentRoute == screen.route,
                 onClick = {
-                    val route = if (screen == Screen.Search) "search/null/null" else screen.route
-
-                    navController.navigate(route) {
+                    navController.navigate(screen.route) {
                         popUpTo(navController.graph.findStartDestination().id) {
                             saveState = true
                         }

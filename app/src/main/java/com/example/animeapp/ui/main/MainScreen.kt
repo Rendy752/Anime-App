@@ -1,6 +1,8 @@
 package com.example.animeapp.ui.main
 
 import android.net.Uri
+import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -35,8 +37,9 @@ fun MainScreen() {
 
     isBottomBarVisible = when (currentRoute) {
         "recommendations",
-        "search/{genreIdentity}/{producerIdentity}",
+        "search",
         "settings" -> true
+
         else -> false
     }
 
@@ -53,10 +56,38 @@ fun MainScreen() {
             NavHost(
                 navController = navController,
                 startDestination = "recommendations",
-                modifier = Modifier.weight(1f)
+                modifier = Modifier.weight(1f),
+                enterTransition = {
+                    slideIntoContainer(
+                        AnimatedContentTransitionScope.SlideDirection.Start,
+                        tween(700)
+                    )
+                },
+                exitTransition = {
+                    slideOutOfContainer(
+                        AnimatedContentTransitionScope.SlideDirection.Start,
+                        tween(700)
+                    )
+                },
+                popEnterTransition = {
+                    slideIntoContainer(
+                        AnimatedContentTransitionScope.SlideDirection.End,
+                        tween(700)
+                    )
+                },
+                popExitTransition = {
+                    slideOutOfContainer(
+                        AnimatedContentTransitionScope.SlideDirection.End,
+                        tween(700)
+                    )
+                }
             ) {
                 composable("recommendations") {
                     AnimeRecommendationsScreen(navController)
+                }
+
+                composable("search") {
+                    AnimeSearchScreen(navController)
                 }
 
                 composable(
@@ -96,7 +127,7 @@ fun MainScreen() {
                         navController,
                         genre,
                         producer,
-                        setBottomNavVisible = { isBottomBarVisible = it })
+                    )
                 }
 
                 composable("settings") {

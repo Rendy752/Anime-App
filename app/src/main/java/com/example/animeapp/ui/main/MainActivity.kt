@@ -2,6 +2,7 @@ package com.example.animeapp.ui.main
 
 import android.os.Bundle
 import android.view.WindowManager
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
@@ -10,19 +11,20 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
+import com.example.animeapp.ui.common_ui.QuitConfirmationAlert
 import com.example.animeapp.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
-
-
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
 
@@ -31,7 +33,6 @@ class MainActivity : AppCompatActivity() {
 
         if (isDarkMode) {
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-
         } else {
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
         }
@@ -40,6 +41,18 @@ class MainActivity : AppCompatActivity() {
 
         setContent {
             val themeApplied = remember { mutableStateOf(false) }
+            var showQuitDialog by remember { mutableStateOf(false) }
+
+            BackHandler {
+                showQuitDialog = true
+            }
+
+            if (showQuitDialog) {
+                QuitConfirmationAlert(
+                    onDismissRequest = { showQuitDialog = false },
+                    onQuitConfirmed = { finish() }
+                )
+            }
 
             if (!themeApplied.value) {
                 themeApplied.value = true
