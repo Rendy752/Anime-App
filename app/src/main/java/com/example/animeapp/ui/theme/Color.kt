@@ -218,9 +218,14 @@ val surfaceContainerDarkHighContrast = Color(0xFF2E3036)
 val surfaceContainerHighDarkHighContrast = Color(0xFF393B41)
 val surfaceContainerHighestDarkHighContrast = Color(0xFF44474D)
 
+val subColor = Color(0xFF64B5F6)
+val dubColor = Color(0xFF81C784)
+val epsColor = Color(0xFFFFB74D)
 
-
-
+val defaultEpisode = Color(0xFF646464)
+val watchedEpisode = Color(0xFF484848)
+val watchingEpisode = Color(0xFFFFD700)
+val fillerEpisode = Color(0xFFFF8C00)
 
 
 

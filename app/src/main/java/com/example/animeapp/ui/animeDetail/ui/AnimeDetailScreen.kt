@@ -9,8 +9,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.Share
-import androidx.compose.material.icons.filled.Tv
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -46,7 +46,7 @@ import com.example.animeapp.models.NameAndUrl
 import com.example.animeapp.ui.common_ui.ErrorMessage
 
 
-fun convertToNameAndUrl(list: List<String>?): List<NameAndUrl>? {
+private fun convertToNameAndUrl(list: List<String>?): List<NameAndUrl>? {
     return list?.map { item ->
         val encodedItem = Uri.encode(item)
         val youtubeSearchUrl = "${YOUTUBE_URL}/results?search_query=$encodedItem"
@@ -67,9 +67,7 @@ fun AnimeDetailScreen(
     val defaultEpisode by viewModel.defaultEpisode.collectAsState()
     val context = LocalContext.current
 
-    LaunchedEffect(animeId) {
-        viewModel.handleAnimeDetail(animeId)
-    }
+    LaunchedEffect(animeId) { viewModel.handleAnimeDetail(animeId) }
 
     Scaffold(
         topBar = {
@@ -103,7 +101,7 @@ fun AnimeDetailScreen(
                                     )
                                 }) {
                                     Icon(
-                                        imageVector = Icons.Filled.Tv,
+                                        imageVector = Icons.Filled.LiveTv,
                                         tint = MaterialTheme.colorScheme.primary,
                                         contentDescription = stringResource(id = R.string.watch)
                                     )
@@ -150,6 +148,7 @@ fun AnimeDetailScreen(
 
                     is Resource.Success -> {
                         animeDetail?.data?.data?.let { animeDetailData ->
+                            LaunchedEffect(animeDetailData.mal_id) { viewModel.handleEpisodes() }
                             Column(
                                 modifier = Modifier.padding(8.dp)
                             ) {
@@ -164,7 +163,14 @@ fun AnimeDetailScreen(
                                     animeDetailData.relations,
                                     { animeId -> viewModel.getAnimeDetail(animeId) },
                                     { animeId -> viewModel.handleAnimeDetail(animeId) })
-//                        AnimeEpisodes(animeDetailComplement)
+
+
+                                EpisodesDetailSection(
+                                    animeDetailComplement = animeDetailComplement,
+                                    onEpisodeClick = { episodeId ->
+                                        navController.navigate("animeWatch/$animeId/$episodeId")
+                                    }
+                                )
 
                                 val openingNameAndUrls =
                                     convertToNameAndUrl(animeDetailData.theme.openings)

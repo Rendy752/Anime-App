@@ -35,10 +35,13 @@ class AnimeDetailViewModel @Inject constructor(
     val animeDetail: StateFlow<Resource<AnimeDetailResponse>?> = _animeDetail.asStateFlow()
 
     private val _animeDetailComplement = MutableStateFlow<Resource<AnimeDetailComplement?>?>(null)
-    val animeDetailComplement: StateFlow<Resource<AnimeDetailComplement?>?> = _animeDetailComplement.asStateFlow()
+    val animeDetailComplement: StateFlow<Resource<AnimeDetailComplement?>?> =
+        _animeDetailComplement.asStateFlow()
 
     private val _defaultEpisode = MutableStateFlow<EpisodeDetailComplement?>(null)
     val defaultEpisode: StateFlow<EpisodeDetailComplement?> = _defaultEpisode.asStateFlow()
+
+    private var episodesFetched = false
 
     fun handleAnimeDetail(id: Int) = viewModelScope.launch {
         _animeDetail.value = Resource.Loading()
@@ -50,6 +53,8 @@ class AnimeDetailViewModel @Inject constructor(
     }
 
     fun handleEpisodes() = viewModelScope.launch {
+        if (episodesFetched) return@launch
+
         _animeDetailComplement.value = Resource.Loading()
         val detailData = _animeDetail.value?.data?.data
             ?: run {
@@ -80,6 +85,7 @@ class AnimeDetailViewModel @Inject constructor(
             return@launch
         }
         handleValidEpisode(response)
+        episodesFetched = true
     }
 
     private suspend fun handleCachedAnimeDetailComplement(detailData: AnimeDetail): Boolean {
