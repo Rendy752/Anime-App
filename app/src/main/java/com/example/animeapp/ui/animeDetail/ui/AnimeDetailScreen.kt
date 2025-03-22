@@ -1,265 +1,286 @@
 package com.example.animeapp.ui.animeDetail.ui
 
+import android.content.Context
 import android.content.Intent
+import android.content.res.Configuration
 import android.net.Uri
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.LiveTv
-import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.example.animeapp.BuildConfig.YOUTUBE_URL
+import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.animeapp.R
-import com.example.animeapp.utils.Resource
-import com.example.animeapp.utils.ShareUtils
+import com.example.animeapp.BuildConfig.YOUTUBE_URL
+import com.example.animeapp.models.AnimeDetail
+import com.example.animeapp.models.AnimeDetailComplement
+import com.example.animeapp.models.EpisodeDetailComplement
+import com.example.animeapp.models.NameAndUrl
+import com.example.animeapp.ui.animeDetail.components.AnimeDetailScreenErrorMessage
+import com.example.animeapp.ui.animeDetail.components.AnimeDetailTopBar
 import com.example.animeapp.ui.animeDetail.viewmodel.AnimeDetailViewModel
 import com.example.animeapp.ui.common_ui.AnimeHeader
-import com.example.animeapp.ui.common_ui.DetailCommonBody
-import com.example.animeapp.ui.common_ui.YoutubePreview
-import androidx.core.net.toUri
-import com.example.animeapp.models.NameAndUrl
 import com.example.animeapp.ui.common_ui.AnimeHeaderSkeleton
+import com.example.animeapp.ui.common_ui.DetailCommonBody
 import com.example.animeapp.ui.common_ui.DetailCommonBodySkeleton
-import com.example.animeapp.ui.common_ui.ErrorMessage
+import com.example.animeapp.ui.common_ui.YoutubePreview
 import com.example.animeapp.ui.common_ui.YoutubePreviewSkeleton
-import kotlinx.coroutines.launch
+import com.example.animeapp.utils.Resource
 
-
-private fun convertToNameAndUrl(list: List<String>?): List<NameAndUrl>? {
-    return list?.map { item ->
-        val encodedItem = Uri.encode(item)
-        val youtubeSearchUrl = "${YOUTUBE_URL}/results?search_query=$encodedItem"
-        NameAndUrl(name = item, url = youtubeSearchUrl)
-    }
-}
+private fun convertToNameAndUrl(list: List<String>?): List<NameAndUrl>? =
+    list?.map { NameAndUrl(it, "$YOUTUBE_URL/results?search_query=${Uri.encode(it)}") }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AnimeDetailScreen(
-    animeTitle: String,
-    animeId: Int,
-    navController: NavController
-) {
+fun AnimeDetailScreen(animeTitle: String, animeId: Int, navController: NavController) {
     val viewModel: AnimeDetailViewModel = hiltViewModel()
     val animeDetail by viewModel.animeDetail.collectAsState()
     val animeDetailComplement by viewModel.animeDetailComplement.collectAsState()
     val defaultEpisode by viewModel.defaultEpisode.collectAsState()
     val context = LocalContext.current
-    val scrollState = rememberLazyListState()
-    val coroutineScope = rememberCoroutineScope()
+    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+    val leftScrollState = rememberLazyListState()
+    val rightScrollState = rememberLazyListState()
 
-    LaunchedEffect(animeId) {
-        viewModel.handleAnimeDetail(animeId)
-    }
+    LaunchedEffect(animeId) { viewModel.handleAnimeDetail(animeId) }
 
-    LaunchedEffect(Unit) {
-        coroutineScope.launch {
-            scrollState.animateScrollToItem(0)
-        }
-    }
-
-    Scaffold(
-        topBar = {
-            Column {
-                TopAppBar(
-                    navigationIcon = {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                        }
-                    },
-                    title = {
-                        Text(
-                            text = animeTitle,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    },
-                    actions = {
-                        animeDetail?.data?.data?.let { animeDetailData ->
-                            if (animeDetailComplement is Resource.Success &&
-                                (animeDetailComplement as Resource.Success).data?.episodes?.isNotEmpty() == true &&
-                                defaultEpisode != null
-                            ) {
-                                IconButton(onClick = {
-                                    navController.navigate(
-                                        "animeWatch/${animeDetailData.mal_id}/${
-                                            (animeDetailComplement as Resource.Success).data?.episodes?.get(
-                                                0
-                                            )?.episodeId
-                                        }/${defaultEpisode!!.id}"
-                                    )
-                                }) {
-                                    Icon(
-                                        imageVector = Icons.Filled.LiveTv,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        contentDescription = stringResource(id = R.string.watch)
-                                    )
-                                }
-                            }
-                            IconButton(onClick = {
-                                ShareUtils.shareAnimeDetail(context, animeDetailData)
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Filled.Share,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    contentDescription = stringResource(id = R.string.filter)
-                                )
-                            }
-                        }
-                    },
-
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        titleContentColor = MaterialTheme.colorScheme.primary
-                    )
-                )
-                HorizontalDivider(
-                    color = MaterialTheme.colorScheme.surfaceContainer,
-                    thickness = 2.dp
+    Scaffold(topBar = {
+        AnimeDetailTopBar(
+            animeTitle,
+            animeDetail,
+            animeDetailComplement,
+            defaultEpisode,
+            navController
+        )
+    }) { paddingValues ->
+        when (animeDetail) {
+            is Resource.Loading -> LoadingContent(paddingValues, isLandscape)
+            is Resource.Success -> {
+                LaunchedEffect(Unit) { viewModel.handleEpisodes() }
+                SuccessContent(
+                    paddingValues,
+                    animeDetail?.data?.data,
+                    animeDetailComplement,
+                    defaultEpisode,
+                    navController,
+                    context,
+                    isLandscape,
+                    leftScrollState,
+                    rightScrollState,
+                    viewModel
                 )
             }
-        },
-    ) { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .padding(paddingValues)
-                .fillMaxSize(),
-            state = scrollState
-        ) {
+
+            is Resource.Error -> ErrorContent(paddingValues, animeDetail?.message ?: "Error")
+            else -> ErrorContent(paddingValues, "Empty")
+        }
+    }
+}
+
+@Composable
+private fun LoadingContent(paddingValues: PaddingValues, isLandscape: Boolean) {
+    LazyColumn(
+        modifier = Modifier
+            .padding(paddingValues)
+            .fillMaxSize()
+    ) {
+        if (isLandscape) {
             item {
-                when (animeDetail) {
-                    is Resource.Loading -> {
-                        Column(modifier = Modifier.padding(8.dp)) {
-                            AnimeHeaderSkeleton()
-                            NumberDetailSectionSkeleton()
-                            YoutubePreviewSkeleton()
-                            DetailBodySectionSkeleton()
-                            DetailCommonBodySkeleton("Background")
-                            DetailCommonBodySkeleton("Synopsis")
-                            ClickableListSectionSkeleton("Openings")
-                            ClickableListSectionSkeleton("Endings")
-                            ClickableListSectionSkeleton("Externals")
-                            ClickableListSectionSkeleton("Streamings")
-                        }
+                Row {
+                    Column(modifier = Modifier.weight(1f)) {
+                        LeftColumnContentSkeleton()
                     }
-
-                    is Resource.Success -> {
-                        animeDetail?.data?.data?.let { animeDetailData ->
-                            LaunchedEffect(animeDetailData.mal_id) { viewModel.handleEpisodes() }
-                            Column(
-                                modifier = Modifier.padding(8.dp)
-                            ) {
-                                AnimeHeader(animeDetailData)
-                                NumberDetailSection(animeDetailData)
-                                YoutubePreview(animeDetailData.trailer.embed_url)
-                                DetailBodySection(animeDetailData, navController)
-                                DetailCommonBody("Background", animeDetailData.background)
-                                DetailCommonBody("Synopsis", animeDetailData.synopsis)
-
-                                RelationSection(
-                                    navController,
-                                    animeDetailData.relations,
-                                    { animeId -> viewModel.getAnimeDetail(animeId) },
-                                    { animeId -> viewModel.handleAnimeDetail(animeId) })
-
-                                EpisodesDetailSection(
-                                    animeDetailComplement = animeDetailComplement,
-                                    onEpisodeClick = { episodeId ->
-                                        navController.navigate("animeWatch/$animeId/$episodeId/$defaultEpisode")
-                                    }
-                                )
-
-                                val openingNameAndUrls =
-                                    convertToNameAndUrl(animeDetailData.theme.openings)
-                                ClickableListSection(
-                                    title = "Openings",
-                                    items = openingNameAndUrls,
-                                    onClick = { url ->
-                                        val intent = Intent(Intent.ACTION_VIEW, url.toUri())
-                                        context.startActivity(intent)
-                                    },
-                                )
-
-                                val endingNameAndUrls =
-                                    convertToNameAndUrl(animeDetailData.theme.endings)
-                                ClickableListSection(
-                                    title = "Endings",
-                                    items = endingNameAndUrls,
-                                    onClick = { url ->
-                                        val intent = Intent(Intent.ACTION_VIEW, url.toUri())
-                                        context.startActivity(intent)
-                                    },
-                                )
-
-                                ClickableListSection(
-                                    title = "Externals",
-                                    items = animeDetailData.external,
-                                    onClick = { external ->
-                                        val intent =
-                                            Intent(Intent.ACTION_VIEW, external.toUri())
-                                        context.startActivity(intent)
-                                    },
-                                )
-
-                                ClickableListSection(
-                                    title = "Streamings",
-                                    items = animeDetailData.streaming,
-                                    onClick = { streaming ->
-                                        val intent =
-                                            Intent(Intent.ACTION_VIEW, streaming.toUri())
-                                        context.startActivity(intent)
-                                    },
-                                )
-                            }
-                        }
+                    Column(modifier = Modifier.weight(1f)) {
+                        RightColumnContentSkeleton()
                     }
+                }
+            }
+        } else {
+            item {
+                VerticalColumnContentSkeleton()
+            }
+        }
+    }
+}
 
-                    is Resource.Error -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            ErrorMessage(
-                                message = (animeDetail as Resource.Error).message ?: "Error"
-                            )
-                        }
-                    }
+@Composable
+private fun VerticalColumnContentSkeleton() {
+    Column(modifier = Modifier.padding(8.dp)) {
+        LeftColumnContentSkeleton()
+        RightColumnContentSkeleton()
+    }
+}
 
-                    else -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            ErrorMessage(message = "Empty")
-                        }
+@Composable
+private fun LeftColumnContentSkeleton() {
+    Column(modifier = Modifier.padding(8.dp)) {
+        AnimeHeaderSkeleton()
+        NumberDetailSectionSkeleton()
+        YoutubePreviewSkeleton()
+        DetailBodySectionSkeleton()
+    }
+}
+
+@Composable
+private fun RightColumnContentSkeleton() {
+    Column(modifier = Modifier.padding(8.dp)) {
+        listOf<String>("Background", "Synopsis").forEach { DetailCommonBodySkeleton(it) }
+        listOf<String>(
+            "Openings",
+            "Endings",
+            "Externals",
+            "Streamings"
+        ).forEach { DetailCommonBodySkeleton(it) }
+    }
+}
+
+@Composable
+private fun SuccessContent(
+    paddingValues: PaddingValues,
+    animeDetailData: AnimeDetail?,
+    animeDetailComplement: Resource<AnimeDetailComplement?>?,
+    defaultEpisode: EpisodeDetailComplement?,
+    navController: NavController,
+    context: Context,
+    isLandscape: Boolean,
+    leftScrollState: androidx.compose.foundation.lazy.LazyListState,
+    rightScrollState: androidx.compose.foundation.lazy.LazyListState,
+    viewModel: AnimeDetailViewModel
+) {
+    animeDetailData?.let { data ->
+        if (isLandscape) {
+            Row(
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .fillMaxSize()
+            ) {
+                LazyColumn(modifier = Modifier.weight(1f), state = leftScrollState) {
+                    item { LeftColumnContent(data, navController) }
+                }
+                LazyColumn(modifier = Modifier.weight(1f), state = rightScrollState) {
+                    item {
+                        RightColumnContent(
+                            viewModel,
+                            data,
+                            animeDetailComplement,
+                            defaultEpisode,
+                            navController,
+                            context
+                        )
                     }
+                }
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .padding(paddingValues)
+                    .fillMaxSize()
+            ) {
+                item {
+                    VerticalColumnContent(
+                        viewModel,
+                        data,
+                        animeDetailComplement,
+                        defaultEpisode,
+                        navController,
+                        context
+                    )
                 }
             }
         }
     }
+}
+
+@Composable
+private fun LeftColumnContent(data: AnimeDetail, navController: NavController) {
+    Column(modifier = Modifier.padding(8.dp)) {
+        AnimeHeader(data)
+        NumberDetailSection(data)
+        YoutubePreview(data.trailer.embed_url)
+        DetailBodySection(data, navController)
+    }
+}
+
+@Composable
+private fun RightColumnContent(
+    viewModel: AnimeDetailViewModel,
+    data: AnimeDetail,
+    animeDetailComplement: Resource<AnimeDetailComplement?>?,
+    defaultEpisode: EpisodeDetailComplement?,
+    navController: NavController,
+    context: Context
+) {
+    Column(modifier = Modifier.padding(8.dp)) {
+        listOf(
+            "Background" to data.background,
+            "Synopsis" to data.synopsis,
+        ).forEach { DetailCommonBody(it.first, it.second) }
+        RelationSection(
+            navController,
+            data.relations,
+            { animeId -> viewModel.getAnimeDetail(animeId) },
+            { animeId -> viewModel.handleAnimeDetail(animeId) })
+        EpisodesDetailSection(animeDetailComplement, { episodeId ->
+            navController.navigate("animeWatch/${data.mal_id}/$episodeId/$defaultEpisode")
+        })
+        CommonListContent(data, context)
+    }
+}
+
+@Composable
+private fun VerticalColumnContent(
+    viewModel: AnimeDetailViewModel,
+    data: AnimeDetail,
+    animeDetailComplement: Resource<AnimeDetailComplement?>?,
+    defaultEpisode: EpisodeDetailComplement?,
+    navController: NavController,
+    context: Context
+) {
+    Column(modifier = Modifier.padding(8.dp)) {
+        LeftColumnContent(data, navController)
+        RightColumnContent(
+            viewModel,
+            data,
+            animeDetailComplement,
+            defaultEpisode,
+            navController,
+            context
+        )
+    }
+}
+
+@Composable
+private fun CommonListContent(data: AnimeDetail, context: Context) {
+    listOf(
+        "Openings" to convertToNameAndUrl(data.theme.openings),
+        "Endings" to convertToNameAndUrl(data.theme.endings),
+        "Externals" to data.external,
+        "Streamings" to data.streaming
+    ).forEach { (title, items) ->
+        ClickableListSection(title, items) { url ->
+            context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
+        }
+    }
+}
+
+@Composable
+private fun ErrorContent(paddingValues: PaddingValues, message: String) {
+    LazyColumn(
+        modifier = Modifier
+            .padding(paddingValues)
+            .fillMaxSize()
+    ) { item { AnimeDetailScreenErrorMessage(message) } }
 }

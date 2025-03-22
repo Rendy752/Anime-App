@@ -2,6 +2,8 @@ package com.example.animeapp.ui.animeDetail.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material3.HorizontalDivider
@@ -43,7 +45,9 @@ fun ClickableListSection(
                     .padding(bottom = 8.dp)
             )
             Column(
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .heightIn(max = 300.dp)
+                    .verticalScroll(rememberScrollState())
             ) {
                 items.forEach { item ->
                     Row(
