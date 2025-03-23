@@ -65,6 +65,7 @@ fun VideoPlayerSection(
     onEnterPipMode: () -> Unit,
     isFullscreen: Boolean,
     onFullscreenChange: (Boolean) -> Unit,
+    isScreenOn: Boolean,
     onPlayerError: (String) -> Unit
 ) {
     val context = LocalContext.current
@@ -157,6 +158,11 @@ fun VideoPlayerSection(
         onDispose {
             HlsPlayerUtil.abandonAudioFocus(audioManager)
         }
+    }
+
+    DisposableEffect(isScreenOn) {
+        if (!isScreenOn) exoPlayer.pause()
+        onDispose { }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {

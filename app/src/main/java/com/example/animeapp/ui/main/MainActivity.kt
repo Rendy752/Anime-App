@@ -1,5 +1,6 @@
 package com.example.animeapp.ui.main
 
+import android.app.PictureInPictureParams
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.compose.BackHandler
@@ -19,6 +20,8 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
 import com.example.animeapp.ui.common_ui.QuitConfirmationAlert
 import com.example.animeapp.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -26,6 +29,7 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     private val onPictureInPictureModeChangedListeners = mutableListOf<(Boolean) -> Unit>()
+    private lateinit var navController: NavHostController
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -42,6 +46,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         setContent {
+            navController = rememberNavController()
             val themeApplied = remember { mutableStateOf(false) }
             var showQuitDialog by remember { mutableStateOf(false) }
 
@@ -66,7 +71,7 @@ class MainActivity : AppCompatActivity() {
                         modifier = Modifier.fillMaxSize(),
                         color = MaterialTheme.colorScheme.background
                     ) {
-                        MainScreen()
+                        MainScreen(navController = navController)
                         setStatusBarColor(MaterialTheme.colorScheme.surface)
                     }
                 }
@@ -104,5 +109,13 @@ class MainActivity : AppCompatActivity() {
 
     fun removeOnPictureInPictureModeChangedListener(listener: (Boolean) -> Unit) {
         onPictureInPictureModeChangedListeners.remove(listener)
+    }
+
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        val currentRoute = navController.currentDestination?.route
+        if (currentRoute?.startsWith("animeWatch/") == true) {
+            enterPictureInPictureMode(PictureInPictureParams.Builder().build())
+        }
     }
 }

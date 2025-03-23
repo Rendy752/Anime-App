@@ -1,6 +1,8 @@
 package com.example.animeapp.ui.animeWatch.ui
 
 import android.app.Activity
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.res.Configuration
 import android.os.Build
 import android.view.WindowInsets
@@ -54,6 +56,8 @@ import com.example.animeapp.models.NetworkStatus
 import com.example.animeapp.ui.animeWatch.AnimeWatchViewModel
 import com.example.animeapp.utils.NetworkStateMonitor
 import com.example.animeapp.utils.Resource
+import com.example.animeapp.utils.ScreenOffReceiver
+import com.example.animeapp.utils.ScreenOnReceiver
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -75,7 +79,10 @@ fun AnimeWatchScreen(
     val scope = rememberCoroutineScope()
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
+    var isScreenOn by remember { mutableStateOf(true) }
     val context = LocalContext.current
+    val screenOffReceiver = remember { ScreenOffReceiver { isScreenOn = false } }
+    val screenOnReceiver = remember { ScreenOnReceiver { isScreenOn = true } }
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     var isFullscreen by remember { mutableStateOf(false) }
     val state = rememberPullToRefreshState()
@@ -108,7 +115,12 @@ fun AnimeWatchScreen(
         val connectionObserver = Observer<Boolean> { isConnected = it }
         networkStateMonitor.networkStatus.observeForever(networkObserver)
         networkStateMonitor.isConnected.observeForever(connectionObserver)
+        context.registerReceiver(screenOffReceiver, IntentFilter(Intent.ACTION_SCREEN_OFF))
+        context.registerReceiver(screenOnReceiver, IntentFilter(Intent.ACTION_SCREEN_ON))
+
         onDispose {
+            context.unregisterReceiver(screenOffReceiver)
+            context.unregisterReceiver(screenOnReceiver)
             networkStateMonitor.stopMonitoring()
             networkStateMonitor.networkStatus.removeObserver(networkObserver)
             networkStateMonitor.isConnected.removeObserver(connectionObserver)
@@ -220,7 +232,8 @@ fun AnimeWatchScreen(
                                 isPipMode = isPipMode,
                                 onEnterPipMode = onEnterPipMode,
                                 isFullscreen = isFullscreen,
-                                onFullscreenChange = { isFullscreen = it }
+                                onFullscreenChange = { isFullscreen = it },
+                                isScreenOn = isScreenOn
                             ) { message -> errorMessage = message }
                             if (!isPipMode && !isFullscreen) {
                                 Text("Content")

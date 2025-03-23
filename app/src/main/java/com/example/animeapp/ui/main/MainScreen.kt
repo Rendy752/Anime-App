@@ -14,11 +14,11 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.CommonIdentity
@@ -35,8 +35,7 @@ import com.google.gson.Gson
 import java.net.URLDecoder
 
 @Composable
-fun MainScreen() {
-    val navController = rememberNavController()
+fun MainScreen(navController: NavHostController) {
     val activity = LocalActivity.current
     val gson = Gson()
     var isBottomBarVisible by remember { mutableStateOf(true) }
@@ -206,12 +205,13 @@ fun MainScreen() {
                     )
 
                     var isPipMode by remember { mutableStateOf(false) }
+                    val activity = LocalActivity.current as? MainActivity
 
                     DisposableEffect(activity) {
                         val onPictureInPictureModeChangedCallback = { isInPipMode: Boolean ->
                             isPipMode = isInPipMode
                         }
-                        if (activity is MainActivity) {
+                        if (activity != null) {
                             activity.addOnPictureInPictureModeChangedListener(
                                 onPictureInPictureModeChangedCallback
                             )
@@ -222,9 +222,9 @@ fun MainScreen() {
                             }
                         }
                         onDispose {
-                            if (activity is MainActivity) {
-                                activity.removeOnPictureInPictureModeChangedListener { }
-                            }
+                            activity?.removeOnPictureInPictureModeChangedListener(
+                                onPictureInPictureModeChangedCallback
+                            )
                         }
                     }
 
@@ -236,11 +236,9 @@ fun MainScreen() {
                         navController = navController,
                         isPipMode = isPipMode,
                         onEnterPipMode = {
-                            if (activity is MainActivity) {
-                                activity.enterPictureInPictureMode(
-                                    PictureInPictureParams.Builder().build()
-                                )
-                            }
+                            activity?.enterPictureInPictureMode(
+                                PictureInPictureParams.Builder().build()
+                            )
                         }
                     )
                 }
