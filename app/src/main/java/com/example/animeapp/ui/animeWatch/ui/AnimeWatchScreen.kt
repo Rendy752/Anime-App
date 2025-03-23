@@ -8,14 +8,14 @@ import android.os.Build
 import android.view.WindowInsets
 import android.view.WindowManager
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -55,7 +55,6 @@ import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.NetworkStatus
 import com.example.animeapp.ui.animeWatch.AnimeWatchViewModel
 import com.example.animeapp.utils.NetworkStateMonitor
-import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ScreenOffReceiver
 import com.example.animeapp.utils.ScreenOnReceiver
 import kotlinx.coroutines.launch
@@ -72,25 +71,32 @@ fun AnimeWatchScreen(
     onEnterPipMode: () -> Unit
 ) {
     val viewModel: AnimeWatchViewModel = hiltViewModel()
+
+    // ViewModel Data
     val episodeDetailComplement by viewModel.episodeDetailComplement.collectAsState()
     val episodeSourcesQuery by viewModel.episodeSourcesQuery.collectAsState()
+    val isRefreshing by viewModel.isRefreshing.collectAsState()
 
+    // UI State
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var isFullscreen by remember { mutableStateOf(false) }
+    val scrollState = rememberLazyListState()
+    val state = rememberPullToRefreshState()
 
+    // Device State
     var isScreenOn by remember { mutableStateOf(true) }
     val context = LocalContext.current
     val screenOffReceiver = remember { ScreenOffReceiver { isScreenOn = false } }
     val screenOnReceiver = remember { ScreenOnReceiver { isScreenOn = true } }
-    val isRefreshing by viewModel.isRefreshing.collectAsState()
-    var isFullscreen by remember { mutableStateOf(false) }
-    val state = rememberPullToRefreshState()
+    val configuration = LocalConfiguration.current
+    val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+
+    // Network State
     val networkStateMonitor = remember { NetworkStateMonitor(context) }
     var networkStatus by remember { mutableStateOf(networkStateMonitor.networkStatus.value) }
     var isConnected by remember { mutableStateOf(networkStateMonitor.isConnected.value != false) }
-    val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     BackHandler(enabled = isFullscreen) {
         if (isFullscreen) {
@@ -214,37 +220,46 @@ fun AnimeWatchScreen(
                 )
             },
         ) {
-            Column(
-                modifier = Modifier.fillMaxSize()
-            ) {
-                when (episodeDetailComplement) {
-                    is Resource.Loading -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                        ) { CircularProgressIndicator() }
-                    }
+            val videoSize = if (isLandscape) Modifier.fillMaxSize()
+            else if (!isPipMode && !isFullscreen) Modifier.height(250.dp)
+            else Modifier.fillMaxSize()
 
-                    is Resource.Success -> {
-                        episodeDetailComplement.data?.let { episodeDetailComplement ->
-                            VideoPlayerSection(
-                                episodeDetailComplement,
-                                viewModel,
-                                isPipMode = isPipMode,
-                                onEnterPipMode = onEnterPipMode,
-                                isFullscreen = isFullscreen,
-                                onFullscreenChange = { isFullscreen = it },
-                                isScreenOn = isScreenOn
-                            ) { message -> errorMessage = message }
-                            if (!isPipMode && !isFullscreen) {
-                                Text("Content")
-                            }
-                        }
+            if (isLandscape) {
+                Row(modifier = Modifier.fillMaxSize()) {
+                    PlayerSection(
+                        episodeDetailComplement,
+                        viewModel,
+                        isPipMode,
+                        onEnterPipMode,
+                        isFullscreen,
+                        { isFullscreen = it },
+                        isScreenOn,
+                        episodeId,
+                        episodeSourcesQuery,
+                        Modifier.weight(1f),
+                        videoSize,
+                        { message -> errorMessage = message })
+                    if (!isPipMode && !isFullscreen) {
+                        ContentSection(animeDetail, scrollState, Modifier.weight(1f))
                     }
-
-                    is Resource.Error -> {
-                        episodeSourcesQuery?.let { query ->
-                            viewModel.handleSelectedEpisodeServer(query.copy(id = episodeId))
-                        }
+                }
+            } else {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    PlayerSection(
+                        episodeDetailComplement,
+                        viewModel,
+                        isPipMode,
+                        onEnterPipMode,
+                        isFullscreen,
+                        { isFullscreen = it },
+                        isScreenOn,
+                        episodeId,
+                        episodeSourcesQuery,
+                        Modifier,
+                        videoSize,
+                        { message -> errorMessage = message })
+                    if (!isPipMode && !isFullscreen) {
+                        ContentSection(animeDetail, scrollState, Modifier.weight(1f))
                     }
                 }
             }

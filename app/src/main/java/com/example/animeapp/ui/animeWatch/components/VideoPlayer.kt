@@ -1,9 +1,11 @@
-package com.example.animeapp.ui.animeWatch.ui
+package com.example.animeapp.ui.animeWatch.components
 
 import android.content.Context
 import android.content.res.Configuration
 import android.media.AudioManager
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.view.MotionEvent
 import android.view.ViewGroup
 import android.view.WindowManager
@@ -58,7 +60,7 @@ import androidx.compose.material.icons.filled.Speed
 
 @OptIn(UnstableApi::class, ExperimentalComposeUiApi::class)
 @Composable
-fun VideoPlayerSection(
+fun VideoPlayer(
     episodeDetailComplement: EpisodeDetailComplement,
     viewModel: AnimeWatchViewModel,
     isPipMode: Boolean,
@@ -66,7 +68,9 @@ fun VideoPlayerSection(
     isFullscreen: Boolean,
     onFullscreenChange: (Boolean) -> Unit,
     isScreenOn: Boolean,
-    onPlayerError: (String) -> Unit
+    onPlayerError: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    videoSize: Modifier
 ) {
     val context = LocalContext.current
     val exoPlayer = remember { ExoPlayer.Builder(context).build() }
@@ -165,7 +169,9 @@ fun VideoPlayerSection(
         onDispose { }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(
+        modifier = modifier.then(videoSize)
+    ) {
         AndroidView(
             factory = { playerView },
             modifier = Modifier.fillMaxSize()
@@ -203,7 +209,7 @@ fun VideoPlayerSection(
                 when (event.action) {
                     MotionEvent.ACTION_DOWN -> {
                         isHolding = true
-                        android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+                        Handler(Looper.getMainLooper()).postDelayed({
                             if (isHolding && exoPlayer.playbackParameters.speed != 2f) {
                                 exoPlayer.playbackParameters =
                                     exoPlayer.playbackParameters.withSpeed(2f)
@@ -217,7 +223,7 @@ fun VideoPlayerSection(
                     }
 
                     MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                        android.os.Handler(android.os.Looper.getMainLooper())
+                        Handler(Looper.getMainLooper())
                             .removeCallbacksAndMessages(null)
                         if (isFromHolding) {
                             exoPlayer.playbackParameters =

@@ -45,7 +45,7 @@ private fun shimmerAnimation(): Brush {
 }
 
 @Composable
-fun SkeletonBox(modifier: Modifier = Modifier, width: Dp = 0.dp, height: Dp) {
+fun SkeletonBox(modifier: Modifier = Modifier, width: Dp = 0.dp, height: Dp = 100.dp) {
     Box(
         modifier = modifier
             .then(if (width > 0.dp) Modifier.size(width, height) else Modifier.height(height))
