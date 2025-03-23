@@ -168,6 +168,7 @@ fun VideoPlayerSection(
             view.setShowPreviousButton(false)
             view.setShowNextButton(false)
             view.setFullscreenButtonState(true)
+            view.setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
             view.setShowSubtitleButton(true)
             view.useController = !isPipMode
             view.setFullscreenButtonClickListener {
