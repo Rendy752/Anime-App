@@ -1,7 +1,9 @@
 package com.example.animeapp.ui.main
 
 import android.app.PictureInPictureParams
+import android.content.Intent
 import android.net.Uri
+import android.widget.Toast
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.tween
@@ -35,6 +37,7 @@ import java.net.URLDecoder
 @Composable
 fun MainScreen() {
     val navController = rememberNavController()
+    val activity = LocalActivity.current
     val gson = Gson()
     var isBottomBarVisible by remember { mutableStateOf(true) }
 
@@ -47,6 +50,28 @@ fun MainScreen() {
         "settings" -> true
 
         else -> false
+    }
+
+    LaunchedEffect(Unit) {
+        activity?.let { activity ->
+            val intent = activity.intent
+
+            if (intent.action == Intent.ACTION_VIEW &&
+                intent.scheme == "animeapp" &&
+                intent.data != null
+            ) {
+                intent.data?.pathSegments?.let { segments ->
+                    if (segments.size >= 2 && segments[0] == "detail") {
+                        val animeId = segments[1].toIntOrNull()
+                        if (animeId != null) {
+                            navController.navigate("animeDetail/Title/$animeId")
+                        }
+                    } else {
+                        Toast.makeText(activity, "Invalid URL", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+        }
     }
 
     Surface(
@@ -181,7 +206,6 @@ fun MainScreen() {
                     )
 
                     var isPipMode by remember { mutableStateOf(false) }
-                    val activity = LocalActivity.current
 
                     DisposableEffect(activity) {
                         val onPictureInPictureModeChangedCallback = { isInPipMode: Boolean ->

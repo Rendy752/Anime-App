@@ -105,23 +105,4 @@ class MainActivity : AppCompatActivity() {
     fun removeOnPictureInPictureModeChangedListener(listener: (Boolean) -> Unit) {
         onPictureInPictureModeChangedListeners.remove(listener)
     }
-
-//    override fun onNewIntent(intent: Intent) {
-//        super.onNewIntent(intent)
-//        if (intent.action == Intent.ACTION_VIEW &&
-//            intent.scheme == "animeapp" &&
-//            intent.data != null
-//        ) handleAnimeUrl(intent.data, rememberNavController())
-//    }
-//
-//    private fun handleAnimeUrl(uri: Uri?, navController: NavController) {
-//        uri?.pathSegments?.let { segments ->
-//            if (segments.size >= 2 && segments[0] == "detail") {
-//                val animeId = segments[1].toIntOrNull()
-//                if (animeId != null) {
-//                    navController.navigate("animeDetail/$animeId")
-//                }
-//            } else Toast.makeText(this@MainActivity, "Invalid URL", Toast.LENGTH_SHORT).show()
-//        }
-//    }
 }
