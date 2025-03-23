@@ -171,15 +171,15 @@ class AnimeWatchPlayerFragment : Fragment() {
                     }
                 )
             }
-            HlsPlayerUtil.initializePlayer(
-                exoPlayer,
-                introButton,
-                outroButton,
-                sources
-            )
+//            HlsPlayerUtil.initializePlayer(
+//                exoPlayer,
+//                introButton,
+//                outroButton,
+//                sources
+//            )
 
             introOutroHandler?.stop()
-            introOutroHandler = IntroOutroHandler(exoPlayer, introButton, outroButton, sources)
+//            introOutroHandler = IntroOutroHandler(exoPlayer, introButton, outroButton, sources)
             introOutroHandler?.start()
 
             val sessionId = "episode_${System.currentTimeMillis()}"
@@ -279,7 +279,7 @@ class AnimeWatchPlayerFragment : Fragment() {
     override fun onDestroyView() {
         super.onDestroyView()
         introOutroHandler?.stop()
-        introOutroHandler?.releaseButtons()
+//        introOutroHandler?.releaseButtons()
         HlsPlayerUtil.releasePlayer(binding.playerView)
         mediaSession?.release()
         mediaSession = null

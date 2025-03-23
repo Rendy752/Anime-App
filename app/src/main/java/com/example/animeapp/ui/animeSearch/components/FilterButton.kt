@@ -38,11 +38,12 @@ fun ResetButton(
     Button(
         modifier = modifier ?: Modifier,
         onClick = {
-            if (isDefault()) {
-                Toast.makeText(context, "Filters are already default", Toast.LENGTH_SHORT).show()
-            } else {
-                resetAction()
-            }
+            if (isDefault()) Toast.makeText(
+                context,
+                "Filters are already default",
+                Toast.LENGTH_SHORT
+            ).show()
+            else resetAction()
         },
         enabled = !isDefault(),
         colors = ButtonDefaults.buttonColors(
