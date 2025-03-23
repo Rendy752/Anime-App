@@ -14,20 +14,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -36,6 +28,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -44,7 +37,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Observer
@@ -54,6 +46,7 @@ import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.NetworkStatus
 import com.example.animeapp.ui.animeWatch.AnimeWatchViewModel
+import com.example.animeapp.ui.animeWatch.components.AnimeWatchTopBar
 import com.example.animeapp.utils.NetworkStateMonitor
 import com.example.animeapp.utils.ScreenOffReceiver
 import com.example.animeapp.utils.ScreenOnReceiver
@@ -84,6 +77,7 @@ fun AnimeWatchScreen(
     var isFullscreen by remember { mutableStateOf(false) }
     val scrollState = rememberLazyListState()
     val state = rememberPullToRefreshState()
+    var selectedContentIndex by remember { mutableIntStateOf(0) }
 
     // Device State
     var isScreenOn by remember { mutableStateOf(true) }
@@ -91,7 +85,7 @@ fun AnimeWatchScreen(
     val screenOffReceiver = remember { ScreenOffReceiver { isScreenOn = false } }
     val screenOnReceiver = remember { ScreenOnReceiver { isScreenOn = true } }
     val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == android.content.res.Configuration.ORIENTATION_LANDSCAPE
+    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     // Network State
     val networkStateMonitor = remember { NetworkStateMonitor(context) }
@@ -154,49 +148,13 @@ fun AnimeWatchScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            if (!isPipMode && !isFullscreen) {
-                Column {
-                    TopAppBar(
-                        navigationIcon = {
-                            IconButton(onClick = { navController.popBackStack() }) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Back"
-                                )
-                            }
-                        },
-                        title = {
-                            Text(
-                                animeDetail.title, maxLines = 1,
-                                overflow = TextOverflow.Companion.Ellipsis
-                            )
-                        },
-                        actions = {
-                            networkStatus?.let {
-                                Row {
-                                    Text(
-                                        text = it.label,
-                                        color = if (it.color == MaterialTheme.colorScheme.onError) MaterialTheme.colorScheme.onError
-                                        else MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Icon(
-                                        imageVector = it.icon,
-                                        contentDescription = it.label,
-                                        tint = it.color
-                                    )
-                                }
-                            }
-                        },
-                        colors = TopAppBarDefaults.topAppBarColors(
-                            titleContentColor = MaterialTheme.colorScheme.primary
-                        )
-                    )
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.surfaceContainer,
-                        thickness = 2.dp
-                    )
-                }
-            }
+            if (!isPipMode && !isFullscreen) AnimeWatchTopBar(
+                animeDetail,
+                networkStatus,
+                selectedContentIndex,
+                { selectedContentIndex = it },
+                navController
+            )
         },
     ) { paddingValues ->
         PullToRefreshBox(
@@ -240,7 +198,12 @@ fun AnimeWatchScreen(
                         videoSize,
                         { message -> errorMessage = message })
                     if (!isPipMode && !isFullscreen) {
-                        ContentSection(animeDetail, scrollState, Modifier.weight(1f))
+                        ContentSection(
+                            animeDetail,
+                            scrollState,
+                            selectedContentIndex,
+                            Modifier.weight(1f)
+                        )
                     }
                 }
             } else {
@@ -259,7 +222,12 @@ fun AnimeWatchScreen(
                         videoSize,
                         { message -> errorMessage = message })
                     if (!isPipMode && !isFullscreen) {
-                        ContentSection(animeDetail, scrollState, Modifier.weight(1f))
+                        ContentSection(
+                            animeDetail,
+                            scrollState,
+                            selectedContentIndex,
+                            Modifier.weight(1f)
+                        )
                     }
                 }
             }

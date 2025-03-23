@@ -25,9 +25,7 @@ fun PlayerSection(
     onErrorMessageChange: (String?) -> Unit
 ) {
     when (episodeDetailComplement) {
-        is Resource.Loading -> {
-            SkeletonBox(modifier = modifier)
-        }
+        is Resource.Loading -> SkeletonBox(modifier = modifier.then(videoSize))
 
         is Resource.Success -> {
             episodeDetailComplement.data?.let { episodeDetailComplement ->
@@ -46,12 +44,8 @@ fun PlayerSection(
             }
         }
 
-        is Resource.Error -> {
-            episodeSourcesQuery?.let { query ->
-                viewModel.handleSelectedEpisodeServer(query.copy(id = episodeId))
-            }
+        else -> episodeSourcesQuery?.let { query ->
+            viewModel.handleSelectedEpisodeServer(query.copy(id = episodeId))
         }
-
-        else -> {}
     }
 }
