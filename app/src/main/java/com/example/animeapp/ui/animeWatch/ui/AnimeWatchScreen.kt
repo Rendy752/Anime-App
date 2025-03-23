@@ -58,7 +58,9 @@ fun AnimeWatchScreen(
     episodeId: String,
     episodes: List<Episode>,
     defaultEpisode: EpisodeDetailComplement,
-    navController: NavController
+    navController: NavController,
+    isPipMode: Boolean,
+    onEnterPipMode: () -> Unit
 ) {
     val viewModel: AnimeWatchViewModel = hiltViewModel()
     val episodeDetailComplement by viewModel.episodeDetailComplement.collectAsState()
@@ -75,7 +77,6 @@ fun AnimeWatchScreen(
     var networkStatus by remember { mutableStateOf(networkStateMonitor.networkStatus.value) }
     var isConnected by remember { mutableStateOf(networkStateMonitor.isConnected.value != false) }
     val configuration = LocalConfiguration.current
-    // TODO: Handle landscape mode
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     DisposableEffect(Unit) {
@@ -116,43 +117,48 @@ fun AnimeWatchScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            Column {
-                TopAppBar(
-                    navigationIcon = {
-                        IconButton(onClick = { navController.popBackStack() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                        }
-                    },
-                    title = {
-                        Text(
-                            animeDetail.title, maxLines = 1,
-                            overflow = TextOverflow.Companion.Ellipsis
-                        )
-                    },
-                    actions = {
-                        networkStatus?.let {
-                            Row {
-                                Text(
-                                    text = it.label,
-                                    color = if (it.color == MaterialTheme.colorScheme.onError) MaterialTheme.colorScheme.onError
-                                    else MaterialTheme.colorScheme.onSurface
-                                )
+            if (!isPipMode) {
+                Column {
+                    TopAppBar(
+                        navigationIcon = {
+                            IconButton(onClick = { navController.popBackStack() }) {
                                 Icon(
-                                    imageVector = it.icon,
-                                    contentDescription = it.label,
-                                    tint = it.color
+                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Back"
                                 )
                             }
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        titleContentColor = MaterialTheme.colorScheme.primary
+                        },
+                        title = {
+                            Text(
+                                animeDetail.title, maxLines = 1,
+                                overflow = TextOverflow.Companion.Ellipsis
+                            )
+                        },
+                        actions = {
+                            networkStatus?.let {
+                                Row {
+                                    Text(
+                                        text = it.label,
+                                        color = if (it.color == MaterialTheme.colorScheme.onError) MaterialTheme.colorScheme.onError
+                                        else MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Icon(
+                                        imageVector = it.icon,
+                                        contentDescription = it.label,
+                                        tint = it.color
+                                    )
+                                }
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            titleContentColor = MaterialTheme.colorScheme.primary
+                        )
                     )
-                )
-                HorizontalDivider(
-                    color = MaterialTheme.colorScheme.surfaceContainer,
-                    thickness = 2.dp
-                )
+                    HorizontalDivider(
+                        color = MaterialTheme.colorScheme.surfaceContainer,
+                        thickness = 2.dp
+                    )
+                }
             }
         },
     ) { paddingValues ->
@@ -184,17 +190,20 @@ fun AnimeWatchScreen(
                     is Resource.Loading -> {
                         Box(
                             modifier = Modifier.fillMaxSize(),
-                        ) {
-                            CircularProgressIndicator()
-                        }
+                        ) { CircularProgressIndicator() }
                     }
 
                     is Resource.Success -> {
                         episodeDetailComplement.data?.let { episodeDetailComplement ->
                             VideoPlayerSection(
                                 episodeDetailComplement,
-                                viewModel
+                                viewModel,
+                                isPipMode = isPipMode,
+                                onEnterPipMode = onEnterPipMode,
                             ) { message -> errorMessage = message }
+                            if (!isPipMode) {
+                                Text("Content")
+                            }
                         }
                     }
 

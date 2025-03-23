@@ -25,6 +25,8 @@ import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
+    private val onPictureInPictureModeChangedListeners = mutableListOf<(Boolean) -> Unit>()
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
 
@@ -88,6 +90,20 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
+    }
+
+    @Deprecated("Deprecated in android.app.Activity")
+    override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode)
+        onPictureInPictureModeChangedListeners.forEach { it(isInPictureInPictureMode) }
+    }
+
+    fun addOnPictureInPictureModeChangedListener(listener: (Boolean) -> Unit) {
+        onPictureInPictureModeChangedListeners.add(listener)
+    }
+
+    fun removeOnPictureInPictureModeChangedListener(listener: (Boolean) -> Unit) {
+        onPictureInPictureModeChangedListeners.remove(listener)
     }
 
 //    override fun onNewIntent(intent: Intent) {

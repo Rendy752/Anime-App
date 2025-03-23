@@ -61,6 +61,8 @@ import androidx.compose.material.icons.filled.Speed
 fun VideoPlayerSection(
     episodeDetailComplement: EpisodeDetailComplement,
     viewModel: AnimeWatchViewModel,
+    isPipMode: Boolean,
+    onEnterPipMode: () -> Unit,
     onPlayerError: (String) -> Unit
 ) {
     val context = LocalContext.current
@@ -166,6 +168,7 @@ fun VideoPlayerSection(
             view.setShowNextButton(false)
             view.setFullscreenButtonState(true)
             view.setShowSubtitleButton(true)
+            view.useController = !isPipMode
             view.setFullscreenButtonClickListener {
                 isFullscreen = !isFullscreen
                 val activity = context as? FragmentActivity
@@ -312,12 +315,7 @@ fun VideoPlayerSection(
 
         if (showPip) {
             IconButton(
-                onClick = {
-                    val activity = context as? FragmentActivity
-                    activity?.enterPictureInPictureMode(
-                        android.app.PictureInPictureParams.Builder().build()
-                    )
-                },
+                onClick = { onEnterPipMode() },
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .padding(16.dp)

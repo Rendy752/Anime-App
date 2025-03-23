@@ -1,6 +1,8 @@
 package com.example.animeapp.ui.main
 
+import android.app.PictureInPictureParams
 import android.net.Uri
+import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Column
@@ -43,6 +45,7 @@ fun MainScreen() {
         "recommendations",
         "search",
         "settings" -> true
+
         else -> false
     }
 
@@ -177,12 +180,44 @@ fun MainScreen() {
                         EpisodeDetailComplement::class.java
                     )
 
+                    var isPipMode by remember { mutableStateOf(false) }
+                    val activity = LocalActivity.current
+
+                    DisposableEffect(activity) {
+                        val onPictureInPictureModeChangedCallback = { isInPipMode: Boolean ->
+                            isPipMode = isInPipMode
+                        }
+                        if (activity is MainActivity) {
+                            activity.addOnPictureInPictureModeChangedListener(
+                                onPictureInPictureModeChangedCallback
+                            )
+                            onDispose {
+                                activity.removeOnPictureInPictureModeChangedListener(
+                                    onPictureInPictureModeChangedCallback
+                                )
+                            }
+                        }
+                        onDispose {
+                            if (activity is MainActivity) {
+                                activity.removeOnPictureInPictureModeChangedListener { }
+                            }
+                        }
+                    }
+
                     AnimeWatchScreen(
-                        animeDetail,
-                        episodeId,
-                        episodes,
-                        defaultEpisode,
-                        navController
+                        animeDetail = animeDetail,
+                        episodeId = episodeId,
+                        episodes = episodes,
+                        defaultEpisode = defaultEpisode,
+                        navController = navController,
+                        isPipMode = isPipMode,
+                        onEnterPipMode = {
+                            if (activity is MainActivity) {
+                                activity.enterPictureInPictureMode(
+                                    PictureInPictureParams.Builder().build()
+                                )
+                            }
+                        }
                     )
                 }
             }
