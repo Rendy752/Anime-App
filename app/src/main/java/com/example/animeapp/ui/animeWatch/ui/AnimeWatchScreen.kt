@@ -1,6 +1,11 @@
 package com.example.animeapp.ui.animeWatch.ui
 
+import android.app.Activity
 import android.content.res.Configuration
+import android.os.Build
+import android.view.WindowInsets
+import android.view.WindowManager
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -72,12 +77,26 @@ fun AnimeWatchScreen(
 
     val context = LocalContext.current
     val isRefreshing by viewModel.isRefreshing.collectAsState()
+    var isFullscreen by remember { mutableStateOf(false) }
     val state = rememberPullToRefreshState()
     val networkStateMonitor = remember { NetworkStateMonitor(context) }
     var networkStatus by remember { mutableStateOf(networkStateMonitor.networkStatus.value) }
     var isConnected by remember { mutableStateOf(networkStateMonitor.isConnected.value != false) }
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+    BackHandler(enabled = isFullscreen) {
+        if (isFullscreen) {
+            isFullscreen = false
+            (context as? Activity)?.window?.let { window ->
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                    window.insetsController?.show(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
+                } else {
+                    window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+                }
+            }
+        }
+    }
 
     DisposableEffect(Unit) {
         viewModel.setInitialState(animeDetail, episodes, defaultEpisode)
@@ -117,7 +136,7 @@ fun AnimeWatchScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            if (!isPipMode) {
+            if (!isPipMode && !isFullscreen) {
                 Column {
                     TopAppBar(
                         navigationIcon = {
@@ -200,8 +219,10 @@ fun AnimeWatchScreen(
                                 viewModel,
                                 isPipMode = isPipMode,
                                 onEnterPipMode = onEnterPipMode,
+                                isFullscreen = isFullscreen,
+                                onFullscreenChange = { isFullscreen = it }
                             ) { message -> errorMessage = message }
-                            if (!isPipMode) {
+                            if (!isPipMode && !isFullscreen) {
                                 Text("Content")
                             }
                         }

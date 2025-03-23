@@ -63,6 +63,8 @@ fun VideoPlayerSection(
     viewModel: AnimeWatchViewModel,
     isPipMode: Boolean,
     onEnterPipMode: () -> Unit,
+    isFullscreen: Boolean,
+    onFullscreenChange: (Boolean) -> Unit,
     onPlayerError: (String) -> Unit
 ) {
     val context = LocalContext.current
@@ -82,7 +84,6 @@ fun VideoPlayerSection(
     var speedUpText by remember { mutableStateOf("1x speed") }
     var showSpeedUp by remember { mutableStateOf(false) }
     var showPip by remember { mutableStateOf(false) }
-    var isFullscreen by remember { mutableStateOf(false) }
 
     DisposableEffect(exoPlayer) {
         isLoading = true
@@ -170,12 +171,12 @@ fun VideoPlayerSection(
             view.setShowSubtitleButton(true)
             view.useController = !isPipMode
             view.setFullscreenButtonClickListener {
-                isFullscreen = !isFullscreen
+                onFullscreenChange(!isFullscreen)
                 val activity = context as? FragmentActivity
                 activity?.window?.let { window ->
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                         val controller = window.insetsController
-                        if (isFullscreen) {
+                        if (!isFullscreen) {
                             controller?.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
                             controller?.systemBarsBehavior =
                                 WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
@@ -183,7 +184,7 @@ fun VideoPlayerSection(
                             controller?.show(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
                         }
                     } else {
-                        if (isFullscreen) {
+                        if (!isFullscreen) {
                             window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
                         } else {
                             window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
