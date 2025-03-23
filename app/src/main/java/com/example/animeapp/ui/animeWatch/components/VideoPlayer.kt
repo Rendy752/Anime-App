@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
@@ -57,6 +56,8 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.PictureInPictureAlt
 import com.example.animeapp.ui.animeWatch.AnimeWatchViewModel
 import androidx.compose.material.icons.filled.Speed
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.MaterialTheme
 
 @OptIn(UnstableApi::class, ExperimentalComposeUiApi::class)
 @Composable
@@ -247,16 +248,10 @@ fun VideoPlayer(
                 val bottomBar = view.findViewById<ViewGroup>(RMedia3.id.exo_bottom_bar)
                 val orientation = view.resources.configuration.orientation
                 subtitleView?.setPadding(
-                    0,
-                    0,
-                    0,
+                    0, 0, 0,
                     if (visibility == View.VISIBLE && orientation == Configuration.ORIENTATION_LANDSCAPE || (visibility == View.VISIBLE && (context as? FragmentActivity)?.resources?.configuration?.orientation == Configuration.ORIENTATION_PORTRAIT)) bottomBar.height else 0
                 )
             })
-        }
-
-        if (isLoading) {
-            CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
         }
 
         if (showNextEpisode) {
@@ -297,53 +292,53 @@ fun VideoPlayer(
             }
         }
 
-        if (showIntro) {
-            Button(
-                onClick = {
-                    introOutroHandler.skipIntro(
-                        episodeDetailComplement.sources.intro?.end ?: 0
-                    )
-                },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 76.dp, bottom = 60.dp)
-            ) {
-                Text("Skip Intro")
-            }
+        if (showIntro && !isPipMode) {
+            SkipButton(
+                label = "Skip Intro",
+                skipTime = episodeDetailComplement.sources.intro?.end ?: 0,
+                onSkip = { introOutroHandler.skipIntro(it) },
+                modifier = Modifier.align(Alignment.BottomEnd)
+            )
         }
 
-        if (showOutro) {
-            Button(
-                onClick = {
-                    introOutroHandler.skipOutro(
-                        episodeDetailComplement.sources.outro?.end ?: 0
-                    )
-                },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(end = 76.dp, bottom = 60.dp)
-            ) {
-                Text("Skip Outro")
-            }
+        if (showOutro && !isPipMode) {
+            SkipButton(
+                label = "Skip Outro",
+                skipTime = episodeDetailComplement.sources.outro?.end ?: 0,
+                onSkip = { introOutroHandler.skipOutro(it) },
+                modifier = Modifier.align(Alignment.BottomEnd)
+            )
         }
 
-        if (showPip) {
+        if (showPip && !isPipMode) {
             IconButton(
                 onClick = { onEnterPipMode() },
                 modifier = Modifier
                     .align(Alignment.TopCenter)
-                    .padding(16.dp)
+                    .padding(16.dp),
+                colors = IconButtonDefaults.iconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary
+                )
             ) {
                 Icon(
                     imageVector = Icons.Filled.PictureInPictureAlt,
+                    tint = MaterialTheme.colorScheme.onPrimary,
                     contentDescription = "PIP"
                 )
             }
         }
 
-        if (showSpeedUp) {
+        if (showSpeedUp && !isPipMode) {
             Button(
-                colors = ButtonDefaults.buttonColors(containerColor = Color.Black.copy(alpha = 0.4f)),
+                colors = ButtonDefaults.buttonColors(
+                    disabledContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.38f),
+                    disabledContentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.38f)
+                ),
+                shape = MaterialTheme.shapes.medium,
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 4.dp
+                ),
                 onClick = { },
                 modifier = Modifier
                     .align(Alignment.TopCenter)
@@ -353,12 +348,12 @@ fun VideoPlayer(
                 Icon(
                     imageVector = Icons.Filled.Speed,
                     contentDescription = "Speed Up",
-                    tint = Color.White,
+                    tint = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.padding(end = 4.dp)
                 )
                 Text(
                     text = speedUpText,
-                    color = Color.White,
+                    color = MaterialTheme.colorScheme.onPrimary,
                     fontSize = 16.sp
                 )
             }
