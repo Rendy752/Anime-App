@@ -108,49 +108,30 @@ fun WatchHeaderSection(
                 Row(
                     modifier = Modifier
                         .horizontalScroll(rememberScrollState())
+                        .fillMaxWidth()
                         .padding(8.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-//                    listOf(
-//                        "sub" to servers.sub,
-//                        "dub" to servers.dub,
-//                        "raw" to servers.raw
-//                    ).forEach { (type, servers) ->}
                     episodeSourcesQuery?.let { query ->
-                        if (servers.sub.isNotEmpty()) {
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                ServerSegmentedButton(
-                                    "sub",
-                                    servers.sub,
-                                    onServerSelected = onServerSelected,
-                                    episodeSourcesQuery = query
-                                )
+                        listOf(
+                            "sub" to servers.sub,
+                            "dub" to servers.dub,
+                            "raw" to servers.raw
+                        ).forEach { (type, servers) ->
+                            if (servers.isNotEmpty()) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    ServerSegmentedButton(
+                                        type,
+                                        servers,
+                                        onServerSelected = onServerSelected,
+                                        episodeSourcesQuery = query
+                                    )
+                                }
                             }
-                        }
-                        if (servers.dub.isNotEmpty()) {
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                ServerSegmentedButton(
-                                    "dub",
-                                    servers.dub,
-                                    onServerSelected = onServerSelected,
-                                    episodeSourcesQuery = query
-                                )
-                            }
-                        }
-                        if (servers.raw.isNotEmpty()) {
-                            ServerSegmentedButton(
-                                "raw",
-                                servers.raw,
-                                onServerSelected = onServerSelected,
-                                episodeSourcesQuery = query
-                            )
                         }
                     }
                 }
