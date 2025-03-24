@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animeWatch.components
+package com.example.animeapp.ui.animeWatch.ui
 
 import android.content.Context
 import android.content.res.Configuration
@@ -54,16 +54,20 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.PictureInPictureAlt
-import com.example.animeapp.ui.animeWatch.AnimeWatchViewModel
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import com.example.animeapp.models.Episode
+import com.example.animeapp.models.EpisodeSourcesQuery
+import com.example.animeapp.ui.animeWatch.components.SkipButton
 
 @OptIn(UnstableApi::class, ExperimentalComposeUiApi::class)
 @Composable
-fun VideoPlayer(
+fun VideoPlayerSection(
     episodeDetailComplement: EpisodeDetailComplement,
-    viewModel: AnimeWatchViewModel,
+    episodes: List<Episode>,
+    episodeSourcesQuery: EpisodeSourcesQuery,
+    handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
     isPipMode: Boolean,
     onEnterPipMode: () -> Unit,
     isFullscreen: Boolean,
@@ -119,26 +123,24 @@ fun VideoPlayer(
             override fun onPlaybackStateChanged(playbackState: Int) {
                 super.onPlaybackStateChanged(playbackState)
                 isLoading = false
-                viewModel.episodeDetailComplement.value.data?.servers.let { servers ->
-                    viewModel.episodes.value?.let { episodes ->
-                        if (playbackState == Player.STATE_ENDED) {
-                            playerView.hideController()
-                            if (episodes.isNotEmpty()) {
-                                val currentEpisode = servers?.episodeNo
-                                val nextEpisode =
-                                    episodes.find { it.episodeNo == (currentEpisode?.plus(1) ?: 0) }
-                                if (nextEpisode == null) {
-                                    showNextEpisode = false
-                                } else {
-                                    showNextEpisode = true
-                                    nextEpisodeName = nextEpisode.name
-                                }
-                            } else {
+                episodeDetailComplement.servers.let { servers ->
+                    if (playbackState == Player.STATE_ENDED) {
+                        playerView.hideController()
+                        if (episodes.isNotEmpty()) {
+                            val currentEpisode = servers.episodeNo
+                            val nextEpisode =
+                                episodes.find { it.episodeNo == currentEpisode.plus(1) }
+                            if (nextEpisode == null) {
                                 showNextEpisode = false
+                            } else {
+                                showNextEpisode = true
+                                nextEpisodeName = nextEpisode.name
                             }
                         } else {
                             showNextEpisode = false
                         }
+                    } else {
+                        showNextEpisode = false
                     }
                 }
             }
@@ -273,14 +275,11 @@ fun VideoPlayer(
                         )
                     }
                     IconButton(onClick = {
-                        viewModel.episodeSourcesQuery.value?.let { query ->
-                            viewModel.handleSelectedEpisodeServer(
-                                query.copy(
-                                    id = viewModel.episodes.value?.find { it.name == nextEpisodeName }?.episodeId
-                                        ?: ""
-                                )
+                        handleSelectedEpisodeServer(
+                            episodeSourcesQuery.copy(
+                                id = episodes.find { it.name == nextEpisodeName }?.episodeId ?: ""
                             )
-                        }
+                        )
                         showNextEpisode = false
                     }) {
                         Icon(

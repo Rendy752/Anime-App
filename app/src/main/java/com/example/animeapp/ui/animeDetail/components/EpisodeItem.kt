@@ -9,7 +9,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -17,8 +16,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.Episode
 import com.example.animeapp.ui.common_ui.SkeletonBox
-import com.example.animeapp.ui.theme.defaultEpisode
-import com.example.animeapp.ui.theme.fillerEpisode
+import com.example.animeapp.utils.EpisodeUtils
 import com.example.animeapp.utils.basicContainer
 
 @Composable
@@ -27,12 +25,7 @@ fun EpisodeItem(episode: Episode, query: String, onClick: (String) -> Unit) {
         modifier = Modifier
             .basicContainer(
                 onItemClick = { onClick(episode.episodeId) },
-                backgroundBrush = Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.surfaceContainerHigh,
-                        if (episode.filler) fillerEpisode else defaultEpisode
-                    )
-                )
+                backgroundBrush = EpisodeUtils.getEpisodeBackgroundColor(episode.filler)
             )
             .fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,

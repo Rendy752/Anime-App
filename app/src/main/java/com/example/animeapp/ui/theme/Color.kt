@@ -223,6 +223,7 @@ val dubColor = Color(0xFF81C784)
 val epsColor = Color(0xFFFFB74D)
 
 val defaultEpisode = Color(0xFF646464)
+val favoriteEpisode = Color(0xFFF44336)
 val watchedEpisode = Color(0xFF484848)
 val watchingEpisode = Color(0xFFFFD700)
 val fillerEpisode = Color(0xFFFF8C00)

@@ -19,7 +19,7 @@ fun ContentSegmentedButton(
     onSelectedIndexChange: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val options = listOf("Video", "Details")
+    val options = listOf("Watch", "Details")
 
     SingleChoiceSegmentedButtonRow(modifier = modifier) {
         options.forEachIndexed { index, label ->
@@ -32,9 +32,9 @@ fun ContentSegmentedButton(
                 selected = index == selectedIndex,
                 label = {
                     when (label) {
-                        "Video" -> Icon(
+                        "Watch" -> Icon(
                             imageVector = Icons.Default.LiveTv,
-                            contentDescription = "Video"
+                            contentDescription = "Watch"
                         )
 
                         "Details" -> Icon(

@@ -50,11 +50,11 @@ object ResponseHandler {
             } else {
                 response
             }
-        } catch (e: IOException) {
+        } catch (_: IOException) {
             Response.error(500, "Network error".toResponseBody())
         } catch (e: HttpException) {
             Response.error(e.code(), "HTTP error".toResponseBody())
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             Response.error(500, "Unknown error".toResponseBody())
         }
     }

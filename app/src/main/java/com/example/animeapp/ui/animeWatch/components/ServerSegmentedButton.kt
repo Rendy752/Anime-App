@@ -13,10 +13,11 @@ import com.example.animeapp.models.Server
 
 @Composable
 fun ServerSegmentedButton(
-    servers: List<Server>?,
+    servers: List<Server>,
+    onServerSelected: (Server) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    if (servers.isNullOrEmpty()) return
+    if (servers.isEmpty()) return
 
     val selectedIndex: MutableState<Int> = remember { mutableIntStateOf(0) }
     SingleChoiceSegmentedButtonRow(modifier = modifier) {
@@ -26,7 +27,10 @@ fun ServerSegmentedButton(
                     index = index,
                     count = servers.size
                 ),
-                onClick = { selectedIndex.value = index },
+                onClick = {
+                    selectedIndex.value = index
+                    onServerSelected(server)
+                },
                 selected = index == selectedIndex.value,
                 label = {
                     Text(server.serverName)

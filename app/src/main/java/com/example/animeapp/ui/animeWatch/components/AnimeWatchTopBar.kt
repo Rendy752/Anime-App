@@ -24,6 +24,7 @@ import com.example.animeapp.models.NetworkStatus
 @Composable
 fun AnimeWatchTopBar(
     animeDetail: AnimeDetail,
+    isLandscape: Boolean,
     networkStatus: NetworkStatus?,
     selectedContentIndex: Int,
     onContentIndexChange: (Int) -> Unit,
@@ -65,7 +66,7 @@ fun AnimeWatchTopBar(
                             )
                         }
                     }
-                    ContentSegmentedButton(
+                    if (isLandscape) ContentSegmentedButton(
                         selectedIndex = selectedContentIndex,
                         onSelectedIndexChange = onContentIndexChange
                     )

@@ -231,7 +231,7 @@ fun MainScreen(navController: NavHostController) {
                     AnimeWatchScreen(
                         animeDetail = animeDetail,
                         episodeId = episodeId,
-                        episodes = episodes,
+                        episodesList = episodes,
                         defaultEpisode = defaultEpisode,
                         navController = navController,
                         isPipMode = isPipMode,

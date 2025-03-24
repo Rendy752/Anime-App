@@ -170,7 +170,7 @@ class AnimeWatchFragment : Fragment(), MenuProvider {
             .replace(R.id.player_fragment_container, AnimeWatchPlayerFragment())
             .replace(R.id.header_fragment_container, AnimeWatchHeaderFragment())
             .replace(R.id.episode_fragment_container, AnimeWatchEpisodeFragment())
-            .replace(R.id.info_fragment_container, AnimeWatchInfoFragment())
+//            .replace(R.id.info_fragment_container, AnimeWatchInfoFragment())
             .commit()
     }
 
