@@ -29,7 +29,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -60,6 +59,7 @@ import androidx.compose.material3.MaterialTheme
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeSourcesQuery
 import com.example.animeapp.ui.animeWatch.components.SkipButton
+import com.example.animeapp.utils.basicContainer
 
 @OptIn(UnstableApi::class, ExperimentalComposeUiApi::class)
 @Composable
@@ -260,9 +260,10 @@ fun VideoPlayerSection(
             Column(
                 modifier = Modifier
                     .align(Alignment.Center)
-                    .padding(16.dp)
+                    .basicContainer(isPrimary = true),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(text = nextEpisodeName, color = Color.White)
+                Text(text = nextEpisodeName, color = MaterialTheme.colorScheme.onPrimary)
                 Row {
                     IconButton(onClick = {
                         exoPlayer.seekTo(0)
@@ -272,6 +273,7 @@ fun VideoPlayerSection(
                         Icon(
                             imageVector = Icons.Filled.RestartAlt,
                             contentDescription = "Restart",
+                            tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
                     IconButton(onClick = {
@@ -285,6 +287,7 @@ fun VideoPlayerSection(
                         Icon(
                             imageVector = Icons.Filled.SkipNext,
                             contentDescription = "Skip Next",
+                            tint = MaterialTheme.colorScheme.onPrimary
                         )
                     }
                 }

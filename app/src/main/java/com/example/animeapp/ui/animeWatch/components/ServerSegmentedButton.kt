@@ -51,6 +51,7 @@ fun ServerSegmentedButton(
                     )
                 },
                 selected = index == selectedIndex.value,
+                enabled = index != selectedIndex.value,
                 label = {
                     Text(server.serverName)
                 },

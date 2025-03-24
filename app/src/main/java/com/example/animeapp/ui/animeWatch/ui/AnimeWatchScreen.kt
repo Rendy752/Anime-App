@@ -132,7 +132,7 @@ fun AnimeWatchScreen(
         }
     }
 
-    LaunchedEffect(episodeSourcesQuery) {
+    LaunchedEffect(Unit) {
         episodeSourcesQuery?.let { query ->
             viewModel.handleSelectedEpisodeServer(query.copy(id = episodeId))
         }
