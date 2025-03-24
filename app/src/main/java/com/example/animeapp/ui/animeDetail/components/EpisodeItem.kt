@@ -16,7 +16,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.Episode
 import com.example.animeapp.ui.common_ui.SkeletonBox
-import com.example.animeapp.utils.EpisodeUtils
+import com.example.animeapp.utils.WatchUtils.getEpisodeBackgroundColor
 import com.example.animeapp.utils.basicContainer
 
 @Composable
@@ -25,7 +25,7 @@ fun EpisodeItem(episode: Episode, query: String, onClick: (String) -> Unit) {
         modifier = Modifier
             .basicContainer(
                 onItemClick = { onClick(episode.episodeId) },
-                backgroundBrush = EpisodeUtils.getEpisodeBackgroundColor(episode.filler)
+                backgroundBrush = getEpisodeBackgroundColor(episode.filler)
             )
             .fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,

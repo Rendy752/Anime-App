@@ -215,6 +215,7 @@ fun AnimeWatchScreen(
                                             isFullscreen = isFullscreen,
                                             onFullscreenChange = { isFullscreen = it },
                                             isScreenOn = isScreenOn,
+                                            isLandscape = isLandscape,
                                             onPlayerError = { message -> errorMessage = message },
                                             modifier = videoPlayerModifier,
                                             videoSize = videoSize
@@ -234,12 +235,12 @@ fun AnimeWatchScreen(
                                                                 animeDetail,
                                                                 episodeDetailComplement,
                                                                 episodes,
-                                                                {
-                                                                    viewModel.handleSelectedEpisodeServer(
-                                                                        it
-                                                                    )
-                                                                },
-                                                            )
+                                                                episodeSourcesQuery
+                                                            ) {
+                                                                viewModel.handleSelectedEpisodeServer(
+                                                                    it
+                                                                )
+                                                            }
                                                         }
                                                     } else {
                                                         InfoContentSection(animeDetail)
@@ -259,12 +260,8 @@ fun AnimeWatchScreen(
                                                         animeDetail,
                                                         episodeDetailComplement,
                                                         episodes,
-                                                        {
-                                                            viewModel.handleSelectedEpisodeServer(
-                                                                it
-                                                            )
-                                                        },
-                                                    )
+                                                        episodeSourcesQuery
+                                                    ) { viewModel.handleSelectedEpisodeServer(it) }
                                                 }
                                                 InfoContentSection(animeDetail)
                                             }

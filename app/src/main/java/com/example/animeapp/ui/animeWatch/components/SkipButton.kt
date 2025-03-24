@@ -20,8 +20,8 @@ fun SkipButton(
         onClick = { onSkip(skipTime) },
         modifier = modifier.padding(end = 80.dp, bottom = 80.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = MaterialTheme.colorScheme.primary,
-            contentColor = MaterialTheme.colorScheme.onPrimary
+            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+            contentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f)
         )
     ) {
         Text(label)

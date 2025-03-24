@@ -12,6 +12,7 @@ fun WatchContentSection(
     animeDetail: AnimeDetail,
     episodeDetailComplement: EpisodeDetailComplement,
     episodes: List<Episode>,
+    episodeSourcesQuery: EpisodeSourcesQuery?,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
 ) {
     val currentEpisode =
@@ -21,24 +22,8 @@ fun WatchContentSection(
             title = animeDetail.title,
             episode = currentEpisode,
             episodeDetailComplement = episodeDetailComplement,
-            onServerSelected = { server ->
-                episodeDetailComplement.servers.let { servers ->
-                    val category = when (server) {
-                        in servers.sub -> "sub"
-                        in servers.dub -> "dub"
-                        in servers.raw -> "raw"
-                        else -> "sub"
-                    }
-                    handleSelectedEpisodeServer(
-                        EpisodeSourcesQuery(
-                            servers.episodeId,
-                            server.serverName,
-                            category
-                        )
-                    )
-                }
-            }
-        )
+            episodeSourcesQuery = episodeSourcesQuery
+        ) { handleSelectedEpisodeServer(it) }
     } else {
         Text("Episode not found")
     }

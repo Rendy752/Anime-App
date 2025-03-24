@@ -73,6 +73,7 @@ fun VideoPlayerSection(
     isFullscreen: Boolean,
     onFullscreenChange: (Boolean) -> Unit,
     isScreenOn: Boolean,
+    isLandscape: Boolean,
     onPlayerError: (String) -> Unit,
     modifier: Modifier = Modifier,
     videoSize: Modifier
@@ -248,10 +249,9 @@ fun VideoPlayerSection(
                 showPip = visibility == View.VISIBLE
                 val subtitleView = view.subtitleView
                 val bottomBar = view.findViewById<ViewGroup>(RMedia3.id.exo_bottom_bar)
-                val orientation = view.resources.configuration.orientation
                 subtitleView?.setPadding(
                     0, 0, 0,
-                    if (visibility == View.VISIBLE && orientation == Configuration.ORIENTATION_LANDSCAPE || (visibility == View.VISIBLE && (context as? FragmentActivity)?.resources?.configuration?.orientation == Configuration.ORIENTATION_PORTRAIT)) bottomBar.height else 0
+                    if (visibility == View.VISIBLE && isLandscape || (visibility == View.VISIBLE && (context as? FragmentActivity)?.resources?.configuration?.orientation == Configuration.ORIENTATION_PORTRAIT)) bottomBar.height else 0
                 )
             })
         }
@@ -316,13 +316,13 @@ fun VideoPlayerSection(
                     .align(Alignment.TopCenter)
                     .padding(16.dp),
                 colors = IconButtonDefaults.iconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary
+                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f),
+                    contentColor = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f)
                 )
             ) {
                 Icon(
                     imageVector = Icons.Filled.PictureInPictureAlt,
-                    tint = MaterialTheme.colorScheme.onPrimary,
+                    tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f),
                     contentDescription = "PIP"
                 )
             }
@@ -347,12 +347,12 @@ fun VideoPlayerSection(
                 Icon(
                     imageVector = Icons.Filled.Speed,
                     contentDescription = "Speed Up",
-                    tint = MaterialTheme.colorScheme.onPrimary,
+                    tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f),
                     modifier = Modifier.padding(end = 4.dp)
                 )
                 Text(
                     text = speedUpText,
-                    color = MaterialTheme.colorScheme.onPrimary,
+                    color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f),
                     fontSize = 16.sp
                 )
             }

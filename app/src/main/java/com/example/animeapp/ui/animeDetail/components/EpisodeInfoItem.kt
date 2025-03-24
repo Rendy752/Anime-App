@@ -4,7 +4,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -13,7 +12,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.ui.common_ui.SkeletonBox
@@ -22,7 +20,7 @@ import com.example.animeapp.ui.common_ui.SkeletonBox
 fun EpisodeInfoItem(
     text: String,
     color: Color,
-    icon: ImageVector,
+    icon: @Composable (() -> Unit)?,
     isFirst: Boolean,
     isLast: Boolean,
     hasRight: Boolean
@@ -47,11 +45,7 @@ fun EpisodeInfoItem(
                 horizontalArrangement = Arrangement.Center,
                 modifier = Modifier.padding(8.dp)
             ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp)
-                )
+                icon?.invoke()
                 Spacer(modifier = Modifier.width(4.dp))
                 Text(
                     text = text,

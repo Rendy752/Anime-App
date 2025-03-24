@@ -18,10 +18,17 @@ fun Modifier.basicContainer(
     isError: Boolean = false,
     isPrimary: Boolean = false,
     onItemClick: (() -> Unit)? = null,
-    backgroundBrush: Brush? = null
+    backgroundBrush: Brush? = null,
+    isUsePadding: Boolean = true
 ): Modifier {
     var modifier = this
-        .padding(8.dp)
+        .then(
+            if (isUsePadding) {
+                Modifier.padding(8.dp)
+            } else {
+                Modifier
+            }
+        )
         .clip(RoundedCornerShape(16.dp))
         .border(
             width = 1.dp,
@@ -62,7 +69,14 @@ fun Modifier.basicContainer(
         )
 
     onItemClick?.let { modifier = modifier.clickable { it() } }
-    return modifier.padding(16.dp)
+
+    return modifier.then(
+        if (isUsePadding) {
+            Modifier.padding(16.dp)
+        } else {
+            Modifier
+        }
+    )
 }
 
 @Composable

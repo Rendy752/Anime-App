@@ -1,16 +1,13 @@
 package com.example.animeapp.ui.animeDetail.components
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.LiveTv
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.animeapp.ui.theme.dubColor
 import com.example.animeapp.ui.theme.epsColor
 import com.example.animeapp.ui.theme.subColor
+import com.example.animeapp.utils.WatchUtils.getServerCategoryIcon
 
 @Composable
 fun EpisodeInfoRow(
@@ -21,7 +18,11 @@ fun EpisodeInfoRow(
 ) {
     val counts = listOf(subCount, dubCount, epsCount)
     val colors = listOf(subColor, dubColor, epsColor)
-    val icons = listOf(Icons.Default.Subtitles, Icons.Default.Mic, Icons.Default.LiveTv)
+    val icons = listOf(
+        getServerCategoryIcon("sub"),
+        getServerCategoryIcon("dub"),
+        getServerCategoryIcon("raw")
+    )
 
     val nonNullCounts = counts.filterNotNull()
 
