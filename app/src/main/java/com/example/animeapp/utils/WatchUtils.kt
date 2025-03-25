@@ -16,17 +16,20 @@ import com.example.animeapp.ui.theme.defaultEpisode
 import com.example.animeapp.ui.theme.favoriteEpisode
 import com.example.animeapp.ui.theme.fillerEpisode
 import com.example.animeapp.ui.theme.watchedEpisode
+import com.example.animeapp.ui.theme.watchingEpisode
 
 object WatchUtils {
     @Composable
     fun getEpisodeBackgroundColor(
         isFiller: Boolean,
-        episodeDetailComplement: EpisodeDetailComplement? = null
+        episodeDetailComplement: EpisodeDetailComplement? = null,
+        isWatching: Boolean? = null,
     ): Brush {
         return Brush.verticalGradient(
             colors = listOf(
                 MaterialTheme.colorScheme.surfaceContainerHigh,
-                if (episodeDetailComplement?.isFavorite == true) favoriteEpisode
+                if (isWatching == true) watchingEpisode
+                else if (episodeDetailComplement?.isFavorite == true) favoriteEpisode
                 else if (episodeDetailComplement?.isWatched == true) watchedEpisode
                 else if (isFiller) fillerEpisode
                 else defaultEpisode

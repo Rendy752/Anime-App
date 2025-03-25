@@ -1,7 +1,10 @@
 package com.example.animeapp.ui.animeWatch.components
 
-import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -14,13 +17,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.utils.WatchUtils.getEpisodeBackgroundColor
+import com.example.animeapp.utils.basicContainer
 
 @Composable
 fun WatchEpisodeItem(
@@ -32,24 +38,50 @@ fun WatchEpisodeItem(
 
     Surface(
         modifier = Modifier
-            .background(getEpisodeBackgroundColor(episode.filler, episodeDetailComplement))
-            .pointerInput(Unit) {
-                detectTapGestures(
-                    onLongPress = { showTooltip = true },
-                    onTap = { onEpisodeClick(episode.episodeId) }
-                )
-            },
-        shape = RoundedCornerShape(8.dp),
-        contentColor = Color.White
+            .padding(8.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                shape = RoundedCornerShape(16.dp)
+            ),
     ) {
-        Text(
-            text = episode.episodeNo.toString(),
-            modifier = Modifier.padding(16.dp),
-            color = if (episode.episodeNo == episodeDetailComplement.servers.episodeNo) Color.White else MaterialTheme.colorScheme.onSurface
-        )
+        val isCurrentEpisode = episodeDetailComplement.servers.episodeNo == episode.episodeNo
+        Box(
+            modifier = Modifier
+                .aspectRatio(1f)
+                .basicContainer(
+                    backgroundBrush = getEpisodeBackgroundColor(
+                        episode.filler,
+                        episodeDetailComplement,
+                        isCurrentEpisode,
+                    ),
+                    outerPadding = PaddingValues(0.dp),
+                    innerPadding = PaddingValues(0.dp),
+                )
+                .then(
+                    if (!isCurrentEpisode) {
+                        Modifier.pointerInput(Unit) {
+                            detectTapGestures(
+                                onTap = { onEpisodeClick(episode.episodeId) },
+                                onLongPress = { showTooltip = true },
+                            )
+                        }
+                    } else {
+                        Modifier
+                    }
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = episode.episodeNo.toString(),
+                textAlign = TextAlign.Center,
+            )
+        }
 
         if (showTooltip) {
             Popup(
+                offset = IntOffset(0, -100),
                 alignment = Alignment.TopCenter,
                 onDismissRequest = { showTooltip = false }
             ) {

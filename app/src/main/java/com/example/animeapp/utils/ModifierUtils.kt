@@ -3,6 +3,7 @@ package com.example.animeapp.utils
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -19,16 +20,11 @@ fun Modifier.basicContainer(
     isPrimary: Boolean = false,
     onItemClick: (() -> Unit)? = null,
     backgroundBrush: Brush? = null,
-    isUsePadding: Boolean = true
+    outerPadding: PaddingValues = PaddingValues(8.dp),
+    innerPadding: PaddingValues = PaddingValues(16.dp)
 ): Modifier {
     var modifier = this
-        .then(
-            if (isUsePadding) {
-                Modifier.padding(8.dp)
-            } else {
-                Modifier
-            }
-        )
+        .padding(outerPadding)
         .clip(RoundedCornerShape(16.dp))
         .border(
             width = 1.dp,
@@ -70,13 +66,7 @@ fun Modifier.basicContainer(
 
     onItemClick?.let { modifier = modifier.clickable { it() } }
 
-    return modifier.then(
-        if (isUsePadding) {
-            Modifier.padding(16.dp)
-        } else {
-            Modifier
-        }
-    )
+    return modifier.padding(innerPadding)
 }
 
 @Composable
