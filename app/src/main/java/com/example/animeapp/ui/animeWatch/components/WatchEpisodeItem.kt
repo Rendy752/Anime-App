@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
@@ -76,6 +77,7 @@ fun WatchEpisodeItem(
             Text(
                 text = episode.episodeNo.toString(),
                 textAlign = TextAlign.Center,
+                fontWeight = FontWeight.Bold
             )
         }
 

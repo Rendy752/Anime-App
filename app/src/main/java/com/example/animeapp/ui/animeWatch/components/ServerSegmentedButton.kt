@@ -1,5 +1,6 @@
 package com.example.animeapp.ui.animeWatch.components
 
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
@@ -40,6 +41,12 @@ fun ServerSegmentedButton(
                 shape = SegmentedButtonDefaults.itemShape(
                     index = index,
                     count = servers.size
+                ),
+                colors = SegmentedButtonDefaults.colors(
+                    inactiveContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    inactiveContentColor = MaterialTheme.colorScheme.onSurface,
+                    disabledActiveContainerColor = MaterialTheme.colorScheme.primary,
+                    disabledActiveContentColor = MaterialTheme.colorScheme.onPrimary
                 ),
                 onClick = {
                     selectedIndex.value = index
