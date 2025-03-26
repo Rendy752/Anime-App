@@ -31,13 +31,13 @@ fun WatchEpisode(
             .basicContainer()
             .fillMaxWidth()
     ) {
+        EpisodeJump(animeDetail, episodes, gridState)
         EpisodeNavigation(
             episodeDetailComplement,
             episodes,
             episodeSourcesQuery,
             handleSelectedEpisodeServer,
         )
-        EpisodeJump(animeDetail, episodes, gridState)
         HorizontalDivider(modifier = Modifier
             .fillMaxWidth()
             .padding(top = 8.dp))
@@ -59,8 +59,8 @@ fun WatchEpisodeSkeleton(episodesSize: Int = 12) {
             .basicContainer()
             .fillMaxWidth()
     ) {
-        EpisodeNavigationSkeleton()
         EpisodeJumpSkeleton()
+        EpisodeNavigationSkeleton()
         HorizontalDivider(modifier = Modifier
             .fillMaxWidth()
             .padding(top = 8.dp))
