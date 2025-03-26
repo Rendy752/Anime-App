@@ -106,10 +106,6 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.logging.interceptor)
 
-    // Navigation
-    implementation(libs.androidx.navigation.fragment.ktx.v282)
-    implementation(libs.androidx.navigation.ui.ktx.v282)
-
     // Coil
     implementation(libs.coil.compose)
 
@@ -120,9 +116,6 @@ dependencies {
     implementation(libs.hilt.android)
     implementation(libs.androidx.hilt.navigation.compose)
     kapt(libs.hilt.android.compiler)
-
-    //ViewModel injection
-    kapt(libs.androidx.hilt.compiler)
 
     //Kotlinx Serialization
     implementation(libs.kotlinx.serialization.json)
@@ -147,7 +140,6 @@ dependencies {
 
     // --- Testing Dependencies ---
     testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
     // Mocking Libraries
@@ -155,16 +147,8 @@ dependencies {
     implementation(libs.mockito.core)
     androidTestImplementation(libs.mockito.android)
 
-    // --- Architecture Components Testing ---
-    androidTestImplementation(libs.androidx.core.testing)
-
     // --- Coroutines Testing ---
     androidTestImplementation(libs.kotlinx.coroutines.test)
-
-    testImplementation(libs.byte.buddy)
-    testImplementation(libs.byte.buddy.agent)
-    implementation(libs.androidx.multidex)
-    androidTestImplementation(libs.mockwebserver)
 }
 
 kapt {
