@@ -1,10 +1,10 @@
 package com.example.animeapp.ui.animeSearch.limitAndPagination
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -16,25 +16,33 @@ import com.example.animeapp.ui.common_ui.DropdownInputField
 import com.example.animeapp.utils.Limit
 
 @Composable
-fun LimitAndPaginationContent(
-    page: Int,
-    paginationState: CompletePagination?,
+fun LimitAndPaginationTopBottom(
+    pagination: CompletePagination?,
     selectedLimit: Int,
     onPageChange: (Int) -> Unit,
-    onLimitChange: (Int) -> Unit,
-    isPager: Boolean = true
+    onLimitChange: (Int) -> Unit
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 8.dp, start = 8.dp, end = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        if (isPager && page == 0 || !isPager) {
-            if (paginationState != null) {
-                PaginationButtons(paginationState, onPageChange)
+        if (pagination != null) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                PaginationButtons(pagination) { onPageChange(it) }
             }
         }
-        if (isPager && page == 1 || !isPager) {
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             DropdownInputField(
                 label = "Limit",
                 options = Limit.limitOptions.map { it.toString() },
@@ -43,8 +51,5 @@ fun LimitAndPaginationContent(
                 modifier = Modifier.wrapContentSize()
             )
         }
-    }
-    if (!isPager) {
-        Spacer(modifier = Modifier.height(8.dp))
     }
 }
