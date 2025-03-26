@@ -42,6 +42,7 @@ fun GenreProducerFilterFieldSection(
         Row(
             modifier = Modifier
                 .weight(1f)
+                .height(64.dp)
                 .clip(RoundedCornerShape(8.dp))
                 .background(if (isGenresBottomSheetShow) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer)
                 .border(2.dp, MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(8.dp))
@@ -87,6 +88,7 @@ fun GenreProducerFilterFieldSection(
         Row(
             modifier = Modifier
                 .weight(1f)
+                .height(64.dp)
                 .clip(RoundedCornerShape(8.dp))
                 .background(if (isProducersBottomSheetShow) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer)
                 .border(2.dp, MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(8.dp))

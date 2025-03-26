@@ -52,16 +52,14 @@ fun AnimeSearchScreen(
     val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
-    LaunchedEffect(genre, producer) {
+    LaunchedEffect(Unit) {
         if (genre != null) {
             viewModel.setSelectedGenre(genre)
             viewModel.applyGenreFilters()
         } else if (producer != null) {
             viewModel.setSelectedProducer(producer)
             viewModel.applyProducerFilters()
-        } else {
-            viewModel.searchAnime()
-        }
+        } else if (animeSearchResults.data == null) viewModel.searchAnime()
     }
 
     Scaffold(
