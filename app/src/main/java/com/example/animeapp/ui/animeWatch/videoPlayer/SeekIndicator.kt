@@ -38,7 +38,7 @@ fun SeekIndicator(seekDirection: Int, seekAmount: Long, modifier: Modifier = Mod
             )
         }
         Text(
-            text = "$seekAmount seconds",
+            text = "${if (seekDirection == -1) "-" else ""}$seekAmount seconds",
             color = Color.White,
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold

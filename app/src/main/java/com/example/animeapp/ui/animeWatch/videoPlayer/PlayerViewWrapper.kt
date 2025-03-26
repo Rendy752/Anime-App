@@ -15,6 +15,7 @@ import android.view.WindowManager
 import androidx.annotation.OptIn
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -45,6 +46,10 @@ fun PlayerViewWrapper(
 ) {
     val context = LocalContext.current
     var isSeeking by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isSeeking) {
+        if (!isSeeking) playerView.hideController()
+    }
 
     AndroidView(
         factory = { playerView },
@@ -100,6 +105,7 @@ fun PlayerViewWrapper(
                             onSeek(-1, 10L)
                         }
                         isSeeking = true
+                        view.showController()
                         Handler(Looper.getMainLooper()).postDelayed({
                             isSeeking = false
                         }, 1000)
@@ -123,7 +129,7 @@ fun PlayerViewWrapper(
                 MotionEvent.ACTION_DOWN -> {
                     isHolding = true
                     Handler(Looper.getMainLooper()).postDelayed({
-                        if (isHolding && exoPlayer.playbackParameters.speed != 2f) {
+                        if (isHolding && exoPlayer.playbackParameters.speed != 2f && !isSeeking) {
                             exoPlayer.playbackParameters =
                                 exoPlayer.playbackParameters.withSpeed(2f)
                             view.useController = false
