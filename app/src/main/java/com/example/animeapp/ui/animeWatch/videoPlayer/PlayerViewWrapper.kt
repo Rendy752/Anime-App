@@ -1,9 +1,11 @@
 package com.example.animeapp.ui.animeWatch.videoPlayer
 
+import android.annotation.SuppressLint
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
@@ -13,6 +15,10 @@ import android.view.WindowManager
 import androidx.annotation.OptIn
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
@@ -22,6 +28,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import androidx.media3.ui.R as RMedia3
 
+@SuppressLint("ClickableViewAccessibility")
 @OptIn(UnstableApi::class)
 @Composable
 fun PlayerViewWrapper(
@@ -33,9 +40,12 @@ fun PlayerViewWrapper(
     isLandscape: Boolean,
     onPipVisibilityChange: (Boolean) -> Unit,
     onSpeedChange: (Float, Boolean) -> Unit,
-    onHoldingChange: (Boolean, Boolean) -> Unit
+    onHoldingChange: (Boolean, Boolean) -> Unit,
+    onSeek: (Int, Long) -> Unit
 ) {
     val context = LocalContext.current
+    var isSeeking by remember { mutableStateOf(false) }
+
     AndroidView(
         factory = { playerView },
         modifier = Modifier.fillMaxSize()
@@ -43,6 +53,8 @@ fun PlayerViewWrapper(
         view.player = exoPlayer
         view.setShowPreviousButton(false)
         view.setShowNextButton(false)
+        view.setShowRewindButton(false)
+        view.setShowFastForwardButton(false)
         view.setFullscreenButtonState(true)
         view.setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
         view.setShowSubtitleButton(true)
@@ -72,7 +84,41 @@ fun PlayerViewWrapper(
 
         var isHolding = false
         var isFromHolding = false
+
+        val gestureDetector =
+            GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
+                override fun onDoubleTap(e: MotionEvent): Boolean {
+                    if (!isSeeking) {
+                        val screenWidth = view.width
+                        val tapX = e.x
+
+                        if (tapX > screenWidth / 2) {
+                            exoPlayer.seekTo(exoPlayer.currentPosition + 10000)
+                            onSeek(1, 10L)
+                        } else {
+                            exoPlayer.seekTo(exoPlayer.currentPosition - 10000)
+                            onSeek(-1, 10L)
+                        }
+                        isSeeking = true
+                        Handler(Looper.getMainLooper()).postDelayed({
+                            isSeeking = false
+                        }, 1000)
+                        return true
+                    }
+                    return false
+                }
+
+                override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
+                    if (!isSeeking) {
+                        view.performClick()
+                        return true
+                    }
+                    return false
+                }
+            })
+
         view.setOnTouchListener { _, event ->
+            gestureDetector.onTouchEvent(event)
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     isHolding = true
@@ -99,7 +145,6 @@ fun PlayerViewWrapper(
                 }
             }
             onHoldingChange(isHolding, isFromHolding)
-            if (!isHolding) view.performClick()
             true
         }
 

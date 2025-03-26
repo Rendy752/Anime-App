@@ -1,9 +1,13 @@
 package com.example.animeapp.ui.animeWatch.videoPlayer
 
+import android.os.Handler
+import android.os.Looper
 import androidx.annotation.OptIn
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -45,6 +49,10 @@ fun VideoPlayer(
     var speedUpText by remember { mutableStateOf("1x speed") }
     var showSpeedUp by remember { mutableStateOf(false) }
     var showPip by remember { mutableStateOf(false) }
+    var showSeekIndicator by remember { mutableStateOf(false) }
+    var seekDirection by remember { mutableIntStateOf(0) }
+    var seekAmount by remember { mutableLongStateOf(0L) }
+    var isSeeking by remember { mutableStateOf(false) }
 
     Box(modifier = modifier.then(videoSize)) {
         PlayerViewWrapper(
@@ -62,11 +70,25 @@ fun VideoPlayer(
             onHoldingChange = { holding, fromHolding ->
                 isHolding = holding
                 isFromHolding = fromHolding
+            },
+            onSeek = { direction, amount ->
+                showSeekIndicator = true
+                seekDirection = direction
+                seekAmount = amount
+                isSeeking = true
+                Handler(Looper.getMainLooper()).postDelayed({
+                    showSeekIndicator = false
+                    isSeeking = false
+                }, 1000)
             }
         )
+        if (showSeekIndicator) SeekIndicator(
+            seekDirection = seekDirection,
+            seekAmount = seekAmount,
+            modifier = Modifier.align(Alignment.Center)
+        )
 
-        NextEpisodeOverlay(
-            isShowNextEpisode = isShowNextEpisode,
+        if (isShowNextEpisode) NextEpisodeOverlay(
             nextEpisodeName = nextEpisodeName,
             onRestart = { exoPlayer.seekTo(0); exoPlayer.play(); setShowNextEpisode(false) },
             onSkipNext = {

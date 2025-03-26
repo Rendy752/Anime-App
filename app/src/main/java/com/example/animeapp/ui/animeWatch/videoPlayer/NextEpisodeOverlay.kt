@@ -16,33 +16,30 @@ import com.example.animeapp.utils.basicContainer
 
 @Composable
 fun NextEpisodeOverlay(
-    isShowNextEpisode: Boolean,
     nextEpisodeName: String,
     onRestart: () -> Unit,
     onSkipNext: () -> Unit,
     modifier: Modifier
 ) {
-    if (isShowNextEpisode) {
-        Column(
-            modifier = modifier.basicContainer(isPrimary = true),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(text = nextEpisodeName, color = MaterialTheme.colorScheme.onPrimary)
-            Row {
-                IconButton(onClick = onRestart) {
-                    Icon(
-                        Icons.Filled.RestartAlt,
-                        contentDescription = "Restart",
-                        tint = MaterialTheme.colorScheme.onPrimary
-                    )
-                }
-                IconButton(onClick = onSkipNext) {
-                    Icon(
-                        Icons.Filled.SkipNext,
-                        contentDescription = "Skip Next",
-                        tint = MaterialTheme.colorScheme.onPrimary
-                    )
-                }
+    Column(
+        modifier = modifier.basicContainer(isPrimary = true),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(text = nextEpisodeName, color = MaterialTheme.colorScheme.onPrimary)
+        Row {
+            IconButton(onClick = onRestart) {
+                Icon(
+                    Icons.Filled.RestartAlt,
+                    contentDescription = "Restart",
+                    tint = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+            IconButton(onClick = onSkipNext) {
+                Icon(
+                    Icons.Filled.SkipNext,
+                    contentDescription = "Skip Next",
+                    tint = MaterialTheme.colorScheme.onPrimary
+                )
             }
         }
     }

@@ -69,7 +69,7 @@ fun EpisodesDetailSection(
                             .fillMaxWidth()
                             .padding(bottom = 8.dp)
                     )
-                    repeat(5) {
+                    repeat(3) {
                         EpisodeDetailItemSkeleton()
                     }
                 }

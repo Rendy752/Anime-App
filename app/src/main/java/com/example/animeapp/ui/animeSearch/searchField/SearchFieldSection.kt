@@ -32,9 +32,9 @@ fun SearchFieldSection(
     val scope = rememberCoroutineScope()
     var query by remember { mutableStateOf(initialQuery) }
     val debounce = remember {
-        Debounce(scope, 1000L, { newQuery ->
+        Debounce(scope, 1000L) { newQuery ->
             onQueryChanged(AnimeSearchQueryState(query = newQuery, page = 1))
-        }, null, Debounce.StateType.ANIME_SEARCH)
+        }
     }
 
     var searchViewHeight by remember { mutableStateOf(0.dp) }

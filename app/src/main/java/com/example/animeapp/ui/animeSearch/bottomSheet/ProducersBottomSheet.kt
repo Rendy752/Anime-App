@@ -46,14 +46,14 @@ fun ProducersBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit)
     val scope = rememberCoroutineScope()
     var query by remember { mutableStateOf(producersQueryState.query) }
     val debounce = remember {
-        Debounce(scope, 1000L, { newQuery ->
+        Debounce(scope, 1000L) { newQuery ->
             viewModel.applyProducerQueryStateFilters(
                 producersQueryState.copy(
                     query = newQuery,
                     page = 1
                 )
             )
-        }, viewModel, Debounce.StateType.PRODUCER_SEARCH)
+        }
     }
 
     val context = LocalContext.current
