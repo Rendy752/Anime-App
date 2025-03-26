@@ -29,7 +29,7 @@ import com.example.animeapp.models.Producer
 import com.example.animeapp.ui.animeDetail.AnimeDetailScreen
 import com.example.animeapp.ui.animeRecommendations.AnimeRecommendationsScreen
 import com.example.animeapp.ui.animeSearch.AnimeSearchScreen
-import com.example.animeapp.ui.animeWatch.ui.AnimeWatchScreen
+import com.example.animeapp.ui.animeWatch.AnimeWatchScreen
 import com.example.animeapp.ui.settings.ui.SettingsScreen
 import com.google.gson.Gson
 import java.net.URLDecoder

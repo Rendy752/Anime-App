@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animeWatch.ui
+package com.example.animeapp.ui.animeWatch.videoPlayer
 
 import android.content.Context
 import android.media.AudioManager
@@ -28,7 +28,6 @@ import android.support.v4.media.session.PlaybackStateCompat
 import androidx.compose.runtime.LaunchedEffect
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeSourcesQuery
-import com.example.animeapp.ui.animeWatch.components.VideoPlayer
 
 @OptIn(UnstableApi::class, ExperimentalComposeUiApi::class)
 @Composable

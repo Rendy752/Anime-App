@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animeWatch.ui
+package com.example.animeapp.ui.animeWatch
 
 import android.app.Activity
 import android.content.Intent
@@ -47,8 +47,10 @@ import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.NetworkStatus
-import com.example.animeapp.ui.animeWatch.AnimeWatchViewModel
 import com.example.animeapp.ui.animeWatch.components.AnimeWatchTopBar
+import com.example.animeapp.ui.animeWatch.infoContent.InfoContentSection
+import com.example.animeapp.ui.animeWatch.videoPlayer.VideoPlayerSection
+import com.example.animeapp.ui.animeWatch.watchContent.WatchContentSection
 import com.example.animeapp.ui.common_ui.SkeletonBox
 import com.example.animeapp.utils.NetworkStateMonitor
 import com.example.animeapp.utils.Resource

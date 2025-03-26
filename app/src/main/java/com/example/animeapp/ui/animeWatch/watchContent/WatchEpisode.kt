@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animeWatch.ui
+package com.example.animeapp.ui.animeWatch.watchContent
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,14 +13,11 @@ import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.EpisodeSourcesQuery
-import com.example.animeapp.ui.animeWatch.components.EpisodeJump
-import com.example.animeapp.ui.animeWatch.components.EpisodeNavigation
-import com.example.animeapp.ui.animeWatch.components.EpisodeSelectionGrid
 import com.example.animeapp.utils.basicContainer
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun WatchEpisodeSection(
+fun WatchEpisode(
     animeDetail: AnimeDetail,
     episodeDetailComplement: EpisodeDetailComplement,
     episodes: List<Episode>,

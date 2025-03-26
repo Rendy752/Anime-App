@@ -61,6 +61,7 @@ fun AnimeDetailScreen(animeTitle: String, animeId: Int, navController: NavContro
     val animeDetail by viewModel.animeDetail.collectAsState()
     val animeDetailComplement by viewModel.animeDetailComplement.collectAsState()
     val defaultEpisode by viewModel.defaultEpisode.collectAsState()
+
     val context = LocalContext.current
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     val leftScrollState = rememberLazyListState()

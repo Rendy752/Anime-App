@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animeWatch.components
+package com.example.animeapp.ui.animeWatch.videoPlayer
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button

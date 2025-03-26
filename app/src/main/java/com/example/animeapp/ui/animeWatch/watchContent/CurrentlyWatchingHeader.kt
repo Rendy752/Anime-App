@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animeWatch.components
+package com.example.animeapp.ui.animeWatch.watchContent
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.fillMaxWidth

@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animeWatch.ui
+package com.example.animeapp.ui.animeWatch.infoContent
 
 import androidx.compose.runtime.Composable
 import com.example.animeapp.models.AnimeDetail

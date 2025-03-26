@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animeWatch.ui
+package com.example.animeapp.ui.animeWatch.watchContent
 
 import androidx.compose.runtime.Composable
 import com.example.animeapp.models.AnimeDetail
@@ -17,14 +17,14 @@ fun WatchContentSection(
     val currentEpisode =
         episodes.find { it.episodeId == episodeDetailComplement.servers.episodeId }
     currentEpisode?.let { currentEpisode ->
-        WatchHeaderSection(
+        WatchHeader(
             title = animeDetail.title,
             episode = currentEpisode,
             episodeDetailComplement = episodeDetailComplement,
             episodeSourcesQuery = episodeSourcesQuery
         ) { handleSelectedEpisodeServer(it) }
     }
-    if (episodes.size > 1) WatchEpisodeSection(
+    if (episodes.size > 1) WatchEpisode(
         animeDetail = animeDetail,
         episodeDetailComplement = episodeDetailComplement,
         episodes = episodes,
