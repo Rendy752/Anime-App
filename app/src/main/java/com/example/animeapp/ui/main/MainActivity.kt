@@ -89,14 +89,6 @@ class MainActivity : AppCompatActivity() {
         windowInsetsController.isAppearanceLightStatusBars = useDarkIcons
     }
 
-    override fun onResume() {
-        super.onResume()
-    }
-
-    override fun onPause() {
-        super.onPause()
-    }
-
     @Deprecated("Deprecated in android.app.Activity")
     override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode)
