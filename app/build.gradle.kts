@@ -27,8 +27,16 @@ android {
         val localProperties = Properties()
         localProperties.load(project.rootProject.file("local.properties").inputStream())
         buildConfigField("String", "JIKAN_URL", "\"${localProperties.getProperty("jikan.url")}\"")
-        buildConfigField("String", "ANIMERUNWAY_URL", "\"${localProperties.getProperty("animerunway.url")}\"")
-        buildConfigField("String", "YOUTUBE_URL", "\"${localProperties.getProperty("youtube.url")}\"")
+        buildConfigField(
+            "String",
+            "ANIMERUNWAY_URL",
+            "\"${localProperties.getProperty("animerunway.url")}\""
+        )
+        buildConfigField(
+            "String",
+            "YOUTUBE_URL",
+            "\"${localProperties.getProperty("youtube.url")}\""
+        )
     }
 
     buildTypes {
@@ -50,11 +58,10 @@ android {
     }
     buildFeatures {
         compose = true
-        viewBinding = true
         buildConfig = true
     }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.15"
+    composeOptions.apply {
+        this.kotlinCompilerExtensionVersion = "1.5.15"
     }
     hilt {
         enableAggregatingTask = true
@@ -63,28 +70,22 @@ android {
 
 dependencies {
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
     implementation(libs.material)
-    implementation(libs.androidx.constraintlayout)
-    implementation(libs.androidx.lifecycle.livedata.ktx)
-    implementation(libs.androidx.lifecycle.viewmodel.ktx)
-    implementation(libs.androidx.navigation.fragment.ktx)
-    implementation(libs.androidx.navigation.ui.ktx)
 
     //Compose
-    implementation("androidx.compose.ui:ui:1.7.8")
-    implementation("androidx.compose.material3:material3:1.3.1")
-    implementation("androidx.compose.material3:material3-window-size-class:1.3.1")
-    implementation("androidx.compose.material3:material3-adaptive-navigation-suite:1.4.0-alpha10")
-    implementation("androidx.compose.ui:ui-tooling-preview:1.7.8")
-    implementation("androidx.activity:activity-compose:1.10.1")
-    implementation("androidx.navigation:navigation-compose:2.8.9")
-    implementation("androidx.compose.ui:ui-text-google-fonts:1.7.8")
-    implementation("androidx.compose.material:material-icons-extended:1.7.8")
-    implementation("androidx.compose.material:material:1.7.8")
-    debugImplementation("androidx.compose.ui:ui-tooling:1.7.8")
-    debugImplementation("androidx.compose.ui:ui-test-manifest:1.7.8")
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.7.8")
+    implementation(libs.compose.ui)
+    implementation(libs.compose.material3)
+    implementation(libs.compose.windowsizeclass)
+    implementation(libs.compose.adaptive.navigation.suite)
+    implementation(libs.compose.ui.tooling.preview)
+    implementation(libs.compose.activity)
+    implementation(libs.compose.navigation)
+    implementation(libs.compose.ui.text.google.fonts)
+    implementation(libs.compose.material.icons.extended)
+    implementation(libs.compose.material)
+    debugImplementation(libs.compose.ui.tooling)
+    debugImplementation(libs.compose.ui.test.manifest)
+    androidTestImplementation(libs.compose.ui.test.junit4)
 
     // ViewModel
     implementation(libs.androidx.lifecycle.viewmodel.ktx.v286)
@@ -92,7 +93,6 @@ dependencies {
 
     // Room
     implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.legacy.support.v4)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)
 
@@ -110,32 +110,22 @@ dependencies {
     implementation(libs.androidx.navigation.fragment.ktx.v282)
     implementation(libs.androidx.navigation.ui.ktx.v282)
 
-    // Glide
-    implementation(libs.glide)
-    ksp(libs.compiler)
-
     // Coil
-    implementation("io.coil-kt:coil-compose:2.5.0")
+    implementation(libs.coil.compose)
 
     //PrettyTime
     implementation(libs.prettytime)
 
     //Hilt
     implementation(libs.hilt.android)
-    implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+    implementation(libs.androidx.hilt.navigation.compose)
     kapt(libs.hilt.android.compiler)
-
-    //Flexbox
-    implementation(libs.flexbox)
 
     //ViewModel injection
     kapt(libs.androidx.hilt.compiler)
 
     //Kotlinx Serialization
     implementation(libs.kotlinx.serialization.json)
-
-    //Loading Skeleton
-    implementation(libs.shimmer)
 
     //Splash screen
     implementation(libs.androidx.core.splashscreen)
@@ -144,6 +134,7 @@ dependencies {
     implementation(libs.commons.text)
 
     //Exoplayer
+    implementation(libs.androidx.legacy.support.v4)
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.ui)
     implementation(libs.media3.exoplayer.hls)
