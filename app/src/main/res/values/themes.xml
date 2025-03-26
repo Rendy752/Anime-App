@@ -1,105 +1,10 @@
 <resources>
 
-    <style name="AppTheme" parent="Theme.MaterialComponents.Light.DarkActionBar">
-        <item name="actionBarTheme">@style/CustomActionBarStyle.Light</item>
-        <item name="android:actionBarStyle">@style/CustomActionBarStyle.Light</item>
-    </style>
+    <style name="AppTheme" parent="Theme.Material3.Light.NoActionBar"/>
 
     <style name="Theme.App.Starting" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/nightTextColorPrimary</item>
         <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_app_icon_round</item>
         <item name="postSplashScreenTheme">@style/AppTheme</item>
-    </style>
-
-    <style name="CustomActionBarStyle.Light" parent="ThemeOverlay.AppCompat.ActionBar">
-        <item name="android:background">?android:attr/windowBackground</item>
-        <item name="titleTextStyle">@style/CustomActionBarTitleTextStyle.Light</item>
-    </style>
-
-    <style name="CustomActionBarTitleTextStyle.Light" parent="TextAppearance.AppCompat.Widget.ActionBar.Title">
-        <item name="android:textColor">?attr/colorOnSurface</item>
-    </style>
-
-    <style name="container">
-        <item name="android:background">@drawable/container_light</item>
-        <item name="android:padding">16dp</item>
-    </style>
-
-    <style name="container.withMargin">
-        <item name="android:layout_margin">8dp</item>"
-    </style>
-
-    <style name="AppTheme.AnimeRecommendation">
-        <item name="colorPrimary">@color/colorPrimary</item>
-        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
-        <item name="colorAccent">@color/colorAccent</item>
-        <item name="android:windowBackground">@color/windowBackground</item>
-    </style>
-
-    <style name="AnimeTitle" parent="@android:style/TextAppearance.Medium">
-        <item name="android:textSize">16sp</item>
-        <item name="android:textStyle">bold</item>
-    </style>
-
-    <style name="AnimeTitle.Primary" parent="@android:style/TextAppearance.Medium">
-        <item name="android:textColor">@color/textColorPrimary</item>
-    </style>
-
-    <style name="AnimeTitle.Secondary" parent="@android:style/TextAppearance.Medium">
-        <item name="android:textColor">@color/textColorSecondary</item>
-    </style>
-
-    <style name="RecommendationContent">
-        <item name="android:textColor">@color/textColorSecondary</item>
-        <item name="android:textSize">14sp</item>
-    </style>
-
-    <style name="ColorPrimaryContent">
-        <item name="android:textColor">@color/textColorPrimary</item>
-        <item name="android:textSize">12sp</item>
-        <item name="android:textStyle">bold</item>
-    </style>
-
-    <style name="ColorSecondaryContent">
-        <item name="android:textColor">@color/textColorSecondary</item>
-        <item name="android:textSize">12sp</item>
-    </style>
-
-    <style name="RoundedImageViewShape">
-        <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">8dp</item>
-    </style>
-
-    <style name="LogTextViewStyle">
-        <item name="android:padding">8dp</item>
-        <item name="android:background">@drawable/container_light</item>
-        <item name="android:textColor">@color/textColorPrimary</item>
-        <item name="android:textSize">14sp</item>
-        <item name="android:textStyle">bold</item>
-    </style>
-
-    <style name="LogButtonStyle">
-        <item name="android:backgroundTint">@color/colorPrimary</item>
-        <item name="android:textColor">@color/colorWhite</item>
-        <item name="android:padding">8dp</item>
-        <item name="android:textSize">14sp</item>
-        <item name="android:textStyle">bold</item>
-        <item name="android:textAllCaps">true</item>
-        <item name="android:layout_gravity">center</item>
-        <item name="android:layout_width">match_parent</item>
-        <item name="android:layout_height">wrap_content</item>
-    </style>
-
-    <style name="SynonymTextStyle" parent="@android:style/TextAppearance.Medium">
-        <item name="android:textColor">@color/textColorPrimary</item>
-        <item name="android:background">@drawable/container_light</item>
-        <item name="android:padding">8dp</item>
-        <item name="android:textSize">12sp</item>
-        <item name="android:layout_marginRight">4dp</item>
-    </style>
-
-    <style name="RoundedImageView">
-        <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">50%</item>
     </style>
 </resources>

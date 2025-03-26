@@ -17,18 +17,26 @@ import javax.inject.Inject
 class AnimeRecommendationsViewModel @Inject constructor(
     private val animeRecommendationsRepository: AnimeRecommendationsRepository
 ) : ViewModel() {
-
     private val _animeRecommendations =
         MutableStateFlow<Resource<AnimeRecommendationResponse>>(Resource.Loading())
     val animeRecommendations: StateFlow<Resource<AnimeRecommendationResponse>> =
         _animeRecommendations.asStateFlow()
 
+    private val _isRefreshing = MutableStateFlow(false)
+    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
+
     private var animeRecommendationsPage = 1
 
+    init {
+        getAnimeRecommendations()
+    }
+
     fun getAnimeRecommendations() = viewModelScope.launch {
+        _isRefreshing.value = true
         _animeRecommendations.value = Resource.Loading()
         val response =
             animeRecommendationsRepository.getAnimeRecommendations(animeRecommendationsPage)
         _animeRecommendations.value = ResponseHandler.handleCommonResponse(response)
+        _isRefreshing.value = false
     }
 }

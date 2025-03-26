@@ -11,4 +11,12 @@ data class CommonIdentity(
     val type: String,
     val name: String,
     val url: String
-): Parcelable
+) : Parcelable {
+    fun mapToGenre(): Genre {
+        return Genre(mal_id, name, url, 0)
+    }
+
+    fun mapToProducer(): Producer {
+        return Producer(mal_id, url, listOf(Title(type, name)), null, 0, null, null, 0)
+    }
+}

@@ -1,61 +1,39 @@
 package com.example.animeapp.utils
 
-import android.os.Bundle
-import androidx.fragment.app.Fragment
-import androidx.navigation.NavOptions
-import androidx.navigation.fragment.findNavController
-import com.example.animeapp.R
+import androidx.navigation.NavController
 import com.example.animeapp.models.AnimeDetail
+import com.example.animeapp.models.CommonIdentity
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
+import com.google.gson.Gson
+import java.net.URLEncoder
 
 object Navigation {
-    fun navigateToAnimeDetail(fragment: Fragment, animeId: Int, actionId: Int) {
-        val bundle = Bundle().apply {
-            putInt("id", animeId)
-        }
-        val navOptions = NavOptions.Builder()
-            .setEnterAnim(R.anim.slide_in_right)
-            .setExitAnim(R.anim.slide_out_left)
-            .setPopEnterAnim(R.anim.slide_in_left)
-            .setPopExitAnim(R.anim.slide_out_right)
-            .setPopUpTo(R.id.animeDetailFragment, true)
-            .build()
-
-        fragment.findNavController().navigate(
-            actionId,
-            bundle,
-            navOptions
-        )
-    }
-
-    fun navigateToAnimeWatch(
-        fragment: Fragment,
-        actionId: Int,
+    fun NavController.navigateToAnimeWatch(
         animeDetail: AnimeDetail,
         episodeId: String,
         episodes: List<Episode>,
         defaultEpisode: EpisodeDetailComplement
     ) {
-        val bundle = Bundle().apply {
-            putParcelable("animeDetail", animeDetail)
-            putString("episodeId", episodeId)
-            putParcelableArrayList("episodes", ArrayList(episodes))
-            putParcelable("defaultEpisode", defaultEpisode)
-        }
+        val gson = Gson()
+        val animeDetailJson = URLEncoder.encode(gson.toJson(animeDetail), "UTF-8")
+        val episodeIdEncoded = URLEncoder.encode(episodeId, "UTF-8")
+        val episodesJson = URLEncoder.encode(gson.toJson(episodes), "UTF-8")
+        val defaultEpisodeJson = URLEncoder.encode(gson.toJson(defaultEpisode), "UTF-8")
 
-        val navOptions = NavOptions.Builder()
-            .setEnterAnim(R.anim.slide_in_left)
-            .setExitAnim(R.anim.slide_out_right)
-            .setPopEnterAnim(R.anim.slide_in_right)
-            .setPopExitAnim(R.anim.slide_out_left)
-            .setPopUpTo(R.id.animeDetailFragment, false)
-            .build()
+        navigate("animeWatch/$animeDetailJson/$episodeIdEncoded/$episodesJson/$defaultEpisodeJson")
+    }
 
-        fragment.findNavController().navigate(
-            actionId,
-            bundle,
-            navOptions
-        )
+    fun NavController.navigateWithFilter(
+        data: CommonIdentity?,
+        genreFilter: Boolean = false
+    ) {
+        val gson = Gson()
+        val commonIdentityString = data?.let { URLEncoder.encode(gson.toJson(it), "UTF-8") }
+
+        val genrePart = if (genreFilter) commonIdentityString ?: "null" else "null"
+        val producerPart = if (!genreFilter) commonIdentityString ?: "null" else "null"
+
+        navigate("search/$genrePart/$producerPart")
     }
 }

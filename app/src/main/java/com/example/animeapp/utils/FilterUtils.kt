@@ -1,9 +1,28 @@
 package com.example.animeapp.utils
 
-import com.example.animeapp.databinding.FragmentBottomSheetFilterBinding
 import com.example.animeapp.models.AnimeSearchQueryState
+import com.example.animeapp.models.Episode
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 
 object FilterUtils {
+
+    data class FilterState(
+        val queryState: AnimeSearchQueryState,
+        val type: String = queryState.type ?: "Any",
+        val score: String? = queryState.score?.toString(),
+        val minScore: String? = queryState.minScore?.toString(),
+        val maxScore: String? = queryState.maxScore?.toString(),
+        val status: String = queryState.status ?: "Any",
+        val rating: String = queryState.rating ?: "Any",
+        val sfw: Boolean = queryState.sfw == true,
+        val unapproved: Boolean = queryState.unapproved == true,
+        val orderBy: String = queryState.orderBy ?: "Any",
+        val sort: String = queryState.sort ?: "Any",
+        val enableDateRange: Boolean = queryState.startDate != null || queryState.endDate != null,
+        val startDate: LocalDate? = queryState.startDate?.let { LocalDate.parse(it) },
+        val endDate: LocalDate? = queryState.endDate?.let { LocalDate.parse(it) }
+    )
 
     val TYPE_OPTIONS =
         listOf("Any", "TV", "Movie", "OVA", "Special", "ONA", "Music", "CM", "PV", "TV Special")
@@ -25,58 +44,57 @@ object FilterUtils {
 
     fun collectFilterValues(
         currentState: AnimeSearchQueryState,
-        binding: FragmentBottomSheetFilterBinding
+        type: String?,
+        score: Double?,
+        minScore: Double?,
+        maxScore: Double?,
+        status: String?,
+        rating: String?,
+        sfw: Boolean?,
+        unapproved: Boolean?,
+        orderBy: String?,
+        sort: String?,
+        startDate: LocalDate?,
+        endDate: LocalDate?,
+        enableDateRange: Boolean
     ): AnimeSearchQueryState {
-        binding.apply {
-            val enableDateRange = binding.enableDateRangeCheckBox.isChecked
-
-            val startDate = if (!enableDateRange) {
+        return currentState.defaultLimitAndPage().copy(
+            type = type?.takeIf { it != "Any" },
+            score = if (minScore != null || maxScore != null) {
                 null
             } else {
-                DateUtils.formatDate(
-                    binding.startDatePicker.year,
-                    binding.startDatePicker.month,
-                    binding.startDatePicker.dayOfMonth
-                )
-            }
-
-            val endDate = if (!enableDateRange) {
-                null
-            } else {
-                DateUtils.formatDate(
-                    binding.endDatePicker.year,
-                    binding.endDatePicker.month,
-                    binding.endDatePicker.dayOfMonth
-                )
-            }
-
-            val minScore = minScoreEditText.text.toString().toDoubleOrNull()
-            val maxScore = maxScoreEditText.text.toString().toDoubleOrNull()
-
-            return currentState.defaultLimitAndPage().copy(
-                type = typeSpinner.text.toString().takeIf { it != "Any" },
-                score = if (minScore != null || maxScore != null) {
-                    null
-                } else {
-                    scoreEditText.text.toString().toDoubleOrNull()
-                },
-                minScore = minScore,
-                maxScore = maxScore,
-                status = statusSpinner.text.toString().takeIf { it != "Any" },
-                rating = RATING_DESCRIPTIONS.entries.firstOrNull {
-                    it.value == ratingSpinner.text.toString()
-                }?.key?.takeIf { it != "Any" },
-                sfw = sfwCheckBox.isChecked.takeIf { it },
-                unapproved = unapprovedCheckBox.isChecked.takeIf { it },
-                orderBy = orderBySpinner.text.toString().takeIf { it != "Any" },
-                sort = sortSpinner.text.toString().takeIf { it != "Any" },
-                startDate = startDate,
-                endDate = endDate
-            )
-        }
+                score
+            },
+            minScore = minScore,
+            maxScore = maxScore,
+            status = status?.takeIf { it != "Any" },
+            rating = rating?.takeIf { it != "Any" },
+            sfw = sfw.takeIf { it != false },
+            unapproved = unapproved.takeIf { it != false },
+            orderBy = orderBy?.takeIf { it != "Any" },
+            sort = sort?.takeIf { it != "Any" },
+            startDate = if (enableDateRange) startDate?.let { formatDate(it) } else null,
+            endDate = if (enableDateRange) endDate?.let { formatDate(it) } else null
+        )
     }
 
     fun getRatingDescription(ratingCode: String): String {
         return RATING_DESCRIPTIONS[ratingCode] ?: ratingCode
+    }
+
+    private fun formatDate(date: LocalDate): String {
+        val formatter = DateTimeFormatter.ISO_LOCAL_DATE
+        return date.format(formatter)
+    }
+
+    fun filterEpisodes(episodes: List<Episode>, query: String): List<Episode> {
+        return if (query.isBlank()) {
+            episodes
+        } else {
+            episodes.filter { episode ->
+                episode.episodeNo.toString().contains(query, ignoreCase = true) ||
+                        episode.name.contains(query, ignoreCase = true)
+            }
+        }
     }
 }

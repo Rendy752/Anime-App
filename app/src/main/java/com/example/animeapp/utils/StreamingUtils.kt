@@ -1,12 +1,5 @@
 package com.example.animeapp.utils
 
-import android.content.Context
-import android.graphics.drawable.Drawable
-import android.graphics.drawable.GradientDrawable
-import android.graphics.drawable.LayerDrawable
-import androidx.core.content.ContextCompat
-import com.example.animeapp.R
-import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeServersResponse
 import com.example.animeapp.models.EpisodeSourcesQuery
 import com.example.animeapp.models.EpisodeSourcesResponse
@@ -66,26 +59,5 @@ object StreamingUtils {
         } catch (e: Exception) {
             Resource.Error(e.message ?: "An error occurred")
         }
-    }
-
-    fun getEpisodeBackground(
-        context: Context,
-        episode: Episode,
-        selectedEpisodeNo: Int? = null
-    ): Drawable {
-        val backgroundColor = if (episode.episodeNo == selectedEpisodeNo) {
-            ContextCompat.getColor(context, R.color.watching_episode)
-        } else if (episode.filler) {
-            ContextCompat.getColor(context, R.color.filler_episode)
-        } else {
-            ContextCompat.getColor(context, R.color.default_episode)
-        }
-
-        val backgroundDrawable = GradientDrawable().apply {
-            setColor(backgroundColor)
-            cornerRadius = 16f
-        }
-
-        return LayerDrawable(arrayOf(backgroundDrawable))
     }
 }

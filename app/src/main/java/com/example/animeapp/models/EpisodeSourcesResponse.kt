@@ -13,4 +13,13 @@ data class EpisodeSourcesResponse(
     val sources: List<Source>,
     val anilistID: Int,
     val malID: Int
-): Parcelable
+) : Parcelable
+
+val episodeSourcesResponsePlaceholder = EpisodeSourcesResponse(
+    tracks = listOf(trackPlaceholder),
+    intro = timeRangePlaceholder,
+    outro = timeRangePlaceholder,
+    sources = listOf(sourcePlaceholder),
+    anilistID = 1,
+    malID = 1
+)

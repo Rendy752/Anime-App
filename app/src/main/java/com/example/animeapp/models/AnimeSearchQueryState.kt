@@ -25,8 +25,7 @@ data class AnimeSearchQueryState(
     val endDate: String? = null
 ) {
     fun isDefault(): Boolean {
-        return query.isBlank() &&
-                type == null &&
+        return type == null &&
                 score == null &&
                 minScore == null &&
                 maxScore == null &&

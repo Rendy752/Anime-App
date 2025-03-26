@@ -12,3 +12,10 @@ data class Track(
     val kind: String? = null,
     val default: Boolean? = false
 ): Parcelable
+
+val trackPlaceholder = Track(
+    file = "https://cdn.myanimelist.net/images/",
+    label = "English",
+    kind = "sub",
+    default = true
+)

@@ -4,10 +4,6 @@ import android.media.AudioAttributes
 import android.media.AudioManager
 import android.media.AudioManager.OnAudioFocusChangeListener
 import android.media.AudioFocusRequest
-import android.os.Handler
-import android.os.Looper
-import android.view.View
-import android.widget.Button
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes as Media3AudioAttributes
 import androidx.media3.common.MediaItem
@@ -27,22 +23,11 @@ object HlsPlayerUtil {
     private var audioFocusRequest: AudioFocusRequest? = null
     private var audioFocusRequested = false
 
-    private var handler: Handler? = null
-
     @OptIn(UnstableApi::class)
     fun initializePlayer(
         player: ExoPlayer,
-        introButton: Button,
-        outroButton: Button,
         videoData: EpisodeSourcesResponse
     ) {
-        introButton.visibility = View.GONE
-        outroButton.visibility = View.GONE
-        introButton.setOnClickListener(null)
-        outroButton.setOnClickListener(null)
-
-        val introOutroHandler = IntroOutroHandler(player, introButton, outroButton, videoData)
-        introOutroHandler.let { handler?.removeCallbacks(it) }
 
         if (videoData.sources.isNotEmpty() && videoData.sources[0].type == "hls") {
 
@@ -66,9 +51,6 @@ object HlsPlayerUtil {
 
             player.setMediaItem(mediaItemBuilder.build())
             player.prepare()
-
-            handler = Handler(Looper.getMainLooper())
-            handler?.post(introOutroHandler)
 
             audioFocusChangeListener = OnAudioFocusChangeListener { focusChange ->
                 when (focusChange) {
@@ -129,7 +111,5 @@ object HlsPlayerUtil {
     fun releasePlayer(playerView: PlayerView) {
         playerView.player?.release()
         playerView.player = null
-        handler?.removeCallbacksAndMessages(null)
-        handler = null
     }
 }

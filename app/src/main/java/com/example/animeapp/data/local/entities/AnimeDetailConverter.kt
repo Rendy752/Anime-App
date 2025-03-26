@@ -2,7 +2,6 @@ package com.example.animeapp.data.local.entities
 
 import androidx.room.TypeConverter
 import com.example.animeapp.models.*
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 class AnimeDetailConverter {

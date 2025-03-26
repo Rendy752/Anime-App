@@ -8,6 +8,7 @@ plugins {
     id("kotlin-parcelize")
     id("kotlinx-serialization")
     id("com.google.devtools.ksp")
+    kotlin("plugin.compose")
 }
 
 android {
@@ -26,8 +27,16 @@ android {
         val localProperties = Properties()
         localProperties.load(project.rootProject.file("local.properties").inputStream())
         buildConfigField("String", "JIKAN_URL", "\"${localProperties.getProperty("jikan.url")}\"")
-        buildConfigField("String", "ANIMERUNWAY_URL", "\"${localProperties.getProperty("animerunway.url")}\"")
-        buildConfigField("String", "YOUTUBE_URL", "\"${localProperties.getProperty("youtube.url")}\"")
+        buildConfigField(
+            "String",
+            "ANIMERUNWAY_URL",
+            "\"${localProperties.getProperty("animerunway.url")}\""
+        )
+        buildConfigField(
+            "String",
+            "YOUTUBE_URL",
+            "\"${localProperties.getProperty("youtube.url")}\""
+        )
     }
 
     buildTypes {
@@ -48,8 +57,11 @@ android {
         jvmTarget = "17"
     }
     buildFeatures {
-        viewBinding = true
+        compose = true
         buildConfig = true
+    }
+    composeOptions.apply {
+        this.kotlinCompilerExtensionVersion = "1.5.15"
     }
     hilt {
         enableAggregatingTask = true
@@ -58,13 +70,22 @@ android {
 
 dependencies {
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
     implementation(libs.material)
-    implementation(libs.androidx.constraintlayout)
-    implementation(libs.androidx.lifecycle.livedata.ktx)
-    implementation(libs.androidx.lifecycle.viewmodel.ktx)
-    implementation(libs.androidx.navigation.fragment.ktx)
-    implementation(libs.androidx.navigation.ui.ktx)
+
+    //Compose
+    implementation(libs.compose.ui)
+    implementation(libs.compose.material3)
+    implementation(libs.compose.windowsizeclass)
+    implementation(libs.compose.adaptive.navigation.suite)
+    implementation(libs.compose.ui.tooling.preview)
+    implementation(libs.compose.activity)
+    implementation(libs.compose.navigation)
+    implementation(libs.compose.ui.text.google.fonts)
+    implementation(libs.compose.material.icons.extended)
+    implementation(libs.compose.material)
+    debugImplementation(libs.compose.ui.tooling)
+    debugImplementation(libs.compose.ui.test.manifest)
+    androidTestImplementation(libs.compose.ui.test.junit4)
 
     // ViewModel
     implementation(libs.androidx.lifecycle.viewmodel.ktx.v286)
@@ -72,8 +93,6 @@ dependencies {
 
     // Room
     implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.legacy.support.v4)
-    implementation(libs.androidx.fragment.ktx)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)
 
@@ -87,33 +106,19 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.logging.interceptor)
 
-    // Navigation
-    implementation(libs.androidx.navigation.fragment.ktx.v282)
-    implementation(libs.androidx.navigation.ui.ktx.v282)
-
-    // Glide
-    implementation(libs.glide)
-    ksp(libs.compiler)
+    // Coil
+    implementation(libs.coil.compose)
 
     //PrettyTime
     implementation(libs.prettytime)
 
     //Hilt
     implementation(libs.hilt.android)
+    implementation(libs.androidx.hilt.navigation.compose)
     kapt(libs.hilt.android.compiler)
-
-    //Flexbox
-    implementation(libs.flexbox)
-
-    //ViewModel injection
-    kapt(libs.androidx.hilt.compiler)
-    implementation(libs.androidx.hilt.navigation.fragment)
 
     //Kotlinx Serialization
     implementation(libs.kotlinx.serialization.json)
-
-    //Loading Skeleton
-    implementation(libs.shimmer)
 
     //Splash screen
     implementation(libs.androidx.core.splashscreen)
@@ -122,6 +127,7 @@ dependencies {
     implementation(libs.commons.text)
 
     //Exoplayer
+    implementation(libs.androidx.legacy.support.v4)
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.ui)
     implementation(libs.media3.exoplayer.hls)
@@ -134,7 +140,6 @@ dependencies {
 
     // --- Testing Dependencies ---
     testImplementation(libs.junit)
-    androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
 
     // Mocking Libraries
@@ -142,16 +147,8 @@ dependencies {
     implementation(libs.mockito.core)
     androidTestImplementation(libs.mockito.android)
 
-    // --- Architecture Components Testing ---
-    androidTestImplementation(libs.androidx.core.testing)
-
     // --- Coroutines Testing ---
     androidTestImplementation(libs.kotlinx.coroutines.test)
-
-    testImplementation(libs.byte.buddy)
-    testImplementation(libs.byte.buddy.agent)
-    implementation(libs.androidx.multidex)
-    androidTestImplementation(libs.mockwebserver)
 }
 
 kapt {

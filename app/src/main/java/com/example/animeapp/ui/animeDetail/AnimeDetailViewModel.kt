@@ -1,6 +1,5 @@
 package com.example.animeapp.ui.animeDetail
 
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.animeapp.models.AnimeAniwatchSearchResponse
@@ -19,6 +18,9 @@ import com.example.animeapp.utils.ResponseHandler
 import com.example.animeapp.utils.StreamingUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import retrofit2.Response
 import javax.inject.Inject
@@ -28,13 +30,20 @@ class AnimeDetailViewModel @Inject constructor(
     private val animeDetailRepository: AnimeDetailRepository,
     private val animeStreamingRepository: AnimeStreamingRepository
 ) : ViewModel() {
-    val animeDetail: MutableLiveData<Resource<AnimeDetailResponse>?> = MutableLiveData()
-    val animeDetailComplement: MutableLiveData<Resource<AnimeDetailComplement?>> = MutableLiveData()
-    val defaultEpisode: MutableLiveData<EpisodeDetailComplement?> = MutableLiveData()
+
+    private val _animeDetail = MutableStateFlow<Resource<AnimeDetailResponse>?>(null)
+    val animeDetail: StateFlow<Resource<AnimeDetailResponse>?> = _animeDetail.asStateFlow()
+
+    private val _animeDetailComplement = MutableStateFlow<Resource<AnimeDetailComplement?>?>(null)
+    val animeDetailComplement: StateFlow<Resource<AnimeDetailComplement?>?> =
+        _animeDetailComplement.asStateFlow()
+
+    private val _defaultEpisode = MutableStateFlow<EpisodeDetailComplement?>(null)
+    val defaultEpisode: StateFlow<EpisodeDetailComplement?> = _defaultEpisode.asStateFlow()
 
     fun handleAnimeDetail(id: Int) = viewModelScope.launch {
-        animeDetail.postValue(Resource.Loading())
-        animeDetail.postValue(getAnimeDetail(id))
+        _animeDetail.value = Resource.Loading()
+        _animeDetail.value = getAnimeDetail(id)
     }
 
     suspend fun getAnimeDetail(id: Int): Resource<AnimeDetailResponse> {
@@ -42,31 +51,34 @@ class AnimeDetailViewModel @Inject constructor(
     }
 
     fun handleEpisodes() = viewModelScope.launch {
-        animeDetailComplement.postValue(Resource.Loading())
-        val detailData =
-            animeDetail.value?.data?.data
-                ?: return@launch animeDetailComplement.postValue(Resource.Error("Anime data not available"))
+        _animeDetailComplement.value = Resource.Loading()
+        val detailData = _animeDetail.value?.data?.data
+            ?: run {
+                _animeDetailComplement.value = Resource.Error("Anime data not available")
+                return@launch
+            }
         if (handleCachedAnimeDetailComplement(detailData)) return@launch
 
-        if (detailData.type == "Music") return@launch animeDetailComplement.postValue(
-            Resource.Error("Anime is a music, no episodes available")
-        )
-        if (detailData.status == "Not yet aired") return@launch animeDetailComplement.postValue(
-            Resource.Error("Anime not yet aired")
-        )
+        if (detailData.type == "Music") {
+            _animeDetailComplement.value =
+                Resource.Error("Anime is a music, no episodes available")
+            return@launch
+        }
+        if (detailData.status == "Not yet aired") {
+            _animeDetailComplement.value = Resource.Error("Anime not yet aired")
+            return@launch
+        }
         val title = detailData.title
-        val englishTitle = animeDetail.value?.data?.data?.title_english ?: ""
+        val englishTitle = _animeDetail.value?.data?.data?.title_english ?: ""
         val searchTitle = when {
             englishTitle.isNotEmpty() -> englishTitle.lowercase()
             else -> title.lowercase()
         }
         val response = animeStreamingRepository.getAnimeAniwatchSearch(searchTitle)
         if (!response.isSuccessful) {
-            return@launch animeDetailComplement.postValue(
-                Resource.Error(
-                    response.errorBody()?.string() ?: "Unknown error"
-                )
-            )
+            _animeDetailComplement.value =
+                Resource.Error(response.errorBody()?.string() ?: "Unknown error")
+            return@launch
         }
         handleValidEpisode(response)
     }
@@ -82,15 +94,15 @@ class AnimeDetailViewModel @Inject constructor(
             )
 
             if (updatedAnimeDetail == null) {
-                animeDetailComplement.postValue(Resource.Error("Failed to fetch or update episodes"))
+                _animeDetailComplement.value = Resource.Error("Failed to fetch or update episodes")
             } else {
-                animeDetailComplement.postValue(Resource.Success(updatedAnimeDetail))
+                _animeDetailComplement.value = Resource.Success(updatedAnimeDetail)
             }
 
             cachedAnimeDetail.episodes.firstOrNull()?.episodeId?.let { episodeId ->
                 val cachedEpisodeDetailComplement =
                     animeDetailRepository.getCachedEpisodeDetailComplement(episodeId)
-                defaultEpisode.postValue(cachedEpisodeDetailComplement)
+                _defaultEpisode.value = cachedEpisodeDetailComplement
             }
 
             return true
@@ -101,28 +113,22 @@ class AnimeDetailViewModel @Inject constructor(
     private fun handleValidEpisode(response: Response<AnimeAniwatchSearchResponse>) =
         viewModelScope.launch {
             if (!response.isSuccessful) {
-                animeDetailComplement.postValue(
-                    Resource.Error(
-                        response.errorBody()?.string() ?: "Unknown error"
-                    )
-                )
+                _animeDetailComplement.value =
+                    Resource.Error(response.errorBody()?.string() ?: "Unknown error")
                 return@launch
             }
 
             val resultResponse = response.body() ?: run {
-                animeDetailComplement.postValue(
-                    Resource.Error(
-                        response.errorBody()?.string() ?: "Unknown error"
-                    )
-                )
+                _animeDetailComplement.value =
+                    Resource.Error(response.errorBody()?.string() ?: "Unknown error")
                 return@launch
             }
 
-            animeDetail.value?.data?.data?.let { animeDetail ->
+            _animeDetail.value?.data?.data?.let { animeDetail ->
                 val animes = FindAnimeTitle.findClosestAnimes(resultResponse, animeDetail)
 
                 if (animes.isEmpty()) {
-                    animeDetailComplement.postValue(Resource.Error("No matching anime found"))
+                    _animeDetailComplement.value = Resource.Error("No matching anime found")
                     return@launch
                 }
 
@@ -163,9 +169,8 @@ class AnimeDetailViewModel @Inject constructor(
                         cachedAnimeDetailComplement.let {
                             animeDetailRepository.insertCachedAnimeDetailComplement(it)
                         }
-                        animeDetailComplement.postValue(
+                        _animeDetailComplement.value =
                             Resource.Success(cachedAnimeDetailComplement)
-                        )
 
                         defaultEpisodeServersResponse.data?.let { servers ->
                             defaultEpisodeSourcesResponse.data?.let { sources ->
@@ -185,7 +190,7 @@ class AnimeDetailViewModel @Inject constructor(
                                     }
                                 cachedEpisodeDetailComplement?.let {
                                     animeDetailRepository.insertCachedEpisodeDetailComplement(it)
-                                    defaultEpisode.postValue(cachedEpisodeDetailComplement)
+                                    _defaultEpisode.value = cachedEpisodeDetailComplement
                                 }
                             }
                         }
@@ -193,7 +198,7 @@ class AnimeDetailViewModel @Inject constructor(
                     }
                 }
 
-                animeDetailComplement.postValue(Resource.Error("No matching anime found"))
+                _animeDetailComplement.value = Resource.Error("No matching anime found")
             }
         }
 
@@ -213,5 +218,5 @@ class AnimeDetailViewModel @Inject constructor(
         }.await()
 
     private fun checkEpisodeSourceMalId(response: Resource<EpisodeSourcesResponse>): Boolean =
-        animeDetail.value?.data?.data?.mal_id == response.data?.malID
+        _animeDetail.value?.data?.data?.mal_id == response.data?.malID
 }

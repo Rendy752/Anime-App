@@ -11,7 +11,7 @@ data class EpisodeSourcesQuery(
     val id: String,
     var server: String,
     val category: String
-): Parcelable {
+) : Parcelable {
     @IgnoredOnParcel
     private val serverMap = mapOf(
         "vidsrc" to "vidstreaming"
@@ -21,3 +21,9 @@ data class EpisodeSourcesQuery(
         this.server = serverMap.getOrDefault(server, server)
     }
 }
+
+val episodeSourcesQueryPlaceholder = EpisodeSourcesQuery(
+    id = "watch-1",
+    server = "vidstreaming",
+    category = "sub"
+)

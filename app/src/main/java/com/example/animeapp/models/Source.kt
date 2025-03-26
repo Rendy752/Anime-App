@@ -9,4 +9,9 @@ import kotlinx.serialization.Serializable
 data class Source(
     val url: String,
     val type: String
-): Parcelable
+) : Parcelable
+
+val sourcePlaceholder = Source(
+    url = "",
+    type = ""
+)

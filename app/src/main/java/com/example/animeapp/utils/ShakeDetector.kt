@@ -70,7 +70,7 @@ class ShakeDetector(private val onShakeListener: () -> Unit) : SensorEventListen
     override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
 
     companion object {
-        private const val SHAKE_THRESHOLD = 800
+        private const val SHAKE_THRESHOLD = 500
         private const val DIRECTION_THRESHOLD = 2
         private const val REQUIRED_SHAKES = 6
     }
