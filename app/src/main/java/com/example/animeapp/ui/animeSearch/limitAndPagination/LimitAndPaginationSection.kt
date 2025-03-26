@@ -8,43 +8,43 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.animeapp.ui.animeSearch.AnimeSearchViewModel
+import com.example.animeapp.models.AnimeSearchQueryState
+import com.example.animeapp.models.CompletePagination
 
 @Composable
 @OptIn(ExperimentalFoundationApi::class)
 fun LimitAndPaginationSection(
-    viewModel: AnimeSearchViewModel,
+    query: AnimeSearchQueryState,
+    pagination: CompletePagination?,
+    onQueryChanged: (AnimeSearchQueryState) -> Unit,
     useHorizontalPager: Boolean = true
 ) {
-    val animeSearchQueryState by viewModel.queryState.collectAsState()
-    val animeSearchData by viewModel.animeSearchResults.collectAsState()
-    var selectedLimit by remember { mutableIntStateOf(animeSearchQueryState.limit ?: 10) }
-    val paginationState = animeSearchData.data?.pagination
+    var selectedLimit by remember { mutableIntStateOf(query.limit ?: 10) }
 
-    if (paginationState != null && useHorizontalPager) HorizontalDivider()
+    if (pagination != null && useHorizontalPager) HorizontalDivider()
 
     if (useHorizontalPager) {
         HorizontalPager(state = rememberPagerState { 2 }, Modifier.padding(8.dp)) { page ->
             LimitAndPaginationContent(
                 page = page,
-                paginationState = paginationState,
+                paginationState = pagination,
                 selectedLimit = selectedLimit,
-                onPageChange = { viewModel.applyFilters(animeSearchQueryState.copy(page = it)) },
+                onPageChange = { onQueryChanged(query.copy(page = it)) },
                 onLimitChange = {
                     selectedLimit = it
-                    viewModel.applyFilters(animeSearchQueryState.copy(limit = it, page = 1))
+                    onQueryChanged(query.copy(limit = it, page = 1))
                 }
             )
         }
     } else {
         LimitAndPaginationContent(
             page = 0,
-            paginationState = paginationState,
+            paginationState = pagination,
             selectedLimit = selectedLimit,
-            onPageChange = { viewModel.applyFilters(animeSearchQueryState.copy(page = it)) },
+            onPageChange = { onQueryChanged(query.copy(page = it)) },
             onLimitChange = {
                 selectedLimit = it
-                viewModel.applyFilters(animeSearchQueryState.copy(limit = it, page = 1))
+                onQueryChanged(query.copy(limit = it, page = 1))
             },
             isPager = false
         )

@@ -147,7 +147,12 @@ fun AnimeSearchScreen(
                                 setProducersBottomSheet = { isProducersBottomSheetShow = it }
                             )
                             HorizontalDivider(modifier = Modifier.padding(bottom = 8.dp))
-                            LimitAndPaginationSection(viewModel, false)
+                            LimitAndPaginationSection(
+                                queryState,
+                                animeSearchResults.data?.pagination,
+                                viewModel::applyFilters,
+                                false
+                            )
                         }
                         VerticalDivider()
                         Box(
@@ -195,7 +200,11 @@ fun AnimeSearchScreen(
                                 viewModel.applyGenreFilters()
                             }
                         }
-                        LimitAndPaginationSection(viewModel)
+                        LimitAndPaginationSection(
+                            queryState,
+                            animeSearchResults.data?.pagination,
+                            viewModel::applyFilters
+                        )
                     }
                 }
             }
