@@ -20,9 +20,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.Episode
+import com.example.animeapp.ui.common_ui.SkeletonBox
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -71,6 +73,24 @@ fun EpisodeJump(
                 focusedLabelColor = MaterialTheme.colorScheme.primary,
                 unfocusedLabelColor = MaterialTheme.colorScheme.primary,
             )
+        )
+    }
+}
+
+@Preview
+@Composable
+fun EpisodeJumpSkeleton() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        SkeletonBox(width = 150.dp, height = 16.dp)
+        SkeletonBox(
+            height = 56.dp,
+            modifier = Modifier
+                .padding(top = 8.dp)
+                .weight(1f)
         )
     }
 }

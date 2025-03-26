@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
@@ -55,6 +56,22 @@ fun EpisodeSelectionGrid(
                     )
                 }
             )
+        }
+    }
+}
+
+@Preview
+@Composable
+fun EpisodeSelectionGridSkeleton(episodesSize: Int = 12) {
+    LazyVerticalGrid(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(max = 300.dp)
+            .wrapContentHeight(),
+        columns = GridCells.Fixed(4),
+    ) {
+        items(episodesSize) {
+            WatchEpisodeItemSkeleton()
         }
     }
 }

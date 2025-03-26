@@ -12,3 +12,10 @@ data class Episode(
     val episodeId: String,
     val filler: Boolean
 ): Parcelable
+
+val episodePlaceholder = Episode(
+    name = "Title of Episode",
+    episodeNo = 1,
+    episodeId = "watch-1",
+    filler = false
+)

@@ -32,3 +32,11 @@ fun WatchContentSection(
         handleSelectedEpisodeServer = handleSelectedEpisodeServer
     )
 }
+
+@Composable
+fun WatchContentSectionSkeleton(episodesSize: Int?) {
+    WatchHeaderSkeleton()
+    if (episodesSize != null && episodesSize > 1) {
+        WatchEpisodeSkeleton(episodesSize)
+    }
+}

@@ -13,3 +13,11 @@ data class EpisodeServersResponse(
     val dub: List<Server>,
     val raw: List<Server>
 ): Parcelable
+
+val episodeServersResponsePlaceholder = EpisodeServersResponse(
+    episodeId = "watch-1",
+    episodeNo = 1,
+    sub = listOf(serverPlaceholder),
+    dub = listOf(serverPlaceholder),
+    raw = listOf(serverPlaceholder)
+)

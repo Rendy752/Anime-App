@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
@@ -46,5 +47,18 @@ fun EpisodeNavigation(
                 )
             }
         }
+    }
+}
+
+@Preview
+@Composable
+fun EpisodeNavigationSkeleton() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        EpisodeNavigationButtonSkeleton(modifier = Modifier.weight(1f), isPrevious = true)
+        EpisodeNavigationButtonSkeleton(modifier = Modifier.weight(1f), isPrevious = false)
     }
 }

@@ -10,12 +10,14 @@ import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Recommend
 import androidx.compose.material.icons.filled.Score
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -76,13 +78,16 @@ fun AnimeSearchItem(
                     .padding(end = 16.dp),
             ) {
                 Text(
+                    modifier = Modifier.fillMaxWidth(),
                     text = if (errorTitle.isNullOrEmpty()) anime?.title
                         ?: "Unknown Title" else errorTitle,
                     style = MaterialTheme.typography.titleLarge,
                     fontSize = 14.sp,
-                    maxLines = 1,
+                    maxLines = 2,
+                    textAlign = TextAlign.Center,
                     overflow = TextOverflow.Ellipsis
                 )
+                HorizontalDivider()
                 if (errorTitle.isNullOrEmpty()) {
                     Row(
                         modifier = Modifier.padding(top = 2.dp),
@@ -94,6 +99,7 @@ fun AnimeSearchItem(
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.weight(1f),
                             maxLines = 1,
+                            textAlign = TextAlign.Center,
                             overflow = TextOverflow.Ellipsis
                         )
                         if (anime?.approved == true) {

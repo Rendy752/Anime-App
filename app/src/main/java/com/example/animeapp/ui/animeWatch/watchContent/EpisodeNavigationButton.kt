@@ -17,9 +17,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeSourcesQuery
+import com.example.animeapp.ui.common_ui.SkeletonBox
 import com.example.animeapp.utils.basicContainer
 import com.example.animeapp.utils.WatchUtils.getEpisodeBackgroundColor
 
@@ -71,6 +73,49 @@ fun EpisodeNavigationButton(
             textAlign = TextAlign.Center,
             maxLines = 2,
             overflow = TextOverflow.Companion.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
+        if (!isPrevious) {
+            Icon(
+                buttonIcon,
+                contentDescription = "Next Episode",
+                modifier = Modifier.padding(start = 8.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+        }
+    }
+}
+
+@Preview
+@Composable
+fun EpisodeNavigationButtonSkeleton(modifier: Modifier = Modifier, isPrevious: Boolean = false) {
+    val buttonIcon = if (isPrevious) {
+        Icons.AutoMirrored.Filled.ArrowBack
+    } else {
+        Icons.AutoMirrored.Filled.ArrowForward
+    }
+    Row(
+        modifier = modifier
+            .basicContainer(
+                backgroundBrush = getEpisodeBackgroundColor(false),
+                innerPadding = PaddingValues(8.dp)
+            )
+            .fillMaxWidth()
+            .height(56.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (isPrevious) {
+            Icon(
+                buttonIcon,
+                contentDescription = "Previous Episode",
+                modifier = Modifier.padding(end = 8.dp),
+                tint = MaterialTheme.colorScheme.primary
+            )
+        }
+        SkeletonBox(
+            width = 100.dp,
+            height = 20.dp,
             modifier = Modifier.weight(1f)
         )
         if (!isPrevious) {

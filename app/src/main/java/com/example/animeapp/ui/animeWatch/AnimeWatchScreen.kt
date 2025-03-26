@@ -9,12 +9,10 @@ import android.view.WindowInsets
 import android.view.WindowManager
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -47,11 +45,9 @@ import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.NetworkStatus
+import com.example.animeapp.ui.animeWatch.components.AnimeWatchSkeleton
+import com.example.animeapp.ui.animeWatch.components.AnimeWatchSuccessContent
 import com.example.animeapp.ui.animeWatch.components.AnimeWatchTopBar
-import com.example.animeapp.ui.animeWatch.infoContent.InfoContentSection
-import com.example.animeapp.ui.animeWatch.videoPlayer.VideoPlayerSection
-import com.example.animeapp.ui.animeWatch.watchContent.WatchContentSection
-import com.example.animeapp.ui.common_ui.SkeletonBox
 import com.example.animeapp.utils.NetworkStateMonitor
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ScreenOffReceiver
@@ -191,92 +187,47 @@ fun AnimeWatchScreen(
             else Modifier.fillMaxSize()
 
             Column(modifier = Modifier.fillMaxSize()) {
+                val videoPlayerModifier = Modifier
+                    .then(if (isLandscape) Modifier.weight(0.5f) else Modifier.fillMaxWidth())
+                    .then(videoSize)
                 when (episodeDetailComplement) {
-                    is Resource.Loading -> SkeletonBox(modifier = Modifier.then(videoSize))
+                    is Resource.Loading -> AnimeWatchSkeleton(
+                        animeDetail,
+                        episodes,
+                        selectedContentIndex,
+                        isLandscape,
+                        isPipMode,
+                        isFullscreen,
+                        scrollState,
+                        modifier = videoPlayerModifier,
+                        videoSize
+                    )
 
-                    is Resource.Success -> {
-                        episodeDetailComplement.data?.let { episodeDetailComplement ->
-                            episodes?.let { episodeList ->
-                                episodeSourcesQuery?.let { query ->
-                                    val videoPlayerModifier = Modifier
-                                        .then(if (isLandscape) Modifier.weight(0.5f) else Modifier.fillMaxWidth())
-                                        .then(videoSize)
-
-                                    Row(modifier = Modifier.fillMaxWidth()) {
-                                        VideoPlayerSection(
-                                            episodeDetailComplement = episodeDetailComplement,
-                                            episodes = episodeList,
-                                            episodeSourcesQuery = query,
-                                            handleSelectedEpisodeServer = {
-                                                viewModel.handleSelectedEpisodeServer(
-                                                    it
-                                                )
-                                            },
-                                            isPipMode = isPipMode,
-                                            onEnterPipMode = onEnterPipMode,
-                                            isFullscreen = isFullscreen,
-                                            onFullscreenChange = { isFullscreen = it },
-                                            isScreenOn = isScreenOn,
-                                            isLandscape = isLandscape,
-                                            onPlayerError = { message -> errorMessage = message },
-                                            modifier = videoPlayerModifier,
-                                            videoSize = videoSize
-                                        )
-
-                                        if (isLandscape && !isPipMode && !isFullscreen) {
-                                            LazyColumn(
-                                                modifier = Modifier
-                                                    .weight(0.5f)
-                                                    .padding(8.dp),
-                                                state = scrollState
-                                            ) {
-                                                item {
-                                                    if (selectedContentIndex == 0) {
-                                                        episodes?.let { episodes ->
-                                                            WatchContentSection(
-                                                                animeDetail,
-                                                                episodeDetailComplement,
-                                                                episodes,
-                                                                episodeSourcesQuery
-                                                            ) {
-                                                                viewModel.handleSelectedEpisodeServer(
-                                                                    it
-                                                                )
-                                                            }
-                                                        }
-                                                    } else {
-                                                        InfoContentSection(animeDetail)
-                                                    }
-                                                }
-                                            }
-                                        }
-                                    }
-                                    if (!isLandscape && !isPipMode && !isFullscreen) {
-                                        LazyColumn(
-                                            modifier = Modifier.padding(8.dp),
-                                            state = scrollState
-                                        ) {
-                                            item {
-                                                episodes?.let { episodes ->
-                                                    WatchContentSection(
-                                                        animeDetail,
-                                                        episodeDetailComplement,
-                                                        episodes,
-                                                        episodeSourcesQuery
-                                                    ) { viewModel.handleSelectedEpisodeServer(it) }
-                                                }
-                                                InfoContentSection(animeDetail)
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    is Resource.Success -> AnimeWatchSuccessContent(
+                        animeDetail,
+                        episodeDetailComplement,
+                        episodes,
+                        episodeSourcesQuery,
+                        isLandscape,
+                        isPipMode,
+                        isFullscreen,
+                        scrollState,
+                        isScreenOn,
+                        onEnterPipMode,
+                        { isFullscreen = it },
+                        { errorMessage = it },
+                        { viewModel.handleSelectedEpisodeServer(it) },
+                        selectedContentIndex,
+                        videoPlayerModifier,
+                        videoSize
+                    )
 
                     is Resource.Error -> {
                         episodeSourcesQuery?.let { query ->
                             viewModel.handleSelectedEpisodeServer(query.copy(id = episodeId))
+                            scope.launch {
+                                snackbarHostState.showSnackbar("Error on the server, returning to the first episode. Try again later after 1 hour.")
+                            }
                         }
                     }
                 }

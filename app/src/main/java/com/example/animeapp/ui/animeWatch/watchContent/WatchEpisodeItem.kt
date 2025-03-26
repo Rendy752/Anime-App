@@ -21,11 +21,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
+import com.example.animeapp.ui.common_ui.SkeletonBox
 import com.example.animeapp.utils.WatchUtils.getEpisodeBackgroundColor
 import com.example.animeapp.utils.basicContainer
 
@@ -98,6 +100,35 @@ fun WatchEpisodeItem(
                     )
                 }
             }
+        }
+    }
+}
+
+@Preview
+@Composable
+fun WatchEpisodeItemSkeleton() {
+    Surface(
+        modifier = Modifier
+            .padding(8.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                shape = RoundedCornerShape(16.dp)
+            ),
+    ) {
+        Box(
+            modifier = Modifier
+                .aspectRatio(1f)
+                .basicContainer(
+                    backgroundBrush = getEpisodeBackgroundColor(false),
+                    outerPadding = PaddingValues(0.dp),
+                    innerPadding = PaddingValues(0.dp),
+                )
+                .padding(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            SkeletonBox(width = 20.dp, height = 20.dp)
         }
     }
 }

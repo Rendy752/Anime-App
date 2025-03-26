@@ -10,3 +10,8 @@ data class Server(
     val serverName: String,
     val serverId: Int
 ): Parcelable
+
+val serverPlaceholder = Server(
+    serverName = "Server Name",
+    serverId = 1
+)

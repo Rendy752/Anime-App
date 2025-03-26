@@ -8,6 +8,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.Episode
@@ -47,5 +48,22 @@ fun WatchEpisode(
             handleSelectedEpisodeServer,
             gridState
         )
+    }
+}
+
+@Preview
+@Composable
+fun WatchEpisodeSkeleton(episodesSize: Int = 12) {
+    Column(
+        modifier = Modifier
+            .basicContainer()
+            .fillMaxWidth()
+    ) {
+        EpisodeNavigationSkeleton()
+        EpisodeJumpSkeleton()
+        HorizontalDivider(modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp))
+        EpisodeSelectionGridSkeleton(episodesSize)
     }
 }

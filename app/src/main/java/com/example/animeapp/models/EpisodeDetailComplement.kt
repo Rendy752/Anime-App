@@ -27,3 +27,16 @@ data class EpisodeDetailComplement(
     val createdAt: Long = Instant.now().epochSecond,
     var updatedAt: Long = Instant.now().epochSecond
 ) : Parcelable
+
+val episodeDetailComplementPlaceholder = EpisodeDetailComplement(
+    id = "watch-1",
+    title = "Title of Episode",
+    imageUrl = "https://cdn.myanimelist.net/images/",
+    servers = episodeServersResponsePlaceholder,
+    sources = episodeSourcesResponsePlaceholder,
+    sourcesQuery = episodeSourcesQueryPlaceholder,
+    isFavorite = false,
+    isWatched = false,
+    lastWatched = null,
+    lastTimestamp = null,
+)
