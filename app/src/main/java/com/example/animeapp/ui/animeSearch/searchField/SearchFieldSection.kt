@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animeSearch.ui
+package com.example.animeapp.ui.animeSearch.searchField
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -16,24 +16,25 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.R
-import com.example.animeapp.ui.animeSearch.viewmodel.AnimeSearchViewModel
+import com.example.animeapp.models.AnimeSearchQueryState
 import com.example.animeapp.ui.common_ui.SearchView
 import com.example.animeapp.utils.Debounce
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SearchFieldSection(
-    viewModel: AnimeSearchViewModel,
+    initialQuery: String,
+    onQueryChanged: (AnimeSearchQueryState) -> Unit,
     showFilterIcon: Boolean = false,
     isFilterBottomSheetShow: Boolean = false,
     onFilterClick: (() -> Unit)? = null
 ) {
     val scope = rememberCoroutineScope()
-    var query by remember { mutableStateOf(viewModel.queryState.value.query) }
+    var query by remember { mutableStateOf(initialQuery) }
     val debounce = remember {
         Debounce(scope, 1000L, { newQuery ->
-            viewModel.applyFilters(viewModel.queryState.value.copy(query = newQuery, page = 1))
-        }, viewModel, Debounce.StateType.ANIME_SEARCH)
+            onQueryChanged(AnimeSearchQueryState(query = newQuery, page = 1))
+        }, null, Debounce.StateType.ANIME_SEARCH)
     }
 
     var searchViewHeight by remember { mutableStateOf(0.dp) }

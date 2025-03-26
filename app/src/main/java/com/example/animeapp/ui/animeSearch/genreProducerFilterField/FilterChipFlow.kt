@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animeSearch.components
+package com.example.animeapp.ui.animeSearch.genreProducerFilterField
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement

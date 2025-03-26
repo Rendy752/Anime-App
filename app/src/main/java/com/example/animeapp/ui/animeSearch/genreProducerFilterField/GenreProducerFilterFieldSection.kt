@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animeSearch.ui
+package com.example.animeapp.ui.animeSearch.genreProducerFilterField
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.background
@@ -18,12 +18,11 @@ import androidx.compose.ui.unit.dp
 import com.example.animeapp.R
 import com.example.animeapp.models.Genre
 import com.example.animeapp.models.Producer
-import com.example.animeapp.ui.animeSearch.components.FilterChipFlow
-import com.example.animeapp.ui.animeSearch.viewmodel.AnimeSearchViewModel
+import com.example.animeapp.ui.animeSearch.AnimeSearchViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-fun FilterFieldSection(
+fun GenreProducerFilterFieldSection(
     viewModel: AnimeSearchViewModel,
     isGenresBottomSheetShow: Boolean,
     isProducersBottomSheetShow: Boolean,

@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animeSearch.ui
+package com.example.animeapp.ui.animeSearch
 
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
@@ -13,8 +13,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.animeapp.R
-import com.example.animeapp.ui.animeSearch.components.FilterBottomSheet
-import com.example.animeapp.ui.animeSearch.viewmodel.AnimeSearchViewModel
+import com.example.animeapp.ui.animeSearch.bottomSheet.FilterBottomSheet
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.FilterList
@@ -23,8 +22,12 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.Genre
 import com.example.animeapp.models.Producer
-import com.example.animeapp.ui.animeSearch.components.GenresBottomSheet
-import com.example.animeapp.ui.animeSearch.components.ProducersBottomSheet
+import com.example.animeapp.ui.animeSearch.bottomSheet.GenresBottomSheet
+import com.example.animeapp.ui.animeSearch.bottomSheet.ProducersBottomSheet
+import com.example.animeapp.ui.animeSearch.limitAndPagination.LimitAndPaginationSection
+import com.example.animeapp.ui.animeSearch.results.ResultsSection
+import com.example.animeapp.ui.animeSearch.searchField.SearchFieldSection
+import com.example.animeapp.ui.animeSearch.genreProducerFilterField.GenreProducerFilterFieldSection
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,6 +37,11 @@ fun AnimeSearchScreen(
     producer: Producer? = null,
 ) {
     val viewModel: AnimeSearchViewModel = hiltViewModel()
+
+    val queryState by viewModel.queryState.collectAsState()
+    val animeSearchResults = viewModel.animeSearchResults.collectAsState().value
+    val selectedGenres = viewModel.selectedGenres.collectAsState().value
+    val genres = viewModel.genres.collectAsState().value
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val state = rememberPullToRefreshState()
     var isFilterBottomSheetShow by remember { mutableStateOf(false) }
@@ -120,11 +128,16 @@ fun AnimeSearchScreen(
                                 .clip(MaterialTheme.shapes.extraLarge),
                             verticalArrangement = Arrangement.SpaceBetween
                         ) {
-                            SearchFieldSection(viewModel, true, isFilterBottomSheetShow) {
+                            SearchFieldSection(
+                                queryState.query,
+                                viewModel::applyFilters,
+                                true,
+                                isFilterBottomSheetShow
+                            ) {
                                 isFilterBottomSheetShow = true
                             }
                             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                            FilterFieldSection(
+                            GenreProducerFilterFieldSection(
                                 viewModel,
                                 isGenresBottomSheetShow,
                                 isProducersBottomSheetShow,
@@ -143,14 +156,25 @@ fun AnimeSearchScreen(
                                 .fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) {
-                            ResultsSection(navController, viewModel)
+                            ResultsSection(
+                                navController,
+                                animeSearchResults,
+                                selectedGenres,
+                                genres,
+                            ) { genre ->
+                                viewModel.setSelectedGenre(genre)
+                                viewModel.applyGenreFilters()
+                            }
                         }
                     }
                 } else {
                     Column(modifier = Modifier.fillMaxSize()) {
-                        SearchFieldSection(viewModel)
+                        SearchFieldSection(
+                            queryState.query,
+                            viewModel::applyFilters
+                        )
                         Spacer(modifier = Modifier.height(8.dp))
-                        FilterFieldSection(
+                        GenreProducerFilterFieldSection(
                             viewModel,
                             isGenresBottomSheetShow,
                             isProducersBottomSheetShow,
@@ -161,7 +185,15 @@ fun AnimeSearchScreen(
                         )
                         HorizontalDivider()
                         Column(modifier = Modifier.weight(1f)) {
-                            ResultsSection(navController, viewModel)
+                            ResultsSection(
+                                navController,
+                                animeSearchResults,
+                                selectedGenres,
+                                genres,
+                            ) { genre ->
+                                viewModel.setSelectedGenre(genre)
+                                viewModel.applyGenreFilters()
+                            }
                         }
                         LimitAndPaginationSection(viewModel)
                     }

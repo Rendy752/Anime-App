@@ -27,8 +27,8 @@ import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.Genre
 import com.example.animeapp.models.Producer
 import com.example.animeapp.ui.animeDetail.ui.AnimeDetailScreen
-import com.example.animeapp.ui.animeRecommendations.ui.AnimeRecommendationsScreen
-import com.example.animeapp.ui.animeSearch.ui.AnimeSearchScreen
+import com.example.animeapp.ui.animeRecommendations.AnimeRecommendationsScreen
+import com.example.animeapp.ui.animeSearch.AnimeSearchScreen
 import com.example.animeapp.ui.animeWatch.ui.AnimeWatchScreen
 import com.example.animeapp.ui.settings.ui.SettingsScreen
 import com.google.gson.Gson

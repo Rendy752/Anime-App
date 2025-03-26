@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animeSearch.components
+package com.example.animeapp.ui.animeSearch.bottomSheet
 
 import android.content.Context
 import androidx.compose.foundation.ScrollState
@@ -13,7 +13,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.R
-import com.example.animeapp.ui.animeSearch.viewmodel.AnimeSearchViewModel
+import com.example.animeapp.ui.animeSearch.AnimeSearchViewModel
+import com.example.animeapp.ui.animeSearch.components.ApplyButton
+import com.example.animeapp.ui.animeSearch.components.ResetButton
 import com.example.animeapp.ui.common_ui.*
 import com.example.animeapp.utils.FilterUtils
 

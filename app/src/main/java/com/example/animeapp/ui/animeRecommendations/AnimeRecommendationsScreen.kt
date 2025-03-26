@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animeRecommendations.ui
+package com.example.animeapp.ui.animeRecommendations
 
 import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
@@ -20,9 +20,8 @@ import androidx.lifecycle.Observer
 import androidx.navigation.NavController
 import com.example.animeapp.R
 import com.example.animeapp.models.NetworkStatus
-import com.example.animeapp.ui.animeRecommendations.components.AnimeRecommendationItem
-import com.example.animeapp.ui.animeRecommendations.components.AnimeRecommendationItemSkeleton
-import com.example.animeapp.ui.animeRecommendations.viewmodel.AnimeRecommendationsViewModel
+import com.example.animeapp.ui.animeRecommendations.recommendations.RecommendationItem
+import com.example.animeapp.ui.animeRecommendations.recommendations.RecommendationItemSkeleton
 import com.example.animeapp.ui.common_ui.ErrorMessage
 import com.example.animeapp.utils.NetworkStateMonitor
 import com.example.animeapp.utils.Resource
@@ -31,14 +30,17 @@ import com.example.animeapp.utils.Resource
 @Composable
 fun AnimeRecommendationsScreen(navController: NavController) {
     val viewModel: AnimeRecommendationsViewModel = hiltViewModel()
+
     val animeRecommendationsState by viewModel.animeRecommendations.collectAsState()
-    val context = LocalContext.current
     val isRefreshing by viewModel.isRefreshing.collectAsState()
+
     val state = rememberPullToRefreshState()
+
+    val context = LocalContext.current
+    val configuration = LocalConfiguration.current
     val networkStateMonitor = remember { NetworkStateMonitor(context) }
     var networkStatus by remember { mutableStateOf(networkStateMonitor.networkStatus.value) }
     var isConnected by remember { mutableStateOf(networkStateMonitor.isConnected.value != false) }
-    val configuration = LocalConfiguration.current
     val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
     DisposableEffect(Unit) {
@@ -117,7 +119,7 @@ fun AnimeRecommendationsScreen(navController: NavController) {
 
                 when (animeRecommendationsState) {
                     is Resource.Loading -> {
-                        repeat(3) { AnimeRecommendationItemSkeleton() }
+                        repeat(3) { RecommendationItemSkeleton() }
                     }
 
                     is Resource.Success -> {
@@ -127,7 +129,7 @@ fun AnimeRecommendationsScreen(navController: NavController) {
                         if (!isLandscape) {
                             LazyColumn {
                                 items(animeRecommendations) {
-                                    AnimeRecommendationItem(
+                                    RecommendationItem(
                                         recommendation = it,
                                         onItemClick = { anime -> navController.navigate("animeDetail/${anime.title}/${anime.mal_id}") }
                                     )
@@ -144,7 +146,7 @@ fun AnimeRecommendationsScreen(navController: NavController) {
                                         animeRecommendations.subList(startIndex, endIndex)
                                     LazyColumn(modifier = Modifier.weight(1f)) {
                                         items(columnItems) {
-                                            AnimeRecommendationItem(
+                                            RecommendationItem(
                                                 recommendation = it,
                                                 onItemClick = { anime -> navController.navigate("animeDetail/${anime.title}/${anime.mal_id}") }
                                             )

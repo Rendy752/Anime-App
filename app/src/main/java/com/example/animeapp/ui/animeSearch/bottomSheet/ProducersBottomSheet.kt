@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animeSearch.components
+package com.example.animeapp.ui.animeSearch.bottomSheet
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
@@ -18,7 +18,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.R
 import com.example.animeapp.models.Producer
-import com.example.animeapp.ui.animeSearch.viewmodel.AnimeSearchViewModel
+import com.example.animeapp.ui.animeSearch.AnimeSearchViewModel
+import com.example.animeapp.ui.animeSearch.components.ApplyButton
+import com.example.animeapp.ui.animeSearch.components.CancelButton
+import com.example.animeapp.ui.animeSearch.components.PaginationButtons
+import com.example.animeapp.ui.animeSearch.components.ResetButton
+import com.example.animeapp.ui.animeSearch.genreProducerFilterField.FilterChipFlow
 import com.example.animeapp.ui.common_ui.DropdownInputField
 import com.example.animeapp.ui.common_ui.RetryButton
 import com.example.animeapp.ui.common_ui.SearchView
