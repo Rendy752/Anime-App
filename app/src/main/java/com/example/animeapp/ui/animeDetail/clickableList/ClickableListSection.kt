@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animeDetail.ui
+package com.example.animeapp.ui.animeDetail.clickableList
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*

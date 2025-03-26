@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animeDetail.components
+package com.example.animeapp.ui.animeDetail.episodeDetail
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background

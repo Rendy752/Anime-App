@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animeDetail.viewmodel
+package com.example.animeapp.ui.animeDetail
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -41,8 +41,6 @@ class AnimeDetailViewModel @Inject constructor(
     private val _defaultEpisode = MutableStateFlow<EpisodeDetailComplement?>(null)
     val defaultEpisode: StateFlow<EpisodeDetailComplement?> = _defaultEpisode.asStateFlow()
 
-    private var episodesFetched = false
-
     fun handleAnimeDetail(id: Int) = viewModelScope.launch {
         _animeDetail.value = Resource.Loading()
         _animeDetail.value = getAnimeDetail(id)
@@ -53,8 +51,6 @@ class AnimeDetailViewModel @Inject constructor(
     }
 
     fun handleEpisodes() = viewModelScope.launch {
-        if (episodesFetched) return@launch
-
         _animeDetailComplement.value = Resource.Loading()
         val detailData = _animeDetail.value?.data?.data
             ?: run {
@@ -85,7 +81,6 @@ class AnimeDetailViewModel @Inject constructor(
             return@launch
         }
         handleValidEpisode(response)
-        episodesFetched = true
     }
 
     private suspend fun handleCachedAnimeDetailComplement(detailData: AnimeDetail): Boolean {

@@ -26,7 +26,7 @@ import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.Genre
 import com.example.animeapp.models.Producer
-import com.example.animeapp.ui.animeDetail.ui.AnimeDetailScreen
+import com.example.animeapp.ui.animeDetail.AnimeDetailScreen
 import com.example.animeapp.ui.animeRecommendations.AnimeRecommendationsScreen
 import com.example.animeapp.ui.animeSearch.AnimeSearchScreen
 import com.example.animeapp.ui.animeWatch.ui.AnimeWatchScreen

@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animeDetail.components
+package com.example.animeapp.ui.animeDetail.episodeDetail
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable

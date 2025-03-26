@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animeDetail.ui
+package com.example.animeapp.ui.animeDetail.episodeDetail
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
@@ -12,10 +12,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.AnimeDetailComplement
-import com.example.animeapp.ui.animeDetail.components.EpisodeInfoRow
-import com.example.animeapp.ui.animeDetail.components.EpisodeInfoRowSkeleton
-import com.example.animeapp.ui.animeDetail.components.EpisodeItem
-import com.example.animeapp.ui.animeDetail.components.EpisodeItemSkeleton
 import com.example.animeapp.ui.common_ui.ErrorMessage
 import com.example.animeapp.ui.common_ui.SearchView
 import com.example.animeapp.ui.common_ui.SearchViewSkeleton
@@ -74,7 +70,7 @@ fun EpisodesDetailSection(
                             .padding(bottom = 8.dp)
                     )
                     repeat(5) {
-                        EpisodeItemSkeleton()
+                        EpisodeDetailItemSkeleton()
                     }
                 }
             }
@@ -114,7 +110,7 @@ fun EpisodesDetailSection(
                                 }
                             } else {
                                 items(filteredEpisodes) { episode ->
-                                    EpisodeItem(
+                                    EpisodeDetailItem(
                                         episode = episode,
                                         query = searchQuery,
                                         onClick = onEpisodeClick

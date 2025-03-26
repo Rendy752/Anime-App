@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animeDetail.ui
+package com.example.animeapp.ui.animeDetail.detailBody
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row

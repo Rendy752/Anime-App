@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animeDetail.components
+package com.example.animeapp.ui.animeDetail.episodeDetail
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -20,7 +20,7 @@ import com.example.animeapp.utils.WatchUtils.getEpisodeBackgroundColor
 import com.example.animeapp.utils.basicContainer
 
 @Composable
-fun EpisodeItem(episode: Episode, query: String, onClick: (String) -> Unit) {
+fun EpisodeDetailItem(episode: Episode, query: String, onClick: (String) -> Unit) {
     Row(
         modifier = Modifier
             .basicContainer(
@@ -62,7 +62,7 @@ fun highlightText(text: String, query: String): AnnotatedString {
 
 @Preview
 @Composable
-fun EpisodeItemSkeleton() {
+fun EpisodeDetailItemSkeleton() {
     Row(
         modifier = Modifier
             .basicContainer()

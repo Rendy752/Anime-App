@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animeDetail.ui
+package com.example.animeapp.ui.animeDetail
 
 import android.content.Context
 import android.content.Intent
@@ -18,6 +18,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -32,7 +34,13 @@ import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.NameAndUrl
 import com.example.animeapp.ui.animeDetail.components.AnimeDetailScreenErrorMessage
 import com.example.animeapp.ui.animeDetail.components.AnimeDetailTopBar
-import com.example.animeapp.ui.animeDetail.viewmodel.AnimeDetailViewModel
+import com.example.animeapp.ui.animeDetail.clickableList.ClickableListSection
+import com.example.animeapp.ui.animeDetail.detailBody.DetailBodySection
+import com.example.animeapp.ui.animeDetail.detailBody.DetailBodySectionSkeleton
+import com.example.animeapp.ui.animeDetail.episodeDetail.EpisodesDetailSection
+import com.example.animeapp.ui.animeDetail.numericDetail.NumericDetailSection
+import com.example.animeapp.ui.animeDetail.numericDetail.NumericDetailSectionSkeleton
+import com.example.animeapp.ui.animeDetail.relation.RelationSection
 import com.example.animeapp.ui.common_ui.AnimeHeader
 import com.example.animeapp.ui.common_ui.AnimeHeaderSkeleton
 import com.example.animeapp.ui.common_ui.DetailCommonBody
@@ -49,6 +57,7 @@ private fun convertToNameAndUrl(list: List<String>?): List<NameAndUrl>? =
 @Composable
 fun AnimeDetailScreen(animeTitle: String, animeId: Int, navController: NavController) {
     val viewModel: AnimeDetailViewModel = hiltViewModel()
+
     val animeDetail by viewModel.animeDetail.collectAsState()
     val animeDetailComplement by viewModel.animeDetailComplement.collectAsState()
     val defaultEpisode by viewModel.defaultEpisode.collectAsState()
@@ -57,7 +66,13 @@ fun AnimeDetailScreen(animeTitle: String, animeId: Int, navController: NavContro
     val leftScrollState = rememberLazyListState()
     val rightScrollState = rememberLazyListState()
 
-    LaunchedEffect(animeId) { viewModel.handleAnimeDetail(animeId) }
+    val currentAnimeIdState = rememberSaveable { mutableIntStateOf(animeId) }
+    val currentAnimeId = currentAnimeIdState.intValue
+    LaunchedEffect(currentAnimeId) { viewModel.handleAnimeDetail(currentAnimeId) }
+
+    LaunchedEffect(animeDetail) {
+        if (animeDetail is Resource.Success) viewModel.handleEpisodes()
+    }
 
     Scaffold(topBar = {
         AnimeDetailTopBar(
@@ -71,7 +86,6 @@ fun AnimeDetailScreen(animeTitle: String, animeId: Int, navController: NavContro
         when (animeDetail) {
             is Resource.Loading -> LoadingContent(paddingValues, isLandscape)
             is Resource.Success -> {
-                LaunchedEffect(Unit) { viewModel.handleEpisodes() }
                 SuccessContent(
                     paddingValues,
                     animeDetail?.data?.data,
@@ -83,7 +97,7 @@ fun AnimeDetailScreen(animeTitle: String, animeId: Int, navController: NavContro
                     leftScrollState,
                     rightScrollState,
                     viewModel
-                )
+                ) { newAnimeId -> currentAnimeIdState.intValue = newAnimeId }
             }
 
             is Resource.Error -> ErrorContent(paddingValues, animeDetail?.message ?: "Error")
@@ -130,7 +144,7 @@ private fun VerticalColumnContentSkeleton() {
 private fun LeftColumnContentSkeleton() {
     Column(modifier = Modifier.padding(8.dp)) {
         AnimeHeaderSkeleton()
-        NumberDetailSectionSkeleton()
+        NumericDetailSectionSkeleton()
         YoutubePreviewSkeleton()
         DetailBodySectionSkeleton()
     }
@@ -160,7 +174,8 @@ private fun SuccessContent(
     isLandscape: Boolean,
     leftScrollState: LazyListState,
     rightScrollState: LazyListState,
-    viewModel: AnimeDetailViewModel
+    viewModel: AnimeDetailViewModel,
+    onAnimeIdChange: (Int) -> Unit
 ) {
     animeDetailData?.let { data ->
         if (isLandscape) {
@@ -180,7 +195,8 @@ private fun SuccessContent(
                             animeDetailComplement,
                             defaultEpisode,
                             navController,
-                            context
+                            context,
+                            onAnimeIdChange
                         )
                     }
                 }
@@ -198,7 +214,8 @@ private fun SuccessContent(
                         animeDetailComplement,
                         defaultEpisode,
                         navController,
-                        context
+                        context,
+                        onAnimeIdChange
                     )
                 }
             }
@@ -210,7 +227,7 @@ private fun SuccessContent(
 private fun LeftColumnContent(data: AnimeDetail, navController: NavController) {
     Column(modifier = Modifier.padding(8.dp)) {
         AnimeHeader(data)
-        NumberDetailSection(data)
+        NumericDetailSection(data)
         YoutubePreview(data.trailer.embed_url)
         DetailBodySection(data, navController)
     }
@@ -223,7 +240,8 @@ private fun RightColumnContent(
     animeDetailComplement: Resource<AnimeDetailComplement?>?,
     defaultEpisode: EpisodeDetailComplement?,
     navController: NavController,
-    context: Context
+    context: Context,
+    onAnimeIdChange: (Int) -> Unit
 ) {
     Column(modifier = Modifier.padding(8.dp)) {
         listOf(
@@ -234,7 +252,7 @@ private fun RightColumnContent(
             navController,
             data.relations,
             { animeId -> viewModel.getAnimeDetail(animeId) },
-            { animeId -> viewModel.handleAnimeDetail(animeId) })
+            { animeId -> onAnimeIdChange(animeId) })
         EpisodesDetailSection(animeDetailComplement, { episodeId ->
             defaultEpisode?.let { defaultEpisode ->
                 animeDetailComplement?.data?.episodes?.let { episodes ->
@@ -258,7 +276,8 @@ private fun VerticalColumnContent(
     animeDetailComplement: Resource<AnimeDetailComplement?>?,
     defaultEpisode: EpisodeDetailComplement?,
     navController: NavController,
-    context: Context
+    context: Context,
+    onAnimeIdChange: (Int) -> Unit
 ) {
     Column(modifier = Modifier.padding(8.dp)) {
         LeftColumnContent(data, navController)
@@ -268,7 +287,8 @@ private fun VerticalColumnContent(
             animeDetailComplement,
             defaultEpisode,
             navController,
-            context
+            context,
+            onAnimeIdChange
         )
     }
 }
