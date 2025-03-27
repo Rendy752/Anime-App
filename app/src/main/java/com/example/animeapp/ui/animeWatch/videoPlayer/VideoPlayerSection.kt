@@ -57,7 +57,7 @@ fun VideoPlayerSection(
     var nextEpisodeName by remember { mutableStateOf("") }
     var mediaSession: MediaSession? by remember { mutableStateOf(null) }
 
-    DisposableEffect(exoPlayer) {
+    DisposableEffect(episodeSourcesQuery) {
         isLoading = true
         HlsPlayerUtil.initializePlayer(exoPlayer, episodeDetailComplement.sources)
         introOutroHandler.start()
