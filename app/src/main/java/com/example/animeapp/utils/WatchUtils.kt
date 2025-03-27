@@ -25,14 +25,18 @@ object WatchUtils {
         episodeDetailComplement: EpisodeDetailComplement? = null,
         isWatching: Boolean? = null,
     ): Brush {
+        val color = when {
+            isWatching == true -> watchingEpisode
+            episodeDetailComplement?.isFavorite == true -> favoriteEpisode
+            episodeDetailComplement?.isWatched == true -> watchedEpisode
+            isFiller -> fillerEpisode
+            else -> defaultEpisode
+        }
+
         return Brush.verticalGradient(
             colors = listOf(
                 MaterialTheme.colorScheme.surfaceContainerHigh,
-                if (isWatching == true) watchingEpisode
-                else if (episodeDetailComplement?.isFavorite == true) favoriteEpisode
-                else if (episodeDetailComplement?.isWatched == true) watchedEpisode
-                else if (isFiller) fillerEpisode
-                else defaultEpisode
+                color
             )
         )
     }

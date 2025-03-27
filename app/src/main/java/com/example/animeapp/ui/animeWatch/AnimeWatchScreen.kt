@@ -45,8 +45,7 @@ import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.NetworkStatus
-import com.example.animeapp.ui.animeWatch.components.AnimeWatchSkeleton
-import com.example.animeapp.ui.animeWatch.components.AnimeWatchSuccessContent
+import com.example.animeapp.ui.animeWatch.components.AnimeWatchContent
 import com.example.animeapp.ui.animeWatch.components.AnimeWatchTopBar
 import com.example.animeapp.utils.NetworkStateMonitor
 import com.example.animeapp.utils.Resource
@@ -190,20 +189,14 @@ fun AnimeWatchScreen(
                 val videoPlayerModifier = Modifier
                     .then(if (isLandscape) Modifier.weight(0.5f) else Modifier.fillMaxWidth())
                     .then(videoSize)
-                when (episodeDetailComplement) {
-                    is Resource.Loading -> AnimeWatchSkeleton(
-                        animeDetail,
-                        episodes,
-                        selectedContentIndex,
-                        isLandscape,
-                        isPipMode,
-                        isFullscreen,
-                        scrollState,
-                        modifier = videoPlayerModifier,
-                        videoSize
-                    )
-
-                    is Resource.Success -> AnimeWatchSuccessContent(
+                if (episodeDetailComplement is Resource.Error) {
+                    LaunchedEffect(Unit) {
+                        snackbarHostState.showSnackbar(
+                            "Error on the server, returning to the first episode. Try again later after 1 hour."
+                        )
+                    }
+                } else {
+                    AnimeWatchContent(
                         animeDetail,
                         episodeDetailComplement,
                         episodes,
@@ -221,15 +214,6 @@ fun AnimeWatchScreen(
                         videoPlayerModifier,
                         videoSize
                     )
-
-                    is Resource.Error -> {
-                        episodeSourcesQuery?.let { query ->
-                            viewModel.handleSelectedEpisodeServer(query.copy(id = episodeId))
-                            scope.launch {
-                                snackbarHostState.showSnackbar("Error on the server, returning to the first episode. Try again later after 1 hour.")
-                            }
-                        }
-                    }
                 }
             }
         }

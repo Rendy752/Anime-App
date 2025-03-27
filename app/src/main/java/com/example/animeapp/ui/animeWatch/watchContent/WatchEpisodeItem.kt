@@ -33,11 +33,23 @@ import com.example.animeapp.utils.basicContainer
 
 @Composable
 fun WatchEpisodeItem(
-    episodeDetailComplement: EpisodeDetailComplement,
+    episodeDetailComplement: EpisodeDetailComplement?,
     episode: Episode,
-    onEpisodeClick: (String) -> Unit
+    onEpisodeClick: (String) -> Unit,
+    isSelected: Boolean
 ) {
+    val isCurrentEpisode =
+        if (episodeDetailComplement != null) episodeDetailComplement.servers.episodeNo == episode.episodeNo else false
     var showTooltip by remember { mutableStateOf(false) }
+    val backgroundColor =
+        if (isSelected) getEpisodeBackgroundColor(
+            episode.filler,
+            isWatching = true
+        ) else getEpisodeBackgroundColor(
+            episode.filler,
+            episodeDetailComplement,
+            isCurrentEpisode,
+        )
 
     Surface(
         modifier = Modifier
@@ -49,16 +61,12 @@ fun WatchEpisodeItem(
                 shape = RoundedCornerShape(16.dp)
             ),
     ) {
-        val isCurrentEpisode = episodeDetailComplement.servers.episodeNo == episode.episodeNo
+
         Box(
             modifier = Modifier
                 .aspectRatio(1f)
                 .basicContainer(
-                    backgroundBrush = getEpisodeBackgroundColor(
-                        episode.filler,
-                        episodeDetailComplement,
-                        isCurrentEpisode,
-                    ),
+                    backgroundBrush = backgroundColor,
                     outerPadding = PaddingValues(0.dp),
                     innerPadding = PaddingValues(0.dp),
                 )
@@ -103,6 +111,7 @@ fun WatchEpisodeItem(
         }
     }
 }
+
 
 @Preview
 @Composable
