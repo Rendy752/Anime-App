@@ -20,8 +20,8 @@ fun SeekIndicator(seekDirection: Int, seekAmount: Long, modifier: Modifier = Mod
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = modifier.padding(
-            end = if (seekDirection == -1) 140.dp else 0.dp,
-            start = if (seekDirection == 1) 140.dp else 0.dp
+            end = if (seekDirection == -1) 180.dp else 0.dp,
+            start = if (seekDirection == 1) 180.dp else 0.dp
         )
     ) {
         if (seekDirection == 1) {
