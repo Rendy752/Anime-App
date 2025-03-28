@@ -85,7 +85,6 @@ dependencies {
     implementation(libs.compose.material)
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.compose.ui.test.manifest)
-    androidTestImplementation(libs.compose.ui.test.junit4)
 
     // ViewModel
     implementation(libs.androidx.lifecycle.viewmodel.ktx.v286)
@@ -115,7 +114,6 @@ dependencies {
     //Hilt
     implementation(libs.hilt.android)
     implementation(libs.androidx.hilt.navigation.compose)
-    kapt(libs.hilt.android.compiler)
 
     //Kotlinx Serialization
     implementation(libs.kotlinx.serialization.json)
@@ -140,12 +138,18 @@ dependencies {
 
     // --- Testing Dependencies ---
     testImplementation(libs.junit)
+    testImplementation(libs.androidx.core.testing)
+    testImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation(libs.hilt.android.testing)
+    kaptAndroidTest(libs.hilt.android.compiler)
     androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(libs.compose.ui.test.junit4)
 
     // Mocking Libraries
     testImplementation(libs.mockito.core)
     implementation(libs.mockito.core)
     androidTestImplementation(libs.mockito.android)
+    testImplementation(libs.mockk)
 
     // --- Coroutines Testing ---
     androidTestImplementation(libs.kotlinx.coroutines.test)

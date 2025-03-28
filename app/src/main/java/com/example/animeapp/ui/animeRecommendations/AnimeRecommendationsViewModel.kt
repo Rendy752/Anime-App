@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.example.animeapp.models.AnimeRecommendationResponse
 import com.example.animeapp.repository.AnimeRecommendationsRepository
 import com.example.animeapp.utils.Resource
-import com.example.animeapp.utils.ResponseHandler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -34,9 +33,8 @@ class AnimeRecommendationsViewModel @Inject constructor(
     fun getAnimeRecommendations() = viewModelScope.launch {
         _isRefreshing.value = true
         _animeRecommendations.value = Resource.Loading()
-        val response =
+        _animeRecommendations.value =
             animeRecommendationsRepository.getAnimeRecommendations(animeRecommendationsPage)
-        _animeRecommendations.value = ResponseHandler.handleCommonResponse(response)
         _isRefreshing.value = false
     }
 }

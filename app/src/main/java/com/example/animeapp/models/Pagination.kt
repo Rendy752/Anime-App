@@ -8,6 +8,11 @@ data class Pagination(
     val has_next_page: Boolean
 )
 
+val defaultPagination = Pagination(
+    last_visible_page = 1,
+    has_next_page = false
+)
+
 @Serializable
 data class CompletePagination(
     val last_visible_page: Int,
