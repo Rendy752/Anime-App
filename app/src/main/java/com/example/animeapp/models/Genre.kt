@@ -12,3 +12,10 @@ data class Genre(
     val url: String,
     val count: Int
 ): Parcelable
+
+val genrePlaceholder = Genre(
+    mal_id = 0,
+    name = "",
+    url = "",
+    count = 0
+)

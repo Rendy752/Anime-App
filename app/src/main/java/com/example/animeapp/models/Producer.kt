@@ -15,16 +15,31 @@ data class Producer(
     val established: String?,
     val about: String?,
     val count: Int
-): Parcelable
+) : Parcelable
+
+val producerPlaceholder = Producer(
+    mal_id = 0,
+    url = "",
+    titles = emptyList(),
+    images = ProducerImage(
+        jpg = JpgImage(
+            image_url = ""
+        )
+    ),
+    favorites = 0,
+    established = "",
+    about = "",
+    count = 0
+)
 
 @Parcelize
 @Serializable
 data class ProducerImage(
     val jpg: JpgImage?
-): Parcelable
+) : Parcelable
 
 @Parcelize
 @Serializable
 data class JpgImage(
     val image_url: String?
-): Parcelable
+) : Parcelable
