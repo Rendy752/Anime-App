@@ -8,6 +8,7 @@ import android.os.Build
 import android.view.WindowInsets
 import android.view.WindowManager
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -47,6 +48,7 @@ import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.NetworkStatus
 import com.example.animeapp.ui.animeWatch.components.AnimeWatchContent
 import com.example.animeapp.ui.animeWatch.components.AnimeWatchTopBar
+import com.example.animeapp.ui.common_ui.ErrorMessage
 import com.example.animeapp.utils.NetworkStateMonitor
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ScreenOffReceiver
@@ -190,10 +192,21 @@ fun AnimeWatchScreen(
                     .then(if (isLandscape) Modifier.weight(0.5f) else Modifier.fillMaxWidth())
                     .then(videoSize)
                 if (episodeDetailComplement is Resource.Error) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        ErrorMessage("${episodeDetailComplement.message}")
+                    }
                     LaunchedEffect(Unit) {
                         snackbarHostState.showSnackbar(
                             "Error on the server, returning to the first episode. Try again later after 1 hour."
                         )
+                        episodeSourcesQuery?.let { query ->
+                            episodes?.firstOrNull()?.episodeId?.let { episodeId ->
+                                viewModel.handleSelectedEpisodeServer(
+                                    query.copy(id = episodeId),
+                                    true
+                                )
+                            }
+                        }
                     }
                 } else {
                     AnimeWatchContent(
