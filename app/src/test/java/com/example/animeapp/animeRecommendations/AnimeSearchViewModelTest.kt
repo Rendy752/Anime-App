@@ -31,6 +31,10 @@ class AnimeSearchViewModelTest {
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
+        coEvery { repository.getGenres() } returns Response.success(mockk())
+        coEvery { repository.getProducers(any()) } returns Response.success(mockk())
+        coEvery { repository.searchAnime(any()) } returns Response.success(mockk())
+        coEvery { repository.getRandomAnime() } returns Response.success(mockk())
         viewModel = AnimeSearchViewModel(repository)
     }
 
@@ -173,15 +177,16 @@ class AnimeSearchViewModelTest {
 
     @Test
     fun `resetBottomSheetFilters should reset queryState and call searchAnime`() = runTest {
-        val initialQueryState = viewModel.queryState.value.copy(query = "Naruto", genres = "1")
+        val initialQueryState = viewModel.queryState.value.copy(
+            query = "Naruto", genres = "1",
+            producers = "1", page = 1, limit = 10, maxScore = 10.0, minScore = 5.0, type = "TV"
+        )
         viewModel.applyFilters(initialQueryState)
-        coEvery { repository.searchAnime(any()) } returns Response.success(mockk())
-        coEvery { repository.getRandomAnime() } returns Response.success(mockk())
 
         viewModel.resetBottomSheetFilters()
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertEquals(initialQueryState.resetBottomSheetFilters(), viewModel.queryState.value)
-        coVerify { repository.searchAnime(any()) }
+        coVerify { repository.searchAnime(initialQueryState.resetBottomSheetFilters()) }
     }
 }
