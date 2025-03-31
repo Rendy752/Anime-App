@@ -87,8 +87,8 @@ fun AnimeSearchItem(
                     textAlign = TextAlign.Center,
                     overflow = TextOverflow.Ellipsis
                 )
-                HorizontalDivider()
                 if (errorTitle.isNullOrEmpty()) {
+                    HorizontalDivider()
                     Row(
                         modifier = Modifier.padding(top = 2.dp),
                         verticalAlignment = Alignment.CenterVertically,
