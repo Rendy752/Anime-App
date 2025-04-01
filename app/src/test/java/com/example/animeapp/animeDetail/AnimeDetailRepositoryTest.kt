@@ -8,14 +8,15 @@ import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.models.EpisodeDetailComplement
+import com.example.animeapp.models.EpisodesResponse
 import com.example.animeapp.repository.AnimeDetailRepository
 import com.example.animeapp.utils.DateUtils
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import kotlinx.coroutines.runBlocking
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import retrofit2.Response
@@ -150,20 +151,25 @@ class AnimeDetailRepositoryTest {
         }
 
     @Test
-    fun `updateAnimeDetailComplementWithEpisodes should return null when api call fails`() =
+    fun `updateAnimeDetailComplementWithEpisodes should return cached object when api call fails`() =
         runBlocking {
-            val animeDetail = mockk<AnimeDetail>()
+            val animeDetail = mockk<AnimeDetail> {
+                every { airing } returns false
+            }
             val animeDetailComplement = mockk<AnimeDetailComplement>()
-            coEvery { animeDetailComplementDao.getAnimeDetailComplementByMalId(any()) } returns animeDetailComplement
-            every { DateUtils.isEpisodeAreUpToDate(any(), any(), any(), any()) } returns false
-            coEvery { runwayAPI.getEpisodes(any()) } returns Response.error(400, mockk())
+            val responseBody = mockk<okhttp3.ResponseBody> {
+                every { contentType() } returns "application/json".toMediaTypeOrNull()
+                every { contentLength() } returns 0L
+            }
+            val errorResponse = Response.error<EpisodesResponse>(400, responseBody)
+            coEvery { runwayAPI.getEpisodes(any()) } returns errorResponse
 
             val result = animeDetailRepository.updateAnimeDetailComplementWithEpisodes(
                 animeDetail,
                 animeDetailComplement
             )
 
-            assertNull(result)
+            assertEquals(animeDetailComplement, result)
         }
 
     @Test

@@ -36,8 +36,8 @@ class AnimeDetailRepository(
                 val remoteData =
                     ResponseHandler.handleCommonResponse(jikanAPI.getAnimeDetail(cache.mal_id))
 
-                if (remoteData is Resource.Success && remoteData.data?.data != cache) {
-                    remoteData.data?.data?.let {
+                if (remoteData is Resource.Success && remoteData.data.data != cache) {
+                    remoteData.data.data.let {
                         animeDetailDao.updateAnimeDetail(it)
                         Response.success(remoteData.data)
                     } ?: Response.success(AnimeDetailResponse(cache))
@@ -89,7 +89,7 @@ class AnimeDetailRepository(
                 runwayAPI.getEpisodes(cachedAnimeDetailComplement.id)
             )
             if (episodesResponse is Resource.Success) {
-                val episodes = episodesResponse.data?.episodes ?: return@withContext null
+                val episodes = episodesResponse.data.episodes
 
                 if (episodes != cachedAnimeDetailComplement.episodes) {
                     val updatedAnimeDetail = cachedAnimeDetailComplement.copy(episodes = episodes)
@@ -98,9 +98,9 @@ class AnimeDetailRepository(
                 } else {
                     return@withContext cachedAnimeDetailComplement
                 }
+            } else {
+                return@withContext cachedAnimeDetailComplement
             }
-
-            return@withContext null
         } else {
             return@withContext cachedAnimeDetailComplement
         }

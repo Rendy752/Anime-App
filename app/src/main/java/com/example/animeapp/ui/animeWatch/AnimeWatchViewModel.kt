@@ -88,8 +88,8 @@ class AnimeWatchViewModel @Inject constructor(
                             return@launch
                         }
 
-                        episodeServersResource.data?.let { servers ->
-                            episodeSourcesResource.data?.let { sources ->
+                        episodeServersResource.data.let { servers ->
+                            episodeSourcesResource.data.let { sources ->
                                 val updatedEpisodeDetailComplement =
                                     cachedEpisodeDetailComplement.copy(
                                         servers = servers,
@@ -138,8 +138,8 @@ class AnimeWatchViewModel @Inject constructor(
                 return@launch
             }
 
-            episodeServersResource.data?.let { servers ->
-                episodeSourcesResource.data?.let { sources ->
+            episodeServersResource.data.let { servers ->
+                episodeSourcesResource.data.let { sources ->
                     val cachedEpisodeDetailComplement =
                         animeStreamingRepository.getCachedEpisodeDetailComplement(
                             episodeSourcesQuery.id

@@ -141,7 +141,7 @@ class AnimeDetailViewModel @Inject constructor(
                     }
 
                     val defaultEpisodeServersResponse =
-                        getDefaultEpisodeServers(episodesResponse.data?.episodes?.firstOrNull()?.episodeId)
+                        getDefaultEpisodeServers(episodesResponse.data.episodes.firstOrNull()?.episodeId)
 
                     if (defaultEpisodeServersResponse !is Resource.Success) {
                         continue
@@ -160,7 +160,7 @@ class AnimeDetailViewModel @Inject constructor(
                         val cachedAnimeDetailComplement = AnimeDetailComplement(
                             _id = anime.id,
                             malId = animeDetail.mal_id,
-                            episodes = episodesResponse.data?.episodes ?: emptyList(),
+                            episodes = episodesResponse.data.episodes,
                             eps = anime.episodes?.eps,
                             sub = anime.episodes?.sub,
                             dub = anime.episodes?.dub,
@@ -172,8 +172,8 @@ class AnimeDetailViewModel @Inject constructor(
                         _animeDetailComplement.value =
                             Resource.Success(cachedAnimeDetailComplement)
 
-                        defaultEpisodeServersResponse.data?.let { servers ->
-                            defaultEpisodeSourcesResponse.data?.let { sources ->
+                        defaultEpisodeServersResponse.data.let { servers ->
+                            defaultEpisodeSourcesResponse.data.let { sources ->
                                 val cachedEpisodeDetailComplement =
                                     StreamingUtils.getEpisodeQuery(
                                         Resource.Success(servers),
