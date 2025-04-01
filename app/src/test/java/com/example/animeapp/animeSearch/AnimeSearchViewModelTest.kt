@@ -1,9 +1,19 @@
-package com.example.animeapp.animeRecommendations
+package com.example.animeapp.animeSearch
 
-import com.example.animeapp.ui.animeSearch.AnimeSearchViewModel
-
-import com.example.animeapp.models.*
+import com.example.animeapp.models.AnimeDetailResponse
+import com.example.animeapp.models.AnimeSearchResponse
+import com.example.animeapp.models.CompletePagination
+import com.example.animeapp.models.Genre
+import com.example.animeapp.models.GenresResponse
+import com.example.animeapp.models.JpgImage
+import com.example.animeapp.models.Producer
+import com.example.animeapp.models.ProducerImage
+import com.example.animeapp.models.ProducersResponse
+import com.example.animeapp.models.Title
+import com.example.animeapp.models.genrePlaceholder
+import com.example.animeapp.models.producerPlaceholder
 import com.example.animeapp.repository.AnimeSearchRepository
+import com.example.animeapp.ui.animeSearch.AnimeSearchViewModel
 import com.example.animeapp.utils.Resource
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -17,7 +27,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
-import org.junit.Assert.assertEquals
+import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 import retrofit2.Response
@@ -81,7 +91,7 @@ class AnimeSearchViewModelTest {
 
         val result = viewModel.genres.first()
 
-        assertEquals(Resource.Success(genresResponse), result)
+        Assert.assertEquals(Resource.Success(genresResponse), result)
     }
 
     @Test
@@ -90,7 +100,7 @@ class AnimeSearchViewModelTest {
 
         viewModel.setSelectedGenre(genre)
 
-        assertEquals(listOf(genre), viewModel.selectedGenres.value)
+        Assert.assertEquals(listOf(genre), viewModel.selectedGenres.value)
     }
 
     @Test
@@ -98,15 +108,18 @@ class AnimeSearchViewModelTest {
         val genre = genrePlaceholder.copy(mal_id = 1)
         viewModel.setSelectedGenre(genre)
         val searchResponse =
-            AnimeSearchResponse(data = emptyList(), pagination = CompletePagination.default())
+            AnimeSearchResponse(
+                data = emptyList(),
+                pagination = CompletePagination.Companion.default()
+            )
         coEvery { repository.searchAnime(any()) } returns Response.success(searchResponse)
 
         viewModel.applyGenreFilters()
         testDispatcher.scheduler.advanceUntilIdle()
 
         val result = viewModel.animeSearchResults.first()
-        assertEquals("1", viewModel.queryState.value.genres)
-        assertEquals(Resource.Success(searchResponse), result)
+        Assert.assertEquals("1", viewModel.queryState.value.genres)
+        Assert.assertEquals(Resource.Success(searchResponse), result)
     }
 
     @Test
@@ -123,8 +136,8 @@ class AnimeSearchViewModelTest {
 
         viewModel.resetGenreSelection()
 
-        assertEquals(emptyList<Genre>(), viewModel.selectedGenres.value)
-        assertEquals(null, viewModel.queryState.value.genres)
+        Assert.assertEquals(emptyList<Genre>(), viewModel.selectedGenres.value)
+        Assert.assertEquals(null, viewModel.queryState.value.genres)
     }
 
     @Test
@@ -153,7 +166,7 @@ class AnimeSearchViewModelTest {
         )
 
         val producersResponse = ProducersResponse(
-            pagination = CompletePagination.default(),
+            pagination = CompletePagination.Companion.default(),
             data = producers
         )
 
@@ -164,7 +177,7 @@ class AnimeSearchViewModelTest {
 
         val result = viewModel.producers.first()
 
-        assertEquals(Resource.Success(producersResponse), result)
+        Assert.assertEquals(Resource.Success(producersResponse), result)
     }
 
     @Test
@@ -172,7 +185,7 @@ class AnimeSearchViewModelTest {
         val producer = producerPlaceholder
 
         viewModel.setSelectedProducer(producer)
-        assertEquals(listOf(producer), viewModel.selectedProducers.value)
+        Assert.assertEquals(listOf(producer), viewModel.selectedProducers.value)
     }
 
     @Test
@@ -180,15 +193,18 @@ class AnimeSearchViewModelTest {
         val producer = producerPlaceholder.copy(mal_id = 1)
         viewModel.setSelectedProducer(producer)
         val searchResponse =
-            AnimeSearchResponse(data = emptyList(), pagination = CompletePagination.default())
+            AnimeSearchResponse(
+                data = emptyList(),
+                pagination = CompletePagination.Companion.default()
+            )
         coEvery { repository.searchAnime(any()) } returns Response.success(searchResponse)
 
         viewModel.applyProducerFilters()
         testDispatcher.scheduler.advanceUntilIdle()
 
         val result = viewModel.animeSearchResults.first()
-        assertEquals("1", viewModel.queryState.value.producers)
-        assertEquals(Resource.Success(searchResponse), result)
+        Assert.assertEquals("1", viewModel.queryState.value.producers)
+        Assert.assertEquals(Resource.Success(searchResponse), result)
     }
 
     @Test
@@ -206,8 +222,8 @@ class AnimeSearchViewModelTest {
 
         viewModel.resetProducerSelection()
 
-        assertEquals(emptyList<Producer>(), viewModel.selectedProducers.value)
-        assertEquals(null, viewModel.queryState.value.producers)
+        Assert.assertEquals(emptyList<Producer>(), viewModel.selectedProducers.value)
+        Assert.assertEquals(null, viewModel.queryState.value.producers)
     }
 
     @Test
@@ -221,7 +237,7 @@ class AnimeSearchViewModelTest {
         viewModel.resetBottomSheetFilters()
         testDispatcher.scheduler.advanceUntilIdle()
 
-        assertEquals(initialQueryState.resetBottomSheetFilters(), viewModel.queryState.value)
+        Assert.assertEquals(initialQueryState.resetBottomSheetFilters(), viewModel.queryState.value)
         coVerify { repository.searchAnime(initialQueryState.resetBottomSheetFilters()) }
     }
 }
