@@ -32,11 +32,14 @@ import com.example.animeapp.utils.IntroOutroHandler
 import androidx.compose.runtime.LaunchedEffect
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeSourcesQuery
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 @OptIn(UnstableApi::class, ExperimentalComposeUiApi::class)
 @Composable
 fun VideoPlayerSection(
     episodeDetailComplement: EpisodeDetailComplement,
+    updateEpisodeDetailComplement: (EpisodeDetailComplement) -> Unit,
     episodes: List<Episode>,
     episodeSourcesQuery: EpisodeSourcesQuery,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
@@ -64,6 +67,7 @@ fun VideoPlayerSection(
         episodes.find { it.episodeNo == currentEpisodeNo + 1 }
     }
     var isLoading by remember { mutableStateOf(false) }
+    var isShowResumeOverlay by remember { mutableStateOf(episodeDetailComplement.lastTimestamp != null) }
     var isShowNextEpisode by remember { mutableStateOf(false) }
     var nextEpisodeName by remember { mutableStateOf("") }
     var mediaSessionCompat: MediaSessionCompat? by remember { mutableStateOf(null) }
@@ -71,6 +75,7 @@ fun VideoPlayerSection(
     val playbackStateBuilder = remember { PlaybackStateCompat.Builder() }
 
     fun updatePlaybackState(state: Int) {
+        isShowResumeOverlay = false
         playbackStateBuilder.setState(state, exoPlayer.currentPosition, 1.0f)
         mediaSessionCompat?.setPlaybackState(playbackStateBuilder.build())
     }
@@ -116,6 +121,7 @@ fun VideoPlayerSection(
                         isShowNextEpisode = false
                     }
                 }
+                if (exoPlayer.currentPosition > 0) isShowResumeOverlay = false
             }
         }
         exoPlayer.addListener(listener)
@@ -210,8 +216,18 @@ fun VideoPlayerSection(
         onDispose {
             exoPlayer.removeListener(listener)
             introOutroHandler.stop()
+
             HlsPlayerUtil.abandonAudioFocus(audioManager)
             HlsPlayerUtil.releasePlayer(playerView)
+            val seekPosition = exoPlayer.currentPosition
+            if (seekPosition > 10000 && seekPosition != episodeDetailComplement.lastTimestamp) {
+                val updatedEpisode = episodeDetailComplement.copy(
+                    lastTimestamp = seekPosition,
+                    lastWatched = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+                )
+                updateEpisodeDetailComplement(updatedEpisode)
+            }
+
             mediaSessionCompat?.release()
             mediaSessionCompat = null
             mediaControllerCompat = null
@@ -235,6 +251,8 @@ fun VideoPlayerSection(
         onEnterPipMode = onEnterPipMode,
         isFullscreen = isFullscreen,
         onFullscreenChange = onFullscreenChange,
+        isShowResumeOverlay = isShowResumeOverlay,
+        setShowResumeOverlay = { isShowResumeOverlay = it },
         isShowNextEpisode = isShowNextEpisode,
         setShowNextEpisode = { isShowNextEpisode = it },
         nextEpisodeName = nextEpisodeName,

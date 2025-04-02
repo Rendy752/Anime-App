@@ -97,9 +97,7 @@ class AnimeWatchViewModel @Inject constructor(
                                         sourcesQuery = episodeSourcesQuery
                                     )
 
-                                animeStreamingRepository.updateEpisodeDetailComplement(
-                                    updatedEpisodeDetailComplement
-                                )
+                                updateEpisodeDetailComplement(updatedEpisodeDetailComplement)
                                 _episodeDetailComplement.value =
                                     Resource.Success(updatedEpisodeDetailComplement)
                                 return@launch
@@ -145,7 +143,7 @@ class AnimeWatchViewModel @Inject constructor(
                             episodeSourcesQuery.id
                         )
                     if (cachedEpisodeDetailComplement != null && cachedEpisodeDetailComplement.sourcesQuery != episodeSourcesQuery) {
-                        animeStreamingRepository.updateEpisodeDetailComplement(
+                        updateEpisodeDetailComplement(
                             cachedEpisodeDetailComplement.copy(
                                 servers = servers,
                                 sources = sources,
@@ -180,6 +178,14 @@ class AnimeWatchViewModel @Inject constructor(
                 Resource.Error(e.message ?: "An unexpected error occurred")
         } finally {
             _isRefreshing.value = false
+        }
+    }
+
+    fun updateEpisodeDetailComplement(updatedEpisodeDetailComplement: EpisodeDetailComplement) {
+        viewModelScope.launch {
+            animeStreamingRepository.updateEpisodeDetailComplement(
+                updatedEpisodeDetailComplement
+            )
         }
     }
 

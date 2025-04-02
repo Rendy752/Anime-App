@@ -24,6 +24,7 @@ import com.example.animeapp.utils.Resource
 fun AnimeWatchContent(
     animeDetail: AnimeDetail,
     episodeDetailComplement: Resource<EpisodeDetailComplement>,
+    updateEpisodeDetailComplement: (EpisodeDetailComplement) -> Unit,
     episodes: List<Episode>?,
     episodeSourcesQuery: EpisodeSourcesQuery?,
     isLandscape: Boolean,
@@ -43,23 +44,22 @@ fun AnimeWatchContent(
         episodeSourcesQuery?.let { query ->
             Row(modifier = Modifier.fillMaxWidth()) {
                 if (episodeDetailComplement is Resource.Success) {
-                    episodeDetailComplement.data?.let {
-                        VideoPlayerSection(
-                            episodeDetailComplement = it,
-                            episodes = episodeList,
-                            episodeSourcesQuery = query,
-                            handleSelectedEpisodeServer = handleSelectedEpisodeServer,
-                            isPipMode = isPipMode,
-                            onEnterPipMode = onEnterPipMode,
-                            isFullscreen = isFullscreen,
-                            onFullscreenChange = onFullscreenChange,
-                            isScreenOn = isScreenOn,
-                            isLandscape = isLandscape,
-                            onPlayerError = onPlayerError,
-                            modifier = modifier,
-                            videoSize = videoSize
-                        )
-                    }
+                    VideoPlayerSection(
+                        episodeDetailComplement = episodeDetailComplement.data,
+                        updateEpisodeDetailComplement = updateEpisodeDetailComplement,
+                        episodes = episodeList,
+                        episodeSourcesQuery = query,
+                        handleSelectedEpisodeServer = handleSelectedEpisodeServer,
+                        isPipMode = isPipMode,
+                        onEnterPipMode = onEnterPipMode,
+                        isFullscreen = isFullscreen,
+                        onFullscreenChange = onFullscreenChange,
+                        isScreenOn = isScreenOn,
+                        isLandscape = isLandscape,
+                        onPlayerError = onPlayerError,
+                        modifier = modifier,
+                        videoSize = videoSize
+                    )
                 } else {
                     Box(modifier = modifier.then(videoSize)) {
                         SkeletonBox(modifier = Modifier.fillMaxSize())

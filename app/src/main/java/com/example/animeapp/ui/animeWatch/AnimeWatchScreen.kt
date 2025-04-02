@@ -212,6 +212,7 @@ fun AnimeWatchScreen(
                     AnimeWatchContent(
                         animeDetail,
                         episodeDetailComplement,
+                        { viewModel.updateEpisodeDetailComplement(it) },
                         episodes,
                         episodeSourcesQuery,
                         isLandscape,

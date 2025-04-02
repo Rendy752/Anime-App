@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun Modifier.basicContainer(
     isError: Boolean = false,
+    isTertiary: Boolean = false,
     isPrimary: Boolean = false,
     onItemClick: (() -> Unit)? = null,
     backgroundBrush: Brush? = null,
@@ -40,6 +41,15 @@ fun Modifier.basicContainer(
                         colors = listOf(
                             MaterialTheme.colorScheme.error,
                             MaterialTheme.colorScheme.errorContainer
+                        )
+                    )
+                )
+            } else if (isTertiary) {
+                Modifier.background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            MaterialTheme.colorScheme.tertiary,
+                            MaterialTheme.colorScheme.tertiaryContainer
                         )
                     )
                 )

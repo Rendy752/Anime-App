@@ -35,6 +35,8 @@ fun VideoPlayer(
     onEnterPipMode: () -> Unit,
     isFullscreen: Boolean,
     onFullscreenChange: (Boolean) -> Unit,
+    isShowResumeOverlay: Boolean,
+    setShowResumeOverlay: (Boolean) -> Unit,
     isShowNextEpisode: Boolean,
     setShowNextEpisode: (Boolean) -> Unit,
     nextEpisodeName: String,
@@ -47,9 +49,9 @@ fun VideoPlayer(
     var isHolding by remember { mutableStateOf(false) }
     var isFromHolding by remember { mutableStateOf(false) }
     var speedUpText by remember { mutableStateOf("1x speed") }
-    var showSpeedUp by remember { mutableStateOf(false) }
-    var showPip by remember { mutableStateOf(false) }
-    var showSeekIndicator by remember { mutableStateOf(false) }
+    var isShowSpeedUp by remember { mutableStateOf(false) }
+    var isShowPip by remember { mutableStateOf(false) }
+    var isShowSeekIndicator by remember { mutableStateOf(false) }
     var seekDirection by remember { mutableIntStateOf(0) }
     var seekAmount by remember { mutableLongStateOf(0L) }
     var isSeeking by remember { mutableStateOf(false) }
@@ -62,31 +64,41 @@ fun VideoPlayer(
             onFullscreenChange = onFullscreenChange,
             isFullscreen = isFullscreen,
             isLandscape = isLandscape,
-            onPipVisibilityChange = { showPip = it },
+            onPipVisibilityChange = { isShowPip = it },
             onSpeedChange = { speed, isHolding ->
                 speedUpText = "${speed.toInt()}x speed"
-                showSpeedUp = isHolding
+                isShowSpeedUp = isHolding
             },
             onHoldingChange = { holding, fromHolding ->
                 isHolding = holding
                 isFromHolding = fromHolding
             },
             onSeek = { direction, amount ->
-                showSeekIndicator = true
+                isShowSeekIndicator = true
                 seekDirection = direction
                 seekAmount = amount
                 isSeeking = true
                 Handler(Looper.getMainLooper()).postDelayed({
-                    showSeekIndicator = false
+                    isShowSeekIndicator = false
                     isSeeking = false
                 }, 1000)
             }
         )
-        if (showSeekIndicator) SeekIndicator(
+        if (isShowSeekIndicator) SeekIndicator(
             seekDirection = seekDirection,
             seekAmount = seekAmount,
             modifier = Modifier.align(Alignment.Center)
         )
+
+        if (!isPipMode && isShowResumeOverlay && episodeDetailComplement.lastTimestamp != null) {
+            ResumePlaybackOverlay(
+                lastTimestamp = episodeDetailComplement.lastTimestamp,
+                onClose = { setShowResumeOverlay(false) },
+                onRestart = { exoPlayer.seekTo(0); exoPlayer.play(); setShowResumeOverlay(false) },
+                onResume = { exoPlayer.seekTo(it); exoPlayer.play(); setShowResumeOverlay(false) },
+                modifier = Modifier.align(Alignment.Center)
+            )
+        }
 
         if (isShowNextEpisode) NextEpisodeOverlay(
             nextEpisodeName = nextEpisodeName,
@@ -101,7 +113,7 @@ fun VideoPlayer(
             modifier = Modifier.align(Alignment.Center)
         )
 
-        if (!isPipMode) SkipIntroOutroButtons(
+        if (!isPipMode && !isShowResumeOverlay) SkipIntroOutroButtons(
             showIntro = showIntro,
             showOutro = showOutro,
             introEnd = episodeDetailComplement.sources.intro?.end ?: 0,
@@ -111,12 +123,12 @@ fun VideoPlayer(
             modifier = Modifier.align(Alignment.BottomEnd)
         )
 
-        if (showPip && !isPipMode) PipButton(
+        if (isShowPip && !isPipMode) PipButton(
             onEnterPipMode = onEnterPipMode,
             modifier = Modifier.align(Alignment.TopCenter)
         )
 
-        if (showSpeedUp && !isPipMode) SpeedUpIndicator(
+        if (isShowSpeedUp && !isPipMode) SpeedUpIndicator(
             speedText = speedUpText,
             modifier = Modifier.align(Alignment.TopCenter)
         )

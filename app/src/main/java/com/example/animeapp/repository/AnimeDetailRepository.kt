@@ -8,7 +8,7 @@ import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.models.EpisodeDetailComplement
-import com.example.animeapp.utils.DateUtils
+import com.example.animeapp.utils.TimeUtils
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ResponseHandler
 import kotlinx.coroutines.Dispatchers
@@ -51,7 +51,7 @@ class AnimeDetailRepository(
     }
 
     private suspend fun isDataNeedUpdate(data: AnimeDetail): Boolean {
-        return data.airing && !DateUtils.isEpisodeAreUpToDate(
+        return data.airing && !TimeUtils.isEpisodeAreUpToDate(
             data.broadcast.time,
             data.broadcast.timezone,
             data.broadcast.day,

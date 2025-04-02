@@ -10,8 +10,9 @@ import java.time.LocalTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.temporal.TemporalAdjusters
+import java.util.concurrent.TimeUnit
 
-object DateUtils {
+object TimeUtils {
     fun formatDateToAgo(dateString: String): String {
         val prettyTime = PrettyTime(Locale.getDefault())
         val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.getDefault())
@@ -71,6 +72,18 @@ object DateUtils {
         } catch (e: Exception) {
             println("Error parsing broadcast time: ${e.message}")
             return false
+        }
+    }
+
+    fun formatTimestamp(timestamp: Long): String {
+        val hours = TimeUnit.MILLISECONDS.toHours(timestamp)
+        val minutes = TimeUnit.MILLISECONDS.toMinutes(timestamp) % TimeUnit.HOURS.toMinutes(1)
+        val seconds = TimeUnit.MILLISECONDS.toSeconds(timestamp) % TimeUnit.MINUTES.toSeconds(1)
+
+        return if (hours > 0) {
+            String.format(Locale.US, "%02d:%02d:%02d", hours, minutes, seconds)
+        } else {
+            String.format(Locale.US, "%02d:%02d", minutes, seconds)
         }
     }
 }

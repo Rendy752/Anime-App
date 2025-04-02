@@ -10,7 +10,7 @@ import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.EpisodesResponse
 import com.example.animeapp.repository.AnimeDetailRepository
-import com.example.animeapp.utils.DateUtils
+import com.example.animeapp.utils.TimeUtils
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
@@ -47,7 +47,7 @@ class AnimeDetailRepositoryTest {
         val animeDetail = mockk<AnimeDetail>()
         val animeDetailResponse = AnimeDetailResponse(animeDetail)
         coEvery { animeDetailDao.getAnimeDetailById(animeId) } returns animeDetail
-        every { DateUtils.isEpisodeAreUpToDate(any(), any(), any(), any()) } returns true
+        every { TimeUtils.isEpisodeAreUpToDate(any(), any(), any(), any()) } returns true
 
         val result = animeDetailRepository.getAnimeDetail(animeId)
 
@@ -60,7 +60,7 @@ class AnimeDetailRepositoryTest {
         val animeDetail = mockk<AnimeDetail>()
         val animeDetailResponse = AnimeDetailResponse(animeDetail)
         coEvery { animeDetailDao.getAnimeDetailById(animeId) } returns animeDetail
-        every { DateUtils.isEpisodeAreUpToDate(any(), any(), any(), any()) } returns false
+        every { TimeUtils.isEpisodeAreUpToDate(any(), any(), any(), any()) } returns false
         coEvery { jikanAPI.getAnimeDetail(animeId) } returns Response.success(animeDetailResponse)
         coEvery { animeDetailDao.updateAnimeDetail(any()) } returns Unit
 
@@ -107,7 +107,7 @@ class AnimeDetailRepositoryTest {
             val animeDetail = mockk<AnimeDetail>()
             val animeDetailComplement = mockk<AnimeDetailComplement>()
             coEvery { animeDetailComplementDao.getAnimeDetailComplementByMalId(any()) } returns animeDetailComplement
-            every { DateUtils.isEpisodeAreUpToDate(any(), any(), any(), any()) } returns false
+            every { TimeUtils.isEpisodeAreUpToDate(any(), any(), any(), any()) } returns false
             coEvery { runwayAPI.getEpisodes(any()) } returns Response.success(mockk())
             coEvery { animeDetailComplementDao.updateEpisodeAnimeDetailComplement(any()) } returns Unit
             every {
@@ -140,7 +140,7 @@ class AnimeDetailRepositoryTest {
             val animeDetail = mockk<AnimeDetail>()
             val animeDetailComplement = mockk<AnimeDetailComplement>()
             coEvery { animeDetailComplementDao.getAnimeDetailComplementByMalId(any()) } returns animeDetailComplement
-            every { DateUtils.isEpisodeAreUpToDate(any(), any(), any(), any()) } returns true
+            every { TimeUtils.isEpisodeAreUpToDate(any(), any(), any(), any()) } returns true
 
             val result = animeDetailRepository.updateAnimeDetailComplementWithEpisodes(
                 animeDetail,
