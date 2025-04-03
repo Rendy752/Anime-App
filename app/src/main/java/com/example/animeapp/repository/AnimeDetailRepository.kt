@@ -80,6 +80,11 @@ class AnimeDetailRepository(
             animeDetailComplementDao.insertAnimeDetailComplement(animeDetailComplement)
         }
 
+    suspend fun updateAnimeDetailComplement(updatedAnimeDetailComplement: AnimeDetailComplement) =
+        withContext(Dispatchers.IO) {
+            animeDetailComplementDao.updateAnimeDetailComplement(updatedAnimeDetailComplement)
+        }
+
     suspend fun updateAnimeDetailComplementWithEpisodes(
         animeDetail: AnimeDetail,
         cachedAnimeDetailComplement: AnimeDetailComplement

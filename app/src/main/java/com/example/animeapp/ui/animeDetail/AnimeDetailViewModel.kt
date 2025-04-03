@@ -249,4 +249,12 @@ class AnimeDetailViewModel @Inject constructor(
 
     private fun checkEpisodeSourceMalId(response: Resource<EpisodeSourcesResponse>): Boolean =
         _animeDetail.value?.data?.data?.mal_id == response.data?.malID
+
+    fun updateAnimeDetailComplement(updatedAnimeDetailComplement: AnimeDetailComplement) {
+        viewModelScope.launch {
+            animeDetailRepository.updateAnimeDetailComplement(
+                updatedAnimeDetailComplement
+            )
+        }
+    }
 }

@@ -82,7 +82,7 @@ fun AnimeDetailScreen(animeTitle: String, animeId: Int, navController: NavContro
             animeDetailComplement,
             defaultEpisode,
             navController
-        )
+        ) { viewModel.updateAnimeDetailComplement(it) }
     }) { paddingValues ->
         when (animeDetail) {
             is Resource.Loading -> LoadingContent(paddingValues, isLandscape)
