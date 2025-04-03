@@ -32,6 +32,7 @@ import com.example.animeapp.utils.IntroOutroHandler
 import androidx.compose.runtime.LaunchedEffect
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeSourcesQuery
+import com.example.animeapp.models.EpisodeSourcesResponse
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -147,6 +148,25 @@ fun VideoPlayerSection(
             )
 
             setCallback(object : MediaSessionCompat.Callback() {
+                fun skipTimeRange(
+                    sources: EpisodeSourcesResponse,
+                    isToEnd: Boolean = true,
+                    handleSelectedEpisodeServer: () -> Unit = {}
+                ) {
+                    val currentPosition = exoPlayer.currentPosition / 1000
+                    val videoDuration = exoPlayer.duration / 1000
+
+                    if (currentPosition == 0L || (videoDuration != -9223372036854775L && currentPosition >= videoDuration - 1)) {
+                        handleSelectedEpisodeServer()
+                    } else if (sources.outro?.start != null && currentPosition in sources.outro.start..sources.outro.end) {
+                        exoPlayer.seekTo(if (isToEnd) sources.outro.end * 1000L else sources.outro.start * 1000L)
+                    } else if (sources.intro?.start != null && currentPosition in sources.intro.start..sources.intro.end) {
+                        exoPlayer.seekTo(if (isToEnd) sources.intro.end * 1000L else sources.intro.start * 1000L)
+                    } else {
+                        handleSelectedEpisodeServer()
+                    }
+                }
+
                 override fun onPlay() {
                     exoPlayer.play()
                     updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
@@ -162,10 +182,12 @@ fun VideoPlayerSection(
                     nextClickRunnable?.let { handler.removeCallbacks(it) }
 
                     if (nextClickCount >= 3) {
-                        nextEpisode?.let {
-                            handleSelectedEpisodeServer(
-                                episodeSourcesQuery.copy(id = it.episodeId)
-                            )
+                        skipTimeRange(episodeDetailComplement.sources) {
+                            nextEpisode?.let {
+                                handleSelectedEpisodeServer(
+                                    episodeSourcesQuery.copy(id = it.episodeId)
+                                )
+                            }
                         }
                         nextClickCount = 0
                     } else {
@@ -184,10 +206,12 @@ fun VideoPlayerSection(
                     previousClickRunnable?.let { handler.removeCallbacks(it) }
 
                     if (previousClickCount >= 3) {
-                        previousEpisode?.let {
-                            handleSelectedEpisodeServer(
-                                episodeSourcesQuery.copy(id = it.episodeId)
-                            )
+                        skipTimeRange(episodeDetailComplement.sources, false) {
+                            previousEpisode?.let {
+                                handleSelectedEpisodeServer(
+                                    episodeSourcesQuery.copy(id = it.episodeId)
+                                )
+                            }
                         }
                         previousClickCount = 0
                     } else {
