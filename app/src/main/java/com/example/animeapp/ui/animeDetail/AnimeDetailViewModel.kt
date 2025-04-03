@@ -102,7 +102,30 @@ class AnimeDetailViewModel @Inject constructor(
             cachedAnimeDetail.episodes.firstOrNull()?.episodeId?.let { episodeId ->
                 val cachedEpisodeDetailComplement =
                     animeDetailRepository.getCachedEpisodeDetailComplement(episodeId)
-                _defaultEpisode.value = cachedEpisodeDetailComplement
+                if (cachedEpisodeDetailComplement != null) _defaultEpisode.value =
+                    cachedEpisodeDetailComplement
+                else {
+                    val defaultEpisodeServersResponse =
+                        getDefaultEpisodeServers(cachedAnimeDetail.episodes.firstOrNull()?.episodeId)
+                    val defaultEpisodeSourcesResponse =
+                        StreamingUtils.getEpisodeSources(
+                            defaultEpisodeServersResponse,
+                            animeStreamingRepository
+                        )
+
+                    if (defaultEpisodeServersResponse is Resource.Success &&
+                        defaultEpisodeSourcesResponse is Resource.Success &&
+                        checkEpisodeSourceMalId(defaultEpisodeSourcesResponse)
+                    ) {
+                        _animeDetail.value?.data?.data?.let { animeDetail ->
+                            insertCachedEpisodeDetailComplement(
+                                defaultEpisodeServersResponse,
+                                defaultEpisodeSourcesResponse,
+                                animeDetail
+                            )
+                        }
+                    }
+                }
             }
 
             return true
@@ -142,21 +165,16 @@ class AnimeDetailViewModel @Inject constructor(
 
                     val defaultEpisodeServersResponse =
                         getDefaultEpisodeServers(episodesResponse.data.episodes.firstOrNull()?.episodeId)
-
-                    if (defaultEpisodeServersResponse !is Resource.Success) {
-                        continue
-                    }
+                    if (defaultEpisodeServersResponse !is Resource.Success) continue
 
                     val defaultEpisodeSourcesResponse =
                         StreamingUtils.getEpisodeSources(
                             defaultEpisodeServersResponse,
                             animeStreamingRepository
                         )
+                    if (defaultEpisodeSourcesResponse !is Resource.Success) continue
 
-                    if (defaultEpisodeSourcesResponse is Resource.Success && checkEpisodeSourceMalId(
-                            defaultEpisodeSourcesResponse
-                        )
-                    ) {
+                    if (checkEpisodeSourceMalId(defaultEpisodeSourcesResponse)) {
                         val cachedAnimeDetailComplement = AnimeDetailComplement(
                             _id = anime.id,
                             malId = animeDetail.mal_id,
@@ -166,34 +184,17 @@ class AnimeDetailViewModel @Inject constructor(
                             dub = anime.episodes?.dub,
                         )
 
-                        cachedAnimeDetailComplement.let {
-                            animeDetailRepository.insertCachedAnimeDetailComplement(it)
-                        }
+                        animeDetailRepository.insertCachedAnimeDetailComplement(
+                            cachedAnimeDetailComplement
+                        )
                         _animeDetailComplement.value =
                             Resource.Success(cachedAnimeDetailComplement)
 
-                        defaultEpisodeServersResponse.data.let { servers ->
-                            defaultEpisodeSourcesResponse.data.let { sources ->
-                                val cachedEpisodeDetailComplement =
-                                    StreamingUtils.getEpisodeQuery(
-                                        Resource.Success(servers),
-                                        servers.episodeId
-                                    )?.let { query ->
-                                        EpisodeDetailComplement(
-                                            id = servers.episodeId,
-                                            title = animeDetail.title,
-                                            imageUrl = animeDetail.images.jpg.image_url,
-                                            servers = servers,
-                                            sources = sources,
-                                            sourcesQuery = query
-                                        )
-                                    }
-                                cachedEpisodeDetailComplement?.let {
-                                    animeDetailRepository.insertCachedEpisodeDetailComplement(it)
-                                    _defaultEpisode.value = cachedEpisodeDetailComplement
-                                }
-                            }
-                        }
+                        insertCachedEpisodeDetailComplement(
+                            defaultEpisodeServersResponse,
+                            defaultEpisodeSourcesResponse,
+                            animeDetail
+                        )
                         return@launch
                     }
                 }
@@ -201,6 +202,35 @@ class AnimeDetailViewModel @Inject constructor(
                 _animeDetailComplement.value = Resource.Error("No matching anime found")
             }
         }
+
+    private fun insertCachedEpisodeDetailComplement(
+        defaultEpisodeServersResponse: Resource.Success<EpisodeServersResponse>,
+        defaultEpisodeSourcesResponse: Resource.Success<EpisodeSourcesResponse>,
+        animeDetail: AnimeDetail
+    ) = viewModelScope.launch {
+        defaultEpisodeServersResponse.data.let { servers ->
+            defaultEpisodeSourcesResponse.data.let { sources ->
+                val cachedEpisodeDetailComplement =
+                    StreamingUtils.getEpisodeQuery(
+                        Resource.Success(servers),
+                        servers.episodeId
+                    )?.let { query ->
+                        EpisodeDetailComplement(
+                            id = servers.episodeId,
+                            title = animeDetail.title,
+                            imageUrl = animeDetail.images.jpg.image_url,
+                            servers = servers,
+                            sources = sources,
+                            sourcesQuery = query
+                        )
+                    }
+                cachedEpisodeDetailComplement?.let {
+                    animeDetailRepository.insertCachedEpisodeDetailComplement(it)
+                    _defaultEpisode.value = it
+                }
+            }
+        }
+    }
 
     private suspend fun getEpisodes(animeId: String): Resource<EpisodesResponse> =
         viewModelScope.async {
