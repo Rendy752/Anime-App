@@ -90,8 +90,9 @@ fun VideoPlayer(
             modifier = Modifier.align(Alignment.Center)
         )
 
-        if (!isPipMode && isShowResumeOverlay && episodeDetailComplement.lastTimestamp != null) {
+        if (isShowResumeOverlay && episodeDetailComplement.lastTimestamp != null) {
             ResumePlaybackOverlay(
+                isPipMode = isPipMode,
                 lastTimestamp = episodeDetailComplement.lastTimestamp,
                 onClose = { setShowResumeOverlay(false) },
                 onRestart = { exoPlayer.seekTo(0); exoPlayer.play(); setShowResumeOverlay(false) },

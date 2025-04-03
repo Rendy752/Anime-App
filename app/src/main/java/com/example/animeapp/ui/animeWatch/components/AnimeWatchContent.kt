@@ -23,6 +23,7 @@ import com.example.animeapp.utils.Resource
 @Composable
 fun AnimeWatchContent(
     animeDetail: AnimeDetail,
+    getCachedEpisodeDetailComplement: suspend (String) -> EpisodeDetailComplement?,
     episodeDetailComplement: Resource<EpisodeDetailComplement>,
     updateEpisodeDetailComplement: (EpisodeDetailComplement) -> Unit,
     episodes: List<Episode>?,
@@ -77,6 +78,7 @@ fun AnimeWatchContent(
                             if (selectedContentIndex == 0) {
                                 WatchContentSection(
                                     animeDetail,
+                                    getCachedEpisodeDetailComplement,
                                     episodeDetailComplement,
                                     episodes,
                                     episodeSourcesQuery
@@ -98,6 +100,7 @@ fun AnimeWatchContent(
                     item {
                         WatchContentSection(
                             animeDetail,
+                            getCachedEpisodeDetailComplement,
                             episodeDetailComplement,
                             episodes,
                             episodeSourcesQuery

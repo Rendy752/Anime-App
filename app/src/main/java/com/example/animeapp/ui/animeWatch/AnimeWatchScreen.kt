@@ -156,9 +156,11 @@ fun AnimeWatchScreen(
                 animeDetail,
                 isLandscape,
                 networkStatus,
+                navController,
                 selectedContentIndex,
                 { selectedContentIndex = it },
-                navController
+                episodeDetailComplement,
+                { viewModel.updateEpisodeDetailComplement(it) }
             )
         },
     ) { paddingValues ->
@@ -211,6 +213,7 @@ fun AnimeWatchScreen(
                 } else {
                     AnimeWatchContent(
                         animeDetail,
+                        { viewModel.getCachedEpisodeDetailComplement(it) },
                         episodeDetailComplement,
                         { viewModel.updateEpisodeDetailComplement(it) },
                         episodes,

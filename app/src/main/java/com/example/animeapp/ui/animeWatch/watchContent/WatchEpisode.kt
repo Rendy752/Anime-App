@@ -20,6 +20,7 @@ import com.example.animeapp.utils.basicContainer
 @Composable
 fun WatchEpisode(
     animeDetail: AnimeDetail,
+    getCachedEpisodeDetailComplement: suspend (String) -> EpisodeDetailComplement?,
     episodeDetailComplement: Resource<EpisodeDetailComplement>,
     episodes: List<Episode>,
     episodeSourcesQuery: EpisodeSourcesQuery?,
@@ -34,14 +35,12 @@ fun WatchEpisode(
         EpisodeJump(animeDetail, episodes, gridState)
 
         if (episodeDetailComplement is Resource.Success) {
-            episodeDetailComplement.data?.let { episodeDetail ->
-                EpisodeNavigation(
-                    episodeDetail,
-                    episodes,
-                    episodeSourcesQuery,
-                    handleSelectedEpisodeServer,
-                )
-            }
+            EpisodeNavigation(
+                episodeDetailComplement.data,
+                episodes,
+                episodeSourcesQuery,
+                handleSelectedEpisodeServer,
+            )
         } else EpisodeNavigationSkeleton()
 
         HorizontalDivider(
@@ -51,6 +50,7 @@ fun WatchEpisode(
         )
         EpisodeSelectionGrid(
             episodes,
+            getCachedEpisodeDetailComplement,
             if (episodeDetailComplement is Resource.Success) episodeDetailComplement.data else null,
             episodeSourcesQuery,
             handleSelectedEpisodeServer,

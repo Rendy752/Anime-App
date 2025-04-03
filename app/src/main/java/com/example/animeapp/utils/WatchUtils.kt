@@ -28,7 +28,7 @@ object WatchUtils {
         val color = when {
             isWatching == true -> watchingEpisode
             episodeDetailComplement?.isFavorite == true -> favoriteEpisode
-            episodeDetailComplement?.isWatched == true -> watchedEpisode
+            episodeDetailComplement?.lastWatched != null -> watchedEpisode
             isFiller -> fillerEpisode
             else -> defaultEpisode
         }

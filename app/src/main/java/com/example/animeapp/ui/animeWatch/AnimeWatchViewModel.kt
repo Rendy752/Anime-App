@@ -60,8 +60,7 @@ class AnimeWatchViewModel @Inject constructor(
             _episodeDetailComplement.value = Resource.Loading()
             _episodeSourcesQuery.value = episodeSourcesQuery
             if (!isRefreshed) {
-                val cachedEpisodeDetailComplement =
-                    animeStreamingRepository.getCachedEpisodeDetailComplement(episodeSourcesQuery.id)
+                val cachedEpisodeDetailComplement = getCachedEpisodeDetailComplement(episodeSourcesQuery.id)
 
                 if (cachedEpisodeDetailComplement != null) {
                     if (cachedEpisodeDetailComplement.sourcesQuery == episodeSourcesQuery) {
@@ -138,10 +137,7 @@ class AnimeWatchViewModel @Inject constructor(
 
             episodeServersResource.data.let { servers ->
                 episodeSourcesResource.data.let { sources ->
-                    val cachedEpisodeDetailComplement =
-                        animeStreamingRepository.getCachedEpisodeDetailComplement(
-                            episodeSourcesQuery.id
-                        )
+                    val cachedEpisodeDetailComplement = getCachedEpisodeDetailComplement(episodeSourcesQuery.id)
                     if (cachedEpisodeDetailComplement != null && cachedEpisodeDetailComplement.sourcesQuery != episodeSourcesQuery) {
                         updateEpisodeDetailComplement(
                             cachedEpisodeDetailComplement.copy(
@@ -192,6 +188,9 @@ class AnimeWatchViewModel @Inject constructor(
             _isRefreshing.value = false
         }
     }
+
+    suspend fun getCachedEpisodeDetailComplement(episodeId: String): EpisodeDetailComplement? =
+        animeStreamingRepository.getCachedEpisodeDetailComplement(episodeId)
 
     fun updateEpisodeDetailComplement(updatedEpisodeDetailComplement: EpisodeDetailComplement) {
         viewModelScope.launch {
