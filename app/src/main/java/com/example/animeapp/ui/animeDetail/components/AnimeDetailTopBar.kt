@@ -69,6 +69,25 @@ fun AnimeDetailTopBar(
             },
             actions = {
                 animeDetail?.data?.data?.let { animeDetailData ->
+                    if (animeDetailComplement is Resource.Success) {
+                        IconButton(onClick = {
+                            isFavorite.value = !isFavorite.value
+                            debounceJob?.cancel()
+                            debounceJob = scope.launch {
+                                delay(100)
+                                animeDetailComplement.data?.let {
+                                    onFavoriteToggle(it.copy(isFavorite = isFavorite.value))
+                                }
+                            }
+                        }) {
+                            Icon(
+                                imageVector = if (isFavorite.value) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                                contentDescription = if (isFavorite.value) "Remove from favorites" else "Add to favorites",
+                                tint = MaterialTheme.colorScheme.tertiary
+                            )
+                        }
+                    }
+
                     if (animeDetailComplement is Resource.Success &&
                         animeDetailComplement.data?.episodes?.isNotEmpty() == true &&
                         defaultEpisode != null
@@ -90,24 +109,7 @@ fun AnimeDetailTopBar(
                             }
                         }
                     }
-                    if (animeDetailComplement is Resource.Success) {
-                        IconButton(onClick = {
-                            isFavorite.value = !isFavorite.value
-                            debounceJob?.cancel()
-                            debounceJob = scope.launch {
-                                delay(100)
-                                animeDetailComplement.data?.let {
-                                    onFavoriteToggle(it.copy(isFavorite = isFavorite.value))
-                                }
-                            }
-                        }) {
-                            Icon(
-                                imageVector = if (isFavorite.value) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                                contentDescription = if (isFavorite.value) "Remove from favorites" else "Add to favorites",
-                                tint = MaterialTheme.colorScheme.tertiary
-                            )
-                        }
-                    }
+
                     IconButton(onClick = {
                         ShareUtils.shareAnimeDetail(context, animeDetailData)
                     }) {

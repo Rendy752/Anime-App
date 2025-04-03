@@ -12,6 +12,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.AnimeDetailComplement
+import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.ui.common_ui.ErrorMessage
 import com.example.animeapp.ui.common_ui.SearchView
 import com.example.animeapp.ui.common_ui.SearchViewSkeleton
@@ -22,6 +23,7 @@ import com.example.animeapp.utils.basicContainer
 @Composable
 fun EpisodesDetailSection(
     animeDetailComplement: Resource<AnimeDetailComplement?>?,
+    getCachedEpisodeDetailComplement: suspend (String) -> EpisodeDetailComplement?,
     onEpisodeClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -113,6 +115,7 @@ fun EpisodesDetailSection(
                                     EpisodeDetailItem(
                                         episode = episode,
                                         query = searchQuery,
+                                        getCachedEpisodeDetailComplement = getCachedEpisodeDetailComplement,
                                         onClick = onEpisodeClick
                                     )
                                 }

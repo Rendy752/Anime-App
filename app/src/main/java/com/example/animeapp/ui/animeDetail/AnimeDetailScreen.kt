@@ -254,18 +254,21 @@ private fun RightColumnContent(
             data.relations,
             { animeId -> viewModel.getAnimeDetail(animeId) },
             { animeId -> onAnimeIdChange(animeId) })
-        EpisodesDetailSection(animeDetailComplement, { episodeId ->
-            defaultEpisode?.let { defaultEpisode ->
-                animeDetailComplement?.data?.episodes?.let { episodes ->
-                    navController.navigateToAnimeWatch(
-                        animeDetail = data,
-                        episodeId = episodeId,
-                        episodes = episodes,
-                        defaultEpisode = defaultEpisode
-                    )
+        EpisodesDetailSection(
+            animeDetailComplement,
+            { viewModel.getCachedEpisodeDetailComplement(it) },
+            { episodeId ->
+                defaultEpisode?.let { defaultEpisode ->
+                    animeDetailComplement?.data?.episodes?.let { episodes ->
+                        navController.navigateToAnimeWatch(
+                            animeDetail = data,
+                            episodeId = episodeId,
+                            episodes = episodes,
+                            defaultEpisode = defaultEpisode
+                        )
+                    }
                 }
-            }
-        })
+            })
         CommonListContent(data, context)
     }
 }

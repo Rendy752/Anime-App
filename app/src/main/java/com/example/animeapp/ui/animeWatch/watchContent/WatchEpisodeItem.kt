@@ -40,9 +40,7 @@ fun WatchEpisodeItem(
     onEpisodeClick: (String) -> Unit,
     isSelected: Boolean
 ) {
-    var episodeDetailComplement by remember {
-        mutableStateOf<EpisodeDetailComplement?>(null)
-    }
+    var episodeDetailComplement by remember { mutableStateOf<EpisodeDetailComplement?>(null) }
     LaunchedEffect(currentEpisode) {
         episodeDetailComplement = getCachedEpisodeDetailComplement(episode.episodeId)
     }

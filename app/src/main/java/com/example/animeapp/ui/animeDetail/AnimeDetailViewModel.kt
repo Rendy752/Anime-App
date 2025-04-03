@@ -232,6 +232,9 @@ class AnimeDetailViewModel @Inject constructor(
         }
     }
 
+    suspend fun getCachedEpisodeDetailComplement(episodeId: String): EpisodeDetailComplement? =
+        animeStreamingRepository.getCachedEpisodeDetailComplement(episodeId)
+
     private suspend fun getEpisodes(animeId: String): Resource<EpisodesResponse> =
         viewModelScope.async {
             ResponseHandler.handleCommonResponse(animeStreamingRepository.getEpisodes(animeId))
