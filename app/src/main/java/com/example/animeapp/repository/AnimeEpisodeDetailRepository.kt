@@ -16,7 +16,7 @@ import kotlinx.coroutines.withContext
 import com.example.animeapp.utils.ResponseHandler.safeApiCall
 import retrofit2.Response
 
-class AnimeDetailRepository(
+class AnimeEpisodeDetailRepository(
     private val animeDetailDao: AnimeDetailDao,
     private val animeDetailComplementDao: AnimeDetailComplementDao,
     private val episodeDetailComplementDao: EpisodeDetailComplementDao,
@@ -119,5 +119,21 @@ class AnimeDetailRepository(
     suspend fun insertCachedEpisodeDetailComplement(episodeDetailComplement: EpisodeDetailComplement) =
         withContext(Dispatchers.IO) {
             episodeDetailComplementDao.insertEpisodeDetailComplement(episodeDetailComplement)
+        }
+
+    suspend fun getAnimeAniwatchSearch(keyword: String) =
+        safeApiCall { runwayAPI.getAnimeAniwatchSearch(keyword) }
+
+    suspend fun getEpisodes(id: String) = safeApiCall { runwayAPI.getEpisodes(id) }
+
+    suspend fun getEpisodeServers(episodeId: String) =
+        safeApiCall { runwayAPI.getEpisodeServers(episodeId) }
+
+    suspend fun getEpisodeSources(episodeId: String, server: String, category: String) =
+        safeApiCall { runwayAPI.getEpisodeSources(episodeId, server, category) }
+
+    suspend fun updateEpisodeDetailComplement(episodeDetailComplement: EpisodeDetailComplement) =
+        withContext(Dispatchers.IO) {
+            episodeDetailComplementDao.updateEpisodeDetailComplement(episodeDetailComplement)
         }
 }

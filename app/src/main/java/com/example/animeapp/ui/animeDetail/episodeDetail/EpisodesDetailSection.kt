@@ -91,7 +91,7 @@ fun EpisodesDetailSection(
                                 )
                             }
                         }
-                        SearchView(
+                        if (data.episodes.size >= 4) SearchView(
                             query = searchQuery,
                             onQueryChange = {
                                 searchQuery = it
@@ -113,6 +113,7 @@ fun EpisodesDetailSection(
                             } else {
                                 items(filteredEpisodes) { episode ->
                                     EpisodeDetailItem(
+                                        animeDetailComplement = data,
                                         episode = episode,
                                         query = searchQuery,
                                         getCachedEpisodeDetailComplement = getCachedEpisodeDetailComplement,

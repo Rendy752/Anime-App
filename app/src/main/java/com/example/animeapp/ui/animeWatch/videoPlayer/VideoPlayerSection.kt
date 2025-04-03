@@ -33,12 +33,15 @@ import androidx.compose.runtime.LaunchedEffect
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeSourcesQuery
 import com.example.animeapp.models.EpisodeSourcesResponse
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @OptIn(UnstableApi::class, ExperimentalComposeUiApi::class)
 @Composable
 fun VideoPlayerSection(
+    updateLastEpisodeWatchedIdAnimeDetailComplement: (String) -> Unit,
     episodeDetailComplement: EpisodeDetailComplement,
     updateEpisodeDetailComplement: (EpisodeDetailComplement) -> Unit,
     episodes: List<Episode>,
@@ -245,11 +248,18 @@ fun VideoPlayerSection(
             HlsPlayerUtil.releasePlayer(playerView)
             val seekPosition = exoPlayer.currentPosition
             if (seekPosition > 10000 && seekPosition != episodeDetailComplement.lastTimestamp) {
-                val updatedEpisode = episodeDetailComplement.copy(
-                    lastTimestamp = seekPosition,
-                    lastWatched = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-                )
-                updateEpisodeDetailComplement(updatedEpisode)
+                runBlocking {
+                    withTimeout(5000) {
+                        updateLastEpisodeWatchedIdAnimeDetailComplement(episodeDetailComplement.id)
+                        updateEpisodeDetailComplement(
+                            episodeDetailComplement.copy(
+                                lastTimestamp = seekPosition,
+                                lastWatched = LocalDateTime.now()
+                                    .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+                            )
+                        )
+                    }
+                }
             }
 
             mediaSessionCompat?.release()

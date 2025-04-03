@@ -114,6 +114,7 @@ dependencies {
     //Hilt
     implementation(libs.hilt.android)
     implementation(libs.androidx.hilt.navigation.compose)
+    kapt(libs.hilt.android.compiler)
 
     //Kotlinx Serialization
     implementation(libs.kotlinx.serialization.json)

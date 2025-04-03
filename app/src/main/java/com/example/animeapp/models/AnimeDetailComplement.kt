@@ -21,7 +21,7 @@ data class AnimeDetailComplement(
     val eps: Int? = null,
     val sub: Int? = null,
     val dub: Int? = null,
-    val lastEpisodeWatched: Int? = null,
+    val lastEpisodeWatchedId: String? = null,
     val episodes: List<Episode>,
     val lastEpisodeUpdatedAt: Long = Instant.now().epochSecond,
     val createdAt: Long = Instant.now().epochSecond,

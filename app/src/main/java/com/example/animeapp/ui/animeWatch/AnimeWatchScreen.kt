@@ -43,6 +43,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Observer
 import androidx.navigation.NavController
 import com.example.animeapp.models.AnimeDetail
+import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.NetworkStatus
@@ -59,6 +60,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun AnimeWatchScreen(
     animeDetail: AnimeDetail,
+    animeDetailComplement: AnimeDetailComplement,
     episodeId: String,
     episodesList: List<Episode>,
     defaultEpisode: EpisodeDetailComplement,
@@ -109,8 +111,14 @@ fun AnimeWatchScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        episodeSourcesQuery?.let { query ->
+            viewModel.handleSelectedEpisodeServer(query.copy(id = episodeId), isFirstInit = true)
+        }
+    }
+
     DisposableEffect(Unit) {
-        viewModel.setInitialState(animeDetail, episodesList, defaultEpisode)
+        viewModel.setInitialState(animeDetail, animeDetailComplement, episodesList, defaultEpisode)
 
         networkStateMonitor.startMonitoring(context)
         val networkObserver = Observer<NetworkStatus> {
@@ -128,12 +136,6 @@ fun AnimeWatchScreen(
             networkStateMonitor.stopMonitoring()
             networkStateMonitor.networkStatus.removeObserver(networkObserver)
             networkStateMonitor.isConnected.removeObserver(connectionObserver)
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        episodeSourcesQuery?.let { query ->
-            viewModel.handleSelectedEpisodeServer(query.copy(id = episodeId))
         }
     }
 
@@ -203,16 +205,14 @@ fun AnimeWatchScreen(
                         )
                         episodeSourcesQuery?.let { query ->
                             episodes?.firstOrNull()?.episodeId?.let { episodeId ->
-                                viewModel.handleSelectedEpisodeServer(
-                                    query.copy(id = episodeId),
-                                    true
-                                )
+                                viewModel.handleSelectedEpisodeServer(query.copy(id = episodeId))
                             }
                         }
                     }
                 } else {
                     AnimeWatchContent(
                         animeDetail,
+                        { viewModel.updateLastEpisodeWatchedIdAnimeDetailComplement(it) },
                         { viewModel.getCachedEpisodeDetailComplement(it) },
                         episodeDetailComplement,
                         { viewModel.updateEpisodeDetailComplement(it) },

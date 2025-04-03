@@ -44,15 +44,12 @@ fun EpisodeNavigationButton(
                 backgroundBrush = getEpisodeBackgroundColor(episode?.filler == true),
                 innerPadding = PaddingValues(8.dp),
                 onItemClick = {
-                    episode?.let {
-                        handleSelectedEpisodeServer(
-                            episodeSourcesQuery?.copy(id = it.episodeId)
-                                ?: EpisodeSourcesQuery(
-                                    id = it.episodeId,
-                                    server = "vidsrc",
-                                    category = "sub"
-                                )
-                        )
+                    episode?.let { episode ->
+                        episodeSourcesQuery?.let { episodeSourcesQuery ->
+                            handleSelectedEpisodeServer(
+                                episodeSourcesQuery.copy(id = episode.episodeId)
+                            )
+                        }
                     }
                 })
             .fillMaxWidth()

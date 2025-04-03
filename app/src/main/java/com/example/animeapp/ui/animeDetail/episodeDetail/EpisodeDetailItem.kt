@@ -1,6 +1,8 @@
 package com.example.animeapp.ui.animeDetail.episodeDetail
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -19,6 +21,7 @@ import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.Episode
 import com.example.animeapp.ui.common_ui.SkeletonBox
@@ -27,6 +30,7 @@ import com.example.animeapp.utils.basicContainer
 
 @Composable
 fun EpisodeDetailItem(
+    animeDetailComplement: AnimeDetailComplement,
     episode: Episode,
     query: String,
     getCachedEpisodeDetailComplement: suspend (String) -> EpisodeDetailComplement?,
@@ -46,10 +50,30 @@ fun EpisodeDetailItem(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text(
-            text = "Ep. ${episode.episodeNo}",
-            modifier = Modifier.basicContainer()
-        )
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            animeDetailComplement.lastEpisodeWatchedId?.let { lastEpisodeWatchedId ->
+                if (episodeDetailComplement?.id == lastEpisodeWatchedId) Text(
+                    text = "Last Watched",
+                    modifier = Modifier
+                        .basicContainer(
+                            outerPadding = PaddingValues(2.dp),
+                            innerPadding = PaddingValues(8.dp),
+                            backgroundBrush = getEpisodeBackgroundColor(
+                                episode.filler,
+                                isWatching = true
+                            )
+                        )
+                )
+            }
+            Text(
+                text = "Ep. ${episode.episodeNo}",
+                modifier = Modifier
+                    .basicContainer(
+                        outerPadding = PaddingValues(2.dp),
+                        innerPadding = PaddingValues(8.dp),
+                    )
+            )
+        }
         Text(
             text = highlightText(episode.name, query)
         )

@@ -92,12 +92,14 @@ fun AnimeDetailTopBar(
                         animeDetailComplement.data?.episodes?.isNotEmpty() == true &&
                         defaultEpisode != null
                     ) {
-                        animeDetailComplement.data.let { animeDetailComplementData ->
+                        animeDetailComplement.data.let { animeDetailComplement ->
                             IconButton(onClick = {
                                 navController.navigateToAnimeWatch(
                                     animeDetail = animeDetailData,
-                                    episodeId = animeDetailComplementData.episodes[0].episodeId,
-                                    episodes = animeDetailComplementData.episodes,
+                                    animeDetailComplement = animeDetailComplement,
+                                    episodeId = animeDetailComplement.lastEpisodeWatchedId
+                                        ?: animeDetailComplement.episodes[0].episodeId,
+                                    episodes = animeDetailComplement.episodes,
                                     defaultEpisode = defaultEpisode
                                 )
                             }) {

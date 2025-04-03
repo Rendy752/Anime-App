@@ -259,13 +259,16 @@ private fun RightColumnContent(
             { viewModel.getCachedEpisodeDetailComplement(it) },
             { episodeId ->
                 defaultEpisode?.let { defaultEpisode ->
-                    animeDetailComplement?.data?.episodes?.let { episodes ->
-                        navController.navigateToAnimeWatch(
-                            animeDetail = data,
-                            episodeId = episodeId,
-                            episodes = episodes,
-                            defaultEpisode = defaultEpisode
-                        )
+                    if (animeDetailComplement is Resource.Success) {
+                        animeDetailComplement.data?.let { animeDetailComplement ->
+                            navController.navigateToAnimeWatch(
+                                animeDetail = data,
+                                animeDetailComplement = animeDetailComplement,
+                                episodeId = episodeId,
+                                episodes = animeDetailComplement.episodes,
+                                defaultEpisode = defaultEpisode
+                            )
+                        }
                     }
                 }
             })

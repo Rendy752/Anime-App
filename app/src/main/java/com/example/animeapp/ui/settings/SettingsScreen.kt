@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.settings.ui
+package com.example.animeapp.ui.settings
 
 import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate

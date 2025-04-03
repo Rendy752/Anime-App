@@ -23,6 +23,7 @@ import com.example.animeapp.utils.Resource
 @Composable
 fun AnimeWatchContent(
     animeDetail: AnimeDetail,
+    updateLastEpisodeWatchedIdAnimeDetailComplement: (String) -> Unit,
     getCachedEpisodeDetailComplement: suspend (String) -> EpisodeDetailComplement?,
     episodeDetailComplement: Resource<EpisodeDetailComplement>,
     updateEpisodeDetailComplement: (EpisodeDetailComplement) -> Unit,
@@ -46,6 +47,7 @@ fun AnimeWatchContent(
             Row(modifier = Modifier.fillMaxWidth()) {
                 if (episodeDetailComplement is Resource.Success) {
                     VideoPlayerSection(
+                        updateLastEpisodeWatchedIdAnimeDetailComplement = updateLastEpisodeWatchedIdAnimeDetailComplement,
                         episodeDetailComplement = episodeDetailComplement.data,
                         updateEpisodeDetailComplement = updateEpisodeDetailComplement,
                         episodes = episodeList,

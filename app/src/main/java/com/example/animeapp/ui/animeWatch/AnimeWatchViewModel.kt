@@ -3,10 +3,11 @@ package com.example.animeapp.ui.animeWatch
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.animeapp.models.AnimeDetail
+import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.EpisodeSourcesQuery
-import com.example.animeapp.repository.AnimeStreamingRepository
+import com.example.animeapp.repository.AnimeEpisodeDetailRepository
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ResponseHandler
 import com.example.animeapp.utils.StreamingUtils
@@ -19,7 +20,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AnimeWatchViewModel @Inject constructor(
-    private val animeStreamingRepository: AnimeStreamingRepository
+    private val animeEpisodeDetailRepository: AnimeEpisodeDetailRepository
 ) : ViewModel() {
     private val _animeDetail = MutableStateFlow<AnimeDetail?>(null)
     val animeDetail: StateFlow<AnimeDetail?> = _animeDetail.asStateFlow()
@@ -27,6 +28,7 @@ class AnimeWatchViewModel @Inject constructor(
     private val _episodes = MutableStateFlow<List<Episode>?>(null)
     val episodes: StateFlow<List<Episode>?> = _episodes.asStateFlow()
 
+    private val _animeDetailComplement = MutableStateFlow<AnimeDetailComplement?>(null)
     private val _defaultEpisodeDetailComplement = MutableStateFlow<EpisodeDetailComplement?>(null)
 
     private val _episodeDetailComplement =
@@ -42,10 +44,12 @@ class AnimeWatchViewModel @Inject constructor(
 
     fun setInitialState(
         animeDetail: AnimeDetail,
+        animeDetailComplement: AnimeDetailComplement,
         episodes: List<Episode>,
         defaultEpisode: EpisodeDetailComplement?,
     ) {
         _animeDetail.value = animeDetail
+        _animeDetailComplement.value = animeDetailComplement
         _episodes.value = episodes
         _defaultEpisodeDetailComplement.value = defaultEpisode
         restoreDefaultValues()
@@ -53,17 +57,19 @@ class AnimeWatchViewModel @Inject constructor(
 
     fun handleSelectedEpisodeServer(
         episodeSourcesQuery: EpisodeSourcesQuery,
+        isFirstInit: Boolean = false,
         isRefreshed: Boolean = false
     ) = viewModelScope.launch {
         try {
             _isRefreshing.value = true
             _episodeDetailComplement.value = Resource.Loading()
-            _episodeSourcesQuery.value = episodeSourcesQuery
             if (!isRefreshed) {
-                val cachedEpisodeDetailComplement = getCachedEpisodeDetailComplement(episodeSourcesQuery.id)
+                val cachedEpisodeDetailComplement =
+                    getCachedEpisodeDetailComplement(episodeSourcesQuery.id)
 
                 if (cachedEpisodeDetailComplement != null) {
-                    if (cachedEpisodeDetailComplement.sourcesQuery == episodeSourcesQuery) {
+                    if (cachedEpisodeDetailComplement.sourcesQuery == episodeSourcesQuery || isFirstInit) {
+                        _episodeSourcesQuery.value = cachedEpisodeDetailComplement.sourcesQuery
                         _episodeDetailComplement.value =
                             Resource.Success(cachedEpisodeDetailComplement)
                         return@launch
@@ -73,7 +79,9 @@ class AnimeWatchViewModel @Inject constructor(
 
                         val episodeSourcesResource = StreamingUtils.getEpisodeSources(
                             episodeServersResource,
-                            animeStreamingRepository,
+                            { id, server, category ->
+                                animeEpisodeDetailRepository.getEpisodeSources(id, server, category)
+                            },
                             episodeSourcesQuery
                         )
 
@@ -97,6 +105,7 @@ class AnimeWatchViewModel @Inject constructor(
                                     )
 
                                 updateEpisodeDetailComplement(updatedEpisodeDetailComplement)
+                                _episodeSourcesQuery.value = episodeSourcesQuery
                                 _episodeDetailComplement.value =
                                     Resource.Success(updatedEpisodeDetailComplement)
                                 return@launch
@@ -107,7 +116,7 @@ class AnimeWatchViewModel @Inject constructor(
             }
 
             val episodeServersResponse =
-                animeStreamingRepository.getEpisodeServers(episodeSourcesQuery.id)
+                animeEpisodeDetailRepository.getEpisodeServers(episodeSourcesQuery.id)
             val episodeServersResource =
                 ResponseHandler.handleCommonResponse(episodeServersResponse)
 
@@ -122,7 +131,9 @@ class AnimeWatchViewModel @Inject constructor(
 
             val episodeSourcesResource = StreamingUtils.getEpisodeSources(
                 episodeServersResource,
-                animeStreamingRepository,
+                { id, server, category ->
+                    animeEpisodeDetailRepository.getEpisodeSources(id, server, category)
+                },
                 episodeSourcesQuery
             )
 
@@ -137,7 +148,8 @@ class AnimeWatchViewModel @Inject constructor(
 
             episodeServersResource.data.let { servers ->
                 episodeSourcesResource.data.let { sources ->
-                    val cachedEpisodeDetailComplement = getCachedEpisodeDetailComplement(episodeSourcesQuery.id)
+                    val cachedEpisodeDetailComplement =
+                        getCachedEpisodeDetailComplement(episodeSourcesQuery.id)
                     if (cachedEpisodeDetailComplement != null && cachedEpisodeDetailComplement.sourcesQuery != episodeSourcesQuery) {
                         updateEpisodeDetailComplement(
                             cachedEpisodeDetailComplement.copy(
@@ -169,7 +181,7 @@ class AnimeWatchViewModel @Inject constructor(
                                     )
                                 )
                             } else {
-                                animeStreamingRepository.insertCachedEpisodeDetailComplement(
+                                animeEpisodeDetailRepository.insertCachedEpisodeDetailComplement(
                                     remoteEpisodeDetailComplement
                                 )
                             }
@@ -189,16 +201,24 @@ class AnimeWatchViewModel @Inject constructor(
         }
     }
 
-    suspend fun getCachedEpisodeDetailComplement(episodeId: String): EpisodeDetailComplement? =
-        animeStreamingRepository.getCachedEpisodeDetailComplement(episodeId)
-
-    fun updateEpisodeDetailComplement(updatedEpisodeDetailComplement: EpisodeDetailComplement) {
+    fun updateLastEpisodeWatchedIdAnimeDetailComplement(lastEpisodeWatchedId: String) =
         viewModelScope.launch {
-            animeStreamingRepository.updateEpisodeDetailComplement(
+            _animeDetailComplement.value?.let {
+                animeEpisodeDetailRepository.updateAnimeDetailComplement(
+                    it.copy(lastEpisodeWatchedId = lastEpisodeWatchedId)
+                )
+            }
+        }
+
+    suspend fun getCachedEpisodeDetailComplement(episodeId: String): EpisodeDetailComplement? =
+        animeEpisodeDetailRepository.getCachedEpisodeDetailComplement(episodeId)
+
+    fun updateEpisodeDetailComplement(updatedEpisodeDetailComplement: EpisodeDetailComplement) =
+        viewModelScope.launch {
+            animeEpisodeDetailRepository.updateEpisodeDetailComplement(
                 updatedEpisodeDetailComplement
             )
         }
-    }
 
     private fun restoreDefaultValues() {
         _defaultEpisodeDetailComplement.value?.let { default ->
