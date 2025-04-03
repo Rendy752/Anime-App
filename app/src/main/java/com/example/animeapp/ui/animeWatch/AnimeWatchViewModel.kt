@@ -151,8 +151,8 @@ class AnimeWatchViewModel @Inject constructor(
                             )
                         )
                     } else {
-                        val remoteEpisodeDetailComplement = animeDetail.value?.let { animeDetail ->
-                            EpisodeDetailComplement(
+                        animeDetail.value?.let { animeDetail ->
+                            val remoteEpisodeDetailComplement = EpisodeDetailComplement(
                                 id = servers.episodeId,
                                 title = animeDetail.title,
                                 imageUrl = animeDetail.images.jpg.image_url,
@@ -160,12 +160,24 @@ class AnimeWatchViewModel @Inject constructor(
                                 sources = sources,
                                 sourcesQuery = episodeSourcesQuery
                             )
-                        }
 
-                        if (remoteEpisodeDetailComplement != null) {
-                            animeStreamingRepository.insertCachedEpisodeDetailComplement(
-                                remoteEpisodeDetailComplement
-                            )
+                            if (cachedEpisodeDetailComplement != null) {
+                                updateEpisodeDetailComplement(
+                                    cachedEpisodeDetailComplement.copy(
+                                        id = remoteEpisodeDetailComplement.id,
+                                        title = remoteEpisodeDetailComplement.title,
+                                        imageUrl = remoteEpisodeDetailComplement.imageUrl,
+                                        servers = remoteEpisodeDetailComplement.servers,
+                                        sources = remoteEpisodeDetailComplement.sources,
+                                        sourcesQuery = remoteEpisodeDetailComplement.sourcesQuery,
+                                    )
+                                )
+                            } else {
+                                animeStreamingRepository.insertCachedEpisodeDetailComplement(
+                                    remoteEpisodeDetailComplement
+                                )
+                            }
+
                             _episodeDetailComplement.value =
                                 Resource.Success(remoteEpisodeDetailComplement)
                         }
