@@ -10,13 +10,14 @@ import com.example.animeapp.utils.Resource
 @Composable
 fun WatchContentSection(
     animeDetail: AnimeDetail,
+    getCachedEpisodeDetailComplement: suspend (String) -> EpisodeDetailComplement?,
     episodeDetailComplement: Resource<EpisodeDetailComplement>,
     episodes: List<Episode>,
     episodeSourcesQuery: EpisodeSourcesQuery?,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
 ) {
     if (episodeDetailComplement is Resource.Success) {
-        episodeDetailComplement.data?.let { episodeDetail ->
+        episodeDetailComplement.data.let { episodeDetail ->
             val currentEpisode =
                 episodes.find { it.episodeId == episodeDetail.servers.episodeId }
             currentEpisode?.let { currentEpisode ->
@@ -33,6 +34,7 @@ fun WatchContentSection(
     }
     if (episodes.size > 1) WatchEpisode(
         animeDetail = animeDetail,
+        getCachedEpisodeDetailComplement = getCachedEpisodeDetailComplement,
         episodeDetailComplement = episodeDetailComplement,
         episodes = episodes,
         episodeSourcesQuery = episodeSourcesQuery,

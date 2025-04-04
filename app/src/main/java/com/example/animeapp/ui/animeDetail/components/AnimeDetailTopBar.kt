@@ -3,6 +3,8 @@ package com.example.animeapp.ui.animeDetail.components
 import androidx.compose.foundation.layout.Column
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.LiveTv
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -14,6 +16,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -26,6 +32,9 @@ import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.utils.Navigation.navigateToAnimeWatch
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ShareUtils
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,9 +43,23 @@ fun AnimeDetailTopBar(
     animeDetail: Resource<AnimeDetailResponse>?,
     animeDetailComplement: Resource<AnimeDetailComplement?>?,
     defaultEpisode: EpisodeDetailComplement?,
-    navController: NavController
+    navController: NavController,
+    onFavoriteToggle: (AnimeDetailComplement) -> Unit
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val debounceJob = remember { mutableStateOf<Job?>(null) }
+    val isFavorite = remember { mutableStateOf(false) }
+    animeDetailComplement?.data?.isFavorite?.let {
+        if (animeDetailComplement is Resource.Success) isFavorite.value = it
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            debounceJob.value?.cancel()
+        }
+    }
+
     Column {
         TopAppBar(
             navigationIcon = {
@@ -53,16 +76,37 @@ fun AnimeDetailTopBar(
             },
             actions = {
                 animeDetail?.data?.data?.let { animeDetailData ->
+                    if (animeDetailComplement is Resource.Success) {
+                        IconButton(onClick = {
+                            isFavorite.value = !isFavorite.value
+                            debounceJob.value?.cancel()
+                            debounceJob.value = scope.launch {
+                                delay(100)
+                                animeDetailComplement.data?.let {
+                                    onFavoriteToggle(it.copy(isFavorite = isFavorite.value))
+                                }
+                            }
+                        }) {
+                            Icon(
+                                imageVector = if (isFavorite.value) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                                contentDescription = if (isFavorite.value) "Remove from favorites" else "Add to favorites",
+                                tint = MaterialTheme.colorScheme.tertiary
+                            )
+                        }
+                    }
+
                     if (animeDetailComplement is Resource.Success &&
                         animeDetailComplement.data?.episodes?.isNotEmpty() == true &&
                         defaultEpisode != null
                     ) {
-                        animeDetailComplement.data.let { animeDetailComplementData ->
+                        animeDetailComplement.data.let { animeDetailComplement ->
                             IconButton(onClick = {
                                 navController.navigateToAnimeWatch(
                                     animeDetail = animeDetailData,
-                                    episodeId = animeDetailComplementData.episodes[0].episodeId,
-                                    episodes = animeDetailComplementData.episodes,
+                                    animeDetailComplement = animeDetailComplement,
+                                    episodeId = animeDetailComplement.lastEpisodeWatchedId
+                                        ?: animeDetailComplement.episodes[0].episodeId,
+                                    episodes = animeDetailComplement.episodes,
                                     defaultEpisode = defaultEpisode
                                 )
                             }) {
@@ -74,6 +118,7 @@ fun AnimeDetailTopBar(
                             }
                         }
                     }
+
                     IconButton(onClick = {
                         ShareUtils.shareAnimeDetail(context, animeDetailData)
                     }) {

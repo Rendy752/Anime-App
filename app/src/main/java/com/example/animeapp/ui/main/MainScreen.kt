@@ -21,6 +21,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
 import com.example.animeapp.models.AnimeDetail
+import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.CommonIdentity
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
@@ -30,7 +31,7 @@ import com.example.animeapp.ui.animeDetail.AnimeDetailScreen
 import com.example.animeapp.ui.animeRecommendations.AnimeRecommendationsScreen
 import com.example.animeapp.ui.animeSearch.AnimeSearchScreen
 import com.example.animeapp.ui.animeWatch.AnimeWatchScreen
-import com.example.animeapp.ui.settings.ui.SettingsScreen
+import com.example.animeapp.ui.settings.SettingsScreen
 import com.google.gson.Gson
 import java.net.URLDecoder
 
@@ -174,9 +175,10 @@ fun MainScreen(navController: NavHostController) {
                 }
 
                 composable(
-                    "animeWatch/{animeDetailJson}/{episodeIdEncoded}/{episodesJson}/{defaultEpisodeJson}",
+                    "animeWatch/{animeDetailJson}/{animeDetailComplementJson}/{episodeIdEncoded}/{episodesJson}/{defaultEpisodeJson}",
                     arguments = listOf(
                         navArgument("animeDetailJson") { type = NavType.StringType },
+                        navArgument("animeDetailComplementJson") { type = NavType.StringType },
                         navArgument("episodeIdEncoded") { type = NavType.StringType },
                         navArgument("episodesJson") { type = NavType.StringType },
                         navArgument("defaultEpisodeJson") { type = NavType.StringType }
@@ -184,6 +186,8 @@ fun MainScreen(navController: NavHostController) {
                 ) { backStackEntry ->
                     val animeDetailJson =
                         backStackEntry.arguments?.getString("animeDetailJson") ?: ""
+                    val animeDetailComplementJson =
+                        backStackEntry.arguments?.getString("animeDetailComplementJson") ?: ""
                     val episodeIdEncoded =
                         backStackEntry.arguments?.getString("episodeIdEncoded") ?: ""
                     val episodesJson = backStackEntry.arguments?.getString("episodesJson") ?: ""
@@ -193,6 +197,10 @@ fun MainScreen(navController: NavHostController) {
                     val animeDetail = Gson().fromJson(
                         URLDecoder.decode(animeDetailJson, "UTF-8"),
                         AnimeDetail::class.java
+                    )
+                    val animeDetailComplement = Gson().fromJson(
+                        URLDecoder.decode(animeDetailComplementJson, "UTF-8"),
+                        AnimeDetailComplement::class.java
                     )
                     val episodeId = URLDecoder.decode(episodeIdEncoded, "UTF-8")
                     val episodes = Gson().fromJson(
@@ -230,6 +238,7 @@ fun MainScreen(navController: NavHostController) {
 
                     AnimeWatchScreen(
                         animeDetail = animeDetail,
+                        animeDetailComplement = animeDetailComplement,
                         episodeId = episodeId,
                         episodesList = episodes,
                         defaultEpisode = defaultEpisode,

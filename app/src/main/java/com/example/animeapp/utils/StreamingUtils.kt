@@ -3,7 +3,7 @@ package com.example.animeapp.utils
 import com.example.animeapp.models.EpisodeServersResponse
 import com.example.animeapp.models.EpisodeSourcesQuery
 import com.example.animeapp.models.EpisodeSourcesResponse
-import com.example.animeapp.repository.AnimeStreamingRepository
+import retrofit2.Response
 
 object StreamingUtils {
     fun getEpisodeQuery(
@@ -38,7 +38,7 @@ object StreamingUtils {
 
     suspend fun getEpisodeSources(
         response: Resource<EpisodeServersResponse>,
-        animeStreamingRepository: AnimeStreamingRepository,
+        getEpisodeSources: suspend (String, String, String) -> Response<EpisodeSourcesResponse>,
         episodeSourcesQuery: EpisodeSourcesQuery? = null
     ): Resource<EpisodeSourcesResponse> {
         val episodeServers = response.data
@@ -50,7 +50,7 @@ object StreamingUtils {
 
         return try {
             ResponseHandler.handleCommonResponse(
-                animeStreamingRepository.getEpisodeSources(
+                getEpisodeSources(
                     episodeQuery.id,
                     episodeQuery.server,
                     episodeQuery.category

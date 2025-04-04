@@ -14,7 +14,7 @@ import com.example.animeapp.models.AnimeRecommendation
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.animeapp.models.animeRecommendationPlaceholder
 import com.example.animeapp.ui.common_ui.SkeletonBox
-import com.example.animeapp.utils.DateUtils
+import com.example.animeapp.utils.TimeUtils
 import com.example.animeapp.utils.basicContainer
 import com.example.animeapp.utils.shimmerContainer
 
@@ -67,7 +67,7 @@ fun RecommendationItem(
                 fontSize = 12.sp
             )
             Text(
-                text = "~ ${DateUtils.formatDateToAgo(recommendation.date)}",
+                text = "~ ${TimeUtils.formatDateToAgo(recommendation.date)}",
                 fontSize = 12.sp
             )
         }

@@ -82,7 +82,7 @@ fun AnimeDetailScreen(animeTitle: String, animeId: Int, navController: NavContro
             animeDetailComplement,
             defaultEpisode,
             navController
-        )
+        ) { viewModel.updateAnimeDetailComplement(it) }
     }) { paddingValues ->
         when (animeDetail) {
             is Resource.Loading -> LoadingContent(paddingValues, isLandscape)
@@ -254,18 +254,24 @@ private fun RightColumnContent(
             data.relations,
             { animeId -> viewModel.getAnimeDetail(animeId) },
             { animeId -> onAnimeIdChange(animeId) })
-        EpisodesDetailSection(animeDetailComplement, { episodeId ->
-            defaultEpisode?.let { defaultEpisode ->
-                animeDetailComplement?.data?.episodes?.let { episodes ->
-                    navController.navigateToAnimeWatch(
-                        animeDetail = data,
-                        episodeId = episodeId,
-                        episodes = episodes,
-                        defaultEpisode = defaultEpisode
-                    )
+        EpisodesDetailSection(
+            animeDetailComplement,
+            { viewModel.getCachedEpisodeDetailComplement(it) },
+            { episodeId ->
+                defaultEpisode?.let { defaultEpisode ->
+                    if (animeDetailComplement is Resource.Success) {
+                        animeDetailComplement.data?.let { animeDetailComplement ->
+                            navController.navigateToAnimeWatch(
+                                animeDetail = data,
+                                animeDetailComplement = animeDetailComplement,
+                                episodeId = episodeId,
+                                episodes = animeDetailComplement.episodes,
+                                defaultEpisode = defaultEpisode
+                            )
+                        }
+                    }
                 }
-            }
-        })
+            })
         CommonListContent(data, context)
     }
 }

@@ -21,7 +21,6 @@ data class EpisodeDetailComplement(
     val sources: EpisodeSourcesResponse,
     val sourcesQuery: EpisodeSourcesQuery,
     val isFavorite: Boolean = false,
-    val isWatched: Boolean = false,
     val lastWatched: String? = null,
     val lastTimestamp: Long? = null,
     val createdAt: Long = Instant.now().epochSecond,
@@ -36,7 +35,6 @@ val episodeDetailComplementPlaceholder = EpisodeDetailComplement(
     sources = episodeSourcesResponsePlaceholder,
     sourcesQuery = episodeSourcesQueryPlaceholder,
     isFavorite = false,
-    isWatched = false,
     lastWatched = null,
     lastTimestamp = null,
 )

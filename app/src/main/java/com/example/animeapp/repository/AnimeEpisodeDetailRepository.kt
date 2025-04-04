@@ -8,7 +8,7 @@ import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.models.EpisodeDetailComplement
-import com.example.animeapp.utils.DateUtils
+import com.example.animeapp.utils.TimeUtils
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ResponseHandler
 import kotlinx.coroutines.Dispatchers
@@ -16,7 +16,7 @@ import kotlinx.coroutines.withContext
 import com.example.animeapp.utils.ResponseHandler.safeApiCall
 import retrofit2.Response
 
-class AnimeDetailRepository(
+class AnimeEpisodeDetailRepository(
     private val animeDetailDao: AnimeDetailDao,
     private val animeDetailComplementDao: AnimeDetailComplementDao,
     private val episodeDetailComplementDao: EpisodeDetailComplementDao,
@@ -36,8 +36,8 @@ class AnimeDetailRepository(
                 val remoteData =
                     ResponseHandler.handleCommonResponse(jikanAPI.getAnimeDetail(cache.mal_id))
 
-                if (remoteData is Resource.Success && remoteData.data?.data != cache) {
-                    remoteData.data?.data?.let {
+                if (remoteData is Resource.Success && remoteData.data.data != cache) {
+                    remoteData.data.data.let {
                         animeDetailDao.updateAnimeDetail(it)
                         Response.success(remoteData.data)
                     } ?: Response.success(AnimeDetailResponse(cache))
@@ -51,7 +51,7 @@ class AnimeDetailRepository(
     }
 
     private suspend fun isDataNeedUpdate(data: AnimeDetail): Boolean {
-        return data.airing && !DateUtils.isEpisodeAreUpToDate(
+        return data.airing && !TimeUtils.isEpisodeAreUpToDate(
             data.broadcast.time,
             data.broadcast.timezone,
             data.broadcast.day,
@@ -80,6 +80,11 @@ class AnimeDetailRepository(
             animeDetailComplementDao.insertAnimeDetailComplement(animeDetailComplement)
         }
 
+    suspend fun updateAnimeDetailComplement(updatedAnimeDetailComplement: AnimeDetailComplement) =
+        withContext(Dispatchers.IO) {
+            animeDetailComplementDao.updateAnimeDetailComplement(updatedAnimeDetailComplement)
+        }
+
     suspend fun updateAnimeDetailComplementWithEpisodes(
         animeDetail: AnimeDetail,
         cachedAnimeDetailComplement: AnimeDetailComplement
@@ -89,7 +94,7 @@ class AnimeDetailRepository(
                 runwayAPI.getEpisodes(cachedAnimeDetailComplement.id)
             )
             if (episodesResponse is Resource.Success) {
-                val episodes = episodesResponse.data?.episodes ?: return@withContext null
+                val episodes = episodesResponse.data.episodes
 
                 if (episodes != cachedAnimeDetailComplement.episodes) {
                     val updatedAnimeDetail = cachedAnimeDetailComplement.copy(episodes = episodes)
@@ -98,9 +103,9 @@ class AnimeDetailRepository(
                 } else {
                     return@withContext cachedAnimeDetailComplement
                 }
+            } else {
+                return@withContext cachedAnimeDetailComplement
             }
-
-            return@withContext null
         } else {
             return@withContext cachedAnimeDetailComplement
         }
@@ -114,5 +119,21 @@ class AnimeDetailRepository(
     suspend fun insertCachedEpisodeDetailComplement(episodeDetailComplement: EpisodeDetailComplement) =
         withContext(Dispatchers.IO) {
             episodeDetailComplementDao.insertEpisodeDetailComplement(episodeDetailComplement)
+        }
+
+    suspend fun getAnimeAniwatchSearch(keyword: String) =
+        safeApiCall { runwayAPI.getAnimeAniwatchSearch(keyword) }
+
+    suspend fun getEpisodes(id: String) = safeApiCall { runwayAPI.getEpisodes(id) }
+
+    suspend fun getEpisodeServers(episodeId: String) =
+        safeApiCall { runwayAPI.getEpisodeServers(episodeId) }
+
+    suspend fun getEpisodeSources(episodeId: String, server: String, category: String) =
+        safeApiCall { runwayAPI.getEpisodeSources(episodeId, server, category) }
+
+    suspend fun updateEpisodeDetailComplement(episodeDetailComplement: EpisodeDetailComplement) =
+        withContext(Dispatchers.IO) {
+            episodeDetailComplementDao.updateEpisodeDetailComplement(episodeDetailComplement)
         }
 }

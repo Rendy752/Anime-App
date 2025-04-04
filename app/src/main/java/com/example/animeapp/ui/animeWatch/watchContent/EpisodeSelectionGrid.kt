@@ -23,6 +23,7 @@ import com.example.animeapp.utils.Debounce
 @Composable
 fun EpisodeSelectionGrid(
     episodes: List<Episode>,
+    getCachedEpisodeDetailComplement: suspend (String) -> EpisodeDetailComplement?,
     episodeDetailComplement: EpisodeDetailComplement?,
     episodeSourcesQuery: EpisodeSourcesQuery?,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
@@ -68,8 +69,9 @@ fun EpisodeSelectionGrid(
     ) {
         items(episodes) { episode ->
             WatchEpisodeItem(
-                episodeDetailComplement = episodeDetailComplement,
+                currentEpisode = episodeDetailComplement,
                 episode = episode,
+                getCachedEpisodeDetailComplement = getCachedEpisodeDetailComplement,
                 onEpisodeClick = { episodeId ->
                     setSelectedEpisodeId(episodeId)
                     debounce.query(episodeId)

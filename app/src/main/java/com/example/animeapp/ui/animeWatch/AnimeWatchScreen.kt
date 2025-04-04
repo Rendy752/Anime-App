@@ -8,6 +8,7 @@ import android.os.Build
 import android.view.WindowInsets
 import android.view.WindowManager
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -42,11 +43,13 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Observer
 import androidx.navigation.NavController
 import com.example.animeapp.models.AnimeDetail
+import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.NetworkStatus
 import com.example.animeapp.ui.animeWatch.components.AnimeWatchContent
 import com.example.animeapp.ui.animeWatch.components.AnimeWatchTopBar
+import com.example.animeapp.ui.common_ui.ErrorMessage
 import com.example.animeapp.utils.NetworkStateMonitor
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ScreenOffReceiver
@@ -57,6 +60,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun AnimeWatchScreen(
     animeDetail: AnimeDetail,
+    animeDetailComplement: AnimeDetailComplement,
     episodeId: String,
     episodesList: List<Episode>,
     defaultEpisode: EpisodeDetailComplement,
@@ -107,8 +111,14 @@ fun AnimeWatchScreen(
         }
     }
 
+    LaunchedEffect(Unit) {
+        episodeSourcesQuery?.let { query ->
+            viewModel.handleSelectedEpisodeServer(query.copy(id = episodeId), isFirstInit = true)
+        }
+    }
+
     DisposableEffect(Unit) {
-        viewModel.setInitialState(animeDetail, episodesList, defaultEpisode)
+        viewModel.setInitialState(animeDetail, animeDetailComplement, episodesList, defaultEpisode)
 
         networkStateMonitor.startMonitoring(context)
         val networkObserver = Observer<NetworkStatus> {
@@ -126,12 +136,6 @@ fun AnimeWatchScreen(
             networkStateMonitor.stopMonitoring()
             networkStateMonitor.networkStatus.removeObserver(networkObserver)
             networkStateMonitor.isConnected.removeObserver(connectionObserver)
-        }
-    }
-
-    LaunchedEffect(Unit) {
-        episodeSourcesQuery?.let { query ->
-            viewModel.handleSelectedEpisodeServer(query.copy(id = episodeId))
         }
     }
 
@@ -154,9 +158,11 @@ fun AnimeWatchScreen(
                 animeDetail,
                 isLandscape,
                 networkStatus,
+                navController,
                 selectedContentIndex,
                 { selectedContentIndex = it },
-                navController
+                episodeDetailComplement,
+                { viewModel.updateEpisodeDetailComplement(it) }
             )
         },
     ) { paddingValues ->
@@ -190,15 +196,26 @@ fun AnimeWatchScreen(
                     .then(if (isLandscape) Modifier.weight(0.5f) else Modifier.fillMaxWidth())
                     .then(videoSize)
                 if (episodeDetailComplement is Resource.Error) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        ErrorMessage("${episodeDetailComplement.message}")
+                    }
                     LaunchedEffect(Unit) {
                         snackbarHostState.showSnackbar(
                             "Error on the server, returning to the first episode. Try again later after 1 hour."
                         )
+                        episodeSourcesQuery?.let { query ->
+                            episodes?.firstOrNull()?.episodeId?.let { episodeId ->
+                                viewModel.handleSelectedEpisodeServer(query.copy(id = episodeId))
+                            }
+                        }
                     }
                 } else {
                     AnimeWatchContent(
                         animeDetail,
+                        { viewModel.updateLastEpisodeWatchedIdAnimeDetailComplement(it) },
+                        { viewModel.getCachedEpisodeDetailComplement(it) },
                         episodeDetailComplement,
+                        { viewModel.updateEpisodeDetailComplement(it) },
                         episodes,
                         episodeSourcesQuery,
                         isLandscape,

@@ -23,7 +23,10 @@ import com.example.animeapp.utils.Resource
 @Composable
 fun AnimeWatchContent(
     animeDetail: AnimeDetail,
+    updateLastEpisodeWatchedIdAnimeDetailComplement: (String) -> Unit,
+    getCachedEpisodeDetailComplement: suspend (String) -> EpisodeDetailComplement?,
     episodeDetailComplement: Resource<EpisodeDetailComplement>,
+    updateEpisodeDetailComplement: (EpisodeDetailComplement) -> Unit,
     episodes: List<Episode>?,
     episodeSourcesQuery: EpisodeSourcesQuery?,
     isLandscape: Boolean,
@@ -43,23 +46,23 @@ fun AnimeWatchContent(
         episodeSourcesQuery?.let { query ->
             Row(modifier = Modifier.fillMaxWidth()) {
                 if (episodeDetailComplement is Resource.Success) {
-                    episodeDetailComplement.data?.let {
-                        VideoPlayerSection(
-                            episodeDetailComplement = it,
-                            episodes = episodeList,
-                            episodeSourcesQuery = query,
-                            handleSelectedEpisodeServer = handleSelectedEpisodeServer,
-                            isPipMode = isPipMode,
-                            onEnterPipMode = onEnterPipMode,
-                            isFullscreen = isFullscreen,
-                            onFullscreenChange = onFullscreenChange,
-                            isScreenOn = isScreenOn,
-                            isLandscape = isLandscape,
-                            onPlayerError = onPlayerError,
-                            modifier = modifier,
-                            videoSize = videoSize
-                        )
-                    }
+                    VideoPlayerSection(
+                        updateLastEpisodeWatchedIdAnimeDetailComplement = updateLastEpisodeWatchedIdAnimeDetailComplement,
+                        episodeDetailComplement = episodeDetailComplement.data,
+                        updateEpisodeDetailComplement = updateEpisodeDetailComplement,
+                        episodes = episodeList,
+                        episodeSourcesQuery = query,
+                        handleSelectedEpisodeServer = handleSelectedEpisodeServer,
+                        isPipMode = isPipMode,
+                        onEnterPipMode = onEnterPipMode,
+                        isFullscreen = isFullscreen,
+                        onFullscreenChange = onFullscreenChange,
+                        isScreenOn = isScreenOn,
+                        isLandscape = isLandscape,
+                        onPlayerError = onPlayerError,
+                        modifier = modifier,
+                        videoSize = videoSize
+                    )
                 } else {
                     Box(modifier = modifier.then(videoSize)) {
                         SkeletonBox(modifier = Modifier.fillMaxSize())
@@ -77,6 +80,7 @@ fun AnimeWatchContent(
                             if (selectedContentIndex == 0) {
                                 WatchContentSection(
                                     animeDetail,
+                                    getCachedEpisodeDetailComplement,
                                     episodeDetailComplement,
                                     episodes,
                                     episodeSourcesQuery
@@ -98,6 +102,7 @@ fun AnimeWatchContent(
                     item {
                         WatchContentSection(
                             animeDetail,
+                            getCachedEpisodeDetailComplement,
                             episodeDetailComplement,
                             episodes,
                             episodeSourcesQuery
