@@ -54,6 +54,7 @@ fun AnimeWatchTopBar(
             debounceJob.value?.cancel()
         }
     }
+
     Column {
         TopAppBar(
             navigationIcon = {
