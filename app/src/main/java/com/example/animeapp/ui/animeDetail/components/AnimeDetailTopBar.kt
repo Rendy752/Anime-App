@@ -16,6 +16,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -47,10 +48,16 @@ fun AnimeDetailTopBar(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-    var debounceJob: Job? = null
+    val debounceJob = remember { mutableStateOf<Job?>(null) }
     val isFavorite = remember { mutableStateOf(false) }
     animeDetailComplement?.data?.isFavorite?.let {
         if (animeDetailComplement is Resource.Success) isFavorite.value = it
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            debounceJob.value?.cancel()
+        }
     }
 
     Column {
@@ -72,8 +79,8 @@ fun AnimeDetailTopBar(
                     if (animeDetailComplement is Resource.Success) {
                         IconButton(onClick = {
                             isFavorite.value = !isFavorite.value
-                            debounceJob?.cancel()
-                            debounceJob = scope.launch {
+                            debounceJob.value?.cancel()
+                            debounceJob.value = scope.launch {
                                 delay(100)
                                 animeDetailComplement.data?.let {
                                     onFavoriteToggle(it.copy(isFavorite = isFavorite.value))
