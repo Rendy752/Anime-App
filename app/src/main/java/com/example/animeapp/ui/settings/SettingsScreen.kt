@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.animeapp.R
@@ -40,7 +41,14 @@ fun SettingsScreen() {
         topBar = {
             Column {
                 TopAppBar(
-                    title = { Text(text = stringResource(id = R.string.title_settings)) },
+                    title = {
+                        Text(
+                            text = stringResource(id = R.string.title_settings),
+                            modifier = Modifier.padding(end = 8.dp),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    },
                     colors = TopAppBarDefaults.topAppBarColors(
                         titleContentColor = MaterialTheme.colorScheme.primary
                     )

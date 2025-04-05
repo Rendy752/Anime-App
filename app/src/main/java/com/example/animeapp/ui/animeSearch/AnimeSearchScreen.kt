@@ -19,6 +19,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.Genre
 import com.example.animeapp.models.Producer
@@ -67,7 +68,14 @@ fun AnimeSearchScreen(
             if (!isLandscape) {
                 Column {
                     TopAppBar(
-                        title = { Text(text = stringResource(id = R.string.title_search)) },
+                        title = {
+                            Text(
+                                text = stringResource(id = R.string.title_search),
+                                modifier = Modifier.padding(end = 8.dp),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        },
                         navigationIcon = {
                             if (genre != null || producer != null) {
                                 IconButton(onClick = { navController.popBackStack() }) {

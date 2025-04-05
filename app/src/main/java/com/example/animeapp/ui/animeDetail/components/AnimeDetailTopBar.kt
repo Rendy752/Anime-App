@@ -71,7 +71,7 @@ fun AnimeDetailTopBar(
                 Text(
                     text = animeDetail?.data?.data?.title ?: animeTitle,
                     maxLines = 1,
-                    overflow = TextOverflow.Companion.Ellipsis
+                    overflow = TextOverflow.Ellipsis
                 )
             },
             actions = {
@@ -81,7 +81,7 @@ fun AnimeDetailTopBar(
                             isFavorite.value = !isFavorite.value
                             debounceJob.value?.cancel()
                             debounceJob.value = scope.launch {
-                                delay(100)
+                                delay(300)
                                 animeDetailComplement.data?.let {
                                     onFavoriteToggle(it.copy(isFavorite = isFavorite.value))
                                 }

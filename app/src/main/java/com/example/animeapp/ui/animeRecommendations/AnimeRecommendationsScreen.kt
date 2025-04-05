@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Observer
@@ -67,7 +68,14 @@ fun AnimeRecommendationsScreen(navController: NavController) {
         topBar = {
             Column {
                 TopAppBar(
-                    title = { Text(text = stringResource(R.string.title_recommendation)) },
+                    title = {
+                        Text(
+                            text = stringResource(R.string.title_recommendation),
+                            modifier = Modifier.padding(end = 8.dp),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    },
                     actions = {
                         networkStatus?.let {
                             Row {
@@ -124,8 +132,7 @@ fun AnimeRecommendationsScreen(navController: NavController) {
 
                     is Resource.Success -> {
                         val animeRecommendations =
-                            (animeRecommendationsState as Resource.Success).data?.data
-                                ?: emptyList()
+                            (animeRecommendationsState as Resource.Success).data.data
                         if (!isLandscape) {
                             LazyColumn {
                                 items(animeRecommendations) {

@@ -74,6 +74,7 @@ fun DropdownInputField(
             value = selectedValue,
             onValueChange = {},
             label = { Text(label) },
+            singleLine = true,
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             modifier = Modifier.menuAnchor().fillMaxWidth()
         )

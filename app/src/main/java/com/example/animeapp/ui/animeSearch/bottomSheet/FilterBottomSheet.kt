@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.R
 import com.example.animeapp.ui.animeSearch.AnimeSearchViewModel
@@ -56,7 +57,9 @@ private fun FilterHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            stringResource(R.string.filter_anime),
+            stringResource(R.string.filter),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.primary
         )
@@ -133,11 +136,9 @@ private fun FilterContent(
         }
         Row(Modifier.fillMaxWidth()) {
             val selectedRatingDescription by remember {
-                mutableStateOf(
-                    FilterUtils.getRatingDescription(
-                        filterState.value.rating
-                    )
-                )
+                derivedStateOf {
+                    FilterUtils.getRatingDescription(filterState.value.rating)
+                }
             }
             DropdownInputField(
                 "Rating",
