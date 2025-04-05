@@ -35,15 +35,12 @@ import com.example.animeapp.models.EpisodeSourcesQuery
 import com.example.animeapp.models.EpisodeSourcesResponse
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 @OptIn(UnstableApi::class, ExperimentalComposeUiApi::class)
 @Composable
 fun VideoPlayerSection(
-    updateLastEpisodeWatchedIdAnimeDetailComplement: (String) -> Unit,
+    updateStoredWatchState: (Long) -> Unit,
     episodeDetailComplement: EpisodeDetailComplement,
-    updateEpisodeDetailComplement: (EpisodeDetailComplement) -> Unit,
     episodes: List<Episode>,
     episodeSourcesQuery: EpisodeSourcesQuery,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
@@ -58,10 +55,10 @@ fun VideoPlayerSection(
     videoSize: Modifier
 ) {
     val context = LocalContext.current
-    val exoPlayer = remember { ExoPlayer.Builder(context).build() }
+    val exoPlayer = remember(episodeSourcesQuery) { ExoPlayer.Builder(context).build() }
     val audioManager = remember { context.getSystemService(Context.AUDIO_SERVICE) as AudioManager }
     val introOutroHandler =
-        remember { IntroOutroHandler(exoPlayer, episodeDetailComplement.sources) }
+        remember(episodeSourcesQuery) { IntroOutroHandler(exoPlayer, episodeDetailComplement.sources) }
     val playerView = remember { PlayerView(context) }
     val currentEpisodeNo = episodeDetailComplement.servers.episodeNo
     val previousEpisode = remember(currentEpisodeNo) {
@@ -77,6 +74,20 @@ fun VideoPlayerSection(
     var mediaSessionCompat: MediaSessionCompat? by remember { mutableStateOf(null) }
     var mediaControllerCompat: MediaControllerCompat? by remember { mutableStateOf(null) }
     val playbackStateBuilder = remember { PlaybackStateCompat.Builder() }
+
+    val handler = remember(episodeSourcesQuery) { Handler(Looper.getMainLooper()) }
+    val savePositionRunnable = remember(episodeSourcesQuery) {
+        object : Runnable {
+            override fun run() {
+                if (exoPlayer.currentPosition > 10000) {
+                    runBlocking {
+                        withTimeout(5000) { updateStoredWatchState(exoPlayer.currentPosition) }
+                    }
+                }
+                handler.postDelayed(this, 1000)
+            }
+        }
+    }
 
     fun updatePlaybackState(state: Int) {
         isShowResumeOverlay = false
@@ -104,9 +115,11 @@ fun VideoPlayerSection(
                     (context as? FragmentActivity)?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                     HlsPlayerUtil.requestAudioFocus(audioManager)
                     updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
+                    handler.post(savePositionRunnable)
                 } else {
                     HlsPlayerUtil.abandonAudioFocus(audioManager)
                     updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
+                    handler.removeCallbacks(savePositionRunnable)
                 }
             }
 
@@ -121,6 +134,9 @@ fun VideoPlayerSection(
                             servers.episodeNo,
                             setNextEpisodeName = { nextEpisodeName = it }
                         )
+                        runBlocking {
+                            withTimeout(5000) { updateStoredWatchState(exoPlayer.duration) }
+                        }
                     } else {
                         isShowNextEpisode = false
                     }
@@ -243,22 +259,13 @@ fun VideoPlayerSection(
         onDispose {
             exoPlayer.removeListener(listener)
             introOutroHandler.stop()
+            handler.removeCallbacks(savePositionRunnable)
 
             HlsPlayerUtil.abandonAudioFocus(audioManager)
             HlsPlayerUtil.releasePlayer(playerView)
-            val seekPosition = exoPlayer.currentPosition
-            if (seekPosition > 10000 && seekPosition != episodeDetailComplement.lastTimestamp) {
+            if (exoPlayer.currentPosition > 10000) {
                 runBlocking {
-                    withTimeout(5000) {
-                        updateLastEpisodeWatchedIdAnimeDetailComplement(episodeDetailComplement.id)
-                        updateEpisodeDetailComplement(
-                            episodeDetailComplement.copy(
-                                lastTimestamp = seekPosition,
-                                lastWatched = LocalDateTime.now()
-                                    .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-                            )
-                        )
-                    }
+                    withTimeout(5000) { updateStoredWatchState(exoPlayer.currentPosition) }
                 }
             }
 

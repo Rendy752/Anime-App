@@ -15,6 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.example.animeapp.utils.ResponseHandler.safeApiCall
 import retrofit2.Response
+import java.time.Instant
 
 class AnimeEpisodeDetailRepository(
     private val animeDetailDao: AnimeDetailDao,
@@ -82,7 +83,11 @@ class AnimeEpisodeDetailRepository(
 
     suspend fun updateAnimeDetailComplement(updatedAnimeDetailComplement: AnimeDetailComplement) =
         withContext(Dispatchers.IO) {
-            animeDetailComplementDao.updateAnimeDetailComplement(updatedAnimeDetailComplement)
+            animeDetailComplementDao.updateAnimeDetailComplement(
+                updatedAnimeDetailComplement.copy(
+                    updatedAt = Instant.now().epochSecond
+                )
+            )
         }
 
     suspend fun updateAnimeDetailComplementWithEpisodes(
@@ -98,7 +103,12 @@ class AnimeEpisodeDetailRepository(
 
                 if (episodes != cachedAnimeDetailComplement.episodes) {
                     val updatedAnimeDetail = cachedAnimeDetailComplement.copy(episodes = episodes)
-                    animeDetailComplementDao.updateEpisodeAnimeDetailComplement(updatedAnimeDetail)
+                    animeDetailComplementDao.updateAnimeDetailComplement(
+                        updatedAnimeDetail.copy(
+                            lastEpisodeUpdatedAt = Instant.now().epochSecond,
+                            updatedAt = Instant.now().epochSecond
+                        )
+                    )
                     return@withContext updatedAnimeDetail
                 } else {
                     return@withContext cachedAnimeDetailComplement
@@ -134,6 +144,10 @@ class AnimeEpisodeDetailRepository(
 
     suspend fun updateEpisodeDetailComplement(episodeDetailComplement: EpisodeDetailComplement) =
         withContext(Dispatchers.IO) {
-            episodeDetailComplementDao.updateEpisodeDetailComplement(episodeDetailComplement)
+            episodeDetailComplementDao.updateEpisodeDetailComplement(
+                episodeDetailComplement.copy(
+                    updatedAt = Instant.now().epochSecond
+                )
+            )
         }
 }

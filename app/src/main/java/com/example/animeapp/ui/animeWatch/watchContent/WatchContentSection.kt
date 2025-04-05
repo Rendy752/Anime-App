@@ -10,6 +10,7 @@ import com.example.animeapp.utils.Resource
 @Composable
 fun WatchContentSection(
     animeDetail: AnimeDetail,
+    isFavorite: Boolean,
     getCachedEpisodeDetailComplement: suspend (String) -> EpisodeDetailComplement?,
     episodeDetailComplement: Resource<EpisodeDetailComplement>,
     episodes: List<Episode>,
@@ -23,6 +24,7 @@ fun WatchContentSection(
             currentEpisode?.let { currentEpisode ->
                 WatchHeader(
                     title = animeDetail.title,
+                    isFavorite = isFavorite,
                     episode = currentEpisode,
                     episodeDetailComplement = episodeDetail,
                     episodeSourcesQuery = episodeSourcesQuery

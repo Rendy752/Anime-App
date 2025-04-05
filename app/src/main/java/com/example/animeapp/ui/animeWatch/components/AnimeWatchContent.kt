@@ -23,10 +23,10 @@ import com.example.animeapp.utils.Resource
 @Composable
 fun AnimeWatchContent(
     animeDetail: AnimeDetail,
-    updateLastEpisodeWatchedIdAnimeDetailComplement: (String) -> Unit,
+    isFavorite: Boolean,
+    updateStoredWatchState: (EpisodeDetailComplement, Long) -> Unit,
     getCachedEpisodeDetailComplement: suspend (String) -> EpisodeDetailComplement?,
     episodeDetailComplement: Resource<EpisodeDetailComplement>,
-    updateEpisodeDetailComplement: (EpisodeDetailComplement) -> Unit,
     episodes: List<Episode>?,
     episodeSourcesQuery: EpisodeSourcesQuery?,
     isLandscape: Boolean,
@@ -47,9 +47,10 @@ fun AnimeWatchContent(
             Row(modifier = Modifier.fillMaxWidth()) {
                 if (episodeDetailComplement is Resource.Success) {
                     VideoPlayerSection(
-                        updateLastEpisodeWatchedIdAnimeDetailComplement = updateLastEpisodeWatchedIdAnimeDetailComplement,
+                        updateStoredWatchState = { seekPosition ->
+                            updateStoredWatchState(episodeDetailComplement.data, seekPosition)
+                        },
                         episodeDetailComplement = episodeDetailComplement.data,
-                        updateEpisodeDetailComplement = updateEpisodeDetailComplement,
                         episodes = episodeList,
                         episodeSourcesQuery = query,
                         handleSelectedEpisodeServer = handleSelectedEpisodeServer,
@@ -80,6 +81,7 @@ fun AnimeWatchContent(
                             if (selectedContentIndex == 0) {
                                 WatchContentSection(
                                     animeDetail,
+                                    isFavorite,
                                     getCachedEpisodeDetailComplement,
                                     episodeDetailComplement,
                                     episodes,
@@ -102,6 +104,7 @@ fun AnimeWatchContent(
                     item {
                         WatchContentSection(
                             animeDetail,
+                            isFavorite,
                             getCachedEpisodeDetailComplement,
                             episodeDetailComplement,
                             episodes,

@@ -35,6 +35,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun AnimeWatchTopBar(
     animeDetail: AnimeDetail,
+    isFavorite: Boolean,
     isLandscape: Boolean,
     networkStatus: NetworkStatus?,
     navController: NavController,
@@ -44,15 +45,10 @@ fun AnimeWatchTopBar(
     onFavoriteToggle: (EpisodeDetailComplement) -> Unit
 ) {
     val scope = rememberCoroutineScope()
-    val isFavorite = remember { mutableStateOf(false) }
     val debounceJob = remember { mutableStateOf<Job?>(null) }
-    if (episodeDetailComplement is Resource.Success) isFavorite.value =
-        episodeDetailComplement.data.isFavorite
 
     DisposableEffect(Unit) {
-        onDispose {
-            debounceJob.value?.cancel()
-        }
+        onDispose { debounceJob.value?.cancel() }
     }
 
     Column {
@@ -97,16 +93,15 @@ fun AnimeWatchTopBar(
                     )
                     if (episodeDetailComplement is Resource.Success) {
                         IconButton(onClick = {
-                            isFavorite.value = !isFavorite.value
                             debounceJob.value?.cancel()
                             debounceJob.value = scope.launch {
                                 delay(300)
-                                onFavoriteToggle(episodeDetailComplement.data.copy(isFavorite = isFavorite.value))
+                                onFavoriteToggle(episodeDetailComplement.data.copy(isFavorite = !isFavorite))
                             }
                         }) {
                             Icon(
-                                imageVector = if (isFavorite.value) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                                contentDescription = if (isFavorite.value) "Remove from favorites" else "Add to favorites",
+                                imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                                contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
                                 tint = MaterialTheme.colorScheme.tertiary
                             )
                         }

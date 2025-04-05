@@ -55,6 +55,8 @@ import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ScreenOffReceiver
 import com.example.animeapp.utils.ScreenOnReceiver
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,6 +81,7 @@ fun AnimeWatchScreen(
     // UI State
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val isFavorite = remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     var isFullscreen by remember { mutableStateOf(false) }
     val scrollState = rememberLazyListState()
@@ -114,6 +117,12 @@ fun AnimeWatchScreen(
     LaunchedEffect(Unit) {
         episodeSourcesQuery?.let { query ->
             viewModel.handleSelectedEpisodeServer(query.copy(id = episodeId), isFirstInit = true)
+        }
+    }
+
+    LaunchedEffect(episodeDetailComplement) {
+        if (episodeDetailComplement is Resource.Success) {
+            isFavorite.value = episodeDetailComplement.data?.isFavorite == true
         }
     }
 
@@ -156,13 +165,17 @@ fun AnimeWatchScreen(
         topBar = {
             if (!isPipMode && !isFullscreen) AnimeWatchTopBar(
                 animeDetail,
+                isFavorite.value,
                 isLandscape,
                 networkStatus,
                 navController,
                 selectedContentIndex,
                 { selectedContentIndex = it },
                 episodeDetailComplement,
-                { viewModel.updateEpisodeDetailComplement(it) }
+                {
+                    isFavorite.value = it.isFavorite
+                    viewModel.updateEpisodeDetailComplement(it)
+                }
             )
         },
     ) { paddingValues ->
@@ -170,7 +183,7 @@ fun AnimeWatchScreen(
             isRefreshing = isRefreshing,
             onRefresh = {
                 episodeSourcesQuery?.let { query ->
-                    viewModel.handleSelectedEpisodeServer(query, true)
+                    viewModel.handleSelectedEpisodeServer(query, isRefreshed = true)
                 }
             },
             modifier = Modifier
@@ -212,10 +225,21 @@ fun AnimeWatchScreen(
                 } else {
                     AnimeWatchContent(
                         animeDetail,
-                        { viewModel.updateLastEpisodeWatchedIdAnimeDetailComplement(it) },
+                        isFavorite.value,
+                        { episodeDetailComplement, seekPosition ->
+                            viewModel.updateLastEpisodeWatchedIdAnimeDetailComplement(
+                                episodeDetailComplement.id
+                            )
+                            val updatedEpisodeDetailComplement = episodeDetailComplement.copy(
+                                isFavorite = isFavorite.value,
+                                lastTimestamp = seekPosition,
+                                lastWatched = LocalDateTime.now()
+                                    .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+                            )
+                            viewModel.updateEpisodeDetailComplement(updatedEpisodeDetailComplement)
+                        },
                         { viewModel.getCachedEpisodeDetailComplement(it) },
                         episodeDetailComplement,
-                        { viewModel.updateEpisodeDetailComplement(it) },
                         episodes,
                         episodeSourcesQuery,
                         isLandscape,

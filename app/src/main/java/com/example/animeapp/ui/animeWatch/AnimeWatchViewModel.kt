@@ -204,16 +204,20 @@ class AnimeWatchViewModel @Inject constructor(
     fun updateLastEpisodeWatchedIdAnimeDetailComplement(lastEpisodeWatchedId: String) =
         viewModelScope.launch {
             _animeDetailComplement.value?.let {
+                if (it.lastEpisodeWatchedId == lastEpisodeWatchedId) return@launch
                 animeEpisodeDetailRepository.updateAnimeDetailComplement(
                     it.copy(lastEpisodeWatchedId = lastEpisodeWatchedId)
                 )
+                _animeDetailComplement.value = it.copy(lastEpisodeWatchedId = lastEpisodeWatchedId)
             }
         }
 
     suspend fun getCachedEpisodeDetailComplement(episodeId: String): EpisodeDetailComplement? =
         animeEpisodeDetailRepository.getCachedEpisodeDetailComplement(episodeId)
 
-    fun updateEpisodeDetailComplement(updatedEpisodeDetailComplement: EpisodeDetailComplement) =
+    fun updateEpisodeDetailComplement(
+        updatedEpisodeDetailComplement: EpisodeDetailComplement,
+    ) =
         viewModelScope.launch {
             animeEpisodeDetailRepository.updateEpisodeDetailComplement(
                 updatedEpisodeDetailComplement
