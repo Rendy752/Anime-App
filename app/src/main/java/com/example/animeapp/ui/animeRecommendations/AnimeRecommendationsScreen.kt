@@ -127,7 +127,16 @@ fun AnimeRecommendationsScreen(navController: NavController) {
 
                 when (animeRecommendationsState) {
                     is Resource.Loading -> {
-                        repeat(3) { RecommendationItemSkeleton() }
+                        if (!isLandscape) repeat(3) { RecommendationItemSkeleton() }
+                        else {
+                            Row(modifier = Modifier.fillMaxSize()) {
+                                repeat(2) {
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        repeat(2) { RecommendationItemSkeleton() }
+                                    }
+                                }
+                            }
+                        }
                     }
 
                     is Resource.Success -> {
