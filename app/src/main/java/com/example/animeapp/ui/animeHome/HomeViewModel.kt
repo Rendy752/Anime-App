@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.home
+package com.example.animeapp.ui.animeHome
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -22,11 +22,7 @@ class HomeViewModel @Inject constructor(
     val continueWatchingState: StateFlow<Resource<EpisodeDetailComplement?>> =
         _continueWatchingState.asStateFlow()
 
-    init {
-        fetchContinueWatchingEpisode()
-    }
-
-    private fun fetchContinueWatchingEpisode() {
+    fun fetchContinueWatchingEpisode() {
         viewModelScope.launch {
             try {
                 val episode =

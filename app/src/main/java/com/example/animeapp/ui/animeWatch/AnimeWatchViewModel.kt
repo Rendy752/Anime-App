@@ -148,48 +148,43 @@ class AnimeWatchViewModel @Inject constructor(
 
             episodeServersResource.data.let { servers ->
                 episodeSourcesResource.data.let { sources ->
-                    val cachedEpisodeDetailComplement =
+                    var cachedEpisodeDetailComplement =
                         getCachedEpisodeDetailComplement(episodeSourcesQuery.id)
-                    if (cachedEpisodeDetailComplement != null && cachedEpisodeDetailComplement.sourcesQuery != episodeSourcesQuery) {
-                        updateEpisodeDetailComplement(
-                            cachedEpisodeDetailComplement.copy(
-                                servers = servers,
-                                sources = sources,
-                                sourcesQuery = episodeSourcesQuery
-                            )
+                    if (cachedEpisodeDetailComplement != null) {
+                        cachedEpisodeDetailComplement = cachedEpisodeDetailComplement.copy(
+                            servers = servers,
+                            sources = sources,
+                            sourcesQuery = episodeSourcesQuery
                         )
+                        updateEpisodeDetailComplement(cachedEpisodeDetailComplement)
+                        _episodeDetailComplement.value = Resource.Success(cachedEpisodeDetailComplement)
                     } else {
                         animeDetail.value?.let { animeDetail ->
-                            val remoteEpisodeDetailComplement = EpisodeDetailComplement(
-                                id = servers.episodeId,
-                                title = animeDetail.title,
-                                imageUrl = animeDetail.images.jpg.image_url,
-                                servers = servers,
-                                sources = sources,
-                                sourcesQuery = episodeSourcesQuery
-                            )
-
-                            if (cachedEpisodeDetailComplement != null) {
-                                updateEpisodeDetailComplement(
-                                    cachedEpisodeDetailComplement.copy(
-                                        id = remoteEpisodeDetailComplement.id,
-                                        title = remoteEpisodeDetailComplement.title,
-                                        imageUrl = remoteEpisodeDetailComplement.imageUrl,
-                                        servers = remoteEpisodeDetailComplement.servers,
-                                        sources = remoteEpisodeDetailComplement.sources,
-                                        sourcesQuery = remoteEpisodeDetailComplement.sourcesQuery,
-                                    )
+                            val currentEpisode =
+                                _episodes.value?.firstOrNull { it.episodeId == servers.episodeId }
+                            currentEpisode?.let { currentEpisode ->
+                                val remoteEpisodeDetailComplement = EpisodeDetailComplement(
+                                    id = currentEpisode.episodeId,
+                                    animeTitle = animeDetail.title,
+                                    episodeTitle = currentEpisode.name,
+                                    imageUrl = animeDetail.images.jpg.image_url,
+                                    number = currentEpisode.episodeNo,
+                                    isFiller = currentEpisode.filler,
+                                    servers = servers,
+                                    sources = sources,
+                                    sourcesQuery = episodeSourcesQuery
                                 )
-                            } else {
+
                                 animeEpisodeDetailRepository.insertCachedEpisodeDetailComplement(
                                     remoteEpisodeDetailComplement
                                 )
-                            }
 
-                            _episodeDetailComplement.value =
-                                Resource.Success(remoteEpisodeDetailComplement)
+                                _episodeDetailComplement.value =
+                                    Resource.Success(remoteEpisodeDetailComplement)
+                            }
                         }
                     }
+                    _episodeSourcesQuery.value = episodeSourcesQuery
                 }
             }
         } catch (e: Exception) {

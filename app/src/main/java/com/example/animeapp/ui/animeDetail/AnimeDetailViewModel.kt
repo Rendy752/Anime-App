@@ -6,6 +6,7 @@ import com.example.animeapp.models.AnimeAniwatchSearchResponse
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.AnimeDetailResponse
+import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.EpisodeServersResponse
 import com.example.animeapp.models.EpisodeSourcesResponse
@@ -97,14 +98,13 @@ class AnimeDetailViewModel @Inject constructor(
                 _animeDetailComplement.value = Resource.Success(updatedAnimeDetail)
             }
 
-            cachedAnimeDetail.episodes.firstOrNull()?.episodeId?.let { episodeId ->
+            cachedAnimeDetail.episodes.firstOrNull()?.let { firstEpisode ->
                 val cachedEpisodeDetailComplement =
-                    animeEpisodeDetailRepository.getCachedEpisodeDetailComplement(episodeId)
+                    animeEpisodeDetailRepository.getCachedEpisodeDetailComplement(firstEpisode.episodeId)
                 if (cachedEpisodeDetailComplement != null) _defaultEpisode.value =
                     cachedEpisodeDetailComplement
                 else {
-                    val defaultEpisodeServersResponse =
-                        getDefaultEpisodeServers(cachedAnimeDetail.episodes.firstOrNull()?.episodeId)
+                    val defaultEpisodeServersResponse = getDefaultEpisodeServers(firstEpisode.episodeId)
                     val defaultEpisodeSourcesResponse =
                         StreamingUtils.getEpisodeSources(
                             defaultEpisodeServersResponse,
@@ -119,6 +119,7 @@ class AnimeDetailViewModel @Inject constructor(
                     ) {
                         _animeDetail.value?.data?.data?.let { animeDetail ->
                             insertCachedEpisodeDetailComplement(
+                                firstEpisode,
                                 defaultEpisodeServersResponse,
                                 defaultEpisodeSourcesResponse,
                                 animeDetail
@@ -193,6 +194,7 @@ class AnimeDetailViewModel @Inject constructor(
                             Resource.Success(cachedAnimeDetailComplement)
 
                         insertCachedEpisodeDetailComplement(
+                            episodesResponse.data.episodes.first(),
                             defaultEpisodeServersResponse,
                             defaultEpisodeSourcesResponse,
                             animeDetail
@@ -206,6 +208,7 @@ class AnimeDetailViewModel @Inject constructor(
         }
 
     private fun insertCachedEpisodeDetailComplement(
+        episode: Episode,
         defaultEpisodeServersResponse: Resource.Success<EpisodeServersResponse>,
         defaultEpisodeSourcesResponse: Resource.Success<EpisodeSourcesResponse>,
         animeDetail: AnimeDetail
@@ -218,9 +221,12 @@ class AnimeDetailViewModel @Inject constructor(
                         servers.episodeId
                     )?.let { query ->
                         EpisodeDetailComplement(
-                            id = servers.episodeId,
-                            title = animeDetail.title,
+                            id = episode.episodeId,
+                            animeTitle = animeDetail.title,
+                            episodeTitle = episode.name,
                             imageUrl = animeDetail.images.jpg.image_url,
+                            number =  episode.episodeNo,
+                            isFiller = episode.filler,
                             servers = servers,
                             sources = sources,
                             sourcesQuery = query

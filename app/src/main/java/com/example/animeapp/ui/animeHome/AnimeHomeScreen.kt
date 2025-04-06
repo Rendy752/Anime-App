@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.home
+package com.example.animeapp.ui.animeHome
 
 import android.os.Handler
 import android.os.Looper
@@ -9,49 +9,42 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Popup
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
-import com.example.animeapp.ui.common_ui.ContinueWatchingCard
+import com.example.animeapp.ui.animeHome.components.ContinueWatchingCard
 import com.example.animeapp.utils.Resource
 
 @Composable
-fun HomeScreen(navController: NavHostController) {
+fun AnimeHomeScreen(currentRoute: String?, navController: NavHostController) {
     val viewModel: HomeViewModel = hiltViewModel()
     val continueWatchingState by viewModel.continueWatchingState.collectAsState()
-    var showPopup by remember { mutableStateOf(false) }
+    var isShowPopup by remember { mutableStateOf(false) }
     var episodeData by remember {
         mutableStateOf<com.example.animeapp.models.EpisodeDetailComplement?>(
             null
         )
     }
 
+    LaunchedEffect(currentRoute) {
+        viewModel.fetchContinueWatchingEpisode()
+    }
+
     LaunchedEffect(continueWatchingState) {
         if (continueWatchingState is Resource.Success) {
-            continueWatchingState.data?.let {
-                episodeData = it
-                showPopup = true
+            episodeData = continueWatchingState.data
+            isShowPopup = episodeData != null
+            if (isShowPopup) {
                 Handler(Looper.getMainLooper()).postDelayed({
-                    showPopup = false
+                    isShowPopup = false
                 }, 10000)
             }
         } else {
-            showPopup = false
+            isShowPopup = false
         }
     }
 
-    if (showPopup) {
-        episodeData?.let {
-            Popup(
-                alignment = Alignment.BottomEnd,
-                offset = IntOffset((-20).dp.value.toInt(), (-20).dp.value.toInt()),
-                onDismissRequest = { showPopup = false }
-            ) {
-                ContinueWatchingCard(episode = it)
-            }
-        }
-    }
+    ContinueWatchingCard(
+        isShowPopup = isShowPopup,
+        episode = episodeData ?: return,
+        onDismiss = { isShowPopup = false })
 }

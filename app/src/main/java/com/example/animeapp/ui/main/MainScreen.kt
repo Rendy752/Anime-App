@@ -31,7 +31,7 @@ import com.example.animeapp.ui.animeDetail.AnimeDetailScreen
 import com.example.animeapp.ui.animeRecommendations.AnimeRecommendationsScreen
 import com.example.animeapp.ui.animeSearch.AnimeSearchScreen
 import com.example.animeapp.ui.animeWatch.AnimeWatchScreen
-import com.example.animeapp.ui.home.HomeScreen
+import com.example.animeapp.ui.animeHome.AnimeHomeScreen
 import com.example.animeapp.ui.settings.SettingsScreen
 import com.google.gson.Gson
 import java.net.URLDecoder
@@ -109,7 +109,7 @@ fun MainScreen(navController: NavHostController) {
                 }
             ) {
                 composable(BottomScreen.Home.route) {
-                    HomeScreen(navController)
+                    AnimeHomeScreen(currentRoute, navController)
                 }
 
                 composable(BottomScreen.Recommendations.route) {

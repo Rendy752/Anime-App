@@ -217,9 +217,7 @@ fun AnimeWatchScreen(
                             "Error on the server, returning to the first episode. Try again later after 1 hour."
                         )
                         episodeSourcesQuery?.let { query ->
-                            episodes?.firstOrNull()?.episodeId?.let { episodeId ->
-                                viewModel.handleSelectedEpisodeServer(query.copy(id = episodeId))
-                            }
+                            viewModel.handleSelectedEpisodeServer(query.copy(id = episodeId))
                         }
                     }
                 } else {
