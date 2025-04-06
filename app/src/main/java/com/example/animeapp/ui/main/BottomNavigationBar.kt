@@ -23,7 +23,7 @@ fun BottomNavigationBar(navController: NavHostController) {
     ) {
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = navBackStackEntry?.destination?.route
-        Screen.entries.forEach { screen ->
+        BottomScreen.entries.forEach { screen ->
             NavigationBarItem(
                 modifier = Modifier.padding(horizontal = 4.dp),
                 icon = screen.icon,

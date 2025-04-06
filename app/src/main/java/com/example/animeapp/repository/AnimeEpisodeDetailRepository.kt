@@ -121,6 +121,12 @@ class AnimeEpisodeDetailRepository(
         }
     }
 
+    suspend fun getCachedLatestWatchedEpisodeDetailComplement(): EpisodeDetailComplement? {
+        return withContext(Dispatchers.IO) {
+            episodeDetailComplementDao.getLatestWatchedEpisodeDetailComplement()
+        }
+    }
+
     suspend fun getCachedEpisodeDetailComplement(id: String): EpisodeDetailComplement? =
         withContext(Dispatchers.IO) {
             episodeDetailComplementDao.getEpisodeDetailComplementById(id)

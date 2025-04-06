@@ -16,6 +16,9 @@ interface EpisodeDetailComplementDao {
     @Query("SELECT * FROM episode_detail_complement WHERE id = :id")
     fun getEpisodeDetailComplementById(id: String): EpisodeDetailComplement?
 
+    @Query("SELECT * FROM episode_detail_complement WHERE lastWatched IS NOT NULL AND lastTimestamp IS NOT NULL ORDER BY lastWatched DESC LIMIT 1")
+    fun getLatestWatchedEpisodeDetailComplement(): EpisodeDetailComplement?
+
     @Delete
     suspend fun deleteEpisodeDetailComplement(episodeDetailComplement: EpisodeDetailComplement)
 

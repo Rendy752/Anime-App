@@ -39,7 +39,7 @@ import kotlinx.coroutines.withTimeout
 @OptIn(UnstableApi::class, ExperimentalComposeUiApi::class)
 @Composable
 fun VideoPlayerSection(
-    updateStoredWatchState: (Long) -> Unit,
+    updateStoredWatchState: (Long?) -> Unit,
     episodeDetailComplement: EpisodeDetailComplement,
     episodes: List<Episode>,
     episodeSourcesQuery: EpisodeSourcesQuery,
@@ -135,7 +135,7 @@ fun VideoPlayerSection(
                             setNextEpisodeName = { nextEpisodeName = it }
                         )
                         runBlocking {
-                            withTimeout(5000) { updateStoredWatchState(exoPlayer.duration) }
+                            withTimeout(5000) { updateStoredWatchState(null) }
                         }
                     } else {
                         isShowNextEpisode = false

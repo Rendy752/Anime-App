@@ -31,6 +31,7 @@ import com.example.animeapp.ui.animeDetail.AnimeDetailScreen
 import com.example.animeapp.ui.animeRecommendations.AnimeRecommendationsScreen
 import com.example.animeapp.ui.animeSearch.AnimeSearchScreen
 import com.example.animeapp.ui.animeWatch.AnimeWatchScreen
+import com.example.animeapp.ui.home.HomeScreen
 import com.example.animeapp.ui.settings.SettingsScreen
 import com.google.gson.Gson
 import java.net.URLDecoder
@@ -44,13 +45,7 @@ fun MainScreen(navController: NavHostController) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    isBottomBarVisible = when (currentRoute) {
-        "recommendations",
-        "search",
-        "settings" -> true
-
-        else -> false
-    }
+    isBottomBarVisible = BottomScreen.entries.any { it.route == currentRoute }
 
     LaunchedEffect(Unit) {
         activity?.let { activity ->
@@ -86,7 +81,7 @@ fun MainScreen(navController: NavHostController) {
         ) {
             NavHost(
                 navController = navController,
-                startDestination = "recommendations",
+                startDestination = BottomScreen.Home.route,
                 modifier = Modifier.weight(1f),
                 enterTransition = {
                     slideIntoContainer(
@@ -113,16 +108,20 @@ fun MainScreen(navController: NavHostController) {
                     )
                 }
             ) {
-                composable("recommendations") {
+                composable(BottomScreen.Home.route) {
+                    HomeScreen(navController)
+                }
+
+                composable(BottomScreen.Recommendations.route) {
                     AnimeRecommendationsScreen(navController)
                 }
 
-                composable("search") {
+                composable(BottomScreen.Search.route) {
                     AnimeSearchScreen(navController)
                 }
 
                 composable(
-                    "search/{genreIdentity}/{producerIdentity}",
+                    "${BottomScreen.Search.route}/{genreIdentity}/{producerIdentity}",
                     arguments = listOf(
                         navArgument("genreIdentity") {
                             type = NavType.StringType
@@ -161,7 +160,7 @@ fun MainScreen(navController: NavHostController) {
                     )
                 }
 
-                composable("settings") {
+                composable(BottomScreen.Settings.route) {
                     SettingsScreen()
                 }
 
