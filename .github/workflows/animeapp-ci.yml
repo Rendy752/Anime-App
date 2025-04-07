@@ -26,6 +26,12 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
+      - name: Create local.properties
+        run: |
+            echo "jikan.url=${{ secrets.JIKAN_URL }}" > local.properties
+            echo "animerunway.url=${{ secrets.ANIMERUNWAY_URL }}" >> local.properties
+            echo "youtube.url=${{ secrets.YOUTUBE_URL }}" >> local.properties
+
       - name: Grant Gradle Execute Permissions
         run: chmod +x gradlew
 
