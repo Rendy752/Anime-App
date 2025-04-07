@@ -10,11 +10,9 @@ import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.EpisodeServersResponse
 import com.example.animeapp.models.EpisodeSourcesResponse
-import com.example.animeapp.models.EpisodesResponse
 import com.example.animeapp.repository.AnimeEpisodeDetailRepository
 import com.example.animeapp.utils.FindAnimeTitle
 import com.example.animeapp.utils.Resource
-import com.example.animeapp.utils.ResponseHandler
 import com.example.animeapp.utils.StreamingUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.async
@@ -46,7 +44,7 @@ class AnimeDetailViewModel @Inject constructor(
     }
 
     suspend fun getAnimeDetail(id: Int): Resource<AnimeDetailResponse> {
-        return ResponseHandler.handleCommonResponse(animeEpisodeDetailRepository.getAnimeDetail(id))
+        return animeEpisodeDetailRepository.getAnimeDetail(id)
     }
 
     fun handleEpisodes() = viewModelScope.launch {
@@ -87,10 +85,11 @@ class AnimeDetailViewModel @Inject constructor(
             animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(detailData.mal_id)
 
         cachedAnimeDetailComplement?.let { cachedAnimeDetail ->
-            val updatedAnimeDetail = animeEpisodeDetailRepository.updateAnimeDetailComplementWithEpisodes(
-                detailData,
-                cachedAnimeDetail
-            )
+            val updatedAnimeDetail =
+                animeEpisodeDetailRepository.updateAnimeDetailComplementWithEpisodes(
+                    detailData,
+                    cachedAnimeDetail
+                )
 
             if (updatedAnimeDetail == null) {
                 _animeDetailComplement.value = Resource.Error("Failed to fetch or update episodes")
@@ -104,7 +103,8 @@ class AnimeDetailViewModel @Inject constructor(
                 if (cachedEpisodeDetailComplement != null) _defaultEpisode.value =
                     cachedEpisodeDetailComplement
                 else {
-                    val defaultEpisodeServersResponse = getDefaultEpisodeServers(firstEpisode.episodeId)
+                    val defaultEpisodeServersResponse =
+                        getDefaultEpisodeServers(firstEpisode.episodeId)
                     val defaultEpisodeSourcesResponse =
                         StreamingUtils.getEpisodeSources(
                             defaultEpisodeServersResponse,
@@ -158,8 +158,8 @@ class AnimeDetailViewModel @Inject constructor(
 
                 for (anime in animes) {
                     val animeId = anime.id.substringBefore("?").trim()
-                    val episodesResponse = getEpisodes(animeId)
 
+                    val episodesResponse = animeEpisodeDetailRepository.getEpisodes(animeId)
                     if (episodesResponse !is Resource.Success) {
                         continue
                     }
@@ -225,7 +225,7 @@ class AnimeDetailViewModel @Inject constructor(
                             animeTitle = animeDetail.title,
                             episodeTitle = episode.name,
                             imageUrl = animeDetail.images.jpg.image_url,
-                            number =  episode.episodeNo,
+                            number = episode.episodeNo,
                             isFiller = episode.filler,
                             servers = servers,
                             sources = sources,
@@ -243,19 +243,10 @@ class AnimeDetailViewModel @Inject constructor(
     suspend fun getCachedEpisodeDetailComplement(episodeId: String): EpisodeDetailComplement? =
         animeEpisodeDetailRepository.getCachedEpisodeDetailComplement(episodeId)
 
-    private suspend fun getEpisodes(animeId: String): Resource<EpisodesResponse> =
-        viewModelScope.async {
-            ResponseHandler.handleCommonResponse(animeEpisodeDetailRepository.getEpisodes(animeId))
-        }.await()
-
     private suspend fun getDefaultEpisodeServers(defaultEpisodeId: String?): Resource<EpisodeServersResponse> =
         viewModelScope.async {
             defaultEpisodeId ?: return@async Resource.Error("No default episode found")
-            ResponseHandler.handleCommonResponse(
-                animeEpisodeDetailRepository.getEpisodeServers(
-                    defaultEpisodeId
-                )
-            )
+            animeEpisodeDetailRepository.getEpisodeServers(defaultEpisodeId)
         }.await()
 
     private fun checkEpisodeSourceMalId(response: Resource<EpisodeSourcesResponse>): Boolean =

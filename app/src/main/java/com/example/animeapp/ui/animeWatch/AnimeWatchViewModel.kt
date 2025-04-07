@@ -9,7 +9,6 @@ import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.EpisodeSourcesQuery
 import com.example.animeapp.repository.AnimeEpisodeDetailRepository
 import com.example.animeapp.utils.Resource
-import com.example.animeapp.utils.ResponseHandler
 import com.example.animeapp.utils.StreamingUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -115,11 +114,8 @@ class AnimeWatchViewModel @Inject constructor(
                 }
             }
 
-            val episodeServersResponse =
-                animeEpisodeDetailRepository.getEpisodeServers(episodeSourcesQuery.id)
             val episodeServersResource =
-                ResponseHandler.handleCommonResponse(episodeServersResponse)
-
+                animeEpisodeDetailRepository.getEpisodeServers(episodeSourcesQuery.id)
             if (episodeServersResource !is Resource.Success) {
                 restoreDefaultValues()
                 _episodeDetailComplement.value =
@@ -157,7 +153,8 @@ class AnimeWatchViewModel @Inject constructor(
                             sourcesQuery = episodeSourcesQuery
                         )
                         updateEpisodeDetailComplement(cachedEpisodeDetailComplement)
-                        _episodeDetailComplement.value = Resource.Success(cachedEpisodeDetailComplement)
+                        _episodeDetailComplement.value =
+                            Resource.Success(cachedEpisodeDetailComplement)
                     } else {
                         animeDetail.value?.let { animeDetail ->
                             val currentEpisode =

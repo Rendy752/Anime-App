@@ -2,10 +2,8 @@ package com.example.animeapp.ui.animeSearch
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.models.AnimeSearchQueryState
 import com.example.animeapp.models.AnimeSearchResponse
-import com.example.animeapp.models.CompletePagination
 import com.example.animeapp.models.Genre
 import com.example.animeapp.models.GenresResponse
 import com.example.animeapp.models.Producer
@@ -13,14 +11,12 @@ import com.example.animeapp.models.ProducersResponse
 import com.example.animeapp.models.ProducersSearchQueryState
 import com.example.animeapp.repository.AnimeSearchRepository
 import com.example.animeapp.utils.Resource
-import com.example.animeapp.utils.ResponseHandler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import retrofit2.Response
 import javax.inject.Inject
 
 @HiltViewModel
@@ -66,8 +62,7 @@ class AnimeSearchViewModel @Inject constructor(
         } else {
             _isRefreshing.value = true
             _animeSearchResults.value = Resource.Loading()
-            val response = animeSearchRepository.searchAnime(queryState.value)
-            _animeSearchResults.value = ResponseHandler.handleCommonResponse(response)
+            _animeSearchResults.value = animeSearchRepository.searchAnime(queryState.value)
             _isRefreshing.value = false
         }
     }
@@ -82,27 +77,13 @@ class AnimeSearchViewModel @Inject constructor(
     private fun getRandomAnime() = viewModelScope.launch {
         _isRefreshing.value = true
         _animeSearchResults.value = Resource.Loading()
-        val response = animeSearchRepository.getRandomAnime()
-        _animeSearchResults.value = handleAnimeRandomResponse(response)
+        _animeSearchResults.value = animeSearchRepository.getRandomAnime()
         _isRefreshing.value = false
-    }
-
-    private fun handleAnimeRandomResponse(response: Response<AnimeDetailResponse>): Resource<AnimeSearchResponse> {
-        return ResponseHandler.handleResponse(
-            response,
-            onSuccess = { resultResponse ->
-                AnimeSearchResponse(
-                    data = listOf(resultResponse.data),
-                    pagination = CompletePagination.Companion.default()
-                )
-            }
-        )
     }
 
     fun fetchGenres() = viewModelScope.launch {
         _genres.value = Resource.Loading()
-        val response = animeSearchRepository.getGenres()
-        _genres.value = ResponseHandler.handleCommonResponse(response)
+        _genres.value = animeSearchRepository.getGenres()
     }
 
     fun setSelectedGenre(genre: Genre) {
@@ -136,8 +117,7 @@ class AnimeSearchViewModel @Inject constructor(
 
     fun fetchProducers() = viewModelScope.launch {
         _producers.value = Resource.Loading()
-        val response = animeSearchRepository.getProducers(producersQueryState.value)
-        _producers.value = ResponseHandler.handleCommonResponse(response)
+        _producers.value = animeSearchRepository.getProducers(producersQueryState.value)
     }
 
     fun setSelectedProducer(producer: Producer) {
