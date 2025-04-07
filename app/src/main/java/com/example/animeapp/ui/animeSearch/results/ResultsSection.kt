@@ -35,7 +35,7 @@ fun ResultsSection(
             is Resource.Loading -> repeat(3) { AnimeSearchItemSkeleton() }
 
             is Resource.Success -> {
-                if (animeSearchResults.data?.data.isNullOrEmpty()) {
+                if (animeSearchResults.data.data.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         ErrorMessage(stringResource(R.string.no_results_found))
                     }

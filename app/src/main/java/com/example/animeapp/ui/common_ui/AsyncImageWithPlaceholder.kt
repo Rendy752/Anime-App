@@ -37,6 +37,7 @@ fun AsyncImageWithPlaceholder(
     modifier: Modifier = Modifier,
     contentDescription: String?,
     isAiring: Boolean? = null,
+    isImageRoundedStart: Boolean = false,
 ) {
     var isImageLoading by remember { mutableStateOf(true) }
     var showDialog by remember { mutableStateOf(false) }
@@ -56,7 +57,14 @@ fun AsyncImageWithPlaceholder(
             contentDescription = contentDescription,
             modifier = Modifier
                 .fillMaxSize()
-                .clip(RoundedCornerShape(8.dp)),
+                .clip(
+                    RoundedCornerShape(
+                        topStart = 8.dp,
+                        bottomStart = 8.dp,
+                        bottomEnd = if (isImageRoundedStart) 0.dp else 8.dp,
+                        topEnd = if (isImageRoundedStart) 0.dp else 8.dp
+                    )
+                ),
             contentScale = ContentScale.Crop,
             onSuccess = { isImageLoading = false },
             onError = { isImageLoading = false }
@@ -111,7 +119,12 @@ fun AsyncImageWithPlaceholder(
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.End, modifier = Modifier.fillMaxSize()) {
-                        Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center){
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
                             AsyncImage(
                                 model = model,
                                 contentDescription = contentDescription,

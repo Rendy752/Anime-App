@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.animeapp.R
 import androidx.core.content.edit
+import com.example.animeapp.ui.main.BottomScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,7 +44,7 @@ fun SettingsScreen() {
                 TopAppBar(
                     title = {
                         Text(
-                            text = stringResource(id = R.string.title_settings),
+                            text = BottomScreen.Settings.label,
                             modifier = Modifier.padding(end = 8.dp),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis

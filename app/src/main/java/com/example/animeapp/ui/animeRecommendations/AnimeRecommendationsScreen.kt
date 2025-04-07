@@ -24,6 +24,7 @@ import com.example.animeapp.models.NetworkStatus
 import com.example.animeapp.ui.animeRecommendations.recommendations.RecommendationItem
 import com.example.animeapp.ui.animeRecommendations.recommendations.RecommendationItemSkeleton
 import com.example.animeapp.ui.common_ui.ErrorMessage
+import com.example.animeapp.ui.main.BottomScreen
 import com.example.animeapp.utils.NetworkStateMonitor
 import com.example.animeapp.utils.Resource
 
@@ -32,7 +33,7 @@ import com.example.animeapp.utils.Resource
 fun AnimeRecommendationsScreen(navController: NavController) {
     val viewModel: AnimeRecommendationsViewModel = hiltViewModel()
 
-    val animeRecommendationsState by viewModel.animeRecommendations.collectAsState()
+    val animeRecommendations by viewModel.animeRecommendations.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
 
     val state = rememberPullToRefreshState()
@@ -51,7 +52,7 @@ fun AnimeRecommendationsScreen(navController: NavController) {
         }
         val connectionObserver = Observer<Boolean> {
             isConnected = it
-            if (isConnected && animeRecommendationsState is Resource.Error) {
+            if (isConnected && animeRecommendations is Resource.Error) {
                 viewModel.getAnimeRecommendations()
             }
         }
@@ -70,27 +71,11 @@ fun AnimeRecommendationsScreen(navController: NavController) {
                 TopAppBar(
                     title = {
                         Text(
-                            text = stringResource(R.string.title_recommendation),
+                            text = BottomScreen.Recommendations.label,
                             modifier = Modifier.padding(end = 8.dp),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
-                    },
-                    actions = {
-                        networkStatus?.let {
-                            Row {
-                                Text(
-                                    text = it.label,
-                                    color = if (it.color == MaterialTheme.colorScheme.onError) MaterialTheme.colorScheme.onError
-                                    else MaterialTheme.colorScheme.onSurface
-                                )
-                                Icon(
-                                    imageVector = it.icon,
-                                    contentDescription = it.label,
-                                    tint = it.color
-                                )
-                            }
-                        }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
                         titleContentColor = MaterialTheme.colorScheme.primary
@@ -125,7 +110,7 @@ fun AnimeRecommendationsScreen(navController: NavController) {
             ) {
                 if (!isConnected) ErrorMessage(message = stringResource(R.string.no_internet_connection))
 
-                when (animeRecommendationsState) {
+                when (animeRecommendations) {
                     is Resource.Loading -> {
                         if (!isLandscape) repeat(3) { RecommendationItemSkeleton() }
                         else {
@@ -140,32 +125,36 @@ fun AnimeRecommendationsScreen(navController: NavController) {
                     }
 
                     is Resource.Success -> {
-                        val animeRecommendations =
-                            (animeRecommendationsState as Resource.Success).data.data
-                        if (!isLandscape) {
-                            LazyColumn {
-                                items(animeRecommendations) {
-                                    RecommendationItem(
-                                        recommendation = it,
-                                        onItemClick = { anime -> navController.navigate("animeDetail/${anime.title}/${anime.mal_id}") }
-                                    )
+                        animeRecommendations.data?.data?.let { animeRecommendations ->
+                            if (!isLandscape) {
+                                LazyColumn {
+                                    items(animeRecommendations) {
+                                        RecommendationItem(
+                                            recommendation = it,
+                                            onItemClick = { anime -> navController.navigate("animeDetail/${anime.title}/${anime.mal_id}") }
+                                        )
+                                    }
                                 }
-                            }
-                        } else {
-                            val listSize = animeRecommendations.size
-                            val itemsPerColumn = (listSize + 1) / 2
-                            Row(modifier = Modifier.fillMaxSize()) {
-                                repeat(2) { columnIndex ->
-                                    val startIndex = columnIndex * itemsPerColumn
-                                    val endIndex = minOf(startIndex + itemsPerColumn, listSize)
-                                    val columnItems =
-                                        animeRecommendations.subList(startIndex, endIndex)
-                                    LazyColumn(modifier = Modifier.weight(1f)) {
-                                        items(columnItems) {
-                                            RecommendationItem(
-                                                recommendation = it,
-                                                onItemClick = { anime -> navController.navigate("animeDetail/${anime.title}/${anime.mal_id}") }
-                                            )
+                            } else {
+                                val listSize = animeRecommendations.size
+                                val itemsPerColumn = (listSize + 1) / 2
+                                Row(modifier = Modifier.fillMaxSize()) {
+                                    repeat(2) { columnIndex ->
+                                        val startIndex = columnIndex * itemsPerColumn
+                                        val endIndex = minOf(startIndex + itemsPerColumn, listSize)
+                                        val columnItems =
+                                            animeRecommendations.subList(startIndex, endIndex)
+                                        LazyColumn(modifier = Modifier.weight(1f)) {
+                                            items(columnItems) {
+                                                RecommendationItem(
+                                                    recommendation = it,
+                                                    onItemClick = { anime ->
+                                                        navController.navigate(
+                                                            "animeDetail/${anime.title}/${anime.mal_id}"
+                                                        )
+                                                    }
+                                                )
+                                            }
                                         }
                                     }
                                 }

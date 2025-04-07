@@ -29,6 +29,7 @@ import com.example.animeapp.ui.animeSearch.limitAndPagination.LimitAndPagination
 import com.example.animeapp.ui.animeSearch.results.ResultsSection
 import com.example.animeapp.ui.animeSearch.searchField.SearchFieldSection
 import com.example.animeapp.ui.animeSearch.genreProducerFilterField.GenreProducerFilterFieldSection
+import com.example.animeapp.ui.main.BottomScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,7 +71,7 @@ fun AnimeSearchScreen(
                     TopAppBar(
                         title = {
                             Text(
-                                text = stringResource(id = R.string.title_search),
+                                text = BottomScreen.Search.label,
                                 modifier = Modifier.padding(end = 8.dp),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis

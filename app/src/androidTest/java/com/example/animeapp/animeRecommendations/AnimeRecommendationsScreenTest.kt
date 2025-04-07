@@ -8,6 +8,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.animeapp.R
 import com.example.animeapp.ui.animeRecommendations.AnimeRecommendationsScreen
+import com.example.animeapp.ui.main.BottomScreen
 import com.example.animeapp.ui.theme.AppTheme
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
@@ -37,8 +38,7 @@ class AnimeRecommendationsScreenTest {
             val navController = rememberNavController()
             AppTheme {
                 AnimeRecommendationsScreen(navController = navController)
-                val context = LocalContext.current
-                composeTestRule.onNodeWithText(context.getString(R.string.title_recommendation)).assertIsDisplayed()
+                composeTestRule.onNodeWithText(BottomScreen.Recommendations.label).assertIsDisplayed()
             }
         }
     }
