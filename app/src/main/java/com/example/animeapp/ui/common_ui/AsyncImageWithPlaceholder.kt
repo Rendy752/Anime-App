@@ -25,10 +25,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
+
+enum class ImageRoundedCorner {
+    NONE,
+    START,
+    END,
+    TOP,
+    BOTTOM,
+    ALL
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,10 +47,20 @@ fun AsyncImageWithPlaceholder(
     modifier: Modifier = Modifier,
     contentDescription: String?,
     isAiring: Boolean? = null,
-    isImageRoundedStart: Boolean = false,
+    roundedCorners: ImageRoundedCorner = ImageRoundedCorner.ALL,
 ) {
     var isImageLoading by remember { mutableStateOf(true) }
     var showDialog by remember { mutableStateOf(false) }
+
+    val cornerRadius = 8.dp
+    val shape: Shape = when (roundedCorners) {
+        ImageRoundedCorner.NONE -> RoundedCornerShape(0.dp)
+        ImageRoundedCorner.START -> RoundedCornerShape(topStart = cornerRadius, bottomStart = cornerRadius)
+        ImageRoundedCorner.END -> RoundedCornerShape(topEnd = cornerRadius, bottomEnd = cornerRadius)
+        ImageRoundedCorner.TOP -> RoundedCornerShape(topStart = cornerRadius, topEnd = cornerRadius)
+        ImageRoundedCorner.BOTTOM -> RoundedCornerShape(bottomStart = cornerRadius, bottomEnd = cornerRadius)
+        ImageRoundedCorner.ALL -> RoundedCornerShape(cornerRadius)
+    }
 
     Box(
         modifier = modifier
@@ -57,14 +77,7 @@ fun AsyncImageWithPlaceholder(
             contentDescription = contentDescription,
             modifier = Modifier
                 .fillMaxSize()
-                .clip(
-                    RoundedCornerShape(
-                        topStart = 8.dp,
-                        bottomStart = 8.dp,
-                        bottomEnd = if (isImageRoundedStart) 0.dp else 8.dp,
-                        topEnd = if (isImageRoundedStart) 0.dp else 8.dp
-                    )
-                ),
+                .clip(shape),
             contentScale = ContentScale.Crop,
             onSuccess = { isImageLoading = false },
             onError = { isImageLoading = false }

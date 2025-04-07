@@ -40,8 +40,7 @@ class HomeViewModel @Inject constructor(
     fun getWatchRecentEpisode() = viewModelScope.launch {
         _isRefreshing.value = true
         _watchRecentEpisode.value = Resource.Loading()
-        _watchRecentEpisode.value =
-            animeHomeRepository.getWatchRecentEpisode()
+        _watchRecentEpisode.value = animeHomeRepository.getWatchRecentEpisode()
         _isRefreshing.value = false
     }
 

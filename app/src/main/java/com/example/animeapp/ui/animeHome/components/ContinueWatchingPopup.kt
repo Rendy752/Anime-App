@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.ui.common_ui.AsyncImageWithPlaceholder
+import com.example.animeapp.ui.common_ui.ImageRoundedCorner
 import com.example.animeapp.utils.basicContainer
 
 @Composable
@@ -50,7 +51,7 @@ fun ContinueWatchingPopup(
                         AsyncImageWithPlaceholder(
                             model = episode.imageUrl,
                             contentDescription = episode.animeTitle,
-                            isImageRoundedStart = true,
+                            roundedCorners = ImageRoundedCorner.START,
                             modifier = Modifier
                                 .width(50.dp)
                                 .height(75.dp)
