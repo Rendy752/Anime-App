@@ -51,11 +51,6 @@ class AnimeSearchViewModel @Inject constructor(
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
-    init {
-        fetchGenres()
-        fetchProducers()
-    }
-
     fun searchAnime() = viewModelScope.launch {
         if (queryState.value.query.isBlank() && queryState.value.isDefault() && queryState.value.isGenresDefault() && queryState.value.isProducersDefault()) {
             getRandomAnime()

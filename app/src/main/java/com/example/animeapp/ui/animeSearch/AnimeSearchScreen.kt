@@ -1,7 +1,8 @@
 package com.example.animeapp.ui.animeSearch
 
-import android.content.res.Configuration
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
@@ -17,6 +18,7 @@ import com.example.animeapp.ui.animeSearch.bottomSheet.FilterBottomSheet
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
@@ -31,20 +33,29 @@ import com.example.animeapp.ui.animeSearch.results.ResultsSection
 import com.example.animeapp.ui.animeSearch.searchField.SearchFieldSection
 import com.example.animeapp.ui.animeSearch.genreProducerFilterField.GenreProducerFilterFieldSection
 import com.example.animeapp.ui.main.BottomScreen
+import com.example.animeapp.utils.Resource
+import com.example.animeapp.utils.basicContainer
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnimeSearchScreen(
     navController: NavController,
+    isConnected: Boolean,
+    isLandscape: Boolean,
     genre: Genre? = null,
     producer: Producer? = null,
 ) {
     val viewModel: AnimeSearchViewModel = hiltViewModel()
 
     val queryState by viewModel.queryState.collectAsStateWithLifecycle()
-    val animeSearchResults = viewModel.animeSearchResults.collectAsStateWithLifecycle()
-    val selectedGenres = viewModel.selectedGenres.collectAsStateWithLifecycle()
-    val genres = viewModel.genres.collectAsStateWithLifecycle()
+    val animeSearchResults by viewModel.animeSearchResults.collectAsStateWithLifecycle()
+
+    val genres by viewModel.genres.collectAsStateWithLifecycle()
+    val selectedGenres by viewModel.selectedGenres.collectAsStateWithLifecycle()
+
+    val producers by viewModel.producers.collectAsStateWithLifecycle()
+    val selectedProducers by viewModel.selectedProducers.collectAsStateWithLifecycle()
+    val producersQueryState by viewModel.producersQueryState.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val state = rememberPullToRefreshState()
     var isFilterBottomSheetShow by remember { mutableStateOf(false) }
@@ -52,17 +63,33 @@ fun AnimeSearchScreen(
     var isProducersBottomSheetShow by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-
-    LaunchedEffect(Unit) {
+    fun handleInitialFetch() {
         if (genre != null) {
-            viewModel.setSelectedGenre(genre)
             viewModel.applyGenreFilters()
         } else if (producer != null) {
-            viewModel.setSelectedProducer(producer)
             viewModel.applyProducerFilters()
-        } else if (animeSearchResults.value.data == null) viewModel.searchAnime()
+        } else if (animeSearchResults.data == null) viewModel.searchAnime()
+    }
+
+    LaunchedEffect(isConnected) {
+        if (!isConnected) return@LaunchedEffect
+
+        if (genres is Resource.Error) viewModel.fetchGenres()
+        if (producers is Resource.Error) viewModel.fetchProducers()
+        if (animeSearchResults is Resource.Error) {
+            handleInitialFetch()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.fetchGenres()
+        viewModel.fetchProducers()
+        if (genre != null) {
+            viewModel.setSelectedGenre(genre)
+        } else if (producer != null) {
+            viewModel.setSelectedProducer(producer)
+        }
+        handleInitialFetch()
     }
 
     Scaffold(
@@ -89,6 +116,16 @@ fun AnimeSearchScreen(
                             }
                         },
                         actions = {
+                            if (!queryState.isDefault()) Text(
+                                modifier = Modifier
+                                    .basicContainer(
+                                        isPrimary = true,
+                                        onItemClick = {
+                                            viewModel.resetBottomSheetFilters()
+                                        }),
+                                text = "Filter Applied",
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
                             IconButton(onClick = { isFilterBottomSheetShow = true }) {
                                 Icon(
                                     imageVector = Icons.Filled.FilterList,
@@ -111,7 +148,7 @@ fun AnimeSearchScreen(
     ) { paddingValues ->
         PullToRefreshBox(
             isRefreshing = isRefreshing,
-            onRefresh = { viewModel.applyFilters(viewModel.queryState.value) },
+            onRefresh = { viewModel.applyFilters(queryState) },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
@@ -132,21 +169,28 @@ fun AnimeSearchScreen(
                         Column(
                             modifier = Modifier
                                 .weight(0.5f)
+                                .verticalScroll(rememberScrollState())
                                 .fillMaxHeight()
                                 .clip(MaterialTheme.shapes.extraLarge),
                             verticalArrangement = Arrangement.SpaceBetween
                         ) {
                             SearchFieldSection(
-                                queryState.query,
+                                queryState,
                                 viewModel::applyFilters,
                                 true,
-                                isFilterBottomSheetShow
+                                isFilterBottomSheetShow,
+                                viewModel::resetBottomSheetFilters
                             ) {
                                 isFilterBottomSheetShow = true
                             }
                             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                             GenreProducerFilterFieldSection(
-                                viewModel,
+                                selectedGenres,
+                                viewModel::setSelectedGenre,
+                                viewModel::applyGenreFilters,
+                                selectedProducers,
+                                viewModel::setSelectedProducer,
+                                viewModel::applyProducerFilters,
                                 isGenresBottomSheetShow,
                                 isProducersBottomSheetShow,
                                 setGenresBottomSheet = {
@@ -157,7 +201,7 @@ fun AnimeSearchScreen(
                             HorizontalDivider(modifier = Modifier.padding(bottom = 8.dp))
                             LimitAndPaginationSection(
                                 queryState,
-                                animeSearchResults.value.data?.pagination,
+                                animeSearchResults.data?.pagination,
                                 viewModel::applyFilters,
                                 false
                             )
@@ -171,9 +215,9 @@ fun AnimeSearchScreen(
                         ) {
                             ResultsSection(
                                 navController,
-                                animeSearchResults.value,
-                                selectedGenres.value,
-                                genres.value,
+                                animeSearchResults,
+                                selectedGenres,
+                                genres,
                             ) { genre ->
                                 viewModel.setSelectedGenre(genre)
                                 viewModel.applyGenreFilters()
@@ -183,12 +227,17 @@ fun AnimeSearchScreen(
                 } else {
                     Column(modifier = Modifier.fillMaxSize()) {
                         SearchFieldSection(
-                            queryState.query,
+                            queryState,
                             viewModel::applyFilters
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         GenreProducerFilterFieldSection(
-                            viewModel,
+                            selectedGenres,
+                            viewModel::setSelectedGenre,
+                            viewModel::applyGenreFilters,
+                            selectedProducers,
+                            viewModel::setSelectedProducer,
+                            viewModel::applyProducerFilters,
                             isGenresBottomSheetShow,
                             isProducersBottomSheetShow,
                             setGenresBottomSheet = {
@@ -200,9 +249,9 @@ fun AnimeSearchScreen(
                         Column(modifier = Modifier.weight(1f)) {
                             ResultsSection(
                                 navController,
-                                animeSearchResults.value,
-                                selectedGenres.value,
-                                genres.value,
+                                animeSearchResults,
+                                selectedGenres,
+                                genres,
                             ) { genre ->
                                 viewModel.setSelectedGenre(genre)
                                 viewModel.applyGenreFilters()
@@ -210,7 +259,7 @@ fun AnimeSearchScreen(
                         }
                         LimitAndPaginationSection(
                             queryState,
-                            animeSearchResults.value.data?.pagination,
+                            animeSearchResults.data?.pagination,
                             viewModel::applyFilters
                         )
                     }
@@ -238,7 +287,9 @@ fun AnimeSearchScreen(
                 ) {
                     Column(modifier = Modifier.clip(shape)) {
                         FilterBottomSheet(
-                            viewModel = viewModel,
+                            queryState = queryState,
+                            applyFilters = viewModel::applyFilters,
+                            resetBottomSheetFilters = viewModel::resetBottomSheetFilters,
                             onDismiss = { isFilterBottomSheetShow = false }
                         )
                     }
@@ -259,7 +310,13 @@ fun AnimeSearchScreen(
                 ) {
                     Column(modifier = Modifier.clip(shape)) {
                         GenresBottomSheet(
-                            viewModel,
+                            queryState,
+                            viewModel::fetchGenres,
+                            genres,
+                            selectedGenres,
+                            viewModel::setSelectedGenre,
+                            viewModel::resetGenreSelection,
+                            viewModel::applyGenreFilters,
                             onDismiss = { isGenresBottomSheetShow = false })
                     }
                 }
@@ -279,7 +336,15 @@ fun AnimeSearchScreen(
                 ) {
                     Column(modifier = Modifier.clip(shape)) {
                         ProducersBottomSheet(
-                            viewModel,
+                            queryState,
+                            producers,
+                            viewModel::fetchProducers,
+                            selectedProducers,
+                            producersQueryState,
+                            viewModel::applyProducerQueryStateFilters,
+                            viewModel::setSelectedProducer,
+                            viewModel::applyProducerFilters,
+                            viewModel::resetProducerSelection,
                             onDismiss = { isProducersBottomSheetShow = false }
                         )
                     }

@@ -61,10 +61,6 @@ class AnimeDetailViewModel @Inject constructor(
                 Resource.Error("Anime is a music, no episodes available")
             return@launch
         }
-        if (detailData.status == "Not yet aired") {
-            _animeDetailComplement.value = Resource.Error("Anime not yet aired")
-            return@launch
-        }
         val title = detailData.title
         val englishTitle = _animeDetail.value?.data?.data?.title_english ?: ""
         val searchTitle = when {

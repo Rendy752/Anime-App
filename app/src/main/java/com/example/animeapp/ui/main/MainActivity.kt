@@ -1,6 +1,7 @@
 package com.example.animeapp.ui.main
 
 import android.app.PictureInPictureParams
+import android.content.res.Configuration
 import android.os.Bundle
 import android.view.WindowManager
 import androidx.activity.compose.BackHandler
@@ -10,16 +11,16 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.animeapp.ui.common_ui.QuitConfirmationAlert
@@ -47,31 +48,43 @@ class MainActivity : AppCompatActivity() {
 
         setContent {
             navController = rememberNavController()
-            val themeApplied = remember { mutableStateOf(false) }
-            var showQuitDialog by remember { mutableStateOf(false) }
+            val mainViewModel: MainViewModel = hiltViewModel()
+
+            val themeApplied by mainViewModel.themeApplied.collectAsStateWithLifecycle()
+            val showQuitDialog by mainViewModel.showQuitDialog.collectAsStateWithLifecycle()
+            val isConnected by mainViewModel.isConnected.collectAsStateWithLifecycle()
+            val networkStatus by mainViewModel.networkStatus.collectAsStateWithLifecycle()
+
+            val configuration = LocalConfiguration.current
+            val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
             BackHandler {
-                showQuitDialog = true
+                mainViewModel.setShowQuitDialog(true)
             }
 
             if (showQuitDialog) {
                 QuitConfirmationAlert(
-                    onDismissRequest = { showQuitDialog = false },
+                    onDismissRequest = { mainViewModel.setShowQuitDialog(false) },
                     onQuitConfirmed = { finish() }
                 )
             }
 
-            if (!themeApplied.value) {
-                themeApplied.value = true
+            if (!themeApplied) {
+                mainViewModel.setThemeApplied(true)
             }
 
-            if (themeApplied.value) {
+            if (themeApplied) {
                 AppTheme(context = this) {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
                         color = MaterialTheme.colorScheme.background
                     ) {
-                        MainScreen(navController = navController)
+                        MainScreen(
+                            navController = navController,
+                            isConnected = isConnected,
+                            networkStatus = networkStatus,
+                            isLandscape = isLandscape
+                        )
                         setStatusBarColor(MaterialTheme.colorScheme.surface)
                     }
                 }

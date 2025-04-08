@@ -219,7 +219,7 @@ class AnimeWatchViewModel @Inject constructor(
             )
         }
 
-    private fun restoreDefaultValues() {
+    fun restoreDefaultValues() {
         _defaultEpisodeDetailComplement.value?.let { default ->
             _episodeDetailComplement.value = Resource.Success(default)
             _episodeSourcesQuery.value = default.sourcesQuery

@@ -15,7 +15,7 @@ import com.example.animeapp.models.Genre
 import com.example.animeapp.models.GenresResponse
 import com.example.animeapp.ui.common_ui.AnimeSearchItem
 import com.example.animeapp.ui.common_ui.AnimeSearchItemSkeleton
-import com.example.animeapp.ui.common_ui.ErrorMessage
+import com.example.animeapp.ui.common_ui.MessageDisplay
 import com.example.animeapp.utils.Resource
 
 @Composable
@@ -37,7 +37,7 @@ fun ResultsSection(
             is Resource.Success -> {
                 if (animeSearchResults.data.data.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        ErrorMessage(stringResource(R.string.no_results_found))
+                        MessageDisplay(stringResource(R.string.no_results_found))
                     }
                 } else {
                     LazyColumn {
@@ -61,7 +61,7 @@ fun ResultsSection(
 
             is Resource.Error -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    ErrorMessage(stringResource(R.string.error_loading_data))
+                    MessageDisplay(stringResource(R.string.error_loading_data))
                 }
             }
         }

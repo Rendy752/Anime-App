@@ -16,10 +16,11 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.animeapp.R
+import com.example.animeapp.models.AnimeSearchQueryState
 import com.example.animeapp.models.Producer
-import com.example.animeapp.ui.animeSearch.AnimeSearchViewModel
+import com.example.animeapp.models.ProducersResponse
+import com.example.animeapp.models.ProducersSearchQueryState
 import com.example.animeapp.ui.animeSearch.components.ApplyButton
 import com.example.animeapp.ui.animeSearch.components.CancelButton
 import com.example.animeapp.ui.animeSearch.components.PaginationButtons
@@ -38,17 +39,24 @@ import com.example.animeapp.utils.Resource
     ExperimentalFoundationApi::class
 )
 @Composable
-fun ProducersBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit) {
-    val producers by viewModel.producers.collectAsStateWithLifecycle()
-    val queryState by viewModel.queryState.collectAsStateWithLifecycle()
-    val selectedProducers by viewModel.selectedProducers.collectAsStateWithLifecycle()
-    val producersQueryState by viewModel.producersQueryState.collectAsStateWithLifecycle()
+fun ProducersBottomSheet(
+    queryState: AnimeSearchQueryState,
+    producers: Resource<ProducersResponse>,
+    fetchProducers: () -> Unit,
+    selectedProducers: List<Producer>,
+    producersQueryState: ProducersSearchQueryState,
+    applyProducerQueryStateFilters: (ProducersSearchQueryState) -> Unit,
+    setSelectedProducer: (Producer) -> Unit,
+    applyProducerFilters: () -> Unit,
+    resetProducerSelection: () -> Unit,
+    onDismiss: () -> Unit
+) {
 
     val scope = rememberCoroutineScope()
     var query by remember { mutableStateOf(producersQueryState.query) }
     val debounce = remember {
         Debounce(scope, 1000L) { newQuery ->
-            viewModel.applyProducerQueryStateFilters(
+            applyProducerQueryStateFilters(
                 producersQueryState.copy(
                     query = newQuery,
                     page = 1
@@ -76,7 +84,7 @@ fun ProducersBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit)
                 context,
                 { queryState.isProducersDefault() },
                 {
-                    viewModel.resetProducerSelection()
+                    resetProducerSelection()
                     onDismiss()
                 },
                 Modifier.weight(1f)
@@ -86,7 +94,7 @@ fun ProducersBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit)
                 context,
                 { selectedProducers.isEmpty() },
                 {
-                    viewModel.applyProducerFilters()
+                    applyProducerFilters()
                     onDismiss()
                 },
                 Modifier.weight(1f)
@@ -115,7 +123,7 @@ fun ProducersBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit)
             if (selectedProducers.isNotEmpty()) {
                 FilterChipFlow(
                     itemList = selectedProducers,
-                    onSetSelectedId = { viewModel.setSelectedProducer(it as Producer) },
+                    onSetSelectedId = { setSelectedProducer(it as Producer) },
                     itemName = {
                         val title = (it as Producer).titles?.get(0)?.title ?: "Unknown"
                         if (it.count > 0) "$title (${it.count})"
@@ -146,10 +154,10 @@ fun ProducersBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit)
                 }
 
                 is Resource.Success -> {
-                    val producerList = producers.data?.data ?: emptyList()
+                    val producerList = producers.data.data
                     FilterChipFlow(
                         itemList = producerList.filter { it !in selectedProducers },
-                        onSetSelectedId = { viewModel.setSelectedProducer(it as Producer) },
+                        onSetSelectedId = { setSelectedProducer(it as Producer) },
                         itemName = {
                             val title = (it as Producer).titles?.get(0)?.title ?: "Unknown"
                             if (it.count > 0) "$title (${it.count})"
@@ -168,7 +176,7 @@ fun ProducersBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit)
                     ) {
                         RetryButton(
                             message = producers.message ?: "Error loading producers",
-                            onClick = { viewModel.fetchProducers() }
+                            onClick = { fetchProducers() }
                         )
                     }
                 }
@@ -190,7 +198,7 @@ fun ProducersBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit)
                     ) {
                         if (paginationState != null) {
                             PaginationButtons(paginationState) { pageNumber ->
-                                viewModel.applyProducerQueryStateFilters(
+                                applyProducerQueryStateFilters(
                                     producersQueryState.copy(
                                         page = pageNumber
                                     )
@@ -209,7 +217,7 @@ fun ProducersBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit)
                                 val updatedQueryState = producersQueryState.copy(
                                     limit = selectedLimit, page = 1
                                 )
-                                viewModel.applyProducerQueryStateFilters(updatedQueryState)
+                                applyProducerQueryStateFilters(updatedQueryState)
                             }
                         },
                         modifier = Modifier.wrapContentSize()

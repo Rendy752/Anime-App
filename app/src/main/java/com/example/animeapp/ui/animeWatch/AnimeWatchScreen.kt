@@ -3,12 +3,10 @@ package com.example.animeapp.ui.animeWatch
 import android.app.Activity
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.res.Configuration
 import android.os.Build
 import android.view.WindowInsets
 import android.view.WindowManager
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -35,11 +33,9 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.Observer
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.example.animeapp.models.AnimeDetail
@@ -49,8 +45,6 @@ import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.NetworkStatus
 import com.example.animeapp.ui.animeWatch.components.AnimeWatchContent
 import com.example.animeapp.ui.animeWatch.components.AnimeWatchTopBar
-import com.example.animeapp.ui.common_ui.ErrorMessage
-import com.example.animeapp.utils.NetworkStateMonitor
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ScreenOffReceiver
 import com.example.animeapp.utils.ScreenOnReceiver
@@ -67,6 +61,9 @@ fun AnimeWatchScreen(
     episodesList: List<Episode>,
     defaultEpisode: EpisodeDetailComplement,
     navController: NavController,
+    isConnected: Boolean,
+    networkStatus: NetworkStatus,
+    isLandscape: Boolean,
     isPipMode: Boolean,
     onEnterPipMode: () -> Unit
 ) {
@@ -93,13 +90,6 @@ fun AnimeWatchScreen(
     val context = LocalContext.current
     val screenOffReceiver = remember { ScreenOffReceiver { isScreenOn = false } }
     val screenOnReceiver = remember { ScreenOnReceiver { isScreenOn = true } }
-    val configuration = LocalConfiguration.current
-    val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-
-    // Network State
-    val networkStateMonitor = remember { NetworkStateMonitor(context) }
-    var networkStatus by remember { mutableStateOf(networkStateMonitor.networkStatus.value) }
-    var isConnected by remember { mutableStateOf(networkStateMonitor.isConnected.value != false) }
 
     BackHandler(enabled = isFullscreen) {
         if (isFullscreen) {
@@ -124,27 +114,24 @@ fun AnimeWatchScreen(
         if (episodeDetailComplement is Resource.Success) {
             isFavorite.value = episodeDetailComplement.data?.isFavorite == true
         }
+        if (episodeDetailComplement is Resource.Error) {
+            snackbarHostState.showSnackbar(
+                "Error on the server, returning to the first episode. Try again later after 1 hour."
+            )
+            viewModel.restoreDefaultValues()
+            viewModel.handleSelectedEpisodeServer(episodeSourcesQuery)
+        }
     }
 
     DisposableEffect(Unit) {
         viewModel.setInitialState(animeDetail, animeDetailComplement, episodesList, defaultEpisode)
 
-        networkStateMonitor.startMonitoring(context)
-        val networkObserver = Observer<NetworkStatus> {
-            networkStatus = it
-        }
-        val connectionObserver = Observer<Boolean> { isConnected = it }
-        networkStateMonitor.networkStatus.observeForever(networkObserver)
-        networkStateMonitor.isConnected.observeForever(connectionObserver)
         context.registerReceiver(screenOffReceiver, IntentFilter(Intent.ACTION_SCREEN_OFF))
         context.registerReceiver(screenOnReceiver, IntentFilter(Intent.ACTION_SCREEN_ON))
 
         onDispose {
             context.unregisterReceiver(screenOffReceiver)
             context.unregisterReceiver(screenOnReceiver)
-            networkStateMonitor.stopMonitoring()
-            networkStateMonitor.networkStatus.removeObserver(networkObserver)
-            networkStateMonitor.isConnected.removeObserver(connectionObserver)
         }
     }
 
@@ -206,50 +193,39 @@ fun AnimeWatchScreen(
                 val videoPlayerModifier = Modifier
                     .then(if (isLandscape) Modifier.weight(0.5f) else Modifier.fillMaxWidth())
                     .then(videoSize)
-                if (episodeDetailComplement is Resource.Error) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        ErrorMessage("${episodeDetailComplement.message}")
-                    }
-                    LaunchedEffect(Unit) {
-                        snackbarHostState.showSnackbar(
-                            "Error on the server, returning to the first episode. Try again later after 1 hour."
+                AnimeWatchContent(
+                    animeDetail,
+                    isFavorite.value,
+                    { episodeDetailComplement, seekPosition ->
+                        viewModel.updateLastEpisodeWatchedIdAnimeDetailComplement(
+                            episodeDetailComplement.id
                         )
-                        viewModel.handleSelectedEpisodeServer(episodeSourcesQuery.copy(id = episodeId))
-                    }
-                } else {
-                    AnimeWatchContent(
-                        animeDetail,
-                        isFavorite.value,
-                        { episodeDetailComplement, seekPosition ->
-                            viewModel.updateLastEpisodeWatchedIdAnimeDetailComplement(
-                                episodeDetailComplement.id
-                            )
-                            val updatedEpisodeDetailComplement = episodeDetailComplement.copy(
-                                isFavorite = isFavorite.value,
-                                lastTimestamp = seekPosition,
-                                lastWatched = LocalDateTime.now()
-                                    .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
-                            )
-                            viewModel.updateEpisodeDetailComplement(updatedEpisodeDetailComplement)
-                        },
-                        { viewModel.getCachedEpisodeDetailComplement(it) },
-                        episodeDetailComplement,
-                        episodes,
-                        episodeSourcesQuery,
-                        isLandscape,
-                        isPipMode,
-                        isFullscreen,
-                        scrollState,
-                        isScreenOn,
-                        onEnterPipMode,
-                        { isFullscreen = it },
-                        { errorMessage = it },
-                        { viewModel.handleSelectedEpisodeServer(it) },
-                        selectedContentIndex,
-                        videoPlayerModifier,
-                        videoSize
-                    )
-                }
+                        val updatedEpisodeDetailComplement = episodeDetailComplement.copy(
+                            isFavorite = isFavorite.value,
+                            lastTimestamp = seekPosition,
+                            lastWatched = LocalDateTime.now()
+                                .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+                        )
+                        viewModel.updateEpisodeDetailComplement(updatedEpisodeDetailComplement)
+                    },
+                    { viewModel.getCachedEpisodeDetailComplement(it) },
+                    episodeDetailComplement,
+                    episodes,
+                    episodeSourcesQuery,
+                    isConnected,
+                    isLandscape,
+                    isPipMode,
+                    isFullscreen,
+                    scrollState,
+                    isScreenOn,
+                    onEnterPipMode,
+                    { isFullscreen = it },
+                    { errorMessage = it },
+                    { viewModel.handleSelectedEpisodeServer(it) },
+                    selectedContentIndex,
+                    videoPlayerModifier,
+                    videoSize
+                )
             }
         }
     }
