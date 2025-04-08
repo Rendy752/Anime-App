@@ -15,7 +15,6 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -27,6 +26,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Observer
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.example.animeapp.R
 import com.example.animeapp.models.NetworkStatus
@@ -42,9 +42,9 @@ import com.example.animeapp.utils.Resource
 fun AnimeHomeScreen(currentRoute: String?, navController: NavHostController) {
     val viewModel: HomeViewModel = hiltViewModel()
 
-    val watchRecentEpisode by viewModel.watchRecentEpisode.collectAsState()
-    val continueWatchingEpisode by viewModel.continueWatchingEpisode.collectAsState()
-    val isRefreshing by viewModel.isRefreshing.collectAsState()
+    val watchRecentEpisode by viewModel.watchRecentEpisode.collectAsStateWithLifecycle()
+    val continueWatchingEpisode by viewModel.continueWatchingEpisode.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
 
     val state = rememberPullToRefreshState()
 

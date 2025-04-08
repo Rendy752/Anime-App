@@ -13,6 +13,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.animeapp.R
 import com.example.animeapp.ui.animeSearch.AnimeSearchViewModel
 import com.example.animeapp.ui.animeSearch.components.ApplyButton
@@ -25,7 +26,7 @@ fun FilterBottomSheet(
     viewModel: AnimeSearchViewModel,
     onDismiss: () -> Unit
 ) {
-    val queryState by viewModel.queryState.collectAsState()
+    val queryState by viewModel.queryState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val scrollState = rememberScrollState()
 

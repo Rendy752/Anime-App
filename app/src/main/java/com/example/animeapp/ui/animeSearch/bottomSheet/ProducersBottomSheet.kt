@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.animeapp.R
 import com.example.animeapp.models.Producer
 import com.example.animeapp.ui.animeSearch.AnimeSearchViewModel
@@ -38,10 +39,10 @@ import com.example.animeapp.utils.Resource
 )
 @Composable
 fun ProducersBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit) {
-    val producers by viewModel.producers.collectAsState()
-    val queryState by viewModel.queryState.collectAsState()
-    val selectedProducers by viewModel.selectedProducers.collectAsState()
-    val producersQueryState by viewModel.producersQueryState.collectAsState()
+    val producers by viewModel.producers.collectAsStateWithLifecycle()
+    val queryState by viewModel.queryState.collectAsStateWithLifecycle()
+    val selectedProducers by viewModel.selectedProducers.collectAsStateWithLifecycle()
+    val producersQueryState by viewModel.producersQueryState.collectAsStateWithLifecycle()
 
     val scope = rememberCoroutineScope()
     var query by remember { mutableStateOf(producersQueryState.query) }

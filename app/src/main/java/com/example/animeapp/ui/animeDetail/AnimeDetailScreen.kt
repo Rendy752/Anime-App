@@ -16,7 +16,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -26,6 +25,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.example.animeapp.BuildConfig.YOUTUBE_URL
 import com.example.animeapp.models.AnimeDetail
@@ -58,9 +58,9 @@ private fun convertToNameAndUrl(list: List<String>?): List<NameAndUrl>? =
 fun AnimeDetailScreen(animeTitle: String, animeId: Int, navController: NavController) {
     val viewModel: AnimeDetailViewModel = hiltViewModel()
 
-    val animeDetail by viewModel.animeDetail.collectAsState()
-    val animeDetailComplement by viewModel.animeDetailComplement.collectAsState()
-    val defaultEpisode by viewModel.defaultEpisode.collectAsState()
+    val animeDetail by viewModel.animeDetail.collectAsStateWithLifecycle()
+    val animeDetailComplement by viewModel.animeDetailComplement.collectAsStateWithLifecycle()
+    val defaultEpisode by viewModel.defaultEpisode.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
     val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE

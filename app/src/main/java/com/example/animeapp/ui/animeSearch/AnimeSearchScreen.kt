@@ -21,6 +21,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.animeapp.models.Genre
 import com.example.animeapp.models.Producer
 import com.example.animeapp.ui.animeSearch.bottomSheet.GenresBottomSheet
@@ -40,11 +41,11 @@ fun AnimeSearchScreen(
 ) {
     val viewModel: AnimeSearchViewModel = hiltViewModel()
 
-    val queryState by viewModel.queryState.collectAsState()
-    val animeSearchResults = viewModel.animeSearchResults.collectAsState().value
-    val selectedGenres = viewModel.selectedGenres.collectAsState().value
-    val genres = viewModel.genres.collectAsState().value
-    val isRefreshing by viewModel.isRefreshing.collectAsState()
+    val queryState by viewModel.queryState.collectAsStateWithLifecycle()
+    val animeSearchResults = viewModel.animeSearchResults.collectAsStateWithLifecycle()
+    val selectedGenres = viewModel.selectedGenres.collectAsStateWithLifecycle()
+    val genres = viewModel.genres.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val state = rememberPullToRefreshState()
     var isFilterBottomSheetShow by remember { mutableStateOf(false) }
     var isGenresBottomSheetShow by remember { mutableStateOf(false) }
@@ -61,7 +62,7 @@ fun AnimeSearchScreen(
         } else if (producer != null) {
             viewModel.setSelectedProducer(producer)
             viewModel.applyProducerFilters()
-        } else if (animeSearchResults.data == null) viewModel.searchAnime()
+        } else if (animeSearchResults.value.data == null) viewModel.searchAnime()
     }
 
     Scaffold(
@@ -156,7 +157,7 @@ fun AnimeSearchScreen(
                             HorizontalDivider(modifier = Modifier.padding(bottom = 8.dp))
                             LimitAndPaginationSection(
                                 queryState,
-                                animeSearchResults.data?.pagination,
+                                animeSearchResults.value.data?.pagination,
                                 viewModel::applyFilters,
                                 false
                             )
@@ -170,9 +171,9 @@ fun AnimeSearchScreen(
                         ) {
                             ResultsSection(
                                 navController,
-                                animeSearchResults,
-                                selectedGenres,
-                                genres,
+                                animeSearchResults.value,
+                                selectedGenres.value,
+                                genres.value,
                             ) { genre ->
                                 viewModel.setSelectedGenre(genre)
                                 viewModel.applyGenreFilters()
@@ -199,9 +200,9 @@ fun AnimeSearchScreen(
                         Column(modifier = Modifier.weight(1f)) {
                             ResultsSection(
                                 navController,
-                                animeSearchResults,
-                                selectedGenres,
-                                genres,
+                                animeSearchResults.value,
+                                selectedGenres.value,
+                                genres.value,
                             ) { genre ->
                                 viewModel.setSelectedGenre(genre)
                                 viewModel.applyGenreFilters()
@@ -209,7 +210,7 @@ fun AnimeSearchScreen(
                         }
                         LimitAndPaginationSection(
                             queryState,
-                            animeSearchResults.data?.pagination,
+                            animeSearchResults.value.data?.pagination,
                             viewModel::applyFilters
                         )
                     }

@@ -27,7 +27,6 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -41,6 +40,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Observer
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.AnimeDetailComplement
@@ -73,10 +73,10 @@ fun AnimeWatchScreen(
     val viewModel: AnimeWatchViewModel = hiltViewModel()
 
     // ViewModel Data
-    val episodeDetailComplement by viewModel.episodeDetailComplement.collectAsState()
-    val episodes by viewModel.episodes.collectAsState()
-    val episodeSourcesQuery by viewModel.episodeSourcesQuery.collectAsState()
-    val isRefreshing by viewModel.isRefreshing.collectAsState()
+    val episodeDetailComplement by viewModel.episodeDetailComplement.collectAsStateWithLifecycle()
+    val episodes by viewModel.episodes.collectAsStateWithLifecycle()
+    val episodeSourcesQuery by viewModel.episodeSourcesQuery.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
 
     // UI State
     val snackbarHostState = remember { SnackbarHostState() }
@@ -115,9 +115,9 @@ fun AnimeWatchScreen(
     }
 
     LaunchedEffect(Unit) {
-        episodeSourcesQuery?.let { query ->
-            viewModel.handleSelectedEpisodeServer(query.copy(id = episodeId), isFirstInit = true)
-        }
+        viewModel.handleSelectedEpisodeServer(
+            episodeSourcesQuery.copy(id = episodeId), isFirstInit = true
+        )
     }
 
     LaunchedEffect(episodeDetailComplement) {
@@ -182,9 +182,7 @@ fun AnimeWatchScreen(
         PullToRefreshBox(
             isRefreshing = isRefreshing,
             onRefresh = {
-                episodeSourcesQuery?.let { query ->
-                    viewModel.handleSelectedEpisodeServer(query, isRefreshed = true)
-                }
+                viewModel.handleSelectedEpisodeServer(episodeSourcesQuery, isRefreshed = true)
             },
             modifier = Modifier
                 .fillMaxSize()
@@ -216,9 +214,7 @@ fun AnimeWatchScreen(
                         snackbarHostState.showSnackbar(
                             "Error on the server, returning to the first episode. Try again later after 1 hour."
                         )
-                        episodeSourcesQuery?.let { query ->
-                            viewModel.handleSelectedEpisodeServer(query.copy(id = episodeId))
-                        }
+                        viewModel.handleSelectedEpisodeServer(episodeSourcesQuery.copy(id = episodeId))
                     }
                 } else {
                     AnimeWatchContent(

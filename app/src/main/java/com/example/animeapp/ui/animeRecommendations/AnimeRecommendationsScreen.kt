@@ -18,6 +18,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Observer
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import com.example.animeapp.R
 import com.example.animeapp.models.NetworkStatus
@@ -33,8 +34,8 @@ import com.example.animeapp.utils.Resource
 fun AnimeRecommendationsScreen(navController: NavController) {
     val viewModel: AnimeRecommendationsViewModel = hiltViewModel()
 
-    val animeRecommendations by viewModel.animeRecommendations.collectAsState()
-    val isRefreshing by viewModel.isRefreshing.collectAsState()
+    val animeRecommendations by viewModel.animeRecommendations.collectAsStateWithLifecycle()
+    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
 
     val state = rememberPullToRefreshState()
 

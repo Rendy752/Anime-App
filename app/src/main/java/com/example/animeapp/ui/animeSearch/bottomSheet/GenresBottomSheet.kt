@@ -16,7 +16,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,6 +23,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.ui.animeSearch.AnimeSearchViewModel
 import androidx.compose.ui.text.style.TextAlign
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.animeapp.models.Genre
 import com.example.animeapp.ui.animeSearch.components.ApplyButton
 import com.example.animeapp.ui.animeSearch.components.CancelButton
@@ -35,9 +35,9 @@ import com.example.animeapp.utils.Resource
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun GenresBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit) {
-    val genres by viewModel.genres.collectAsState()
-    val queryState by viewModel.queryState.collectAsState()
-    val selectedGenres by viewModel.selectedGenres.collectAsState()
+    val genres by viewModel.genres.collectAsStateWithLifecycle()
+    val queryState by viewModel.queryState.collectAsStateWithLifecycle()
+    val selectedGenres by viewModel.selectedGenres.collectAsStateWithLifecycle()
     val context = LocalContext.current
 
     Column(modifier = Modifier.fillMaxWidth()) {

@@ -7,6 +7,7 @@ import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.EpisodeSourcesQuery
+import com.example.animeapp.models.episodeSourcesQueryPlaceholder
 import com.example.animeapp.repository.AnimeEpisodeDetailRepository
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.StreamingUtils
@@ -35,8 +36,10 @@ class AnimeWatchViewModel @Inject constructor(
     val episodeDetailComplement: StateFlow<Resource<EpisodeDetailComplement>> =
         _episodeDetailComplement.asStateFlow()
 
-    private val _episodeSourcesQuery = MutableStateFlow<EpisodeSourcesQuery?>(null)
-    val episodeSourcesQuery: StateFlow<EpisodeSourcesQuery?> = _episodeSourcesQuery.asStateFlow()
+    private val _episodeSourcesQuery = MutableStateFlow<EpisodeSourcesQuery>(
+        episodeSourcesQueryPlaceholder
+    )
+    val episodeSourcesQuery: StateFlow<EpisodeSourcesQuery> = _episodeSourcesQuery.asStateFlow()
 
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()

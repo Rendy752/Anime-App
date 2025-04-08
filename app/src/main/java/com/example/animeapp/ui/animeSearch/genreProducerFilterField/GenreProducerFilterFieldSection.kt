@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.animeapp.R
 import com.example.animeapp.models.Genre
 import com.example.animeapp.models.Producer
@@ -29,8 +30,8 @@ fun GenreProducerFilterFieldSection(
     setGenresBottomSheet: (Boolean) -> Unit,
     setProducersBottomSheet: (Boolean) -> Unit
 ) {
-    val selectedGenres by viewModel.selectedGenres.collectAsState()
-    val selectedProducers by viewModel.selectedProducers.collectAsState()
+    val selectedGenres by viewModel.selectedGenres.collectAsStateWithLifecycle()
+    val selectedProducers by viewModel.selectedProducers.collectAsStateWithLifecycle()
 
     Row(
         modifier = Modifier
