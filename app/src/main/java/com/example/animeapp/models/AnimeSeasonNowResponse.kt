@@ -7,3 +7,8 @@ data class AnimeSeasonNowResponse(
     val pagination: CompletePagination,
     val data: List<AnimeDetail>
 )
+
+val animeSeasonNowResponsePlaceholder = AnimeSeasonNowResponse(
+    pagination = defaultCompletePagination,
+    data = List(10) { animeDetailPlaceholder }
+)

@@ -5,21 +5,21 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.automirrored.filled.NavigateBefore
+import androidx.compose.material.icons.automirrored.filled.NavigateNext
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
@@ -31,20 +31,19 @@ import com.example.animeapp.utils.WatchUtils.getEpisodeBackgroundColor
 
 @Composable
 fun ContinueWatchingPopup(
-    isShowPopup: Boolean,
     episodeDetailComplement: EpisodeDetailComplement?,
-    onMinimize: () -> Unit,
-    onRestore: () -> Unit,
-    isMinimized: Boolean
+    isMinimized: Boolean,
+    onSetMinimize: (Boolean) -> Unit
 ) {
-    if (isShowPopup && episodeDetailComplement != null) {
+    if (episodeDetailComplement != null) {
         Popup(
             alignment = Alignment.BottomEnd,
             offset = IntOffset(0, (-160).dp.value.toInt()),
         ) {
-            if (!isMinimized) {
-                Column(
-                    modifier = Modifier.basicContainer(
+            Row(
+                modifier = Modifier
+                    .height(75.dp)
+                    .basicContainer(
                         backgroundBrush = getEpisodeBackgroundColor(
                             episodeDetailComplement.isFiller,
                             episodeDetailComplement
@@ -57,69 +56,80 @@ fun ContinueWatchingPopup(
                         ),
                         outerPadding = PaddingValues(0.dp),
                         innerPadding = PaddingValues(0.dp)
+                    ),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (!isMinimized) {
+                    AsyncImageWithPlaceholder(
+                        model = episodeDetailComplement.imageUrl,
+                        contentDescription = episodeDetailComplement.animeTitle,
+                        roundedCorners = ImageRoundedCorner.START,
+                        modifier = Modifier
+                            .width(50.dp)
+                            .height(75.dp)
                     )
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
+                    Column(
+                        modifier = Modifier
+                            .padding(start = 8.dp)
+                            .height(75.dp),
+                        verticalArrangement = Arrangement.SpaceBetween
                     ) {
-                        AsyncImageWithPlaceholder(
-                            model = episodeDetailComplement.imageUrl,
-                            contentDescription = episodeDetailComplement.animeTitle,
-                            roundedCorners = ImageRoundedCorner.START,
-                            modifier = Modifier
-                                .width(50.dp)
-                                .height(75.dp)
-                        )
-                        Column(
-                            modifier = Modifier
-                                .padding(start = 8.dp)
-                                .height(75.dp),
-                            verticalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column {
+                        Column {
+                            Text(
+                                text = episodeDetailComplement.animeTitle,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            ) {
                                 Text(
-                                    text = episodeDetailComplement.animeTitle,
-                                    style = MaterialTheme.typography.bodyMedium
+                                    text = "Eps. ${episodeDetailComplement.number}",
+                                    style = MaterialTheme.typography.bodySmall
                                 )
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                                ) {
-                                    Text(
-                                        text = "Eps. ${episodeDetailComplement.number}",
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                    Text(
-                                        text = episodeDetailComplement.episodeTitle,
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
-                                }
+                                Text(
+                                    text = episodeDetailComplement.episodeTitle,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
                             }
+                        }
+                        Row(
+                            modifier = Modifier.basicContainer(
+                                isPrimary = true,
+                                innerPadding = PaddingValues(4.dp),
+                                outerPadding = PaddingValues(horizontal = 0.dp, vertical = 4.dp),
+                                onItemClick = {}
+                            ),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
                             Text(
                                 text = "Continue Watching",
-                                style = MaterialTheme.typography.bodySmall
+                                style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onPrimary)
+                            )
+                            Icon(
+                                Icons.Filled.PlayArrow,
+                                contentDescription = "Next Episode",
+                                modifier = Modifier.padding(start = 8.dp),
+                                tint = MaterialTheme.colorScheme.onPrimary
                             )
                         }
-                        Icon(
-                            imageVector = Icons.Filled.KeyboardArrowDown,
-                            contentDescription = "Minimize",
-                            modifier = Modifier
-                                .padding(8.dp)
-                                .clickable { onMinimize() }
-                        )
                     }
-                }
-            } else {
-                Surface(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(topStart = 8.dp, bottomStart = 8.dp))
-                        .clickable { onRestore() }
-                ) {
                     Icon(
-                        imageVector = Icons.Filled.KeyboardArrowUp,
+                        imageVector = Icons.AutoMirrored.Filled.NavigateNext,
+                        contentDescription = "Minimize",
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .padding(start = 8.dp)
+                            .clickable { onSetMinimize(true) }
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.NavigateBefore,
                         contentDescription = "Restore",
                         modifier = Modifier
-                            .padding(8.dp)
+                            .fillMaxHeight()
+                            .clickable { onSetMinimize(false) },
                     )
                 }
             }

@@ -3,10 +3,10 @@ package com.example.animeapp.repository
 import com.example.animeapp.data.remote.api.AnimeAPI
 import com.example.animeapp.models.AnimeSearchQueryState
 import com.example.animeapp.models.AnimeSearchResponse
-import com.example.animeapp.models.CompletePagination
 import com.example.animeapp.models.GenresResponse
 import com.example.animeapp.models.ProducersResponse
 import com.example.animeapp.models.ProducersSearchQueryState
+import com.example.animeapp.models.defaultCompletePagination
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ResponseHandler
 import com.example.animeapp.utils.ResponseHandler.safeApiCall
@@ -52,7 +52,7 @@ class AnimeSearchRepository(
             return Resource.Success(
                 AnimeSearchResponse(
                     data = listOf(resource.data.data),
-                    pagination = CompletePagination.Companion.default()
+                    pagination = defaultCompletePagination
                 )
             )
         }

@@ -1,7 +1,5 @@
 package com.example.animeapp.ui.animeHome
 
-import android.os.Handler
-import android.os.Looper
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,96 +12,80 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
 import com.example.animeapp.R
-import com.example.animeapp.models.EpisodeDetailComplement
+import com.example.animeapp.models.animeSeasonNowResponsePlaceholder
+import com.example.animeapp.models.episodeDetailComplementPlaceholder
 import com.example.animeapp.ui.animeHome.components.ContinueWatchingPopup
 import com.example.animeapp.ui.animeHome.components.AnimeSeasonNowGrid
 import com.example.animeapp.ui.animeHome.components.AnimeSeasonNowGridSkeleton
 import com.example.animeapp.ui.animeHome.components.LimitAndPaginationSection
 import com.example.animeapp.ui.common_ui.MessageDisplay
+import com.example.animeapp.ui.main.BottomScreen
 import com.example.animeapp.utils.Resource
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
+@Preview
 @Composable
 fun AnimeHomeScreen(
-    currentRoute: String?,
-    navController: NavHostController,
-    isConnected: Boolean,
-    isLandscape: Boolean
+    state: HomeState = HomeState(
+        animeSeasonNows = Resource.Success(animeSeasonNowResponsePlaceholder),
+        continueWatchingEpisode = episodeDetailComplementPlaceholder,
+        isShowPopup = true
+    ),
+    action: (HomeAction) -> Unit = {},
+    currentRoute: String? = BottomScreen.Home.route,
+    navController: NavHostController = rememberNavController(),
+    isConnected: Boolean = true,
+    isLandscape: Boolean = false
 ) {
-    val viewModel: HomeViewModel = hiltViewModel()
-
-    val animeSeasonNows by viewModel.animeSeasonNows.collectAsStateWithLifecycle()
-    val queryState by viewModel.queryState.collectAsStateWithLifecycle()
-    val continueWatchingEpisode by viewModel.continueWatchingEpisode.collectAsStateWithLifecycle()
-    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
-
-    val state = rememberPullToRefreshState()
-
-    var isShowPopup by remember { mutableStateOf(false) }
-    var isMinimized by remember { mutableStateOf(false) }
-    var episodeDetailComplement by remember { mutableStateOf<EpisodeDetailComplement?>(null) }
+    val pullToRefreshState = rememberPullToRefreshState()
 
     LaunchedEffect(currentRoute) {
-        viewModel.fetchContinueWatchingEpisode()
+        if (currentRoute == BottomScreen.Home.route) action(HomeAction.FetchContinueWatchingEpisode)
     }
 
-    LaunchedEffect(continueWatchingEpisode) {
-        if (continueWatchingEpisode is Resource.Success) {
-            episodeDetailComplement = continueWatchingEpisode.data
-            isShowPopup = episodeDetailComplement != null
-            if (isShowPopup) {
-                Handler(Looper.getMainLooper()).postDelayed({
-                    if (!isMinimized) {
-                        isShowPopup = false
-                    }
-                }, 10000)
-            }
-        } else {
-            isShowPopup = false
-        }
+    LaunchedEffect(state.isMinimized) {
+        if (!state.isMinimized) delay(10000)
+        action(HomeAction.SetMinimized(true))
     }
 
     LaunchedEffect(isConnected) {
-        if (isConnected && animeSeasonNows is Resource.Error) viewModel.getAnimeSeasonNow()
+        if (isConnected && state.animeSeasonNows is Resource.Error) action(HomeAction.GetAnimeSeasonNow)
     }
 
     Scaffold { paddingValues ->
         PullToRefreshBox(
-            isRefreshing = isRefreshing,
-            onRefresh = { viewModel.getAnimeSeasonNow() },
+            isRefreshing = state.isRefreshing,
+            onRefresh = { action(HomeAction.GetAnimeSeasonNow) },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            state = state,
+            state = pullToRefreshState,
             indicator = {
                 PullToRefreshDefaults.Indicator(
-                    isRefreshing = isRefreshing,
+                    isRefreshing = state.isRefreshing,
                     containerColor = MaterialTheme.colorScheme.primary,
                     color = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.align(Alignment.TopCenter),
-                    state = state
+                    state = pullToRefreshState
                 )
             },
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-                when (animeSeasonNows) {
+                when (state.animeSeasonNows) {
                     is Resource.Loading -> {
                         AnimeSeasonNowGridSkeleton(isLandscape)
                     }
 
                     is Resource.Success -> {
-                        animeSeasonNows.data?.let { animeSeasonNow ->
+                        state.animeSeasonNows.data.let { animeSeasonNow ->
                             Column(modifier = Modifier.weight(1f)) {
                                 AnimeSeasonNowGrid(
                                     animeSeasonNow = animeSeasonNow.data,
@@ -128,16 +110,14 @@ fun AnimeHomeScreen(
                     }
                 }
                 LimitAndPaginationSection(
-                    animeSeasonNows,
-                    queryState,
-                    viewModel::applyFilters,
+                    animeSeasonNow = state.animeSeasonNows,
+                    query = state.queryState,
+                    onQueryChanged = { action(HomeAction.ApplyFilters(it)) }
                 )
-                ContinueWatchingPopup(
-                    isShowPopup = isShowPopup,
-                    episodeDetailComplement = episodeDetailComplement,
-                    onMinimize = { isShowPopup = false; isMinimized = true },
-                    onRestore = { isShowPopup = true;isMinimized = false },
-                    isMinimized = isMinimized
+                if (state.isShowPopup) ContinueWatchingPopup(
+                    episodeDetailComplement = state.continueWatchingEpisode,
+                    isMinimized = state.isMinimized,
+                    onSetMinimize = { action(HomeAction.SetMinimized(it)) }
                 )
             }
         }

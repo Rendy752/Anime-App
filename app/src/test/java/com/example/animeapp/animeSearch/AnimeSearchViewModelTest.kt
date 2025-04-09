@@ -1,7 +1,6 @@
 package com.example.animeapp.animeSearch
 
 import com.example.animeapp.models.AnimeSearchResponse
-import com.example.animeapp.models.CompletePagination
 import com.example.animeapp.models.Genre
 import com.example.animeapp.models.GenresResponse
 import com.example.animeapp.models.JpgImage
@@ -9,6 +8,7 @@ import com.example.animeapp.models.Producer
 import com.example.animeapp.models.ProducerImage
 import com.example.animeapp.models.ProducersResponse
 import com.example.animeapp.models.Title
+import com.example.animeapp.models.defaultCompletePagination
 import com.example.animeapp.models.genrePlaceholder
 import com.example.animeapp.models.producerPlaceholder
 import com.example.animeapp.repository.AnimeSearchRepository
@@ -108,7 +108,7 @@ class AnimeSearchViewModelTest {
         val searchResponse =
             AnimeSearchResponse(
                 data = emptyList(),
-                pagination = CompletePagination.Companion.default()
+                pagination = defaultCompletePagination
             )
         coEvery { repository.searchAnime(any()) } returns Resource.Success(searchResponse)
 
@@ -164,7 +164,7 @@ class AnimeSearchViewModelTest {
         )
 
         val producersResponse = ProducersResponse(
-            pagination = CompletePagination.Companion.default(),
+            pagination = defaultCompletePagination,
             data = producers
         )
 
@@ -193,7 +193,7 @@ class AnimeSearchViewModelTest {
         val searchResponse =
             AnimeSearchResponse(
                 data = emptyList(),
-                pagination = CompletePagination.Companion.default()
+                pagination = defaultCompletePagination
             )
         coEvery { repository.searchAnime(any()) } returns Resource.Success(searchResponse)
 

@@ -19,6 +19,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -39,6 +41,7 @@ import com.example.animeapp.ui.animeRecommendations.AnimeRecommendationsScreen
 import com.example.animeapp.ui.animeSearch.AnimeSearchScreen
 import com.example.animeapp.ui.animeWatch.AnimeWatchScreen
 import com.example.animeapp.ui.animeHome.AnimeHomeScreen
+import com.example.animeapp.ui.animeHome.HomeViewModel
 import com.example.animeapp.ui.common_ui.MessageDisplay
 import com.example.animeapp.ui.settings.SettingsScreen
 import com.google.gson.Gson
@@ -122,7 +125,15 @@ fun MainScreen(
                 }
             ) {
                 composable(BottomScreen.Home.route) {
-                    AnimeHomeScreen(currentRoute, navController, isConnected, isLandscape)
+                    val viewModel: HomeViewModel = hiltViewModel()
+                    AnimeHomeScreen(
+                        state = viewModel.state.collectAsStateWithLifecycle().value,
+                        action = viewModel::dispatch,
+                        currentRoute = currentRoute,
+                        navController = navController,
+                        isConnected = isConnected,
+                        isLandscape = isLandscape
+                    )
                 }
 
                 composable(BottomScreen.Recommendations.route) {
