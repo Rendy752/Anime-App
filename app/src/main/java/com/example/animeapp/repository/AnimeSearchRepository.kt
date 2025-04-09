@@ -17,30 +17,32 @@ class AnimeSearchRepository(
     suspend fun searchAnime(
         queryState: AnimeSearchQueryState
     ): Resource<AnimeSearchResponse> {
-        val response = safeApiCall {
-            jikanAPI.getAnimeSearch(
-                q = queryState.query,
-                page = queryState.page,
-                limit = queryState.limit,
-                type = queryState.type,
-                score = queryState.score,
-                minScore = queryState.minScore,
-                maxScore = queryState.maxScore,
-                status = queryState.status,
-                rating = queryState.rating,
-                sfw = queryState.sfw,
-                unapproved = queryState.unapproved,
-                genres = queryState.genres,
-                genresExclude = queryState.genresExclude,
-                orderBy = queryState.orderBy,
-                sort = queryState.sort,
-                letter = queryState.letter,
-                producers = queryState.producers,
-                startDate = queryState.startDate,
-                endDate = queryState.endDate
-            )
+        queryState.apply {
+            val response = safeApiCall {
+                jikanAPI.getAnimeSearch(
+                    q = query,
+                    page = page,
+                    limit = limit,
+                    type = type,
+                    score = score,
+                    minScore = minScore,
+                    maxScore = maxScore,
+                    status = status,
+                    rating = rating,
+                    sfw = sfw,
+                    unapproved = unapproved,
+                    genres = genres,
+                    genresExclude = genresExclude,
+                    orderBy = orderBy,
+                    sort = sort,
+                    letter = letter,
+                    producers = producers,
+                    startDate = startDate,
+                    endDate = endDate
+                )
+            }
+            return ResponseHandler.handleCommonResponse(response)
         }
-        return ResponseHandler.handleCommonResponse(response)
     }
 
     suspend fun getRandomAnime(): Resource<AnimeSearchResponse> {
@@ -65,16 +67,18 @@ class AnimeSearchRepository(
     suspend fun getProducers(
         queryState: ProducersSearchQueryState
     ): Resource<ProducersResponse> {
-        val response = safeApiCall {
-            jikanAPI.getProducers(
-                page = queryState.page,
-                limit = queryState.limit,
-                q = queryState.query,
-                orderBy = queryState.orderBy,
-                sort = queryState.sort,
-                letter = queryState.letter
-            )
+        queryState.apply {
+            val response = safeApiCall {
+                jikanAPI.getProducers(
+                    page = page,
+                    limit = limit,
+                    q = query,
+                    orderBy = orderBy,
+                    sort = sort,
+                    letter = letter
+                )
+            }
+            return ResponseHandler.handleCommonResponse(response)
         }
-        return ResponseHandler.handleCommonResponse(response)
     }
 }

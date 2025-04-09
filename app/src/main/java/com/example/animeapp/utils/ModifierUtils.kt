@@ -21,11 +21,10 @@ fun Modifier.basicContainer(
     isPrimary: Boolean = false,
     onItemClick: (() -> Unit)? = null,
     backgroundBrush: Brush? = null,
-    isRounded: Boolean = true,
+    roundedCornerShape: RoundedCornerShape = RoundedCornerShape(16.dp),
     outerPadding: PaddingValues = PaddingValues(8.dp),
     innerPadding: PaddingValues = PaddingValues(16.dp)
 ): Modifier {
-    val roundedCornerShape = if (isRounded) RoundedCornerShape(16.dp) else RoundedCornerShape(0.dp)
     var modifier = this
         .padding(outerPadding)
         .clip(roundedCornerShape)

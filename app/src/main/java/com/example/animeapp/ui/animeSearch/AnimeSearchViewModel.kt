@@ -57,7 +57,7 @@ class AnimeSearchViewModel @Inject constructor(
         } else {
             _isRefreshing.value = true
             _animeSearchResults.value = Resource.Loading()
-            _animeSearchResults.value = animeSearchRepository.searchAnime(queryState.value)
+            _animeSearchResults.value = animeSearchRepository.searchAnime(_queryState.value)
             _isRefreshing.value = false
         }
     }
@@ -112,7 +112,7 @@ class AnimeSearchViewModel @Inject constructor(
 
     fun fetchProducers() = viewModelScope.launch {
         _producers.value = Resource.Loading()
-        _producers.value = animeSearchRepository.getProducers(producersQueryState.value)
+        _producers.value = animeSearchRepository.getProducers(_producersQueryState.value)
     }
 
     fun setSelectedProducer(producer: Producer) {

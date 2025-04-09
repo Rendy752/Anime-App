@@ -25,9 +25,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.example.animeapp.R
+import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.ui.animeHome.components.ContinueWatchingPopup
 import com.example.animeapp.ui.animeHome.components.AnimeSeasonNowGrid
 import com.example.animeapp.ui.animeHome.components.AnimeSeasonNowGridSkeleton
+import com.example.animeapp.ui.animeHome.components.LimitAndPaginationSection
 import com.example.animeapp.ui.common_ui.MessageDisplay
 import com.example.animeapp.utils.Resource
 
@@ -42,6 +44,7 @@ fun AnimeHomeScreen(
     val viewModel: HomeViewModel = hiltViewModel()
 
     val animeSeasonNows by viewModel.animeSeasonNows.collectAsStateWithLifecycle()
+    val queryState by viewModel.queryState.collectAsStateWithLifecycle()
     val continueWatchingEpisode by viewModel.continueWatchingEpisode.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
 
@@ -49,11 +52,7 @@ fun AnimeHomeScreen(
 
     var isShowPopup by remember { mutableStateOf(false) }
     var isMinimized by remember { mutableStateOf(false) }
-    var episodeData by remember {
-        mutableStateOf<com.example.animeapp.models.EpisodeDetailComplement?>(
-            null
-        )
-    }
+    var episodeDetailComplement by remember { mutableStateOf<EpisodeDetailComplement?>(null) }
 
     LaunchedEffect(currentRoute) {
         viewModel.fetchContinueWatchingEpisode()
@@ -61,8 +60,8 @@ fun AnimeHomeScreen(
 
     LaunchedEffect(continueWatchingEpisode) {
         if (continueWatchingEpisode is Resource.Success) {
-            episodeData = continueWatchingEpisode.data
-            isShowPopup = episodeData != null
+            episodeDetailComplement = continueWatchingEpisode.data
+            isShowPopup = episodeDetailComplement != null
             if (isShowPopup) {
                 Handler(Looper.getMainLooper()).postDelayed({
                     if (!isMinimized) {
@@ -97,23 +96,23 @@ fun AnimeHomeScreen(
                 )
             },
         ) {
-            Column(
-                modifier = Modifier.fillMaxSize()
-            ) {
+            Column(modifier = Modifier.fillMaxSize()) {
                 when (animeSeasonNows) {
                     is Resource.Loading -> {
                         AnimeSeasonNowGridSkeleton(isLandscape)
                     }
 
                     is Resource.Success -> {
-                        animeSeasonNows.data?.data?.let { animeSeasonNow ->
-                            AnimeSeasonNowGrid(
-                                animeSeasonNow = animeSeasonNow,
-                                isLandscape = isLandscape,
-                                onItemClick = { anime ->
-                                    navController.navigate("animeDetail/${anime.title}/${anime.mal_id}")
-                                }
-                            )
+                        animeSeasonNows.data?.let { animeSeasonNow ->
+                            Column(modifier = Modifier.weight(1f)) {
+                                AnimeSeasonNowGrid(
+                                    animeSeasonNow = animeSeasonNow.data,
+                                    isLandscape = isLandscape,
+                                    onItemClick = { anime ->
+                                        navController.navigate("animeDetail/${anime.title}/${anime.mal_id}")
+                                    }
+                                )
+                            }
                         }
                     }
 
@@ -128,17 +127,16 @@ fun AnimeHomeScreen(
                         ) { MessageDisplay(stringResource(R.string.no_internet_connection)) }
                     }
                 }
+                LimitAndPaginationSection(
+                    animeSeasonNows,
+                    queryState,
+                    viewModel::applyFilters,
+                )
                 ContinueWatchingPopup(
                     isShowPopup = isShowPopup,
-                    episode = episodeData,
-                    onMinimize = {
-                        isShowPopup = false
-                        isMinimized = true
-                    },
-                    onRestore = {
-                        isShowPopup = true
-                        isMinimized = false
-                    },
+                    episodeDetailComplement = episodeDetailComplement,
+                    onMinimize = { isShowPopup = false; isMinimized = true },
+                    onRestore = { isShowPopup = true;isMinimized = false },
                     isMinimized = isMinimized
                 )
             }

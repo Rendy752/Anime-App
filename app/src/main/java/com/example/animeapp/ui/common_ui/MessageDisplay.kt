@@ -2,6 +2,7 @@ package com.example.animeapp.ui.common_ui
 
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -18,7 +19,9 @@ fun MessageDisplay(message: String, isError: Boolean = true, isRounded: Boolean 
             .basicContainer(
                 isError = isError,
                 isPrimary = !isError,
-                isRounded = isRounded,
+                roundedCornerShape = if (isRounded) RoundedCornerShape(16.dp) else RoundedCornerShape(
+                    0.dp
+                ),
                 outerPadding = if (isRounded) PaddingValues(8.dp) else PaddingValues(0.dp),
                 innerPadding = if (isRounded) PaddingValues(16.dp) else PaddingValues(8.dp)
             )

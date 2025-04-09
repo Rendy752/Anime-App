@@ -17,7 +17,14 @@ import retrofit2.http.Query
 
 interface AnimeAPI {
     @GET("/v4/seasons/now")
-    suspend fun getAnimeSeasonNow(): Response<AnimeSeasonNowResponse>
+    suspend fun getAnimeSeasonNow(
+        @Query("filter") filter: String? = null,
+        @Query("sfw") sfw: Boolean? = null,
+        @Query("unapproved") unapproved: Boolean? = null,
+        @Query("continuing") continuing: Boolean? = null,
+        @Query("page") page: Int? = null,
+        @Query("limit") limit: Int? = null
+    ): Response<AnimeSeasonNowResponse>
 
     @GET("/v4/recommendations/anime")
     suspend fun getAnimeRecommendations(

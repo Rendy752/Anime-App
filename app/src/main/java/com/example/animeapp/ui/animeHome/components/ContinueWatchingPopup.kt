@@ -27,30 +27,44 @@ import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.ui.common_ui.AsyncImageWithPlaceholder
 import com.example.animeapp.ui.common_ui.ImageRoundedCorner
 import com.example.animeapp.utils.basicContainer
+import com.example.animeapp.utils.WatchUtils.getEpisodeBackgroundColor
 
 @Composable
 fun ContinueWatchingPopup(
     isShowPopup: Boolean,
-    episode: EpisodeDetailComplement?,
+    episodeDetailComplement: EpisodeDetailComplement?,
     onMinimize: () -> Unit,
     onRestore: () -> Unit,
     isMinimized: Boolean
 ) {
-    if (isShowPopup && episode != null) {
+    if (isShowPopup && episodeDetailComplement != null) {
         Popup(
             alignment = Alignment.BottomEnd,
-            offset = IntOffset((-20).dp.value.toInt(), (-20).dp.value.toInt()),
+            offset = IntOffset(0, (-160).dp.value.toInt()),
         ) {
             if (!isMinimized) {
                 Column(
-                    modifier = Modifier.basicContainer(innerPadding = PaddingValues(0.dp))
+                    modifier = Modifier.basicContainer(
+                        backgroundBrush = getEpisodeBackgroundColor(
+                            episodeDetailComplement.isFiller,
+                            episodeDetailComplement
+                        ),
+                        roundedCornerShape = RoundedCornerShape(
+                            topStart = 16.dp,
+                            bottomStart = 16.dp,
+                            topEnd = 0.dp,
+                            bottomEnd = 0.dp
+                        ),
+                        outerPadding = PaddingValues(0.dp),
+                        innerPadding = PaddingValues(0.dp)
+                    )
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         AsyncImageWithPlaceholder(
-                            model = episode.imageUrl,
-                            contentDescription = episode.animeTitle,
+                            model = episodeDetailComplement.imageUrl,
+                            contentDescription = episodeDetailComplement.animeTitle,
                             roundedCorners = ImageRoundedCorner.START,
                             modifier = Modifier
                                 .width(50.dp)
@@ -59,12 +73,12 @@ fun ContinueWatchingPopup(
                         Column(
                             modifier = Modifier
                                 .padding(start = 8.dp)
-                                .height(75.dp), // Set height to match image height
-                            verticalArrangement = Arrangement.SpaceBetween // Justify between elements
+                                .height(75.dp),
+                            verticalArrangement = Arrangement.SpaceBetween
                         ) {
                             Column {
                                 Text(
-                                    text = episode.animeTitle,
+                                    text = episodeDetailComplement.animeTitle,
                                     style = MaterialTheme.typography.bodyMedium
                                 )
                                 Row(
@@ -72,11 +86,11 @@ fun ContinueWatchingPopup(
                                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                                 ) {
                                     Text(
-                                        text = "Eps. ${episode.number}",
+                                        text = "Eps. ${episodeDetailComplement.number}",
                                         style = MaterialTheme.typography.bodySmall
                                     )
                                     Text(
-                                        text = episode.episodeTitle,
+                                        text = episodeDetailComplement.episodeTitle,
                                         style = MaterialTheme.typography.bodySmall
                                     )
                                 }

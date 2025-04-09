@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.AnimeSeasonNowResponse
+import com.example.animeapp.models.AnimeSeasonNowSearchQueryState
 import com.example.animeapp.repository.AnimeEpisodeDetailRepository
 import com.example.animeapp.repository.AnimeHomeRepository
 import com.example.animeapp.utils.Resource
@@ -25,6 +26,9 @@ class HomeViewModel @Inject constructor(
     val animeSeasonNows: StateFlow<Resource<AnimeSeasonNowResponse>> =
         _animeSeasonNows.asStateFlow()
 
+    private val _queryState = MutableStateFlow(AnimeSeasonNowSearchQueryState())
+    val queryState: StateFlow<AnimeSeasonNowSearchQueryState> = _queryState.asStateFlow()
+
     private val _continueWatchingEpisode =
         MutableStateFlow<Resource<EpisodeDetailComplement?>>(Resource.Loading())
     val continueWatchingEpisode: StateFlow<Resource<EpisodeDetailComplement?>> =
@@ -40,8 +44,15 @@ class HomeViewModel @Inject constructor(
     fun getAnimeSeasonNow() = viewModelScope.launch {
         _isRefreshing.value = true
         _animeSeasonNows.value = Resource.Loading()
-        _animeSeasonNows.value = animeHomeRepository.getAnimeSeasonNow()
+        _animeSeasonNows.value = animeHomeRepository.getAnimeSeasonNow(_queryState.value)
         _isRefreshing.value = false
+    }
+
+    fun applyFilters(updatedQueryState: AnimeSeasonNowSearchQueryState) {
+        _queryState.value = updatedQueryState
+        viewModelScope.launch {
+            getAnimeSeasonNow()
+        }
     }
 
     fun fetchContinueWatchingEpisode() {

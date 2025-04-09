@@ -13,7 +13,7 @@ data class AnimeSearchQueryState(
     val maxScore: Double? = null,
     val status: String? = null,
     val rating: String? = null,
-    val sfw: Boolean? = null,
+    val sfw: Boolean? = true,
     val unapproved: Boolean? = null,
     val genres: String? = null,
     val genresExclude: String? = null,
@@ -31,7 +31,7 @@ data class AnimeSearchQueryState(
                 maxScore == null &&
                 status == null &&
                 rating == null &&
-                sfw == null &&
+                sfw == true &&
                 unapproved == null &&
                 orderBy == null &&
                 sort == null &&
@@ -77,7 +77,7 @@ data class AnimeSearchQueryState(
             startDate = null,
             endDate = null,
             unapproved = null,
-            sfw = null
+            sfw = true
         )
     }
 }
