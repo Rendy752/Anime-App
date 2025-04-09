@@ -15,33 +15,33 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.animeapp.models.WatchRecentEpisode
+import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.ui.common_ui.AsyncImageWithPlaceholder
 import com.example.animeapp.ui.common_ui.ImageRoundedCorner
 import com.example.animeapp.ui.common_ui.SkeletonBox
 import com.example.animeapp.utils.basicContainer
 
 @Composable
-fun WatchRecentEpisodeItem(
-    episode: WatchRecentEpisode,
-    onItemClick: (WatchRecentEpisode) -> Unit
+fun AnimeSeasoNowItem(
+    animeDetail: AnimeDetail,
+    onItemClick: (AnimeDetail) -> Unit
 ) {
     Column(
         modifier = Modifier
             .basicContainer(
                 innerPadding = PaddingValues(0.dp),
-                onItemClick = { onItemClick(episode) })
+                onItemClick = { onItemClick(animeDetail) })
     ) {
         Box {
             AsyncImageWithPlaceholder(
-                model = episode.entry.images.jpg.image_url,
-                contentDescription = episode.entry.title,
+                model = animeDetail.images.jpg.image_url,
+                contentDescription = animeDetail.title,
                 roundedCorners = ImageRoundedCorner.TOP,
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(2f / 3f),
             )
-            if (episode.episodes.isNotEmpty()) {
+            animeDetail.type?.let {
                 Text(
                     modifier = Modifier
                         .basicContainer(
@@ -51,7 +51,7 @@ fun WatchRecentEpisodeItem(
                             )
                         )
                         .align(Alignment.TopStart),
-                    text = episode.episodes[0].mal_id.toString(),
+                    text = it,
                     style = MaterialTheme.typography.titleSmall,
                 )
             }
@@ -60,7 +60,7 @@ fun WatchRecentEpisodeItem(
             modifier = Modifier
                 .padding(8.dp)
                 .fillMaxWidth(),
-            text = episode.entry.title,
+            text = animeDetail.title,
             textAlign = TextAlign.Center,
             style = MaterialTheme.typography.titleSmall,
             maxLines = 2,
@@ -71,7 +71,7 @@ fun WatchRecentEpisodeItem(
 
 @Preview
 @Composable
-fun WatchRecentEpisodeItemSkeleton() {
+fun AnimeSeasoNowItemSkeleton() {
     Column(
         modifier = Modifier
             .basicContainer(

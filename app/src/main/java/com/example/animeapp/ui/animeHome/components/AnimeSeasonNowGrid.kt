@@ -8,13 +8,13 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.animeapp.models.WatchRecentEpisode
+import com.example.animeapp.models.AnimeDetail
 
 @Composable
-fun WatchRecentEpisodeGrid(
-    watchRecentEpisodes: List<WatchRecentEpisode>,
+fun AnimeSeasonNowGrid(
+    animeSeasonNow: List<AnimeDetail>,
     isLandscape: Boolean,
-    onItemClick: (WatchRecentEpisode) -> Unit
+    onItemClick: (AnimeDetail) -> Unit
 ) {
     val gridCellsCount = if (isLandscape) 4 else 2
 
@@ -24,15 +24,15 @@ fun WatchRecentEpisodeGrid(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(watchRecentEpisodes) { episode ->
-            WatchRecentEpisodeItem(episode = episode, onItemClick = onItemClick)
+        items(animeSeasonNow) { animeDetail ->
+            AnimeSeasoNowItem(animeDetail = animeDetail, onItemClick = onItemClick)
         }
     }
 }
 
 @Preview
 @Composable
-fun WatchRecentEpisodeGridSkeleton(isLandscape: Boolean = false) {
+fun AnimeSeasonNowGridSkeleton(isLandscape: Boolean = false) {
     val itemCount = if (isLandscape) 8 else 6
 
     LazyVerticalGrid(
@@ -42,7 +42,7 @@ fun WatchRecentEpisodeGridSkeleton(isLandscape: Boolean = false) {
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(itemCount) {
-            WatchRecentEpisodeItemSkeleton()
+            AnimeSeasoNowItemSkeleton()
         }
     }
 }

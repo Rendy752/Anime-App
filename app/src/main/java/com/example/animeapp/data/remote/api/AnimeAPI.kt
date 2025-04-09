@@ -4,20 +4,20 @@ import com.example.animeapp.models.AnimeAniwatchSearchResponse
 import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.models.AnimeRecommendationResponse
 import com.example.animeapp.models.AnimeSearchResponse
+import com.example.animeapp.models.AnimeSeasonNowResponse
 import com.example.animeapp.models.EpisodeServersResponse
 import com.example.animeapp.models.EpisodeSourcesResponse
 import com.example.animeapp.models.EpisodesResponse
 import com.example.animeapp.models.GenresResponse
 import com.example.animeapp.models.ProducersResponse
-import com.example.animeapp.models.WatchRecentEpisodeResponse
 import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface AnimeAPI {
-    @GET("/v4/watch/episodes")
-    suspend fun getWatchRecentEpisode(): Response<WatchRecentEpisodeResponse>
+    @GET("/v4/seasons/now")
+    suspend fun getAnimeSeasonNow(): Response<AnimeSeasonNowResponse>
 
     @GET("/v4/recommendations/anime")
     suspend fun getAnimeRecommendations(

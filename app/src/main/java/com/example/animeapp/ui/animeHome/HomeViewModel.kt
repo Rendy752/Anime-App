@@ -3,7 +3,7 @@ package com.example.animeapp.ui.animeHome
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.animeapp.models.EpisodeDetailComplement
-import com.example.animeapp.models.WatchRecentEpisodeResponse
+import com.example.animeapp.models.AnimeSeasonNowResponse
 import com.example.animeapp.repository.AnimeEpisodeDetailRepository
 import com.example.animeapp.repository.AnimeHomeRepository
 import com.example.animeapp.utils.Resource
@@ -20,10 +20,10 @@ class HomeViewModel @Inject constructor(
     private val animeEpisodeDetailRepository: AnimeEpisodeDetailRepository
 ) : ViewModel() {
 
-    private val _watchRecentEpisode =
-        MutableStateFlow<Resource<WatchRecentEpisodeResponse>>(Resource.Loading())
-    val watchRecentEpisode: StateFlow<Resource<WatchRecentEpisodeResponse>> =
-        _watchRecentEpisode.asStateFlow()
+    private val _animeSeasonNows =
+        MutableStateFlow<Resource<AnimeSeasonNowResponse>>(Resource.Loading())
+    val animeSeasonNows: StateFlow<Resource<AnimeSeasonNowResponse>> =
+        _animeSeasonNows.asStateFlow()
 
     private val _continueWatchingEpisode =
         MutableStateFlow<Resource<EpisodeDetailComplement?>>(Resource.Loading())
@@ -34,13 +34,13 @@ class HomeViewModel @Inject constructor(
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
     init {
-        getWatchRecentEpisode()
+        getAnimeSeasonNow()
     }
 
-    fun getWatchRecentEpisode() = viewModelScope.launch {
+    fun getAnimeSeasonNow() = viewModelScope.launch {
         _isRefreshing.value = true
-        _watchRecentEpisode.value = Resource.Loading()
-        _watchRecentEpisode.value = animeHomeRepository.getWatchRecentEpisode()
+        _animeSeasonNows.value = Resource.Loading()
+        _animeSeasonNows.value = animeHomeRepository.getAnimeSeasonNow()
         _isRefreshing.value = false
     }
 

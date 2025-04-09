@@ -26,8 +26,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.example.animeapp.R
 import com.example.animeapp.ui.animeHome.components.ContinueWatchingPopup
-import com.example.animeapp.ui.animeHome.components.WatchRecentEpisodeGrid
-import com.example.animeapp.ui.animeHome.components.WatchRecentEpisodeGridSkeleton
+import com.example.animeapp.ui.animeHome.components.AnimeSeasonNowGrid
+import com.example.animeapp.ui.animeHome.components.AnimeSeasonNowGridSkeleton
 import com.example.animeapp.ui.common_ui.MessageDisplay
 import com.example.animeapp.utils.Resource
 
@@ -41,7 +41,7 @@ fun AnimeHomeScreen(
 ) {
     val viewModel: HomeViewModel = hiltViewModel()
 
-    val watchRecentEpisode by viewModel.watchRecentEpisode.collectAsStateWithLifecycle()
+    val animeSeasonNows by viewModel.animeSeasonNows.collectAsStateWithLifecycle()
     val continueWatchingEpisode by viewModel.continueWatchingEpisode.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
 
@@ -76,13 +76,13 @@ fun AnimeHomeScreen(
     }
 
     LaunchedEffect(isConnected) {
-        if (isConnected && watchRecentEpisode is Resource.Error) viewModel.getWatchRecentEpisode()
+        if (isConnected && animeSeasonNows is Resource.Error) viewModel.getAnimeSeasonNow()
     }
 
     Scaffold { paddingValues ->
         PullToRefreshBox(
             isRefreshing = isRefreshing,
-            onRefresh = { viewModel.getWatchRecentEpisode() },
+            onRefresh = { viewModel.getAnimeSeasonNow() },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
@@ -100,18 +100,18 @@ fun AnimeHomeScreen(
             Column(
                 modifier = Modifier.fillMaxSize()
             ) {
-                when (watchRecentEpisode) {
+                when (animeSeasonNows) {
                     is Resource.Loading -> {
-                        WatchRecentEpisodeGridSkeleton(isLandscape)
+                        AnimeSeasonNowGridSkeleton(isLandscape)
                     }
 
                     is Resource.Success -> {
-                        watchRecentEpisode.data?.data?.let { recentEpisodes ->
-                            WatchRecentEpisodeGrid(
-                                watchRecentEpisodes = recentEpisodes,
+                        animeSeasonNows.data?.data?.let { animeSeasonNow ->
+                            AnimeSeasonNowGrid(
+                                animeSeasonNow = animeSeasonNow,
                                 isLandscape = isLandscape,
-                                onItemClick = { episode ->
-                                    navController.navigate("animeDetail/${episode.entry.title}/${episode.entry.mal_id}")
+                                onItemClick = { anime ->
+                                    navController.navigate("animeDetail/${anime.title}/${anime.mal_id}")
                                 }
                             )
                         }

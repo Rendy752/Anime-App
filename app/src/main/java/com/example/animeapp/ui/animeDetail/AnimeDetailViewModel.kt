@@ -148,7 +148,7 @@ class AnimeDetailViewModel @Inject constructor(
                 val animes = FindAnimeTitle.findClosestAnimes(resultResponse, animeDetail)
 
                 if (animes.isEmpty()) {
-                    _animeDetailComplement.value = Resource.Error("No matching anime found")
+                    _animeDetailComplement.value = Resource.Error("No episode found")
                     return@launch
                 }
 
@@ -199,7 +199,7 @@ class AnimeDetailViewModel @Inject constructor(
                     }
                 }
 
-                _animeDetailComplement.value = Resource.Error("No matching anime found")
+                _animeDetailComplement.value = Resource.Error("No episode found")
             }
         }
 
