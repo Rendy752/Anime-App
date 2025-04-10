@@ -24,7 +24,8 @@ import com.example.animeapp.models.episodeDetailComplementPlaceholder
 import com.example.animeapp.ui.animeHome.components.ContinueWatchingPopup
 import com.example.animeapp.ui.animeHome.components.AnimeSeasonNowGrid
 import com.example.animeapp.ui.animeHome.components.AnimeSeasonNowGridSkeleton
-import com.example.animeapp.ui.animeHome.components.LimitAndPaginationSection
+import com.example.animeapp.ui.common_ui.LimitAndPaginationQueryState
+import com.example.animeapp.ui.common_ui.LimitAndPaginationSection
 import com.example.animeapp.ui.common_ui.MessageDisplay
 import com.example.animeapp.ui.main.BottomScreen
 import com.example.animeapp.ui.main.MainState
@@ -110,9 +111,19 @@ fun AnimeHomeScreen(
                     }
                 }
                 LimitAndPaginationSection(
-                    animeSeasonNow = state.animeSeasonNows,
-                    query = state.queryState,
-                    onQueryChanged = { action(HomeAction.ApplyFilters(it)) }
+                    isVisible = state.animeSeasonNows is Resource.Success,
+                    pagination = state.animeSeasonNows.data?.pagination,
+                    query = LimitAndPaginationQueryState(
+                        state.queryState.page,
+                        state.queryState.limit
+                    ),
+                    onQueryChanged = {
+                        action(
+                            HomeAction.ApplyFilters(
+                                state.queryState.copy(page = it.page, limit = it.limit)
+                            )
+                        )
+                    }
                 )
                 if (state.isShowPopup) ContinueWatchingPopup(
                     episodeDetailComplement = state.continueWatchingEpisode,

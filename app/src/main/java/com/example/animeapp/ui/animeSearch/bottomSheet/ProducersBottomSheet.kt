@@ -2,8 +2,6 @@ package com.example.animeapp.ui.animeSearch.bottomSheet
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -22,15 +20,14 @@ import com.example.animeapp.models.ProducersResponse
 import com.example.animeapp.models.ProducersSearchQueryState
 import com.example.animeapp.ui.animeSearch.components.ApplyButton
 import com.example.animeapp.ui.animeSearch.components.CancelButton
-import com.example.animeapp.ui.animeSearch.components.PaginationButtons
 import com.example.animeapp.ui.animeSearch.components.ResetButton
 import com.example.animeapp.ui.animeSearch.genreProducerFilterField.FilterChipFlow
 import com.example.animeapp.ui.animeSearch.genreProducerFilterField.FilterChipFlowSkeleton
-import com.example.animeapp.ui.common_ui.DropdownInputField
+import com.example.animeapp.ui.common_ui.LimitAndPaginationQueryState
+import com.example.animeapp.ui.common_ui.LimitAndPaginationSection
 import com.example.animeapp.ui.common_ui.RetryButton
 import com.example.animeapp.ui.common_ui.SearchView
 import com.example.animeapp.utils.Debounce
-import com.example.animeapp.utils.Limit
 import com.example.animeapp.utils.Resource
 
 @OptIn(
@@ -51,7 +48,6 @@ fun ProducersBottomSheet(
     resetProducerSelection: () -> Unit,
     onDismiss: () -> Unit
 ) {
-
     val scope = rememberCoroutineScope()
     var query by remember { mutableStateOf(producersQueryState.query) }
     val debounce = remember {
@@ -66,9 +62,6 @@ fun ProducersBottomSheet(
     }
 
     val context = LocalContext.current
-    var selectedLimit by remember { mutableIntStateOf(producersQueryState.limit ?: 10) }
-    val pagerState = rememberPagerState { 2 }
-    val paginationState = producers.data?.pagination
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -178,47 +171,21 @@ fun ProducersBottomSheet(
             }
         }
 
-        if (paginationState != null) HorizontalDivider()
-        HorizontalPager(state = pagerState, Modifier.padding(8.dp)) { page ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (page == 0) {
-                    Row(
-                        horizontalArrangement = Arrangement.End,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        if (paginationState != null) {
-                            PaginationButtons(paginationState) { pageNumber ->
-                                applyProducerQueryStateFilters(
-                                    producersQueryState.copy(
-                                        page = pageNumber
-                                    )
-                                )
-                            }
-                        }
-                    }
-                } else {
-                    DropdownInputField(
-                        label = "Limit",
-                        options = Limit.limitOptions.map { it.toString() },
-                        selectedValue = selectedLimit.toString(),
-                        onValueChange = {
-                            selectedLimit = it.toInt()
-                            if (producersQueryState.limit != selectedLimit) {
-                                val updatedQueryState = producersQueryState.copy(
-                                    limit = selectedLimit, page = 1
-                                )
-                                applyProducerQueryStateFilters(updatedQueryState)
-                            }
-                        },
-                        modifier = Modifier.wrapContentSize()
+        LimitAndPaginationSection(
+            isVisible = producers is Resource.Success,
+            pagination = producers.data?.pagination,
+            query = LimitAndPaginationQueryState(
+                producersQueryState.page,
+                producersQueryState.limit
+            ),
+            onQueryChanged = {
+                applyProducerQueryStateFilters(
+                    producersQueryState.copy(
+                        page = it.page,
+                        limit = it.limit
                     )
-                }
+                )
             }
-        }
+        )
     }
 }

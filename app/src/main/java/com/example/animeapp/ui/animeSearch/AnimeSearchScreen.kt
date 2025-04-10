@@ -30,10 +30,11 @@ import com.example.animeapp.models.Genre
 import com.example.animeapp.models.Producer
 import com.example.animeapp.ui.animeSearch.bottomSheet.GenresBottomSheet
 import com.example.animeapp.ui.animeSearch.bottomSheet.ProducersBottomSheet
-import com.example.animeapp.ui.animeSearch.limitAndPagination.LimitAndPaginationSection
+import com.example.animeapp.ui.common_ui.LimitAndPaginationSection
 import com.example.animeapp.ui.animeSearch.results.ResultsSection
 import com.example.animeapp.ui.animeSearch.searchField.SearchFieldSection
 import com.example.animeapp.ui.animeSearch.genreProducerFilterField.GenreProducerFilterFieldSection
+import com.example.animeapp.ui.common_ui.LimitAndPaginationQueryState
 import com.example.animeapp.ui.main.BottomScreen
 import com.example.animeapp.ui.main.MainState
 import com.example.animeapp.utils.Resource
@@ -203,9 +204,20 @@ fun AnimeSearchScreen(
                             )
                             HorizontalDivider(modifier = Modifier.padding(bottom = 8.dp))
                             LimitAndPaginationSection(
-                                queryState,
-                                animeSearchResults.data?.pagination,
-                                viewModel::applyFilters,
+                                isVisible = animeSearchResults is Resource.Success,
+                                pagination = animeSearchResults.data?.pagination,
+                                query = LimitAndPaginationQueryState(
+                                    queryState.page,
+                                    queryState.limit
+                                ),
+                                onQueryChanged = {
+                                    viewModel.applyFilters(
+                                        queryState.copy(
+                                            page = it.page,
+                                            limit = it.limit
+                                        )
+                                    )
+                                },
                                 false
                             )
                         }
@@ -243,9 +255,7 @@ fun AnimeSearchScreen(
                             viewModel::applyProducerFilters,
                             isGenresBottomSheetShow,
                             isProducersBottomSheetShow,
-                            setGenresBottomSheet = {
-                                isGenresBottomSheetShow = it
-                            },
+                            setGenresBottomSheet = { isGenresBottomSheetShow = it },
                             setProducersBottomSheet = { isProducersBottomSheetShow = it }
                         )
                         HorizontalDivider()
@@ -261,9 +271,20 @@ fun AnimeSearchScreen(
                             }
                         }
                         LimitAndPaginationSection(
-                            queryState,
-                            animeSearchResults.data?.pagination,
-                            viewModel::applyFilters
+                            isVisible = animeSearchResults is Resource.Success,
+                            pagination = animeSearchResults.data?.pagination,
+                            query = LimitAndPaginationQueryState(
+                                queryState.page,
+                                queryState.limit
+                            ),
+                            onQueryChanged = {
+                                viewModel.applyFilters(
+                                    queryState.copy(
+                                        page = it.page,
+                                        limit = it.limit
+                                    )
+                                )
+                            }
                         )
                     }
                 }
