@@ -2,8 +2,8 @@ package com.example.animeapp.ui.animeDetail
 
 import android.content.Context
 import android.content.Intent
-import android.content.res.Configuration
 import android.net.Uri
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -16,23 +16,25 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
 import com.example.animeapp.BuildConfig.YOUTUBE_URL
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.NameAndUrl
-import com.example.animeapp.ui.animeDetail.components.AnimeDetailScreenErrorMessage
 import com.example.animeapp.ui.animeDetail.components.AnimeDetailTopBar
 import com.example.animeapp.ui.animeDetail.clickableList.ClickableListSection
 import com.example.animeapp.ui.animeDetail.detailBody.DetailBodySection
@@ -45,8 +47,10 @@ import com.example.animeapp.ui.common_ui.AnimeHeader
 import com.example.animeapp.ui.common_ui.AnimeHeaderSkeleton
 import com.example.animeapp.ui.common_ui.DetailCommonBody
 import com.example.animeapp.ui.common_ui.DetailCommonBodySkeleton
+import com.example.animeapp.ui.common_ui.MessageDisplay
 import com.example.animeapp.ui.common_ui.YoutubePreview
 import com.example.animeapp.ui.common_ui.YoutubePreviewSkeleton
+import com.example.animeapp.ui.main.MainState
 import com.example.animeapp.utils.Navigation.navigateToAnimeWatch
 import com.example.animeapp.utils.Resource
 
@@ -54,21 +58,33 @@ private fun convertToNameAndUrl(list: List<String>?): List<NameAndUrl>? =
     list?.map { NameAndUrl(it, "$YOUTUBE_URL/results?search_query=${Uri.encode(it)}") }
 
 @OptIn(ExperimentalMaterial3Api::class)
+@Preview
 @Composable
-fun AnimeDetailScreen(animeTitle: String, animeId: Int, navController: NavController) {
+fun AnimeDetailScreen(
+    title: String = "Anime Title",
+    id: Int = 20,
+    navController: NavHostController = rememberNavController(),
+    mainState: MainState = MainState()
+) {
     val viewModel: AnimeDetailViewModel = hiltViewModel()
 
-    val animeDetail by viewModel.animeDetail.collectAsState()
-    val animeDetailComplement by viewModel.animeDetailComplement.collectAsState()
-    val defaultEpisode by viewModel.defaultEpisode.collectAsState()
+    val animeDetail by viewModel.animeDetail.collectAsStateWithLifecycle()
+    val animeDetailComplement by viewModel.animeDetailComplement.collectAsStateWithLifecycle()
+    val defaultEpisode by viewModel.defaultEpisode.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
-    val isLandscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
     val leftScrollState = rememberLazyListState()
     val rightScrollState = rememberLazyListState()
 
-    val currentAnimeIdState = rememberSaveable { mutableIntStateOf(animeId) }
+    val currentAnimeIdState = rememberSaveable { mutableIntStateOf(id) }
     val currentAnimeId = currentAnimeIdState.intValue
+
+    LaunchedEffect(mainState.isConnected) {
+        if (mainState.isConnected && animeDetail is Resource.Error) viewModel.handleAnimeDetail(
+            currentAnimeId
+        )
+    }
+
     LaunchedEffect(currentAnimeId) { viewModel.handleAnimeDetail(currentAnimeId) }
 
     LaunchedEffect(animeDetail) {
@@ -77,32 +93,42 @@ fun AnimeDetailScreen(animeTitle: String, animeId: Int, navController: NavContro
 
     Scaffold(topBar = {
         AnimeDetailTopBar(
-            animeTitle,
+            title,
             animeDetail,
             animeDetailComplement,
             defaultEpisode,
-            navController
-        ) { viewModel.updateAnimeDetailComplement(it) }
+            navController,
+            { viewModel.handleToggleFavorite(it) }
+        )
     }) { paddingValues ->
-        when (animeDetail) {
-            is Resource.Loading -> LoadingContent(paddingValues, isLandscape)
-            is Resource.Success -> {
-                SuccessContent(
-                    paddingValues,
-                    animeDetail?.data?.data,
-                    animeDetailComplement,
-                    defaultEpisode,
-                    navController,
-                    context,
-                    isLandscape,
-                    leftScrollState,
-                    rightScrollState,
-                    viewModel
-                ) { newAnimeId -> currentAnimeIdState.intValue = newAnimeId }
-            }
+        Column(modifier = Modifier.fillMaxSize()) {
+            when (animeDetail) {
+                is Resource.Loading -> LoadingContent(paddingValues, mainState.isLandscape)
+                is Resource.Success -> {
+                    SuccessContent(
+                        paddingValues,
+                        animeDetail?.data?.data,
+                        animeDetailComplement,
+                        defaultEpisode,
+                        navController,
+                        context,
+                        mainState.isLandscape,
+                        leftScrollState,
+                        rightScrollState,
+                        viewModel
+                    ) { newAnimeId -> currentAnimeIdState.intValue = newAnimeId }
+                }
 
-            is Resource.Error -> ErrorContent(paddingValues, animeDetail?.message ?: "Error")
-            else -> ErrorContent(paddingValues, "Empty")
+                is Resource.Error -> Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) { MessageDisplay(animeDetail?.message ?: "Error") }
+
+                else -> Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) { MessageDisplay("Empty") }
+            }
         }
     }
 }
@@ -312,13 +338,4 @@ private fun CommonListContent(data: AnimeDetail, context: Context) {
             context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
         }
     }
-}
-
-@Composable
-private fun ErrorContent(paddingValues: PaddingValues, message: String) {
-    LazyColumn(
-        modifier = Modifier
-            .padding(paddingValues)
-            .fillMaxSize()
-    ) { item { AnimeDetailScreenErrorMessage(message) } }
 }

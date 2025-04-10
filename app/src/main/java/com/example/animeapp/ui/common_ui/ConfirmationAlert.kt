@@ -6,24 +6,26 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 
 @Composable
-fun QuitConfirmationAlert(
-    onDismissRequest: () -> Unit,
-    onQuitConfirmed: () -> Unit
+fun ConfirmationAlert(
+    title: String,
+    message: String,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit
 ) {
     AlertDialog(
-        onDismissRequest = onDismissRequest,
-        title = { Text("Quit AnimeApp?") },
-        text = { Text("Are you sure you want to quit the app?") },
+        onDismissRequest = onCancel,
+        title = { Text(title) },
+        text = { Text(message) },
         confirmButton = {
             Button(onClick = {
-                onDismissRequest()
-                onQuitConfirmed()
+                onCancel()
+                onConfirm()
             }) {
                 Text("Quit")
             }
         },
         dismissButton = {
-            Button(onClick = onDismissRequest) {
+            Button(onClick = onCancel) {
                 Text("Cancel")
             }
         }

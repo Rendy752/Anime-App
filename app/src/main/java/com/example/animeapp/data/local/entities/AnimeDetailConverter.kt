@@ -39,12 +39,12 @@ class AnimeDetailConverter {
     }
 
     @TypeConverter
-    fun fromStringArray(strings: Array<String>): String {
+    fun fromStringList(strings: List<String>): String {
         return json.encodeToString(strings)
     }
 
     @TypeConverter
-    fun toStringArray(string: String): Array<String> {
+    fun toStringList(string: String): List<String> {
         return json.decodeFromString(string)
     }
 

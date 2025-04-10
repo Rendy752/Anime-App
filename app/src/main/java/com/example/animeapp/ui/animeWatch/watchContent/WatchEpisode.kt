@@ -37,6 +37,7 @@ fun WatchEpisode(
         if (episodeDetailComplement is Resource.Success) {
             EpisodeNavigation(
                 episodeDetailComplement.data,
+                getCachedEpisodeDetailComplement,
                 episodes,
                 episodeSourcesQuery,
                 handleSelectedEpisodeServer,

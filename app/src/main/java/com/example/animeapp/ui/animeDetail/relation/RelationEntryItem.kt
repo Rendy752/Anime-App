@@ -30,7 +30,7 @@ fun RelationEntryItem(
         isLoading = true
         when (val result = getAnimeDetail(entryId)) {
             is Resource.Success -> {
-                animeDetail = result.data?.data
+                animeDetail = result.data.data
                 isLoading = false
             }
 

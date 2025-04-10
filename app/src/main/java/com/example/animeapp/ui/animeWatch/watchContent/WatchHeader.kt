@@ -20,6 +20,7 @@ import com.example.animeapp.utils.basicContainer
 @Composable
 fun WatchHeader(
     title: String,
+    isFavorite: Boolean,
     episode: Episode,
     episodeDetailComplement: EpisodeDetailComplement,
     episodeSourcesQuery: EpisodeSourcesQuery?,
@@ -30,7 +31,7 @@ fun WatchHeader(
             .basicContainer(
                 backgroundBrush = getEpisodeBackgroundColor(
                     episode.filler,
-                    episodeDetailComplement
+                    episodeDetailComplement.copy(isFavorite = isFavorite)
                 ),
                 innerPadding = PaddingValues(0.dp)
             )

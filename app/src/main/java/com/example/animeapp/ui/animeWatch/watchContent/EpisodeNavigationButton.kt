@@ -20,6 +20,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.Episode
+import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.EpisodeSourcesQuery
 import com.example.animeapp.ui.common_ui.SkeletonBox
 import com.example.animeapp.utils.basicContainer
@@ -28,6 +29,7 @@ import com.example.animeapp.utils.WatchUtils.getEpisodeBackgroundColor
 @Composable
 fun EpisodeNavigationButton(
     modifier: Modifier = Modifier,
+    episodeDetailComplement: EpisodeDetailComplement?,
     episode: Episode?,
     isPrevious: Boolean,
     episodeSourcesQuery: EpisodeSourcesQuery?,
@@ -41,7 +43,10 @@ fun EpisodeNavigationButton(
     Row(
         modifier = modifier
             .basicContainer(
-                backgroundBrush = getEpisodeBackgroundColor(episode?.filler == true),
+                backgroundBrush = getEpisodeBackgroundColor(
+                    episode?.filler == true,
+                    episodeDetailComplement
+                ),
                 innerPadding = PaddingValues(8.dp),
                 onItemClick = {
                     episode?.let { episode ->

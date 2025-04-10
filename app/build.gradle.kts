@@ -145,6 +145,7 @@ dependencies {
     kaptAndroidTest(libs.hilt.android.compiler)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.compose.ui.test.junit4)
+    androidTestImplementation(libs.mockito.kotlin)
 
     // Mocking Libraries
     testImplementation(libs.mockito.core)

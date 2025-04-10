@@ -13,7 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.EpisodeDetailComplement
-import com.example.animeapp.ui.common_ui.ErrorMessage
+import com.example.animeapp.ui.common_ui.MessageDisplay
 import com.example.animeapp.ui.common_ui.SearchView
 import com.example.animeapp.ui.common_ui.SearchViewSkeleton
 import com.example.animeapp.utils.FilterUtils
@@ -108,7 +108,7 @@ fun EpisodesDetailSection(
                         ) {
                             if (filteredEpisodes.isEmpty() && searchQuery.isNotEmpty()) {
                                 item {
-                                    ErrorMessage(message = "No episodes found")
+                                    MessageDisplay(message = "No episodes found")
                                 }
                             } else {
                                 items(filteredEpisodes) { episode ->
@@ -123,19 +123,19 @@ fun EpisodesDetailSection(
                             }
                         }
                     } else {
-                        ErrorMessage(message = "No episodes found")
+                        MessageDisplay(message = "No episodes found")
                     }
                 }
             }
 
             is Resource.Error -> {
-                ErrorMessage(
+                MessageDisplay(
                     message = animeDetailComplement.message ?: "Error loading episodes"
                 )
             }
 
             else -> {
-                ErrorMessage(message = "Episode data not available")
+                MessageDisplay(message = "Episode data not available")
             }
         }
     }
