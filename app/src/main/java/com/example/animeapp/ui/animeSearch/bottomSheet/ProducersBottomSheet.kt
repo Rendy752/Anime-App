@@ -4,7 +4,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -26,6 +25,7 @@ import com.example.animeapp.ui.animeSearch.components.CancelButton
 import com.example.animeapp.ui.animeSearch.components.PaginationButtons
 import com.example.animeapp.ui.animeSearch.components.ResetButton
 import com.example.animeapp.ui.animeSearch.genreProducerFilterField.FilterChipFlow
+import com.example.animeapp.ui.animeSearch.genreProducerFilterField.FilterChipFlowSkeleton
 import com.example.animeapp.ui.common_ui.DropdownInputField
 import com.example.animeapp.ui.common_ui.RetryButton
 import com.example.animeapp.ui.common_ui.SearchView
@@ -143,40 +143,35 @@ fun ProducersBottomSheet(
                 )
             }
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-            when (producers) {
-                is Resource.Loading -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        contentAlignment = Alignment.Center
-                    ) { CircularProgressIndicator() }
-                }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                when (producers) {
+                    is Resource.Loading -> {
+                        FilterChipFlowSkeleton()
+                    }
 
-                is Resource.Success -> {
-                    val producerList = producers.data.data
-                    FilterChipFlow(
-                        itemList = producerList.filter { it !in selectedProducers },
-                        onSetSelectedId = { setSelectedProducer(it as Producer) },
-                        itemName = {
-                            val title = (it as Producer).titles?.get(0)?.title ?: "Unknown"
-                            if (it.count > 0) "$title (${it.count})"
-                            else title
-                        },
-                        getItemId = { it },
-                    )
-                }
+                    is Resource.Success -> {
+                        val producerList = producers.data.data
+                        FilterChipFlow(
+                            itemList = producerList.filter { it !in selectedProducers },
+                            onSetSelectedId = { setSelectedProducer(it as Producer) },
+                            itemName = {
+                                val title = (it as Producer).titles?.get(0)?.title ?: "Unknown"
+                                if (it.count > 0) "$title (${it.count})"
+                                else title
+                            },
+                            getItemId = { it },
+                        )
+                    }
 
-                is Resource.Error -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
+                    is Resource.Error -> {
                         RetryButton(
                             message = producers.message ?: "Error loading producers",
-                            onClick = { fetchProducers() }
+                            onClick = { fetchProducers() },
+                            modifier = Modifier.padding(16.dp)
                         )
                     }
                 }

@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -28,6 +27,7 @@ import com.example.animeapp.ui.animeSearch.components.ApplyButton
 import com.example.animeapp.ui.animeSearch.components.CancelButton
 import com.example.animeapp.ui.animeSearch.components.ResetButton
 import com.example.animeapp.ui.animeSearch.genreProducerFilterField.FilterChipFlow
+import com.example.animeapp.ui.animeSearch.genreProducerFilterField.FilterChipFlowSkeleton
 import com.example.animeapp.ui.common_ui.RetryButton
 import com.example.animeapp.utils.Resource
 
@@ -103,40 +103,35 @@ fun GenresBottomSheet(
                 )
             }
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-            when (genres) {
-                is Resource.Loading -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        contentAlignment = Alignment.Center
-                    ) { CircularProgressIndicator() }
-                }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                when (genres) {
+                    is Resource.Loading -> {
+                        FilterChipFlowSkeleton()
+                    }
 
-                is Resource.Success -> {
-                    val genreList = genres.data.data
-                    FilterChipFlow(
-                        itemList = genreList.filter { it !in selectedGenres },
-                        onSetSelectedId = { setSelectedGenre(it as Genre) },
-                        itemName = {
-                            val name = (it as Genre).name
-                            if (it.count > 0) "$name (${it.count})"
-                            else name
-                        },
-                        getItemId = { it },
-                    )
-                }
+                    is Resource.Success -> {
+                        val genreList = genres.data.data
+                        FilterChipFlow(
+                            itemList = genreList.filter { it !in selectedGenres },
+                            onSetSelectedId = { setSelectedGenre(it as Genre) },
+                            itemName = {
+                                val name = (it as Genre).name
+                                if (it.count > 0) "$name (${it.count})"
+                                else name
+                            },
+                            getItemId = { it },
+                        )
+                    }
 
-                is Resource.Error -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
+                    is Resource.Error -> {
                         RetryButton(
                             message = genres.message ?: "Error loading genres",
-                            onClick = { fetchGenres() }
+                            onClick = { fetchGenres() },
+                            modifier = Modifier.padding(16.dp)
                         )
                     }
                 }

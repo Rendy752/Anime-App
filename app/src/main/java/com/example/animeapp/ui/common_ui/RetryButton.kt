@@ -17,10 +17,10 @@ import androidx.compose.ui.unit.dp
 import com.example.animeapp.utils.basicContainer
 
 @Composable
-fun RetryButton(message: String, onClick: () -> Unit) {
+fun RetryButton(message: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Row(
         horizontalArrangement = Arrangement.Center,
-        modifier = Modifier
+        modifier = modifier
             .basicContainer(isPrimary = true, onItemClick = onClick)
             .wrapContentSize()
             .fillMaxWidth(),
