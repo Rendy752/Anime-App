@@ -11,6 +11,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -34,46 +35,41 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
-
-        val themePrefs = getSharedPreferences("theme_prefs", MODE_PRIVATE)
-        val isDarkMode = themePrefs.getBoolean("is_dark_mode", false)
-
-        if (isDarkMode) {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-        } else {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-        }
-
         super.onCreate(savedInstanceState)
 
         setContent {
             navController = rememberNavController()
             val mainViewModel: MainViewModel = hiltViewModel()
 
-            val themeApplied by mainViewModel.themeApplied.collectAsStateWithLifecycle()
-            val showQuitDialog by mainViewModel.showQuitDialog.collectAsStateWithLifecycle()
-            val isConnected by mainViewModel.isConnected.collectAsStateWithLifecycle()
-            val networkStatus by mainViewModel.networkStatus.collectAsStateWithLifecycle()
+            val state by mainViewModel.state.collectAsStateWithLifecycle()
 
             val configuration = LocalConfiguration.current
             val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
-            BackHandler {
-                mainViewModel.setShowQuitDialog(true)
+            LaunchedEffect(state.isDarkMode) {
+                if (state.isDarkMode) {
+                    AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+                } else {
+                    AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+                }
             }
 
-            if (showQuitDialog) {
+            BackHandler {
+                mainViewModel.dispatch(MainAction.SetShowQuitDialog(true))
+            }
+
+            if (state.showQuitDialog) {
                 QuitConfirmationAlert(
-                    onDismissRequest = { mainViewModel.setShowQuitDialog(false) },
+                    onDismissRequest = { mainViewModel.dispatch(MainAction.SetShowQuitDialog(false)) },
                     onQuitConfirmed = { finish() }
                 )
             }
 
-            if (!themeApplied) {
-                mainViewModel.setThemeApplied(true)
+            if (!state.themeApplied) {
+                mainViewModel.dispatch(MainAction.SetThemeApplied(true))
             }
 
-            if (themeApplied) {
+            if (state.themeApplied) {
                 AppTheme(context = this) {
                     Surface(
                         modifier = Modifier.fillMaxSize(),
@@ -81,9 +77,8 @@ class MainActivity : AppCompatActivity() {
                     ) {
                         MainScreen(
                             navController = navController,
-                            isConnected = isConnected,
-                            networkStatus = networkStatus,
-                            isLandscape = isLandscape
+                            mainState = state.copy(isLandscape = isLandscape),
+                            mainAction = mainViewModel::dispatch,
                         )
                         setStatusBarColor(MaterialTheme.colorScheme.surface)
                     }

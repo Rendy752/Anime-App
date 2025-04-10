@@ -27,6 +27,7 @@ import com.example.animeapp.ui.animeHome.components.AnimeSeasonNowGridSkeleton
 import com.example.animeapp.ui.animeHome.components.LimitAndPaginationSection
 import com.example.animeapp.ui.common_ui.MessageDisplay
 import com.example.animeapp.ui.main.BottomScreen
+import com.example.animeapp.ui.main.MainState
 import com.example.animeapp.utils.Resource
 import kotlinx.coroutines.delay
 
@@ -39,11 +40,10 @@ fun AnimeHomeScreen(
         continueWatchingEpisode = episodeDetailComplementPlaceholder,
         isShowPopup = true
     ),
+    mainState: MainState = MainState(),
     action: (HomeAction) -> Unit = {},
     currentRoute: String? = BottomScreen.Home.route,
-    navController: NavHostController = rememberNavController(),
-    isConnected: Boolean = true,
-    isLandscape: Boolean = false
+    navController: NavHostController = rememberNavController()
 ) {
     val pullToRefreshState = rememberPullToRefreshState()
 
@@ -56,8 +56,8 @@ fun AnimeHomeScreen(
         action(HomeAction.SetMinimized(true))
     }
 
-    LaunchedEffect(isConnected) {
-        if (isConnected && state.animeSeasonNows is Resource.Error) action(HomeAction.GetAnimeSeasonNow)
+    LaunchedEffect(mainState.isConnected) {
+        if (mainState.isConnected && state.animeSeasonNows is Resource.Error) action(HomeAction.GetAnimeSeasonNow)
     }
 
     Scaffold { paddingValues ->
@@ -81,7 +81,7 @@ fun AnimeHomeScreen(
             Column(modifier = Modifier.fillMaxSize()) {
                 when (state.animeSeasonNows) {
                     is Resource.Loading -> {
-                        AnimeSeasonNowGridSkeleton(isLandscape)
+                        AnimeSeasonNowGridSkeleton(mainState.isLandscape)
                     }
 
                     is Resource.Success -> {
@@ -89,7 +89,7 @@ fun AnimeHomeScreen(
                             Column(modifier = Modifier.weight(1f)) {
                                 AnimeSeasonNowGrid(
                                     animeSeasonNow = animeSeasonNow.data,
-                                    isLandscape = isLandscape,
+                                    isLandscape = mainState.isLandscape,
                                     onItemClick = { anime ->
                                         navController.navigate("animeDetail/${anime.title}/${anime.mal_id}")
                                     }
@@ -99,7 +99,7 @@ fun AnimeHomeScreen(
                     }
 
                     is Resource.Error -> {
-                        if (isConnected) Box(
+                        if (mainState.isConnected) Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
                         ) { MessageDisplay(stringResource(R.string.error_loading_data)) }

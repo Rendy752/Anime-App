@@ -34,7 +34,6 @@ import com.example.animeapp.models.CommonIdentity
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.Genre
-import com.example.animeapp.models.NetworkStatus
 import com.example.animeapp.models.Producer
 import com.example.animeapp.ui.animeDetail.AnimeDetailScreen
 import com.example.animeapp.ui.animeRecommendations.AnimeRecommendationsScreen
@@ -50,9 +49,8 @@ import java.net.URLDecoder
 @Composable
 fun MainScreen(
     navController: NavHostController,
-    isConnected: Boolean,
-    networkStatus: NetworkStatus,
-    isLandscape: Boolean
+    mainState: MainState,
+    mainAction: (MainAction) -> Unit
 ) {
     val activity = LocalActivity.current
     val gson = Gson()
@@ -125,23 +123,28 @@ fun MainScreen(
                 }
             ) {
                 composable(BottomScreen.Home.route) {
-                    val viewModel: HomeViewModel = hiltViewModel()
+                    val homeViewModel: HomeViewModel = hiltViewModel()
                     AnimeHomeScreen(
-                        state = viewModel.state.collectAsStateWithLifecycle().value,
-                        action = viewModel::dispatch,
+                        state = homeViewModel.state.collectAsStateWithLifecycle().value,
+                        mainState = mainState,
+                        action = homeViewModel::dispatch,
                         currentRoute = currentRoute,
                         navController = navController,
-                        isConnected = isConnected,
-                        isLandscape = isLandscape
                     )
                 }
 
                 composable(BottomScreen.Recommendations.route) {
-                    AnimeRecommendationsScreen(navController, isConnected, isLandscape)
+                    AnimeRecommendationsScreen(
+                        navController = navController,
+                        mainState = mainState
+                    )
                 }
 
                 composable(BottomScreen.Search.route) {
-                    AnimeSearchScreen(navController, isConnected, isLandscape)
+                    AnimeSearchScreen(
+                        navController = navController,
+                        mainState = mainState
+                    )
                 }
 
                 composable(
@@ -177,20 +180,33 @@ fun MainScreen(
                         }
                     }
 
-                    AnimeSearchScreen(navController, isConnected, isLandscape, genre, producer)
+                    AnimeSearchScreen(
+                        navController = navController,
+                        mainState = mainState,
+                        genre = genre,
+                        producer = producer
+                    )
                 }
 
                 composable(BottomScreen.Settings.route) {
-                    SettingsScreen()
+                    SettingsScreen(
+                        mainState = mainState,
+                        mainAction = mainAction
+                    )
                 }
 
                 composable(
-                    "animeDetail/{animeTitle}/{animeId}",
-                    arguments = listOf(navArgument("animeId") { type = NavType.IntType })
+                    "animeDetail/{title}/{id}",
+                    arguments = listOf(navArgument("id") { type = NavType.IntType })
                 ) { backStackEntry ->
-                    val animeTitle = backStackEntry.arguments?.getString("animeTitle") ?: ""
-                    val animeId = backStackEntry.arguments?.getInt("animeId") ?: 0
-                    AnimeDetailScreen(animeTitle, animeId, navController, isConnected, isLandscape)
+                    val title = backStackEntry.arguments?.getString("title") ?: ""
+                    val id = backStackEntry.arguments?.getInt("id") ?: 0
+                    AnimeDetailScreen(
+                        title = title,
+                        id = id,
+                        navController = navController,
+                        mainState = mainState
+                    )
                 }
 
                 composable(
@@ -262,12 +278,10 @@ fun MainScreen(
                         episodesList = episodes,
                         defaultEpisode = defaultEpisode,
                         navController = navController,
-                        isConnected = isConnected,
-                        networkStatus = networkStatus,
-                        isLandscape = isLandscape,
+                        mainState = mainState,
                         isPipMode = isPipMode,
                         onEnterPipMode = {
-                            if (isConnected) activity?.enterPictureInPictureMode(
+                            if (mainState.isConnected) activity?.enterPictureInPictureMode(
                                 PictureInPictureParams.Builder().build()
                             )
                         }
@@ -278,7 +292,7 @@ fun MainScreen(
                 BottomNavigationBar(navController)
             }
             AnimatedVisibility(
-                visible = !isConnected,
+                visible = !mainState.isConnected,
                 enter = slideInVertically(
                     initialOffsetY = { it },
                     animationSpec = tween(durationMillis = 1000, easing = EaseInOut)

@@ -22,11 +22,14 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
 import com.example.animeapp.BuildConfig.YOUTUBE_URL
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.AnimeDetailComplement
@@ -47,6 +50,7 @@ import com.example.animeapp.ui.common_ui.DetailCommonBodySkeleton
 import com.example.animeapp.ui.common_ui.MessageDisplay
 import com.example.animeapp.ui.common_ui.YoutubePreview
 import com.example.animeapp.ui.common_ui.YoutubePreviewSkeleton
+import com.example.animeapp.ui.main.MainState
 import com.example.animeapp.utils.Navigation.navigateToAnimeWatch
 import com.example.animeapp.utils.Resource
 
@@ -54,13 +58,13 @@ private fun convertToNameAndUrl(list: List<String>?): List<NameAndUrl>? =
     list?.map { NameAndUrl(it, "$YOUTUBE_URL/results?search_query=${Uri.encode(it)}") }
 
 @OptIn(ExperimentalMaterial3Api::class)
+@Preview
 @Composable
 fun AnimeDetailScreen(
-    animeTitle: String,
-    animeId: Int,
-    navController: NavController,
-    isConnected: Boolean,
-    isLandscape: Boolean
+    title: String = "Anime Title",
+    id: Int = 20,
+    navController: NavHostController = rememberNavController(),
+    mainState: MainState = MainState()
 ) {
     val viewModel: AnimeDetailViewModel = hiltViewModel()
 
@@ -72,11 +76,13 @@ fun AnimeDetailScreen(
     val leftScrollState = rememberLazyListState()
     val rightScrollState = rememberLazyListState()
 
-    val currentAnimeIdState = rememberSaveable { mutableIntStateOf(animeId) }
+    val currentAnimeIdState = rememberSaveable { mutableIntStateOf(id) }
     val currentAnimeId = currentAnimeIdState.intValue
 
-    LaunchedEffect(isConnected) {
-        if (isConnected && animeDetail is Resource.Error) viewModel.handleAnimeDetail(currentAnimeId)
+    LaunchedEffect(mainState.isConnected) {
+        if (mainState.isConnected && animeDetail is Resource.Error) viewModel.handleAnimeDetail(
+            currentAnimeId
+        )
     }
 
     LaunchedEffect(currentAnimeId) { viewModel.handleAnimeDetail(currentAnimeId) }
@@ -87,7 +93,7 @@ fun AnimeDetailScreen(
 
     Scaffold(topBar = {
         AnimeDetailTopBar(
-            animeTitle,
+            title,
             animeDetail,
             animeDetailComplement,
             defaultEpisode,
@@ -96,7 +102,7 @@ fun AnimeDetailScreen(
     }) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize()) {
             when (animeDetail) {
-                is Resource.Loading -> LoadingContent(paddingValues, isLandscape)
+                is Resource.Loading -> LoadingContent(paddingValues, mainState.isLandscape)
                 is Resource.Success -> {
                     SuccessContent(
                         paddingValues,
@@ -105,7 +111,7 @@ fun AnimeDetailScreen(
                         defaultEpisode,
                         navController,
                         context,
-                        isLandscape,
+                        mainState.isLandscape,
                         leftScrollState,
                         rightScrollState,
                         viewModel

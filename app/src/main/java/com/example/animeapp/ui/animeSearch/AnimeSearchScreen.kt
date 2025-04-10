@@ -12,7 +12,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
 import com.example.animeapp.R
 import com.example.animeapp.ui.animeSearch.bottomSheet.FilterBottomSheet
 import androidx.compose.material.icons.Icons
@@ -22,8 +21,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
 import com.example.animeapp.models.Genre
 import com.example.animeapp.models.Producer
 import com.example.animeapp.ui.animeSearch.bottomSheet.GenresBottomSheet
@@ -33,15 +35,16 @@ import com.example.animeapp.ui.animeSearch.results.ResultsSection
 import com.example.animeapp.ui.animeSearch.searchField.SearchFieldSection
 import com.example.animeapp.ui.animeSearch.genreProducerFilterField.GenreProducerFilterFieldSection
 import com.example.animeapp.ui.main.BottomScreen
+import com.example.animeapp.ui.main.MainState
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.basicContainer
 
 @OptIn(ExperimentalMaterial3Api::class)
+@Preview
 @Composable
 fun AnimeSearchScreen(
-    navController: NavController,
-    isConnected: Boolean,
-    isLandscape: Boolean,
+    navController: NavHostController = rememberNavController(),
+    mainState: MainState = MainState(),
     genre: Genre? = null,
     producer: Producer? = null,
 ) {
@@ -71,8 +74,8 @@ fun AnimeSearchScreen(
         } else if (animeSearchResults.data == null) viewModel.searchAnime()
     }
 
-    LaunchedEffect(isConnected) {
-        if (!isConnected) return@LaunchedEffect
+    LaunchedEffect(mainState.isConnected) {
+        if (!mainState.isConnected) return@LaunchedEffect
 
         if (genres is Resource.Error) viewModel.fetchGenres()
         if (producers is Resource.Error) viewModel.fetchProducers()
@@ -94,7 +97,7 @@ fun AnimeSearchScreen(
 
     Scaffold(
         topBar = {
-            if (!isLandscape) {
+            if (!mainState.isLandscape) {
                 Column {
                     TopAppBar(
                         title = {
@@ -164,7 +167,7 @@ fun AnimeSearchScreen(
             },
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
-                if (isLandscape) {
+                if (mainState.isLandscape) {
                     Row {
                         Column(
                             modifier = Modifier
@@ -276,9 +279,9 @@ fun AnimeSearchScreen(
             if (isFilterBottomSheetShow) {
                 ModalBottomSheet(
                     modifier = Modifier
-                        .height(if (isLandscape) screenHeight * 0.95f else screenHeight * 0.6f)
-                        .width(if (isLandscape) screenWidth * 0.7f else screenWidth * 0.95f)
-                        .padding(bottom = if (isLandscape) 0.dp else bottomPadding)
+                        .height(if (mainState.isLandscape) screenHeight * 0.95f else screenHeight * 0.6f)
+                        .width(if (mainState.isLandscape) screenWidth * 0.7f else screenWidth * 0.95f)
+                        .padding(bottom = if (mainState.isLandscape) 0.dp else bottomPadding)
                         .align(Alignment.BottomCenter),
                     containerColor = containerColor,
                     sheetState = sheetState,
@@ -299,9 +302,9 @@ fun AnimeSearchScreen(
             if (isGenresBottomSheetShow) {
                 ModalBottomSheet(
                     modifier = Modifier
-                        .height(if (isLandscape) screenHeight * 0.95f else screenHeight * 0.6f)
-                        .width(if (isLandscape) screenWidth * 0.9f else screenWidth * 0.95f)
-                        .padding(bottom = if (isLandscape) 0.dp else bottomPadding)
+                        .height(if (mainState.isLandscape) screenHeight * 0.95f else screenHeight * 0.6f)
+                        .width(if (mainState.isLandscape) screenWidth * 0.9f else screenWidth * 0.95f)
+                        .padding(bottom = if (mainState.isLandscape) 0.dp else bottomPadding)
                         .align(Alignment.BottomCenter),
                     containerColor = containerColor,
                     sheetState = sheetState,
@@ -325,9 +328,9 @@ fun AnimeSearchScreen(
             if (isProducersBottomSheetShow) {
                 ModalBottomSheet(
                     modifier = Modifier
-                        .height(if (isLandscape) screenHeight * 0.95f else screenHeight * 0.6f)
-                        .width(if (isLandscape) screenWidth * 0.9f else screenWidth * 0.95f)
-                        .padding(bottom = if (isLandscape) 0.dp else bottomPadding)
+                        .height(if (mainState.isLandscape) screenHeight * 0.95f else screenHeight * 0.6f)
+                        .width(if (mainState.isLandscape) screenWidth * 0.9f else screenWidth * 0.95f)
+                        .padding(bottom = if (mainState.isLandscape) 0.dp else bottomPadding)
                         .align(Alignment.BottomCenter),
                     containerColor = containerColor,
                     sheetState = sheetState,

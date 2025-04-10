@@ -139,7 +139,7 @@ fun VideoPlayerSection(
                             setNextEpisodeName = { nextEpisodeName = it }
                         )
                         runBlocking {
-                            withTimeout(5000) { updateStoredWatchState(null) }
+                            withTimeout(5000) { updateStoredWatchState(exoPlayer.duration) }
                         }
                     } else {
                         isShowNextEpisode = false

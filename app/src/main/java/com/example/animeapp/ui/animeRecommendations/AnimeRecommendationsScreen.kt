@@ -12,23 +12,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
 import com.example.animeapp.R
 import com.example.animeapp.ui.animeRecommendations.recommendations.RecommendationItem
 import com.example.animeapp.ui.animeRecommendations.recommendations.RecommendationItemSkeleton
 import com.example.animeapp.ui.common_ui.MessageDisplay
 import com.example.animeapp.ui.main.BottomScreen
+import com.example.animeapp.ui.main.MainState
 import com.example.animeapp.utils.Resource
 
 @OptIn(ExperimentalMaterial3Api::class)
+@Preview
 @Composable
 fun AnimeRecommendationsScreen(
-    navController: NavController,
-    isConnected: Boolean,
-    isLandscape: Boolean
+    navController: NavHostController = rememberNavController(),
+    mainState: MainState = MainState(),
 ) {
     val viewModel: AnimeRecommendationsViewModel = hiltViewModel()
 
@@ -36,8 +39,8 @@ fun AnimeRecommendationsScreen(
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val state = rememberPullToRefreshState()
 
-    LaunchedEffect(isConnected) {
-        if (isConnected && animeRecommendations is Resource.Error) viewModel.getAnimeRecommendations()
+    LaunchedEffect(mainState.isConnected) {
+        if (mainState.isConnected && animeRecommendations is Resource.Error) viewModel.getAnimeRecommendations()
     }
 
     Scaffold(
@@ -85,7 +88,7 @@ fun AnimeRecommendationsScreen(
             ) {
                 when (animeRecommendations) {
                     is Resource.Loading -> {
-                        if (!isLandscape) repeat(3) { RecommendationItemSkeleton() }
+                        if (!mainState.isLandscape) repeat(3) { RecommendationItemSkeleton() }
                         else {
                             Row(modifier = Modifier.fillMaxSize()) {
                                 repeat(2) {
@@ -99,7 +102,7 @@ fun AnimeRecommendationsScreen(
 
                     is Resource.Success -> {
                         animeRecommendations.data?.data?.let { animeRecommendations ->
-                            if (!isLandscape) {
+                            if (!mainState.isLandscape) {
                                 LazyColumn {
                                     items(animeRecommendations) {
                                         RecommendationItem(
@@ -136,10 +139,15 @@ fun AnimeRecommendationsScreen(
                     }
 
                     is Resource.Error -> {
-                        MessageDisplay(
-                            animeRecommendations.message
-                                ?: stringResource(R.string.error_loading_data)
-                        )
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            MessageDisplay(
+                                animeRecommendations.message
+                                    ?: stringResource(R.string.error_loading_data)
+                            )
+                        }
                     }
                 }
             }

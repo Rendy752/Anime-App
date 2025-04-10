@@ -34,17 +34,22 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavController
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
-import com.example.animeapp.models.NetworkStatus
+import com.example.animeapp.models.animeDetailComplementPlaceholder
+import com.example.animeapp.models.animeDetailPlaceholder
+import com.example.animeapp.models.episodeDetailComplementPlaceholder
 import com.example.animeapp.ui.animeWatch.components.AnimeWatchContent
 import com.example.animeapp.ui.animeWatch.components.AnimeWatchTopBar
+import com.example.animeapp.ui.main.MainState
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ScreenOffReceiver
 import com.example.animeapp.utils.ScreenOnReceiver
@@ -53,19 +58,18 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
+@Preview
 @Composable
 fun AnimeWatchScreen(
-    animeDetail: AnimeDetail,
-    animeDetailComplement: AnimeDetailComplement,
-    episodeId: String,
-    episodesList: List<Episode>,
-    defaultEpisode: EpisodeDetailComplement,
-    navController: NavController,
-    isConnected: Boolean,
-    networkStatus: NetworkStatus,
-    isLandscape: Boolean,
-    isPipMode: Boolean,
-    onEnterPipMode: () -> Unit
+    animeDetail: AnimeDetail = animeDetailPlaceholder,
+    animeDetailComplement: AnimeDetailComplement = animeDetailComplementPlaceholder,
+    episodeId: String = "",
+    episodesList: List<Episode> = emptyList(),
+    defaultEpisode: EpisodeDetailComplement = episodeDetailComplementPlaceholder,
+    navController: NavHostController = rememberNavController(),
+    mainState: MainState = MainState(),
+    isPipMode: Boolean = false,
+    onEnterPipMode: () -> Unit = {},
 ) {
     val viewModel: AnimeWatchViewModel = hiltViewModel()
 
@@ -153,8 +157,8 @@ fun AnimeWatchScreen(
             if (!isPipMode && !isFullscreen) AnimeWatchTopBar(
                 animeDetail,
                 isFavorite.value,
-                isLandscape,
-                networkStatus,
+                mainState.isLandscape,
+                mainState.networkStatus,
                 navController,
                 selectedContentIndex,
                 { selectedContentIndex = it },
@@ -185,13 +189,13 @@ fun AnimeWatchScreen(
                 )
             },
         ) {
-            val videoSize = if (isLandscape) Modifier.fillMaxSize()
+            val videoSize = if (mainState.isLandscape) Modifier.fillMaxSize()
             else if (!isPipMode && !isFullscreen) Modifier.height(250.dp)
             else Modifier.fillMaxSize()
 
             Column(modifier = Modifier.fillMaxSize()) {
                 val videoPlayerModifier = Modifier
-                    .then(if (isLandscape) Modifier.weight(0.5f) else Modifier.fillMaxWidth())
+                    .then(if (mainState.isLandscape) Modifier.weight(0.5f) else Modifier.fillMaxWidth())
                     .then(videoSize)
                 AnimeWatchContent(
                     animeDetail,
@@ -212,8 +216,8 @@ fun AnimeWatchScreen(
                     episodeDetailComplement,
                     episodes,
                     episodeSourcesQuery,
-                    isConnected,
-                    isLandscape,
+                    mainState.isConnected,
+                    mainState.isLandscape,
                     isPipMode,
                     isFullscreen,
                     scrollState,
