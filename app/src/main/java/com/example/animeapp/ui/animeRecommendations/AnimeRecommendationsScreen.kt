@@ -88,12 +88,13 @@ fun AnimeRecommendationsScreen(
             ) {
                 when (animeRecommendations) {
                     is Resource.Loading -> {
-                        if (!mainState.isLandscape) repeat(3) { RecommendationItemSkeleton() }
-                        else {
+                        if (!mainState.isLandscape) {
+                            LazyColumn { items(3) { RecommendationItemSkeleton() } }
+                        } else {
                             Row(modifier = Modifier.fillMaxSize()) {
                                 repeat(2) {
-                                    Column(modifier = Modifier.weight(1f)) {
-                                        repeat(2) { RecommendationItemSkeleton() }
+                                    LazyColumn(modifier = Modifier.weight(1f)) {
+                                        items(2) { RecommendationItemSkeleton() }
                                     }
                                 }
                             }

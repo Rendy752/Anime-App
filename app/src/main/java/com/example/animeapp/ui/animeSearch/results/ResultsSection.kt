@@ -32,7 +32,9 @@ fun ResultsSection(
         verticalArrangement = Arrangement.Center
     ) {
         when (animeSearchResults) {
-            is Resource.Loading -> repeat(3) { AnimeSearchItemSkeleton() }
+            is Resource.Loading -> LazyColumn {
+                items(3) { AnimeSearchItemSkeleton() }
+            }
 
             is Resource.Success -> {
                 if (animeSearchResults.data.data.isEmpty()) {
