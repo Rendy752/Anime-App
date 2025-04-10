@@ -22,6 +22,7 @@ data class MainState(
     val showQuitDialog: Boolean = false,
     val isConnected: Boolean = true,
     val networkStatus: NetworkStatus = networkStatusPlaceholder,
+    val isShowIdleDialog: Boolean = false,
     val isLandscape: Boolean = false
 )
 
@@ -31,6 +32,7 @@ sealed class MainAction {
     data class SetShowQuitDialog(val show: Boolean) : MainAction()
     data class SetIsConnected(val connected: Boolean) : MainAction()
     data class SetNetworkStatus(val status: NetworkStatus) : MainAction()
+    data class SetIsShowIdleDialog(val show: Boolean) : MainAction()
 }
 
 @HiltViewModel
@@ -39,9 +41,7 @@ class MainViewModel @Inject constructor(application: Application) : AndroidViewM
     private val themePrefs = application.getSharedPreferences("theme_prefs", Context.MODE_PRIVATE)
 
     private val _state = MutableStateFlow(
-        MainState(
-            isDarkMode = themePrefs.getBoolean("is_dark_mode", false)
-        )
+        MainState(isDarkMode = themePrefs.getBoolean("is_dark_mode", false))
     )
     val state: StateFlow<MainState> = _state.asStateFlow()
 
@@ -58,6 +58,7 @@ class MainViewModel @Inject constructor(application: Application) : AndroidViewM
             is MainAction.SetShowQuitDialog -> setShowQuitDialog(action.show)
             is MainAction.SetIsConnected -> setIsConnected(action.connected)
             is MainAction.SetNetworkStatus -> setNetworkStatus(action.status)
+            is MainAction.SetIsShowIdleDialog -> setIsShowIdleDialog(action.show)
         }
     }
 
@@ -80,6 +81,10 @@ class MainViewModel @Inject constructor(application: Application) : AndroidViewM
 
     private fun setNetworkStatus(status: NetworkStatus) {
         _state.update { it.copy(networkStatus = status) }
+    }
+
+    private fun setIsShowIdleDialog(show: Boolean) {
+        _state.update { it.copy(isShowIdleDialog = show) }
     }
 
     private fun startNetworkMonitoring() {

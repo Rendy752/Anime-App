@@ -24,9 +24,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import com.example.animeapp.ui.common_ui.QuitConfirmationAlert
+import com.example.animeapp.ui.common_ui.ConfirmationAlert
 import com.example.animeapp.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.delay
+import java.util.concurrent.TimeUnit
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -46,6 +48,16 @@ class MainActivity : AppCompatActivity() {
             val configuration = LocalConfiguration.current
             val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
+            LaunchedEffect(Unit) {
+                while (true) {
+                    delay(TimeUnit.MINUTES.toMillis(1))
+                    val currentRoute = navController.currentDestination?.route
+                    if (currentRoute?.startsWith("animeWatch/") == false) {
+                        mainViewModel.dispatch(MainAction.SetIsShowIdleDialog(true))
+                    }
+                }
+            }
+
             LaunchedEffect(state.isDarkMode) {
                 if (state.isDarkMode) {
                     AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
@@ -59,9 +71,20 @@ class MainActivity : AppCompatActivity() {
             }
 
             if (state.showQuitDialog) {
-                QuitConfirmationAlert(
-                    onDismissRequest = { mainViewModel.dispatch(MainAction.SetShowQuitDialog(false)) },
-                    onQuitConfirmed = { finish() }
+                ConfirmationAlert(
+                    title = "Quit AnimeApp?",
+                    message = "Are you sure you want to quit the app?",
+                    onConfirm = { finish() },
+                    onCancel = { mainViewModel.dispatch(MainAction.SetShowQuitDialog(false)) }
+                )
+            }
+
+            if (state.isShowIdleDialog) {
+                ConfirmationAlert(
+                    title = "Are you still there?",
+                    message = "It seems you haven't interacted with the app for a while. Are you want to quit the app?",
+                    onConfirm = { finish() },
+                    onCancel = { mainViewModel.dispatch(MainAction.SetIsShowIdleDialog(false)) }
                 )
             }
 
