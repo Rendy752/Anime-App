@@ -97,8 +97,9 @@ fun AnimeDetailScreen(
             animeDetail,
             animeDetailComplement,
             defaultEpisode,
-            navController
-        ) { viewModel.updateAnimeDetailComplement(it) }
+            navController,
+            { viewModel.handleToggleFavorite(it) }
+        )
     }) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize()) {
             when (animeDetail) {

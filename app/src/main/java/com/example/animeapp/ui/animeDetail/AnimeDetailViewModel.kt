@@ -248,11 +248,14 @@ class AnimeDetailViewModel @Inject constructor(
     private fun checkEpisodeSourceMalId(response: Resource<EpisodeSourcesResponse>): Boolean =
         _animeDetail.value?.data?.data?.mal_id == response.data?.malID
 
-    fun updateAnimeDetailComplement(updatedAnimeDetailComplement: AnimeDetailComplement) {
+    fun handleToggleFavorite(favorite: Boolean) {
         viewModelScope.launch {
-            animeEpisodeDetailRepository.updateAnimeDetailComplement(
-                updatedAnimeDetailComplement
-            )
+            if (_animeDetailComplement.value !is Resource.Success) return@launch
+            _animeDetailComplement.value?.data?.let {
+                val updatedComplement = it.copy(isFavorite = favorite)
+                _animeDetailComplement.value = Resource.Success(updatedComplement)
+                animeEpisodeDetailRepository.updateAnimeDetailComplement(updatedComplement)
+            }
         }
     }
 }

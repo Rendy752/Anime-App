@@ -44,7 +44,7 @@ fun AnimeDetailTopBar(
     animeDetailComplement: Resource<AnimeDetailComplement?>?,
     defaultEpisode: EpisodeDetailComplement?,
     navController: NavController,
-    onFavoriteToggle: (AnimeDetailComplement) -> Unit
+    onFavoriteToggle: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -83,7 +83,7 @@ fun AnimeDetailTopBar(
                             debounceJob.value = scope.launch {
                                 delay(300)
                                 animeDetailComplement.data?.let {
-                                    onFavoriteToggle(it.copy(isFavorite = isFavorite.value))
+                                    onFavoriteToggle(isFavorite.value)
                                 }
                             }
                         }) {
