@@ -20,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
@@ -38,7 +39,7 @@ fun ContinueWatchingPopup(
     if (episodeDetailComplement != null) {
         Popup(
             alignment = Alignment.BottomEnd,
-            offset = IntOffset(0, (-160).dp.value.toInt()),
+            offset = IntOffset(0, (-200).dp.value.toInt()),
         ) {
             Row(
                 modifier = Modifier
@@ -70,21 +71,23 @@ fun ContinueWatchingPopup(
                     )
                     Column(
                         modifier = Modifier
-                            .padding(start = 8.dp)
+                            .padding(horizontal = 8.dp)
                             .height(75.dp),
                         verticalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Column {
+                        Column(modifier = Modifier.width(250.dp)) {
                             Text(
                                 text = episodeDetailComplement.animeTitle,
-                                style = MaterialTheme.typography.bodyMedium
+                                style = MaterialTheme.typography.bodyMedium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
                                 Text(
-                                    text = "Eps. ${episodeDetailComplement.number}",
+                                    text = "Eps. ${episodeDetailComplement.number},",
                                     style = MaterialTheme.typography.bodySmall
                                 )
                                 Text(
@@ -120,7 +123,6 @@ fun ContinueWatchingPopup(
                         contentDescription = "Minimize",
                         modifier = Modifier
                             .fillMaxHeight()
-                            .padding(start = 8.dp)
                             .clickable { onSetMinimize(true) }
                     )
                 } else {
