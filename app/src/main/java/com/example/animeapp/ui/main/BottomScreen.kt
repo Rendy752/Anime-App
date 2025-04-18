@@ -20,4 +20,8 @@ enum class BottomScreen(
         { Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Recommendations") }),
     Search("search", "Search", { Icon(Icons.Filled.Search, contentDescription = "Search") }),
     Settings("settings", "Settings", { Icon(Icons.Filled.Settings, contentDescription = "Settings") });
+
+    companion object {
+        val orderedList = listOf(Home, Recommendations, Search, Settings)
+    }
 }
