@@ -1,21 +1,26 @@
 package com.example.animeapp.ui.animeDetail.episodeDetail
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.ui.common_ui.MessageDisplay
+import com.example.animeapp.ui.common_ui.RetryButton
 import com.example.animeapp.ui.common_ui.SearchView
 import com.example.animeapp.ui.common_ui.SearchViewSkeleton
+import com.example.animeapp.ui.common_ui.SkeletonBox
 import com.example.animeapp.utils.FilterUtils
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.basicContainer
@@ -24,6 +29,7 @@ import com.example.animeapp.utils.basicContainer
 fun EpisodesDetailSection(
     animeDetailComplement: Resource<AnimeDetailComplement?>?,
     getCachedEpisodeDetailComplement: suspend (String) -> EpisodeDetailComplement?,
+    handleEpisodes: () -> Unit,
     onEpisodeClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -66,11 +72,26 @@ fun EpisodesDetailSection(
         when (animeDetailComplement) {
             is Resource.Loading -> {
                 Column(modifier = Modifier.fillMaxWidth()) {
-                    SearchViewSkeleton(
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(bottom = 8.dp)
-                    )
+                            .padding(bottom = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        SearchViewSkeleton(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(end = 4.dp)
+                        )
+                        SkeletonBox(
+                            modifier = modifier
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(MaterialTheme.colorScheme.primaryContainer),
+                            height = 56.dp,
+                            width = 56.dp
+                        )
+                    }
                     repeat(3) {
                         EpisodeDetailItemSkeleton()
                     }
@@ -91,16 +112,27 @@ fun EpisodesDetailSection(
                                 )
                             }
                         }
-                        if (data.episodes.size >= 4) SearchView(
-                            query = searchQuery,
-                            onQueryChange = {
-                                searchQuery = it
-                            },
-                            placeholder = "Search",
+                        Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(bottom = 8.dp)
-                        )
+                                .padding(bottom = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (data.episodes.size >= 4) {
+                                SearchView(
+                                    query = searchQuery,
+                                    onQueryChange = { searchQuery = it },
+                                    placeholder = "Search",
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(end = 4.dp)
+                                )
+                            }
+                            RetryButton(
+                                onClick = { handleEpisodes() }
+                            )
+                        }
                         LazyColumn(
                             modifier = Modifier
                                 .fillMaxWidth()

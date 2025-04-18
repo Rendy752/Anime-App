@@ -98,7 +98,7 @@ fun AnimeDetailScreen(
             animeDetailComplement,
             defaultEpisode,
             navController,
-            { viewModel.handleToggleFavorite(it) }
+            onFavoriteToggle = { viewModel.handleToggleFavorite(it) }
         )
     }) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize()) {
@@ -283,6 +283,7 @@ private fun RightColumnContent(
         EpisodesDetailSection(
             animeDetailComplement,
             { viewModel.getCachedEpisodeDetailComplement(it) },
+            viewModel::handleEpisodes,
             { episodeId ->
                 defaultEpisode?.let { defaultEpisode ->
                     if (animeDetailComplement is Resource.Success) {
@@ -297,7 +298,8 @@ private fun RightColumnContent(
                         }
                     }
                 }
-            })
+            }
+        )
         CommonListContent(data, context)
     }
 }
