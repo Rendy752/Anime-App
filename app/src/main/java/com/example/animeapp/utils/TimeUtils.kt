@@ -65,9 +65,9 @@ object TimeUtils {
 
             println("isUpdatedAfterBroadcast: $isUpdatedAfterBroadcast")
             println("isCurrentTimeWithinBroadcastWindow: $isCurrentTimeWithinBroadcastWindow")
+            println("isEpisodeAreUpToDate: ${isUpdatedAfterBroadcast || !isCurrentTimeWithinBroadcastWindow}")
 
-            return if (isUpdatedAfterBroadcast) true
-            else !isCurrentTimeWithinBroadcastWindow
+            return isUpdatedAfterBroadcast || !isCurrentTimeWithinBroadcastWindow
 
         } catch (e: Exception) {
             println("Error parsing broadcast time: ${e.message}")
