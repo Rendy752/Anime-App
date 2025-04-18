@@ -120,9 +120,8 @@ fun AnimeWatchScreen(
         }
         if (episodeDetailComplement is Resource.Error) {
             snackbarHostState.showSnackbar(
-                "Error on the server, returning to the first episode. Try again later after 1 hour."
+                "Failed to fetch episode sources, returning to the previous episode. Check your internet connection or try again later after 1 hour."
             )
-            viewModel.restoreDefaultValues()
             viewModel.handleSelectedEpisodeServer(episodeSourcesQuery)
         }
     }

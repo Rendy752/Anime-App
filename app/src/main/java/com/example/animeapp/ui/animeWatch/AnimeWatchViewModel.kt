@@ -54,7 +54,7 @@ class AnimeWatchViewModel @Inject constructor(
         _animeDetailComplement.value = animeDetailComplement
         _episodes.value = episodes
         _defaultEpisodeDetailComplement.value = defaultEpisode
-        restoreDefaultValues()
+        restoreDefaultValues(defaultEpisode)
     }
 
     fun handleSelectedEpisodeServer(
@@ -62,6 +62,7 @@ class AnimeWatchViewModel @Inject constructor(
         isFirstInit: Boolean = false,
         isRefreshed: Boolean = false
     ) = viewModelScope.launch {
+        val tempEpisodeDetailComplement: EpisodeDetailComplement? = (_episodeDetailComplement.value as? Resource.Success)?.data
         try {
             _isRefreshing.value = true
             _episodeDetailComplement.value = Resource.Loading()
@@ -88,7 +89,7 @@ class AnimeWatchViewModel @Inject constructor(
                         )
 
                         if (episodeSourcesResource !is Resource.Success) {
-                            restoreDefaultValues()
+                            restoreDefaultValues(tempEpisodeDetailComplement)
                             _episodeDetailComplement.value =
                                 Resource.Error(
                                     episodeSourcesResource.message
@@ -120,7 +121,7 @@ class AnimeWatchViewModel @Inject constructor(
             val episodeServersResource =
                 animeEpisodeDetailRepository.getEpisodeServers(episodeSourcesQuery.id)
             if (episodeServersResource !is Resource.Success) {
-                restoreDefaultValues()
+                restoreDefaultValues(tempEpisodeDetailComplement)
                 _episodeDetailComplement.value =
                     Resource.Error(
                         episodeServersResource.message ?: "Failed to fetch episode servers"
@@ -137,7 +138,7 @@ class AnimeWatchViewModel @Inject constructor(
             )
 
             if (episodeSourcesResource !is Resource.Success) {
-                restoreDefaultValues()
+                restoreDefaultValues(tempEpisodeDetailComplement)
                 _episodeDetailComplement.value =
                     Resource.Error(
                         episodeSourcesResource.message ?: "Failed to fetch episode sources"
@@ -188,7 +189,7 @@ class AnimeWatchViewModel @Inject constructor(
                 }
             }
         } catch (e: Exception) {
-            restoreDefaultValues()
+            restoreDefaultValues(tempEpisodeDetailComplement)
             _episodeDetailComplement.value =
                 Resource.Error(e.message ?: "An unexpected error occurred")
         } finally {
@@ -219,10 +220,15 @@ class AnimeWatchViewModel @Inject constructor(
             )
         }
 
-    fun restoreDefaultValues() {
-        _defaultEpisodeDetailComplement.value?.let { default ->
-            _episodeDetailComplement.value = Resource.Success(default)
-            _episodeSourcesQuery.value = default.sourcesQuery
+    private fun restoreDefaultValues(episodeDetailComplement: EpisodeDetailComplement?) {
+        episodeDetailComplement?.let { complement ->
+            _episodeDetailComplement.value = Resource.Success(complement)
+            _episodeSourcesQuery.value = complement.sourcesQuery
+        } ?: run {
+            _defaultEpisodeDetailComplement.value?.let { default ->
+                _episodeDetailComplement.value = Resource.Success(default)
+                _episodeSourcesQuery.value = default.sourcesQuery
+            }
         }
     }
 }
