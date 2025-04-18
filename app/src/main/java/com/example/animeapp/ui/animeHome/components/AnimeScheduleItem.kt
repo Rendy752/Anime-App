@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -19,6 +20,7 @@ import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.ui.common_ui.AsyncImageWithPlaceholder
 import com.example.animeapp.ui.common_ui.ImageRoundedCorner
 import com.example.animeapp.ui.common_ui.SkeletonBox
+import com.example.animeapp.utils.TimeUtils
 import com.example.animeapp.utils.basicContainer
 
 @Composable
@@ -32,7 +34,7 @@ fun AnimeScheduleItem(
                 innerPadding = PaddingValues(0.dp),
                 onItemClick = { onItemClick(animeDetail) })
     ) {
-        Box {
+        Box(modifier = Modifier.fillMaxWidth()) {
             AsyncImageWithPlaceholder(
                 model = animeDetail.images.jpg.image_url,
                 contentDescription = animeDetail.title,
@@ -53,6 +55,25 @@ fun AnimeScheduleItem(
                         .align(Alignment.TopStart),
                     text = it,
                     style = MaterialTheme.typography.titleSmall,
+                )
+            }
+            val remainingTimeState: State<String> =
+                TimeUtils.rememberBroadcastTimeRemaining(animeDetail.broadcast)
+            if (remainingTimeState.value.isNotEmpty()) {
+                Text(
+                    text = remainingTimeState.value,
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .basicContainer(
+                            isError = remainingTimeState.value != "Broadcasting...",
+                            isPrimary = remainingTimeState.value == "Broadcasting...",
+                            innerPadding = PaddingValues(
+                                horizontal = 8.dp,
+                                vertical = 4.dp
+                            )
+                        )
                 )
             }
         }
