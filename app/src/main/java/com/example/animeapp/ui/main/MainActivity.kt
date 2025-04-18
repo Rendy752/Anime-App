@@ -95,7 +95,10 @@ class MainActivity : AppCompatActivity() {
                     title = "Are you still there?",
                     message = "It seems you haven't interacted with the app for a while. Are you want to quit the app?",
                     onConfirm = { finish() },
-                    onCancel = { mainViewModel.dispatch(MainAction.SetIsShowIdleDialog(false)) }
+                    onCancel = {
+                        mainViewModel.dispatch(MainAction.SetIsShowIdleDialog(false))
+                        resetIdleTimer()
+                    }
                 )
             }
 
