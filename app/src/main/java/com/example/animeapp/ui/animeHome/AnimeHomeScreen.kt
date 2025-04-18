@@ -19,11 +19,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.animeapp.R
-import com.example.animeapp.models.animeSeasonNowResponsePlaceholder
+import com.example.animeapp.models.animeSchedulesResponsePlaceholder
 import com.example.animeapp.models.episodeDetailComplementPlaceholder
 import com.example.animeapp.ui.animeHome.components.ContinueWatchingPopup
-import com.example.animeapp.ui.animeHome.components.AnimeSeasonNowGrid
-import com.example.animeapp.ui.animeHome.components.AnimeSeasonNowGridSkeleton
+import com.example.animeapp.ui.animeHome.components.AnimeSchedulesGrid
+import com.example.animeapp.ui.animeHome.components.AnimeSchedulesGridSkeleton
 import com.example.animeapp.ui.common_ui.LimitAndPaginationQueryState
 import com.example.animeapp.ui.common_ui.LimitAndPaginationSection
 import com.example.animeapp.ui.common_ui.MessageDisplay
@@ -37,7 +37,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun AnimeHomeScreen(
     state: HomeState = HomeState(
-        animeSeasonNows = Resource.Success(animeSeasonNowResponsePlaceholder),
+        animeSchedules = Resource.Success(animeSchedulesResponsePlaceholder),
         continueWatchingEpisode = episodeDetailComplementPlaceholder,
         isShowPopup = true
     ),
@@ -58,13 +58,13 @@ fun AnimeHomeScreen(
     }
 
     LaunchedEffect(mainState.isConnected) {
-        if (mainState.isConnected && state.animeSeasonNows is Resource.Error) action(HomeAction.GetAnimeSeasonNow)
+        if (mainState.isConnected && state.animeSchedules is Resource.Error) action(HomeAction.GetAnimeSchedules)
     }
 
     Scaffold { paddingValues ->
         PullToRefreshBox(
             isRefreshing = state.isRefreshing,
-            onRefresh = { action(HomeAction.GetAnimeSeasonNow) },
+            onRefresh = { action(HomeAction.GetAnimeSchedules) },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
@@ -80,16 +80,16 @@ fun AnimeHomeScreen(
             },
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-                when (state.animeSeasonNows) {
+                when (state.animeSchedules) {
                     is Resource.Loading -> {
-                        AnimeSeasonNowGridSkeleton(mainState.isLandscape)
+                        AnimeSchedulesGridSkeleton(mainState.isLandscape)
                     }
 
                     is Resource.Success -> {
-                        state.animeSeasonNows.data.let { animeSeasonNow ->
+                        state.animeSchedules.data.let { animeSchedules ->
                             Column(modifier = Modifier.weight(1f)) {
-                                AnimeSeasonNowGrid(
-                                    animeSeasonNow = animeSeasonNow.data,
+                                AnimeSchedulesGrid(
+                                    animeSchedules = animeSchedules.data,
                                     isLandscape = mainState.isLandscape,
                                     onItemClick = { anime ->
                                         navController.navigate("animeDetail/${anime.title}/${anime.mal_id}")
@@ -111,8 +111,8 @@ fun AnimeHomeScreen(
                     }
                 }
                 LimitAndPaginationSection(
-                    isVisible = state.animeSeasonNows is Resource.Success,
-                    pagination = state.animeSeasonNows.data?.pagination,
+                    isVisible = state.animeSchedules is Resource.Success,
+                    pagination = state.animeSchedules.data?.pagination,
                     query = LimitAndPaginationQueryState(
                         state.queryState.page,
                         state.queryState.limit

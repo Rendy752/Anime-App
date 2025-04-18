@@ -22,7 +22,7 @@ import com.example.animeapp.ui.common_ui.SkeletonBox
 import com.example.animeapp.utils.basicContainer
 
 @Composable
-fun AnimeSeasoNowItem(
+fun AnimeScheduleItem(
     animeDetail: AnimeDetail,
     onItemClick: (AnimeDetail) -> Unit
 ) {
@@ -71,7 +71,7 @@ fun AnimeSeasoNowItem(
 
 @Preview
 @Composable
-fun AnimeSeasoNowItemSkeleton() {
+fun AnimeScheduleItemSkeleton() {
     Column(
         modifier = Modifier
             .basicContainer(

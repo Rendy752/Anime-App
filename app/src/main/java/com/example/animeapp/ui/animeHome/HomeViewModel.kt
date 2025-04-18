@@ -2,8 +2,8 @@ package com.example.animeapp.ui.animeHome
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.animeapp.models.AnimeSeasonNowResponse
-import com.example.animeapp.models.AnimeSeasonNowSearchQueryState
+import com.example.animeapp.models.AnimeSchedulesResponse
+import com.example.animeapp.models.AnimeSchedulesSearchQueryState
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.repository.AnimeEpisodeDetailRepository
 import com.example.animeapp.repository.AnimeHomeRepository
@@ -18,8 +18,8 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class HomeState(
-    val animeSeasonNows: Resource<AnimeSeasonNowResponse> = Resource.Loading(),
-    val queryState: AnimeSeasonNowSearchQueryState = AnimeSeasonNowSearchQueryState(),
+    val animeSchedules: Resource<AnimeSchedulesResponse> = Resource.Loading(),
+    val queryState: AnimeSchedulesSearchQueryState = AnimeSchedulesSearchQueryState(),
     val continueWatchingEpisode: EpisodeDetailComplement? = null,
     val isRefreshing: Boolean = false,
     val isShowPopup: Boolean = false,
@@ -27,8 +27,8 @@ data class HomeState(
 )
 
 sealed class HomeAction {
-    data object GetAnimeSeasonNow : HomeAction()
-    data class ApplyFilters(val updatedQueryState: AnimeSeasonNowSearchQueryState) : HomeAction()
+    data object GetAnimeSchedules : HomeAction()
+    data class ApplyFilters(val updatedQueryState: AnimeSchedulesSearchQueryState) : HomeAction()
     data object FetchContinueWatchingEpisode : HomeAction()
     data class SetMinimized(val minimize: Boolean) : HomeAction()
     data class SetShowPopup(val show: Boolean) : HomeAction()
@@ -44,12 +44,12 @@ class HomeViewModel @Inject constructor(
     val state: StateFlow<HomeState> = _state.asStateFlow()
 
     init {
-        dispatch(HomeAction.GetAnimeSeasonNow)
+        dispatch(HomeAction.GetAnimeSchedules)
     }
 
     fun dispatch(action: HomeAction) {
         when (action) {
-            HomeAction.GetAnimeSeasonNow -> getAnimeSeasonNow()
+            HomeAction.GetAnimeSchedules -> getAnimeSchedules()
             is HomeAction.ApplyFilters -> applyFilters(action.updatedQueryState)
             HomeAction.FetchContinueWatchingEpisode -> fetchContinueWatchingEpisode()
             is HomeAction.SetMinimized -> setMinimized(action.minimize)
@@ -57,15 +57,15 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    private fun getAnimeSeasonNow() = viewModelScope.launch {
-        _state.update { it.copy(isRefreshing = true, animeSeasonNows = Resource.Loading()) }
-        val result = animeHomeRepository.getAnimeSeasonNow(_state.value.queryState)
-        _state.update { it.copy(isRefreshing = false, animeSeasonNows = result) }
+    private fun getAnimeSchedules() = viewModelScope.launch {
+        _state.update { it.copy(isRefreshing = true, animeSchedules = Resource.Loading()) }
+        val result = animeHomeRepository.getAnimeSchedules(_state.value.queryState)
+        _state.update { it.copy(isRefreshing = false, animeSchedules = result) }
     }
 
-    private fun applyFilters(updatedQueryState: AnimeSeasonNowSearchQueryState) {
+    private fun applyFilters(updatedQueryState: AnimeSchedulesSearchQueryState) {
         _state.update { it.copy(queryState = updatedQueryState) }
-        dispatch(HomeAction.GetAnimeSeasonNow)
+        dispatch(HomeAction.GetAnimeSchedules)
     }
 
     private fun fetchContinueWatchingEpisode() {

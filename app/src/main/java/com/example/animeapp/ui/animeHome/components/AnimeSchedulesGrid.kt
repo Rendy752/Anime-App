@@ -11,8 +11,8 @@ import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.AnimeDetail
 
 @Composable
-fun AnimeSeasonNowGrid(
-    animeSeasonNow: List<AnimeDetail>,
+fun AnimeSchedulesGrid(
+    animeSchedules: List<AnimeDetail>,
     isLandscape: Boolean,
     onItemClick: (AnimeDetail) -> Unit
 ) {
@@ -24,15 +24,15 @@ fun AnimeSeasonNowGrid(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(animeSeasonNow) { animeDetail ->
-            AnimeSeasoNowItem(animeDetail = animeDetail, onItemClick = onItemClick)
+        items(animeSchedules) { animeDetail ->
+            AnimeScheduleItem(animeDetail = animeDetail, onItemClick = onItemClick)
         }
     }
 }
 
 @Preview
 @Composable
-fun AnimeSeasonNowGridSkeleton(isLandscape: Boolean = false) {
+fun AnimeSchedulesGridSkeleton(isLandscape: Boolean = false) {
     val itemCount = if (isLandscape) 8 else 6
 
     LazyVerticalGrid(
@@ -42,7 +42,7 @@ fun AnimeSeasonNowGridSkeleton(isLandscape: Boolean = false) {
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(itemCount) {
-            AnimeSeasoNowItemSkeleton()
+            AnimeScheduleItemSkeleton()
         }
     }
 }

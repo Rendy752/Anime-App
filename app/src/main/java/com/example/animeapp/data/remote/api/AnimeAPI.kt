@@ -3,8 +3,8 @@ package com.example.animeapp.data.remote.api
 import com.example.animeapp.models.AnimeAniwatchSearchResponse
 import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.models.AnimeRecommendationResponse
+import com.example.animeapp.models.AnimeSchedulesResponse
 import com.example.animeapp.models.AnimeSearchResponse
-import com.example.animeapp.models.AnimeSeasonNowResponse
 import com.example.animeapp.models.EpisodeServersResponse
 import com.example.animeapp.models.EpisodeSourcesResponse
 import com.example.animeapp.models.EpisodesResponse
@@ -16,15 +16,15 @@ import retrofit2.http.Path
 import retrofit2.http.Query
 
 interface AnimeAPI {
-    @GET("/v4/seasons/now")
-    suspend fun getAnimeSeasonNow(
+    @GET("/v4/schedules")
+    suspend fun getAnimeSchedules(
         @Query("filter") filter: String? = null,
         @Query("sfw") sfw: Boolean? = null,
+        @Query("kids") kids: Boolean? = null,
         @Query("unapproved") unapproved: Boolean? = null,
-        @Query("continuing") continuing: Boolean? = null,
         @Query("page") page: Int? = null,
         @Query("limit") limit: Int? = null
-    ): Response<AnimeSeasonNowResponse>
+    ): Response<AnimeSchedulesResponse>
 
     @GET("/v4/recommendations/anime")
     suspend fun getAnimeRecommendations(

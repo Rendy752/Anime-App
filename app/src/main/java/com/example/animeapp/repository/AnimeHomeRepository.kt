@@ -1,8 +1,8 @@
 package com.example.animeapp.repository
 
 import com.example.animeapp.data.remote.api.AnimeAPI
-import com.example.animeapp.models.AnimeSeasonNowResponse
-import com.example.animeapp.models.AnimeSeasonNowSearchQueryState
+import com.example.animeapp.models.AnimeSchedulesResponse
+import com.example.animeapp.models.AnimeSchedulesSearchQueryState
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ResponseHandler
 import com.example.animeapp.utils.ResponseHandler.safeApiCall
@@ -10,16 +10,16 @@ import com.example.animeapp.utils.ResponseHandler.safeApiCall
 class AnimeHomeRepository(
     private val jikanAPI: AnimeAPI
 ) {
-    suspend fun getAnimeSeasonNow(
-        queryState: AnimeSeasonNowSearchQueryState
-    ): Resource<AnimeSeasonNowResponse> {
+    suspend fun getAnimeSchedules(
+        queryState: AnimeSchedulesSearchQueryState
+    ): Resource<AnimeSchedulesResponse> {
         queryState.apply {
             val response = safeApiCall {
-                jikanAPI.getAnimeSeasonNow(
+                jikanAPI.getAnimeSchedules(
                     filter = filter,
                     sfw = sfw,
+                    kids = kids,
                     unapproved = unapproved,
-                    continuing = continuing,
                     page = page,
                     limit = limit
                 )
