@@ -29,6 +29,7 @@ import com.example.animeapp.ui.common_ui.LimitAndPaginationSection
 import com.example.animeapp.ui.common_ui.MessageDisplay
 import com.example.animeapp.ui.main.BottomScreen
 import com.example.animeapp.ui.main.MainState
+import com.example.animeapp.utils.Navigation.navigateToAnimeDetail
 import com.example.animeapp.utils.Resource
 import kotlinx.coroutines.delay
 
@@ -92,7 +93,9 @@ fun AnimeHomeScreen(
                                     animeSchedules = animeSchedules.data,
                                     isLandscape = mainState.isLandscape,
                                     onItemClick = { anime ->
-                                        navController.navigate("animeDetail/${anime.title}/${anime.mal_id}")
+                                        navController.navigateToAnimeDetail(
+                                            anime.title, anime.mal_id
+                                        )
                                     }
                                 )
                             }

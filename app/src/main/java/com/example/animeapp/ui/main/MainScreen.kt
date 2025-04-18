@@ -43,6 +43,7 @@ import com.example.animeapp.ui.animeHome.AnimeHomeScreen
 import com.example.animeapp.ui.animeHome.HomeViewModel
 import com.example.animeapp.ui.common_ui.MessageDisplay
 import com.example.animeapp.ui.settings.SettingsScreen
+import com.example.animeapp.utils.Navigation.navigateToAnimeDetail
 import com.google.gson.Gson
 import java.net.URLDecoder
 
@@ -73,7 +74,9 @@ fun MainScreen(
                     if (segments.size >= 2 && segments[0] == "detail") {
                         val animeId = segments[1].toIntOrNull()
                         if (animeId != null) {
-                            navController.navigate("animeDetail/Title/$animeId")
+                            navController.navigateToAnimeDetail(
+                                "Title", animeId
+                            )
                         }
                     } else {
                         Toast.makeText(activity, "Invalid URL", Toast.LENGTH_SHORT).show()

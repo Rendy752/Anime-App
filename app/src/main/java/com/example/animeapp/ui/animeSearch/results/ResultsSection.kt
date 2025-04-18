@@ -16,6 +16,7 @@ import com.example.animeapp.models.GenresResponse
 import com.example.animeapp.ui.common_ui.AnimeSearchItem
 import com.example.animeapp.ui.common_ui.AnimeSearchItemSkeleton
 import com.example.animeapp.ui.common_ui.MessageDisplay
+import com.example.animeapp.utils.Navigation.navigateToAnimeDetail
 import com.example.animeapp.utils.Resource
 
 @Composable
@@ -53,9 +54,13 @@ fun ResultsSection(
                                     genre?.let {
                                         onGenreClick(genre)
                                     }
-                                }) { animeId ->
-                                navController.navigate("animeDetail/${anime.title}/$animeId")
-                            }
+                                },
+                                onItemClick = {
+                                    navController.navigateToAnimeDetail(
+                                        anime.title, anime.mal_id
+                                    )
+                                }
+                            )
                         }
                     }
                 }

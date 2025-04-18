@@ -45,10 +45,10 @@ fun AnimeSearchItem(
     selectedGenres: List<Genre> = emptyList(),
     errorTitle: String? = null,
     onGenreClick: ((CommonIdentity) -> Unit)? = null,
-    onItemClick: ((Int) -> Unit)? = null,
+    onItemClick: (() -> Unit)? = null,
 ) {
     val modifier = if (onItemClick != null && anime != null) {
-        Modifier.basicContainer(onItemClick = { onItemClick.invoke(anime.mal_id) })
+        Modifier.basicContainer(onItemClick = { onItemClick.invoke() })
     } else Modifier.basicContainer()
     Column(
         modifier = modifier

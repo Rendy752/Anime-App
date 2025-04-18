@@ -24,6 +24,7 @@ import com.example.animeapp.ui.animeRecommendations.recommendations.Recommendati
 import com.example.animeapp.ui.common_ui.MessageDisplay
 import com.example.animeapp.ui.main.BottomScreen
 import com.example.animeapp.ui.main.MainState
+import com.example.animeapp.utils.Navigation.navigateToAnimeDetail
 import com.example.animeapp.utils.Resource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -108,7 +109,11 @@ fun AnimeRecommendationsScreen(
                                     items(animeRecommendations) {
                                         RecommendationItem(
                                             recommendation = it,
-                                            onItemClick = { anime -> navController.navigate("animeDetail/${anime.title}/${anime.mal_id}") }
+                                            onItemClick = { anime ->
+                                                navController.navigateToAnimeDetail(
+                                                    anime.title, anime.mal_id
+                                                )
+                                            }
                                         )
                                     }
                                 }
@@ -126,8 +131,8 @@ fun AnimeRecommendationsScreen(
                                                 RecommendationItem(
                                                     recommendation = it,
                                                     onItemClick = { anime ->
-                                                        navController.navigate(
-                                                            "animeDetail/${anime.title}/${anime.mal_id}"
+                                                        navController.navigateToAnimeDetail(
+                                                            anime.title, anime.mal_id
                                                         )
                                                     }
                                                 )
