@@ -3,20 +3,24 @@ package com.example.animeapp.ui.main
 import android.app.PictureInPictureParams
 import android.content.res.Configuration
 import android.os.Bundle
+import android.view.MotionEvent
 import android.view.WindowManager
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
@@ -34,6 +38,8 @@ import java.util.concurrent.TimeUnit
 class MainActivity : AppCompatActivity() {
     private val onPictureInPictureModeChangedListeners = mutableListOf<(Boolean) -> Unit>()
     private lateinit var navController: NavHostController
+    private var lastInteractionTime = System.currentTimeMillis()
+    private val idleTimeoutMillis = TimeUnit.MINUTES.toMillis(1)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -48,11 +54,16 @@ class MainActivity : AppCompatActivity() {
             val configuration = LocalConfiguration.current
             val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
+            val resetIdleTimer = remember { { lastInteractionTime = System.currentTimeMillis() } }
+
             LaunchedEffect(Unit) {
                 while (true) {
-                    delay(TimeUnit.MINUTES.toMillis(1))
+                    delay(500)
+                    val currentTime = System.currentTimeMillis()
+                    val isIdle = currentTime - lastInteractionTime > idleTimeoutMillis
                     val currentRoute = navController.currentDestination?.route
-                    if (currentRoute?.startsWith("animeWatch/") == false) {
+
+                    if (isIdle && currentRoute?.startsWith("animeWatch/") == false) {
                         mainViewModel.dispatch(MainAction.SetIsShowIdleDialog(true))
                     }
                 }
@@ -95,7 +106,15 @@ class MainActivity : AppCompatActivity() {
             if (state.themeApplied) {
                 AppTheme(context = this) {
                     Surface(
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .pointerInput(Unit) {
+                                detectTapGestures(
+                                    onPress = { resetIdleTimer() },
+                                    onDoubleTap = { resetIdleTimer() },
+                                    onLongPress = { resetIdleTimer() }
+                                )
+                            },
                         color = MaterialTheme.colorScheme.background
                     ) {
                         MainScreen(
@@ -108,6 +127,11 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
+        lastInteractionTime = System.currentTimeMillis()
+        return super.dispatchTouchEvent(ev)
     }
 
     private fun setStatusBarColor(color: Color) {
