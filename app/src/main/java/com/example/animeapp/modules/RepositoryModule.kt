@@ -7,6 +7,7 @@ import com.example.animeapp.data.remote.api.AnimeAPI
 import com.example.animeapp.di.AnimeRunwayApi
 import com.example.animeapp.di.JikanApi
 import com.example.animeapp.repository.AnimeEpisodeDetailRepository
+import com.example.animeapp.repository.AnimeHomeRepository
 import com.example.animeapp.repository.AnimeRecommendationsRepository
 import com.example.animeapp.repository.AnimeSearchRepository
 import dagger.Module
@@ -17,6 +18,16 @@ import dagger.hilt.android.components.ViewModelComponent
 @Module
 @InstallIn(ViewModelComponent::class)
 object RepositoryModule {
+    @Provides
+    fun provideAnimeHomeRepository(@JikanApi animeAPI: AnimeAPI): AnimeHomeRepository {
+        return AnimeHomeRepository(animeAPI)
+    }
+
+    @Provides
+    fun provideAnimeRecommendationsRepository(@JikanApi animeAPI: AnimeAPI): AnimeRecommendationsRepository {
+        return AnimeRecommendationsRepository(animeAPI)
+    }
+
     @Provides
     fun provideAnimeEpisodeDetailRepository(
         animeDetailDao: AnimeDetailDao,
@@ -32,11 +43,6 @@ object RepositoryModule {
             jikanAPI,
             runwayAPI
         )
-    }
-
-    @Provides
-    fun provideAnimeRecommendationsRepository(@JikanApi animeAPI: AnimeAPI): AnimeRecommendationsRepository {
-        return AnimeRecommendationsRepository(animeAPI)
     }
 
     @Provides

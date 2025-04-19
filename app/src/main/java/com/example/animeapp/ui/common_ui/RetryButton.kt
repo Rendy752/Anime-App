@@ -1,10 +1,9 @@
 package com.example.animeapp.ui.common_ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.Icon
@@ -17,21 +16,28 @@ import androidx.compose.ui.unit.dp
 import com.example.animeapp.utils.basicContainer
 
 @Composable
-fun RetryButton(message: String, onClick: () -> Unit) {
+fun RetryButton(modifier: Modifier = Modifier, message: String? = null, onClick: () -> Unit) {
     Row(
         horizontalArrangement = Arrangement.Center,
-        modifier = Modifier
-            .basicContainer(isPrimary = true, onItemClick = onClick)
-            .wrapContentSize()
-            .fillMaxWidth(),
+        modifier = modifier
+            .basicContainer(
+                isPrimary = true,
+                onItemClick = onClick,
+                outerPadding = PaddingValues(0.dp)
+            ),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
             imageVector = Icons.Default.Refresh,
             contentDescription = "Retry",
-            modifier = Modifier.padding(end = 8.dp),
             tint = MaterialTheme.colorScheme.onPrimary
         )
-        Text(message, color = MaterialTheme.colorScheme.onPrimary)
+        message?.let {
+            Text(
+                it,
+                color = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.padding(start = 8.dp),
+            )
+        }
     }
 }

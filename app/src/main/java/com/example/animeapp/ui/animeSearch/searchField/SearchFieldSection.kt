@@ -14,26 +14,30 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.R
 import com.example.animeapp.models.AnimeSearchQueryState
 import com.example.animeapp.ui.common_ui.SearchView
 import com.example.animeapp.utils.Debounce
+import com.example.animeapp.utils.basicContainer
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SearchFieldSection(
-    initialQuery: String,
+    queryState: AnimeSearchQueryState,
     onQueryChanged: (AnimeSearchQueryState) -> Unit,
     showFilterIcon: Boolean = false,
     isFilterBottomSheetShow: Boolean = false,
+    resetBottomSheetFilters: (() -> Unit)? = null,
     onFilterClick: (() -> Unit)? = null
 ) {
     val scope = rememberCoroutineScope()
-    var query by remember { mutableStateOf(initialQuery) }
-    val debounce = remember {
+    var query by remember(queryState) { mutableStateOf(queryState.query) }
+    val debounce = remember(queryState) {
         Debounce(scope, 1000L) { newQuery ->
-            onQueryChanged(AnimeSearchQueryState(query = newQuery, page = 1))
+            onQueryChanged(queryState.copy(query = newQuery, page = 1))
         }
     }
 
@@ -43,7 +47,7 @@ fun SearchFieldSection(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 8.dp, end = 8.dp, top = 8.dp)
+            .padding(start = 8.dp, end = 8.dp, top = 8.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -62,6 +66,23 @@ fun SearchFieldSection(
                     .onGloballyPositioned { coordinates ->
                         searchViewHeight = with(density) { coordinates.size.height.toDp() }
                     }
+            )
+            if (resetBottomSheetFilters != null && !queryState.isDefault()) Text(
+                modifier = Modifier
+                    .width(110.dp)
+                    .basicContainer(
+                        isPrimary = true,
+                        outerPadding = PaddingValues(0.dp),
+                        innerPadding = PaddingValues(4.dp),
+                        onItemClick = {
+                            resetBottomSheetFilters()
+                        }
+                    ),
+                text = "Filter Applied",
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onPrimary
             )
             if (showFilterIcon) {
                 IconButton(

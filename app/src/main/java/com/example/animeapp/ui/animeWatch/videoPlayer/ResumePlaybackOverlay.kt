@@ -21,6 +21,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.utils.TimeUtils
 import com.example.animeapp.utils.basicContainer
@@ -49,6 +50,7 @@ fun ResumePlaybackOverlay(
                     pop()
                     append(" ?")
                 },
+                textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onPrimary
             )
             Row(verticalAlignment = Alignment.CenterVertically) {

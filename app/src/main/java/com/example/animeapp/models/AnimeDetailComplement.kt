@@ -33,3 +33,17 @@ data class AnimeDetailComplement(
             _id = value.substringBefore("?").trim()
         }
 }
+
+val animeDetailComplementPlaceholder = AnimeDetailComplement(
+    _id = "",
+    malId = 0,
+    isFavorite = false,
+    eps = 0,
+    sub = 0,
+    dub = 0,
+    lastEpisodeWatchedId = null,
+    episodes = listOf(episodePlaceholder),
+    lastEpisodeUpdatedAt = Instant.now().epochSecond,
+    createdAt = Instant.now().epochSecond,
+    updatedAt = Instant.now().epochSecond
+)

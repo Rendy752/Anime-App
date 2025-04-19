@@ -15,8 +15,11 @@ import java.time.Instant
 @Serializable
 data class EpisodeDetailComplement(
     val id: String,
-    val title: String,
+    val animeTitle: String,
+    val episodeTitle: String,
     val imageUrl: String?,
+    val number: Int,
+    val isFiller: Boolean,
     val servers: EpisodeServersResponse,
     val sources: EpisodeSourcesResponse,
     val sourcesQuery: EpisodeSourcesQuery,
@@ -29,7 +32,10 @@ data class EpisodeDetailComplement(
 
 val episodeDetailComplementPlaceholder = EpisodeDetailComplement(
     id = "watch-1",
-    title = "Title of Episode",
+    animeTitle = "Title of Anime",
+    episodeTitle = "Title of Episode",
+    number = 1,
+    isFiller = false,
     imageUrl = "https://cdn.myanimelist.net/images/",
     servers = episodeServersResponsePlaceholder,
     sources = episodeSourcesResponsePlaceholder,

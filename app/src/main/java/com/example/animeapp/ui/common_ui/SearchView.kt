@@ -1,7 +1,6 @@
 package com.example.animeapp.ui.common_ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -71,7 +70,6 @@ fun SearchView(
 fun SearchViewSkeleton(modifier: Modifier = Modifier) {
     SkeletonBox(
         modifier = modifier
-            .fillMaxWidth()
             .clip(RoundedCornerShape(8.dp))
             .background(MaterialTheme.colorScheme.primaryContainer),
         height = 56.dp

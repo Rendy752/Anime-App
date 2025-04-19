@@ -39,4 +39,9 @@ object Navigation {
 
         navigate("search/$genrePart/$producerPart")
     }
+
+    fun NavController.navigateToAnimeDetail(title: String, id: Int) {
+        val titleEncoded = URLEncoder.encode(title, "UTF-8")
+        navigate("animeDetail/$titleEncoded/$id")
+    }
 }

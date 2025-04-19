@@ -1,8 +1,6 @@
 package com.example.animeapp.animeSearch
 
-import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.models.AnimeSearchResponse
-import com.example.animeapp.models.CompletePagination
 import com.example.animeapp.models.Genre
 import com.example.animeapp.models.GenresResponse
 import com.example.animeapp.models.JpgImage
@@ -10,6 +8,7 @@ import com.example.animeapp.models.Producer
 import com.example.animeapp.models.ProducerImage
 import com.example.animeapp.models.ProducersResponse
 import com.example.animeapp.models.Title
+import com.example.animeapp.models.defaultCompletePagination
 import com.example.animeapp.models.genrePlaceholder
 import com.example.animeapp.models.producerPlaceholder
 import com.example.animeapp.repository.AnimeSearchRepository
@@ -30,7 +29,6 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AnimeSearchViewModelTest {
@@ -42,10 +40,10 @@ class AnimeSearchViewModelTest {
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        coEvery { repository.getGenres() } returns Response.success(mockk())
-        coEvery { repository.getProducers(any()) } returns Response.success(mockk())
-        coEvery { repository.searchAnime(any()) } returns Response.success(mockk())
-        coEvery { repository.getRandomAnime() } returns Response.success(mockk())
+        coEvery { repository.getGenres() } returns Resource.Success(mockk())
+        coEvery { repository.getProducers(any()) } returns Resource.Success(mockk())
+        coEvery { repository.searchAnime(any()) } returns Resource.Success(mockk())
+        coEvery { repository.getRandomAnime() } returns Resource.Success(mockk())
         viewModel = AnimeSearchViewModel(repository)
     }
 
@@ -56,11 +54,11 @@ class AnimeSearchViewModelTest {
 
     @Test
     fun `searchAnime with empty query and default filters should call getRandomAnime`() = runTest {
-        val mockAnimeDetailResponse = mockk<AnimeDetailResponse> {
+        val mockAnimeDetailResponse = mockk<AnimeSearchResponse> {
             every { data } returns mockk()
         }
 
-        coEvery { repository.getRandomAnime() } returns Response.success(mockAnimeDetailResponse)
+        coEvery { repository.getRandomAnime() } returns Resource.Success(mockAnimeDetailResponse)
 
         viewModel.searchAnime()
         testDispatcher.scheduler.advanceUntilIdle()
@@ -84,7 +82,7 @@ class AnimeSearchViewModelTest {
         )
         val genresResponse = GenresResponse(genres)
 
-        coEvery { repository.getGenres() } returns Response.success(genresResponse)
+        coEvery { repository.getGenres() } returns Resource.Success(genresResponse)
 
         viewModel.fetchGenres()
         testDispatcher.scheduler.advanceUntilIdle()
@@ -110,9 +108,9 @@ class AnimeSearchViewModelTest {
         val searchResponse =
             AnimeSearchResponse(
                 data = emptyList(),
-                pagination = CompletePagination.Companion.default()
+                pagination = defaultCompletePagination
             )
-        coEvery { repository.searchAnime(any()) } returns Response.success(searchResponse)
+        coEvery { repository.searchAnime(any()) } returns Resource.Success(searchResponse)
 
         viewModel.applyGenreFilters()
         testDispatcher.scheduler.advanceUntilIdle()
@@ -126,10 +124,10 @@ class AnimeSearchViewModelTest {
     fun `resetGenreSelection should clear selected genres and reset queryState`() = runTest {
         val genre = genrePlaceholder
 
-        val mockAnimeDetailResponse = mockk<AnimeDetailResponse> {
+        val mockAnimeDetailResponse = mockk<AnimeSearchResponse> {
             every { data } returns mockk()
         }
-        coEvery { repository.getRandomAnime() } returns Response.success(mockAnimeDetailResponse)
+        coEvery { repository.getRandomAnime() } returns Resource.Success(mockAnimeDetailResponse)
 
         viewModel.setSelectedGenre(genre)
         viewModel.applyGenreFilters()
@@ -166,11 +164,11 @@ class AnimeSearchViewModelTest {
         )
 
         val producersResponse = ProducersResponse(
-            pagination = CompletePagination.Companion.default(),
+            pagination = defaultCompletePagination,
             data = producers
         )
 
-        coEvery { repository.getProducers(any()) } returns Response.success(producersResponse)
+        coEvery { repository.getProducers(any()) } returns Resource.Success(producersResponse)
 
         viewModel.fetchProducers()
         testDispatcher.scheduler.advanceUntilIdle()
@@ -195,9 +193,9 @@ class AnimeSearchViewModelTest {
         val searchResponse =
             AnimeSearchResponse(
                 data = emptyList(),
-                pagination = CompletePagination.Companion.default()
+                pagination = defaultCompletePagination
             )
-        coEvery { repository.searchAnime(any()) } returns Response.success(searchResponse)
+        coEvery { repository.searchAnime(any()) } returns Resource.Success(searchResponse)
 
         viewModel.applyProducerFilters()
         testDispatcher.scheduler.advanceUntilIdle()
@@ -211,11 +209,11 @@ class AnimeSearchViewModelTest {
     fun `resetProducerSelection should clear selected producers and reset queryState`() = runTest {
         val producer = producerPlaceholder
 
-        val mockAnimeDetailResponse = mockk<AnimeDetailResponse> {
+        val mockAnimeDetailResponse = mockk<AnimeSearchResponse> {
             every { data } returns mockk()
         }
 
-        coEvery { repository.getRandomAnime() } returns Response.success(mockAnimeDetailResponse)
+        coEvery { repository.getRandomAnime() } returns Resource.Success(mockAnimeDetailResponse)
 
         viewModel.setSelectedProducer(producer)
         viewModel.applyProducerFilters()
