@@ -115,6 +115,7 @@ class AnimeDetailViewModel @Inject constructor(
                     ) {
                         _animeDetail.value?.data?.data?.let { animeDetail ->
                             insertCachedEpisodeDetailComplement(
+                                cachedAnimeDetail.id,
                                 firstEpisode,
                                 defaultEpisodeServersResponse,
                                 defaultEpisodeSourcesResponse,
@@ -175,7 +176,7 @@ class AnimeDetailViewModel @Inject constructor(
 
                     if (checkEpisodeSourceMalId(defaultEpisodeSourcesResponse)) {
                         val cachedAnimeDetailComplement = AnimeDetailComplement(
-                            _id = anime.id,
+                            id = anime.id.substringBefore("?").trim(),
                             malId = animeDetail.mal_id,
                             episodes = episodesResponse.data.episodes,
                             eps = anime.episodes?.eps,
@@ -190,6 +191,7 @@ class AnimeDetailViewModel @Inject constructor(
                             Resource.Success(cachedAnimeDetailComplement)
 
                         insertCachedEpisodeDetailComplement(
+                            cachedAnimeDetailComplement.id,
                             episodesResponse.data.episodes.first(),
                             defaultEpisodeServersResponse,
                             defaultEpisodeSourcesResponse,
@@ -204,6 +206,7 @@ class AnimeDetailViewModel @Inject constructor(
         }
 
     private fun insertCachedEpisodeDetailComplement(
+        aniwatchId: String,
         episode: Episode,
         defaultEpisodeServersResponse: Resource.Success<EpisodeServersResponse>,
         defaultEpisodeSourcesResponse: Resource.Success<EpisodeSourcesResponse>,
@@ -218,6 +221,8 @@ class AnimeDetailViewModel @Inject constructor(
                     )?.let { query ->
                         EpisodeDetailComplement(
                             id = episode.episodeId,
+                            malId = animeDetail.mal_id,
+                            aniwatchId = aniwatchId,
                             animeTitle = animeDetail.title,
                             episodeTitle = episode.name,
                             imageUrl = animeDetail.images.jpg.image_url,

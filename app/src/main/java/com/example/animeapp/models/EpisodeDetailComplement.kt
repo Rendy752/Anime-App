@@ -15,6 +15,8 @@ import java.time.Instant
 @Serializable
 data class EpisodeDetailComplement(
     val id: String,
+    val malId: Int,
+    val aniwatchId: String,
     val animeTitle: String,
     val episodeTitle: String,
     val imageUrl: String?,
@@ -32,6 +34,8 @@ data class EpisodeDetailComplement(
 
 val episodeDetailComplementPlaceholder = EpisodeDetailComplement(
     id = "watch-1",
+    malId = 1,
+    aniwatchId = "1",
     animeTitle = "Title of Anime",
     episodeTitle = "Title of Episode",
     number = 1,

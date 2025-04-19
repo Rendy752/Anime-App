@@ -164,17 +164,20 @@ class AnimeWatchViewModel @Inject constructor(
                             val currentEpisode =
                                 _episodes.value?.firstOrNull { it.episodeId == servers.episodeId }
                             currentEpisode?.let { currentEpisode ->
-                                val remoteEpisodeDetailComplement = EpisodeDetailComplement(
-                                    id = currentEpisode.episodeId,
-                                    animeTitle = animeDetail.title,
-                                    episodeTitle = currentEpisode.name,
-                                    imageUrl = animeDetail.images.jpg.image_url,
-                                    number = currentEpisode.episodeNo,
-                                    isFiller = currentEpisode.filler,
-                                    servers = servers,
-                                    sources = sources,
-                                    sourcesQuery = episodeSourcesQuery
-                                )
+                                _animeDetailComplement.value?.let { animeDetailComplement ->
+                                    val remoteEpisodeDetailComplement = EpisodeDetailComplement(
+                                        id = currentEpisode.episodeId,
+                                        malId = animeDetail.mal_id,
+                                        aniwatchId = animeDetailComplement.id,
+                                        animeTitle = animeDetail.title,
+                                        episodeTitle = currentEpisode.name,
+                                        imageUrl = animeDetail.images.jpg.image_url,
+                                        number = currentEpisode.episodeNo,
+                                        isFiller = currentEpisode.filler,
+                                        servers = servers,
+                                        sources = sources,
+                                        sourcesQuery = episodeSourcesQuery
+                                    )
 
                                 animeEpisodeDetailRepository.insertCachedEpisodeDetailComplement(
                                     remoteEpisodeDetailComplement
@@ -182,6 +185,7 @@ class AnimeWatchViewModel @Inject constructor(
 
                                 _episodeDetailComplement.value =
                                     Resource.Success(remoteEpisodeDetailComplement)
+                                }
                             }
                         }
                     }
