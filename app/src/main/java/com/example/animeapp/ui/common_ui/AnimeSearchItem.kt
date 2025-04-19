@@ -119,9 +119,13 @@ fun AnimeSearchItem(
                         ) {
                             genres.map { it }.toList().forEach { data ->
                                 val isSelected = selectedGenres.any { it.mal_id == data.mal_id }
-                                FilterChipView(data.name, isSelected) {
-                                    onGenreClick?.invoke(data)
-                                }
+                                FilterChipView(
+                                    text = data.name,
+                                    checked = isSelected,
+                                    onCheckedChange = {
+                                        onGenreClick?.invoke(data)
+                                    }
+                                )
                             }
                         }
                     }

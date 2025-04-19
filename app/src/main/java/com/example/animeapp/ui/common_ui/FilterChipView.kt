@@ -25,10 +25,12 @@ fun FilterChipView(
     text: String,
     checked: Boolean? = null,
     imageUrl: String? = null,
+    useDisabled: Boolean = false,
     onCheckedChange: (() -> Unit)? = null
 ) {
     FilterChip(
         selected = checked == true,
+        enabled = if (useDisabled) checked != true else true,
         onClick = {
             if (onCheckedChange != null) onCheckedChange()
         },

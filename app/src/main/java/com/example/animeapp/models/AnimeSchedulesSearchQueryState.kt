@@ -1,7 +1,6 @@
 package com.example.animeapp.models
 
-import java.time.DayOfWeek
-import java.time.LocalDate
+import com.example.animeapp.utils.TimeUtils.getCurrentDayOfWeek
 
 data class AnimeSchedulesSearchQueryState(
     val filter: String? = getCurrentDayOfWeek(),
@@ -23,21 +22,5 @@ data class AnimeSchedulesSearchQueryState(
             kids = false,
             unapproved = null,
         )
-    }
-
-    companion object {
-        fun getCurrentDayOfWeek(): String {
-            val currentDay = LocalDate.now().dayOfWeek
-            return when (currentDay) {
-                DayOfWeek.MONDAY -> "monday"
-                DayOfWeek.TUESDAY -> "tuesday"
-                DayOfWeek.WEDNESDAY -> "wednesday"
-                DayOfWeek.THURSDAY -> "thursday"
-                DayOfWeek.FRIDAY -> "friday"
-                DayOfWeek.SATURDAY -> "saturday"
-                DayOfWeek.SUNDAY -> "sunday"
-                else -> "unknown"
-            }
-        }
     }
 }

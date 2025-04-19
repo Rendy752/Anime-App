@@ -130,6 +130,7 @@ fun EpisodesDetailSection(
                                 )
                             }
                             RetryButton(
+                                modifier = if (data.episodes.size >= 4) Modifier else Modifier.fillMaxWidth(),
                                 onClick = { handleEpisodes() }
                             )
                         }

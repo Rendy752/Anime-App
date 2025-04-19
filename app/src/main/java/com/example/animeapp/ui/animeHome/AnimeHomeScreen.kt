@@ -1,9 +1,14 @@
 package com.example.animeapp.ui.animeHome
 
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -16,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.animeapp.R
@@ -24,9 +30,11 @@ import com.example.animeapp.models.episodeDetailComplementPlaceholder
 import com.example.animeapp.ui.animeHome.components.ContinueWatchingPopup
 import com.example.animeapp.ui.animeHome.components.AnimeSchedulesGrid
 import com.example.animeapp.ui.animeHome.components.AnimeSchedulesGridSkeleton
+import com.example.animeapp.ui.common_ui.FilterChipView
 import com.example.animeapp.ui.common_ui.LimitAndPaginationQueryState
 import com.example.animeapp.ui.common_ui.LimitAndPaginationSection
 import com.example.animeapp.ui.common_ui.MessageDisplay
+import com.example.animeapp.utils.TimeUtils.getDayOfWeekList
 import com.example.animeapp.ui.main.BottomScreen
 import com.example.animeapp.ui.main.MainState
 import com.example.animeapp.utils.Navigation.navigateToAnimeDetail
@@ -81,6 +89,43 @@ fun AnimeHomeScreen(
             },
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
+                if (!mainState.isLandscape) Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp)
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(
+                        8.dp, Alignment.CenterHorizontally
+                    ),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    FilterChipView(
+                        text = "All",
+                        checked = state.queryState.filter == null,
+                        useDisabled = true,
+                        onCheckedChange = {
+                            action(
+                                HomeAction.ApplyFilters(
+                                    state.queryState.copy(filter = null, page = 1)
+                                )
+                            )
+                        }
+                    )
+                    getDayOfWeekList().forEach { dayName ->
+                        FilterChipView(
+                            text = dayName,
+                            checked = dayName == state.queryState.filter,
+                            useDisabled = true,
+                            onCheckedChange = {
+                                action(
+                                    HomeAction.ApplyFilters(
+                                        state.queryState.copy(filter = dayName, page = 1)
+                                    )
+                                )
+                            }
+                        )
+                    }
+                }
                 when (state.animeSchedules) {
                     is Resource.Loading -> {
                         AnimeSchedulesGridSkeleton(mainState.isLandscape)
@@ -114,7 +159,7 @@ fun AnimeHomeScreen(
                     }
                 }
                 LimitAndPaginationSection(
-                    isVisible = state.animeSchedules is Resource.Success,
+                    isVisible = state.animeSchedules is Resource.Success && !mainState.isLandscape,
                     pagination = state.animeSchedules.data?.pagination,
                     query = LimitAndPaginationQueryState(
                         state.queryState.page,

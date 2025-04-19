@@ -16,6 +16,7 @@ import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.time.format.TextStyle
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
 import java.util.Date
@@ -24,6 +25,37 @@ import java.util.concurrent.TimeUnit
 
 object TimeUtils {
     private val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+
+    fun getCurrentDayOfWeek(): String {
+        val currentDay = LocalDate.now().dayOfWeek
+        return currentDay.name.lowercase(Locale.ENGLISH)
+            .replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.ENGLISH) else it.toString() }
+    }
+
+    fun getDayOfWeekList(): List<String> {
+        val currentDay = LocalDate.now().dayOfWeek
+        val daysOfWeek = DayOfWeek.entries
+
+        val orderedList = mutableListOf<String>()
+
+        orderedList.add(
+            currentDay.getDisplayName(TextStyle.FULL_STANDALONE, Locale.ENGLISH).lowercase()
+                .replaceFirstChar { it.titlecase(Locale.ENGLISH) })
+
+        daysOfWeek.drop(currentDay.ordinal + 1).forEach {
+            orderedList.add(
+                it.getDisplayName(TextStyle.FULL_STANDALONE, Locale.ENGLISH).lowercase()
+                    .replaceFirstChar { it.titlecase(Locale.ENGLISH) })
+        }
+
+        daysOfWeek.take(currentDay.ordinal).forEach {
+            orderedList.add(
+                it.getDisplayName(TextStyle.FULL_STANDALONE, Locale.ENGLISH).lowercase()
+                    .replaceFirstChar { it.titlecase(Locale.ENGLISH) })
+        }
+
+        return orderedList
+    }
 
     fun formatDateToAgo(dateString: String): String {
         return try {
@@ -161,7 +193,7 @@ object TimeUtils {
                             broadcast.day
                         )
                     ) {
-                        remainingTime.value = "Broadcasting..."
+                        remainingTime.value = "On Air"
                     } else {
                         val broadcastLocalTime = LocalTime.parse(broadcast.time, timeFormatter)
                         var nextBroadcast = broadcastDateTimeThisWeek
@@ -193,7 +225,7 @@ object TimeUtils {
                             days > 0 -> "${days}d ${hours}h ${minutes}m"
                             hours > 0 -> "${hours}h ${minutes}m"
                             minutes >= 0 -> "${minutes}m"
-                            else -> "Broadcasting..."
+                            else -> "On Air"
                         }
                     }
                 }

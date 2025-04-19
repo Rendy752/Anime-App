@@ -31,6 +31,7 @@ fun AnimeScheduleItem(
     Column(
         modifier = Modifier
             .basicContainer(
+                outerPadding = PaddingValues(0.dp),
                 innerPadding = PaddingValues(0.dp),
                 onItemClick = { onItemClick(animeDetail) })
     ) {
@@ -62,13 +63,15 @@ fun AnimeScheduleItem(
             if (remainingTimeState.value.isNotEmpty()) {
                 Text(
                     text = remainingTimeState.value,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .basicContainer(
-                            isError = remainingTimeState.value != "Broadcasting...",
-                            isPrimary = remainingTimeState.value == "Broadcasting...",
+                            isError = remainingTimeState.value != "On Air",
+                            isPrimary = remainingTimeState.value == "On Air",
                             innerPadding = PaddingValues(
                                 horizontal = 8.dp,
                                 vertical = 4.dp
@@ -96,6 +99,7 @@ fun AnimeScheduleItemSkeleton() {
     Column(
         modifier = Modifier
             .basicContainer(
+                outerPadding = PaddingValues(0.dp),
                 innerPadding = PaddingValues(0.dp)
             )
     ) {
