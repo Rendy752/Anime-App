@@ -10,13 +10,10 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.animeapp.R
 import com.example.animeapp.ui.animeSearch.bottomSheet.FilterBottomSheet
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
@@ -38,7 +35,6 @@ import com.example.animeapp.ui.common_ui.LimitAndPaginationQueryState
 import com.example.animeapp.ui.main.BottomScreen
 import com.example.animeapp.ui.main.MainState
 import com.example.animeapp.utils.Resource
-import com.example.animeapp.utils.basicContainer
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview
@@ -119,25 +115,6 @@ fun AnimeSearchScreen(
                                 }
                             }
                         },
-                        actions = {
-                            if (!queryState.isDefault()) Text(
-                                modifier = Modifier
-                                    .basicContainer(
-                                        isPrimary = true,
-                                        onItemClick = {
-                                            viewModel.resetBottomSheetFilters()
-                                        }),
-                                text = "Filter Applied",
-                                color = MaterialTheme.colorScheme.onPrimary
-                            )
-                            IconButton(onClick = { isFilterBottomSheetShow = true }) {
-                                Icon(
-                                    imageVector = Icons.Filled.FilterList,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    contentDescription = stringResource(id = R.string.filter)
-                                )
-                            }
-                        },
                         colors = TopAppBarDefaults.topAppBarColors(
                             titleContentColor = MaterialTheme.colorScheme.primary
                         )
@@ -179,14 +156,12 @@ fun AnimeSearchScreen(
                             verticalArrangement = Arrangement.SpaceBetween
                         ) {
                             SearchFieldSection(
-                                queryState,
-                                viewModel::applyFilters,
-                                true,
-                                isFilterBottomSheetShow,
-                                viewModel::resetBottomSheetFilters
-                            ) {
-                                isFilterBottomSheetShow = true
-                            }
+                                queryState = queryState,
+                                onQueryChanged = viewModel::applyFilters,
+                                isFilterBottomSheetShow = isFilterBottomSheetShow,
+                                resetBottomSheetFilters = viewModel::resetBottomSheetFilters,
+                                onFilterClick = { isFilterBottomSheetShow = true }
+                            )
                             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                             GenreProducerFilterFieldSection(
                                 selectedGenres,
@@ -242,8 +217,11 @@ fun AnimeSearchScreen(
                 } else {
                     Column(modifier = Modifier.fillMaxSize()) {
                         SearchFieldSection(
-                            queryState,
-                            viewModel::applyFilters
+                            queryState = queryState,
+                            onQueryChanged = viewModel::applyFilters,
+                            isFilterBottomSheetShow = isFilterBottomSheetShow,
+                            resetBottomSheetFilters = viewModel::resetBottomSheetFilters,
+                            onFilterClick = { isFilterBottomSheetShow = true }
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         GenreProducerFilterFieldSection(

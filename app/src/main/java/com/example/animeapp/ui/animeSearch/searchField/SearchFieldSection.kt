@@ -28,10 +28,9 @@ import com.example.animeapp.utils.basicContainer
 fun SearchFieldSection(
     queryState: AnimeSearchQueryState,
     onQueryChanged: (AnimeSearchQueryState) -> Unit,
-    showFilterIcon: Boolean = false,
-    isFilterBottomSheetShow: Boolean = false,
-    resetBottomSheetFilters: (() -> Unit)? = null,
-    onFilterClick: (() -> Unit)? = null
+    isFilterBottomSheetShow: Boolean,
+    resetBottomSheetFilters: (() -> Unit),
+    onFilterClick: (() -> Unit)
 ) {
     val scope = rememberCoroutineScope()
     var query by remember(queryState) { mutableStateOf(queryState.query) }
@@ -67,7 +66,7 @@ fun SearchFieldSection(
                         searchViewHeight = with(density) { coordinates.size.height.toDp() }
                     }
             )
-            if (resetBottomSheetFilters != null && !queryState.isDefault()) Text(
+            if (!queryState.isDefault()) Text(
                 modifier = Modifier
                     .width(110.dp)
                     .basicContainer(
@@ -84,25 +83,23 @@ fun SearchFieldSection(
                 overflow = TextOverflow.Ellipsis,
                 color = MaterialTheme.colorScheme.onPrimary
             )
-            if (showFilterIcon) {
-                IconButton(
-                    onClick = { onFilterClick?.invoke() },
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(if (isFilterBottomSheetShow) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer)
-                        .border(
-                            2.dp,
-                            MaterialTheme.colorScheme.primaryContainer,
-                            RoundedCornerShape(8.dp)
-                        )
-                        .size(searchViewHeight)
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.FilterList,
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        contentDescription = stringResource(id = R.string.filter)
+            IconButton(
+                onClick = { onFilterClick.invoke() },
+                modifier = Modifier
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(if (isFilterBottomSheetShow) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primaryContainer)
+                    .border(
+                        2.dp,
+                        MaterialTheme.colorScheme.primaryContainer,
+                        RoundedCornerShape(8.dp)
                     )
-                }
+                    .size(searchViewHeight)
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.FilterList,
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    contentDescription = stringResource(id = R.string.filter)
+                )
             }
         }
     }

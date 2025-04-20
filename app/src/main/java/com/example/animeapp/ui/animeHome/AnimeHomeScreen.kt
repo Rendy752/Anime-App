@@ -1,5 +1,10 @@
 package com.example.animeapp.ui.animeHome
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.EaseInOut
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -89,41 +94,53 @@ fun AnimeHomeScreen(
             },
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
-                if (!mainState.isLandscape) Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp)
-                        .horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(
-                        8.dp, Alignment.CenterHorizontally
+                AnimatedVisibility(
+                    visible = !mainState.isLandscape,
+                    enter = slideInVertically(
+                        initialOffsetY = { -it },
+                        animationSpec = tween(durationMillis = 1000, easing = EaseInOut)
                     ),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    FilterChipView(
-                        text = "All",
-                        checked = state.queryState.filter == null,
-                        useDisabled = true,
-                        onCheckedChange = {
-                            action(
-                                HomeAction.ApplyFilters(
-                                    state.queryState.copy(filter = null, page = 1)
-                                )
-                            )
-                        }
+                    exit = slideOutVertically(
+                        targetOffsetY = { -it },
+                        animationSpec = tween(durationMillis = 1000, easing = EaseInOut)
                     )
-                    getDayOfWeekList().forEach { dayName ->
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp)
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(
+                            8.dp, Alignment.CenterHorizontally
+                        ),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
                         FilterChipView(
-                            text = dayName,
-                            checked = dayName == state.queryState.filter,
+                            text = "All",
+                            checked = state.queryState.filter == null,
                             useDisabled = true,
                             onCheckedChange = {
                                 action(
                                     HomeAction.ApplyFilters(
-                                        state.queryState.copy(filter = dayName, page = 1)
+                                        state.queryState.copy(filter = null, page = 1)
                                     )
                                 )
                             }
                         )
+                        getDayOfWeekList().forEach { dayName ->
+                            FilterChipView(
+                                text = dayName,
+                                checked = dayName == state.queryState.filter,
+                                useDisabled = true,
+                                onCheckedChange = {
+                                    action(
+                                        HomeAction.ApplyFilters(
+                                            state.queryState.copy(filter = dayName, page = 1)
+                                        )
+                                    )
+                                }
+                            )
+                        }
                     }
                 }
                 when (state.animeSchedules) {
