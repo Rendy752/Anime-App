@@ -10,7 +10,7 @@ import com.example.animeapp.repository.AnimeEpisodeDetailRepository
 import com.example.animeapp.repository.AnimeHomeRepository
 import com.example.animeapp.ui.animeHome.HomeAction
 import com.example.animeapp.ui.animeHome.HomeState
-import com.example.animeapp.ui.animeHome.HomeViewModel
+import com.example.animeapp.ui.animeHome.AnimeHomeViewModel
 import com.example.animeapp.utils.Resource
 import io.mockk.clearMocks
 import io.mockk.coEvery
@@ -32,14 +32,14 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 
 @ExperimentalCoroutinesApi
-class HomeViewModelTest {
+class AnimeHomeViewModelTest {
 
     @get:Rule
     val instantTaskExecutorRule = InstantTaskExecutorRule()
 
     private val animeHomeRepository: AnimeHomeRepository = mockk()
     private val animeEpisodeDetailRepository: AnimeEpisodeDetailRepository = mockk()
-    private lateinit var viewModel: HomeViewModel
+    private lateinit var viewModel: AnimeHomeViewModel
 
     @Before
     fun setUp() {
@@ -48,7 +48,7 @@ class HomeViewModelTest {
             animeHomeRepository.getAnimeSchedules(AnimeSchedulesSearchQueryState())
         } returns Resource.Loading()
 
-        viewModel = HomeViewModel(animeHomeRepository, animeEpisodeDetailRepository)
+        viewModel = AnimeHomeViewModel(animeHomeRepository, animeEpisodeDetailRepository)
     }
 
     @After
@@ -58,7 +58,7 @@ class HomeViewModelTest {
 
     @Test
     fun `Initial state and GetAnimeSchedules dispatch`() = runTest {
-        val viewModel = HomeViewModel(animeHomeRepository, animeEpisodeDetailRepository)
+        val viewModel = AnimeHomeViewModel(animeHomeRepository, animeEpisodeDetailRepository)
 
         val initialState = HomeState()
         assertTrue(viewModel.state.value.animeSchedules is Resource.Loading)

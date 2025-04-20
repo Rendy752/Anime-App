@@ -35,7 +35,7 @@ sealed class HomeAction {
 }
 
 @HiltViewModel
-class HomeViewModel @Inject constructor(
+class AnimeHomeViewModel @Inject constructor(
     private val animeHomeRepository: AnimeHomeRepository,
     private val animeEpisodeDetailRepository: AnimeEpisodeDetailRepository
 ) : ViewModel() {
