@@ -3,6 +3,7 @@ package com.example.animeapp.utils
 import android.util.Log
 import org.apache.commons.text.similarity.LevenshteinDistance
 import java.util.regex.Pattern
+import kotlin.math.min
 
 object AnimeTitleFinder {
 
@@ -39,10 +40,15 @@ object AnimeTitleFinder {
             ScoredItem(item, bestScore)
         }
 
-        return scoredItems.sortedByDescending { it.score }
+        val sortedAndFiltered = scoredItems.sortedByDescending { it.score }
             .filter { it.score >= MIN_SIMILARITY_THRESHOLD }
-            .take(maxResults)
-            .map { it.item }
+
+        val topResults = sortedAndFiltered.take(min(maxResults, sortedAndFiltered.size))
+        val firstTwoFromData = data.take(2)
+
+        return (topResults.map { it.item } + firstTwoFromData)
+            .distinct()
+            .take(maxResults + 2)
     }
 
     private fun extractCoreTitleAndNumber(title: String): Pair<String, Pair<Int?, String?>> {

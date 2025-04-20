@@ -86,8 +86,8 @@ fun AnimeSearchScreen(
     }
 
     LaunchedEffect(Unit) {
-        viewModel.fetchGenres()
-        viewModel.fetchProducers()
+        if (genres !is Resource.Success) viewModel.fetchGenres()
+        if (producers !is Resource.Success) viewModel.fetchProducers()
         if (genre != null) {
             viewModel.setSelectedGenre(genre)
         } else if (producer != null) {
