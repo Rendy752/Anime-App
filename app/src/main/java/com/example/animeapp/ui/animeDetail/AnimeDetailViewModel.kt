@@ -11,7 +11,7 @@ import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.EpisodeServersResponse
 import com.example.animeapp.models.EpisodeSourcesResponse
 import com.example.animeapp.repository.AnimeEpisodeDetailRepository
-import com.example.animeapp.utils.FindAnimeTitle
+import com.example.animeapp.utils.AnimeTitleFinder
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.StreamingUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -146,7 +146,17 @@ class AnimeDetailViewModel @Inject constructor(
             }
 
             _animeDetail.value?.data?.data?.let { animeDetail ->
-                val animes = FindAnimeTitle.findClosestAnimes(resultResponse, animeDetail)
+                val targetTitles = listOfNotNull(
+                    animeDetail.title,
+                    animeDetail.title_english
+                ) + (animeDetail.title_synonyms ?: emptyList())
+
+                val animes = AnimeTitleFinder.findClosestMatches(
+                    targetTitles = targetTitles,
+                    data = resultResponse.animes,
+                    maxResults = 2,
+                    titleExtractor = { it.name }
+                )
 
                 if (animes.isEmpty()) {
                     _animeDetailComplement.value = Resource.Error("No episode found")
