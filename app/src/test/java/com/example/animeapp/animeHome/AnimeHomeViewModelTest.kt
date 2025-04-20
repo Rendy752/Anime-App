@@ -1,8 +1,8 @@
 package com.example.animeapp.animeHome
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import com.example.animeapp.models.AnimeSchedulesResponse
 import com.example.animeapp.models.AnimeSchedulesSearchQueryState
+import com.example.animeapp.models.ListAnimeDetailResponse
 import com.example.animeapp.models.animeDetailPlaceholder
 import com.example.animeapp.models.defaultCompletePagination
 import com.example.animeapp.models.episodeDetailComplementPlaceholder
@@ -72,7 +72,7 @@ class AnimeHomeViewModelTest {
     @Test
     fun `GetAnimeSchedules success`() = runTest {
         val mockResponse = Resource.Success(
-            AnimeSchedulesResponse(
+            ListAnimeDetailResponse(
                 pagination = defaultCompletePagination,
                 data = listOf(animeDetailPlaceholder)
             )
@@ -88,7 +88,7 @@ class AnimeHomeViewModelTest {
     @Test
     fun `GetAnimeSchedules failure`() = runTest {
         val errorMessage = "API Error"
-        val mockResponse = Resource.Error<AnimeSchedulesResponse>(errorMessage)
+        val mockResponse = Resource.Error<ListAnimeDetailResponse>(errorMessage)
         coEvery { animeHomeRepository.getAnimeSchedules(any()) } returns mockResponse
 
         assertFalse(viewModel.state.value.isRefreshing)
@@ -188,7 +188,7 @@ class AnimeHomeViewModelTest {
 
     @Test
     fun `Edge case  StateFlow multiple updates`() = runTest {
-        val mockResponseSuccess = Resource.Success(AnimeSchedulesResponse(
+        val mockResponseSuccess = Resource.Success(ListAnimeDetailResponse(
             pagination = defaultCompletePagination,
             data = listOf(animeDetailPlaceholder)
         ))
