@@ -3,12 +3,12 @@ package com.example.animeapp.models
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class AnimeSchedulesResponse(
+data class ListAnimeDetailResponse(
     val pagination: CompletePagination,
     val data: List<AnimeDetail>
 )
 
-val animeSchedulesResponsePlaceholder = AnimeSchedulesResponse(
+val listAnimeDetailResponsePlaceholder = ListAnimeDetailResponse(
     pagination = defaultCompletePagination,
     data = List(10) { animeDetailPlaceholder }
 )

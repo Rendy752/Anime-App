@@ -3,7 +3,7 @@ package com.example.animeapp.data.remote.api
 import com.example.animeapp.models.AnimeAniwatchSearchResponse
 import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.models.AnimeRecommendationResponse
-import com.example.animeapp.models.AnimeSchedulesResponse
+import com.example.animeapp.models.ListAnimeDetailResponse
 import com.example.animeapp.models.AnimeSearchResponse
 import com.example.animeapp.models.EpisodeServersResponse
 import com.example.animeapp.models.EpisodeSourcesResponse
@@ -24,7 +24,15 @@ interface AnimeAPI {
         @Query("unapproved") unapproved: Boolean? = null,
         @Query("page") page: Int? = null,
         @Query("limit") limit: Int? = null
-    ): Response<AnimeSchedulesResponse>
+    ): Response<ListAnimeDetailResponse>
+
+    @GET("/v4/top/anime")
+    suspend fun getTop20Anime(
+        @Query("filter") filter: String = "airing",
+        @Query("sfw") sfw: Boolean = true,
+        @Query("page") page: Int = 1,
+        @Query("limit") limit: Int = 20
+    ): Response<ListAnimeDetailResponse>
 
     @GET("/v4/recommendations/anime")
     suspend fun getAnimeRecommendations(

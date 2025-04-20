@@ -11,11 +11,11 @@ import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Apartment
 import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -45,7 +45,7 @@ fun DetailBodySection(animeDetail: AnimeDetail, navController: NavController) {
                 modifier = Modifier.weight(1f)
             ) {
                 DataTextWithIcon("Status", animeDetail.status, Icons.Default.Info)
-                DataTextWithIcon("Type", animeDetail.type ?: "Unknown", Icons.Default.Category)
+                DataTextWithIcon("Type", animeDetail.type ?: "Unknown", Icons.Default.PlayCircle)
                 DataTextWithIcon("Source", animeDetail.source, Icons.AutoMirrored.Filled.MenuBook)
                 DataTextWithIcon("Season", animeDetail.season ?: "-", Icons.Default.CalendarMonth)
                 DataTextWithIcon(

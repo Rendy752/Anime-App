@@ -2,7 +2,7 @@ package com.example.animeapp.ui.animeHome
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.animeapp.models.AnimeSchedulesResponse
+import com.example.animeapp.models.ListAnimeDetailResponse
 import com.example.animeapp.models.AnimeSchedulesSearchQueryState
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.repository.AnimeEpisodeDetailRepository
@@ -18,7 +18,8 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class HomeState(
-    val animeSchedules: Resource<AnimeSchedulesResponse> = Resource.Loading(),
+    val animeSchedules: Resource<ListAnimeDetailResponse> = Resource.Loading(),
+    val top10Anime: Resource<ListAnimeDetailResponse> = Resource.Loading(),
     val queryState: AnimeSchedulesSearchQueryState = AnimeSchedulesSearchQueryState(),
     val continueWatchingEpisode: EpisodeDetailComplement? = null,
     val isRefreshing: Boolean = false,
@@ -28,6 +29,7 @@ data class HomeState(
 
 sealed class HomeAction {
     data object GetAnimeSchedules : HomeAction()
+    data object GetTop10Anime : HomeAction()
     data class ApplyFilters(val updatedQueryState: AnimeSchedulesSearchQueryState) : HomeAction()
     data object FetchContinueWatchingEpisode : HomeAction()
     data class SetMinimized(val minimize: Boolean) : HomeAction()
@@ -45,11 +47,13 @@ class AnimeHomeViewModel @Inject constructor(
 
     init {
         dispatch(HomeAction.GetAnimeSchedules)
+        getTop10Anime()
     }
 
     fun dispatch(action: HomeAction) {
         when (action) {
             HomeAction.GetAnimeSchedules -> getAnimeSchedules()
+            HomeAction.GetTop10Anime -> getTop10Anime()
             is HomeAction.ApplyFilters -> applyFilters(action.updatedQueryState)
             HomeAction.FetchContinueWatchingEpisode -> fetchContinueWatchingEpisode()
             is HomeAction.SetMinimized -> setMinimized(action.minimize)
@@ -61,6 +65,12 @@ class AnimeHomeViewModel @Inject constructor(
         _state.update { it.copy(isRefreshing = true, animeSchedules = Resource.Loading()) }
         val result = animeHomeRepository.getAnimeSchedules(_state.value.queryState)
         _state.update { it.copy(isRefreshing = false, animeSchedules = result) }
+    }
+
+    private fun getTop10Anime() = viewModelScope.launch {
+        _state.update { it.copy(top10Anime = Resource.Loading()) }
+        val result = animeHomeRepository.getTop10Anime()
+        _state.update { it.copy(top10Anime = result) }
     }
 
     private fun applyFilters(updatedQueryState: AnimeSchedulesSearchQueryState) {
