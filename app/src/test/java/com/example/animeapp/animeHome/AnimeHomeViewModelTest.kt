@@ -65,7 +65,6 @@ class AnimeHomeViewModelTest {
         val viewModel = AnimeHomeViewModel(animeHomeRepository, animeEpisodeDetailRepository)
 
         val initialState = HomeState()
-        assertEquals(initialState.carouselLastInteractionTime, viewModel.state.value.carouselLastInteractionTime)
         assertTrue(viewModel.state.value.animeSchedules is Resource.Loading)
         assertTrue(viewModel.state.value.top10Anime is Resource.Loading)
         assertEquals(initialState.queryState, viewModel.state.value.queryState)

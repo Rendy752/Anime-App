@@ -138,9 +138,8 @@ fun AnimeScheduleItemSkeleton() {
         SkeletonBox(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
                 .padding(8.dp),
-            height = 20.dp
+            height = 40.dp
         )
     }
 }
