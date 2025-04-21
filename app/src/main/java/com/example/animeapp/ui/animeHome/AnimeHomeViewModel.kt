@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.Date
 import javax.inject.Inject
 
 data class HomeState(
@@ -24,7 +25,10 @@ data class HomeState(
     val continueWatchingEpisode: EpisodeDetailComplement? = null,
     val isRefreshing: Boolean = false,
     val isShowPopup: Boolean = false,
-    val isMinimized: Boolean = false
+    val isMinimized: Boolean = false,
+    val autoScrollEnabled: Boolean = true,
+    val carouselLastInteractionTime: Long = Date().time,
+    val currentCarouselPage: Int = 0
 )
 
 sealed class HomeAction {
@@ -34,6 +38,9 @@ sealed class HomeAction {
     data object FetchContinueWatchingEpisode : HomeAction()
     data class SetMinimized(val minimize: Boolean) : HomeAction()
     data class SetShowPopup(val show: Boolean) : HomeAction()
+    data class SetAutoScrollEnabled(val enabled: Boolean) : HomeAction()
+    data object UpdateCarouselLastInteractionTime : HomeAction()
+    data class SetCurrentCarouselPage(val page: Int) : HomeAction()
 }
 
 @HiltViewModel
@@ -58,6 +65,9 @@ class AnimeHomeViewModel @Inject constructor(
             HomeAction.FetchContinueWatchingEpisode -> fetchContinueWatchingEpisode()
             is HomeAction.SetMinimized -> setMinimized(action.minimize)
             is HomeAction.SetShowPopup -> setShowPopup(action.show)
+            is HomeAction.SetAutoScrollEnabled -> setAutoScrollEnabled(action.enabled)
+            HomeAction.UpdateCarouselLastInteractionTime -> updateCarouselLastInteractionTime()
+            is HomeAction.SetCurrentCarouselPage -> setCurrentCarouselPage(action.page)
         }
     }
 
@@ -97,5 +107,17 @@ class AnimeHomeViewModel @Inject constructor(
 
     private fun setShowPopup(show: Boolean) {
         _state.update { it.copy(isShowPopup = show) }
+    }
+
+    private fun setAutoScrollEnabled(enabled: Boolean) {
+        _state.update { it.copy(autoScrollEnabled = enabled) }
+    }
+
+    private fun updateCarouselLastInteractionTime() {
+        _state.update { it.copy(carouselLastInteractionTime = Date().time) }
+    }
+
+    private fun setCurrentCarouselPage(page: Int) {
+        _state.update { it.copy(currentCarouselPage = page) }
     }
 }

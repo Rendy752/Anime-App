@@ -107,6 +107,14 @@ fun AnimeHomeScreen(
                             is Resource.Success -> {
                                 TopAnimeCarousel(
                                     topAnimeList = state.top10Anime.data.data,
+                                    currentCarouselPage = state.currentCarouselPage,
+                                    autoScrollEnabled = state.autoScrollEnabled,
+                                    carouselLastInteractionTime = state.carouselLastInteractionTime,
+                                    onPageChanged = { action(HomeAction.SetCurrentCarouselPage(it)) },
+                                    onAutoScrollEnabledChanged = {
+                                        action(HomeAction.SetAutoScrollEnabled(it))
+                                    },
+                                    onCarouselInteraction = { action(HomeAction.UpdateCarouselLastInteractionTime) },
                                     navController = navController
                                 )
                             }

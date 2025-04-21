@@ -48,6 +48,10 @@ class AnimeHomeViewModelTest {
             animeHomeRepository.getAnimeSchedules(AnimeSchedulesSearchQueryState())
         } returns Resource.Loading()
 
+        coEvery {
+            animeHomeRepository.getTop10Anime()
+        } returns Resource.Loading()
+
         viewModel = AnimeHomeViewModel(animeHomeRepository, animeEpisodeDetailRepository)
     }
 
@@ -61,12 +65,16 @@ class AnimeHomeViewModelTest {
         val viewModel = AnimeHomeViewModel(animeHomeRepository, animeEpisodeDetailRepository)
 
         val initialState = HomeState()
+        assertEquals(initialState.carouselLastInteractionTime, viewModel.state.value.carouselLastInteractionTime)
         assertTrue(viewModel.state.value.animeSchedules is Resource.Loading)
+        assertTrue(viewModel.state.value.top10Anime is Resource.Loading)
         assertEquals(initialState.queryState, viewModel.state.value.queryState)
         assertEquals(initialState.continueWatchingEpisode, viewModel.state.value.continueWatchingEpisode)
         assertEquals(initialState.isRefreshing, viewModel.state.value.isRefreshing)
         assertEquals(initialState.isShowPopup, viewModel.state.value.isShowPopup)
         assertEquals(initialState.isMinimized, viewModel.state.value.isMinimized)
+        assertEquals(initialState.currentCarouselPage, viewModel.state.value.currentCarouselPage)
+        assertEquals(initialState.autoScrollEnabled, viewModel.state.value.autoScrollEnabled)
     }
 
     @Test
@@ -98,6 +106,34 @@ class AnimeHomeViewModelTest {
 
         assertFalse(viewModel.state.value.isRefreshing)
         assertEquals(mockResponse, viewModel.state.value.animeSchedules)
+    }
+
+    @Test
+    fun `GetTop10Anime success`() = runTest {
+        val mockResponse = Resource.Success(
+            ListAnimeDetailResponse(
+                pagination = defaultCompletePagination,
+                data = listOf(animeDetailPlaceholder)
+            )
+        )
+        coEvery { animeHomeRepository.getTop10Anime() } returns mockResponse
+
+        viewModel.dispatch(HomeAction.GetTop10Anime)
+
+        assertEquals(mockResponse, viewModel.state.value.top10Anime)
+    }
+
+    @Test
+    fun `GetTop10Anime failure`() = runTest {
+        val errorMessage = "API Error"
+        val mockResponse = Resource.Error<ListAnimeDetailResponse>(errorMessage)
+        coEvery { animeHomeRepository.getTop10Anime() } returns mockResponse
+
+        assertNull(viewModel.state.value.top10Anime.data)
+
+        viewModel.dispatch(HomeAction.GetTop10Anime)
+
+        assertEquals(mockResponse, viewModel.state.value.top10Anime)
     }
 
     @Test

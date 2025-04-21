@@ -16,12 +16,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
@@ -31,23 +25,28 @@ import androidx.navigation.NavHostController
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.utils.Navigation.navigateToAnimeDetail
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import java.util.Date
 
 @Composable
-fun TopAnimeCarousel(topAnimeList: List<AnimeDetail>, navController: NavHostController) {
+fun TopAnimeCarousel(
+    topAnimeList: List<AnimeDetail>,
+    currentCarouselPage: Int,
+    autoScrollEnabled: Boolean,
+    carouselLastInteractionTime: Long,
+    onPageChanged: (Int) -> Unit,
+    onAutoScrollEnabledChanged: (Boolean) -> Unit,
+    onCarouselInteraction: () -> Unit,
+    navController: NavHostController
+) {
     if (topAnimeList.isNotEmpty()) {
         val topAnimeCount = topAnimeList.size
         val pagerState = rememberPagerState(
             pageCount = { Int.MAX_VALUE },
-            initialPage = 0
+            initialPage = currentCarouselPage
         )
-        val coroutineScope = rememberCoroutineScope()
-        var isAutoScrollingEnabled by remember { mutableStateOf(true) }
-        val lastInteractionTime = remember { mutableLongStateOf(Date().time) }
 
-        LaunchedEffect(isAutoScrollingEnabled) {
-            if (isAutoScrollingEnabled && topAnimeCount > 1) {
+        LaunchedEffect(autoScrollEnabled) {
+            if (autoScrollEnabled && topAnimeCount > 1) {
                 while (true) {
                     delay(3000)
                     pagerState.animateScrollToPage((pagerState.currentPage + 1) % topAnimeCount)
@@ -56,11 +55,15 @@ fun TopAnimeCarousel(topAnimeList: List<AnimeDetail>, navController: NavHostCont
         }
 
         LaunchedEffect(pagerState.currentPage) {
-            coroutineScope.launch {
-                delay(5000)
+            onPageChanged(pagerState.currentPage)
+        }
+
+        LaunchedEffect(Unit) {
+            while (true) {
+                delay(1000)
                 val currentTime = Date().time
-                if (currentTime - lastInteractionTime.longValue >= 5000 && !isAutoScrollingEnabled) {
-                    isAutoScrollingEnabled = true
+                if (!autoScrollEnabled && currentTime - carouselLastInteractionTime >= 5000) {
+                    onAutoScrollEnabledChanged(true)
                 }
             }
         }
@@ -71,11 +74,11 @@ fun TopAnimeCarousel(topAnimeList: List<AnimeDetail>, navController: NavHostCont
                 .pointerInput(Unit) {
                     detectDragGestures(
                         onDragStart = {
-                            isAutoScrollingEnabled = false
-                            lastInteractionTime.longValue = Date().time
+                            onAutoScrollEnabledChanged(false)
+                            onCarouselInteraction()
                         },
-                        onDrag = { _, _ -> lastInteractionTime.longValue = Date().time },
-                        onDragEnd = { lastInteractionTime.longValue = Date().time }
+                        onDrag = { _, _ -> onCarouselInteraction() },
+                        onDragEnd = { onCarouselInteraction() }
                     )
                 },
         ) {
