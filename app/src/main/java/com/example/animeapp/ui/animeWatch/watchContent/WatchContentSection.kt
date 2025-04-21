@@ -27,15 +27,15 @@ fun WatchContentSection(
                     isFavorite = isFavorite,
                     episode = currentEpisode,
                     episodeDetailComplement = episodeDetail,
-                    episodeSourcesQuery = episodeSourcesQuery
-                ) { handleSelectedEpisodeServer(it) }
+                    episodeSourcesQuery = episodeSourcesQuery,
+                    onServerSelected = { handleSelectedEpisodeServer(it) }
+                )
             }
         }
     } else {
         WatchHeaderSkeleton()
     }
     if (episodes.size > 1) WatchEpisode(
-        animeDetail = animeDetail,
         getCachedEpisodeDetailComplement = getCachedEpisodeDetailComplement,
         episodeDetailComplement = episodeDetailComplement,
         episodes = episodes,

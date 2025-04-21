@@ -25,7 +25,6 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.Episode
 import com.example.animeapp.ui.common_ui.SkeletonBox
 import kotlinx.coroutines.launch
@@ -33,7 +32,6 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EpisodeJump(
-    animeDetail: AnimeDetail,
     episodes: List<Episode>,
     gridState: LazyGridState
 ) {
@@ -58,7 +56,7 @@ fun EpisodeJump(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                animeDetail.episodes.toString(),
+                episodes.size.toString(),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -69,7 +67,7 @@ fun EpisodeJump(
             onValueChange = { newValue ->
                 val filteredValue = newValue.filter { it.isDigit() }
                 val intValue = filteredValue.toIntOrNull()
-                if (intValue == null || (intValue >= 1 && intValue <= animeDetail.episodes)) {
+                if (intValue == null || (intValue >= 1 && intValue <= episodes.size)) {
                     episodeNumberInput = filteredValue
                     intValue?.let { episodeNo ->
                         val index = episodes.indexOfFirst { it.episodeNo == episodeNo }
