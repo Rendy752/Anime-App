@@ -40,7 +40,7 @@ fun AnimeHeader(animeDetail: AnimeDetail) {
         verticalAlignment = Alignment.CenterVertically
     ) {
         AsyncImageWithPlaceholder(
-            model = animeDetail.images.jpg.large_image_url,
+            model = animeDetail.images.webp.large_image_url,
             contentDescription = animeDetail.title,
             isAiring = animeDetail.airing,
             modifier = Modifier

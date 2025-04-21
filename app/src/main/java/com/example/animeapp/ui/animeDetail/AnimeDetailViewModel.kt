@@ -235,7 +235,7 @@ class AnimeDetailViewModel @Inject constructor(
                             aniwatchId = aniwatchId,
                             animeTitle = animeDetail.title,
                             episodeTitle = episode.name,
-                            imageUrl = animeDetail.images.jpg.image_url,
+                            imageUrl = animeDetail.images.webp.large_image_url,
                             number = episode.episodeNo,
                             isFiller = episode.filler,
                             servers = servers,

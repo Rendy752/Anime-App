@@ -42,7 +42,7 @@ fun HeaderPair(
         )
 
         AsyncImageWithPlaceholder(
-            model = anime.images.jpg.image_url,
+            model = anime.images.webp.large_image_url,
             contentDescription = anime.title,
         )
 

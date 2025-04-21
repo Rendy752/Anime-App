@@ -37,12 +37,13 @@ fun AnimeScheduleItem(
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
             AsyncImageWithPlaceholder(
-                model = animeDetail.images.jpg.image_url,
+                model = animeDetail.images.webp.large_image_url,
                 contentDescription = animeDetail.title,
                 roundedCorners = ImageRoundedCorner.TOP,
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(2f / 3f),
+                isClickable = false
             )
             animeDetail.type?.let {
                 Text(

@@ -46,7 +46,7 @@ fun TopAnimeItem(animeDetail: AnimeDetail, onItemClick: (String, Int) -> Unit) {
             }
     ) {
         AsyncImageWithPlaceholder(
-            model = animeDetail.images.jpg.large_image_url,
+            model = animeDetail.images.webp.large_image_url,
             contentDescription = animeDetail.title,
             modifier = Modifier
                 .fillMaxHeight()
