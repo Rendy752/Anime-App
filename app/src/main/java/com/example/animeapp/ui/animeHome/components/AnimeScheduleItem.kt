@@ -6,12 +6,14 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -104,14 +106,39 @@ fun AnimeScheduleItemSkeleton() {
                 innerPadding = PaddingValues(0.dp)
             )
     ) {
+        Box(modifier = Modifier.fillMaxWidth()) {
+            SkeletonBox(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(2f / 3f)
+            )
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(8.dp)
+            ) {
+                SkeletonBox(
+                    modifier = Modifier.clip(RoundedCornerShape(16.dp)),
+                    width = 30.dp,
+                    height = 20.dp
+                )
+            }
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(8.dp)
+            ) {
+                SkeletonBox(
+                    modifier = Modifier.clip(RoundedCornerShape(16.dp)),
+                    width = 75.dp,
+                    height = 20.dp
+                )
+            }
+        }
         SkeletonBox(
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(2f / 3f)
-        )
-        SkeletonBox(
-            modifier = Modifier
-                .fillMaxWidth()
+                .clip(RoundedCornerShape(16.dp))
                 .padding(8.dp),
             height = 20.dp
         )
