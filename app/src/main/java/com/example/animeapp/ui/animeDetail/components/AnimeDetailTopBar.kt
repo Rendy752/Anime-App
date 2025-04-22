@@ -28,7 +28,7 @@ import androidx.navigation.NavController
 import com.example.animeapp.R
 import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.AnimeDetailResponse
-import com.example.animeapp.models.EpisodeDetailComplement
+import com.example.animeapp.ui.common_ui.SkeletonBox
 import com.example.animeapp.utils.Navigation.navigateToAnimeWatch
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ShareUtils
@@ -39,12 +39,11 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnimeDetailTopBar(
-    animeTitle: String,
     animeDetail: Resource<AnimeDetailResponse>?,
     animeDetailComplement: Resource<AnimeDetailComplement?>?,
-    defaultEpisode: EpisodeDetailComplement?,
+    defaultEpisodeId: String?,
     navController: NavController,
-    onFavoriteToggle: (AnimeDetailComplement) -> Unit
+    onFavoriteToggle: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -68,11 +67,30 @@ fun AnimeDetailTopBar(
                 }
             },
             title = {
-                Text(
-                    text = animeDetail?.data?.data?.title ?: animeTitle,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                when (animeDetail) {
+                    is Resource.Loading -> SkeletonBox(
+                        width = 200.dp,
+                        height = 40.dp
+                    )
+
+                    is Resource.Success -> Text(
+                        text = animeDetail.data.data.title,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    is Resource.Error -> Text(
+                        text = "Error",
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    else -> Text(
+                        text = "Empty",
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             },
             actions = {
                 animeDetail?.data?.data?.let { animeDetailData ->
@@ -83,7 +101,7 @@ fun AnimeDetailTopBar(
                             debounceJob.value = scope.launch {
                                 delay(300)
                                 animeDetailComplement.data?.let {
-                                    onFavoriteToggle(it.copy(isFavorite = isFavorite.value))
+                                    onFavoriteToggle(isFavorite.value)
                                 }
                             }
                         }) {
@@ -97,24 +115,23 @@ fun AnimeDetailTopBar(
 
                     if (animeDetailComplement is Resource.Success &&
                         animeDetailComplement.data?.episodes?.isNotEmpty() == true &&
-                        defaultEpisode != null
+                        defaultEpisodeId != null
                     ) {
                         animeDetailComplement.data.let { animeDetailComplement ->
-                            IconButton(onClick = {
-                                navController.navigateToAnimeWatch(
-                                    animeDetail = animeDetailData,
-                                    animeDetailComplement = animeDetailComplement,
-                                    episodeId = animeDetailComplement.lastEpisodeWatchedId
-                                        ?: animeDetailComplement.episodes[0].episodeId,
-                                    episodes = animeDetailComplement.episodes,
-                                    defaultEpisode = defaultEpisode
-                                )
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Filled.LiveTv,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    contentDescription = stringResource(id = R.string.watch)
-                                )
+                            animeDetailComplement.episodes?.let { episodes ->
+                                IconButton(onClick = {
+                                    navController.navigateToAnimeWatch(
+                                        malId = animeDetailData.mal_id,
+                                        episodeId = animeDetailComplement.lastEpisodeWatchedId
+                                            ?: defaultEpisodeId,
+                                    )
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.Filled.LiveTv,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        contentDescription = stringResource(id = R.string.watch)
+                                    )
+                                }
                             }
                         }
                     }

@@ -18,20 +18,21 @@ import androidx.compose.ui.unit.dp
 import com.example.animeapp.R
 import com.example.animeapp.models.Genre
 import com.example.animeapp.models.Producer
-import com.example.animeapp.ui.animeSearch.AnimeSearchViewModel
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun GenreProducerFilterFieldSection(
-    viewModel: AnimeSearchViewModel,
+    selectedGenres: List<Genre>,
+    setSelectedGenre: (Genre) -> Unit,
+    applyGenreFilters: () -> Unit,
+    selectedProducers: List<Producer>,
+    setSelectedProducer: (Producer) -> Unit,
+    applyProducerFilters: () -> Unit,
     isGenresBottomSheetShow: Boolean,
     isProducersBottomSheetShow: Boolean,
     setGenresBottomSheet: (Boolean) -> Unit,
     setProducersBottomSheet: (Boolean) -> Unit
 ) {
-    val selectedGenres by viewModel.selectedGenres.collectAsState()
-    val selectedProducers by viewModel.selectedProducers.collectAsState()
-
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -61,8 +62,8 @@ fun GenreProducerFilterFieldSection(
                     FilterChipFlow(
                         itemList = selectedGenres,
                         onSetSelectedId = {
-                            viewModel.setSelectedGenre(it as Genre)
-                            viewModel.applyGenreFilters()
+                            setSelectedGenre(it as Genre)
+                            applyGenreFilters()
                         },
                         itemName = { (it as Genre).name },
                         getItemId = { it },
@@ -107,8 +108,8 @@ fun GenreProducerFilterFieldSection(
                     FilterChipFlow(
                         itemList = selectedProducers,
                         onSetSelectedId = {
-                            viewModel.setSelectedProducer(it as Producer)
-                            viewModel.applyProducerFilters()
+                            setSelectedProducer(it as Producer)
+                            applyProducerFilters()
                         },
                         itemName = { (it as Producer).titles?.get(0)?.title ?: "Unknown" },
                         getItemId = { it },

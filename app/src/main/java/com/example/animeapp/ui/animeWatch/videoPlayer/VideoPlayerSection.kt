@@ -39,7 +39,7 @@ import kotlinx.coroutines.withTimeout
 @OptIn(UnstableApi::class, ExperimentalComposeUiApi::class)
 @Composable
 fun VideoPlayerSection(
-    updateStoredWatchState: (Long) -> Unit,
+    updateStoredWatchState: (Long?) -> Unit,
     episodeDetailComplement: EpisodeDetailComplement,
     episodes: List<Episode>,
     episodeSourcesQuery: EpisodeSourcesQuery,
@@ -50,16 +50,16 @@ fun VideoPlayerSection(
     onFullscreenChange: (Boolean) -> Unit,
     isScreenOn: Boolean,
     isLandscape: Boolean,
-    onPlayerError: (String) -> Unit,
+    onPlayerError: (String?) -> Unit,
     modifier: Modifier = Modifier,
     videoSize: Modifier
 ) {
     val context = LocalContext.current
     val exoPlayer = remember(episodeSourcesQuery) { ExoPlayer.Builder(context).build() }
-    val audioManager = remember { context.getSystemService(Context.AUDIO_SERVICE) as AudioManager }
+    val audioManager = remember(episodeSourcesQuery) { context.getSystemService(Context.AUDIO_SERVICE) as AudioManager }
     val introOutroHandler =
         remember(episodeSourcesQuery) { IntroOutroHandler(exoPlayer, episodeDetailComplement.sources) }
-    val playerView = remember { PlayerView(context) }
+    val playerView = remember(episodeSourcesQuery) { PlayerView(context) }
     val currentEpisodeNo = episodeDetailComplement.servers.episodeNo
     val previousEpisode = remember(currentEpisodeNo) {
         episodes.find { it.episodeNo == currentEpisodeNo - 1 }
@@ -71,8 +71,8 @@ fun VideoPlayerSection(
     var isShowResumeOverlay by remember { mutableStateOf(episodeDetailComplement.lastTimestamp != null) }
     var isShowNextEpisode by remember { mutableStateOf(false) }
     var nextEpisodeName by remember { mutableStateOf("") }
-    var mediaSessionCompat: MediaSessionCompat? by remember { mutableStateOf(null) }
-    var mediaControllerCompat: MediaControllerCompat? by remember { mutableStateOf(null) }
+    var mediaSessionCompat: MediaSessionCompat? by remember(episodeSourcesQuery) { mutableStateOf(null) }
+    var mediaControllerCompat: MediaControllerCompat? by remember(episodeSourcesQuery) { mutableStateOf(null) }
     val playbackStateBuilder = remember { PlaybackStateCompat.Builder() }
 
     val handler = remember(episodeSourcesQuery) { Handler(Looper.getMainLooper()) }
@@ -113,6 +113,7 @@ fun VideoPlayerSection(
                 super.onIsPlayingChanged(isPlaying)
                 if (isPlaying) {
                     (context as? FragmentActivity)?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    onPlayerError(null)
                     HlsPlayerUtil.requestAudioFocus(audioManager)
                     updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
                     handler.post(savePositionRunnable)
@@ -126,6 +127,9 @@ fun VideoPlayerSection(
             override fun onPlaybackStateChanged(playbackState: Int) {
                 super.onPlaybackStateChanged(playbackState)
                 isLoading = false
+                if (playbackState == Player.STATE_READY && !exoPlayer.isPlaying) {
+                    onPlayerError(null)
+                }
                 episodeDetailComplement.servers.let { servers ->
                     if (playbackState == Player.STATE_ENDED) {
                         playerView.hideController()

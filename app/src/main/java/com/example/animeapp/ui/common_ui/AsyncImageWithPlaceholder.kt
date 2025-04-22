@@ -25,10 +25,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
+
+enum class ImageRoundedCorner {
+    NONE,
+    START,
+    END,
+    TOP,
+    BOTTOM,
+    ALL
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,18 +47,48 @@ fun AsyncImageWithPlaceholder(
     modifier: Modifier = Modifier,
     contentDescription: String?,
     isAiring: Boolean? = null,
+    roundedCorners: ImageRoundedCorner = ImageRoundedCorner.ALL,
+    isClickable: Boolean = true
 ) {
     var isImageLoading by remember { mutableStateOf(true) }
     var showDialog by remember { mutableStateOf(false) }
 
+    val cornerRadius = 8.dp
+    val shape: Shape = when (roundedCorners) {
+        ImageRoundedCorner.NONE -> RoundedCornerShape(0.dp)
+        ImageRoundedCorner.START -> RoundedCornerShape(
+            topStart = cornerRadius,
+            bottomStart = cornerRadius
+        )
+
+        ImageRoundedCorner.END -> RoundedCornerShape(
+            topEnd = cornerRadius,
+            bottomEnd = cornerRadius
+        )
+
+        ImageRoundedCorner.TOP -> RoundedCornerShape(topStart = cornerRadius, topEnd = cornerRadius)
+        ImageRoundedCorner.BOTTOM -> RoundedCornerShape(
+            bottomStart = cornerRadius,
+            bottomEnd = cornerRadius
+        )
+
+        ImageRoundedCorner.ALL -> RoundedCornerShape(cornerRadius)
+    }
+
     Box(
         modifier = modifier
             .size(100.dp, 150.dp)
-            .clickable {
-                if (model != null) {
-                    showDialog = true
+            .then(
+                if (isClickable) {
+                    Modifier.clickable {
+                        if (model != null) {
+                            showDialog = true
+                        }
+                    }
+                } else {
+                    Modifier
                 }
-            },
+            ),
         contentAlignment = Alignment.Center
     ) {
         AsyncImage(
@@ -56,8 +96,9 @@ fun AsyncImageWithPlaceholder(
             contentDescription = contentDescription,
             modifier = Modifier
                 .fillMaxSize()
-                .clip(RoundedCornerShape(8.dp)),
+                .clip(shape),
             contentScale = ContentScale.Crop,
+            alignment = Alignment.TopCenter,
             onSuccess = { isImageLoading = false },
             onError = { isImageLoading = false }
         )
@@ -101,7 +142,7 @@ fun AsyncImageWithPlaceholder(
     if (showDialog && model != null) {
         BasicAlertDialog(
             onDismissRequest = { showDialog = false },
-            properties = DialogProperties(usePlatformDefaultWidth = false),
+            properties = DialogProperties(usePlatformDefaultWidth = true),
             content = {
                 Box(
                     modifier = Modifier
@@ -111,7 +152,12 @@ fun AsyncImageWithPlaceholder(
                     contentAlignment = Alignment.Center
                 ) {
                     Column(horizontalAlignment = Alignment.End, modifier = Modifier.fillMaxSize()) {
-                        Box(modifier = Modifier.fillMaxSize().padding(16.dp), contentAlignment = Alignment.Center){
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .padding(16.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
                             AsyncImage(
                                 model = model,
                                 contentDescription = contentDescription,

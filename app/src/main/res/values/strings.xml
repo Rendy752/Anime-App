@@ -1,8 +1,5 @@
 <resources>
     <string name="app_name">AnimeApp</string>
-    <string name="title_recommendation">Recommendation</string>
-    <string name="title_search">Search</string>
-    <string name="title_settings">Settings</string>
     <string name="dark_mode">Dark Mode</string>
     <string name="dark_mode_description">Enable dark mode</string>
     <string name="score">Score</string>

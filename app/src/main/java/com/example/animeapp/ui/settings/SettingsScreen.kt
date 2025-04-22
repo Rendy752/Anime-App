@@ -1,6 +1,5 @@
 package com.example.animeapp.ui.settings
 
-import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.Column
 import androidx.compose.animation.core.animateFloatAsState
@@ -16,34 +15,34 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.animeapp.R
-import androidx.core.content.edit
+import com.example.animeapp.ui.main.BottomScreen
+import com.example.animeapp.ui.main.MainAction
+import com.example.animeapp.ui.main.MainState
 
 @OptIn(ExperimentalMaterial3Api::class)
+@Preview
 @Composable
-fun SettingsScreen() {
-    val context = LocalContext.current
-    val themePrefs = context.getSharedPreferences("theme_prefs", Context.MODE_PRIVATE)
-    val isDarkMode = remember { mutableStateOf(themePrefs.getBoolean("is_dark_mode", false)) }
-
+fun SettingsScreen(
+    mainState: MainState = MainState(),
+    mainAction: (MainAction) -> Unit = {}
+) {
     Scaffold(
         topBar = {
             Column {
                 TopAppBar(
                     title = {
                         Text(
-                            text = stringResource(id = R.string.title_settings),
+                            text = BottomScreen.Settings.label,
                             modifier = Modifier.padding(end = 8.dp),
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
@@ -80,18 +79,17 @@ fun SettingsScreen() {
                 }
 
                 val animatedScale by animateFloatAsState(
-                    targetValue = if (isDarkMode.value) 1.2f else 1f,
+                    targetValue = if (mainState.isDarkMode) 1.2f else 1f,
                     label = "scale"
                 )
 
                 Switch(
-                    checked = isDarkMode.value,
+                    checked = mainState.isDarkMode,
                     modifier = Modifier
                         .scale(animatedScale)
                         .padding(10.dp),
                     onCheckedChange = { checked ->
-                        isDarkMode.value = checked
-                        themePrefs.edit { putBoolean("is_dark_mode", checked) }
+                        mainAction(MainAction.SetDarkMode(checked))
                         if (checked) {
                             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
                         } else {

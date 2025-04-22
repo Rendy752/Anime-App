@@ -14,7 +14,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.R
-import com.example.animeapp.ui.animeSearch.AnimeSearchViewModel
+import com.example.animeapp.models.AnimeSearchQueryState
 import com.example.animeapp.ui.animeSearch.components.ApplyButton
 import com.example.animeapp.ui.animeSearch.components.ResetButton
 import com.example.animeapp.ui.common_ui.*
@@ -22,10 +22,11 @@ import com.example.animeapp.utils.FilterUtils
 
 @Composable
 fun FilterBottomSheet(
-    viewModel: AnimeSearchViewModel,
+    queryState: AnimeSearchQueryState,
+    applyFilters: (AnimeSearchQueryState) -> Unit,
+    resetBottomSheetFilters: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    val queryState by viewModel.queryState.collectAsState()
     val context = LocalContext.current
     val scrollState = rememberScrollState()
 
@@ -36,7 +37,14 @@ fun FilterBottomSheet(
             .fillMaxWidth()
             .padding(8.dp)
     ) {
-        FilterHeader(viewModel, filterState, context, onDismiss)
+        FilterHeader(
+            queryState,
+            applyFilters,
+            resetBottomSheetFilters,
+            filterState,
+            context,
+            onDismiss
+        )
         HorizontalDivider()
         FilterContent(scrollState, filterState)
     }
@@ -44,7 +52,9 @@ fun FilterBottomSheet(
 
 @Composable
 private fun FilterHeader(
-    viewModel: AnimeSearchViewModel,
+    queryState: AnimeSearchQueryState,
+    applyFilters: (AnimeSearchQueryState) -> Unit,
+    resetBottomSheetFilters: () -> Unit,
     filterState: MutableState<FilterUtils.FilterState>,
     context: Context,
     onDismiss: () -> Unit
@@ -66,40 +76,42 @@ private fun FilterHeader(
         Row {
             ResetButton(
                 context,
-                { viewModel.queryState.value.isDefault() },
+                { queryState.isDefault() },
                 {
-                    viewModel.resetBottomSheetFilters()
+                    resetBottomSheetFilters()
                     filterState.value =
                         FilterUtils.FilterState(filterState.value.queryState.resetBottomSheetFilters())
                     onDismiss()
                 }
             )
             Spacer(Modifier.width(4.dp))
-            val updatedQueryState = FilterUtils.collectFilterValues(
-                currentState = filterState.value.queryState,
-                type = filterState.value.type,
-                score = filterState.value.score?.toDoubleOrNull(),
-                minScore = filterState.value.minScore?.toDoubleOrNull(),
-                maxScore = filterState.value.maxScore?.toDoubleOrNull(),
-                status = filterState.value.status,
-                rating = filterState.value.rating,
-                sfw = filterState.value.sfw,
-                unapproved = filterState.value.unapproved,
-                orderBy = filterState.value.orderBy,
-                sort = filterState.value.sort,
-                enableDateRange = filterState.value.enableDateRange,
-                startDate = filterState.value.startDate,
-                endDate = filterState.value.endDate
-            )
-            val defaultQueryState = filterState.value.queryState.resetBottomSheetFilters()
-            ApplyButton(
-                context,
-                { updatedQueryState == defaultQueryState },
-                {
-                    viewModel.applyFilters(updatedQueryState)
-                    onDismiss()
-                }
-            )
+            filterState.value.apply {
+                val updatedQueryState = FilterUtils.collectFilterValues(
+                    currentState = queryState,
+                    type = type,
+                    score = score?.toDoubleOrNull(),
+                    minScore = minScore?.toDoubleOrNull(),
+                    maxScore = maxScore?.toDoubleOrNull(),
+                    status = status,
+                    rating = rating,
+                    sfw = sfw,
+                    unapproved = unapproved,
+                    orderBy = orderBy,
+                    sort = sort,
+                    enableDateRange = enableDateRange,
+                    startDate = startDate,
+                    endDate = endDate
+                )
+                val defaultQueryState = queryState.resetBottomSheetFilters()
+                ApplyButton(
+                    context,
+                    { updatedQueryState == defaultQueryState },
+                    {
+                        applyFilters(updatedQueryState)
+                        onDismiss()
+                    }
+                )
+            }
         }
     }
 }

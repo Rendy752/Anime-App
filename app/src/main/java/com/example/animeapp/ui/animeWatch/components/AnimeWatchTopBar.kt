@@ -26,9 +26,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.NetworkStatus
+import com.example.animeapp.ui.common_ui.SkeletonBox
 import com.example.animeapp.utils.Resource
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -37,7 +37,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnimeWatchTopBar(
-    animeDetail: AnimeDetail,
+    title: String?,
     isFavorite: Boolean,
     isLandscape: Boolean,
     networkStatus: NetworkStatus?,
@@ -65,12 +65,17 @@ fun AnimeWatchTopBar(
                 }
             },
             title = {
-                Text(
-                    animeDetail.title,
+                if (title != null) Text(
+                    title,
                     modifier = Modifier.padding(end = 8.dp),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
-                )
+                ) else {
+                    SkeletonBox(
+                        width = 200.dp,
+                        height = 40.dp
+                    )
+                }
             },
             actions = {
                 Row(

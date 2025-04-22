@@ -1,15 +1,15 @@
 package com.example.animeapp.ui.animeWatch.components
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
@@ -22,13 +22,14 @@ import com.example.animeapp.utils.Resource
 
 @Composable
 fun AnimeWatchContent(
-    animeDetail: AnimeDetail,
+    animeDetail: AnimeDetail?,
     isFavorite: Boolean,
-    updateStoredWatchState: (EpisodeDetailComplement, Long) -> Unit,
+    updateStoredWatchState: (EpisodeDetailComplement, Long?) -> Unit,
     getCachedEpisodeDetailComplement: suspend (String) -> EpisodeDetailComplement?,
-    episodeDetailComplement: Resource<EpisodeDetailComplement>,
     episodes: List<Episode>?,
+    episodeDetailComplement: Resource<EpisodeDetailComplement>,
     episodeSourcesQuery: EpisodeSourcesQuery?,
+    isConnected: Boolean,
     isLandscape: Boolean,
     isPipMode: Boolean,
     isFullscreen: Boolean,
@@ -45,7 +46,7 @@ fun AnimeWatchContent(
     episodes?.let { episodeList ->
         episodeSourcesQuery?.let { query ->
             Row(modifier = Modifier.fillMaxWidth()) {
-                if (episodeDetailComplement is Resource.Success) {
+                if (episodeDetailComplement is Resource.Success && isConnected) {
                     VideoPlayerSection(
                         updateStoredWatchState = { seekPosition ->
                             updateStoredWatchState(episodeDetailComplement.data, seekPosition)
@@ -73,8 +74,10 @@ fun AnimeWatchContent(
                 if (isLandscape && !isPipMode && !isFullscreen) {
                     LazyColumn(
                         modifier = Modifier
-                            .weight(0.5f)
-                            .padding(8.dp),
+                            .fillMaxSize()
+                            .weight(0.5f),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
                         state = scrollState
                     ) {
                         item {
@@ -98,7 +101,9 @@ fun AnimeWatchContent(
             }
             if (!isLandscape && !isPipMode && !isFullscreen) {
                 LazyColumn(
-                    modifier = Modifier.padding(8.dp),
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
                     state = scrollState
                 ) {
                     item {

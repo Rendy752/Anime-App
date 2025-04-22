@@ -39,12 +39,12 @@ class AnimeDetailConverter {
     }
 
     @TypeConverter
-    fun fromStringArray(strings: Array<String>): String {
+    fun fromStringList(strings: List<String>): String {
         return json.encodeToString(strings)
     }
 
     @TypeConverter
-    fun toStringArray(string: String): Array<String> {
+    fun toStringList(string: String): List<String> {
         return json.decodeFromString(string)
     }
 
@@ -89,13 +89,13 @@ class AnimeDetailConverter {
     }
 
     @TypeConverter
-    fun fromTheme(theme: Theme): String {
-        return json.encodeToString(theme)
+    fun fromTheme(theme: Theme?): String? {
+        return theme?.let { json.encodeToString(it) }
     }
 
     @TypeConverter
-    fun toTheme(themeJson: String): Theme {
-        return json.decodeFromString(themeJson)
+    fun toTheme(themeJson: String?): Theme? {
+        return themeJson?.let { json.decodeFromString(it) }
     }
 
     @TypeConverter

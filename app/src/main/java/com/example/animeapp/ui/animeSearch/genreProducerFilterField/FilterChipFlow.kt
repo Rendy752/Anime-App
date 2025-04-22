@@ -11,8 +11,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.Producer
+import com.example.animeapp.ui.common_ui.FilterChipSkeleton
 import com.example.animeapp.ui.common_ui.FilterChipView
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -50,6 +52,37 @@ fun FilterChipFlow(
                 imageUrl = if (item is Producer) item.images?.jpg?.image_url else null,
                 onCheckedChange = { onSetSelectedId(getItemId(item)) }
             )
+        }
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Preview
+@Composable
+fun FilterChipFlowSkeleton(
+    count: Int = 10,
+    isHorizontal: Boolean = false
+) {
+    val itemScrollState = rememberScrollState()
+    val modifier: Modifier = if (isHorizontal) {
+        Modifier
+            .fillMaxWidth()
+            .horizontalScroll(itemScrollState)
+    } else {
+        Modifier
+            .fillMaxWidth()
+            .verticalScroll(itemScrollState)
+    }
+    FlowRow(
+        modifier = modifier.padding(horizontal = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(
+            12.dp,
+            alignment = Alignment.CenterHorizontally
+        ),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        repeat(count) {
+            FilterChipSkeleton()
         }
     }
 }

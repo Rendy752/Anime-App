@@ -30,24 +30,25 @@ object HlsPlayerUtil {
     ) {
 
         if (videoData.sources.isNotEmpty() && videoData.sources[0].type == "hls") {
-
             val mediaItemUri = videoData.sources[0].url.toUri()
             val mediaItemBuilder = MediaItem.Builder()
                 .setUri(mediaItemUri)
 
-            val subtitleConfigurations = mutableListOf<SubtitleConfiguration>()
+            if (videoData.tracks.any { it.kind == "captions" }) {
+                val subtitleConfigurations = mutableListOf<SubtitleConfiguration>()
 
-            videoData.tracks.filter { it.kind == "captions" }.forEach { track ->
-                val subtitleConfiguration = SubtitleConfiguration.Builder(track.file.toUri())
-                    .setMimeType(MimeTypes.TEXT_VTT)
-                    .setLanguage(track.label?.substringBefore("-")?.trim())
-                    .setSelectionFlags(if (track.default == true) C.SELECTION_FLAG_DEFAULT else 0)
-                    .setLabel(track.label?.substringBefore("-")?.trim())
-                    .build()
-                subtitleConfigurations.add(subtitleConfiguration)
+                videoData.tracks.filter { it.kind == "captions" }.forEach { track ->
+                    val subtitleConfiguration = SubtitleConfiguration.Builder(track.file.toUri())
+                        .setMimeType(MimeTypes.TEXT_VTT)
+                        .setLanguage(track.label?.substringBefore("-")?.trim())
+                        .setSelectionFlags(if (track.default == true) C.SELECTION_FLAG_DEFAULT else 0)
+                        .setLabel(track.label?.substringBefore("-")?.trim())
+                        .build()
+                    subtitleConfigurations.add(subtitleConfiguration)
+                }
+
+                mediaItemBuilder.setSubtitleConfigurations(subtitleConfigurations)
             }
-
-            mediaItemBuilder.setSubtitleConfigurations(subtitleConfigurations)
 
             player.setMediaItem(mediaItemBuilder.build())
             player.prepare()

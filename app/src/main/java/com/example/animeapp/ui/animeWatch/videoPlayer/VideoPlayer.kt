@@ -60,6 +60,7 @@ fun VideoPlayer(
         PlayerViewWrapper(
             playerView = playerView,
             exoPlayer = exoPlayer,
+            tracks = episodeDetailComplement.sources.tracks,
             isPipMode = isPipMode,
             onFullscreenChange = onFullscreenChange,
             isFullscreen = isFullscreen,

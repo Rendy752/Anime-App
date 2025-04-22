@@ -5,6 +5,8 @@ import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.telephony.TelephonyManager
 import androidx.lifecycle.LiveData
@@ -28,38 +30,16 @@ class NetworkStateMonitor(context: Context) {
     private val _networkStatus = MutableLiveData<NetworkStatus>()
     val networkStatus: LiveData<NetworkStatus> = _networkStatus
 
-    init {
-        checkConnectivity(context)
-    }
-
-    private fun checkConnectivity(context: Context) {
-        val network = connectivityManager.activeNetwork ?: return
-        val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return
-        val isCurrentlyConnected = when {
-            activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) -> true
-            activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) -> true
-            activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET) -> true
-            else -> false
-        }
-        _isConnected.postValue(isCurrentlyConnected)
-
-        _downstreamSpeed.postValue(activeNetwork.linkDownstreamBandwidthKbps)
-
-        updateNetworkStatus(activeNetwork.linkDownstreamBandwidthKbps, context)
-    }
+    private val handler = Handler(Looper.getMainLooper())
+    private val connectivityCheckDelay = 500L
 
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
-            _isConnected.postValue(true)
-            val activeNetwork = connectivityManager.getNetworkCapabilities(network) ?: return
-            _downstreamSpeed.postValue(activeNetwork.linkDownstreamBandwidthKbps)
-            updateNetworkStatus(activeNetwork.linkDownstreamBandwidthKbps, context)
+            postDelayedConnectivityCheck()
         }
 
         override fun onLost(network: Network) {
-            _isConnected.postValue(false)
-            _downstreamSpeed.postValue(0)
-            updateNetworkStatus(0, context)
+            postDelayedConnectivityCheck()
         }
 
         override fun onCapabilitiesChanged(
@@ -69,13 +49,43 @@ class NetworkStateMonitor(context: Context) {
             super.onCapabilitiesChanged(network, networkCapabilities)
             _downstreamSpeed.postValue(networkCapabilities.linkDownstreamBandwidthKbps)
             updateNetworkStatus(networkCapabilities.linkDownstreamBandwidthKbps, context)
+            postDelayedConnectivityCheck()
         }
     }
 
+    private fun postDelayedConnectivityCheck() {
+        handler.removeCallbacks(connectivityCheckRunnable)
+        handler.postDelayed(connectivityCheckRunnable, connectivityCheckDelay)
+    }
+
+    private val connectivityCheckRunnable = Runnable {
+        checkConnectivityInternal(context)
+    }
+
+    private fun checkConnectivityInternal(context: Context) {
+        val activeNetwork = connectivityManager.activeNetwork ?: run {
+            _isConnected.postValue(false)
+            _downstreamSpeed.postValue(0)
+            updateNetworkStatus(0, context)
+            return
+        }
+
+        val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: run {
+            _isConnected.postValue(false)
+            _downstreamSpeed.postValue(0)
+            updateNetworkStatus(0, context)
+            return
+        }
+
+        val hasInternet = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+        _isConnected.postValue(hasInternet)
+        _downstreamSpeed.postValue(capabilities.linkDownstreamBandwidthKbps)
+        updateNetworkStatus(capabilities.linkDownstreamBandwidthKbps, context)
+    }
+
     private fun updateNetworkStatus(speed: Int, context: Context) {
-        val connectivityManager = connectivityManager
-        val network = connectivityManager.activeNetwork
-        val activeNetwork = connectivityManager.getNetworkCapabilities(network)
+        val activeNetwork = connectivityManager.activeNetwork
+        val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork)
         val networkInfo = connectivityManager.activeNetworkInfo
 
         val isAirplaneModeOn = Settings.Global.getInt(
@@ -92,33 +102,38 @@ class NetworkStateMonitor(context: Context) {
             } else {
                 false
             }
+
         var icon: ImageVector = Icons.Filled.WifiOff
         var iconColor: Color = Color.Gray
         var label = "Offline"
+
         if (isAirplaneModeOn) {
             icon = Icons.Filled.AirplanemodeActive
             iconColor = Color.Gray
             label = "Airplane"
-        } else if (networkInfo == null || !networkInfo.isConnected) {
-            _networkStatus.postValue(
-                NetworkStatus(Icons.Filled.SignalCellularOff, "No signal", Color.Gray)
-            )
-            return
-        } else if (activeNetwork != null) {
-             if (activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+        } else if (activeNetwork == null || capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == false) {
+            if (networkInfo?.type == ConnectivityManager.TYPE_MOBILE && !isCellularDataEnabled) {
+                icon = Icons.Filled.SignalCellularOff
+                iconColor = Color.Gray
+                label = "Cellular Off"
+            } else {
+                icon = Icons.Filled.WifiOff
+                iconColor = Color.Red
+                label = "No Internet"
+            }
+        } else if (capabilities != null) {
+            if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
                 when (speed) {
                     in 1..5000 -> {
                         icon = Icons.Filled.Wifi1Bar
                         iconColor = Color.Red
                         label = "$speed Kbps"
-
                     }
 
                     in 5001..10000 -> {
                         icon = Icons.Filled.Wifi2Bar
                         iconColor = Color.Yellow
                         label = "$speed Kbps"
-
                     }
 
                     else -> {
@@ -127,7 +142,7 @@ class NetworkStateMonitor(context: Context) {
                         label = "$speed Kbps"
                     }
                 }
-            } else if (activeNetwork.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
+            } else if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
                 when (speed) {
                     in 1..5000 -> {
                         icon = Icons.Filled.SignalCellularAlt1Bar
@@ -149,25 +164,8 @@ class NetworkStateMonitor(context: Context) {
                 }
             } else {
                 icon = Icons.Filled.WifiOff
-                iconColor = Color.Red
-                label = "Unknown"
-            }
-        } else {
-            if (!isCellularDataEnabled) {
-                icon = Icons.Filled.SignalCellularOff
-                iconColor = Color.Gray
-                label = "Cellular Off"
-                _networkStatus.postValue(
-                    NetworkStatus(
-                        Icons.Filled.SignalCellularOff,
-                        "Cellular Off",
-                        iconColor
-                    )
-                )
-            } else {
-                icon = Icons.Filled.WifiOff
-                iconColor = Color.Gray
-                label = "Offline"
+                iconColor = Color.Green
+                label = "Connected"
             }
         }
         _networkStatus.postValue(NetworkStatus(icon, label, iconColor))
@@ -180,10 +178,11 @@ class NetworkStateMonitor(context: Context) {
             .addTransportType(NetworkCapabilities.TRANSPORT_ETHERNET)
         connectivityManager.registerNetworkCallback(builder.build(), networkCallback)
 
-        checkConnectivity(context)
+        checkConnectivityInternal(context)
     }
 
     fun stopMonitoring() {
         connectivityManager.unregisterNetworkCallback(networkCallback)
+        handler.removeCallbacks(connectivityCheckRunnable)
     }
 }

@@ -4,12 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.AnimeDetailComplement
-import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.EpisodeSourcesQuery
+import com.example.animeapp.models.episodeSourcesQueryPlaceholder
 import com.example.animeapp.repository.AnimeEpisodeDetailRepository
 import com.example.animeapp.utils.Resource
-import com.example.animeapp.utils.ResponseHandler
 import com.example.animeapp.utils.StreamingUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,10 +24,10 @@ class AnimeWatchViewModel @Inject constructor(
     private val _animeDetail = MutableStateFlow<AnimeDetail?>(null)
     val animeDetail: StateFlow<AnimeDetail?> = _animeDetail.asStateFlow()
 
-    private val _episodes = MutableStateFlow<List<Episode>?>(null)
-    val episodes: StateFlow<List<Episode>?> = _episodes.asStateFlow()
-
     private val _animeDetailComplement = MutableStateFlow<AnimeDetailComplement?>(null)
+    val animeDetailComplement: StateFlow<AnimeDetailComplement?> =
+        _animeDetailComplement.asStateFlow()
+
     private val _defaultEpisodeDetailComplement = MutableStateFlow<EpisodeDetailComplement?>(null)
 
     private val _episodeDetailComplement =
@@ -36,34 +35,52 @@ class AnimeWatchViewModel @Inject constructor(
     val episodeDetailComplement: StateFlow<Resource<EpisodeDetailComplement>> =
         _episodeDetailComplement.asStateFlow()
 
-    private val _episodeSourcesQuery = MutableStateFlow<EpisodeSourcesQuery?>(null)
-    val episodeSourcesQuery: StateFlow<EpisodeSourcesQuery?> = _episodeSourcesQuery.asStateFlow()
+    private val _episodeSourcesQuery = MutableStateFlow<EpisodeSourcesQuery>(
+        episodeSourcesQueryPlaceholder
+    )
+    val episodeSourcesQuery: StateFlow<EpisodeSourcesQuery> = _episodeSourcesQuery.asStateFlow()
 
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
-    fun setInitialState(
-        animeDetail: AnimeDetail,
-        animeDetailComplement: AnimeDetailComplement,
-        episodes: List<Episode>,
-        defaultEpisode: EpisodeDetailComplement?,
-    ) {
-        _animeDetail.value = animeDetail
-        _animeDetailComplement.value = animeDetailComplement
-        _episodes.value = episodes
-        _defaultEpisodeDetailComplement.value = defaultEpisode
-        restoreDefaultValues()
+    fun setInitialState(malId: Int, episodeId: String) {
+        viewModelScope.launch {
+            _animeDetail.value = animeEpisodeDetailRepository.getCachedAnimeDetailById(malId)
+
+            val animeDetailComplement =
+                animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(malId)
+            _animeDetailComplement.value = animeDetailComplement
+
+            animeDetailComplement?.let { animeDetailComplement ->
+                val defaultEpisode =
+                    if (animeDetailComplement.lastEpisodeWatchedId != null) animeEpisodeDetailRepository.getCachedEpisodeDetailComplement(
+                        animeDetailComplement.lastEpisodeWatchedId
+                    ) else animeEpisodeDetailRepository.getCachedDefaultEpisodeDetailComplementByMalId(
+                        malId
+                    )
+
+                _defaultEpisodeDetailComplement.value = defaultEpisode
+
+                handleSelectedEpisodeServer(
+                    defaultEpisode?.sourcesQuery?.copy(id = episodeId)
+                        ?: _episodeSourcesQuery.value.copy(id = episodeId),
+                    isFirstInit = true
+                )
+            }
+        }
     }
 
     fun handleSelectedEpisodeServer(
         episodeSourcesQuery: EpisodeSourcesQuery,
         isFirstInit: Boolean = false,
-        isRefreshed: Boolean = false
+        isRefresh: Boolean = false
     ) = viewModelScope.launch {
+        val tempEpisodeDetailComplement: EpisodeDetailComplement? =
+            (_episodeDetailComplement.value as? Resource.Success)?.data
         try {
             _isRefreshing.value = true
             _episodeDetailComplement.value = Resource.Loading()
-            if (!isRefreshed) {
+            if (!isRefresh) {
                 val cachedEpisodeDetailComplement =
                     getCachedEpisodeDetailComplement(episodeSourcesQuery.id)
 
@@ -86,7 +103,7 @@ class AnimeWatchViewModel @Inject constructor(
                         )
 
                         if (episodeSourcesResource !is Resource.Success) {
-                            restoreDefaultValues()
+                            restoreDefaultValues(tempEpisodeDetailComplement)
                             _episodeDetailComplement.value =
                                 Resource.Error(
                                     episodeSourcesResource.message
@@ -115,13 +132,10 @@ class AnimeWatchViewModel @Inject constructor(
                 }
             }
 
-            val episodeServersResponse =
-                animeEpisodeDetailRepository.getEpisodeServers(episodeSourcesQuery.id)
             val episodeServersResource =
-                ResponseHandler.handleCommonResponse(episodeServersResponse)
-
+                animeEpisodeDetailRepository.getEpisodeServers(episodeSourcesQuery.id)
             if (episodeServersResource !is Resource.Success) {
-                restoreDefaultValues()
+                restoreDefaultValues(tempEpisodeDetailComplement)
                 _episodeDetailComplement.value =
                     Resource.Error(
                         episodeServersResource.message ?: "Failed to fetch episode servers"
@@ -138,7 +152,7 @@ class AnimeWatchViewModel @Inject constructor(
             )
 
             if (episodeSourcesResource !is Resource.Success) {
-                restoreDefaultValues()
+                restoreDefaultValues(tempEpisodeDetailComplement)
                 _episodeDetailComplement.value =
                     Resource.Error(
                         episodeSourcesResource.message ?: "Failed to fetch episode sources"
@@ -148,52 +162,52 @@ class AnimeWatchViewModel @Inject constructor(
 
             episodeServersResource.data.let { servers ->
                 episodeSourcesResource.data.let { sources ->
-                    val cachedEpisodeDetailComplement =
+                    var cachedEpisodeDetailComplement =
                         getCachedEpisodeDetailComplement(episodeSourcesQuery.id)
-                    if (cachedEpisodeDetailComplement != null && cachedEpisodeDetailComplement.sourcesQuery != episodeSourcesQuery) {
-                        updateEpisodeDetailComplement(
-                            cachedEpisodeDetailComplement.copy(
-                                servers = servers,
-                                sources = sources,
-                                sourcesQuery = episodeSourcesQuery
-                            )
+                    if (cachedEpisodeDetailComplement != null) {
+                        cachedEpisodeDetailComplement = cachedEpisodeDetailComplement.copy(
+                            servers = servers,
+                            sources = sources,
+                            sourcesQuery = episodeSourcesQuery
                         )
+                        updateEpisodeDetailComplement(cachedEpisodeDetailComplement)
+                        _episodeDetailComplement.value =
+                            Resource.Success(cachedEpisodeDetailComplement)
                     } else {
-                        animeDetail.value?.let { animeDetail ->
-                            val remoteEpisodeDetailComplement = EpisodeDetailComplement(
-                                id = servers.episodeId,
-                                title = animeDetail.title,
-                                imageUrl = animeDetail.images.jpg.image_url,
-                                servers = servers,
-                                sources = sources,
-                                sourcesQuery = episodeSourcesQuery
-                            )
-
-                            if (cachedEpisodeDetailComplement != null) {
-                                updateEpisodeDetailComplement(
-                                    cachedEpisodeDetailComplement.copy(
-                                        id = remoteEpisodeDetailComplement.id,
-                                        title = remoteEpisodeDetailComplement.title,
-                                        imageUrl = remoteEpisodeDetailComplement.imageUrl,
-                                        servers = remoteEpisodeDetailComplement.servers,
-                                        sources = remoteEpisodeDetailComplement.sources,
-                                        sourcesQuery = remoteEpisodeDetailComplement.sourcesQuery,
+                        _animeDetail.value?.let { animeDetail ->
+                            val currentEpisode =
+                                _animeDetailComplement.value?.episodes?.firstOrNull { it.episodeId == servers.episodeId }
+                            currentEpisode?.let { currentEpisode ->
+                                _animeDetailComplement.value?.let { animeDetailComplement ->
+                                    val remoteEpisodeDetailComplement = EpisodeDetailComplement(
+                                        id = currentEpisode.episodeId,
+                                        malId = animeDetail.mal_id,
+                                        aniwatchId = animeDetailComplement.id,
+                                        animeTitle = animeDetail.title,
+                                        episodeTitle = currentEpisode.name,
+                                        imageUrl = animeDetail.images.webp.large_image_url,
+                                        number = currentEpisode.episodeNo,
+                                        isFiller = currentEpisode.filler,
+                                        servers = servers,
+                                        sources = sources,
+                                        sourcesQuery = episodeSourcesQuery
                                     )
-                                )
-                            } else {
-                                animeEpisodeDetailRepository.insertCachedEpisodeDetailComplement(
-                                    remoteEpisodeDetailComplement
-                                )
-                            }
 
-                            _episodeDetailComplement.value =
-                                Resource.Success(remoteEpisodeDetailComplement)
+                                    animeEpisodeDetailRepository.insertCachedEpisodeDetailComplement(
+                                        remoteEpisodeDetailComplement
+                                    )
+
+                                    _episodeDetailComplement.value =
+                                        Resource.Success(remoteEpisodeDetailComplement)
+                                }
+                            }
                         }
                     }
+                    _episodeSourcesQuery.value = episodeSourcesQuery
                 }
             }
         } catch (e: Exception) {
-            restoreDefaultValues()
+            restoreDefaultValues(tempEpisodeDetailComplement)
             _episodeDetailComplement.value =
                 Resource.Error(e.message ?: "An unexpected error occurred")
         } finally {
@@ -205,7 +219,7 @@ class AnimeWatchViewModel @Inject constructor(
         viewModelScope.launch {
             _animeDetailComplement.value?.let {
                 if (it.lastEpisodeWatchedId == lastEpisodeWatchedId) return@launch
-                animeEpisodeDetailRepository.updateAnimeDetailComplement(
+                animeEpisodeDetailRepository.updateCachedAnimeDetailComplement(
                     it.copy(lastEpisodeWatchedId = lastEpisodeWatchedId)
                 )
                 _animeDetailComplement.value = it.copy(lastEpisodeWatchedId = lastEpisodeWatchedId)
@@ -224,10 +238,15 @@ class AnimeWatchViewModel @Inject constructor(
             )
         }
 
-    private fun restoreDefaultValues() {
-        _defaultEpisodeDetailComplement.value?.let { default ->
-            _episodeDetailComplement.value = Resource.Success(default)
-            _episodeSourcesQuery.value = default.sourcesQuery
+    private fun restoreDefaultValues(episodeDetailComplement: EpisodeDetailComplement?) {
+        episodeDetailComplement?.let { complement ->
+            _episodeDetailComplement.value = Resource.Success(complement)
+            _episodeSourcesQuery.value = complement.sourcesQuery
+        } ?: run {
+            _defaultEpisodeDetailComplement.value?.let { default ->
+                _episodeDetailComplement.value = Resource.Success(default)
+                _episodeSourcesQuery.value = default.sourcesQuery
+            }
         }
     }
 }

@@ -22,7 +22,7 @@ import com.example.animeapp.ui.common_ui.AsyncImageWithPlaceholder
 fun HeaderPair(
     anime: AnimeHeader,
     isFirst: Boolean,
-    onItemClick: (AnimeHeader) -> Unit,
+    onItemClick: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -30,7 +30,7 @@ fun HeaderPair(
         modifier = modifier
             .clip(RoundedCornerShape(16.dp))
             .fillMaxWidth()
-            .clickable { onItemClick(anime) }
+            .clickable { onItemClick(anime.mal_id) }
     ) {
         Text(
             text = if (isFirst) "If you like" else "Then you might like",
@@ -42,7 +42,7 @@ fun HeaderPair(
         )
 
         AsyncImageWithPlaceholder(
-            model = anime.images.jpg.image_url,
+            model = anime.images.webp.large_image_url,
             contentDescription = anime.title,
         )
 

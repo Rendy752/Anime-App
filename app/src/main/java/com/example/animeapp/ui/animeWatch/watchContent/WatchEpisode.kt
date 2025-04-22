@@ -9,7 +9,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.EpisodeSourcesQuery
@@ -19,7 +18,6 @@ import com.example.animeapp.utils.basicContainer
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WatchEpisode(
-    animeDetail: AnimeDetail,
     getCachedEpisodeDetailComplement: suspend (String) -> EpisodeDetailComplement?,
     episodeDetailComplement: Resource<EpisodeDetailComplement>,
     episodes: List<Episode>,
@@ -32,14 +30,15 @@ fun WatchEpisode(
             .basicContainer()
             .fillMaxWidth()
     ) {
-        EpisodeJump(animeDetail, episodes, gridState)
+        EpisodeJump(episodes = episodes, gridState = gridState)
 
         if (episodeDetailComplement is Resource.Success) {
             EpisodeNavigation(
-                episodeDetailComplement.data,
-                episodes,
-                episodeSourcesQuery,
-                handleSelectedEpisodeServer,
+                episodeDetailComplement = episodeDetailComplement.data,
+                getCachedEpisodeDetailComplement = getCachedEpisodeDetailComplement,
+                episodes = episodes,
+                episodeSourcesQuery = episodeSourcesQuery,
+                handleSelectedEpisodeServer = handleSelectedEpisodeServer,
             )
         } else EpisodeNavigationSkeleton()
 
@@ -49,12 +48,12 @@ fun WatchEpisode(
                 .padding(top = 8.dp)
         )
         EpisodeSelectionGrid(
-            episodes,
-            getCachedEpisodeDetailComplement,
-            if (episodeDetailComplement is Resource.Success) episodeDetailComplement.data else null,
-            episodeSourcesQuery,
-            handleSelectedEpisodeServer,
-            gridState
+            episodes = episodes,
+            getCachedEpisodeDetailComplement = getCachedEpisodeDetailComplement,
+            episodeDetailComplement = if (episodeDetailComplement is Resource.Success) episodeDetailComplement.data else null,
+            episodeSourcesQuery = episodeSourcesQuery,
+            handleSelectedEpisodeServer = handleSelectedEpisodeServer,
+            gridState = gridState
         )
     }
 }

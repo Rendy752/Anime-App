@@ -5,8 +5,11 @@ import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.LocalActivity
-import androidx.compose.animation.AnimatedContentTransitionScope
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -14,43 +17,42 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
-import com.example.animeapp.models.AnimeDetail
-import com.example.animeapp.models.AnimeDetailComplement
+import com.example.animeapp.R
 import com.example.animeapp.models.CommonIdentity
-import com.example.animeapp.models.Episode
-import com.example.animeapp.models.EpisodeDetailComplement
-import com.example.animeapp.models.Genre
-import com.example.animeapp.models.Producer
 import com.example.animeapp.ui.animeDetail.AnimeDetailScreen
 import com.example.animeapp.ui.animeRecommendations.AnimeRecommendationsScreen
 import com.example.animeapp.ui.animeSearch.AnimeSearchScreen
 import com.example.animeapp.ui.animeWatch.AnimeWatchScreen
+import com.example.animeapp.ui.animeHome.AnimeHomeScreen
+import com.example.animeapp.ui.animeHome.AnimeHomeViewModel
+import com.example.animeapp.ui.common_ui.MessageDisplay
 import com.example.animeapp.ui.settings.SettingsScreen
+import com.example.animeapp.utils.Navigation.navigateToAnimeDetail
 import com.google.gson.Gson
-import java.net.URLDecoder
 
 @Composable
-fun MainScreen(navController: NavHostController) {
+fun MainScreen(
+    navController: NavHostController,
+    onResetIdleTimer: () -> Unit,
+    mainState: MainState,
+    mainAction: (MainAction) -> Unit
+) {
     val activity = LocalActivity.current
-    val gson = Gson()
-    var isBottomBarVisible by remember { mutableStateOf(true) }
+    var isCurrentBottomScreen by remember { mutableStateOf(true) }
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    isBottomBarVisible = when (currentRoute) {
-        "recommendations",
-        "search",
-        "settings" -> true
-
-        else -> false
-    }
+    isCurrentBottomScreen = BottomScreen.entries.any { it.route == currentRoute }
 
     LaunchedEffect(Unit) {
         activity?.let { activity ->
@@ -64,7 +66,7 @@ fun MainScreen(navController: NavHostController) {
                     if (segments.size >= 2 && segments[0] == "detail") {
                         val animeId = segments[1].toIntOrNull()
                         if (animeId != null) {
-                            navController.navigate("animeDetail/Title/$animeId")
+                            navController.navigateToAnimeDetail(animeId)
                         }
                     } else {
                         Toast.makeText(activity, "Invalid URL", Toast.LENGTH_SHORT).show()
@@ -73,6 +75,8 @@ fun MainScreen(navController: NavHostController) {
             }
         }
     }
+
+    LaunchedEffect(currentRoute) { onResetIdleTimer() }
 
     Surface(
         color = MaterialTheme.colorScheme.surface,
@@ -86,43 +90,40 @@ fun MainScreen(navController: NavHostController) {
         ) {
             NavHost(
                 navController = navController,
-                startDestination = "recommendations",
+                startDestination = BottomScreen.Home.route,
                 modifier = Modifier.weight(1f),
-                enterTransition = {
-                    slideIntoContainer(
-                        AnimatedContentTransitionScope.SlideDirection.Start,
-                        tween(700)
-                    )
-                },
-                exitTransition = {
-                    slideOutOfContainer(
-                        AnimatedContentTransitionScope.SlideDirection.Start,
-                        tween(700)
-                    )
-                },
-                popEnterTransition = {
-                    slideIntoContainer(
-                        AnimatedContentTransitionScope.SlideDirection.End,
-                        tween(700)
-                    )
-                },
-                popExitTransition = {
-                    slideOutOfContainer(
-                        AnimatedContentTransitionScope.SlideDirection.End,
-                        tween(700)
-                    )
-                }
+                enterTransition = { getBottomBarEnterTransition(initialState, targetState) },
+                exitTransition = { getBottomBarExitTransition(initialState, targetState) },
+                popEnterTransition = { getBottomBarEnterTransition(initialState, targetState) },
+                popExitTransition = { getBottomBarExitTransition(initialState, targetState) }
             ) {
-                composable("recommendations") {
-                    AnimeRecommendationsScreen(navController)
+                composable(BottomScreen.Home.route) {
+                    val animeHomeViewModel: AnimeHomeViewModel = hiltViewModel()
+                    AnimeHomeScreen(
+                        state = animeHomeViewModel.state.collectAsStateWithLifecycle().value,
+                        mainState = mainState,
+                        action = animeHomeViewModel::dispatch,
+                        currentRoute = currentRoute,
+                        navController = navController,
+                    )
                 }
 
-                composable("search") {
-                    AnimeSearchScreen(navController)
+                composable(BottomScreen.Recommendations.route) {
+                    AnimeRecommendationsScreen(
+                        navController = navController,
+                        mainState = mainState
+                    )
+                }
+
+                composable(BottomScreen.Search.route) {
+                    AnimeSearchScreen(
+                        navController = navController,
+                        mainState = mainState
+                    )
                 }
 
                 composable(
-                    "search/{genreIdentity}/{producerIdentity}",
+                    "${BottomScreen.Search.route}/{genreIdentity}/{producerIdentity}",
                     arguments = listOf(
                         navArgument("genreIdentity") {
                             type = NavType.StringType
@@ -133,85 +134,54 @@ fun MainScreen(navController: NavHostController) {
                             nullable = true
                         }
                     )
-                ) { backStackEntry ->
-                    val genreIdentityString = backStackEntry.arguments?.getString("genreIdentity")
-                    val producerIdentityString =
-                        backStackEntry.arguments?.getString("producerIdentity")
+                ) {
+                    val genreIdentityString = it.arguments?.getString("genreIdentity")
+                    val producerIdentityString = it.arguments?.getString("producerIdentity")
 
-                    val genre: Genre? = genreIdentityString?.let {
-                        if (it == "null") {
-                            null
-                        } else {
-                            gson.fromJson(Uri.decode(it), CommonIdentity::class.java).mapToGenre()
-                        }
+                    val gson = Gson()
+                    val genre = genreIdentityString?.let {
+                        if (it == "null") null
+                        else gson.fromJson(Uri.decode(it), CommonIdentity::class.java).mapToGenre()
                     }
-                    val producer: Producer? = producerIdentityString?.let {
-                        if (it == "null") {
-                            null
-                        } else {
-                            gson.fromJson(Uri.decode(it), CommonIdentity::class.java)
-                                .mapToProducer()
-                        }
+                    val producer = producerIdentityString?.let {
+                        if (it == "null") null
+                        else gson.fromJson(Uri.decode(it), CommonIdentity::class.java)
+                            .mapToProducer()
                     }
 
                     AnimeSearchScreen(
-                        navController,
-                        genre,
-                        producer,
+                        navController = navController,
+                        mainState = mainState,
+                        genre = genre,
+                        producer = producer
                     )
                 }
 
-                composable("settings") {
-                    SettingsScreen()
+                composable(BottomScreen.Settings.route) {
+                    SettingsScreen(
+                        mainState = mainState,
+                        mainAction = mainAction
+                    )
                 }
 
                 composable(
-                    "animeDetail/{animeTitle}/{animeId}",
-                    arguments = listOf(navArgument("animeId") { type = NavType.IntType })
-                ) { backStackEntry ->
-                    val animeTitle = backStackEntry.arguments?.getString("animeTitle") ?: ""
-                    val animeId = backStackEntry.arguments?.getInt("animeId") ?: 0
-                    AnimeDetailScreen(animeTitle, animeId, navController)
+                    "animeDetail/{id}",
+                    arguments = listOf(navArgument("id") { type = NavType.IntType })
+                ) {
+                    AnimeDetailScreen(
+                        id = it.arguments?.getInt("id") ?: 0,
+                        navController = navController,
+                        mainState = mainState
+                    )
                 }
 
                 composable(
-                    "animeWatch/{animeDetailJson}/{animeDetailComplementJson}/{episodeIdEncoded}/{episodesJson}/{defaultEpisodeJson}",
+                    "animeWatch/{malId}/{episodeId}",
                     arguments = listOf(
-                        navArgument("animeDetailJson") { type = NavType.StringType },
-                        navArgument("animeDetailComplementJson") { type = NavType.StringType },
-                        navArgument("episodeIdEncoded") { type = NavType.StringType },
-                        navArgument("episodesJson") { type = NavType.StringType },
-                        navArgument("defaultEpisodeJson") { type = NavType.StringType }
+                        navArgument("malId") { type = NavType.IntType },
+                        navArgument("episodeId") { type = NavType.StringType },
                     )
-                ) { backStackEntry ->
-                    val animeDetailJson =
-                        backStackEntry.arguments?.getString("animeDetailJson") ?: ""
-                    val animeDetailComplementJson =
-                        backStackEntry.arguments?.getString("animeDetailComplementJson") ?: ""
-                    val episodeIdEncoded =
-                        backStackEntry.arguments?.getString("episodeIdEncoded") ?: ""
-                    val episodesJson = backStackEntry.arguments?.getString("episodesJson") ?: ""
-                    val defaultEpisodeJson =
-                        backStackEntry.arguments?.getString("defaultEpisodeJson") ?: ""
-
-                    val animeDetail = Gson().fromJson(
-                        URLDecoder.decode(animeDetailJson, "UTF-8"),
-                        AnimeDetail::class.java
-                    )
-                    val animeDetailComplement = Gson().fromJson(
-                        URLDecoder.decode(animeDetailComplementJson, "UTF-8"),
-                        AnimeDetailComplement::class.java
-                    )
-                    val episodeId = URLDecoder.decode(episodeIdEncoded, "UTF-8")
-                    val episodes = Gson().fromJson(
-                        URLDecoder.decode(episodesJson, "UTF-8"),
-                        Array<Episode>::class.java
-                    ).toList()
-                    val defaultEpisode = Gson().fromJson(
-                        URLDecoder.decode(defaultEpisodeJson, "UTF-8"),
-                        EpisodeDetailComplement::class.java
-                    )
-
+                ) {
                     var isPipMode by remember { mutableStateOf(false) }
                     val activity = LocalActivity.current as? MainActivity
 
@@ -237,23 +207,47 @@ fun MainScreen(navController: NavHostController) {
                     }
 
                     AnimeWatchScreen(
-                        animeDetail = animeDetail,
-                        animeDetailComplement = animeDetailComplement,
-                        episodeId = episodeId,
-                        episodesList = episodes,
-                        defaultEpisode = defaultEpisode,
+                        malId = it.arguments?.getInt("malId") ?: 0,
+                        episodeId = it.arguments?.getString("episodeId") ?: "",
                         navController = navController,
+                        mainState = mainState,
                         isPipMode = isPipMode,
                         onEnterPipMode = {
-                            activity?.enterPictureInPictureMode(
+                            if (mainState.isConnected) activity?.enterPictureInPictureMode(
                                 PictureInPictureParams.Builder().build()
                             )
                         }
                     )
                 }
             }
-            if (isBottomBarVisible) {
+            AnimatedVisibility(
+                visible = isCurrentBottomScreen,
+                enter = slideInVertically(
+                    initialOffsetY = { it },
+                    animationSpec = tween(durationMillis = 1000, easing = EaseInOut)
+                ),
+                exit = slideOutVertically(
+                    targetOffsetY = { it },
+                    animationSpec = tween(durationMillis = 1000, easing = EaseInOut)
+                )
+            ) {
                 BottomNavigationBar(navController)
+            }
+            AnimatedVisibility(
+                visible = !mainState.isConnected,
+                enter = slideInVertically(
+                    initialOffsetY = { it },
+                    animationSpec = tween(durationMillis = 1000, easing = EaseInOut)
+                ),
+                exit = slideOutVertically(
+                    targetOffsetY = { it },
+                    animationSpec = tween(durationMillis = 1000, easing = EaseInOut)
+                )
+            ) {
+                MessageDisplay(
+                    message = stringResource(R.string.no_internet_connection),
+                    isRounded = false
+                )
             }
         }
     }
