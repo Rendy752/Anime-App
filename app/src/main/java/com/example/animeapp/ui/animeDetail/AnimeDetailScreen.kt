@@ -262,7 +262,7 @@ private fun LeftColumnContent(data: AnimeDetail, navController: NavController) {
 @Composable
 private fun RightColumnContent(
     viewModel: AnimeDetailViewModel,
-    data: AnimeDetail,
+    animeDetail: AnimeDetail,
     animeDetailComplement: Resource<AnimeDetailComplement?>?,
     defaultEpisode: EpisodeDetailComplement?,
     navController: NavController,
@@ -271,15 +271,16 @@ private fun RightColumnContent(
 ) {
     Column(modifier = Modifier.padding(8.dp)) {
         listOf(
-            "Background" to data.background,
-            "Synopsis" to data.synopsis,
+            "Background" to animeDetail.background,
+            "Synopsis" to animeDetail.synopsis,
         ).forEach { DetailCommonBody(it.first, it.second) }
         RelationSection(
             navController,
-            data.relations,
+            animeDetail.relations,
             { animeId -> viewModel.getAnimeDetail(animeId) },
             { animeId -> onAnimeIdChange(animeId) })
         EpisodesDetailSection(
+            animeDetail,
             animeDetailComplement,
             { viewModel.getCachedEpisodeDetailComplement(it) },
             viewModel::handleEpisodes,
@@ -288,10 +289,9 @@ private fun RightColumnContent(
                     if (animeDetailComplement is Resource.Success) {
                         animeDetailComplement.data?.let { animeDetailComplement ->
                             navController.navigateToAnimeWatch(
-                                animeDetail = data,
+                                animeDetail = animeDetail,
                                 animeDetailComplement = animeDetailComplement,
                                 episodeId = episodeId,
-                                episodes = animeDetailComplement.episodes,
                                 defaultEpisode = defaultEpisode
                             )
                         }
@@ -299,7 +299,7 @@ private fun RightColumnContent(
                 }
             }
         )
-        CommonListContent(data, context)
+        CommonListContent(animeDetail, context)
     }
 }
 
@@ -328,12 +328,12 @@ private fun VerticalColumnContent(
 }
 
 @Composable
-private fun CommonListContent(data: AnimeDetail, context: Context) {
+private fun CommonListContent(animeDetail: AnimeDetail, context: Context) {
     listOf(
-        "Openings" to convertToNameAndUrl(data.theme?.openings),
-        "Endings" to convertToNameAndUrl(data.theme?.endings),
-        "Externals" to data.external,
-        "Streamings" to data.streaming
+        "Openings" to convertToNameAndUrl(animeDetail.theme?.openings),
+        "Endings" to convertToNameAndUrl(animeDetail.theme?.endings),
+        "Externals" to animeDetail.external,
+        "Streamings" to animeDetail.streaming
     ).forEach { (title, items) ->
         ClickableListSection(title, items) { url ->
             context.startActivity(Intent(Intent.ACTION_VIEW, url.normalizeTitle().toUri()))

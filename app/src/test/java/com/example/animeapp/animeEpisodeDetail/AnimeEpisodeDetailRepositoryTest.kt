@@ -136,7 +136,7 @@ class AnimeEpisodeDetailRepositoryTest {
     }
 
     @Test
-    fun `updateAnimeDetailComplementWithEpisodes should return updated data when needed and successful`() =
+    fun `updateCachedAnimeDetailComplementWithEpisodes should return updated data when needed and successful`() =
         runBlocking {
             val animeDetail = mockk<AnimeDetail> {
                 every { airing } returns true
@@ -147,13 +147,13 @@ class AnimeEpisodeDetailRepositoryTest {
             }
             val animeDetailComplement = mockk<AnimeDetailComplement>()
             coEvery {
-                animeEpisodeDetailRepository.updateAnimeDetailComplementWithEpisodes(
+                animeEpisodeDetailRepository.updateCachedAnimeDetailComplementWithEpisodes(
                     any(),
                     any()
                 )
             } returns animeDetailComplement
 
-            val result = animeEpisodeDetailRepository.updateAnimeDetailComplementWithEpisodes(
+            val result = animeEpisodeDetailRepository.updateCachedAnimeDetailComplementWithEpisodes(
                 animeDetail,
                 animeDetailComplement
             )
@@ -200,18 +200,18 @@ class AnimeEpisodeDetailRepositoryTest {
     }
 
     @Test
-    fun `updateAnimeDetailComplementWithEpisodes should return cached data when not needed`() =
+    fun `updateCachedAnimeDetailComplementWithEpisodes should return cached data when not needed`() =
         runBlocking {
             val (animeDetail, _, animeDetailComplement) = setupAnimeDetailMocks(Instant.now().epochSecond)
 
             coEvery {
-                animeEpisodeDetailRepository.updateAnimeDetailComplementWithEpisodes(
+                animeEpisodeDetailRepository.updateCachedAnimeDetailComplementWithEpisodes(
                     any(),
                     any()
                 )
             } returns animeDetailComplement
 
-            val result = animeEpisodeDetailRepository.updateAnimeDetailComplementWithEpisodes(
+            val result = animeEpisodeDetailRepository.updateCachedAnimeDetailComplementWithEpisodes(
                 animeDetail,
                 animeDetailComplement
             )
@@ -220,18 +220,18 @@ class AnimeEpisodeDetailRepositoryTest {
         }
 
     @Test
-    fun `updateAnimeDetailComplementWithEpisodes should return cached object when api call fails`() =
+    fun `updateCachedAnimeDetailComplementWithEpisodes should return cached object when api call fails`() =
         runBlocking {
             val (animeDetail, _, animeDetailComplement) = setupAnimeDetailMocks(Instant.now().epochSecond)
 
             coEvery {
-                animeEpisodeDetailRepository.updateAnimeDetailComplementWithEpisodes(
+                animeEpisodeDetailRepository.updateCachedAnimeDetailComplementWithEpisodes(
                     any(),
                     any()
                 )
             } returns animeDetailComplement
 
-            val result = animeEpisodeDetailRepository.updateAnimeDetailComplementWithEpisodes(
+            val result = animeEpisodeDetailRepository.updateCachedAnimeDetailComplementWithEpisodes(
                 animeDetail,
                 animeDetailComplement
             )

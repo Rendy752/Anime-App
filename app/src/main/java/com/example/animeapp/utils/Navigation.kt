@@ -4,7 +4,6 @@ import androidx.navigation.NavController
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.CommonIdentity
-import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.google.gson.Gson
 import java.net.URLEncoder
@@ -14,7 +13,6 @@ object Navigation {
         animeDetail: AnimeDetail,
         animeDetailComplement: AnimeDetailComplement,
         episodeId: String,
-        episodes: List<Episode>,
         defaultEpisode: EpisodeDetailComplement
     ) {
         val gson = Gson()
@@ -22,10 +20,9 @@ object Navigation {
         val animeDetailComplementJson =
             URLEncoder.encode(gson.toJson(animeDetailComplement), "UTF-8")
         val episodeIdEncoded = URLEncoder.encode(episodeId, "UTF-8")
-        val episodesJson = URLEncoder.encode(gson.toJson(episodes), "UTF-8")
         val defaultEpisodeJson = URLEncoder.encode(gson.toJson(defaultEpisode), "UTF-8")
 
-        navigate("animeWatch/$animeDetailJson/$animeDetailComplementJson/$episodeIdEncoded/$episodesJson/$defaultEpisodeJson")
+        navigate("animeWatch/$animeDetailJson/$animeDetailComplementJson/$episodeIdEncoded/$defaultEpisodeJson")
     }
 
     fun NavController.navigateWithFilter(

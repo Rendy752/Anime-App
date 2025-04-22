@@ -119,21 +119,22 @@ fun AnimeDetailTopBar(
                         defaultEpisode != null
                     ) {
                         animeDetailComplement.data.let { animeDetailComplement ->
-                            IconButton(onClick = {
-                                navController.navigateToAnimeWatch(
-                                    animeDetail = animeDetailData,
-                                    animeDetailComplement = animeDetailComplement,
-                                    episodeId = animeDetailComplement.lastEpisodeWatchedId
-                                        ?: animeDetailComplement.episodes[0].episodeId,
-                                    episodes = animeDetailComplement.episodes,
-                                    defaultEpisode = defaultEpisode
-                                )
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Filled.LiveTv,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    contentDescription = stringResource(id = R.string.watch)
-                                )
+                            animeDetailComplement.episodes?.let { episodes ->
+                                IconButton(onClick = {
+                                    navController.navigateToAnimeWatch(
+                                        animeDetail = animeDetailData,
+                                        animeDetailComplement = animeDetailComplement,
+                                        episodeId = animeDetailComplement.lastEpisodeWatchedId
+                                            ?: episodes[0].episodeId,
+                                        defaultEpisode = defaultEpisode
+                                    )
+                                }) {
+                                    Icon(
+                                        imageVector = Icons.Filled.LiveTv,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        contentDescription = stringResource(id = R.string.watch)
+                                    )
+                                }
                             }
                         }
                     }

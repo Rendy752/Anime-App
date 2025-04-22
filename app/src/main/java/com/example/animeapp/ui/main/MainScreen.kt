@@ -37,7 +37,6 @@ import com.example.animeapp.R
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.CommonIdentity
-import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.Genre
 import com.example.animeapp.models.Producer
@@ -240,12 +239,11 @@ fun MainScreen(
                 }
 
                 composable(
-                    "animeWatch/{animeDetailJson}/{animeDetailComplementJson}/{episodeIdEncoded}/{episodesJson}/{defaultEpisodeJson}",
+                    "animeWatch/{animeDetailJson}/{animeDetailComplementJson}/{episodeIdEncoded}/{defaultEpisodeJson}",
                     arguments = listOf(
                         navArgument("animeDetailJson") { type = NavType.StringType },
                         navArgument("animeDetailComplementJson") { type = NavType.StringType },
                         navArgument("episodeIdEncoded") { type = NavType.StringType },
-                        navArgument("episodesJson") { type = NavType.StringType },
                         navArgument("defaultEpisodeJson") { type = NavType.StringType }
                     )
                 ) { backStackEntry ->
@@ -255,7 +253,6 @@ fun MainScreen(
                         backStackEntry.arguments?.getString("animeDetailComplementJson") ?: ""
                     val episodeIdEncoded =
                         backStackEntry.arguments?.getString("episodeIdEncoded") ?: ""
-                    val episodesJson = backStackEntry.arguments?.getString("episodesJson") ?: ""
                     val defaultEpisodeJson =
                         backStackEntry.arguments?.getString("defaultEpisodeJson") ?: ""
 
@@ -268,10 +265,6 @@ fun MainScreen(
                         AnimeDetailComplement::class.java
                     )
                     val episodeId = URLDecoder.decode(episodeIdEncoded, "UTF-8")
-                    val episodes = Gson().fromJson(
-                        URLDecoder.decode(episodesJson, "UTF-8"),
-                        Array<Episode>::class.java
-                    ).toList()
                     val defaultEpisode = Gson().fromJson(
                         URLDecoder.decode(defaultEpisodeJson, "UTF-8"),
                         EpisodeDetailComplement::class.java
@@ -305,7 +298,6 @@ fun MainScreen(
                         animeDetail = animeDetail,
                         animeDetailComplement = animeDetailComplement,
                         episodeId = episodeId,
-                        episodesList = episodes,
                         defaultEpisode = defaultEpisode,
                         navController = navController,
                         mainState = mainState,

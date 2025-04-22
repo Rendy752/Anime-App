@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.AnimeDetailComplement
-import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.EpisodeSourcesQuery
 import com.example.animeapp.models.episodeSourcesQueryPlaceholder
@@ -25,9 +24,6 @@ class AnimeWatchViewModel @Inject constructor(
     private val _animeDetail = MutableStateFlow<AnimeDetail?>(null)
     val animeDetail: StateFlow<AnimeDetail?> = _animeDetail.asStateFlow()
 
-    private val _episodes = MutableStateFlow<List<Episode>?>(null)
-    val episodes: StateFlow<List<Episode>?> = _episodes.asStateFlow()
-
     private val _animeDetailComplement = MutableStateFlow<AnimeDetailComplement?>(null)
     private val _defaultEpisodeDetailComplement = MutableStateFlow<EpisodeDetailComplement?>(null)
 
@@ -47,12 +43,10 @@ class AnimeWatchViewModel @Inject constructor(
     fun setInitialState(
         animeDetail: AnimeDetail,
         animeDetailComplement: AnimeDetailComplement,
-        episodes: List<Episode>,
         defaultEpisode: EpisodeDetailComplement?,
     ) {
         _animeDetail.value = animeDetail
         _animeDetailComplement.value = animeDetailComplement
-        _episodes.value = episodes
         _defaultEpisodeDetailComplement.value = defaultEpisode
         restoreDefaultValues(defaultEpisode)
     }
@@ -162,7 +156,7 @@ class AnimeWatchViewModel @Inject constructor(
                     } else {
                         animeDetail.value?.let { animeDetail ->
                             val currentEpisode =
-                                _episodes.value?.firstOrNull { it.episodeId == servers.episodeId }
+                                _animeDetailComplement.value?.episodes?.firstOrNull { it.episodeId == servers.episodeId }
                             currentEpisode?.let { currentEpisode ->
                                 _animeDetailComplement.value?.let { animeDetailComplement ->
                                     val remoteEpisodeDetailComplement = EpisodeDetailComplement(
@@ -205,7 +199,7 @@ class AnimeWatchViewModel @Inject constructor(
         viewModelScope.launch {
             _animeDetailComplement.value?.let {
                 if (it.lastEpisodeWatchedId == lastEpisodeWatchedId) return@launch
-                animeEpisodeDetailRepository.updateAnimeDetailComplement(
+                animeEpisodeDetailRepository.updateCachedAnimeDetailComplement(
                     it.copy(lastEpisodeWatchedId = lastEpisodeWatchedId)
                 )
                 _animeDetailComplement.value = it.copy(lastEpisodeWatchedId = lastEpisodeWatchedId)

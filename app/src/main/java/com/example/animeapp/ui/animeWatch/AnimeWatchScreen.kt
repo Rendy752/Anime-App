@@ -42,7 +42,6 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.AnimeDetailComplement
-import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.animeDetailComplementPlaceholder
 import com.example.animeapp.models.animeDetailPlaceholder
@@ -64,7 +63,6 @@ fun AnimeWatchScreen(
     animeDetail: AnimeDetail = animeDetailPlaceholder,
     animeDetailComplement: AnimeDetailComplement = animeDetailComplementPlaceholder,
     episodeId: String = "",
-    episodesList: List<Episode> = emptyList(),
     defaultEpisode: EpisodeDetailComplement = episodeDetailComplementPlaceholder,
     navController: NavHostController = rememberNavController(),
     mainState: MainState = MainState(),
@@ -75,7 +73,6 @@ fun AnimeWatchScreen(
 
     // ViewModel Data
     val episodeDetailComplement by viewModel.episodeDetailComplement.collectAsStateWithLifecycle()
-    val episodes by viewModel.episodes.collectAsStateWithLifecycle()
     val episodeSourcesQuery by viewModel.episodeSourcesQuery.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
 
@@ -127,7 +124,7 @@ fun AnimeWatchScreen(
     }
 
     DisposableEffect(Unit) {
-        viewModel.setInitialState(animeDetail, animeDetailComplement, episodesList, defaultEpisode)
+        viewModel.setInitialState(animeDetail, animeDetailComplement, defaultEpisode)
 
         context.registerReceiver(screenOffReceiver, IntentFilter(Intent.ACTION_SCREEN_OFF))
         context.registerReceiver(screenOnReceiver, IntentFilter(Intent.ACTION_SCREEN_ON))
@@ -212,8 +209,8 @@ fun AnimeWatchScreen(
                         viewModel.updateEpisodeDetailComplement(updatedEpisodeDetailComplement)
                     },
                     { viewModel.getCachedEpisodeDetailComplement(it) },
+                    animeDetailComplement.episodes,
                     episodeDetailComplement,
-                    episodes,
                     episodeSourcesQuery,
                     mainState.isConnected,
                     mainState.isLandscape,

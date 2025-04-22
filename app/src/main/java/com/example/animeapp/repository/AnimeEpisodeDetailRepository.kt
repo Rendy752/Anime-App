@@ -78,7 +78,7 @@ class AnimeEpisodeDetailRepository(
             animeDetailComplementDao.insertAnimeDetailComplement(animeDetailComplement)
         }
 
-    suspend fun updateAnimeDetailComplement(updatedAnimeDetailComplement: AnimeDetailComplement) =
+    suspend fun updateCachedAnimeDetailComplement(updatedAnimeDetailComplement: AnimeDetailComplement) =
         withContext(Dispatchers.IO) {
             animeDetailComplementDao.updateAnimeDetailComplement(
                 updatedAnimeDetailComplement.copy(
@@ -87,7 +87,7 @@ class AnimeEpisodeDetailRepository(
             )
         }
 
-    suspend fun updateAnimeDetailComplementWithEpisodes(
+    suspend fun updateCachedAnimeDetailComplementWithEpisodes(
         animeDetail: AnimeDetail,
         cachedAnimeDetailComplement: AnimeDetailComplement
     ): AnimeDetailComplement? = withContext(Dispatchers.IO) {

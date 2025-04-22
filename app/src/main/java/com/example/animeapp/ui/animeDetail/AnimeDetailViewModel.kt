@@ -58,8 +58,14 @@ class AnimeDetailViewModel @Inject constructor(
         if (handleCachedAnimeDetailComplement(detailData)) return@launch
 
         if (detailData.type == "Music") {
-            _animeDetailComplement.value =
-                Resource.Error("Anime is a music, no episodes available")
+            val cachedAnimeDetailComplement = AnimeDetailComplement(
+                id = detailData.mal_id.toString(),
+                malId = detailData.mal_id,
+            )
+            animeEpisodeDetailRepository.insertCachedAnimeDetailComplement(
+                cachedAnimeDetailComplement
+            )
+            _animeDetailComplement.value = Resource.Success(cachedAnimeDetailComplement)
             return@launch
         }
 
@@ -79,7 +85,7 @@ class AnimeDetailViewModel @Inject constructor(
 
         cachedAnimeDetailComplement?.let { cachedAnimeDetail ->
             val updatedAnimeDetail =
-                animeEpisodeDetailRepository.updateAnimeDetailComplementWithEpisodes(
+                animeEpisodeDetailRepository.updateCachedAnimeDetailComplementWithEpisodes(
                     detailData,
                     cachedAnimeDetail
                 )
@@ -90,34 +96,40 @@ class AnimeDetailViewModel @Inject constructor(
                 _animeDetailComplement.value = Resource.Success(updatedAnimeDetail)
             }
 
-            cachedAnimeDetail.episodes.firstOrNull()?.let { firstEpisode ->
-                val cachedEpisodeDetailComplement =
-                    animeEpisodeDetailRepository.getCachedEpisodeDetailComplement(firstEpisode.episodeId)
-                if (cachedEpisodeDetailComplement != null) _defaultEpisode.value =
-                    cachedEpisodeDetailComplement
-                else {
-                    val defaultEpisodeServersResponse =
-                        getDefaultEpisodeServers(firstEpisode.episodeId)
-                    val defaultEpisodeSourcesResponse =
-                        StreamingUtils.getEpisodeSources(
-                            defaultEpisodeServersResponse,
-                            { id, server, category ->
-                                animeEpisodeDetailRepository.getEpisodeSources(id, server, category)
-                            }
-                        )
-
-                    if (defaultEpisodeServersResponse is Resource.Success &&
-                        defaultEpisodeSourcesResponse is Resource.Success &&
-                        checkEpisodeSourceMalId(defaultEpisodeSourcesResponse)
-                    ) {
-                        _animeDetail.value?.data?.data?.let { animeDetail ->
-                            insertCachedEpisodeDetailComplement(
-                                cachedAnimeDetail.id,
-                                firstEpisode,
+            cachedAnimeDetail.episodes?.let { episodes ->
+                episodes.firstOrNull()?.let { firstEpisode ->
+                    val cachedEpisodeDetailComplement =
+                        animeEpisodeDetailRepository.getCachedEpisodeDetailComplement(firstEpisode.episodeId)
+                    if (cachedEpisodeDetailComplement != null) _defaultEpisode.value =
+                        cachedEpisodeDetailComplement
+                    else {
+                        val defaultEpisodeServersResponse =
+                            getDefaultEpisodeServers(firstEpisode.episodeId)
+                        val defaultEpisodeSourcesResponse =
+                            StreamingUtils.getEpisodeSources(
                                 defaultEpisodeServersResponse,
-                                defaultEpisodeSourcesResponse,
-                                animeDetail
+                                { id, server, category ->
+                                    animeEpisodeDetailRepository.getEpisodeSources(
+                                        id,
+                                        server,
+                                        category
+                                    )
+                                }
                             )
+
+                        if (defaultEpisodeServersResponse is Resource.Success &&
+                            defaultEpisodeSourcesResponse is Resource.Success &&
+                            checkEpisodeSourceMalId(defaultEpisodeSourcesResponse)
+                        ) {
+                            _animeDetail.value?.data?.data?.let { animeDetail ->
+                                insertCachedEpisodeDetailComplement(
+                                    cachedAnimeDetail.id,
+                                    firstEpisode,
+                                    defaultEpisodeServersResponse,
+                                    defaultEpisodeSourcesResponse,
+                                    animeDetail
+                                )
+                            }
                         }
                     }
                 }
@@ -266,7 +278,7 @@ class AnimeDetailViewModel @Inject constructor(
             _animeDetailComplement.value?.data?.let {
                 val updatedComplement = it.copy(isFavorite = favorite)
                 _animeDetailComplement.value = Resource.Success(updatedComplement)
-                animeEpisodeDetailRepository.updateAnimeDetailComplement(updatedComplement)
+                animeEpisodeDetailRepository.updateCachedAnimeDetailComplement(updatedComplement)
             }
         }
     }

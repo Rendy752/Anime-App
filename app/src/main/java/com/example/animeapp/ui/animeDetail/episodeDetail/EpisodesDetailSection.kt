@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.ui.common_ui.MessageDisplay
@@ -27,6 +28,7 @@ import com.example.animeapp.utils.basicContainer
 
 @Composable
 fun EpisodesDetailSection(
+    animeDetail: AnimeDetail,
     animeDetailComplement: Resource<AnimeDetailComplement?>?,
     getCachedEpisodeDetailComplement: suspend (String) -> EpisodeDetailComplement?,
     handleEpisodes: () -> Unit,
@@ -52,7 +54,7 @@ fun EpisodesDetailSection(
             )
             if (animeDetailComplement is Resource.Success) {
                 animeDetailComplement.data?.let { data ->
-                    if (data.episodes.isNotEmpty()) {
+                    if (data.episodes?.isNotEmpty() == true) {
                         EpisodeInfoRow(
                             subCount = data.sub,
                             dubCount = data.dub,
@@ -100,7 +102,9 @@ fun EpisodesDetailSection(
 
             is Resource.Success -> {
                 animeDetailComplement.data?.let { data ->
-                    if (data.episodes.isNotEmpty()) {
+                    if (animeDetail.type == "Music") {
+                        MessageDisplay(message = "Anime is a music, no episodes available")
+                    } else if (data.episodes?.isNotEmpty() == true) {
                         var searchQuery by rememberSaveable { mutableStateOf("") }
                         val reversedEpisodes = data.episodes.reversed()
 
