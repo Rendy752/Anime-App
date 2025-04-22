@@ -56,9 +56,7 @@ fun ResultsSection(
                                     }
                                 },
                                 onItemClick = {
-                                    navController.navigateToAnimeDetail(
-                                        anime.title, anime.mal_id
-                                    )
+                                    navController.navigateToAnimeDetail(anime.mal_id)
                                 }
                             )
                         }

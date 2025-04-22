@@ -51,6 +51,7 @@ import com.example.animeapp.ui.common_ui.MessageDisplay
 import com.example.animeapp.ui.common_ui.YoutubePreview
 import com.example.animeapp.ui.common_ui.YoutubePreviewSkeleton
 import com.example.animeapp.ui.main.MainState
+import com.example.animeapp.utils.AnimeTitleFinder.normalizeTitle
 import com.example.animeapp.utils.Navigation.navigateToAnimeWatch
 import com.example.animeapp.utils.Resource
 
@@ -61,7 +62,6 @@ private fun convertToNameAndUrl(list: List<String>?): List<NameAndUrl>? =
 @Preview
 @Composable
 fun AnimeDetailScreen(
-    title: String = "Anime Title",
     id: Int = 20,
     navController: NavHostController = rememberNavController(),
     mainState: MainState = MainState()
@@ -93,11 +93,10 @@ fun AnimeDetailScreen(
 
     Scaffold(topBar = {
         AnimeDetailTopBar(
-            title,
-            animeDetail,
-            animeDetailComplement,
-            defaultEpisode,
-            navController,
+            animeDetail = animeDetail,
+            animeDetailComplement = animeDetailComplement,
+            defaultEpisode = defaultEpisode,
+            navController = navController,
             onFavoriteToggle = { viewModel.handleToggleFavorite(it) }
         )
     }) { paddingValues ->
@@ -337,7 +336,7 @@ private fun CommonListContent(data: AnimeDetail, context: Context) {
         "Streamings" to data.streaming
     ).forEach { (title, items) ->
         ClickableListSection(title, items) { url ->
-            context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
+            context.startActivity(Intent(Intent.ACTION_VIEW, url.normalizeTitle().toUri()))
         }
     }
 }

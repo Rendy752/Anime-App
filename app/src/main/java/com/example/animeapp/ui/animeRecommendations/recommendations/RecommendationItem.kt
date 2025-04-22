@@ -9,7 +9,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.animeapp.models.AnimeHeader
 import com.example.animeapp.models.AnimeRecommendation
 import androidx.compose.ui.tooling.preview.Preview
 import com.example.animeapp.models.animeRecommendationPlaceholder
@@ -30,7 +29,7 @@ fun RecommendationItemPreview() {
 @Composable
 fun RecommendationItem(
     recommendation: AnimeRecommendation,
-    onItemClick: (AnimeHeader) -> Unit
+    onItemClick: (Int) -> Unit
 ) {
     Column(modifier = Modifier.basicContainer()) {
         Row(

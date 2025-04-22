@@ -90,8 +90,8 @@ fun TopAnimeCarousel(
                 val index = page % topAnimeCount
                 val animeDetail = topAnimeList[index]
                 Box(modifier = Modifier.fillMaxWidth()) {
-                    TopAnimeItem(animeDetail = animeDetail, onItemClick = { title, malId ->
-                        navController.navigateToAnimeDetail(title, malId)
+                    TopAnimeItem(animeDetail = animeDetail, onItemClick = { malId ->
+                        navController.navigateToAnimeDetail(malId)
                     })
                 }
             }

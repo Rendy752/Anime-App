@@ -148,20 +148,20 @@ class AnimeDetailViewModel @Inject constructor(
                     animeDetail.title_english
                 ) + (animeDetail.title_synonyms ?: emptyList())
 
-                val animes = AnimeTitleFinder.findClosestMatches(
+                val animeAniwatchs = AnimeTitleFinder.findClosestMatches(
                     targetTitles = targetTitles,
                     data = resultResponse.animes,
                     maxResults = 2,
                     titleExtractor = { it.name }
                 )
 
-                if (animes.isEmpty()) {
+                if (animeAniwatchs.isEmpty()) {
                     _animeDetailComplement.value = Resource.Error("No episode found")
                     return@launch
                 }
 
-                for (anime in animes) {
-                    val animeId = anime.id.substringBefore("?").trim()
+                for (animeAniwatch in animeAniwatchs) {
+                    val animeId = animeAniwatch.id.substringBefore("?").trim()
 
                     val episodesResponse = animeEpisodeDetailRepository.getEpisodes(animeId)
                     if (episodesResponse !is Resource.Success) {
@@ -183,12 +183,12 @@ class AnimeDetailViewModel @Inject constructor(
 
                     if (checkEpisodeSourceMalId(defaultEpisodeSourcesResponse)) {
                         val cachedAnimeDetailComplement = AnimeDetailComplement(
-                            id = anime.id.substringBefore("?").trim(),
+                            id = animeAniwatch.id.substringBefore("?").trim(),
                             malId = animeDetail.mal_id,
                             episodes = episodesResponse.data.episodes,
-                            eps = anime.episodes?.eps,
-                            sub = anime.episodes?.sub,
-                            dub = anime.episodes?.dub,
+                            eps = animeAniwatch.episodes?.eps,
+                            sub = animeAniwatch.episodes?.sub,
+                            dub = animeAniwatch.episodes?.dub,
                         )
 
                         animeEpisodeDetailRepository.insertCachedAnimeDetailComplement(

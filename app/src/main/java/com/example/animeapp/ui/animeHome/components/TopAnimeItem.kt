@@ -36,13 +36,13 @@ import com.example.animeapp.ui.common_ui.ImageRoundedCorner
 import com.example.animeapp.ui.common_ui.SkeletonBox
 
 @Composable
-fun TopAnimeItem(animeDetail: AnimeDetail, onItemClick: (String, Int) -> Unit) {
+fun TopAnimeItem(animeDetail: AnimeDetail, onItemClick: (Int) -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(200.dp)
             .clickable {
-                onItemClick(animeDetail.title, animeDetail.mal_id)
+                onItemClick(animeDetail.mal_id)
             }
     ) {
         AsyncImageWithPlaceholder(

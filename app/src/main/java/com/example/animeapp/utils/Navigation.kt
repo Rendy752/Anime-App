@@ -19,7 +19,8 @@ object Navigation {
     ) {
         val gson = Gson()
         val animeDetailJson = URLEncoder.encode(gson.toJson(animeDetail), "UTF-8")
-        val animeDetailComplementJson =  URLEncoder.encode(gson.toJson(animeDetailComplement), "UTF-8")
+        val animeDetailComplementJson =
+            URLEncoder.encode(gson.toJson(animeDetailComplement), "UTF-8")
         val episodeIdEncoded = URLEncoder.encode(episodeId, "UTF-8")
         val episodesJson = URLEncoder.encode(gson.toJson(episodes), "UTF-8")
         val defaultEpisodeJson = URLEncoder.encode(gson.toJson(defaultEpisode), "UTF-8")
@@ -40,8 +41,7 @@ object Navigation {
         navigate("search/$genrePart/$producerPart")
     }
 
-    fun NavController.navigateToAnimeDetail(title: String, id: Int) {
-        val titleEncoded = URLEncoder.encode(title, "UTF-8")
-        navigate("animeDetail/$titleEncoded/$id")
+    fun NavController.navigateToAnimeDetail(id: Int) {
+        navigate("animeDetail/$id")
     }
 }

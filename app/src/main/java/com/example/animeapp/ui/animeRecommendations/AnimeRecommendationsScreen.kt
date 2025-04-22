@@ -109,10 +109,8 @@ fun AnimeRecommendationsScreen(
                                     items(animeRecommendations) {
                                         RecommendationItem(
                                             recommendation = it,
-                                            onItemClick = { anime ->
-                                                navController.navigateToAnimeDetail(
-                                                    anime.title, anime.mal_id
-                                                )
+                                            onItemClick = { malId ->
+                                                navController.navigateToAnimeDetail(malId)
                                             }
                                         )
                                     }
@@ -130,10 +128,8 @@ fun AnimeRecommendationsScreen(
                                             items(columnItems) {
                                                 RecommendationItem(
                                                     recommendation = it,
-                                                    onItemClick = { anime ->
-                                                        navController.navigateToAnimeDetail(
-                                                            anime.title, anime.mal_id
-                                                        )
+                                                    onItemClick = { malId ->
+                                                        navController.navigateToAnimeDetail(malId)
                                                     }
                                                 )
                                             }

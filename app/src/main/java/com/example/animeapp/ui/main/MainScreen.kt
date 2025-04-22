@@ -125,9 +125,7 @@ fun MainScreen(
                     if (segments.size >= 2 && segments[0] == "detail") {
                         val animeId = segments[1].toIntOrNull()
                         if (animeId != null) {
-                            navController.navigateToAnimeDetail(
-                                "Title", animeId
-                            )
+                            navController.navigateToAnimeDetail(animeId)
                         }
                     } else {
                         Toast.makeText(activity, "Invalid URL", Toast.LENGTH_SHORT).show()
@@ -230,13 +228,11 @@ fun MainScreen(
                 }
 
                 composable(
-                    "animeDetail/{title}/{id}",
+                    "animeDetail/{id}",
                     arguments = listOf(navArgument("id") { type = NavType.IntType })
                 ) { backStackEntry ->
-                    val title = backStackEntry.arguments?.getString("title") ?: ""
                     val id = backStackEntry.arguments?.getInt("id") ?: 0
                     AnimeDetailScreen(
-                        title = title,
                         id = id,
                         navController = navController,
                         mainState = mainState

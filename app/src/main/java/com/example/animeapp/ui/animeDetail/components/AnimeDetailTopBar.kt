@@ -29,6 +29,7 @@ import com.example.animeapp.R
 import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.models.EpisodeDetailComplement
+import com.example.animeapp.ui.common_ui.SkeletonBox
 import com.example.animeapp.utils.Navigation.navigateToAnimeWatch
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ShareUtils
@@ -39,7 +40,6 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnimeDetailTopBar(
-    animeTitle: String,
     animeDetail: Resource<AnimeDetailResponse>?,
     animeDetailComplement: Resource<AnimeDetailComplement?>?,
     defaultEpisode: EpisodeDetailComplement?,
@@ -68,11 +68,30 @@ fun AnimeDetailTopBar(
                 }
             },
             title = {
-                Text(
-                    text = animeDetail?.data?.data?.title ?: animeTitle,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
-                )
+                when (animeDetail) {
+                    is Resource.Loading -> SkeletonBox(
+                        width = 200.dp,
+                        height = 40.dp
+                    )
+
+                    is Resource.Success -> Text(
+                        text = animeDetail.data.data.title,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    is Resource.Error -> Text(
+                        text = "Error",
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+
+                    else -> Text(
+                        text = "Empty",
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             },
             actions = {
                 animeDetail?.data?.data?.let { animeDetailData ->

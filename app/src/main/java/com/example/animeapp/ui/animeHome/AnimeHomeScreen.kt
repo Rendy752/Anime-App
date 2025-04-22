@@ -142,9 +142,7 @@ fun AnimeHomeScreen(
                                     animeSchedules = animeSchedules.data,
                                     isLandscape = mainState.isLandscape,
                                     onItemClick = { anime ->
-                                        navController.navigateToAnimeDetail(
-                                            anime.title, anime.mal_id
-                                        )
+                                        navController.navigateToAnimeDetail(anime.mal_id)
                                     }
                                 )
                             }
