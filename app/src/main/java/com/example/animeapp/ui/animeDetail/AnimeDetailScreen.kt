@@ -33,7 +33,6 @@ import androidx.navigation.compose.rememberNavController
 import com.example.animeapp.BuildConfig.YOUTUBE_URL
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.AnimeDetailComplement
-import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.NameAndUrl
 import com.example.animeapp.ui.animeDetail.components.AnimeDetailTopBar
 import com.example.animeapp.ui.animeDetail.clickableList.ClickableListSection
@@ -74,7 +73,7 @@ fun AnimeDetailScreen(
 
     val animeDetail by viewModel.animeDetail.collectAsStateWithLifecycle()
     val animeDetailComplement by viewModel.animeDetailComplement.collectAsStateWithLifecycle()
-    val defaultEpisode by viewModel.defaultEpisode.collectAsStateWithLifecycle()
+    val defaultEpisodeId by viewModel.defaultEpisodeId.collectAsStateWithLifecycle()
 
     val context = LocalContext.current
     val leftScrollState = rememberLazyListState()
@@ -99,7 +98,7 @@ fun AnimeDetailScreen(
         AnimeDetailTopBar(
             animeDetail = animeDetail,
             animeDetailComplement = animeDetailComplement,
-            defaultEpisode = defaultEpisode,
+            defaultEpisodeId = defaultEpisodeId,
             navController = navController,
             onFavoriteToggle = { viewModel.handleToggleFavorite(it) }
         )
@@ -112,7 +111,7 @@ fun AnimeDetailScreen(
                         paddingValues,
                         animeDetail?.data?.data,
                         animeDetailComplement,
-                        defaultEpisode,
+                        defaultEpisodeId,
                         navController,
                         context,
                         mainState.isLandscape,
@@ -198,7 +197,7 @@ private fun SuccessContent(
     paddingValues: PaddingValues,
     animeDetailData: AnimeDetail?,
     animeDetailComplement: Resource<AnimeDetailComplement?>?,
-    defaultEpisode: EpisodeDetailComplement?,
+    defaultEpisodeId: String?,
     navController: NavController,
     context: Context,
     isLandscape: Boolean,
@@ -223,7 +222,7 @@ private fun SuccessContent(
                             viewModel,
                             data,
                             animeDetailComplement,
-                            defaultEpisode,
+                            defaultEpisodeId,
                             navController,
                             context,
                             onAnimeIdChange
@@ -242,7 +241,7 @@ private fun SuccessContent(
                         viewModel,
                         data,
                         animeDetailComplement,
-                        defaultEpisode,
+                        defaultEpisodeId,
                         navController,
                         context,
                         onAnimeIdChange
@@ -268,7 +267,7 @@ private fun RightColumnContent(
     viewModel: AnimeDetailViewModel,
     animeDetail: AnimeDetail,
     animeDetailComplement: Resource<AnimeDetailComplement?>?,
-    defaultEpisode: EpisodeDetailComplement?,
+    defaultEpisodeId: String?,
     navController: NavController,
     context: Context,
     onAnimeIdChange: (Int) -> Unit
@@ -289,16 +288,12 @@ private fun RightColumnContent(
             { viewModel.getCachedEpisodeDetailComplement(it) },
             { viewModel.handleEpisodes(true) },
             { episodeId ->
-                defaultEpisode?.let { defaultEpisode ->
+                defaultEpisodeId?.let {
                     if (animeDetailComplement is Resource.Success) {
-                        animeDetailComplement.data?.let { animeDetailComplement ->
-                            navController.navigateToAnimeWatch(
-                                animeDetail = animeDetail,
-                                animeDetailComplement = animeDetailComplement,
-                                episodeId = episodeId,
-                                defaultEpisode = defaultEpisode
-                            )
-                        }
+                        navController.navigateToAnimeWatch(
+                            malId = animeDetail.mal_id,
+                            episodeId = episodeId,
+                        )
                     }
                 }
             }
@@ -312,7 +307,7 @@ private fun VerticalColumnContent(
     viewModel: AnimeDetailViewModel,
     data: AnimeDetail,
     animeDetailComplement: Resource<AnimeDetailComplement?>?,
-    defaultEpisode: EpisodeDetailComplement?,
+    defaultEpisodeId: String?,
     navController: NavController,
     context: Context,
     onAnimeIdChange: (Int) -> Unit
@@ -323,7 +318,7 @@ private fun VerticalColumnContent(
             viewModel,
             data,
             animeDetailComplement,
-            defaultEpisode,
+            defaultEpisodeId,
             navController,
             context,
             onAnimeIdChange

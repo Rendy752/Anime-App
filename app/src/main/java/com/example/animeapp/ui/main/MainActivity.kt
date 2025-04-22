@@ -122,6 +122,7 @@ class MainActivity : AppCompatActivity() {
                     ) {
                         MainScreen(
                             navController = navController,
+                            onResetIdleTimer = resetIdleTimer,
                             mainState = state.copy(isLandscape = isLandscape),
                             mainAction = mainViewModel::dispatch,
                         )

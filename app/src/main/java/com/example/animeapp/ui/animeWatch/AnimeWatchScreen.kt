@@ -40,12 +40,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import com.example.animeapp.models.AnimeDetail
-import com.example.animeapp.models.AnimeDetailComplement
-import com.example.animeapp.models.EpisodeDetailComplement
-import com.example.animeapp.models.animeDetailComplementPlaceholder
-import com.example.animeapp.models.animeDetailPlaceholder
-import com.example.animeapp.models.episodeDetailComplementPlaceholder
 import com.example.animeapp.ui.animeWatch.components.AnimeWatchContent
 import com.example.animeapp.ui.animeWatch.components.AnimeWatchTopBar
 import com.example.animeapp.ui.main.MainState
@@ -60,10 +54,8 @@ import java.time.format.DateTimeFormatter
 @Preview
 @Composable
 fun AnimeWatchScreen(
-    animeDetail: AnimeDetail = animeDetailPlaceholder,
-    animeDetailComplement: AnimeDetailComplement = animeDetailComplementPlaceholder,
+    malId: Int = 0,
     episodeId: String = "",
-    defaultEpisode: EpisodeDetailComplement = episodeDetailComplementPlaceholder,
     navController: NavHostController = rememberNavController(),
     mainState: MainState = MainState(),
     isPipMode: Boolean = false,
@@ -72,6 +64,8 @@ fun AnimeWatchScreen(
     val viewModel: AnimeWatchViewModel = hiltViewModel()
 
     // ViewModel Data
+    val animeDetail by viewModel.animeDetail.collectAsStateWithLifecycle()
+    val animeDetailComplement by viewModel.animeDetailComplement.collectAsStateWithLifecycle()
     val episodeDetailComplement by viewModel.episodeDetailComplement.collectAsStateWithLifecycle()
     val episodeSourcesQuery by viewModel.episodeSourcesQuery.collectAsStateWithLifecycle()
     val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
@@ -106,9 +100,9 @@ fun AnimeWatchScreen(
     }
 
     LaunchedEffect(Unit) {
-        viewModel.handleSelectedEpisodeServer(
-            episodeSourcesQuery.copy(id = episodeId), isFirstInit = true
-        )
+        scope.launch {
+            viewModel.setInitialState(malId, episodeId)
+        }
     }
 
     LaunchedEffect(episodeDetailComplement) {
@@ -124,8 +118,6 @@ fun AnimeWatchScreen(
     }
 
     DisposableEffect(Unit) {
-        viewModel.setInitialState(animeDetail, animeDetailComplement, defaultEpisode)
-
         context.registerReceiver(screenOffReceiver, IntentFilter(Intent.ACTION_SCREEN_OFF))
         context.registerReceiver(screenOnReceiver, IntentFilter(Intent.ACTION_SCREEN_ON))
 
@@ -151,7 +143,7 @@ fun AnimeWatchScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             if (!isPipMode && !isFullscreen) AnimeWatchTopBar(
-                animeDetail,
+                animeDetail?.title,
                 isFavorite.value,
                 mainState.isLandscape,
                 mainState.networkStatus,
@@ -209,7 +201,7 @@ fun AnimeWatchScreen(
                         viewModel.updateEpisodeDetailComplement(updatedEpisodeDetailComplement)
                     },
                     { viewModel.getCachedEpisodeDetailComplement(it) },
-                    animeDetailComplement.episodes,
+                    animeDetailComplement?.episodes,
                     episodeDetailComplement,
                     episodeSourcesQuery,
                     mainState.isConnected,

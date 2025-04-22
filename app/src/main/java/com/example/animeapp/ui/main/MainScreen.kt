@@ -12,6 +12,8 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -25,12 +27,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
 import com.example.animeapp.R
-import com.example.animeapp.models.AnimeDetail
-import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.CommonIdentity
-import com.example.animeapp.models.EpisodeDetailComplement
-import com.example.animeapp.models.Genre
-import com.example.animeapp.models.Producer
 import com.example.animeapp.ui.animeDetail.AnimeDetailScreen
 import com.example.animeapp.ui.animeRecommendations.AnimeRecommendationsScreen
 import com.example.animeapp.ui.animeSearch.AnimeSearchScreen
@@ -41,16 +38,15 @@ import com.example.animeapp.ui.common_ui.MessageDisplay
 import com.example.animeapp.ui.settings.SettingsScreen
 import com.example.animeapp.utils.Navigation.navigateToAnimeDetail
 import com.google.gson.Gson
-import java.net.URLDecoder
 
 @Composable
 fun MainScreen(
     navController: NavHostController,
+    onResetIdleTimer: () -> Unit,
     mainState: MainState,
     mainAction: (MainAction) -> Unit
 ) {
     val activity = LocalActivity.current
-    val gson = Gson()
     var isCurrentBottomScreen by remember { mutableStateOf(true) }
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -80,12 +76,17 @@ fun MainScreen(
         }
     }
 
+    LaunchedEffect(currentRoute) { onResetIdleTimer() }
+
     Surface(
         color = MaterialTheme.colorScheme.surface,
         modifier = Modifier.fillMaxSize()
     ) {
         Column(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .systemBarsPadding()
+                .navigationBarsPadding()
         ) {
             NavHost(
                 navController = navController,
@@ -133,25 +134,19 @@ fun MainScreen(
                             nullable = true
                         }
                     )
-                ) { backStackEntry ->
-                    val genreIdentityString = backStackEntry.arguments?.getString("genreIdentity")
-                    val producerIdentityString =
-                        backStackEntry.arguments?.getString("producerIdentity")
+                ) {
+                    val genreIdentityString = it.arguments?.getString("genreIdentity")
+                    val producerIdentityString = it.arguments?.getString("producerIdentity")
 
-                    val genre: Genre? = genreIdentityString?.let {
-                        if (it == "null") {
-                            null
-                        } else {
-                            gson.fromJson(Uri.decode(it), CommonIdentity::class.java).mapToGenre()
-                        }
+                    val gson = Gson()
+                    val genre = genreIdentityString?.let {
+                        if (it == "null") null
+                        else gson.fromJson(Uri.decode(it), CommonIdentity::class.java).mapToGenre()
                     }
-                    val producer: Producer? = producerIdentityString?.let {
-                        if (it == "null") {
-                            null
-                        } else {
-                            gson.fromJson(Uri.decode(it), CommonIdentity::class.java)
-                                .mapToProducer()
-                        }
+                    val producer = producerIdentityString?.let {
+                        if (it == "null") null
+                        else gson.fromJson(Uri.decode(it), CommonIdentity::class.java)
+                            .mapToProducer()
                     }
 
                     AnimeSearchScreen(
@@ -172,47 +167,21 @@ fun MainScreen(
                 composable(
                     "animeDetail/{id}",
                     arguments = listOf(navArgument("id") { type = NavType.IntType })
-                ) { backStackEntry ->
-                    val id = backStackEntry.arguments?.getInt("id") ?: 0
+                ) {
                     AnimeDetailScreen(
-                        id = id,
+                        id = it.arguments?.getInt("id") ?: 0,
                         navController = navController,
                         mainState = mainState
                     )
                 }
 
                 composable(
-                    "animeWatch/{animeDetailJson}/{animeDetailComplementJson}/{episodeIdEncoded}/{defaultEpisodeJson}",
+                    "animeWatch/{malId}/{episodeId}",
                     arguments = listOf(
-                        navArgument("animeDetailJson") { type = NavType.StringType },
-                        navArgument("animeDetailComplementJson") { type = NavType.StringType },
-                        navArgument("episodeIdEncoded") { type = NavType.StringType },
-                        navArgument("defaultEpisodeJson") { type = NavType.StringType }
+                        navArgument("malId") { type = NavType.IntType },
+                        navArgument("episodeId") { type = NavType.StringType },
                     )
-                ) { backStackEntry ->
-                    val animeDetailJson =
-                        backStackEntry.arguments?.getString("animeDetailJson") ?: ""
-                    val animeDetailComplementJson =
-                        backStackEntry.arguments?.getString("animeDetailComplementJson") ?: ""
-                    val episodeIdEncoded =
-                        backStackEntry.arguments?.getString("episodeIdEncoded") ?: ""
-                    val defaultEpisodeJson =
-                        backStackEntry.arguments?.getString("defaultEpisodeJson") ?: ""
-
-                    val animeDetail = Gson().fromJson(
-                        URLDecoder.decode(animeDetailJson, "UTF-8"),
-                        AnimeDetail::class.java
-                    )
-                    val animeDetailComplement = Gson().fromJson(
-                        URLDecoder.decode(animeDetailComplementJson, "UTF-8"),
-                        AnimeDetailComplement::class.java
-                    )
-                    val episodeId = URLDecoder.decode(episodeIdEncoded, "UTF-8")
-                    val defaultEpisode = Gson().fromJson(
-                        URLDecoder.decode(defaultEpisodeJson, "UTF-8"),
-                        EpisodeDetailComplement::class.java
-                    )
-
+                ) {
                     var isPipMode by remember { mutableStateOf(false) }
                     val activity = LocalActivity.current as? MainActivity
 
@@ -238,10 +207,8 @@ fun MainScreen(
                     }
 
                     AnimeWatchScreen(
-                        animeDetail = animeDetail,
-                        animeDetailComplement = animeDetailComplement,
-                        episodeId = episodeId,
-                        defaultEpisode = defaultEpisode,
+                        malId = it.arguments?.getInt("malId") ?: 0,
+                        episodeId = it.arguments?.getString("episodeId") ?: "",
                         navController = navController,
                         mainState = mainState,
                         isPipMode = isPipMode,

@@ -24,14 +24,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
+import androidx.navigation.NavController
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.ui.common_ui.AsyncImageWithPlaceholder
 import com.example.animeapp.ui.common_ui.ImageRoundedCorner
+import com.example.animeapp.utils.Navigation.navigateToAnimeWatch
 import com.example.animeapp.utils.basicContainer
 import com.example.animeapp.utils.WatchUtils.getEpisodeBackgroundColor
 
 @Composable
 fun ContinueWatchingPopup(
+    navController: NavController,
     episodeDetailComplement: EpisodeDetailComplement?,
     isMinimized: Boolean,
     onSetMinimize: (Boolean) -> Unit
@@ -101,7 +104,12 @@ fun ContinueWatchingPopup(
                                 isPrimary = true,
                                 innerPadding = PaddingValues(4.dp),
                                 outerPadding = PaddingValues(horizontal = 0.dp, vertical = 4.dp),
-                                onItemClick = {}
+                                onItemClick = {
+                                    navController.navigateToAnimeWatch(
+                                        malId = episodeDetailComplement.malId,
+                                        episodeId = episodeDetailComplement.id,
+                                    )
+                                }
                             ),
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp)

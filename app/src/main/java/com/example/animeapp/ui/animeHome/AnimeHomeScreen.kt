@@ -176,6 +176,7 @@ fun AnimeHomeScreen(
                     }
                 )
                 if (state.isShowPopup) ContinueWatchingPopup(
+                    navController = navController,
                     episodeDetailComplement = state.continueWatchingEpisode,
                     isMinimized = state.isMinimized,
                     onSetMinimize = { action(HomeAction.SetMinimized(it)) }

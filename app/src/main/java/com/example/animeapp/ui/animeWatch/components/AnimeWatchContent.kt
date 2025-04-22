@@ -22,7 +22,7 @@ import com.example.animeapp.utils.Resource
 
 @Composable
 fun AnimeWatchContent(
-    animeDetail: AnimeDetail,
+    animeDetail: AnimeDetail?,
     isFavorite: Boolean,
     updateStoredWatchState: (EpisodeDetailComplement, Long?) -> Unit,
     getCachedEpisodeDetailComplement: suspend (String) -> EpisodeDetailComplement?,

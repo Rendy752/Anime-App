@@ -19,7 +19,7 @@ import com.example.animeapp.utils.basicContainer
 
 @Composable
 fun WatchHeader(
-    title: String,
+    title: String?,
     isFavorite: Boolean,
     episode: Episode,
     episodeDetailComplement: EpisodeDetailComplement,

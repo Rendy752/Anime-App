@@ -30,8 +30,13 @@ class AnimeEpisodeDetailRepository(
             getCachedAnimeDetailResponse(id) ?: getRemoteAnimeDetail(id)
         }
 
+    suspend fun getCachedAnimeDetailById(id: Int): AnimeDetail? =
+        withContext(Dispatchers.IO) {
+            animeDetailDao.getAnimeDetailById(id)
+        }
+
     private suspend fun getCachedAnimeDetailResponse(id: Int): Resource<AnimeDetailResponse>? {
-        val cachedAnimeDetail = animeDetailDao.getAnimeDetailById(id)
+        val cachedAnimeDetail = getCachedAnimeDetailById(id)
 
         return cachedAnimeDetail?.let { cache ->
             if (isDataNeedUpdate(cache)) {
@@ -124,6 +129,11 @@ class AnimeEpisodeDetailRepository(
             episodeDetailComplementDao.getLatestWatchedEpisodeDetailComplement()
         }
     }
+
+    suspend fun getCachedDefaultEpisodeDetailComplementByMalId(malId: Int): EpisodeDetailComplement =
+        withContext(Dispatchers.IO) {
+            episodeDetailComplementDao.getDefaultEpisodeDetailComplementByMalId(malId)
+        }
 
     suspend fun getCachedEpisodeDetailComplement(id: String): EpisodeDetailComplement? =
         withContext(Dispatchers.IO) {

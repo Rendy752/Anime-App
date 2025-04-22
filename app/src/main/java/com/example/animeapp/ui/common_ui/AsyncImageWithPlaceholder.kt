@@ -56,10 +56,22 @@ fun AsyncImageWithPlaceholder(
     val cornerRadius = 8.dp
     val shape: Shape = when (roundedCorners) {
         ImageRoundedCorner.NONE -> RoundedCornerShape(0.dp)
-        ImageRoundedCorner.START -> RoundedCornerShape(topStart = cornerRadius, bottomStart = cornerRadius)
-        ImageRoundedCorner.END -> RoundedCornerShape(topEnd = cornerRadius, bottomEnd = cornerRadius)
+        ImageRoundedCorner.START -> RoundedCornerShape(
+            topStart = cornerRadius,
+            bottomStart = cornerRadius
+        )
+
+        ImageRoundedCorner.END -> RoundedCornerShape(
+            topEnd = cornerRadius,
+            bottomEnd = cornerRadius
+        )
+
         ImageRoundedCorner.TOP -> RoundedCornerShape(topStart = cornerRadius, topEnd = cornerRadius)
-        ImageRoundedCorner.BOTTOM -> RoundedCornerShape(bottomStart = cornerRadius, bottomEnd = cornerRadius)
+        ImageRoundedCorner.BOTTOM -> RoundedCornerShape(
+            bottomStart = cornerRadius,
+            bottomEnd = cornerRadius
+        )
+
         ImageRoundedCorner.ALL -> RoundedCornerShape(cornerRadius)
     }
 
@@ -130,7 +142,7 @@ fun AsyncImageWithPlaceholder(
     if (showDialog && model != null) {
         BasicAlertDialog(
             onDismissRequest = { showDialog = false },
-            properties = DialogProperties(usePlatformDefaultWidth = false),
+            properties = DialogProperties(usePlatformDefaultWidth = true),
             content = {
                 Box(
                     modifier = Modifier

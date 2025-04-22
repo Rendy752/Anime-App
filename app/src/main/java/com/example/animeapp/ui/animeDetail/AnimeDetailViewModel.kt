@@ -36,8 +36,8 @@ class AnimeDetailViewModel @Inject constructor(
     val animeDetailComplement: StateFlow<Resource<AnimeDetailComplement?>?> =
         _animeDetailComplement.asStateFlow()
 
-    private val _defaultEpisode = MutableStateFlow<EpisodeDetailComplement?>(null)
-    val defaultEpisode: StateFlow<EpisodeDetailComplement?> = _defaultEpisode.asStateFlow()
+    private val _defaultEpisodeId = MutableStateFlow<String?>(null)
+    val defaultEpisodeId: StateFlow<String?> = _defaultEpisodeId.asStateFlow()
 
     fun handleAnimeDetail(id: Int) = viewModelScope.launch {
         _animeDetail.value = Resource.Loading()
@@ -104,8 +104,8 @@ class AnimeDetailViewModel @Inject constructor(
                 episodes.firstOrNull()?.let { firstEpisode ->
                     val cachedEpisodeDetailComplement =
                         animeEpisodeDetailRepository.getCachedEpisodeDetailComplement(firstEpisode.episodeId)
-                    if (cachedEpisodeDetailComplement != null) _defaultEpisode.value =
-                        cachedEpisodeDetailComplement
+                    if (cachedEpisodeDetailComplement != null) _defaultEpisodeId.value =
+                        cachedEpisodeDetailComplement.id
                     else {
                         val defaultEpisodeServersResponse =
                             getDefaultEpisodeServers(firstEpisode.episodeId)
@@ -258,7 +258,7 @@ class AnimeDetailViewModel @Inject constructor(
                     }
                 cachedEpisodeDetailComplement?.let {
                     animeEpisodeDetailRepository.insertCachedEpisodeDetailComplement(it)
-                    _defaultEpisode.value = it
+                    _defaultEpisodeId.value = it.id
                 }
             }
         }

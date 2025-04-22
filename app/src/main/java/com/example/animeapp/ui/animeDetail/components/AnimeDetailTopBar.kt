@@ -28,7 +28,6 @@ import androidx.navigation.NavController
 import com.example.animeapp.R
 import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.AnimeDetailResponse
-import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.ui.common_ui.SkeletonBox
 import com.example.animeapp.utils.Navigation.navigateToAnimeWatch
 import com.example.animeapp.utils.Resource
@@ -42,7 +41,7 @@ import kotlinx.coroutines.launch
 fun AnimeDetailTopBar(
     animeDetail: Resource<AnimeDetailResponse>?,
     animeDetailComplement: Resource<AnimeDetailComplement?>?,
-    defaultEpisode: EpisodeDetailComplement?,
+    defaultEpisodeId: String?,
     navController: NavController,
     onFavoriteToggle: (Boolean) -> Unit
 ) {
@@ -116,17 +115,15 @@ fun AnimeDetailTopBar(
 
                     if (animeDetailComplement is Resource.Success &&
                         animeDetailComplement.data?.episodes?.isNotEmpty() == true &&
-                        defaultEpisode != null
+                        defaultEpisodeId != null
                     ) {
                         animeDetailComplement.data.let { animeDetailComplement ->
                             animeDetailComplement.episodes?.let { episodes ->
                                 IconButton(onClick = {
                                     navController.navigateToAnimeWatch(
-                                        animeDetail = animeDetailData,
-                                        animeDetailComplement = animeDetailComplement,
+                                        malId = animeDetailData.mal_id,
                                         episodeId = animeDetailComplement.lastEpisodeWatchedId
-                                            ?: episodes[0].episodeId,
-                                        defaultEpisode = defaultEpisode
+                                            ?: defaultEpisodeId,
                                     )
                                 }) {
                                     Icon(

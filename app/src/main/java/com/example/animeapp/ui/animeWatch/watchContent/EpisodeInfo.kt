@@ -21,7 +21,7 @@ import com.example.animeapp.utils.WatchUtils.getServerCategoryIcon
 
 @Composable
 fun EpisodeInfo(
-    title: String,
+    title: String?,
     episode: Episode,
     episodeNo: Int,
     episodeSourcesQuery: EpisodeSourcesQuery?
@@ -37,13 +37,18 @@ fun EpisodeInfo(
             modifier = Modifier.weight(1f),
             horizontalArrangement = Arrangement.Center
         ) {
-            Text(
+            if (title != null) Text(
                 text = if (episode.name != "Full") episode.name else title,
                 fontWeight = FontWeight.Bold,
                 fontSize = 16.sp,
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center
-            )
+            ) else {
+                SkeletonBox(
+                    width = 100.dp,
+                    height = 20.dp
+                )
+            }
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(

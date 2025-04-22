@@ -25,6 +25,9 @@ class AnimeWatchViewModel @Inject constructor(
     val animeDetail: StateFlow<AnimeDetail?> = _animeDetail.asStateFlow()
 
     private val _animeDetailComplement = MutableStateFlow<AnimeDetailComplement?>(null)
+    val animeDetailComplement: StateFlow<AnimeDetailComplement?> =
+        _animeDetailComplement.asStateFlow()
+
     private val _defaultEpisodeDetailComplement = MutableStateFlow<EpisodeDetailComplement?>(null)
 
     private val _episodeDetailComplement =
@@ -40,15 +43,31 @@ class AnimeWatchViewModel @Inject constructor(
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
 
-    fun setInitialState(
-        animeDetail: AnimeDetail,
-        animeDetailComplement: AnimeDetailComplement,
-        defaultEpisode: EpisodeDetailComplement?,
-    ) {
-        _animeDetail.value = animeDetail
-        _animeDetailComplement.value = animeDetailComplement
-        _defaultEpisodeDetailComplement.value = defaultEpisode
-        restoreDefaultValues(defaultEpisode)
+    fun setInitialState(malId: Int, episodeId: String) {
+        viewModelScope.launch {
+            _animeDetail.value = animeEpisodeDetailRepository.getCachedAnimeDetailById(malId)
+
+            val animeDetailComplement =
+                animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(malId)
+            _animeDetailComplement.value = animeDetailComplement
+
+            animeDetailComplement?.let { animeDetailComplement ->
+                val defaultEpisode =
+                    if (animeDetailComplement.lastEpisodeWatchedId != null) animeEpisodeDetailRepository.getCachedEpisodeDetailComplement(
+                        animeDetailComplement.lastEpisodeWatchedId
+                    ) else animeEpisodeDetailRepository.getCachedDefaultEpisodeDetailComplementByMalId(
+                        malId
+                    )
+
+                _defaultEpisodeDetailComplement.value = defaultEpisode
+
+                handleSelectedEpisodeServer(
+                    defaultEpisode?.sourcesQuery?.copy(id = episodeId)
+                        ?: _episodeSourcesQuery.value.copy(id = episodeId),
+                    isFirstInit = true
+                )
+            }
+        }
     }
 
     fun handleSelectedEpisodeServer(
@@ -56,7 +75,8 @@ class AnimeWatchViewModel @Inject constructor(
         isFirstInit: Boolean = false,
         isRefresh: Boolean = false
     ) = viewModelScope.launch {
-        val tempEpisodeDetailComplement: EpisodeDetailComplement? = (_episodeDetailComplement.value as? Resource.Success)?.data
+        val tempEpisodeDetailComplement: EpisodeDetailComplement? =
+            (_episodeDetailComplement.value as? Resource.Success)?.data
         try {
             _isRefreshing.value = true
             _episodeDetailComplement.value = Resource.Loading()
@@ -154,7 +174,7 @@ class AnimeWatchViewModel @Inject constructor(
                         _episodeDetailComplement.value =
                             Resource.Success(cachedEpisodeDetailComplement)
                     } else {
-                        animeDetail.value?.let { animeDetail ->
+                        _animeDetail.value?.let { animeDetail ->
                             val currentEpisode =
                                 _animeDetailComplement.value?.episodes?.firstOrNull { it.episodeId == servers.episodeId }
                             currentEpisode?.let { currentEpisode ->
@@ -173,12 +193,12 @@ class AnimeWatchViewModel @Inject constructor(
                                         sourcesQuery = episodeSourcesQuery
                                     )
 
-                                animeEpisodeDetailRepository.insertCachedEpisodeDetailComplement(
-                                    remoteEpisodeDetailComplement
-                                )
+                                    animeEpisodeDetailRepository.insertCachedEpisodeDetailComplement(
+                                        remoteEpisodeDetailComplement
+                                    )
 
-                                _episodeDetailComplement.value =
-                                    Resource.Success(remoteEpisodeDetailComplement)
+                                    _episodeDetailComplement.value =
+                                        Resource.Success(remoteEpisodeDetailComplement)
                                 }
                             }
                         }
