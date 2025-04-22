@@ -54,7 +54,7 @@ class AnimeHomeViewModel @Inject constructor(
 
     init {
         dispatch(HomeAction.GetAnimeSchedules)
-        getTop10Anime()
+        dispatch(HomeAction.GetTop10Anime)
     }
 
     fun dispatch(action: HomeAction) {

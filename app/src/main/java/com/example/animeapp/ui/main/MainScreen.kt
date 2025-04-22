@@ -6,15 +6,9 @@ import android.net.Uri
 import android.widget.Toast
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.EnterTransition
-import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -24,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -63,52 +56,7 @@ fun MainScreen(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    val bottomRoutes = BottomScreen.entries.map { it.route }
     isCurrentBottomScreen = BottomScreen.entries.any { it.route == currentRoute }
-
-    fun getBottomBarEnterTransition(
-        initialState: NavBackStackEntry,
-        targetState: NavBackStackEntry
-    ): EnterTransition {
-        val initialRoute = initialState.destination.route
-        val targetRoute = targetState.destination.route
-
-        if (initialRoute in bottomRoutes && targetRoute in bottomRoutes) {
-            val initialIndex = BottomScreen.orderedList.indexOfFirst { it.route == initialRoute }
-            val targetIndex = BottomScreen.orderedList.indexOfFirst { it.route == targetRoute }
-
-            val slideOffset: (Int) -> Int = when {
-                targetIndex > initialIndex -> { fullWidth: Int -> fullWidth }
-                targetIndex < initialIndex -> { fullWidth: Int -> -fullWidth }
-                else -> { _: Int -> 0 }
-            }
-            return slideInHorizontally(animationSpec = tween(700), initialOffsetX = slideOffset)
-        } else {
-            return scaleIn(animationSpec = tween(700))
-        }
-    }
-
-    fun getBottomBarExitTransition(
-        initialState: NavBackStackEntry,
-        targetState: NavBackStackEntry
-    ): ExitTransition {
-        val initialRoute = initialState.destination.route
-        val targetRoute = targetState.destination.route
-
-        if (initialRoute in bottomRoutes && targetRoute in bottomRoutes) {
-            val initialIndex = BottomScreen.orderedList.indexOfFirst { it.route == initialRoute }
-            val targetIndex = BottomScreen.orderedList.indexOfFirst { it.route == targetRoute }
-
-            val slideOffset: (Int) -> Int = when {
-                targetIndex > initialIndex -> { fullWidth: Int -> -fullWidth }
-                targetIndex < initialIndex -> { fullWidth: Int -> fullWidth }
-                else -> { _: Int -> 0 }
-            }
-            return slideOutHorizontally(animationSpec = tween(700), targetOffsetX = slideOffset)
-        } else {
-            return scaleOut(animationSpec = tween(700))
-        }
-    }
 
     LaunchedEffect(Unit) {
         activity?.let { activity ->
@@ -305,7 +253,17 @@ fun MainScreen(
                     )
                 }
             }
-            if (isCurrentBottomScreen) {
+            AnimatedVisibility(
+                visible = isCurrentBottomScreen,
+                enter = slideInVertically(
+                    initialOffsetY = { it },
+                    animationSpec = tween(durationMillis = 1000, easing = EaseInOut)
+                ),
+                exit = slideOutVertically(
+                    targetOffsetY = { it },
+                    animationSpec = tween(durationMillis = 1000, easing = EaseInOut)
+                )
+            ) {
                 BottomNavigationBar(navController)
             }
             AnimatedVisibility(
