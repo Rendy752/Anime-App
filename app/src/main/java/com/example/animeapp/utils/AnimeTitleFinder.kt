@@ -1,13 +1,11 @@
 package com.example.animeapp.utils
 
 import android.util.Log
-import com.example.animeapp.models.AnimeAniwatch
-import com.example.animeapp.models.AnimeAniwatchSearchResponse
-import com.example.animeapp.models.AnimeDetail
 import org.apache.commons.text.similarity.LevenshteinDistance
 import java.util.regex.Pattern
+import kotlin.math.min
 
-object FindAnimeTitle {
+object AnimeTitleFinder {
 
     private val levenshteinDistance = LevenshteinDistance.getDefaultInstance()
     private const val MIN_SIMILARITY_THRESHOLD = 0.25
@@ -17,35 +15,40 @@ object FindAnimeTitle {
     )
     private val numberRegex = Pattern.compile("\\d+")
 
-    fun findClosestAnimes(
-        animeSearchData: AnimeAniwatchSearchResponse,
-        animeDetail: AnimeDetail?
-    ): List<AnimeAniwatch> {
-        if (animeDetail == null) {
-            return animeSearchData.animes.sortedBy { it.name.normalizeForComparison() }.take(2)
+    fun <T> findClosestMatches(
+        targetTitles: List<String>,
+        data: List<T>,
+        maxResults: Int,
+        titleExtractor: (T) -> String
+    ): List<T> {
+        if (data.isEmpty() || targetTitles.isEmpty()) {
+            return emptyList()
         }
 
-        val normalizedDetailTitles = listOfNotNull(
-            animeDetail.title.normalizeForComparison(),
-            animeDetail.title_english?.normalizeForComparison()
-        ) + (animeDetail.title_synonyms?.map { it.normalizeForComparison() } ?: emptyList())
+        val normalizedTargetTitles = targetTitles.map { it.normalizeTitle() }
 
-        val scoredAnimes = animeSearchData.animes.map { anime ->
-            val normalizedAnimeName = anime.name.normalizeForComparison()
-            Log.d("FindAnimeTitle", "Comparing '${anime.name}' with '${animeDetail.title}'")
+        val scoredItems = data.map { item ->
+            val itemName = titleExtractor(item)
+            val normalizedItemName = itemName.normalizeTitle()
+            Log.d("AnimeTitleFinder", "Comparing '$itemName' with '$targetTitles'")
 
-            val bestScore = normalizedDetailTitles.maxOf { detailTitle ->
-                calculateEnhancedSimilarity(normalizedAnimeName, detailTitle)
+            val bestScore = normalizedTargetTitles.maxOf { targetTitle ->
+                calculateEnhancedSimilarity(normalizedItemName, targetTitle)
             }
 
-            Log.d("FindAnimeTitle", "Best score for '${anime.name}': $bestScore")
-            ScoredAnime(anime, bestScore)
+            Log.d("AnimeTitleFinder", "Best score for '$itemName': $bestScore")
+            ScoredItem(item, bestScore)
         }
 
-        return scoredAnimes.sortedByDescending { it.score }
+        val sortedAndFiltered = scoredItems.sortedByDescending { it.score }
             .filter { it.score >= MIN_SIMILARITY_THRESHOLD }
-            .take(2)
-            .map { it.anime }
+
+        val topResults = sortedAndFiltered.take(min(maxResults, sortedAndFiltered.size))
+        val firstTwoFromData = data.take(2)
+
+        return (topResults.map { it.item } + firstTwoFromData)
+            .distinct()
+            .take(maxResults + 2)
     }
 
     private fun extractCoreTitleAndNumber(title: String): Pair<String, Pair<Int?, String?>> {
@@ -137,8 +140,8 @@ object FindAnimeTitle {
         return if (union.isNotEmpty()) intersection.size.toDouble() / union.size.toDouble() else 0.0
     }
 
-    private data class ScoredAnime(val anime: AnimeAniwatch, val score: Double)
+    private data class ScoredItem<T>(val item: T, val score: Double)
 
-    private fun String.normalizeForComparison(): String =
+    fun String.normalizeTitle(): String =
         replace(Regex("[^a-zA-Z0-9\\s]"), "").trim().lowercase()
 }

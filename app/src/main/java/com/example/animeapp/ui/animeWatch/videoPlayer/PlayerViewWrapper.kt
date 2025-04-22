@@ -27,6 +27,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
+import com.example.animeapp.models.Track
 import androidx.media3.ui.R as RMedia3
 
 @SuppressLint("ClickableViewAccessibility")
@@ -35,6 +36,7 @@ import androidx.media3.ui.R as RMedia3
 fun PlayerViewWrapper(
     playerView: PlayerView,
     exoPlayer: ExoPlayer,
+    tracks: List<Track>,
     isPipMode: Boolean,
     onFullscreenChange: (Boolean) -> Unit,
     isFullscreen: Boolean,
@@ -62,7 +64,7 @@ fun PlayerViewWrapper(
         view.setShowFastForwardButton(false)
         view.setFullscreenButtonState(true)
         view.setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
-        view.setShowSubtitleButton(true)
+        view.setShowSubtitleButton(tracks.any { it.kind == "captions" })
         view.useController = !isPipMode
 
         view.setFullscreenButtonClickListener {

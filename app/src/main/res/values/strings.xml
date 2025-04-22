@@ -1,8 +1,5 @@
 <resources>
     <string name="app_name">AnimeApp</string>
-    <string name="title_recommendation">Recommendation</string>
-    <string name="title_search">Search</string>
-    <string name="title_settings">Settings</string>
     <string name="dark_mode">Dark Mode</string>
     <string name="dark_mode_description">Enable dark mode</string>
     <string name="score">Score</string>
@@ -13,7 +10,6 @@
     <string name="watch">Watch</string>
     <string name="search_anime">Search Anime</string>
     <string name="filter">Filter</string>
-    <string name="filter_anime">Filter Anime</string>
     <string name="apply">Apply</string>
     <string name="genres_field">Genres</string>
     <string name="producers_field">Producers</string>

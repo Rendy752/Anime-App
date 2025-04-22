@@ -3,6 +3,7 @@ package com.example.animeapp.ui.animeWatch.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
@@ -21,11 +22,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.NetworkStatus
+import com.example.animeapp.ui.common_ui.SkeletonBox
 import com.example.animeapp.utils.Resource
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -34,7 +37,8 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnimeWatchTopBar(
-    animeDetail: AnimeDetail,
+    title: String?,
+    isFavorite: Boolean,
     isLandscape: Boolean,
     networkStatus: NetworkStatus?,
     navController: NavController,
@@ -44,15 +48,10 @@ fun AnimeWatchTopBar(
     onFavoriteToggle: (EpisodeDetailComplement) -> Unit
 ) {
     val scope = rememberCoroutineScope()
-    val isFavorite = remember { mutableStateOf(false) }
     val debounceJob = remember { mutableStateOf<Job?>(null) }
-    if (episodeDetailComplement is Resource.Success) isFavorite.value =
-        episodeDetailComplement.data.isFavorite
 
     DisposableEffect(Unit) {
-        onDispose {
-            debounceJob.value?.cancel()
-        }
+        onDispose { debounceJob.value?.cancel() }
     }
 
     Column {
@@ -66,11 +65,17 @@ fun AnimeWatchTopBar(
                 }
             },
             title = {
-                Text(
-                    animeDetail.title,
+                if (title != null) Text(
+                    title,
+                    modifier = Modifier.padding(end = 8.dp),
                     maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                )
+                    overflow = TextOverflow.Ellipsis
+                ) else {
+                    SkeletonBox(
+                        width = 200.dp,
+                        height = 40.dp
+                    )
+                }
             },
             actions = {
                 Row(
@@ -97,16 +102,15 @@ fun AnimeWatchTopBar(
                     )
                     if (episodeDetailComplement is Resource.Success) {
                         IconButton(onClick = {
-                            isFavorite.value = !isFavorite.value
                             debounceJob.value?.cancel()
                             debounceJob.value = scope.launch {
                                 delay(300)
-                                onFavoriteToggle(episodeDetailComplement.data.copy(isFavorite = isFavorite.value))
+                                onFavoriteToggle(episodeDetailComplement.data.copy(isFavorite = !isFavorite))
                             }
                         }) {
                             Icon(
-                                imageVector = if (isFavorite.value) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                                contentDescription = if (isFavorite.value) "Remove from favorites" else "Add to favorites",
+                                imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                                contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
                                 tint = MaterialTheme.colorScheme.tertiary
                             )
                         }

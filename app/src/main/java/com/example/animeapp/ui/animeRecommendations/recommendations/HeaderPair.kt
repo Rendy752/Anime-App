@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -21,7 +22,7 @@ import com.example.animeapp.ui.common_ui.AsyncImageWithPlaceholder
 fun HeaderPair(
     anime: AnimeHeader,
     isFirst: Boolean,
-    onItemClick: (AnimeHeader) -> Unit,
+    onItemClick: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -29,17 +30,19 @@ fun HeaderPair(
         modifier = modifier
             .clip(RoundedCornerShape(16.dp))
             .fillMaxWidth()
-            .clickable { onItemClick(anime) }
+            .clickable { onItemClick(anime.mal_id) }
     ) {
         Text(
             text = if (isFirst) "If you like" else "Then you might like",
             style = MaterialTheme.typography.titleLarge,
-            fontSize = 14.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            fontSize = 12.sp,
             modifier = Modifier.padding(bottom = 4.dp)
         )
 
         AsyncImageWithPlaceholder(
-            model = anime.images.jpg.image_url,
+            model = anime.images.webp.large_image_url,
             contentDescription = anime.title,
         )
 
@@ -48,7 +51,8 @@ fun HeaderPair(
             style = MaterialTheme.typography.titleLarge,
             textAlign = TextAlign.Center,
             maxLines = 2,
-            fontSize = 14.sp,
+            overflow = TextOverflow.Ellipsis,
+            fontSize = 12.sp,
             modifier = Modifier.padding(top = 4.dp)
         )
     }

@@ -7,7 +7,6 @@ import androidx.room.Update
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.example.animeapp.models.EpisodeDetailComplement
-import java.time.Instant
 
 @Dao
 interface EpisodeDetailComplementDao {
@@ -17,15 +16,27 @@ interface EpisodeDetailComplementDao {
     @Query("SELECT * FROM episode_detail_complement WHERE id = :id")
     fun getEpisodeDetailComplementById(id: String): EpisodeDetailComplement?
 
+    @Query(
+        """
+            SELECT * FROM episode_detail_complement
+            WHERE malId = :malId
+            ORDER BY
+                CASE
+                    WHEN lastWatched IS NOT NULL AND lastTimestamp IS NOT NULL THEN 0
+                    ELSE 1
+                END,
+                lastWatched DESC
+            LIMIT 1
+        """
+    )
+    fun getDefaultEpisodeDetailComplementByMalId(malId: Int): EpisodeDetailComplement
+
+    @Query("SELECT * FROM episode_detail_complement WHERE lastWatched IS NOT NULL AND lastTimestamp IS NOT NULL ORDER BY lastWatched DESC LIMIT 1")
+    fun getLatestWatchedEpisodeDetailComplement(): EpisodeDetailComplement?
+
     @Delete
     suspend fun deleteEpisodeDetailComplement(episodeDetailComplement: EpisodeDetailComplement)
 
     @Update
-    suspend fun updateEpisodeDetailComplement(episodeDetailComplement: EpisodeDetailComplement) {
-        val updatedEpisode = episodeDetailComplement.copy(updatedAt = Instant.now().epochSecond)
-        updateEpisodeDetailComplementWithoutUpdateTimestamp(updatedEpisode)
-    }
-
-    @Update
-    suspend fun updateEpisodeDetailComplementWithoutUpdateTimestamp(episodeDetailComplement: EpisodeDetailComplement)
+    suspend fun updateEpisodeDetailComplement(episodeDetailComplement: EpisodeDetailComplement)
 }

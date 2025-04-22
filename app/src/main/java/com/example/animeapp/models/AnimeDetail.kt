@@ -22,7 +22,7 @@ data class AnimeDetail(
     val title: String,
     val title_english: String?,
     val title_japanese: String?,
-    val title_synonyms: Array<String>?,
+    val title_synonyms: List<String>?,
     val type: String?,
     val source: String,
     val episodes: Int,
@@ -50,7 +50,7 @@ data class AnimeDetail(
     val themes: List<CommonIdentity>?,
     val demographics: List<CommonIdentity>?,
     val relations: List<Relation>?,
-    val theme: Theme,
+    val theme: Theme?,
     val external: List<NameAndUrl>?,
     val streaming: List<NameAndUrl>?
 ) : Parcelable
@@ -99,7 +99,7 @@ val animeDetailPlaceholder = AnimeDetail(
     title = "Naruto: Shippuuden",
     title_english = "Naruto Shippuden",
     title_japanese = "-ナルト- 疾風伝",
-    title_synonyms = arrayOf("Naruto Hurricane Chronicles"),
+    title_synonyms = listOf("Naruto Hurricane Chronicles"),
     type = "TV",
     source = "Manga",
     episodes = 500,

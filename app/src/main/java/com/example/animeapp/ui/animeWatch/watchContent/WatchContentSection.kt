@@ -9,7 +9,8 @@ import com.example.animeapp.utils.Resource
 
 @Composable
 fun WatchContentSection(
-    animeDetail: AnimeDetail,
+    animeDetail: AnimeDetail?,
+    isFavorite: Boolean,
     getCachedEpisodeDetailComplement: suspend (String) -> EpisodeDetailComplement?,
     episodeDetailComplement: Resource<EpisodeDetailComplement>,
     episodes: List<Episode>,
@@ -22,18 +23,19 @@ fun WatchContentSection(
                 episodes.find { it.episodeId == episodeDetail.servers.episodeId }
             currentEpisode?.let { currentEpisode ->
                 WatchHeader(
-                    title = animeDetail.title,
+                    title = animeDetail?.title,
+                    isFavorite = isFavorite,
                     episode = currentEpisode,
                     episodeDetailComplement = episodeDetail,
-                    episodeSourcesQuery = episodeSourcesQuery
-                ) { handleSelectedEpisodeServer(it) }
+                    episodeSourcesQuery = episodeSourcesQuery,
+                    onServerSelected = { handleSelectedEpisodeServer(it) }
+                )
             }
         }
     } else {
         WatchHeaderSkeleton()
     }
     if (episodes.size > 1) WatchEpisode(
-        animeDetail = animeDetail,
         getCachedEpisodeDetailComplement = getCachedEpisodeDetailComplement,
         episodeDetailComplement = episodeDetailComplement,
         episodes = episodes,

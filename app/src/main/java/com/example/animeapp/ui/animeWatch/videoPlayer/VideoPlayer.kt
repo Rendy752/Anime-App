@@ -60,6 +60,7 @@ fun VideoPlayer(
         PlayerViewWrapper(
             playerView = playerView,
             exoPlayer = exoPlayer,
+            tracks = episodeDetailComplement.sources.tracks,
             isPipMode = isPipMode,
             onFullscreenChange = onFullscreenChange,
             isFullscreen = isFullscreen,
@@ -114,7 +115,7 @@ fun VideoPlayer(
             modifier = Modifier.align(Alignment.Center)
         )
 
-        if (!isPipMode && !isShowResumeOverlay) SkipIntroOutroButtons(
+        if (!isPipMode && !isShowResumeOverlay && !isShowNextEpisode) SkipIntroOutroButtons(
             showIntro = showIntro,
             showOutro = showOutro,
             introEnd = episodeDetailComplement.sources.intro?.end ?: 0,

@@ -10,34 +10,39 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.example.animeapp.ui.animeSearch.AnimeSearchViewModel
 import androidx.compose.ui.text.style.TextAlign
+import com.example.animeapp.models.AnimeSearchQueryState
 import com.example.animeapp.models.Genre
+import com.example.animeapp.models.GenresResponse
 import com.example.animeapp.ui.animeSearch.components.ApplyButton
 import com.example.animeapp.ui.animeSearch.components.CancelButton
 import com.example.animeapp.ui.animeSearch.components.ResetButton
 import com.example.animeapp.ui.animeSearch.genreProducerFilterField.FilterChipFlow
+import com.example.animeapp.ui.animeSearch.genreProducerFilterField.FilterChipFlowSkeleton
 import com.example.animeapp.ui.common_ui.RetryButton
 import com.example.animeapp.utils.Resource
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
-fun GenresBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit) {
-    val genres by viewModel.genres.collectAsState()
-    val queryState by viewModel.queryState.collectAsState()
-    val selectedGenres by viewModel.selectedGenres.collectAsState()
+fun GenresBottomSheet(
+    queryState: AnimeSearchQueryState,
+    fetchGenres: () -> Unit,
+    genres: Resource<GenresResponse>,
+    selectedGenres: List<Genre>,
+    setSelectedGenre: (Genre) -> Unit,
+    resetGenreSelection: () -> Unit,
+    applyGenreFilters: () -> Unit,
+    onDismiss: () -> Unit
+) {
     val context = LocalContext.current
 
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -54,7 +59,7 @@ fun GenresBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit) {
                 context,
                 { queryState.isGenresDefault() },
                 {
-                    viewModel.resetGenreSelection()
+                    resetGenreSelection()
                     onDismiss()
                 },
                 Modifier.weight(1f)
@@ -64,7 +69,7 @@ fun GenresBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit) {
                 context,
                 { selectedGenres.isEmpty() },
                 {
-                    viewModel.applyGenreFilters()
+                    applyGenreFilters()
                     onDismiss()
                 },
                 Modifier.weight(1f)
@@ -78,7 +83,7 @@ fun GenresBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit) {
             if (selectedGenres.isNotEmpty()) {
                 FilterChipFlow(
                     itemList = selectedGenres,
-                    onSetSelectedId = { viewModel.setSelectedGenre(it as Genre) },
+                    onSetSelectedId = { setSelectedGenre(it as Genre) },
                     itemName = {
                         val name = (it as Genre).name
                         if (it.count > 0) "$name (${it.count})"
@@ -98,40 +103,37 @@ fun GenresBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit) {
                 )
             }
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-            when (genres) {
-                is Resource.Loading -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        contentAlignment = Alignment.Center
-                    ) { CircularProgressIndicator() }
-                }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                when (genres) {
+                    is Resource.Loading -> {
+                        FilterChipFlowSkeleton()
+                    }
 
-                is Resource.Success -> {
-                    val genreList = genres.data?.data ?: emptyList()
-                    FilterChipFlow(
-                        itemList = genreList.filter { it !in selectedGenres },
-                        onSetSelectedId = { viewModel.setSelectedGenre(it as Genre) },
-                        itemName = {
-                            val name = (it as Genre).name
-                            if (it.count > 0) "$name (${it.count})"
-                            else name
-                        },
-                        getItemId = { it },
-                    )
-                }
+                    is Resource.Success -> {
+                        val genreList = genres.data.data
+                        FilterChipFlow(
+                            itemList = genreList.filter { it !in selectedGenres },
+                            onSetSelectedId = { setSelectedGenre(it as Genre) },
+                            itemName = {
+                                val name = (it as Genre).name
+                                if (it.count > 0) "$name (${it.count})"
+                                else name
+                            },
+                            getItemId = { it },
+                        )
+                    }
 
-                is Resource.Error -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
+                    is Resource.Error -> {
                         RetryButton(
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .fillMaxWidth(),
                             message = genres.message ?: "Error loading genres",
-                            onClick = { viewModel.fetchGenres() }
+                            onClick = { fetchGenres() }
                         )
                     }
                 }

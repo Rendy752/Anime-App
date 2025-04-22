@@ -20,34 +20,36 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun DataTextWithIcon(label: String, value: String?, icon: ImageVector) {
+fun DataTextWithIcon(label: String? = null, value: String?, icon: ImageVector) {
     if (!value.isNullOrBlank() && value.lowercase() != "null") {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(vertical = 2.dp),
+            modifier = Modifier.padding(vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 imageVector = icon,
-                contentDescription = label,
+                contentDescription = label ?: "Icon",
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier
                     .size(20.dp)
                     .padding(end = 8.dp)
             )
+
+            val fullText = AnnotatedString.Builder().apply {
+                if (!label.isNullOrBlank()) {
+                    append("$label: ")
+                }
+                withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) { append(value) }
+            }.toAnnotatedString()
+
             Text(
-                text = "$label: ",
+                text = fullText,
                 style = MaterialTheme.typography.bodyMedium,
-            )
-            Text(
-                text = value,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold
             )
         }
     }

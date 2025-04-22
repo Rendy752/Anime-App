@@ -21,16 +21,17 @@ fun Modifier.basicContainer(
     isPrimary: Boolean = false,
     onItemClick: (() -> Unit)? = null,
     backgroundBrush: Brush? = null,
+    roundedCornerShape: RoundedCornerShape = RoundedCornerShape(16.dp),
     outerPadding: PaddingValues = PaddingValues(8.dp),
     innerPadding: PaddingValues = PaddingValues(16.dp)
 ): Modifier {
     var modifier = this
         .padding(outerPadding)
-        .clip(RoundedCornerShape(16.dp))
+        .clip(roundedCornerShape)
         .border(
             width = 1.dp,
             color = MaterialTheme.colorScheme.surfaceContainerHighest,
-            shape = RoundedCornerShape(16.dp)
+            shape = roundedCornerShape
         )
         .then(
             if (backgroundBrush != null) {

@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.animeapp.ui.common_ui.SkeletonBox
@@ -69,22 +70,23 @@ fun NumericDetailItem(
     }
 }
 
+@Preview
 @Composable
 fun NumericDetailItemSkeleton() {
     Column(
         modifier = Modifier
             .basicContainer()
-            .width(60.dp)
-            .height(60.dp),
+            .width(90.dp)
+            .height(120.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         SkeletonBox(width = 24.dp, height = 24.dp)
-        Spacer(modifier = Modifier.height(4.dp))
         SkeletonBox(
             modifier = Modifier.fillMaxWidth(0.8f),
             height = 20.dp
         )
+        Spacer(modifier = Modifier.height(4.dp))
         SkeletonBox(
             modifier = Modifier.fillMaxWidth(0.6f),
             height = 30.dp

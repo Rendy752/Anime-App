@@ -12,6 +12,7 @@ import com.example.animeapp.models.EpisodeServersResponse
 import com.example.animeapp.models.EpisodeSourcesResponse
 import com.example.animeapp.models.EpisodesResponse
 import com.example.animeapp.repository.AnimeEpisodeDetailRepository
+import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.TimeUtils
 import io.mockk.coEvery
 import io.mockk.every
@@ -89,13 +90,13 @@ class AnimeEpisodeDetailRepositoryTest {
         every { animeDetailDao.getAnimeDetailById(animeId) } returns animeDetail
         every { animeDetailComplementDao.getAnimeDetailComplementByMalId(animeId) } returns animeDetailComplementMock
 
-        coEvery { animeEpisodeDetailRepository.getAnimeDetail(animeId) } returns Response.success(
+        coEvery { animeEpisodeDetailRepository.getAnimeDetail(animeId) } returns Resource.Success(
             animeDetailResponse
         )
 
         val result = animeEpisodeDetailRepository.getAnimeDetail(animeId)
 
-        assertEquals(Response.success(animeDetailResponse).body(), result.body())
+        assertEquals(Resource.Success(animeDetailResponse), result)
     }
 
     @Test
@@ -103,10 +104,9 @@ class AnimeEpisodeDetailRepositoryTest {
         val animeId = 123
         val mockAnimeDetail = mockk<AnimeDetail>()
         val animeDetailResponse = AnimeDetailResponse(mockAnimeDetail)
-        val expectedResponse = Response.success(animeDetailResponse)
+        val expectedResponse = Resource.Success(animeDetailResponse)
 
         coEvery { animeEpisodeDetailRepository.getAnimeDetail(animeId) } returns expectedResponse
-
         val result = animeEpisodeDetailRepository.getAnimeDetail(animeId)
 
         assertEquals(expectedResponse, result)
@@ -136,7 +136,7 @@ class AnimeEpisodeDetailRepositoryTest {
     }
 
     @Test
-    fun `updateAnimeDetailComplementWithEpisodes should return updated data when needed and successful`() =
+    fun `updateCachedAnimeDetailComplementWithEpisodes should return updated data when needed and successful`() =
         runBlocking {
             val animeDetail = mockk<AnimeDetail> {
                 every { airing } returns true
@@ -147,13 +147,13 @@ class AnimeEpisodeDetailRepositoryTest {
             }
             val animeDetailComplement = mockk<AnimeDetailComplement>()
             coEvery {
-                animeEpisodeDetailRepository.updateAnimeDetailComplementWithEpisodes(
+                animeEpisodeDetailRepository.updateCachedAnimeDetailComplementWithEpisodes(
                     any(),
                     any()
                 )
             } returns animeDetailComplement
 
-            val result = animeEpisodeDetailRepository.updateAnimeDetailComplementWithEpisodes(
+            val result = animeEpisodeDetailRepository.updateCachedAnimeDetailComplementWithEpisodes(
                 animeDetail,
                 animeDetailComplement
             )
@@ -196,22 +196,22 @@ class AnimeEpisodeDetailRepositoryTest {
 
         val result = repository.getAnimeDetail(animeId)
 
-        assertEquals(Response.success(animeDetailResponse).body(), result.body())
+        assertEquals(Resource.Success(animeDetailResponse), result)
     }
 
     @Test
-    fun `updateAnimeDetailComplementWithEpisodes should return cached data when not needed`() =
+    fun `updateCachedAnimeDetailComplementWithEpisodes should return cached data when not needed`() =
         runBlocking {
             val (animeDetail, _, animeDetailComplement) = setupAnimeDetailMocks(Instant.now().epochSecond)
 
             coEvery {
-                animeEpisodeDetailRepository.updateAnimeDetailComplementWithEpisodes(
+                animeEpisodeDetailRepository.updateCachedAnimeDetailComplementWithEpisodes(
                     any(),
                     any()
                 )
             } returns animeDetailComplement
 
-            val result = animeEpisodeDetailRepository.updateAnimeDetailComplementWithEpisodes(
+            val result = animeEpisodeDetailRepository.updateCachedAnimeDetailComplementWithEpisodes(
                 animeDetail,
                 animeDetailComplement
             )
@@ -220,18 +220,18 @@ class AnimeEpisodeDetailRepositoryTest {
         }
 
     @Test
-    fun `updateAnimeDetailComplementWithEpisodes should return cached object when api call fails`() =
+    fun `updateCachedAnimeDetailComplementWithEpisodes should return cached object when api call fails`() =
         runBlocking {
             val (animeDetail, _, animeDetailComplement) = setupAnimeDetailMocks(Instant.now().epochSecond)
 
             coEvery {
-                animeEpisodeDetailRepository.updateAnimeDetailComplementWithEpisodes(
+                animeEpisodeDetailRepository.updateCachedAnimeDetailComplementWithEpisodes(
                     any(),
                     any()
                 )
             } returns animeDetailComplement
 
-            val result = animeEpisodeDetailRepository.updateAnimeDetailComplementWithEpisodes(
+            val result = animeEpisodeDetailRepository.updateCachedAnimeDetailComplementWithEpisodes(
                 animeDetail,
                 animeDetailComplement
             )
@@ -287,9 +287,9 @@ class AnimeEpisodeDetailRepositoryTest {
     fun `getEpisodes should trigger api call`() {
         runBlocking {
             val id = "123"
-            val expectedResponse = Response.success(mockk<EpisodesResponse>())
-            coEvery { animeEpisodeDetailRepository.getEpisodes(id) } returns expectedResponse
+            val expectedResponse = Resource.Success(mockk<EpisodesResponse>())
 
+            coEvery { animeEpisodeDetailRepository.getEpisodes(id) } returns expectedResponse
             val result = animeEpisodeDetailRepository.getEpisodes(id)
 
             assertEquals(expectedResponse, result)
@@ -300,9 +300,8 @@ class AnimeEpisodeDetailRepositoryTest {
     fun `getEpisodeServers should trigger api call`() {
         runBlocking {
             val episodeId = "123"
-            val expectedResponse = Response.success(mockk<EpisodeServersResponse>())
+            val expectedResponse = Resource.Success(mockk<EpisodeServersResponse>())
             coEvery { animeEpisodeDetailRepository.getEpisodeServers(episodeId) } returns expectedResponse
-
             val result = animeEpisodeDetailRepository.getEpisodeServers(episodeId)
 
             assertEquals(expectedResponse, result)

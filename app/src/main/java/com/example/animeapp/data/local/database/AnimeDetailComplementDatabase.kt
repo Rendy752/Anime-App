@@ -9,7 +9,7 @@ import com.example.animeapp.data.local.dao.AnimeDetailComplementDao
 import com.example.animeapp.data.local.entities.AnimeDetailComplementConverter
 import com.example.animeapp.models.AnimeDetailComplement
 
-@Database(entities = [AnimeDetailComplement::class], version = 2, exportSchema = false)
+@Database(entities = [AnimeDetailComplement::class], version = 4, exportSchema = false)
 @TypeConverters(AnimeDetailComplementConverter::class)
 abstract class AnimeDetailComplementDatabase : RoomDatabase() {
 

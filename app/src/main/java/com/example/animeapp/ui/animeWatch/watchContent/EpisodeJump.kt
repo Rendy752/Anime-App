@@ -1,6 +1,7 @@
 package com.example.animeapp.ui.animeWatch.watchContent
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -19,10 +20,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.Episode
 import com.example.animeapp.ui.common_ui.SkeletonBox
 import kotlinx.coroutines.launch
@@ -30,7 +32,6 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EpisodeJump(
-    animeDetail: AnimeDetail,
     episodes: List<Episode>,
     gridState: LazyGridState
 ) {
@@ -42,14 +43,31 @@ fun EpisodeJump(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text("Total Episodes: ${animeDetail.episodes}")
+        Column(
+            modifier = Modifier
+                .weight(0.5f)
+                .align(Alignment.CenterVertically),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                "Total Episodes",
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                episodes.size.toString(),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+        }
 
         OutlinedTextField(
             value = episodeNumberInput,
             onValueChange = { newValue ->
                 val filteredValue = newValue.filter { it.isDigit() }
                 val intValue = filteredValue.toIntOrNull()
-                if (intValue == null || (intValue >= 1 && intValue <= animeDetail.episodes)) {
+                if (intValue == null || (intValue >= 1 && intValue <= episodes.size)) {
                     episodeNumberInput = filteredValue
                     intValue?.let { episodeNo ->
                         val index = episodes.indexOfFirst { it.episodeNo == episodeNo }
@@ -62,9 +80,10 @@ fun EpisodeJump(
                 }
             },
             label = { Text("Jump to Episode") },
+            singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             modifier = Modifier
-                .weight(1f)
+                .weight(0.5f)
                 .padding(horizontal = 8.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = MaterialTheme.colorScheme.primary,

@@ -1,8 +1,8 @@
 package com.example.animeapp.ui.animeDetail.detailBody
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Label
@@ -11,15 +11,16 @@ import androidx.compose.material.icons.automirrored.filled.MenuBook
 import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Apartment
 import androidx.compose.material.icons.filled.CalendarMonth
-import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Event
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.ui.common_ui.ClickableDataTextWithIcon
@@ -37,19 +38,18 @@ fun DetailBodySection(animeDetail: AnimeDetail, navController: NavController) {
             .fillMaxWidth()
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Column(
                 modifier = Modifier.weight(1f)
             ) {
                 DataTextWithIcon("Status", animeDetail.status, Icons.Default.Info)
-                DataTextWithIcon("Type", animeDetail.type ?: "Unknown", Icons.Default.Category)
+                DataTextWithIcon("Type", animeDetail.type ?: "Unknown", Icons.Default.PlayCircle)
                 DataTextWithIcon("Source", animeDetail.source, Icons.AutoMirrored.Filled.MenuBook)
                 DataTextWithIcon("Season", animeDetail.season ?: "-", Icons.Default.CalendarMonth)
                 DataTextWithIcon(
-                    "Released",
-                    animeDetail.year?.toString() ?: "-",
-                    Icons.Default.Event
+                    "Released", animeDetail.year?.toString() ?: "-", Icons.Default.Event
                 )
                 DataTextWithIcon("Aired", animeDetail.aired.string, Icons.Default.DateRange)
                 DataTextWithIcon("Rating", animeDetail.rating ?: "Unknown", Icons.Default.Star)
@@ -65,7 +65,6 @@ fun DetailBodySection(animeDetail: AnimeDetail, navController: NavController) {
                 }
                 ClickableDataTextWithIcon("Genres", genreItems, Icons.AutoMirrored.Filled.Label)
             }
-
             Column(
                 modifier = Modifier.weight(1f)
             ) {
@@ -91,8 +90,7 @@ fun DetailBodySection(animeDetail: AnimeDetail, navController: NavController) {
                 ClickableDataTextWithIcon("Licensors", licensorItems, Icons.Default.Apartment)
 
                 DataTextWithIcon(
-                    "Broadcast",
-                    animeDetail.broadcast.string ?: "-",
+                    "Broadcast", animeDetail.broadcast.string ?: "-",
                     Icons.Default.NotificationsActive
                 )
                 DataTextWithIcon("Duration", animeDetail.duration, Icons.Default.AccessTime)
@@ -110,16 +108,16 @@ fun DetailBodySectionSkeleton() {
             .fillMaxWidth()
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             Column(
                 modifier = Modifier.weight(1f)
             ) {
-                repeat(8) {
+                repeat(9) {
                     DataTextWithIconSkeleton()
                 }
             }
-            Spacer(modifier = Modifier.weight(0.1f))
             Column(
                 modifier = Modifier.weight(1f)
             ) {

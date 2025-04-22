@@ -2,9 +2,6 @@ package com.example.animeapp.ui.animeSearch.bottomSheet
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -17,18 +14,20 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.R
+import com.example.animeapp.models.AnimeSearchQueryState
 import com.example.animeapp.models.Producer
-import com.example.animeapp.ui.animeSearch.AnimeSearchViewModel
+import com.example.animeapp.models.ProducersResponse
+import com.example.animeapp.models.ProducersSearchQueryState
 import com.example.animeapp.ui.animeSearch.components.ApplyButton
 import com.example.animeapp.ui.animeSearch.components.CancelButton
-import com.example.animeapp.ui.animeSearch.components.PaginationButtons
 import com.example.animeapp.ui.animeSearch.components.ResetButton
 import com.example.animeapp.ui.animeSearch.genreProducerFilterField.FilterChipFlow
-import com.example.animeapp.ui.common_ui.DropdownInputField
+import com.example.animeapp.ui.animeSearch.genreProducerFilterField.FilterChipFlowSkeleton
+import com.example.animeapp.ui.common_ui.LimitAndPaginationQueryState
+import com.example.animeapp.ui.common_ui.LimitAndPaginationSection
 import com.example.animeapp.ui.common_ui.RetryButton
 import com.example.animeapp.ui.common_ui.SearchView
 import com.example.animeapp.utils.Debounce
-import com.example.animeapp.utils.Limit
 import com.example.animeapp.utils.Resource
 
 @OptIn(
@@ -37,17 +36,23 @@ import com.example.animeapp.utils.Resource
     ExperimentalFoundationApi::class
 )
 @Composable
-fun ProducersBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit) {
-    val producers by viewModel.producers.collectAsState()
-    val queryState by viewModel.queryState.collectAsState()
-    val selectedProducers by viewModel.selectedProducers.collectAsState()
-    val producersQueryState by viewModel.producersQueryState.collectAsState()
-
+fun ProducersBottomSheet(
+    queryState: AnimeSearchQueryState,
+    producers: Resource<ProducersResponse>,
+    fetchProducers: () -> Unit,
+    selectedProducers: List<Producer>,
+    producersQueryState: ProducersSearchQueryState,
+    applyProducerQueryStateFilters: (ProducersSearchQueryState) -> Unit,
+    setSelectedProducer: (Producer) -> Unit,
+    applyProducerFilters: () -> Unit,
+    resetProducerSelection: () -> Unit,
+    onDismiss: () -> Unit
+) {
     val scope = rememberCoroutineScope()
     var query by remember { mutableStateOf(producersQueryState.query) }
     val debounce = remember {
         Debounce(scope, 1000L) { newQuery ->
-            viewModel.applyProducerQueryStateFilters(
+            applyProducerQueryStateFilters(
                 producersQueryState.copy(
                     query = newQuery,
                     page = 1
@@ -57,9 +62,6 @@ fun ProducersBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit)
     }
 
     val context = LocalContext.current
-    var selectedLimit by remember { mutableIntStateOf(producersQueryState.limit ?: 10) }
-    val pagerState = rememberPagerState { 2 }
-    val paginationState = producers.data?.pagination
 
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
@@ -75,7 +77,7 @@ fun ProducersBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit)
                 context,
                 { queryState.isProducersDefault() },
                 {
-                    viewModel.resetProducerSelection()
+                    resetProducerSelection()
                     onDismiss()
                 },
                 Modifier.weight(1f)
@@ -85,7 +87,7 @@ fun ProducersBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit)
                 context,
                 { selectedProducers.isEmpty() },
                 {
-                    viewModel.applyProducerFilters()
+                    applyProducerFilters()
                     onDismiss()
                 },
                 Modifier.weight(1f)
@@ -114,7 +116,7 @@ fun ProducersBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit)
             if (selectedProducers.isNotEmpty()) {
                 FilterChipFlow(
                     itemList = selectedProducers,
-                    onSetSelectedId = { viewModel.setSelectedProducer(it as Producer) },
+                    onSetSelectedId = { setSelectedProducer(it as Producer) },
                     itemName = {
                         val title = (it as Producer).titles?.get(0)?.title ?: "Unknown"
                         if (it.count > 0) "$title (${it.count})"
@@ -134,87 +136,58 @@ fun ProducersBottomSheet(viewModel: AnimeSearchViewModel, onDismiss: () -> Unit)
                 )
             }
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-            when (producers) {
-                is Resource.Loading -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        contentAlignment = Alignment.Center
-                    ) { CircularProgressIndicator() }
-                }
+            Box(
+                modifier = Modifier
+                    .fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                when (producers) {
+                    is Resource.Loading -> {
+                        FilterChipFlowSkeleton()
+                    }
 
-                is Resource.Success -> {
-                    val producerList = producers.data?.data ?: emptyList()
-                    FilterChipFlow(
-                        itemList = producerList.filter { it !in selectedProducers },
-                        onSetSelectedId = { viewModel.setSelectedProducer(it as Producer) },
-                        itemName = {
-                            val title = (it as Producer).titles?.get(0)?.title ?: "Unknown"
-                            if (it.count > 0) "$title (${it.count})"
-                            else title
-                        },
-                        getItemId = { it },
-                    )
-                }
+                    is Resource.Success -> {
+                        val producerList = producers.data.data
+                        FilterChipFlow(
+                            itemList = producerList.filter { it !in selectedProducers },
+                            onSetSelectedId = { setSelectedProducer(it as Producer) },
+                            itemName = {
+                                val title = (it as Producer).titles?.get(0)?.title ?: "Unknown"
+                                if (it.count > 0) "$title (${it.count})"
+                                else title
+                            },
+                            getItemId = { it },
+                        )
+                    }
 
-                is Resource.Error -> {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(16.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
+                    is Resource.Error -> {
                         RetryButton(
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .fillMaxWidth(),
                             message = producers.message ?: "Error loading producers",
-                            onClick = { viewModel.fetchProducers() }
+                            onClick = { fetchProducers() }
                         )
                     }
                 }
             }
         }
 
-        if (paginationState != null) HorizontalDivider()
-        HorizontalPager(state = pagerState, Modifier.padding(8.dp)) { page ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (page == 0) {
-                    Row(
-                        horizontalArrangement = Arrangement.End,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        if (paginationState != null) {
-                            PaginationButtons(paginationState) { pageNumber ->
-                                viewModel.applyProducerQueryStateFilters(
-                                    producersQueryState.copy(
-                                        page = pageNumber
-                                    )
-                                )
-                            }
-                        }
-                    }
-                } else {
-                    DropdownInputField(
-                        label = "Limit",
-                        options = Limit.limitOptions.map { it.toString() },
-                        selectedValue = selectedLimit.toString(),
-                        onValueChange = {
-                            selectedLimit = it.toInt()
-                            if (producersQueryState.limit != selectedLimit) {
-                                val updatedQueryState = producersQueryState.copy(
-                                    limit = selectedLimit, page = 1
-                                )
-                                viewModel.applyProducerQueryStateFilters(updatedQueryState)
-                            }
-                        },
-                        modifier = Modifier.wrapContentSize()
+        LimitAndPaginationSection(
+            isVisible = producers is Resource.Success,
+            pagination = producers.data?.pagination,
+            query = LimitAndPaginationQueryState(
+                producersQueryState.page,
+                producersQueryState.limit
+            ),
+            onQueryChanged = {
+                applyProducerQueryStateFilters(
+                    producersQueryState.copy(
+                        page = it.page,
+                        limit = it.limit
                     )
-                }
+                )
             }
-        }
+        )
     }
 }
