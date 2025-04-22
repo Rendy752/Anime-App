@@ -331,8 +331,8 @@ private fun VerticalColumnContent(
 @Composable
 private fun CommonListContent(data: AnimeDetail, context: Context) {
     listOf(
-        "Openings" to convertToNameAndUrl(data.theme.openings),
-        "Endings" to convertToNameAndUrl(data.theme.endings),
+        "Openings" to convertToNameAndUrl(data.theme?.openings),
+        "Endings" to convertToNameAndUrl(data.theme?.endings),
         "Externals" to data.external,
         "Streamings" to data.streaming
     ).forEach { (title, items) ->

@@ -50,7 +50,7 @@ data class AnimeDetail(
     val themes: List<CommonIdentity>?,
     val demographics: List<CommonIdentity>?,
     val relations: List<Relation>?,
-    val theme: Theme,
+    val theme: Theme?,
     val external: List<NameAndUrl>?,
     val streaming: List<NameAndUrl>?
 ) : Parcelable
