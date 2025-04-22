@@ -12,6 +12,7 @@ import com.example.animeapp.models.EpisodeServersResponse
 import com.example.animeapp.models.EpisodeSourcesResponse
 import com.example.animeapp.repository.AnimeEpisodeDetailRepository
 import com.example.animeapp.utils.AnimeTitleFinder
+import com.example.animeapp.utils.AnimeTitleFinder.normalizeTitle
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.StreamingUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -61,12 +62,8 @@ class AnimeDetailViewModel @Inject constructor(
                 Resource.Error("Anime is a music, no episodes available")
             return@launch
         }
-        val title = detailData.title
-        val englishTitle = _animeDetail.value?.data?.data?.title_english ?: ""
-        val searchTitle = when {
-            englishTitle.isNotEmpty() -> englishTitle.lowercase()
-            else -> title.lowercase()
-        }
+
+        val searchTitle = (detailData.title_english ?: detailData.title).normalizeTitle()
         val response = animeEpisodeDetailRepository.getAnimeAniwatchSearch(searchTitle)
         if (!response.isSuccessful) {
             _animeDetailComplement.value =

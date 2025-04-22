@@ -25,11 +25,11 @@ object AnimeTitleFinder {
             return emptyList()
         }
 
-        val normalizedTargetTitles = targetTitles.map { it.normalizeForComparison() }
+        val normalizedTargetTitles = targetTitles.map { it.normalizeTitle() }
 
         val scoredItems = data.map { item ->
             val itemName = titleExtractor(item)
-            val normalizedItemName = itemName.normalizeForComparison()
+            val normalizedItemName = itemName.normalizeTitle()
             Log.d("AnimeTitleFinder", "Comparing '$itemName' with '$targetTitles'")
 
             val bestScore = normalizedTargetTitles.maxOf { targetTitle ->
@@ -142,6 +142,6 @@ object AnimeTitleFinder {
 
     private data class ScoredItem<T>(val item: T, val score: Double)
 
-    private fun String.normalizeForComparison(): String =
+    fun String.normalizeTitle(): String =
         replace(Regex("[^a-zA-Z0-9\\s]"), "").trim().lowercase()
 }
