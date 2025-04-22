@@ -56,7 +56,11 @@ import com.example.animeapp.utils.Navigation.navigateToAnimeWatch
 import com.example.animeapp.utils.Resource
 
 private fun convertToNameAndUrl(list: List<String>?): List<NameAndUrl>? =
-    list?.map { NameAndUrl(it, "$YOUTUBE_URL/results?search_query=${Uri.encode(it)}") }
+    list?.map {
+        NameAndUrl(
+            it, "$YOUTUBE_URL/results?search_query=${Uri.encode(it.normalizeTitle())}"
+        )
+    }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview
@@ -283,7 +287,7 @@ private fun RightColumnContent(
             animeDetail,
             animeDetailComplement,
             { viewModel.getCachedEpisodeDetailComplement(it) },
-            viewModel::handleEpisodes,
+            { viewModel.handleEpisodes(true) },
             { episodeId ->
                 defaultEpisode?.let { defaultEpisode ->
                     if (animeDetailComplement is Resource.Success) {
@@ -336,7 +340,7 @@ private fun CommonListContent(animeDetail: AnimeDetail, context: Context) {
         "Streamings" to animeDetail.streaming
     ).forEach { (title, items) ->
         ClickableListSection(title, items) { url ->
-            context.startActivity(Intent(Intent.ACTION_VIEW, url.normalizeTitle().toUri()))
+            context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
         }
     }
 }

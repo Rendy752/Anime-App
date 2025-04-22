@@ -52,13 +52,13 @@ class AnimeEpisodeDetailRepository(
         }
     }
 
-    private suspend fun isDataNeedUpdate(data: AnimeDetail): Boolean {
-        return data.airing && !TimeUtils.isEpisodeAreUpToDate(
+    private suspend fun isDataNeedUpdate(data: AnimeDetail, isRefresh: Boolean = false): Boolean {
+        return data.airing && (isRefresh || !TimeUtils.isEpisodeAreUpToDate(
             data.broadcast.time,
             data.broadcast.timezone,
             data.broadcast.day,
             getCachedAnimeDetailComplementByMalId(data.mal_id)?.lastEpisodeUpdatedAt
-        )
+        ))
     }
 
     private suspend fun getRemoteAnimeDetail(id: Int): Resource<AnimeDetailResponse> {
@@ -89,9 +89,10 @@ class AnimeEpisodeDetailRepository(
 
     suspend fun updateCachedAnimeDetailComplementWithEpisodes(
         animeDetail: AnimeDetail,
-        cachedAnimeDetailComplement: AnimeDetailComplement
+        cachedAnimeDetailComplement: AnimeDetailComplement,
+        isRefresh: Boolean = false
     ): AnimeDetailComplement? = withContext(Dispatchers.IO) {
-        if (isDataNeedUpdate(animeDetail)) {
+        if (isDataNeedUpdate(animeDetail, isRefresh)) {
             val episodesResponse = ResponseHandler.handleCommonResponse(
                 runwayAPI.getEpisodes(cachedAnimeDetailComplement.id)
             )

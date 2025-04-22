@@ -86,7 +86,7 @@ fun EpisodesDetailSection(
                                 .weight(1f)
                                 .padding(end = 4.dp)
                         )
-                        SkeletonBox(
+                        if (animeDetail.airing) SkeletonBox(
                             modifier = modifier
                                 .clip(RoundedCornerShape(16.dp))
                                 .background(MaterialTheme.colorScheme.primaryContainer),
@@ -133,7 +133,7 @@ fun EpisodesDetailSection(
                                         .padding(end = 4.dp)
                                 )
                             }
-                            RetryButton(
+                            if (animeDetail.airing) RetryButton(
                                 modifier = if (data.episodes.size >= 4) Modifier else Modifier.fillMaxWidth(),
                                 onClick = { handleEpisodes() }
                             )

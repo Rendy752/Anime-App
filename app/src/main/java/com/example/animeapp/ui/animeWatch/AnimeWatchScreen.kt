@@ -169,7 +169,7 @@ fun AnimeWatchScreen(
         PullToRefreshBox(
             isRefreshing = isRefreshing,
             onRefresh = {
-                viewModel.handleSelectedEpisodeServer(episodeSourcesQuery, isRefreshed = true)
+                viewModel.handleSelectedEpisodeServer(episodeSourcesQuery, isRefresh = true)
             },
             modifier = Modifier
                 .fillMaxSize()

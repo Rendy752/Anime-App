@@ -54,13 +54,13 @@ class AnimeWatchViewModel @Inject constructor(
     fun handleSelectedEpisodeServer(
         episodeSourcesQuery: EpisodeSourcesQuery,
         isFirstInit: Boolean = false,
-        isRefreshed: Boolean = false
+        isRefresh: Boolean = false
     ) = viewModelScope.launch {
         val tempEpisodeDetailComplement: EpisodeDetailComplement? = (_episodeDetailComplement.value as? Resource.Success)?.data
         try {
             _isRefreshing.value = true
             _episodeDetailComplement.value = Resource.Loading()
-            if (!isRefreshed) {
+            if (!isRefresh) {
                 val cachedEpisodeDetailComplement =
                     getCachedEpisodeDetailComplement(episodeSourcesQuery.id)
 

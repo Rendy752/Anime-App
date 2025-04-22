@@ -48,14 +48,14 @@ class AnimeDetailViewModel @Inject constructor(
         return animeEpisodeDetailRepository.getAnimeDetail(id)
     }
 
-    fun handleEpisodes() = viewModelScope.launch {
+    fun handleEpisodes(isRefresh: Boolean = false) = viewModelScope.launch {
         _animeDetailComplement.value = Resource.Loading()
         val detailData = _animeDetail.value?.data?.data
             ?: run {
                 _animeDetailComplement.value = Resource.Error("Anime data not available")
                 return@launch
             }
-        if (handleCachedAnimeDetailComplement(detailData)) return@launch
+        if (handleCachedAnimeDetailComplement(detailData, isRefresh)) return@launch
 
         if (detailData.type == "Music") {
             val cachedAnimeDetailComplement = AnimeDetailComplement(
@@ -79,7 +79,10 @@ class AnimeDetailViewModel @Inject constructor(
         handleValidEpisode(response)
     }
 
-    private suspend fun handleCachedAnimeDetailComplement(detailData: AnimeDetail): Boolean {
+    private suspend fun handleCachedAnimeDetailComplement(
+        detailData: AnimeDetail,
+        isRefresh: Boolean
+    ): Boolean {
         val cachedAnimeDetailComplement =
             animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(detailData.mal_id)
 
@@ -87,7 +90,8 @@ class AnimeDetailViewModel @Inject constructor(
             val updatedAnimeDetail =
                 animeEpisodeDetailRepository.updateCachedAnimeDetailComplementWithEpisodes(
                     detailData,
-                    cachedAnimeDetail
+                    cachedAnimeDetail,
+                    isRefresh
                 )
 
             if (updatedAnimeDetail == null) {
