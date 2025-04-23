@@ -46,11 +46,8 @@ fun PlayerViewWrapper(
     onSpeedChange: (Float, Boolean) -> Unit,
     onHoldingChange: (Boolean, Boolean) -> Unit,
     onSeek: (Int, Long) -> Unit,
-    onPlayPauseToggle: () -> Unit,
     onFastForward: () -> Unit,
     onRewind: () -> Unit,
-    onNext: () -> Unit,
-    onPrevious: () -> Unit
 ) {
     val context = LocalContext.current
     var isSeeking by remember { mutableStateOf(false) }
@@ -171,12 +168,5 @@ fun PlayerViewWrapper(
                 )
             }
         })
-
-        view.findViewById<View>(RMedia3.id.exo_play_pause)
-            ?.setOnClickListener { onPlayPauseToggle() }
-        view.findViewById<View>(RMedia3.id.exo_ffwd)?.setOnClickListener { onFastForward() }
-        view.findViewById<View>(RMedia3.id.exo_rew)?.setOnClickListener { onRewind() }
-        view.findViewById<View>(RMedia3.id.exo_next)?.setOnClickListener { onNext() }
-        view.findViewById<View>(RMedia3.id.exo_prev)?.setOnClickListener { onPrevious() }
     }
 }

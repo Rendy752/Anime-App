@@ -5,14 +5,11 @@ import android.media.AudioManager
 import android.media.AudioManager.OnAudioFocusChangeListener
 import android.media.AudioFocusRequest
 import androidx.annotation.OptIn
-import androidx.media3.common.AudioAttributes as Media3AudioAttributes
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaItem.SubtitleConfiguration
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.ui.PlayerView
-import androidx.media3.common.Player
 import androidx.media3.common.C
 import com.example.animeapp.models.EpisodeSourcesResponse
 import androidx.core.net.toUri
@@ -28,15 +25,12 @@ object HlsPlayerUtil {
         player: ExoPlayer,
         videoData: EpisodeSourcesResponse
     ) {
-
         if (videoData.sources.isNotEmpty() && videoData.sources[0].type == "hls") {
             val mediaItemUri = videoData.sources[0].url.toUri()
-            val mediaItemBuilder = MediaItem.Builder()
-                .setUri(mediaItemUri)
+            val mediaItemBuilder = MediaItem.Builder().setUri(mediaItemUri)
 
             if (videoData.tracks.any { it.kind == "captions" }) {
                 val subtitleConfigurations = mutableListOf<SubtitleConfiguration>()
-
                 videoData.tracks.filter { it.kind == "captions" }.forEach { track ->
                     val subtitleConfiguration = SubtitleConfiguration.Builder(track.file.toUri())
                         .setMimeType(MimeTypes.TEXT_VTT)
@@ -46,43 +40,18 @@ object HlsPlayerUtil {
                         .build()
                     subtitleConfigurations.add(subtitleConfiguration)
                 }
-
                 mediaItemBuilder.setSubtitleConfigurations(subtitleConfigurations)
             }
 
             player.setMediaItem(mediaItemBuilder.build())
             player.prepare()
-
-            audioFocusChangeListener = OnAudioFocusChangeListener { focusChange ->
-                when (focusChange) {
-                    AudioManager.AUDIOFOCUS_GAIN -> {
-                        player.volume = 1f
-                        if (player.playbackState == Player.STATE_READY) {
-                            player.play()
-                        }
-                    }
-
-                    AudioManager.AUDIOFOCUS_LOSS,
-                    AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> {
-                        player.pause()
-                    }
-
-                    AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
-                        player.volume = 0.5f
-                    }
-                }
-            }
+            player.pause()
         }
     }
 
     fun requestAudioFocus(audioManager: AudioManager) {
         if (!audioFocusRequested) {
             if (audioFocusRequest == null) {
-                Media3AudioAttributes.Builder()
-                    .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE)
-                    .setUsage(C.USAGE_MEDIA)
-                    .build()
-
                 audioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
                     .setAudioAttributes(
                         AudioAttributes.Builder()
@@ -91,7 +60,8 @@ object HlsPlayerUtil {
                             .build()
                     )
                     .setOnAudioFocusChangeListener(
-                        audioFocusChangeListener ?: OnAudioFocusChangeListener { })
+                        audioFocusChangeListener ?: OnAudioFocusChangeListener { }
+                    )
                     .build()
             }
 
@@ -107,10 +77,5 @@ object HlsPlayerUtil {
             audioFocusRequest?.let { audioManager.abandonAudioFocusRequest(it) }
             audioFocusRequested = false
         }
-    }
-
-    fun releasePlayer(playerView: PlayerView) {
-        playerView.player?.release()
-        playerView.player = null
     }
 }

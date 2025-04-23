@@ -46,9 +46,6 @@ fun VideoPlayer(
     modifier: Modifier = Modifier,
     videoSize: Modifier,
     onPlay: () -> Unit,
-    onPause: () -> Unit,
-    onSkipNext: () -> Unit,
-    onSkipPrevious: () -> Unit,
     onFastForward: () -> Unit,
     onRewind: () -> Unit
 ) {
@@ -64,12 +61,19 @@ fun VideoPlayer(
     var seekAmount by remember { mutableLongStateOf(0L) }
     var isSeeking by remember { mutableStateOf(false) }
     var isPlaying by remember { mutableStateOf(false) }
+    var isPlayerReady by remember { mutableStateOf(false) }
 
     val mediaControllerCallback = remember {
         object : MediaControllerCompat.Callback() {
             override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
                 state?.let {
                     isPlaying = it.state == PlaybackStateCompat.STATE_PLAYING
+                    isPlayerReady = it.state == PlaybackStateCompat.STATE_PAUSED ||
+                            it.state == PlaybackStateCompat.STATE_PLAYING ||
+                            it.state == PlaybackStateCompat.STATE_BUFFERING
+                    if (isPlaying) {
+                        setShowResumeOverlay(false)
+                    }
                 }
             }
         }
@@ -81,6 +85,11 @@ fun VideoPlayer(
             mediaController?.unregisterCallback(mediaControllerCallback)
         }
     }
+
+    val shouldShowResumeOverlay = isShowResumeOverlay &&
+            episodeDetailComplement.lastTimestamp != null &&
+            isPlayerReady &&
+            !isPlaying
 
     Box(modifier = modifier.then(videoSize)) {
         PlayerViewWrapper(
@@ -110,17 +119,8 @@ fun VideoPlayer(
                     isSeeking = false
                 }, 1000)
             },
-            onPlayPauseToggle = {
-                if (isPlaying) {
-                    onPause()
-                } else {
-                    onPlay()
-                }
-            },
             onFastForward = onFastForward,
             onRewind = onRewind,
-            onNext = onSkipNext,
-            onPrevious = onSkipPrevious
         )
 
         if (isShowSeekIndicator) {
@@ -131,7 +131,7 @@ fun VideoPlayer(
             )
         }
 
-        if (isShowResumeOverlay && episodeDetailComplement.lastTimestamp != null) {
+        if (shouldShowResumeOverlay) {
             ResumePlaybackOverlay(
                 isPipMode = isPipMode,
                 lastTimestamp = episodeDetailComplement.lastTimestamp,
@@ -170,7 +170,7 @@ fun VideoPlayer(
             )
         }
 
-        if (!isPipMode && !isShowResumeOverlay && !isShowNextEpisode && (showIntro || showOutro)) {
+        if (!isPipMode && !shouldShowResumeOverlay && !isShowNextEpisode && (showIntro || showOutro)) {
             SkipIntroOutroButtons(
                 showIntro = showIntro,
                 showOutro = showOutro,

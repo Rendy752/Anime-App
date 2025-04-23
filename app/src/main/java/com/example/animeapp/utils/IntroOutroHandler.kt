@@ -15,7 +15,6 @@ class IntroOutroHandler(
     private val player: ExoPlayer,
     private val videoData: EpisodeSourcesResponse
 ) {
-
     private var introSkipped = false
     private var outroSkipped = true
     private var job: Job? = null
@@ -71,5 +70,7 @@ class IntroOutroHandler(
         job = null
         showIntroButton.value = false
         showOutroButton.value = false
+        introSkipped = false
+        outroSkipped = true
     }
 }
