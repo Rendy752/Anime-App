@@ -20,6 +20,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -28,6 +29,7 @@ import androidx.navigation.NavController
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.ui.common_ui.AsyncImageWithPlaceholder
 import com.example.animeapp.ui.common_ui.ImageRoundedCorner
+import com.example.animeapp.utils.Navigation.navigateToAnimeDetail
 import com.example.animeapp.utils.Navigation.navigateToAnimeWatch
 import com.example.animeapp.utils.basicContainer
 import com.example.animeapp.utils.WatchUtils.getEpisodeBackgroundColor
@@ -65,7 +67,8 @@ fun ContinueWatchingPopup(
             ) {
                 if (!isMinimized) {
                     AsyncImageWithPlaceholder(
-                        model = episodeDetailComplement.imageUrl,
+                        model = episodeDetailComplement.imageUrl
+                            ?: "default_anime_placeholder_${episodeDetailComplement.animeTitle}",
                         contentDescription = episodeDetailComplement.animeTitle,
                         roundedCorners = ImageRoundedCorner.START,
                         modifier = Modifier
@@ -80,10 +83,16 @@ fun ContinueWatchingPopup(
                     ) {
                         Column(modifier = Modifier.width(250.dp)) {
                             Text(
+                                modifier = Modifier.clickable {
+                                    navController.navigateToAnimeDetail(
+                                        id = episodeDetailComplement.malId,
+                                    )
+                                },
                                 text = episodeDetailComplement.animeTitle,
                                 style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.primary,
                                 maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
+                                overflow = TextOverflow.Ellipsis,
                             )
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
@@ -116,19 +125,19 @@ fun ContinueWatchingPopup(
                         ) {
                             Text(
                                 text = "Continue Watching",
+                                fontWeight = FontWeight.Bold,
                                 style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onPrimary)
                             )
                             Icon(
-                                Icons.Filled.PlayArrow,
-                                contentDescription = "Next Episode",
-                                modifier = Modifier.padding(start = 8.dp),
+                                imageVector = Icons.Filled.PlayArrow,
+                                contentDescription = "Play ${episodeDetailComplement.animeTitle} Episode ${episodeDetailComplement.number}",
                                 tint = MaterialTheme.colorScheme.onPrimary
                             )
                         }
                     }
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.NavigateNext,
-                        contentDescription = "Minimize",
+                        contentDescription = "Minimize popup for ${episodeDetailComplement.animeTitle}",
                         modifier = Modifier
                             .fillMaxHeight()
                             .clickable { onSetMinimize(true) }
@@ -136,7 +145,7 @@ fun ContinueWatchingPopup(
                 } else {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.NavigateBefore,
-                        contentDescription = "Restore",
+                        contentDescription = "Restore popup for ${episodeDetailComplement.animeTitle}",
                         modifier = Modifier
                             .fillMaxHeight()
                             .clickable { onSetMinimize(false) },
