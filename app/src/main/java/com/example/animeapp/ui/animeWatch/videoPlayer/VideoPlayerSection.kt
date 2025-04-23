@@ -131,11 +131,9 @@ fun VideoPlayerSection(
                             (context as? FragmentActivity)?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                             HlsPlayerUtil.requestAudioFocus(audioManager)
                         }
-
                         PlaybackStateCompat.STATE_PAUSED -> {
                             HlsPlayerUtil.abandonAudioFocus(audioManager)
                         }
-
                         PlaybackStateCompat.STATE_STOPPED -> {
                             isShowNextEpisode = updateNextEpisodeName(
                                 episodes = episodes,
@@ -143,42 +141,48 @@ fun VideoPlayerSection(
                                 setNextEpisodeName = { nextEpisodeName = it }
                             )
                         }
-
                         PlaybackStateCompat.STATE_ERROR -> {
                             onPlayerError("Playback error: ${state.errorMessage}")
                             Log.e("VideoPlayerSection", "Playback error: ${state.errorMessage}")
                         }
-
                         PlaybackStateCompat.STATE_BUFFERING -> {
-                            TODO()
+                            isLoading = true
+                            Log.d("VideoPlayerSection", "Buffering media")
+                            // Show loading indicator in UI
                         }
-
-                        PlaybackStateCompat.STATE_CONNECTING -> {
-                            TODO()
-                        }
-
-                        PlaybackStateCompat.STATE_FAST_FORWARDING -> {
-                            TODO()
-                        }
-
                         PlaybackStateCompat.STATE_NONE -> {
-                            TODO()
+                            isLoading = false
+                            Log.d("VideoPlayerSection", "No playback state (idle)")
+                            // Reset UI, hide player controls if needed
                         }
-
+                        PlaybackStateCompat.STATE_CONNECTING -> {
+                            isLoading = true
+                            Log.d("VideoPlayerSection", "Connecting to media")
+                            // Show loading indicator
+                        }
+                        PlaybackStateCompat.STATE_FAST_FORWARDING -> {
+                            Log.d("VideoPlayerSection", "Fast forwarding")
+                            // Optional: Update UI to indicate fast-forward
+                        }
                         PlaybackStateCompat.STATE_REWINDING -> {
-                            TODO()
+                            Log.d("VideoPlayerSection", "Rewinding")
+                            // Optional: Update UI to indicate rewind
                         }
-
                         PlaybackStateCompat.STATE_SKIPPING_TO_NEXT -> {
-                            TODO()
+                            Log.d("VideoPlayerSection", "Skipping to next episode")
+                            // Optional: Show transition UI
                         }
-
                         PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS -> {
-                            TODO()
+                            Log.d("VideoPlayerSection", "Skipping to previous episode")
+                            // Optional: Show transition UI
                         }
-
                         PlaybackStateCompat.STATE_SKIPPING_TO_QUEUE_ITEM -> {
-                            TODO()
+                            Log.d("VideoPlayerSection", "Skipping to queue item")
+                            // Optional: Handle queue navigation
+                        }
+                        else -> {
+                            Log.w("VideoPlayerSection", "Unhandled state: ${it.state}")
+                            // Handle unexpected states gracefully
                         }
                     }
                 }
