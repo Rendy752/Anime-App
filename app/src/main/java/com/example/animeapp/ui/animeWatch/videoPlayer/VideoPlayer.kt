@@ -2,9 +2,12 @@ package com.example.animeapp.ui.animeWatch.videoPlayer
 
 import android.os.Handler
 import android.os.Looper
+import android.support.v4.media.session.MediaControllerCompat
+import android.support.v4.media.session.PlaybackStateCompat
 import androidx.annotation.OptIn
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -14,7 +17,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
@@ -25,8 +27,8 @@ import com.example.animeapp.utils.IntroOutroHandler
 @Composable
 fun VideoPlayer(
     playerView: PlayerView,
-    introOutroHandler: IntroOutroHandler,
-    exoPlayer: ExoPlayer,
+    introOutroHandler: IntroOutroHandler?,
+    mediaController: MediaControllerCompat?,
     episodeDetailComplement: EpisodeDetailComplement,
     episodes: List<Episode>,
     episodeSourcesQuery: EpisodeSourcesQuery,
@@ -42,10 +44,16 @@ fun VideoPlayer(
     nextEpisodeName: String,
     isLandscape: Boolean,
     modifier: Modifier = Modifier,
-    videoSize: Modifier
+    videoSize: Modifier,
+    onPlay: () -> Unit,
+    onPause: () -> Unit,
+    onSkipNext: () -> Unit,
+    onSkipPrevious: () -> Unit,
+    onFastForward: () -> Unit,
+    onRewind: () -> Unit
 ) {
-    val showIntro = introOutroHandler.showIntroButton.value
-    val showOutro = introOutroHandler.showOutroButton.value
+    val showIntro = introOutroHandler?.showIntroButton?.value == true
+    val showOutro = introOutroHandler?.showOutroButton?.value == true
     var isHolding by remember { mutableStateOf(false) }
     var isFromHolding by remember { mutableStateOf(false) }
     var speedUpText by remember { mutableStateOf("1x speed") }
@@ -55,11 +63,29 @@ fun VideoPlayer(
     var seekDirection by remember { mutableIntStateOf(0) }
     var seekAmount by remember { mutableLongStateOf(0L) }
     var isSeeking by remember { mutableStateOf(false) }
+    var isPlaying by remember { mutableStateOf(false) }
+
+    val mediaControllerCallback = remember {
+        object : MediaControllerCompat.Callback() {
+            override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
+                state?.let {
+                    isPlaying = it.state == PlaybackStateCompat.STATE_PLAYING
+                }
+            }
+        }
+    }
+
+    DisposableEffect(mediaController) {
+        mediaController?.registerCallback(mediaControllerCallback)
+        onDispose {
+            mediaController?.unregisterCallback(mediaControllerCallback)
+        }
+    }
 
     Box(modifier = modifier.then(videoSize)) {
         PlayerViewWrapper(
             playerView = playerView,
-            exoPlayer = exoPlayer,
+            mediaController = mediaController,
             tracks = episodeDetailComplement.sources.tracks,
             isPipMode = isPipMode,
             onFullscreenChange = onFullscreenChange,
@@ -83,56 +109,91 @@ fun VideoPlayer(
                     isShowSeekIndicator = false
                     isSeeking = false
                 }, 1000)
-            }
+            },
+            onPlayPauseToggle = {
+                if (isPlaying) {
+                    onPause()
+                } else {
+                    onPlay()
+                }
+            },
+            onFastForward = onFastForward,
+            onRewind = onRewind,
+            onNext = onSkipNext,
+            onPrevious = onSkipPrevious
         )
-        if (isShowSeekIndicator) SeekIndicator(
-            seekDirection = seekDirection,
-            seekAmount = seekAmount,
-            modifier = Modifier.align(Alignment.Center)
-        )
+
+        if (isShowSeekIndicator) {
+            SeekIndicator(
+                seekDirection = seekDirection,
+                seekAmount = seekAmount,
+                modifier = Modifier.align(Alignment.Center)
+            )
+        }
 
         if (isShowResumeOverlay && episodeDetailComplement.lastTimestamp != null) {
             ResumePlaybackOverlay(
                 isPipMode = isPipMode,
                 lastTimestamp = episodeDetailComplement.lastTimestamp,
                 onClose = { setShowResumeOverlay(false) },
-                onRestart = { exoPlayer.seekTo(0); exoPlayer.play(); setShowResumeOverlay(false) },
-                onResume = { exoPlayer.seekTo(it); exoPlayer.play(); setShowResumeOverlay(false) },
+                onRestart = {
+                    mediaController?.transportControls?.seekTo(0)
+                    onPlay()
+                    setShowResumeOverlay(false)
+                },
+                onResume = {
+                    mediaController?.transportControls?.seekTo(it)
+                    onPlay()
+                    setShowResumeOverlay(false)
+                },
                 modifier = Modifier.align(Alignment.Center)
             )
         }
 
-        if (isShowNextEpisode) NextEpisodeOverlay(
-            nextEpisodeName = nextEpisodeName,
-            onRestart = { exoPlayer.seekTo(0); exoPlayer.play(); setShowNextEpisode(false) },
-            onSkipNext = {
-                handleSelectedEpisodeServer(
-                    episodeSourcesQuery.copy(
-                        id = episodes.find { it.name == nextEpisodeName }?.episodeId ?: ""
+        if (isShowNextEpisode) {
+            NextEpisodeOverlay(
+                nextEpisodeName = nextEpisodeName,
+                onRestart = {
+                    mediaController?.transportControls?.seekTo(0)
+                    onPlay()
+                    setShowNextEpisode(false)
+                },
+                onSkipNext = {
+                    handleSelectedEpisodeServer(
+                        episodeSourcesQuery.copy(
+                            id = episodes.find { it.name == nextEpisodeName }?.episodeId ?: ""
+                        )
                     )
-                ); setShowNextEpisode(false)
-            },
-            modifier = Modifier.align(Alignment.Center)
-        )
+                    setShowNextEpisode(false)
+                },
+                modifier = Modifier.align(Alignment.Center)
+            )
+        }
 
-        if (!isPipMode && !isShowResumeOverlay && !isShowNextEpisode) SkipIntroOutroButtons(
-            showIntro = showIntro,
-            showOutro = showOutro,
-            introEnd = episodeDetailComplement.sources.intro?.end ?: 0,
-            outroEnd = episodeDetailComplement.sources.outro?.end ?: 0,
-            onSkipIntro = { introOutroHandler.skipIntro(it) },
-            onSkipOutro = { introOutroHandler.skipOutro(it) },
-            modifier = Modifier.align(Alignment.BottomEnd)
-        )
+        if (!isPipMode && !isShowResumeOverlay && !isShowNextEpisode && (showIntro || showOutro)) {
+            SkipIntroOutroButtons(
+                showIntro = showIntro,
+                showOutro = showOutro,
+                introEnd = episodeDetailComplement.sources.intro?.end ?: 0,
+                outroEnd = episodeDetailComplement.sources.outro?.end ?: 0,
+                onSkipIntro = { introOutroHandler.skipIntro(it) },
+                onSkipOutro = { introOutroHandler.skipOutro(it) },
+                modifier = Modifier.align(Alignment.BottomEnd)
+            )
+        }
 
-        if (isShowPip && !isPipMode) PipButton(
-            onEnterPipMode = onEnterPipMode,
-            modifier = Modifier.align(Alignment.TopCenter)
-        )
+        if (isShowPip && !isPipMode) {
+            PipButton(
+                onEnterPipMode = onEnterPipMode,
+                modifier = Modifier.align(Alignment.TopCenter)
+            )
+        }
 
-        if (isShowSpeedUp && !isPipMode) SpeedUpIndicator(
-            speedText = speedUpText,
-            modifier = Modifier.align(Alignment.TopCenter)
-        )
+        if (isShowSpeedUp && !isPipMode) {
+            SpeedUpIndicator(
+                speedText = speedUpText,
+                modifier = Modifier.align(Alignment.TopCenter)
+            )
+        }
     }
 }

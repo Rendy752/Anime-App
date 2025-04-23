@@ -1,6 +1,7 @@
 package com.example.animeapp.ui.main
 
 import android.app.PictureInPictureParams
+import android.content.Intent
 import android.content.res.Configuration
 import android.os.Bundle
 import android.view.MotionEvent
@@ -25,13 +26,18 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.animeapp.ui.common_ui.ConfirmationAlert
 import com.example.animeapp.ui.theme.AppTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 
 @AndroidEntryPoint
@@ -40,20 +46,22 @@ class MainActivity : AppCompatActivity() {
     private lateinit var navController: NavHostController
     private var lastInteractionTime = System.currentTimeMillis()
     private val idleTimeoutMillis = TimeUnit.MINUTES.toMillis(1)
+    private val intentChannel = Channel<Intent>(Channel.CONFLATED)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
 
+        intent?.let { intentChannel.trySend(it) }
+
         setContent {
             navController = rememberNavController()
-            val mainViewModel: MainViewModel = hiltViewModel()
 
+            val mainViewModel: MainViewModel = hiltViewModel()
             val state by mainViewModel.state.collectAsStateWithLifecycle()
 
             val configuration = LocalConfiguration.current
             val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-
             val resetIdleTimer = remember { { lastInteractionTime = System.currentTimeMillis() } }
 
             LaunchedEffect(Unit) {
@@ -122,15 +130,27 @@ class MainActivity : AppCompatActivity() {
                     ) {
                         MainScreen(
                             navController = navController,
+                            intentChannel = intentChannel,
                             onResetIdleTimer = resetIdleTimer,
                             mainState = state.copy(isLandscape = isLandscape),
-                            mainAction = mainViewModel::dispatch,
+                            mainAction = mainViewModel::dispatch
                         )
                         setStatusBarColor(MaterialTheme.colorScheme.surface)
                     }
                 }
             }
         }
+
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                intent?.let { intentChannel.send(it) }
+            }
+        }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        intent.let { intentChannel.trySend(it) }
     }
 
     override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {

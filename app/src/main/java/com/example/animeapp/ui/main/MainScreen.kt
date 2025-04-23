@@ -37,11 +37,15 @@ import com.example.animeapp.ui.animeHome.AnimeHomeViewModel
 import com.example.animeapp.ui.common_ui.MessageDisplay
 import com.example.animeapp.ui.settings.SettingsScreen
 import com.example.animeapp.utils.Navigation.navigateToAnimeDetail
+import com.example.animeapp.utils.Navigation.navigateToAnimeWatch
 import com.google.gson.Gson
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.receiveAsFlow
 
 @Composable
 fun MainScreen(
     navController: NavHostController,
+    intentChannel: Channel<Intent>,
     onResetIdleTimer: () -> Unit,
     mainState: MainState,
     mainAction: (MainAction) -> Unit
@@ -54,22 +58,55 @@ fun MainScreen(
 
     isCurrentBottomScreen = BottomScreen.entries.any { it.route == currentRoute }
 
-    LaunchedEffect(Unit) {
-        activity?.let { activity ->
-            val intent = activity.intent
+    LaunchedEffect(intentChannel) {
+        intentChannel.receiveAsFlow().collect { intent ->
+            if (intent.action == Intent.ACTION_VIEW && intent.data != null) {
+                intent.data?.let { uri ->
+                    if (uri.scheme == "animeapp" && uri.host == "anime") {
+                        val segments = uri.pathSegments
+                        when {
+                            segments.size >= 2 && segments[0] == "detail" -> {
+                                val animeId = segments[1].toIntOrNull()
+                                if (animeId != null) {
+                                    navController.navigateToAnimeDetail(animeId)
+                                } else {
+                                    Toast.makeText(activity, "Invalid anime ID", Toast.LENGTH_SHORT)
+                                        .show()
+                                }
+                            }
 
-            if (intent.action == Intent.ACTION_VIEW &&
-                intent.scheme == "animeapp" &&
-                intent.data != null
-            ) {
-                intent.data?.pathSegments?.let { segments ->
-                    if (segments.size >= 2 && segments[0] == "detail") {
-                        val animeId = segments[1].toIntOrNull()
-                        if (animeId != null) {
-                            navController.navigateToAnimeDetail(animeId)
+                            segments.size >= 3 && segments[0] == "watch" -> {
+                                val malId = segments[1].toIntOrNull()
+                                val episodeId = segments[2]
+                                if (malId != null && episodeId.isNotEmpty()) {
+                                    val currentArgs = navBackStackEntry?.arguments
+                                    val currentMalId = currentArgs?.getInt("malId")
+                                    val currentEpisodeId = currentArgs?.getString("episodeId")
+                                    val isAlreadyOnCorrectRoute =
+                                                currentMalId == malId &&
+                                                currentEpisodeId == episodeId
+
+                                    if (!isAlreadyOnCorrectRoute) {
+                                        navController.popBackStack(
+                                            "animeWatch/{malId}/{episodeId}",
+                                            inclusive = true,
+                                            saveState = false
+                                        )
+                                        navController.navigateToAnimeWatch(malId, episodeId)
+                                    }
+                                } else {
+                                    Toast.makeText(
+                                        activity,
+                                        "Invalid watch parameters",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                }
+                            }
+
+                            else -> {
+                                Toast.makeText(activity, "Invalid URL", Toast.LENGTH_SHORT).show()
+                            }
                         }
-                    } else {
-                        Toast.makeText(activity, "Invalid URL", Toast.LENGTH_SHORT).show()
                     }
                 }
             }

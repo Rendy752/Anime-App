@@ -1,17 +1,20 @@
 package com.example.animeapp.ui.animeWatch.videoPlayer
 
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
 import android.media.AudioManager
-import android.os.Handler
-import android.os.Looper
+import android.os.IBinder
+import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
-import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.view.WindowManager
 import androidx.annotation.OptIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -20,21 +23,14 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.fragment.app.FragmentActivity
-import androidx.media3.common.PlaybackException
-import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.exoplayer.ExoPlayer
-import androidx.media3.exoplayer.ExoPlaybackException
 import androidx.media3.ui.PlayerView
-import com.example.animeapp.models.EpisodeDetailComplement
-import com.example.animeapp.utils.HlsPlayerUtil
-import com.example.animeapp.utils.IntroOutroHandler
-import androidx.compose.runtime.LaunchedEffect
 import com.example.animeapp.models.Episode
+import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.EpisodeSourcesQuery
-import com.example.animeapp.models.EpisodeSourcesResponse
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
+import com.example.animeapp.utils.HlsPlayerUtil
+import com.example.animeapp.utils.MediaPlaybackService
+import android.util.Log
 
 @OptIn(UnstableApi::class, ExperimentalComposeUiApi::class)
 @Composable
@@ -55,239 +51,210 @@ fun VideoPlayerSection(
     videoSize: Modifier
 ) {
     val context = LocalContext.current
-    val exoPlayer = remember(episodeSourcesQuery) { ExoPlayer.Builder(context).build() }
-    val audioManager = remember(episodeSourcesQuery) { context.getSystemService(Context.AUDIO_SERVICE) as AudioManager }
-    val introOutroHandler =
-        remember(episodeSourcesQuery) { IntroOutroHandler(exoPlayer, episodeDetailComplement.sources) }
-    val playerView = remember(episodeSourcesQuery) { PlayerView(context) }
-    val currentEpisodeNo = episodeDetailComplement.servers.episodeNo
-    val previousEpisode = remember(currentEpisodeNo) {
-        episodes.find { it.episodeNo == currentEpisodeNo - 1 }
-    }
-    val nextEpisode = remember(currentEpisodeNo) {
-        episodes.find { it.episodeNo == currentEpisodeNo + 1 }
-    }
-    var isLoading by remember { mutableStateOf(false) }
+    val audioManager = remember { context.getSystemService(Context.AUDIO_SERVICE) as AudioManager }
+    val playerView = remember { PlayerView(context) }
+    var mediaBrowserCompat by remember { mutableStateOf<MediaBrowserCompat?>(null) }
+    var mediaControllerCompat by remember { mutableStateOf<MediaControllerCompat?>(null) }
+    var mediaPlaybackService by remember { mutableStateOf<MediaPlaybackService?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
     var isShowResumeOverlay by remember { mutableStateOf(episodeDetailComplement.lastTimestamp != null) }
     var isShowNextEpisode by remember { mutableStateOf(false) }
     var nextEpisodeName by remember { mutableStateOf("") }
-    var mediaSessionCompat: MediaSessionCompat? by remember(episodeSourcesQuery) { mutableStateOf(null) }
-    var mediaControllerCompat: MediaControllerCompat? by remember(episodeSourcesQuery) { mutableStateOf(null) }
-    val playbackStateBuilder = remember { PlaybackStateCompat.Builder() }
 
-    val handler = remember(episodeSourcesQuery) { Handler(Looper.getMainLooper()) }
-    val savePositionRunnable = remember(episodeSourcesQuery) {
-        object : Runnable {
-            override fun run() {
-                if (exoPlayer.currentPosition > 10000) {
-                    runBlocking {
-                        withTimeout(5000) { updateStoredWatchState(exoPlayer.currentPosition) }
-                    }
-                }
-                handler.postDelayed(this, 1000)
-            }
-        }
-    }
-
-    fun updatePlaybackState(state: Int) {
-        isShowResumeOverlay = false
-        playbackStateBuilder.setState(state, exoPlayer.currentPosition, 1.0f)
-        mediaSessionCompat?.setPlaybackState(playbackStateBuilder.build())
-    }
-
-    DisposableEffect(episodeSourcesQuery) {
-        isLoading = true
-        HlsPlayerUtil.initializePlayer(exoPlayer, episodeDetailComplement.sources)
-        introOutroHandler.start()
-
-        val listener = object : Player.Listener {
-            override fun onPlayerError(error: PlaybackException) {
-                super.onPlayerError(error)
-                if (error is ExoPlaybackException && error.type == ExoPlaybackException.TYPE_SOURCE) {
-                    onPlayerError("Playback error, try a different server.")
-                }
-                isLoading = false
-            }
-
-            override fun onIsPlayingChanged(isPlaying: Boolean) {
-                super.onIsPlayingChanged(isPlaying)
-                if (isPlaying) {
-                    (context as? FragmentActivity)?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                    onPlayerError(null)
-                    HlsPlayerUtil.requestAudioFocus(audioManager)
-                    updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
-                    handler.post(savePositionRunnable)
-                } else {
-                    HlsPlayerUtil.abandonAudioFocus(audioManager)
-                    updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
-                    handler.removeCallbacks(savePositionRunnable)
-                }
-            }
-
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                super.onPlaybackStateChanged(playbackState)
-                isLoading = false
-                if (playbackState == Player.STATE_READY && !exoPlayer.isPlaying) {
-                    onPlayerError(null)
-                }
-                episodeDetailComplement.servers.let { servers ->
-                    if (playbackState == Player.STATE_ENDED) {
-                        playerView.hideController()
-                        isShowNextEpisode = episodes.isNotEmpty() && updateNextEpisodeName(
-                            episodes,
-                            servers.episodeNo,
-                            setNextEpisodeName = { nextEpisodeName = it }
-                        )
-                        runBlocking {
-                            withTimeout(5000) { updateStoredWatchState(exoPlayer.duration) }
-                        }
-                    } else {
+    // Service binding
+    val serviceConnection = remember {
+        object : ServiceConnection {
+            override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+                Log.d("VideoPlayerSection", "Service connected")
+                val binder = service as MediaPlaybackService.MediaPlaybackBinder
+                mediaPlaybackService = binder.getService()
+                playerView.player = mediaPlaybackService?.getExoPlayer()
+                mediaPlaybackService?.setEpisodeData(
+                    complement = episodeDetailComplement,
+                    episodes = episodes,
+                    query = episodeSourcesQuery,
+                    handler = { handleSelectedEpisodeServer(it) },
+                    updateStoredWatchState = { updateStoredWatchState(it) },
+                    onPlayerError = onPlayerError,
+                    onPlayerReady = {
                         isShowNextEpisode = false
+                        isLoading = false
+                        Log.d("VideoPlayerSection", "Player ready")
                     }
-                }
-                if (exoPlayer.currentPosition > 0) isShowResumeOverlay = false
-            }
-        }
-        exoPlayer.addListener(listener)
-
-        val handler = Handler(Looper.getMainLooper())
-        var nextClickCount = 0
-        var nextClickRunnable: Runnable? = null
-        var previousClickCount = 0
-        var previousClickRunnable: Runnable? = null
-
-        mediaSessionCompat = MediaSessionCompat(context, "VideoPlayerSession").apply {
-            val metadataBuilder = MediaMetadataCompat.Builder()
-            metadataBuilder.putString(
-                MediaMetadataCompat.METADATA_KEY_TITLE,
-                episodeDetailComplement.servers.episodeId
-            )
-            mediaSessionCompat?.setMetadata(metadataBuilder.build())
-            setPlaybackState(
-                playbackStateBuilder.setActions(
-                    PlaybackStateCompat.ACTION_PLAY or PlaybackStateCompat.ACTION_PAUSE or
-                            PlaybackStateCompat.ACTION_SKIP_TO_NEXT or PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
-                ).build()
-            )
-
-            setCallback(object : MediaSessionCompat.Callback() {
-                fun skipTimeRange(
-                    sources: EpisodeSourcesResponse,
-                    isToEnd: Boolean = true,
-                    handleSelectedEpisodeServer: () -> Unit = {}
-                ) {
-                    val currentPosition = exoPlayer.currentPosition / 1000
-                    val videoDuration = exoPlayer.duration / 1000
-
-                    if (currentPosition == 0L || (videoDuration != -9223372036854775L && currentPosition >= videoDuration - 1)) {
-                        handleSelectedEpisodeServer()
-                    } else if (sources.outro?.start != null && currentPosition in sources.outro.start..sources.outro.end) {
-                        exoPlayer.seekTo(if (isToEnd) sources.outro.end * 1000L else sources.outro.start * 1000L)
-                    } else if (sources.intro?.start != null && currentPosition in sources.intro.start..sources.intro.end) {
-                        exoPlayer.seekTo(if (isToEnd) sources.intro.end * 1000L else sources.intro.start * 1000L)
-                    } else {
-                        handleSelectedEpisodeServer()
-                    }
-                }
-
-                override fun onPlay() {
-                    exoPlayer.play()
-                    updatePlaybackState(PlaybackStateCompat.STATE_PLAYING)
-                }
-
-                override fun onPause() {
-                    exoPlayer.pause()
-                    updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
-                }
-
-                override fun onSkipToNext() {
-                    nextClickCount++
-                    nextClickRunnable?.let { handler.removeCallbacks(it) }
-
-                    if (nextClickCount >= 3) {
-                        skipTimeRange(episodeDetailComplement.sources) {
-                            nextEpisode?.let {
-                                handleSelectedEpisodeServer(
-                                    episodeSourcesQuery.copy(id = it.episodeId)
-                                )
-                            }
-                        }
-                        nextClickCount = 0
-                    } else {
-                        nextClickRunnable = Runnable {
-                            if (nextClickCount == 1) {
-                                exoPlayer.seekTo(exoPlayer.currentPosition + 10000)
-                            }
-                            nextClickCount = 0
-                        }
-                        handler.postDelayed(nextClickRunnable, 300)
-                    }
-                }
-
-                override fun onSkipToPrevious() {
-                    previousClickCount++
-                    previousClickRunnable?.let { handler.removeCallbacks(it) }
-
-                    if (previousClickCount >= 3) {
-                        skipTimeRange(episodeDetailComplement.sources, false) {
-                            previousEpisode?.let {
-                                handleSelectedEpisodeServer(
-                                    episodeSourcesQuery.copy(id = it.episodeId)
-                                )
-                            }
-                        }
-                        previousClickCount = 0
-                    } else {
-                        previousClickRunnable = Runnable {
-                            if (previousClickCount == 1) {
-                                exoPlayer.seekTo(exoPlayer.currentPosition - 10000)
-                            }
-                            previousClickCount = 0
-                        }
-                        handler.postDelayed(previousClickRunnable, 300)
-                    }
-                }
-
-                override fun onStop() {
-                    nextClickRunnable?.let { handler.removeCallbacks(it) }
-                    previousClickRunnable?.let { handler.removeCallbacks(it) }
-                    nextClickCount = 0
-                    previousClickCount = 0
-                }
-            })
-            isActive = true
-        }
-
-        mediaControllerCompat = MediaControllerCompat(context, mediaSessionCompat!!)
-
-        onDispose {
-            exoPlayer.removeListener(listener)
-            introOutroHandler.stop()
-            handler.removeCallbacks(savePositionRunnable)
-
-            HlsPlayerUtil.abandonAudioFocus(audioManager)
-            HlsPlayerUtil.releasePlayer(playerView)
-            if (exoPlayer.currentPosition > 10000) {
-                runBlocking {
-                    withTimeout(5000) { updateStoredWatchState(exoPlayer.currentPosition) }
-                }
+                )
             }
 
-            mediaSessionCompat?.release()
-            mediaSessionCompat = null
-            mediaControllerCompat = null
+            override fun onServiceDisconnected(name: ComponentName?) {
+                Log.w("VideoPlayerSection", "Service disconnected")
+                mediaPlaybackService = null
+                playerView.player = null
+            }
         }
     }
 
+    // Bind to service
+    DisposableEffect(episodeDetailComplement, episodeSourcesQuery) {
+        Log.d("VideoPlayerSection", "Binding to service")
+        val intent = Intent(context, MediaPlaybackService::class.java)
+        try {
+            context.startForegroundService(intent)
+            context.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
+        } catch (e: Exception) {
+            Log.e("VideoPlayerSection", "Failed to bind service", e)
+            onPlayerError("Failed to bind service")
+        }
+        onDispose {
+            Log.d("VideoPlayerSection", "Unbinding service")
+            try {
+                context.unbindService(serviceConnection)
+            } catch (e: IllegalArgumentException) {
+                Log.w("VideoPlayerSection", "Service already unbound", e)
+            }
+            playerView.player = null
+            HlsPlayerUtil.abandonAudioFocus(audioManager)
+        }
+    }
+
+    val mediaControllerCallback = remember {
+        object : MediaControllerCompat.Callback() {
+            override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
+                state?.let {
+                    Log.d(
+                        "VideoPlayerSection",
+                        "Playback state changed: state=${it.state}, position=${it.position}"
+                    )
+                    isLoading = false
+                    when (it.state) {
+                        PlaybackStateCompat.STATE_PLAYING -> {
+                            isShowNextEpisode = false
+                            isShowResumeOverlay = false
+                            (context as? FragmentActivity)?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                            HlsPlayerUtil.requestAudioFocus(audioManager)
+                        }
+
+                        PlaybackStateCompat.STATE_PAUSED -> {
+                            HlsPlayerUtil.abandonAudioFocus(audioManager)
+                        }
+
+                        PlaybackStateCompat.STATE_STOPPED -> {
+                            isShowNextEpisode = updateNextEpisodeName(
+                                episodes = episodes,
+                                currentEpisode = episodeDetailComplement.servers.episodeNo,
+                                setNextEpisodeName = { nextEpisodeName = it }
+                            )
+                        }
+
+                        PlaybackStateCompat.STATE_ERROR -> {
+                            onPlayerError("Playback error: ${state.errorMessage}")
+                            Log.e("VideoPlayerSection", "Playback error: ${state.errorMessage}")
+                        }
+
+                        PlaybackStateCompat.STATE_BUFFERING -> {
+                            TODO()
+                        }
+
+                        PlaybackStateCompat.STATE_CONNECTING -> {
+                            TODO()
+                        }
+
+                        PlaybackStateCompat.STATE_FAST_FORWARDING -> {
+                            TODO()
+                        }
+
+                        PlaybackStateCompat.STATE_NONE -> {
+                            TODO()
+                        }
+
+                        PlaybackStateCompat.STATE_REWINDING -> {
+                            TODO()
+                        }
+
+                        PlaybackStateCompat.STATE_SKIPPING_TO_NEXT -> {
+                            TODO()
+                        }
+
+                        PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS -> {
+                            TODO()
+                        }
+
+                        PlaybackStateCompat.STATE_SKIPPING_TO_QUEUE_ITEM -> {
+                            TODO()
+                        }
+                    }
+                }
+            }
+
+            override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
+                Log.d(
+                    "VideoPlayerSection",
+                    "Metadata changed: title=${metadata?.getString(MediaMetadataCompat.METADATA_KEY_TITLE)}, duration=${
+                        metadata?.getLong(MediaMetadataCompat.METADATA_KEY_DURATION)
+                    }"
+                )
+            }
+        }
+    }
+
+    val mediaBrowserConnectionCallback = remember {
+        object : MediaBrowserCompat.ConnectionCallback() {
+            override fun onConnected() {
+                Log.d("VideoPlayerSection", "MediaBrowser connected")
+                mediaBrowserCompat?.sessionToken?.let { token ->
+                    try {
+                        mediaControllerCompat = MediaControllerCompat(context, token)
+                        mediaControllerCompat?.registerCallback(mediaControllerCallback)
+                        Log.d("VideoPlayerSection", "MediaController initialized")
+                    } catch (e: Exception) {
+                        Log.e("VideoPlayerSection", "MediaController initialization failed", e)
+                        onPlayerError("Media controller initialization failed")
+                    }
+                }
+            }
+
+            override fun onConnectionSuspended() {
+                Log.w("VideoPlayerSection", "MediaBrowser connection suspended")
+                mediaControllerCompat?.unregisterCallback(mediaControllerCallback)
+                mediaControllerCompat = null
+            }
+
+            override fun onConnectionFailed() {
+                Log.e("VideoPlayerSection", "MediaBrowser connection failed")
+                onPlayerError("Media browser connection failed")
+            }
+        }
+    }
+
+    // Initialize MediaBrowserCompat
+    DisposableEffect(Unit) {
+        Log.d("VideoPlayerSection", "Initializing MediaBrowser")
+        mediaBrowserCompat = MediaBrowserCompat(
+            context,
+            ComponentName(context, MediaPlaybackService::class.java),
+            mediaBrowserConnectionCallback,
+            null
+        ).apply {
+            try {
+                connect()
+            } catch (e: Exception) {
+                Log.e("VideoPlayerSection", "MediaBrowser connection failed", e)
+                onPlayerError("Media browser connection failed")
+            }
+        }
+        onDispose {
+            Log.d("VideoPlayerSection", "Disconnecting MediaBrowser")
+            mediaControllerCompat?.unregisterCallback(mediaControllerCallback)
+            mediaBrowserCompat?.disconnect()
+        }
+    }
 
     LaunchedEffect(isScreenOn) {
-        if (!isScreenOn) exoPlayer.pause()
+        if (!isScreenOn) mediaControllerCompat?.transportControls?.pause()
     }
 
     VideoPlayer(
         playerView = playerView,
-        introOutroHandler = introOutroHandler,
-        exoPlayer = exoPlayer,
+        introOutroHandler = null,
+        mediaController = mediaControllerCompat,
         episodeDetailComplement = episodeDetailComplement,
         episodes = episodes,
         episodeSourcesQuery = episodeSourcesQuery,
@@ -303,7 +270,39 @@ fun VideoPlayerSection(
         nextEpisodeName = nextEpisodeName,
         isLandscape = isLandscape,
         modifier = modifier,
-        videoSize = videoSize
+        videoSize = videoSize,
+        onPlay = { mediaControllerCompat?.transportControls?.play() },
+        onPause = { mediaControllerCompat?.transportControls?.pause() },
+        onSkipNext = { mediaControllerCompat?.transportControls?.skipToNext() },
+        onSkipPrevious = { mediaControllerCompat?.transportControls?.skipToPrevious() },
+        onFastForward = {
+            val currentPosition = mediaPlaybackService?.getExoPlayer()?.currentPosition
+                ?: mediaControllerCompat?.playbackState?.position
+                ?: 0
+            val duration = mediaPlaybackService?.getExoPlayer()?.duration
+                ?: mediaControllerCompat?.metadata?.getLong(MediaMetadataCompat.METADATA_KEY_DURATION)
+                ?: Long.MAX_VALUE
+            val newPosition = (currentPosition + 10000).coerceAtMost(duration)
+            Log.d(
+                "VideoPlayerSection",
+                "Fast-forward: current=$currentPosition, new=$newPosition, duration=$duration"
+            )
+            mediaControllerCompat?.transportControls?.seekTo(newPosition)
+        },
+        onRewind = {
+            val currentPosition = mediaPlaybackService?.getExoPlayer()?.currentPosition
+                ?: mediaControllerCompat?.playbackState?.position
+                ?: 0
+            val duration = mediaPlaybackService?.getExoPlayer()?.duration
+                ?: mediaControllerCompat?.metadata?.getLong(MediaMetadataCompat.METADATA_KEY_DURATION)
+                ?: Long.MAX_VALUE
+            val newPosition = (currentPosition - 10000).coerceAtLeast(0)
+            Log.d(
+                "VideoPlayerSection",
+                "Rewind: current=$currentPosition, new=$newPosition, duration=$duration"
+            )
+            mediaControllerCompat?.transportControls?.seekTo(newPosition)
+        }
     )
 }
 
@@ -316,5 +315,7 @@ private fun updateNextEpisodeName(
     return if (nextEpisode != null) {
         setNextEpisodeName(nextEpisode.name)
         true
-    } else false
+    } else {
+        false
+    }
 }

@@ -5,6 +5,8 @@ import android.content.res.Configuration
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.support.v4.media.session.MediaControllerCompat
+import android.support.v4.media.session.PlaybackStateCompat
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
@@ -25,7 +27,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.fragment.app.FragmentActivity
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import com.example.animeapp.models.Track
 import androidx.media3.ui.R as RMedia3
@@ -35,7 +36,7 @@ import androidx.media3.ui.R as RMedia3
 @Composable
 fun PlayerViewWrapper(
     playerView: PlayerView,
-    exoPlayer: ExoPlayer,
+    mediaController: MediaControllerCompat?,
     tracks: List<Track>,
     isPipMode: Boolean,
     onFullscreenChange: (Boolean) -> Unit,
@@ -44,7 +45,12 @@ fun PlayerViewWrapper(
     onPipVisibilityChange: (Boolean) -> Unit,
     onSpeedChange: (Float, Boolean) -> Unit,
     onHoldingChange: (Boolean, Boolean) -> Unit,
-    onSeek: (Int, Long) -> Unit
+    onSeek: (Int, Long) -> Unit,
+    onPlayPauseToggle: () -> Unit,
+    onFastForward: () -> Unit,
+    onRewind: () -> Unit,
+    onNext: () -> Unit,
+    onPrevious: () -> Unit
 ) {
     val context = LocalContext.current
     var isSeeking by remember { mutableStateOf(false) }
@@ -57,7 +63,6 @@ fun PlayerViewWrapper(
         factory = { playerView },
         modifier = Modifier.fillMaxSize()
     ) { view ->
-        view.player = exoPlayer
         view.setShowPreviousButton(false)
         view.setShowNextButton(false)
         view.setShowRewindButton(false)
@@ -95,15 +100,15 @@ fun PlayerViewWrapper(
         val gestureDetector =
             GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
                 override fun onDoubleTap(e: MotionEvent): Boolean {
-                    if (!isSeeking) {
+                    if (!isSeeking && mediaController != null) {
                         val screenWidth = view.width
                         val tapX = e.x
 
                         if (tapX > screenWidth / 2) {
-                            exoPlayer.seekTo(exoPlayer.currentPosition + 10000)
+                            onFastForward()
                             onSeek(1, 10L)
                         } else {
-                            exoPlayer.seekTo(exoPlayer.currentPosition - 10000)
+                            onRewind()
                             onSeek(-1, 10L)
                         }
                         isSeeking = true
@@ -126,14 +131,14 @@ fun PlayerViewWrapper(
             })
 
         view.setOnTouchListener { _, event ->
+            if (playerView.player == null) return@setOnTouchListener false
             gestureDetector.onTouchEvent(event)
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     isHolding = true
                     Handler(Looper.getMainLooper()).postDelayed({
-                        if (isHolding && exoPlayer.playbackParameters.speed != 2f && !isSeeking) {
-                            exoPlayer.playbackParameters =
-                                exoPlayer.playbackParameters.withSpeed(2f)
+                        if (isHolding && mediaController?.playbackState?.playbackSpeed != 2f && !isSeeking && mediaController?.playbackState?.state == PlaybackStateCompat.STATE_PLAYING) {
+                            mediaController.transportControls?.setPlaybackSpeed(2f)
                             view.useController = false
                             onSpeedChange(2f, true)
                             isFromHolding = true
@@ -143,8 +148,8 @@ fun PlayerViewWrapper(
 
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                     Handler(Looper.getMainLooper()).removeCallbacksAndMessages(null)
-                    if (isFromHolding) {
-                        exoPlayer.playbackParameters = exoPlayer.playbackParameters.withSpeed(1f)
+                    if (isFromHolding && mediaController != null) {
+                        mediaController.transportControls?.setPlaybackSpeed(1f)
                         view.useController = true
                         onSpeedChange(1f, false)
                     }
@@ -166,5 +171,12 @@ fun PlayerViewWrapper(
                 )
             }
         })
+
+        view.findViewById<View>(RMedia3.id.exo_play_pause)
+            ?.setOnClickListener { onPlayPauseToggle() }
+        view.findViewById<View>(RMedia3.id.exo_ffwd)?.setOnClickListener { onFastForward() }
+        view.findViewById<View>(RMedia3.id.exo_rew)?.setOnClickListener { onRewind() }
+        view.findViewById<View>(RMedia3.id.exo_next)?.setOnClickListener { onNext() }
+        view.findViewById<View>(RMedia3.id.exo_prev)?.setOnClickListener { onPrevious() }
     }
 }
