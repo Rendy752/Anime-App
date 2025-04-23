@@ -79,10 +79,13 @@ fun VideoPlayer(
         }
     }
 
-    DisposableEffect(mediaController) {
+    DisposableEffect(mediaController, isPipMode) {
         mediaController?.registerCallback(mediaControllerCallback)
+        playerView.useController = !isPipMode
+        playerView.controllerShowTimeoutMs = if (isPipMode) 0 else 5000
         onDispose {
             mediaController?.unregisterCallback(mediaControllerCallback)
+            playerView.useController = true
         }
     }
 

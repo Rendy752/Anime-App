@@ -21,7 +21,8 @@ class AnimeApplication : Application() {
     private var mediaPlaybackService: MediaPlaybackService? = null
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-            mediaPlaybackService = (service as MediaPlaybackService.MediaPlaybackBinder).getService()
+            mediaPlaybackService =
+                (service as MediaPlaybackService.MediaPlaybackBinder).getService()
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -32,14 +33,21 @@ class AnimeApplication : Application() {
     override fun onCreate() {
         super.onCreate()
         if (DEBUG) setupSensor()
-        bindService(
-            Intent(this, MediaPlaybackService::class.java),
-            serviceConnection,
-            BIND_AUTO_CREATE
-        )
+        bindMediaService()
+    }
+
+    private fun bindMediaService() {
+        val intent = Intent(this, MediaPlaybackService::class.java)
+        bindService(intent, serviceConnection, BIND_AUTO_CREATE)
+        startForegroundService(intent)
     }
 
     fun getMediaPlaybackService(): MediaPlaybackService? = mediaPlaybackService
+
+    override fun onTerminate() {
+        super.onTerminate()
+        unbindService(serviceConnection)
+    }
 
     private fun setupSensor() {
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager

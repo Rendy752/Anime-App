@@ -47,6 +47,9 @@ import androidx.annotation.OptIn
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
 import androidx.core.graphics.scale
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 private const val NOTIFICATION_ID = 123
 private const val CHANNEL_ID = "anime_playback_channel"
@@ -64,6 +67,10 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
     private var onPlayerReady: (() -> Unit)? = null
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private val handler = Handler(Looper.getMainLooper())
+
+    private val _isPlayingState = MutableStateFlow(false)
+    val isPlayingState: StateFlow<Boolean> = _isPlayingState.asStateFlow()
+
     private val savePositionRunnable = object : Runnable {
         override fun run() {
             exoPlayer?.let { player ->
@@ -121,6 +128,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                 }
 
                 override fun onIsPlayingChanged(isPlaying: Boolean) {
+                    _isPlayingState.value = isPlaying
                     if (isPlaying) {
                         onPlayerError?.invoke(null)
                         handler.post(savePositionRunnable)
@@ -196,6 +204,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                     .setActions(
                         PlaybackStateCompat.ACTION_PLAY or
                                 PlaybackStateCompat.ACTION_PAUSE or
+                                PlaybackStateCompat.ACTION_PLAY_PAUSE or
                                 PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
                                 PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
                                 PlaybackStateCompat.ACTION_STOP or
@@ -333,7 +342,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                             androidx.media3.session.R.drawable.media3_icon_pause
                         else
                             androidx.media3.session.R.drawable.media3_icon_play,
-                        "Play/Pause",
+                        if (playbackState.state == PlaybackStateCompat.STATE_PLAYING) "Pause" else "Play",
                         MediaButtonReceiver.buildMediaButtonPendingIntent(
                             this@MediaPlaybackService,
                             PlaybackStateCompat.ACTION_PLAY_PAUSE
@@ -500,6 +509,9 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         handler.removeCallbacks(savePositionRunnable)
         coroutineScope.cancel()
     }
+
+    fun getCurrentEpisodeNo(): Int = episodeDetailComplement?.servers?.episodeNo ?: -1
+    fun getEpisodes(): List<Episode> = episodes
 
     override fun onGetRoot(
         clientPackageName: String,
