@@ -69,7 +69,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
             exoPlayer?.let { player ->
                 val position = player.currentPosition
                 val duration = player.duration
-                if (player.playbackState == Player.STATE_READY && position > 0 && position < duration) {
+                if (player.isPlaying && player.playbackState == Player.STATE_READY && position > 0 && position < duration) {
                     coroutineScope.launch {
                         try {
                             withTimeout(5_000) { updateStoredWatchState?.invoke(position) }
@@ -109,11 +109,12 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
             addListener(object : Player.Listener {
                 @OptIn(UnstableApi::class)
                 override fun onPlayerError(error: PlaybackException) {
-                    val message = if (error is ExoPlaybackException && error.type == ExoPlaybackException.TYPE_SOURCE) {
-                        "Playback error, try a different server."
-                    } else {
-                        "Playback error: ${error.message}"
-                    }
+                    val message =
+                        if (error is ExoPlaybackException && error.type == ExoPlaybackException.TYPE_SOURCE) {
+                            "Playback error, try a different server."
+                        } else {
+                            "Playback error: ${error.message}"
+                        }
                     onPlayerError?.invoke(message)
                     Log.e("MediaPlaybackService", "Player error", error)
                     updatePlaybackState(PlaybackStateCompat.STATE_ERROR, errorMessage = message)
@@ -139,15 +140,21 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                                     withTimeout(5_000) { updateStoredWatchState?.invoke(duration) }
                                 }
                             } catch (e: Exception) {
-                                Log.e("MediaPlaybackService", "Failed to save watch state at end", e)
+                                Log.e(
+                                    "MediaPlaybackService",
+                                    "Failed to save watch state at end",
+                                    e
+                                )
                             }
                         }
                         updatePlaybackState(PlaybackStateCompat.STATE_STOPPED)
                         val currentEpisodeNo = episodeDetailComplement?.servers?.episodeNo ?: return
                         val nextEpisode = episodes.find { it.episodeNo == currentEpisodeNo + 1 }
                         if (nextEpisode != null) {
-                            episodeSourcesQuery = episodeSourcesQuery?.copy(id = nextEpisode.episodeId)
-                            episodeDetailComplement = episodeDetailComplement?.copy(id = nextEpisode.episodeId)
+                            episodeSourcesQuery =
+                                episodeSourcesQuery?.copy(id = nextEpisode.episodeId)
+                            episodeDetailComplement =
+                                episodeDetailComplement?.copy(id = nextEpisode.episodeId)
                             handleSelectedEpisodeServer?.invoke(episodeSourcesQuery!!)
                         }
                     } else if (playbackState == Player.STATE_READY && !isPlaying) {
@@ -162,7 +169,10 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                     episodeDetailComplement?.let {
                         mediaSession?.setMetadata(
                             MediaMetadataCompat.Builder()
-                                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, "Eps. ${it.number}, ${it.episodeTitle}")
+                                .putString(
+                                    MediaMetadataCompat.METADATA_KEY_TITLE,
+                                    "Eps. ${it.number}, ${it.episodeTitle}"
+                                )
                                 .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, it.animeTitle)
                                 .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, duration)
                                 .build()
@@ -175,7 +185,6 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                     updateNotification()
                 }
             })
-            // Ensure player is paused initially
             pause()
         }
     }
@@ -210,7 +219,9 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
             description = "Channel for anime video playback controls"
             setShowBadge(false)
         }
-        (getSystemService(NOTIFICATION_SERVICE) as NotificationManager).createNotificationChannel(channel)
+        (getSystemService(NOTIFICATION_SERVICE) as NotificationManager).createNotificationChannel(
+            channel
+        )
     }
 
     private class TopCenterCropTransformation : Transformation {
@@ -273,7 +284,8 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         val position = player.currentPosition.takeIf { it >= 0 }?.toInt() ?: 0
 
         val currentEpisodeNo = episodeDetailComplement?.servers?.episodeNo ?: -1
-        val hasPreviousEpisode = currentEpisodeNo > 1 && episodes.any { it.episodeNo == currentEpisodeNo - 1 }
+        val hasPreviousEpisode =
+            currentEpisodeNo > 1 && episodes.any { it.episodeNo == currentEpisodeNo - 1 }
         val hasNextEpisode = episodes.any { it.episodeNo == currentEpisodeNo + 1 }
 
         coroutineScope.launch {
@@ -289,8 +301,14 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                         .setShowActionsInCompactView(*actionIndices.toIntArray())
                 )
                 setSmallIcon(R.drawable.ic_video_black_24dp)
-                setContentTitle(mediaMetadata?.getString(MediaMetadataCompat.METADATA_KEY_TITLE) ?: "Anime Episode")
-                setContentText(mediaMetadata?.getString(MediaMetadataCompat.METADATA_KEY_ALBUM) ?: "Anime Series")
+                setContentTitle(
+                    mediaMetadata?.getString(MediaMetadataCompat.METADATA_KEY_TITLE)
+                        ?: "Anime Episode"
+                )
+                setContentText(
+                    mediaMetadata?.getString(MediaMetadataCompat.METADATA_KEY_ALBUM)
+                        ?: "Anime Series"
+                )
                 setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 setOnlyAlertOnce(true)
                 setProgress(duration, position, false)
@@ -401,7 +419,10 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                 player.pause()
 
                 if (query.id != episodeDetailComplement?.id) {
-                    Log.w("MediaPlaybackService", "Mismatch in episodeSourcesQuery.id (${query.id}) and episodeDetailComplement.id (${episodeDetailComplement?.id})")
+                    Log.w(
+                        "MediaPlaybackService",
+                        "Mismatch in episodeSourcesQuery.id (${query.id}) and episodeDetailComplement.id (${episodeDetailComplement?.id})"
+                    )
                     onPlayerError.invoke("Episode data mismatch")
                     return@launch
                 }
@@ -480,11 +501,18 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         coroutineScope.cancel()
     }
 
-    override fun onGetRoot(clientPackageName: String, clientUid: Int, rootHints: Bundle?): BrowserRoot {
+    override fun onGetRoot(
+        clientPackageName: String,
+        clientUid: Int,
+        rootHints: Bundle?
+    ): BrowserRoot {
         return BrowserRoot("media_root_id", null)
     }
 
-    override fun onLoadChildren(parentId: String, result: Result<List<MediaBrowserCompat.MediaItem?>?>) {
+    override fun onLoadChildren(
+        parentId: String,
+        result: Result<List<MediaBrowserCompat.MediaItem?>?>
+    ) {
         result.sendResult(mutableListOf())
     }
 
@@ -512,7 +540,8 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
             val previousEpisode = episodes.find { it.episodeNo == currentEpisodeNo - 1 }
             if (previousEpisode != null) {
                 episodeSourcesQuery = episodeSourcesQuery?.copy(id = previousEpisode.episodeId)
-                episodeDetailComplement = episodeDetailComplement?.copy(id = previousEpisode.episodeId)
+                episodeDetailComplement =
+                    episodeDetailComplement?.copy(id = previousEpisode.episodeId)
                 handleSelectedEpisodeServer?.invoke(episodeSourcesQuery!!)
             }
         }
