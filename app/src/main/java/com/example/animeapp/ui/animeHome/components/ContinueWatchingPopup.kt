@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -108,10 +109,11 @@ fun ContinueWatchingPopup(
                                 )
                             }
                         }
+                        Spacer(modifier = Modifier.height(4.dp))
                         Row(
                             modifier = Modifier.basicContainer(
                                 isPrimary = true,
-                                innerPadding = PaddingValues(4.dp),
+                                innerPadding = PaddingValues(vertical = 4.dp, horizontal = 8.dp),
                                 outerPadding = PaddingValues(horizontal = 0.dp, vertical = 4.dp),
                                 onItemClick = {
                                     navController.navigateToAnimeWatch(
