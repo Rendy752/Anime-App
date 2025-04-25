@@ -140,6 +140,7 @@ fun AnimeHomeScreen(
                             Column(modifier = Modifier.weight(1f)) {
                                 AnimeSchedulesGrid(
                                     animeSchedules = animeSchedules.data,
+                                    remainingTimes = state.remainingTimes,
                                     isLandscape = mainState.isLandscape,
                                     onItemClick = { anime ->
                                         navController.navigateToAnimeDetail(anime.mal_id)

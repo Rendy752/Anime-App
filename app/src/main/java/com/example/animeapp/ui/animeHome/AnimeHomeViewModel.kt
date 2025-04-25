@@ -2,20 +2,26 @@ package com.example.animeapp.ui.animeHome
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.ListAnimeDetailResponse
 import com.example.animeapp.models.AnimeSchedulesSearchQueryState
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.repository.AnimeEpisodeDetailRepository
 import com.example.animeapp.repository.AnimeHomeRepository
 import com.example.animeapp.utils.Resource
+import com.example.animeapp.utils.TimeUtils.calculateRemainingTime
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.util.Date
+import java.time.*
+import java.time.temporal.ChronoUnit
+import java.util.*
 import javax.inject.Inject
 
 data class HomeState(
@@ -28,7 +34,8 @@ data class HomeState(
     val isMinimized: Boolean = false,
     val autoScrollEnabled: Boolean = true,
     val carouselLastInteractionTime: Long = Date().time,
-    val currentCarouselPage: Int = 0
+    val currentCarouselPage: Int = 0,
+    val remainingTimes: Map<String, String> = emptyMap()
 )
 
 sealed class HomeAction {
@@ -41,6 +48,7 @@ sealed class HomeAction {
     data class SetAutoScrollEnabled(val enabled: Boolean) : HomeAction()
     data object UpdateCarouselLastInteractionTime : HomeAction()
     data class SetCurrentCarouselPage(val page: Int) : HomeAction()
+    data class StartUpdatingBroadcastTimes(val animeSchedules: List<AnimeDetail>) : HomeAction()
 }
 
 @HiltViewModel
@@ -51,6 +59,8 @@ class AnimeHomeViewModel @Inject constructor(
 
     private val _state = MutableStateFlow(HomeState())
     val state: StateFlow<HomeState> = _state.asStateFlow()
+
+    private var timeUpdateJob: Job? = null
 
     init {
         dispatch(HomeAction.GetAnimeSchedules)
@@ -68,6 +78,7 @@ class AnimeHomeViewModel @Inject constructor(
             is HomeAction.SetAutoScrollEnabled -> setAutoScrollEnabled(action.enabled)
             HomeAction.UpdateCarouselLastInteractionTime -> updateCarouselLastInteractionTime()
             is HomeAction.SetCurrentCarouselPage -> setCurrentCarouselPage(action.page)
+            is HomeAction.StartUpdatingBroadcastTimes -> startUpdatingBroadcastTimes(action.animeSchedules)
         }
     }
 
@@ -75,6 +86,9 @@ class AnimeHomeViewModel @Inject constructor(
         _state.update { it.copy(isRefreshing = true, animeSchedules = Resource.Loading()) }
         val result = animeHomeRepository.getAnimeSchedules(_state.value.queryState)
         _state.update { it.copy(isRefreshing = false, animeSchedules = result) }
+        if (result is Resource.Success) {
+            dispatch(HomeAction.StartUpdatingBroadcastTimes(result.data.data))
+        }
     }
 
     private fun getTop10Anime() = viewModelScope.launch {
@@ -119,5 +133,34 @@ class AnimeHomeViewModel @Inject constructor(
 
     private fun setCurrentCarouselPage(page: Int) {
         _state.update { it.copy(currentCarouselPage = page) }
+    }
+
+    private fun startUpdatingBroadcastTimes(animeSchedules: List<AnimeDetail>) {
+        timeUpdateJob?.cancel()
+        timeUpdateJob = viewModelScope.launch(Dispatchers.Default) {
+            try {
+                while (true) {
+                    val nowCurrent = ZonedDateTime.now(ZoneId.systemDefault())
+                    val nextSecond = nowCurrent.plusSeconds(1).withNano(0)
+                    val delayMillis = ChronoUnit.MILLIS.between(nowCurrent, nextSecond)
+                    delay(delayMillis)
+
+                    val updatedTimes = animeSchedules.associate { animeDetail ->
+                        val broadcast = animeDetail.broadcast
+                        val remainingTime = calculateRemainingTime(broadcast)
+                        animeDetail.mal_id.toString() to remainingTime
+                    }
+                    _state.update { it.copy(remainingTimes = updatedTimes) }
+                }
+            } catch (e: Exception) {
+                _state.update { it.copy(remainingTimes = emptyMap()) }
+                e.printStackTrace()
+            }
+        }
+    }
+
+    override fun onCleared() {
+        timeUpdateJob?.cancel()
+        super.onCleared()
     }
 }

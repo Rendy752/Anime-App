@@ -13,6 +13,7 @@ import com.example.animeapp.models.AnimeDetail
 @Composable
 fun AnimeSchedulesGrid(
     animeSchedules: List<AnimeDetail>,
+    remainingTimes: Map<String, String>,
     isLandscape: Boolean,
     onItemClick: (AnimeDetail) -> Unit
 ) {
@@ -22,8 +23,12 @@ fun AnimeSchedulesGrid(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(animeSchedules) { animeDetail ->
-            AnimeScheduleItem(animeDetail = animeDetail, onItemClick = onItemClick)
+        items(animeSchedules, key = { it.mal_id }) { animeDetail ->
+            AnimeScheduleItem(
+                animeDetail = animeDetail,
+                remainingTime = remainingTimes[animeDetail.mal_id.toString()] ?: "",
+                onItemClick = onItemClick
+            )
         }
     }
 }

@@ -10,7 +10,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -22,12 +21,12 @@ import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.ui.common_ui.AsyncImageWithPlaceholder
 import com.example.animeapp.ui.common_ui.ImageRoundedCorner
 import com.example.animeapp.ui.common_ui.SkeletonBox
-import com.example.animeapp.utils.TimeUtils
 import com.example.animeapp.utils.basicContainer
 
 @Composable
 fun AnimeScheduleItem(
     animeDetail: AnimeDetail,
+    remainingTime: String,
     onItemClick: (AnimeDetail) -> Unit
 ) {
     Column(
@@ -61,11 +60,9 @@ fun AnimeScheduleItem(
                     style = MaterialTheme.typography.titleSmall,
                 )
             }
-            val remainingTimeState: State<String> =
-                TimeUtils.rememberBroadcastTimeRemaining(animeDetail.broadcast)
-            if (remainingTimeState.value.isNotEmpty()) {
+            if (remainingTime.isNotEmpty()) {
                 Text(
-                    text = remainingTimeState.value,
+                    text = remainingTime,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     style = MaterialTheme.typography.titleSmall,
@@ -73,8 +70,8 @@ fun AnimeScheduleItem(
                     modifier = Modifier
                         .align(Alignment.BottomEnd)
                         .basicContainer(
-                            isError = remainingTimeState.value != "On Air",
-                            isPrimary = remainingTimeState.value == "On Air",
+                            isError = remainingTime != "On Air",
+                            isPrimary = remainingTime == "On Air",
                             innerPadding = PaddingValues(
                                 horizontal = 8.dp,
                                 vertical = 4.dp
