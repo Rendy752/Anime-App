@@ -106,7 +106,10 @@ fun VideoPlayerSection(
     }
 
     DisposableEffect(Unit) {
-        Log.d("VideoPlayerSection", "Binding to service for episodeSourcesQuery: ${episodeSourcesQuery.id}")
+        Log.d(
+            "VideoPlayerSection",
+            "Binding to service for episodeSourcesQuery: ${episodeSourcesQuery.id}"
+        )
         val intent = Intent(context, MediaPlaybackService::class.java)
         try {
             context.startForegroundService(intent)
@@ -118,6 +121,7 @@ fun VideoPlayerSection(
         onDispose {
             Log.d("VideoPlayerSection", "Unbinding service and stopping playback")
             try {
+                mediaPlaybackService?.stopService()
                 context.stopService(Intent(context, MediaPlaybackService::class.java))
                 context.unbindService(serviceConnection)
             } catch (e: IllegalArgumentException) {
@@ -167,8 +171,12 @@ fun VideoPlayerSection(
         object : MediaControllerCompat.Callback() {
             override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
                 state?.let {
-                    Log.d("VideoPlayerSection", "Playback state changed: state=${it.state}, position=${it.position}")
-                    isLoading = it.state == PlaybackStateCompat.STATE_BUFFERING || it.state == PlaybackStateCompat.STATE_CONNECTING
+                    Log.d(
+                        "VideoPlayerSection",
+                        "Playback state changed: state=${it.state}, position=${it.position}"
+                    )
+                    isLoading =
+                        it.state == PlaybackStateCompat.STATE_BUFFERING || it.state == PlaybackStateCompat.STATE_CONNECTING
                     when (it.state) {
                         PlaybackStateCompat.STATE_PLAYING -> {
                             isShowNextEpisode = false
@@ -176,9 +184,11 @@ fun VideoPlayerSection(
                             (context as? FragmentActivity)?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                             HlsPlayerUtil.requestAudioFocus(audioManager)
                         }
+
                         PlaybackStateCompat.STATE_PAUSED -> {
                             HlsPlayerUtil.abandonAudioFocus(audioManager)
                         }
+
                         PlaybackStateCompat.STATE_STOPPED -> {
                             isShowNextEpisode = updateNextEpisodeName(
                                 episodes = episodes,
@@ -186,17 +196,22 @@ fun VideoPlayerSection(
                                 setNextEpisodeName = { nextEpisodeName = it }
                             )
                         }
+
                         PlaybackStateCompat.STATE_ERROR -> {
                             onPlayerError("Playback error: ${state.errorMessage}")
                             Log.e("VideoPlayerSection", "Playback error: ${state.errorMessage}")
                         }
+
                         else -> {}
                     }
                 }
             }
 
             override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
-                Log.d("VideoPlayerSection", "Metadata changed: title=${metadata?.getString(MediaMetadataCompat.METADATA_KEY_TITLE)}")
+                Log.d(
+                    "VideoPlayerSection",
+                    "Metadata changed: title=${metadata?.getString(MediaMetadataCompat.METADATA_KEY_TITLE)}"
+                )
             }
         }
     }
@@ -285,7 +300,10 @@ fun VideoPlayerSection(
                 ?: mediaControllerCompat?.metadata?.getLong(MediaMetadataCompat.METADATA_KEY_DURATION)
                 ?: Long.MAX_VALUE
             val newPosition = (currentPosition + 10000).coerceAtMost(duration)
-            Log.d("VideoPlayerSection", "Fast-forward: current=$currentPosition, new=$newPosition, duration=$duration")
+            Log.d(
+                "VideoPlayerSection",
+                "Fast-forward: current=$currentPosition, new=$newPosition, duration=$duration"
+            )
             mediaControllerCompat?.transportControls?.seekTo(newPosition)
         },
         onRewind = {
@@ -296,7 +314,10 @@ fun VideoPlayerSection(
                 ?: mediaControllerCompat?.metadata?.getLong(MediaMetadataCompat.METADATA_KEY_DURATION)
                 ?: Long.MAX_VALUE
             val newPosition = (currentPosition - 10000).coerceAtLeast(0)
-            Log.d("VideoPlayerSection", "Rewind: current=$currentPosition, new=$newPosition, duration=$duration")
+            Log.d(
+                "VideoPlayerSection",
+                "Rewind: current=$currentPosition, new=$newPosition, duration=$duration"
+            )
             mediaControllerCompat?.transportControls?.seekTo(newPosition)
         }
     )

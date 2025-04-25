@@ -25,7 +25,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.NetworkStatus
 import com.example.animeapp.ui.common_ui.SkeletonBox
@@ -41,10 +40,10 @@ fun AnimeWatchTopBar(
     isFavorite: Boolean,
     isLandscape: Boolean,
     networkStatus: NetworkStatus?,
-    navController: NavController,
     selectedContentIndex: Int,
     onContentIndexChange: (Int) -> Unit,
     episodeDetailComplement: Resource<EpisodeDetailComplement>,
+    onHandleBackPress: () -> Unit,
     onFavoriteToggle: (EpisodeDetailComplement) -> Unit
 ) {
     val scope = rememberCoroutineScope()
@@ -57,7 +56,7 @@ fun AnimeWatchTopBar(
     Column {
         TopAppBar(
             navigationIcon = {
-                IconButton(onClick = { navController.popBackStack() }) {
+                IconButton(onClick = onHandleBackPress) {
                     Icon(
                         Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back"

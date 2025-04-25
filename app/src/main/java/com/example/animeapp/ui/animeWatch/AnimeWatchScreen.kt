@@ -86,7 +86,7 @@ fun AnimeWatchScreen(
     val screenOffReceiver = remember { ScreenOffReceiver { isScreenOn = false } }
     val screenOnReceiver = remember { ScreenOnReceiver { isScreenOn = true } }
 
-    BackHandler(enabled = isFullscreen) {
+    val onBackPress: () -> Unit = {
         if (isFullscreen) {
             isFullscreen = false
             (context as? Activity)?.window?.let { window ->
@@ -96,7 +96,13 @@ fun AnimeWatchScreen(
                     window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
                 }
             }
+        } else {
+            navController.popBackStack()
         }
+    }
+
+    BackHandler {
+        onBackPress()
     }
 
     LaunchedEffect(Unit) {
@@ -147,10 +153,10 @@ fun AnimeWatchScreen(
                 isFavorite.value,
                 mainState.isLandscape,
                 mainState.networkStatus,
-                navController,
                 selectedContentIndex,
                 { selectedContentIndex = it },
                 episodeDetailComplement,
+                { onBackPress() },
                 {
                     isFavorite.value = it.isFavorite
                     viewModel.updateEpisodeDetailComplement(it)

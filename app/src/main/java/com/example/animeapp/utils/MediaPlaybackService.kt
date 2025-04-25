@@ -393,6 +393,8 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                         PlaybackStateCompat.ACTION_PAUSE or
                         PlaybackStateCompat.ACTION_SKIP_TO_NEXT or
                         PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS or
+                        PlaybackStateCompat.ACTION_REWIND or
+                        PlaybackStateCompat.ACTION_FAST_FORWARD or
                         PlaybackStateCompat.ACTION_STOP or
                         PlaybackStateCompat.ACTION_SEEK_TO
             )
@@ -537,6 +539,23 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
             exoPlayer?.pause()
         }
 
+        override fun onRewind() {
+            exoPlayer?.let { player ->
+                val currentPosition = player.currentPosition
+                val newPosition = (currentPosition - 10_000).coerceAtLeast(0)
+                player.seekTo(newPosition)
+            }
+        }
+
+        override fun onFastForward() {
+            exoPlayer?.let { player ->
+                val currentPosition = player.currentPosition
+                val duration = player.duration
+                val newPosition = (currentPosition + 10_000).coerceAtMost(duration)
+                player.seekTo(newPosition)
+            }
+        }
+
         override fun onSkipToNext() {
             val currentEpisodeNo = episodeDetailComplement?.servers?.episodeNo ?: return
             val nextEpisode = episodes.find { it.episodeNo == currentEpisodeNo + 1 }
@@ -580,5 +599,11 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                 }
             )
         }
+    }
+
+    fun stopService() {
+        exoPlayer?.pause()
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        stopSelf()
     }
 }

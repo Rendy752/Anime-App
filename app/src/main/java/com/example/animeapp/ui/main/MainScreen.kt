@@ -236,11 +236,6 @@ fun MainScreen(
                             activity.addOnPictureInPictureModeChangedListener(
                                 onPictureInPictureModeChangedCallback
                             )
-                            onDispose {
-                                activity.removeOnPictureInPictureModeChangedListener(
-                                    onPictureInPictureModeChangedCallback
-                                )
-                            }
                         }
                         onDispose {
                             activity?.removeOnPictureInPictureModeChangedListener(
@@ -256,33 +251,22 @@ fun MainScreen(
 
                     LaunchedEffect(isPipMode, isPlaying) {
                         if (isPipMode && activity != null) {
-                            val service =
-                                (activity.application as AnimeApplication).getMediaPlaybackService()
-                            val currentEpisodeNo = service?.getCurrentEpisodeNo() ?: -1
-                            val episodes = service?.getEpisodes() ?: emptyList()
-
                             val actions = mutableListOf<RemoteAction>()
-                            val hasPreviousEpisode =
-                                currentEpisodeNo > 1 && episodes.any { it.episodeNo == currentEpisodeNo - 1 }
-                            val hasNextEpisode =
-                                episodes.any { it.episodeNo == currentEpisodeNo + 1 }
 
-                            if (hasPreviousEpisode) {
-                                actions.add(
-                                    RemoteAction(
-                                        Icon.createWithResource(
-                                            activity,
-                                            androidx.media3.session.R.drawable.media3_icon_previous
-                                        ),
-                                        "Previous",
-                                        "Skip to previous episode",
-                                        MediaButtonReceiver.buildMediaButtonPendingIntent(
-                                            activity,
-                                            PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
-                                        )
+                            actions.add(
+                                RemoteAction(
+                                    Icon.createWithResource(
+                                        activity,
+                                        androidx.media3.session.R.drawable.media3_icon_skip_back_10
+                                    ),
+                                    "Rewind",
+                                    "Seek back 10 seconds",
+                                    MediaButtonReceiver.buildMediaButtonPendingIntent(
+                                        activity,
+                                        PlaybackStateCompat.ACTION_REWIND
                                     )
                                 )
-                            }
+                            )
 
                             actions.add(
                                 RemoteAction(
@@ -299,22 +283,20 @@ fun MainScreen(
                                 )
                             )
 
-                            if (hasNextEpisode) {
-                                actions.add(
-                                    RemoteAction(
-                                        Icon.createWithResource(
-                                            activity,
-                                            androidx.media3.session.R.drawable.media3_icon_next
-                                        ),
-                                        "Next",
-                                        "Skip to next episode",
-                                        MediaButtonReceiver.buildMediaButtonPendingIntent(
-                                            activity,
-                                            PlaybackStateCompat.ACTION_SKIP_TO_NEXT
-                                        )
+                            actions.add(
+                                RemoteAction(
+                                    Icon.createWithResource(
+                                        activity,
+                                        androidx.media3.session.R.drawable.media3_icon_skip_forward_10
+                                    ),
+                                    "Fast Forward",
+                                    "Seek forward 10 seconds",
+                                    MediaButtonReceiver.buildMediaButtonPendingIntent(
+                                        activity,
+                                        PlaybackStateCompat.ACTION_FAST_FORWARD
                                     )
                                 )
-                            }
+                            )
 
                             activity.setPictureInPictureParams(
                                 PictureInPictureParams.Builder()
@@ -335,31 +317,22 @@ fun MainScreen(
                                 val service =
                                     (activity.application as AnimeApplication).getMediaPlaybackService()
                                 val isPlaying = service?.getExoPlayer()?.isPlaying == true
-                                val currentEpisodeNo = service?.getCurrentEpisodeNo() ?: -1
-                                val episodes = service?.getEpisodes() ?: emptyList()
-
                                 val actions = mutableListOf<RemoteAction>()
-                                val hasPreviousEpisode =
-                                    currentEpisodeNo > 1 && episodes.any { it.episodeNo == currentEpisodeNo - 1 }
-                                val hasNextEpisode =
-                                    episodes.any { it.episodeNo == currentEpisodeNo + 1 }
 
-                                if (hasPreviousEpisode) {
-                                    actions.add(
-                                        RemoteAction(
-                                            Icon.createWithResource(
-                                                activity,
-                                                androidx.media3.session.R.drawable.media3_icon_previous
-                                            ),
-                                            "Previous",
-                                            "Skip to previous episode",
-                                            MediaButtonReceiver.buildMediaButtonPendingIntent(
-                                                activity,
-                                                PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
-                                            )
+                                actions.add(
+                                    RemoteAction(
+                                        Icon.createWithResource(
+                                            activity,
+                                            androidx.media3.session.R.drawable.media3_icon_skip_back_10
+                                        ),
+                                        "Rewind",
+                                        "Seek back 10 seconds",
+                                        MediaButtonReceiver.buildMediaButtonPendingIntent(
+                                            activity,
+                                            PlaybackStateCompat.ACTION_REWIND
                                         )
                                     )
-                                }
+                                )
 
                                 actions.add(
                                     RemoteAction(
@@ -376,22 +349,20 @@ fun MainScreen(
                                     )
                                 )
 
-                                if (hasNextEpisode) {
-                                    actions.add(
-                                        RemoteAction(
-                                            Icon.createWithResource(
-                                                activity,
-                                                androidx.media3.session.R.drawable.media3_icon_next
-                                            ),
-                                            "Next",
-                                            "Skip to next episode",
-                                            MediaButtonReceiver.buildMediaButtonPendingIntent(
-                                                activity,
-                                                PlaybackStateCompat.ACTION_SKIP_TO_NEXT
-                                            )
+                                actions.add(
+                                    RemoteAction(
+                                        Icon.createWithResource(
+                                            activity,
+                                            androidx.media3.session.R.drawable.media3_icon_skip_forward_10
+                                        ),
+                                        "Fast Forward",
+                                        "Seek forward 10 seconds",
+                                        MediaButtonReceiver.buildMediaButtonPendingIntent(
+                                            activity,
+                                            PlaybackStateCompat.ACTION_FAST_FORWARD
                                         )
                                     )
-                                }
+                                )
 
                                 activity.enterPictureInPictureMode(
                                     PictureInPictureParams.Builder()
