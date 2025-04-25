@@ -1,4 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
@@ -13,9 +12,9 @@
 
     <permission
         android:name="com.example.animeapp.permission.ACCESS_MEDIA_SERVICE"
-        android:protectionLevel="signature"
+        android:description="@string/permission_access_media_service_description"
         android:label="@string/permission_access_media_service_label"
-        android:description="@string/permission_access_media_service_description" />
+        android:protectionLevel="signature" />
 
     <application
         android:name=".AnimeApplication"
@@ -29,19 +28,19 @@
         android:supportsRtl="true"
         tools:targetApi="31">
         <profileable android:shell="true" />
+
         <activity
             android:name=".ui.main.MainActivity"
-            android:supportsPictureInPicture="true"
             android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout"
             android:exported="true"
             android:launchMode="standard"
             android:resizeableActivity="true"
+            android:supportsPictureInPicture="true"
             android:theme="@style/Theme.App.Starting">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
@@ -53,14 +52,23 @@
                     android:pathPattern="/detail/.*"
                     android:scheme="animeapp" />
             </intent-filter>
+        </activity>
 
+        <activity
+            android:name=".ui.animeWatch.AnimeWatchActivity"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:exported="true"
+            android:supportsPictureInPicture="true"
+            android:theme="@style/Theme.App.Starting">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+
                 <data
                     android:host="anime"
-                    android:pathPattern="/watch/.*"
+                    android:pathPrefix="/watch"
                     android:scheme="animeapp" />
             </intent-filter>
         </activity>
@@ -99,5 +107,4 @@
             </intent-filter>
         </receiver>
     </application>
-
 </manifest>
