@@ -41,6 +41,7 @@
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
@@ -52,14 +53,7 @@
                     android:pathPattern="/detail/.*"
                     android:scheme="animeapp" />
             </intent-filter>
-        </activity>
 
-        <activity
-            android:name=".ui.animeWatch.AnimeWatchActivity"
-            android:configChanges="orientation|screenSize|keyboardHidden"
-            android:exported="true"
-            android:supportsPictureInPicture="true"
-            android:theme="@style/Theme.App.Starting">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
 
@@ -68,7 +62,7 @@
 
                 <data
                     android:host="anime"
-                    android:pathPrefix="/watch"
+                    android:pathPattern="/watch/.*"
                     android:scheme="animeapp" />
             </intent-filter>
         </activity>
