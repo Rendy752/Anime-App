@@ -6,6 +6,8 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.graphics.drawable.Icon
 import android.os.Bundle
+import android.support.v4.media.session.PlaybackStateCompat
+import android.util.Log
 import android.view.MotionEvent
 import android.view.WindowManager
 import androidx.activity.compose.BackHandler
@@ -32,6 +34,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.media.session.MediaButtonReceiver
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.animeapp.AnimeApplication
@@ -42,10 +45,6 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
-import android.support.v4.media.session.PlaybackStateCompat
-import androidx.media.session.MediaButtonReceiver
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.mutableStateOf
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -70,17 +69,6 @@ class MainActivity : AppCompatActivity() {
             val configuration = LocalConfiguration.current
             val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
             val resetIdleTimer = remember { { lastInteractionTime = System.currentTimeMillis() } }
-
-            val isPipMode by remember { mutableStateOf(isInPictureInPictureMode) }
-            val mediaService = (application as AnimeApplication).getMediaPlaybackService()
-            val isPlaying by mediaService?.isPlayingState?.collectAsState(initial = false)
-                ?: remember { mutableStateOf(false) }
-
-            LaunchedEffect(isPipMode, isPlaying) {
-                if (isPipMode) {
-                    updatePipActions(isPlaying)
-                }
-            }
 
             LaunchedEffect(Unit) {
                 while (true) {
@@ -186,14 +174,57 @@ class MainActivity : AppCompatActivity() {
         windowInsetsController.isAppearanceLightStatusBars = useDarkIcons
     }
 
+    companion object {
+        fun buildPipActions(activity: MainActivity, isPlaying: Boolean?): List<RemoteAction> {
+            return listOf(
+                RemoteAction(
+                    Icon.createWithResource(
+                        activity,
+                        androidx.media3.session.R.drawable.media3_icon_skip_back_10
+                    ),
+                    "Rewind",
+                    "Seek back 10 seconds",
+                    MediaButtonReceiver.buildMediaButtonPendingIntent(
+                        activity,
+                        PlaybackStateCompat.ACTION_REWIND
+                    )
+                ),
+                RemoteAction(
+                    Icon.createWithResource(
+                        activity,
+                        if (isPlaying == true) androidx.media3.session.R.drawable.media3_icon_pause else androidx.media3.session.R.drawable.media3_icon_play
+                    ),
+                    if (isPlaying == true) "Pause" else "Play",
+                    if (isPlaying == true) "Pause playback" else "Resume playback",
+                    MediaButtonReceiver.buildMediaButtonPendingIntent(
+                        activity,
+                        PlaybackStateCompat.ACTION_PLAY_PAUSE
+                    )
+                ),
+                RemoteAction(
+                    Icon.createWithResource(
+                        activity,
+                        androidx.media3.session.R.drawable.media3_icon_skip_forward_10
+                    ),
+                    "Fast Forward",
+                    "Seek forward 10 seconds",
+                    MediaButtonReceiver.buildMediaButtonPendingIntent(
+                        activity,
+                        PlaybackStateCompat.ACTION_FAST_FORWARD
+                    )
+                )
+            )
+        }
+    }
+
     @Deprecated("Deprecated in android.app.Activity")
     override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode)
+        Log.d(
+            "MainActivity",
+            "onPictureInPictureModeChanged: isInPictureInPictureMode=$isInPictureInPictureMode"
+        )
         onPictureInPictureModeChangedListeners.forEach { it(isInPictureInPictureMode) }
-        if (isInPictureInPictureMode) {
-            val isPlaying = (application as AnimeApplication).getMediaPlaybackService()?.getExoPlayer()?.isPlaying == true
-            updatePipActions(isPlaying)
-        }
     }
 
     fun addOnPictureInPictureModeChangedListener(listener: (Boolean) -> Unit) {
@@ -204,69 +235,30 @@ class MainActivity : AppCompatActivity() {
         onPictureInPictureModeChangedListeners.remove(listener)
     }
 
-    private fun updatePipActions(isPlaying: Boolean?): PictureInPictureParams {
-        val service = (application as AnimeApplication).getMediaPlaybackService()
-        val currentEpisodeNo = service?.getCurrentEpisodeNo() ?: -1
-        val episodes = service?.getEpisodes() ?: emptyList()
-
-        val actions = mutableListOf<RemoteAction>()
-        val hasPreviousEpisode = currentEpisodeNo > 1 && episodes.any { it.episodeNo == currentEpisodeNo - 1 }
-        val hasNextEpisode = episodes.any { it.episodeNo == currentEpisodeNo + 1 }
-
-        if (hasPreviousEpisode) {
-            actions.add(
-                RemoteAction(
-                    Icon.createWithResource(this, androidx.media3.session.R.drawable.media3_icon_previous),
-                    "Previous",
-                    "Skip to previous episode",
-                    MediaButtonReceiver.buildMediaButtonPendingIntent(
-                        this,
-                        PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
-                    )
-                )
-            )
-        }
-
-        actions.add(
-            RemoteAction(
-                Icon.createWithResource(
-                    this,
-                    if (isPlaying == true) androidx.media3.session.R.drawable.media3_icon_pause else androidx.media3.session.R.drawable.media3_icon_play
-                ),
-                if (isPlaying == true) "Pause" else "Play",
-                if (isPlaying == true) "Pause playback" else "Resume playback",
-                MediaButtonReceiver.buildMediaButtonPendingIntent(
-                    this,
-                    PlaybackStateCompat.ACTION_PLAY_PAUSE
-                )
-            )
-        )
-
-        if (hasNextEpisode) {
-            actions.add(
-                RemoteAction(
-                    Icon.createWithResource(this, androidx.media3.session.R.drawable.media3_icon_next),
-                    "Next",
-                    "Skip to next episode",
-                    MediaButtonReceiver.buildMediaButtonPendingIntent(
-                        this,
-                        PlaybackStateCompat.ACTION_SKIP_TO_NEXT
-                    )
-                )
-            )
-        }
-
-        return PictureInPictureParams.Builder()
-            .setActions(actions)
-            .build()
-    }
-
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
         val currentRoute = navController.currentDestination?.route
         if (currentRoute?.startsWith("animeWatch/") == true) {
-            val isPlaying = (application as AnimeApplication).getMediaPlaybackService()?.getExoPlayer()?.isPlaying == true
-            enterPictureInPictureMode(updatePipActions(isPlaying))
+            val service = (application as AnimeApplication).getMediaPlaybackService()
+            val isPlaying = service?.isPlayingState?.value == true
+            Log.d("MainActivity", "onUserLeaveHint: Entering PiP, isPlaying=$isPlaying")
+            enterPictureInPictureMode(
+                PictureInPictureParams.Builder()
+                    .setActions(buildPipActions(this, isPlaying))
+                    .build()
+            )
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        Log.d("MainActivity", "onPause")
+        (applicationContext as AnimeApplication).cleanupService()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.d("MainActivity", "onDestroy")
+        (applicationContext as AnimeApplication).cleanupService()
     }
 }

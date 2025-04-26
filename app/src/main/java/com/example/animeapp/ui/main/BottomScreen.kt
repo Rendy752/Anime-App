@@ -7,7 +7,9 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
 
+@Stable
 enum class BottomScreen(
     val route: String,
     val label: String,

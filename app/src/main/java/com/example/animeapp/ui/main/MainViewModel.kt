@@ -2,6 +2,7 @@ package com.example.animeapp.ui.main
 
 import android.app.Application
 import android.content.Context
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.animeapp.models.NetworkStatus
@@ -16,6 +17,7 @@ import javax.inject.Inject
 import androidx.core.content.edit
 import kotlinx.coroutines.flow.update
 
+@Stable
 data class MainState(
     val isDarkMode: Boolean = false,
     val themeApplied: Boolean = false,

@@ -7,6 +7,7 @@ import android.content.ServiceConnection
 import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.os.IBinder
+import android.util.Log
 import com.chuckerteam.chucker.api.Chucker
 import com.example.animeapp.BuildConfig.DEBUG
 import com.example.animeapp.utils.MediaPlaybackService
@@ -19,16 +20,8 @@ class AnimeApplication : Application() {
     private lateinit var shakeDetector: ShakeDetector
 
     private var mediaPlaybackService: MediaPlaybackService? = null
-    private val serviceConnection = object : ServiceConnection {
-        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-            mediaPlaybackService =
-                (service as MediaPlaybackService.MediaPlaybackBinder).getService()
-        }
-
-        override fun onServiceDisconnected(name: ComponentName?) {
-            mediaPlaybackService = null
-        }
-    }
+    private var isServiceBound = false
+    private var serviceConnection: ServiceConnection? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -36,23 +29,72 @@ class AnimeApplication : Application() {
         bindMediaService()
     }
 
-    private fun bindMediaService() {
-        val intent = Intent(this, MediaPlaybackService::class.java)
-        bindService(intent, serviceConnection, BIND_AUTO_CREATE)
-        startForegroundService(intent)
+    fun bindMediaService() {
+        if (!isServiceBound) {
+            serviceConnection = object : ServiceConnection {
+                override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+                    Log.d("AnimeApplication", "MediaPlaybackService connected")
+                    mediaPlaybackService = (service as MediaPlaybackService.MediaPlaybackBinder).getService()
+                    isServiceBound = true
+                }
+
+                override fun onServiceDisconnected(name: ComponentName?) {
+                    Log.w("AnimeApplication", "MediaPlaybackService disconnected")
+                    mediaPlaybackService = null
+                    isServiceBound = false
+                }
+            }
+            val intent = Intent(this, MediaPlaybackService::class.java)
+            try {
+                bindService(intent, serviceConnection!!, BIND_AUTO_CREATE)
+                Log.d("AnimeApplication", "Bound to MediaPlaybackService")
+            } catch (e: Exception) {
+                Log.e("AnimeApplication", "Failed to bind MediaPlaybackService", e)
+            }
+        }
+    }
+
+    fun unbindMediaService() {
+        if (isServiceBound) {
+            try {
+                serviceConnection?.let { unbindService(it) }
+                Log.d("AnimeApplication", "Unbound MediaPlaybackService")
+            } catch (e: IllegalArgumentException) {
+                Log.w("AnimeApplication", "Service already unbound", e)
+            }
+            mediaPlaybackService = null
+            isServiceBound = false
+            serviceConnection = null
+        }
     }
 
     fun getMediaPlaybackService(): MediaPlaybackService? = mediaPlaybackService
 
+    fun isMediaServiceBound(): Boolean = isServiceBound
+
+    fun cleanupService() {
+        mediaPlaybackService?.let { service ->
+            if (!service.isForegroundService()) {
+                Log.d("AnimeApplication", "Stopping MediaPlaybackService from AnimeApplication")
+                service.stopService()
+                unbindMediaService()
+            } else {
+                Log.d("AnimeApplication", "Keeping MediaPlaybackService alive due to foreground state")
+            }
+        }
+    }
+
     override fun onTerminate() {
         super.onTerminate()
-        unbindService(serviceConnection)
+        cleanupService()
+        if (DEBUG) {
+            sensorManager.unregisterListener(shakeDetector)
+        }
     }
 
     private fun setupSensor() {
         sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
         shakeDetector = ShakeDetector { startActivity(Chucker.getLaunchIntent(this)) }
-
         sensorManager.registerListener(
             shakeDetector,
             sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),

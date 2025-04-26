@@ -4,10 +4,12 @@ import android.os.Handler
 import android.os.Looper
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
+import android.util.Log
 import androidx.annotation.OptIn
 import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
@@ -74,6 +76,7 @@ fun VideoPlayer(
                     if (isPlaying) {
                         setShowResumeOverlay(false)
                     }
+                    Log.d("VideoPlayer", "Playback state: ${it.state}, isPlaying=$isPlaying, isPlayerReady=$isPlayerReady")
                 }
             }
         }
@@ -83,9 +86,19 @@ fun VideoPlayer(
         mediaController?.registerCallback(mediaControllerCallback)
         playerView.useController = !isPipMode
         playerView.controllerShowTimeoutMs = if (isPipMode) 0 else 5000
+        playerView.setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
+        Log.d("VideoPlayer", "PlayerView configured: useController=${playerView.useController}, player=${playerView.player}")
         onDispose {
             mediaController?.unregisterCallback(mediaControllerCallback)
             playerView.useController = true
+            Log.d("VideoPlayer", "PlayerView disposed")
+        }
+    }
+
+    LaunchedEffect(isPlayerReady, isShowResumeOverlay, isShowNextEpisode) {
+        if (isPlayerReady && !isPlaying && !isShowResumeOverlay && !isShowNextEpisode) {
+            Log.d("VideoPlayer", "Auto-playing video")
+            onPlay()
         }
     }
 
@@ -93,6 +106,14 @@ fun VideoPlayer(
             episodeDetailComplement.lastTimestamp != null &&
             isPlayerReady &&
             !isPlaying
+
+    LaunchedEffect(shouldShowResumeOverlay, isShowNextEpisode, isShowPip, isShowSpeedUp, isShowSeekIndicator) {
+        Log.d(
+            "VideoPlayer",
+            "UI State: shouldShowResumeOverlay=$shouldShowResumeOverlay, isShowNextEpisode=$isShowNextEpisode, " +
+                    "isShowPip=$isShowPip, isShowSpeedUp=$isShowSpeedUp, isShowSeekIndicator=$isShowSeekIndicator"
+        )
+    }
 
     Box(modifier = modifier.then(videoSize)) {
         PlayerViewWrapper(

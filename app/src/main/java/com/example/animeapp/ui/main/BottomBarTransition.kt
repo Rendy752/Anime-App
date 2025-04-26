@@ -17,19 +17,17 @@ fun getBottomBarEnterTransition(
 ): EnterTransition {
     val initialRoute = initialState.destination.route
     val targetRoute = targetState.destination.route
-
-    if (initialRoute in bottomRoutes && targetRoute in bottomRoutes) {
+    return if (initialRoute in bottomRoutes && targetRoute in bottomRoutes) {
         val initialIndex = BottomScreen.orderedList.indexOfFirst { it.route == initialRoute }
         val targetIndex = BottomScreen.orderedList.indexOfFirst { it.route == targetRoute }
-
         val slideOffset: (Int) -> Int = when {
-            targetIndex > initialIndex -> { fullWidth: Int -> fullWidth }
-            targetIndex < initialIndex -> { fullWidth: Int -> -fullWidth }
-            else -> { _: Int -> 0 }
+            targetIndex > initialIndex -> { fullWidth -> fullWidth }
+            targetIndex < initialIndex -> { fullWidth -> -fullWidth }
+            else -> { _ -> 0 }
         }
-        return slideInHorizontally(animationSpec = tween(700), initialOffsetX = slideOffset)
+        slideInHorizontally(animationSpec = tween(700), initialOffsetX = slideOffset)
     } else {
-        return scaleIn(animationSpec = tween(700))
+        scaleIn(animationSpec = tween(700))
     }
 }
 
@@ -39,18 +37,16 @@ fun getBottomBarExitTransition(
 ): ExitTransition {
     val initialRoute = initialState.destination.route
     val targetRoute = targetState.destination.route
-
-    if (initialRoute in bottomRoutes && targetRoute in bottomRoutes) {
+    return if (initialRoute in bottomRoutes && targetRoute in bottomRoutes) {
         val initialIndex = BottomScreen.orderedList.indexOfFirst { it.route == initialRoute }
         val targetIndex = BottomScreen.orderedList.indexOfFirst { it.route == targetRoute }
-
         val slideOffset: (Int) -> Int = when {
-            targetIndex > initialIndex -> { fullWidth: Int -> -fullWidth }
-            targetIndex < initialIndex -> { fullWidth: Int -> fullWidth }
-            else -> { _: Int -> 0 }
+            targetIndex > initialIndex -> { fullWidth -> -fullWidth }
+            targetIndex < initialIndex -> { fullWidth -> fullWidth }
+            else -> { _ -> 0 }
         }
-        return slideOutHorizontally(animationSpec = tween(700), targetOffsetX = slideOffset)
+        slideOutHorizontally(animationSpec = tween(700), targetOffsetX = slideOffset)
     } else {
-        return scaleOut(animationSpec = tween(700))
+        scaleOut(animationSpec = tween(700))
     }
 }

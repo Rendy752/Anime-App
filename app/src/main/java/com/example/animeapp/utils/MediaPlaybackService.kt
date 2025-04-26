@@ -14,12 +14,17 @@ import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
+import android.util.Log
+import androidx.annotation.OptIn
 import androidx.core.app.NotificationCompat
+import androidx.core.graphics.scale
 import androidx.media.MediaBrowserServiceCompat
 import androidx.media.session.MediaButtonReceiver
+import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.Timeline
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.ExoPlaybackException
 import coil.ImageLoader
@@ -37,19 +42,15 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import java.net.URLEncoder
 import androidx.core.net.toUri
-import android.util.Log
-import androidx.annotation.OptIn
-import androidx.media3.common.MediaItem
-import androidx.media3.common.util.UnstableApi
-import androidx.core.graphics.scale
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import java.util.concurrent.atomic.AtomicBoolean
 
 private const val NOTIFICATION_ID = 123
 private const val CHANNEL_ID = "anime_playback_channel"
@@ -67,6 +68,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
     private var onPlayerReady: (() -> Unit)? = null
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private val handler = Handler(Looper.getMainLooper())
+    private val isForeground = AtomicBoolean(false)
 
     private val _isPlayingState = MutableStateFlow(false)
     val isPlayingState: StateFlow<Boolean> = _isPlayingState.asStateFlow()
@@ -97,6 +99,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
     }
 
     override fun onBind(intent: Intent?): IBinder? {
+        Log.d("MediaPlaybackService", "onBind called with action: ${intent?.action}")
         return if (intent?.action == "android.media.browse.MediaBrowserService") {
             super.onBind(intent)
         } else {
@@ -106,24 +109,31 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
 
     override fun onCreate() {
         super.onCreate()
+        Log.d("MediaPlaybackService", "Service created")
         initializePlayer()
         initializeMediaSession()
         createNotificationChannel()
     }
 
     private fun initializePlayer() {
+        if (exoPlayer != null) {
+            Log.w("MediaPlaybackService", "ExoPlayer already initialized, skipping")
+            return
+        }
         exoPlayer = ExoPlayer.Builder(this).build().apply {
             addListener(object : Player.Listener {
                 @OptIn(UnstableApi::class)
                 override fun onPlayerError(error: PlaybackException) {
-                    val message =
-                        if (error is ExoPlaybackException && error.type == ExoPlaybackException.TYPE_SOURCE) {
+                    val message = when {
+                        error is ExoPlaybackException && error.type == ExoPlaybackException.TYPE_SOURCE -> {
                             "Playback error, try a different server."
-                        } else {
-                            "Playback error: ${error.message}"
                         }
+
+                        error.message != null -> "Playback error: ${error.message}"
+                        else -> "Unknown playback error"
+                    }
                     onPlayerError?.invoke(message)
-                    Log.e("MediaPlaybackService", "Player error", error)
+                    Log.e("MediaPlaybackService", "Player error: $message", error)
                     updatePlaybackState(PlaybackStateCompat.STATE_ERROR, errorMessage = message)
                 }
 
@@ -140,35 +150,53 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                 }
 
                 override fun onPlaybackStateChanged(playbackState: Int) {
-                    if (playbackState == Player.STATE_ENDED) {
-                        coroutineScope.launch {
-                            try {
-                                val duration = exoPlayer?.duration
-                                if (duration != null && duration > 0) {
-                                    withTimeout(5_000) { updateStoredWatchState?.invoke(duration) }
+                    when (playbackState) {
+                        Player.STATE_ENDED -> {
+                            coroutineScope.launch {
+                                try {
+                                    val duration = exoPlayer?.duration
+                                    if (duration != null && duration > 0) {
+                                        withTimeout(5_000) { updateStoredWatchState?.invoke(duration) }
+                                    }
+                                } catch (e: Exception) {
+                                    Log.e(
+                                        "MediaPlaybackService",
+                                        "Failed to save watch state at end",
+                                        e
+                                    )
                                 }
-                            } catch (e: Exception) {
-                                Log.e(
-                                    "MediaPlaybackService",
-                                    "Failed to save watch state at end",
-                                    e
-                                )
+                            }
+                            updatePlaybackState(PlaybackStateCompat.STATE_STOPPED)
+                            val currentEpisodeNo =
+                                episodeDetailComplement?.servers?.episodeNo ?: return
+                            val nextEpisode = episodes.find { it.episodeNo == currentEpisodeNo + 1 }
+                            if (nextEpisode != null) {
+                                episodeSourcesQuery =
+                                    episodeSourcesQuery?.copy(id = nextEpisode.episodeId)
+                                episodeDetailComplement =
+                                    episodeDetailComplement?.copy(id = nextEpisode.episodeId)
+                                handleSelectedEpisodeServer?.invoke(episodeSourcesQuery!!)
                             }
                         }
-                        updatePlaybackState(PlaybackStateCompat.STATE_STOPPED)
-                        val currentEpisodeNo = episodeDetailComplement?.servers?.episodeNo ?: return
-                        val nextEpisode = episodes.find { it.episodeNo == currentEpisodeNo + 1 }
-                        if (nextEpisode != null) {
-                            episodeSourcesQuery =
-                                episodeSourcesQuery?.copy(id = nextEpisode.episodeId)
-                            episodeDetailComplement =
-                                episodeDetailComplement?.copy(id = nextEpisode.episodeId)
-                            handleSelectedEpisodeServer?.invoke(episodeSourcesQuery!!)
+
+                        Player.STATE_READY -> {
+                            if (!isPlaying) {
+                                onPlayerError?.invoke(null)
+                                onPlayerReady?.invoke()
+                                updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
+                            }
                         }
-                    } else if (playbackState == Player.STATE_READY && !isPlaying) {
-                        onPlayerError?.invoke(null)
-                        onPlayerReady?.invoke()
-                        updateNotification()
+
+                        Player.STATE_BUFFERING -> {
+                            Log.d("MediaPlaybackService", "Player is buffering")
+                            updatePlaybackState(PlaybackStateCompat.STATE_BUFFERING)
+                        }
+
+                        Player.STATE_IDLE -> {
+                            Log.d("MediaPlaybackService", "Player is idle")
+                            onPlayerError?.invoke(null)
+                            updatePlaybackState(PlaybackStateCompat.STATE_NONE)
+                        }
                     }
                 }
 
@@ -194,10 +222,15 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                 }
             })
             pause()
+            Log.d("MediaPlaybackService", "ExoPlayer initialized successfully")
         }
     }
 
     private fun initializeMediaSession() {
+        if (mediaSession != null) {
+            Log.w("MediaPlaybackService", "MediaSession already initialized, skipping")
+            return
+        }
         mediaSession = MediaSessionCompat(this, "MediaPlaybackService").apply {
             setPlaybackState(
                 PlaybackStateCompat.Builder()
@@ -217,6 +250,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
             isActive = true
         }
         sessionToken = mediaSession?.sessionToken
+        Log.d("MediaPlaybackService", "MediaSession initialized")
     }
 
     private fun createNotificationChannel() {
@@ -286,6 +320,11 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
     }
 
     private fun updateNotification() {
+        if (!_isPlayingState.value) {
+            Log.d("MediaPlaybackService", "Skipping notification update: not playing")
+            return
+        }
+
         val player = exoPlayer ?: return
         val playbackState = mediaSession?.controller?.playbackState ?: return
         val mediaMetadata = mediaSession?.controller?.metadata
@@ -381,7 +420,16 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                     )
                 )
             }
-            startForeground(NOTIFICATION_ID, builder.build())
+            try {
+                startForeground(NOTIFICATION_ID, builder.build())
+                isForeground.set(true)
+                Log.d(
+                    "MediaPlaybackService",
+                    "Foreground service started, isForeground=${isForeground.get()}"
+                )
+            } catch (e: Exception) {
+                Log.e("MediaPlaybackService", "Failed to start foreground service", e)
+            }
         }
     }
 
@@ -403,7 +451,9 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         }
         builder.setState(state, position, 1.0f)
         mediaSession?.setPlaybackState(builder.build())
-        updateNotification()
+        if (state == PlaybackStateCompat.STATE_PLAYING) {
+            updateNotification()
+        }
     }
 
     fun setEpisodeData(
@@ -440,17 +490,39 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
 
                 val readyListener = object : Player.Listener {
                     override fun onPlaybackStateChanged(playbackState: Int) {
-                        if (playbackState == Player.STATE_READY) {
-                            onPlayerReady()
-                            updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
-                            player.removeListener(this)
-                        } else if (playbackState == Player.STATE_ENDED || playbackState == Player.STATE_IDLE) {
-                            onPlayerError("Player failed to initialize")
-                            player.removeListener(this)
+                        when (playbackState) {
+                            Player.STATE_READY -> {
+                                Log.d("MediaPlaybackService", "readyListener: Player is ready")
+                                onPlayerReady()
+                                updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
+                                player.removeListener(this)
+                            }
+
+                            Player.STATE_ENDED -> {
+                                Log.d("MediaPlaybackService", "readyListener: Player has ended")
+                                updatePlaybackState(PlaybackStateCompat.STATE_STOPPED)
+                                player.removeListener(this)
+                            }
+
+                            Player.STATE_IDLE -> {
+                                Log.d("MediaPlaybackService", "readyListener: Player is idle")
+                                updatePlaybackState(PlaybackStateCompat.STATE_NONE)
+                                player.removeListener(this)
+                            }
+
+                            Player.STATE_BUFFERING -> {
+                                Log.d("MediaPlaybackService", "readyListener: Player is buffering")
+                                updatePlaybackState(PlaybackStateCompat.STATE_BUFFERING)
+                            }
                         }
                     }
 
                     override fun onPlayerError(error: PlaybackException) {
+                        Log.e(
+                            "MediaPlaybackService",
+                            "readyListener: Player error during initialization",
+                            error
+                        )
                         onPlayerError("Player error during initialization: ${error.message}")
                         player.removeListener(this)
                     }
@@ -460,37 +532,54 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
 
                 try {
                     HlsPlayerUtil.initializePlayer(player, complement.sources)
-                    if (player.playbackState == Player.STATE_READY) {
-                        onPlayerReady()
-                        updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
-                        player.removeListener(readyListener)
-                    }
                     complement.lastTimestamp?.let { timestamp ->
                         if (timestamp > 0 && timestamp < player.duration) {
                             player.seekTo(timestamp)
                         }
                     }
                 } catch (e: Exception) {
+                    Log.e("MediaPlaybackService", "Failed to initialize player", e)
                     onPlayerError("Failed to initialize player: ${e.message}")
                     player.removeListener(readyListener)
                 }
             } ?: run {
                 onPlayerError("ExoPlayer is null")
+                Log.e("MediaPlaybackService", "ExoPlayer is null during setEpisodeData")
             }
         }
     }
 
     fun getExoPlayer(): ExoPlayer? = exoPlayer
 
+    fun isForegroundService(): Boolean {
+        val isForegroundValue = shouldPersist()
+        Log.d(
+            "MediaPlaybackService",
+            "isForegroundService called, returning $isForegroundValue (isForeground=${isForeground.get()}, isPlaying=${_isPlayingState.value})"
+        )
+        return isForegroundValue
+    }
+
+    private fun shouldPersist(): Boolean {
+        return isForeground.get() && _isPlayingState.value
+    }
+
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
-        exoPlayer?.stop()
+        Log.d("MediaPlaybackService", "Task removed, stopping service")
+        exoPlayer?.pause()
         stopForeground(STOP_FOREGROUND_REMOVE)
+        isForeground.set(false)
+        Log.d(
+            "MediaPlaybackService",
+            "Foreground stopped on task removed, isForeground=${isForeground.get()}"
+        )
         stopSelf()
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        Log.d("MediaPlaybackService", "Service destroyed")
         exoPlayer?.let { player ->
             val position = player.currentPosition
             val duration = player.duration
@@ -503,6 +592,8 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                     }
                 }
             }
+            player.setVideoSurface(null)
+            player.stop()
             player.release()
         }
         exoPlayer = null
@@ -510,10 +601,9 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         mediaSession = null
         handler.removeCallbacks(savePositionRunnable)
         coroutineScope.cancel()
+        isForeground.set(false)
+        Log.d("MediaPlaybackService", "Resources released, isForeground=${isForeground.get()}")
     }
-
-    fun getCurrentEpisodeNo(): Int = episodeDetailComplement?.servers?.episodeNo ?: -1
-    fun getEpisodes(): List<Episode> = episodes
 
     override fun onGetRoot(
         clientPackageName: String,
@@ -533,10 +623,19 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
     inner class MediaSessionCallback : MediaSessionCompat.Callback() {
         override fun onPlay() {
             exoPlayer?.play()
+            updateNotification()
         }
 
         override fun onPause() {
             exoPlayer?.pause()
+            if (isForeground.get()) {
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                isForeground.set(false)
+                Log.d(
+                    "MediaPlaybackService",
+                    "Foreground stopped on pause, isForeground=${isForeground.get()}"
+                )
+            }
         }
 
         override fun onRewind() {
@@ -578,8 +677,13 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         }
 
         override fun onStop() {
-            exoPlayer?.stop()
+            exoPlayer?.pause()
             stopForeground(STOP_FOREGROUND_REMOVE)
+            isForeground.set(false)
+            Log.d(
+                "MediaPlaybackService",
+                "Foreground stopped on stop, isForeground=${isForeground.get()}"
+            )
             stopSelf()
         }
 
@@ -602,8 +706,15 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
     }
 
     fun stopService() {
+        Log.d("MediaPlaybackService", "stopService called")
         exoPlayer?.pause()
+        exoPlayer?.setVideoSurface(null)
         stopForeground(STOP_FOREGROUND_REMOVE)
+        isForeground.set(false)
+        Log.d(
+            "MediaPlaybackService",
+            "Foreground stopped in stopService, isForeground=${isForeground.get()}"
+        )
         stopSelf()
     }
 }

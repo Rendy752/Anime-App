@@ -1,11 +1,9 @@
 package com.example.animeapp.ui.main
 
 import android.app.PictureInPictureParams
-import android.app.RemoteAction
 import android.content.Intent
-import android.graphics.drawable.Icon
 import android.net.Uri
-import android.support.v4.media.session.PlaybackStateCompat
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
@@ -23,7 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.media.session.MediaButtonReceiver
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -45,6 +42,7 @@ import com.example.animeapp.utils.Navigation.navigateToAnimeDetail
 import com.example.animeapp.utils.Navigation.navigateToAnimeWatch
 import com.google.gson.Gson
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.receiveAsFlow
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -57,16 +55,19 @@ fun MainScreen(
     mainAction: (MainAction) -> Unit
 ) {
     val activity = LocalActivity.current
-    var isCurrentBottomScreen by remember { mutableStateOf(true) }
-
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
+    val currentRoute by rememberUpdatedState(navBackStackEntry?.destination?.route)
+    val isConnected by rememberUpdatedState(mainState.isConnected)
 
-    isCurrentBottomScreen = BottomScreen.entries.any { it.route == currentRoute }
+    val isCurrentBottomScreen by remember(currentRoute) {
+        derivedStateOf { BottomScreen.entries.any { it.route == currentRoute } }
+    }
 
-    LaunchedEffect(intentChannel) {
-        intentChannel.receiveAsFlow().collect { intent ->
-            if (intent.action == Intent.ACTION_VIEW && intent.data != null) {
+    LaunchedEffect(Unit) {
+        intentChannel.receiveAsFlow()
+            .distinctUntilChanged { old, new -> old.data == new.data && old.action == new.action }
+            .collect { intent ->
+                if (intent.action != Intent.ACTION_VIEW || intent.data == null) return@collect
                 intent.data?.let { uri ->
                     if (uri.scheme == "animeapp" && uri.host == "anime") {
                         val segments = uri.pathSegments
@@ -88,11 +89,7 @@ fun MainScreen(
                                     val currentArgs = navBackStackEntry?.arguments
                                     val currentMalId = currentArgs?.getInt("malId")
                                     val currentEpisodeId = currentArgs?.getString("episodeId")
-                                    val isAlreadyOnCorrectRoute =
-                                        currentMalId == malId &&
-                                                currentEpisodeId == episodeId
-
-                                    if (!isAlreadyOnCorrectRoute) {
+                                    if (currentMalId != malId || currentEpisodeId != episodeId) {
                                         navController.popBackStack(
                                             "animeWatch/{malId}/{episodeId}",
                                             inclusive = true,
@@ -116,10 +113,11 @@ fun MainScreen(
                     }
                 }
             }
-        }
     }
 
-    LaunchedEffect(currentRoute) { onResetIdleTimer() }
+    LaunchedEffect(currentRoute) {
+        onResetIdleTimer()
+    }
 
     Surface(
         color = MaterialTheme.colorScheme.surface,
@@ -142,29 +140,27 @@ fun MainScreen(
             ) {
                 composable(BottomScreen.Home.route) {
                     val animeHomeViewModel: AnimeHomeViewModel = hiltViewModel()
+                    val homeState by animeHomeViewModel.state.collectAsStateWithLifecycle()
                     AnimeHomeScreen(
-                        state = animeHomeViewModel.state.collectAsStateWithLifecycle().value,
+                        state = homeState,
                         mainState = mainState,
-                        action = animeHomeViewModel::dispatch,
+                        action = remember { animeHomeViewModel::dispatch },
                         currentRoute = currentRoute,
-                        navController = navController,
+                        navController = navController
                     )
                 }
-
                 composable(BottomScreen.Recommendations.route) {
                     AnimeRecommendationsScreen(
                         navController = navController,
                         mainState = mainState
                     )
                 }
-
                 composable(BottomScreen.Search.route) {
                     AnimeSearchScreen(
                         navController = navController,
                         mainState = mainState
                     )
                 }
-
                 composable(
                     "${BottomScreen.Search.route}/{genreIdentity}/{producerIdentity}",
                     arguments = listOf(
@@ -180,18 +176,21 @@ fun MainScreen(
                 ) {
                     val genreIdentityString = it.arguments?.getString("genreIdentity")
                     val producerIdentityString = it.arguments?.getString("producerIdentity")
-
                     val gson = Gson()
-                    val genre = genreIdentityString?.let {
-                        if (it == "null") null
-                        else gson.fromJson(Uri.decode(it), CommonIdentity::class.java).mapToGenre()
+                    val genre = remember(genreIdentityString) {
+                        genreIdentityString?.let {
+                            if (it == "null") null
+                            else gson.fromJson(Uri.decode(it), CommonIdentity::class.java)
+                                .mapToGenre()
+                        }
                     }
-                    val producer = producerIdentityString?.let {
-                        if (it == "null") null
-                        else gson.fromJson(Uri.decode(it), CommonIdentity::class.java)
-                            .mapToProducer()
+                    val producer = remember(producerIdentityString) {
+                        producerIdentityString?.let {
+                            if (it == "null") null
+                            else gson.fromJson(Uri.decode(it), CommonIdentity::class.java)
+                                .mapToProducer()
+                        }
                     }
-
                     AnimeSearchScreen(
                         navController = navController,
                         mainState = mainState,
@@ -199,14 +198,12 @@ fun MainScreen(
                         producer = producer
                     )
                 }
-
                 composable(BottomScreen.Settings.route) {
                     SettingsScreen(
                         mainState = mainState,
                         mainAction = mainAction
                     )
                 }
-
                 composable(
                     "animeDetail/{id}",
                     arguments = listOf(navArgument("id") { type = NavType.IntType })
@@ -217,26 +214,29 @@ fun MainScreen(
                         mainState = mainState
                     )
                 }
-
                 composable(
                     "animeWatch/{malId}/{episodeId}",
                     arguments = listOf(
                         navArgument("malId") { type = NavType.IntType },
-                        navArgument("episodeId") { type = NavType.StringType },
+                        navArgument("episodeId") { type = NavType.StringType }
                     )
                 ) {
                     var isPipMode by remember { mutableStateOf(false) }
                     val activity = LocalActivity.current as? MainActivity
+                    val mediaService =
+                        (activity?.application as? AnimeApplication)?.getMediaPlaybackService()
+                    val isPlaying by mediaService?.isPlayingState?.collectAsStateWithLifecycle()
+                        ?: remember { mutableStateOf(false) }
 
                     DisposableEffect(activity) {
-                        val onPictureInPictureModeChangedCallback = { isInPipMode: Boolean ->
+                        val onPictureInPictureModeChangedCallback: (Boolean) -> Unit = { isInPipMode: Boolean ->
                             isPipMode = isInPipMode
+                            Log.d("MainScreen", "PiP mode changed: isPipMode=$isInPipMode")
+                            Unit
                         }
-                        if (activity != null) {
-                            activity.addOnPictureInPictureModeChangedListener(
-                                onPictureInPictureModeChangedCallback
-                            )
-                        }
+                        activity?.addOnPictureInPictureModeChangedListener(
+                            onPictureInPictureModeChangedCallback
+                        )
                         onDispose {
                             activity?.removeOnPictureInPictureModeChangedListener(
                                 onPictureInPictureModeChangedCallback
@@ -244,60 +244,10 @@ fun MainScreen(
                         }
                     }
 
-                    val mediaService =
-                        (activity?.application as? AnimeApplication)?.getMediaPlaybackService()
-                    val isPlaying by mediaService?.isPlayingState?.collectAsState(initial = false)
-                        ?: remember { mutableStateOf(false) }
-
                     LaunchedEffect(isPipMode, isPlaying) {
                         if (isPipMode && activity != null) {
-                            val actions = mutableListOf<RemoteAction>()
-
-                            actions.add(
-                                RemoteAction(
-                                    Icon.createWithResource(
-                                        activity,
-                                        androidx.media3.session.R.drawable.media3_icon_skip_back_10
-                                    ),
-                                    "Rewind",
-                                    "Seek back 10 seconds",
-                                    MediaButtonReceiver.buildMediaButtonPendingIntent(
-                                        activity,
-                                        PlaybackStateCompat.ACTION_REWIND
-                                    )
-                                )
-                            )
-
-                            actions.add(
-                                RemoteAction(
-                                    Icon.createWithResource(
-                                        activity,
-                                        if (isPlaying) androidx.media3.session.R.drawable.media3_icon_pause else androidx.media3.session.R.drawable.media3_icon_play
-                                    ),
-                                    if (isPlaying) "Pause" else "Play",
-                                    if (isPlaying) "Pause playback" else "Resume playback",
-                                    MediaButtonReceiver.buildMediaButtonPendingIntent(
-                                        activity,
-                                        PlaybackStateCompat.ACTION_PLAY_PAUSE
-                                    )
-                                )
-                            )
-
-                            actions.add(
-                                RemoteAction(
-                                    Icon.createWithResource(
-                                        activity,
-                                        androidx.media3.session.R.drawable.media3_icon_skip_forward_10
-                                    ),
-                                    "Fast Forward",
-                                    "Seek forward 10 seconds",
-                                    MediaButtonReceiver.buildMediaButtonPendingIntent(
-                                        activity,
-                                        PlaybackStateCompat.ACTION_FAST_FORWARD
-                                    )
-                                )
-                            )
-
+                            Log.d("MainScreen", "Updating PiP params: isPlaying=$isPlaying")
+                            val actions = MainActivity.buildPipActions(activity, isPlaying)
                             activity.setPictureInPictureParams(
                                 PictureInPictureParams.Builder()
                                     .setActions(actions)
@@ -313,57 +263,12 @@ fun MainScreen(
                         mainState = mainState,
                         isPipMode = isPipMode,
                         onEnterPipMode = {
-                            if (mainState.isConnected && activity != null) {
+                            if (isConnected && activity != null) {
                                 val service =
                                     (activity.application as AnimeApplication).getMediaPlaybackService()
-                                val isPlaying = service?.getExoPlayer()?.isPlaying == true
-                                val actions = mutableListOf<RemoteAction>()
-
-                                actions.add(
-                                    RemoteAction(
-                                        Icon.createWithResource(
-                                            activity,
-                                            androidx.media3.session.R.drawable.media3_icon_skip_back_10
-                                        ),
-                                        "Rewind",
-                                        "Seek back 10 seconds",
-                                        MediaButtonReceiver.buildMediaButtonPendingIntent(
-                                            activity,
-                                            PlaybackStateCompat.ACTION_REWIND
-                                        )
-                                    )
-                                )
-
-                                actions.add(
-                                    RemoteAction(
-                                        Icon.createWithResource(
-                                            activity,
-                                            if (isPlaying == true) androidx.media3.session.R.drawable.media3_icon_pause else androidx.media3.session.R.drawable.media3_icon_play
-                                        ),
-                                        if (isPlaying == true) "Pause" else "Play",
-                                        if (isPlaying == true) "Pause playback" else "Resume playback",
-                                        MediaButtonReceiver.buildMediaButtonPendingIntent(
-                                            activity,
-                                            PlaybackStateCompat.ACTION_PLAY_PAUSE
-                                        )
-                                    )
-                                )
-
-                                actions.add(
-                                    RemoteAction(
-                                        Icon.createWithResource(
-                                            activity,
-                                            androidx.media3.session.R.drawable.media3_icon_skip_forward_10
-                                        ),
-                                        "Fast Forward",
-                                        "Seek forward 10 seconds",
-                                        MediaButtonReceiver.buildMediaButtonPendingIntent(
-                                            activity,
-                                            PlaybackStateCompat.ACTION_FAST_FORWARD
-                                        )
-                                    )
-                                )
-
+                                val isPlaying = service?.isPlayingState?.value == true
+                                Log.d("MainScreen", "Entering PiP: isPlaying=$isPlaying")
+                                val actions = MainActivity.buildPipActions(activity, isPlaying)
                                 activity.enterPictureInPictureMode(
                                     PictureInPictureParams.Builder()
                                         .setActions(actions)
@@ -378,24 +283,24 @@ fun MainScreen(
                 visible = isCurrentBottomScreen,
                 enter = slideInVertically(
                     initialOffsetY = { it },
-                    animationSpec = tween(durationMillis = 1000, easing = EaseInOut)
+                    animationSpec = tween(durationMillis = 700, easing = EaseInOut)
                 ),
                 exit = slideOutVertically(
                     targetOffsetY = { it },
-                    animationSpec = tween(durationMillis = 1000, easing = EaseInOut)
+                    animationSpec = tween(durationMillis = 700, easing = EaseInOut)
                 )
             ) {
-                BottomNavigationBar(navController)
+                BottomNavigationBar(navController = navController)
             }
             AnimatedVisibility(
-                visible = !mainState.isConnected,
+                visible = !isConnected,
                 enter = slideInVertically(
                     initialOffsetY = { it },
-                    animationSpec = tween(durationMillis = 1000, easing = EaseInOut)
+                    animationSpec = tween(durationMillis = 700, easing = EaseInOut)
                 ),
                 exit = slideOutVertically(
                     targetOffsetY = { it },
-                    animationSpec = tween(durationMillis = 1000, easing = EaseInOut)
+                    animationSpec = tween(durationMillis = 700, easing = EaseInOut)
                 )
             ) {
                 MessageDisplay(

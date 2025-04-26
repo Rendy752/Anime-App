@@ -11,6 +11,7 @@ import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
+import android.util.Log
 import android.view.WindowManager
 import androidx.annotation.OptIn
 import androidx.compose.runtime.Composable
@@ -26,13 +27,13 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.fragment.app.FragmentActivity
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
+import com.example.animeapp.AnimeApplication
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.EpisodeSourcesQuery
 import com.example.animeapp.utils.HlsPlayerUtil
 import com.example.animeapp.utils.IntroOutroHandler
 import com.example.animeapp.utils.MediaPlaybackService
-import android.util.Log
 
 @SuppressLint("ImplicitSamInstance")
 @OptIn(UnstableApi::class, ExperimentalComposeUiApi::class)
@@ -55,7 +56,7 @@ fun VideoPlayerSection(
 ) {
     val context = LocalContext.current
     val audioManager = remember { context.getSystemService(Context.AUDIO_SERVICE) as AudioManager }
-    val playerView = remember { PlayerView(context) }
+    val playerView = remember { PlayerView(context).apply { useController = true } }
     var mediaBrowserCompat by remember { mutableStateOf<MediaBrowserCompat?>(null) }
     var mediaControllerCompat by remember { mutableStateOf<MediaControllerCompat?>(null) }
     var mediaPlaybackService by remember { mutableStateOf<MediaPlaybackService?>(null) }
@@ -65,6 +66,8 @@ fun VideoPlayerSection(
     var nextEpisodeName by remember { mutableStateOf("") }
     var introOutroHandler by remember { mutableStateOf<IntroOutroHandler?>(null) }
 
+    val application = context.applicationContext as AnimeApplication
+
     val serviceConnection = remember {
         object : ServiceConnection {
             override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
@@ -72,12 +75,16 @@ fun VideoPlayerSection(
                 val binder = service as MediaPlaybackService.MediaPlaybackBinder
                 mediaPlaybackService = binder.getService()
                 val exoPlayer = mediaPlaybackService?.getExoPlayer()
-                playerView.player = exoPlayer
                 if (exoPlayer != null) {
+                    playerView.player = exoPlayer
+                    Log.d("VideoPlayerSection", "ExoPlayer bound to PlayerView")
                     introOutroHandler = IntroOutroHandler(
                         player = exoPlayer,
                         videoData = episodeDetailComplement.sources
                     ).apply { start() }
+                } else {
+                    Log.w("VideoPlayerSection", "ExoPlayer is null in service")
+                    onPlayerError("ExoPlayer not initialized")
                 }
                 mediaPlaybackService?.setEpisodeData(
                     complement = episodeDetailComplement,
@@ -85,11 +92,16 @@ fun VideoPlayerSection(
                     query = episodeSourcesQuery,
                     handler = { handleSelectedEpisodeServer(it) },
                     updateStoredWatchState = { updateStoredWatchState(it) },
-                    onPlayerError = onPlayerError,
+                    onPlayerError = { error ->
+                        Log.e("VideoPlayerSection", "Player error: $error")
+                        onPlayerError(error)
+                        isLoading = false
+                    },
                     onPlayerReady = {
                         isShowNextEpisode = false
                         isLoading = false
                         Log.d("VideoPlayerSection", "Player ready")
+                        playerView.player = mediaPlaybackService?.getExoPlayer()
                         introOutroHandler?.start()
                     }
                 )
@@ -108,29 +120,87 @@ fun VideoPlayerSection(
     DisposableEffect(Unit) {
         Log.d(
             "VideoPlayerSection",
-            "Binding to service for episodeSourcesQuery: ${episodeSourcesQuery.id}"
+            "Attempting to bind to MediaPlaybackService for episode: ${episodeSourcesQuery.id}"
         )
-        val intent = Intent(context, MediaPlaybackService::class.java)
-        try {
-            context.startForegroundService(intent)
-            context.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
-        } catch (e: Exception) {
-            Log.e("VideoPlayerSection", "Failed to bind service", e)
-            onPlayerError("Failed to bind service")
+        if (application.isMediaServiceBound()) {
+            mediaPlaybackService = application.getMediaPlaybackService()
+            val exoPlayer = mediaPlaybackService?.getExoPlayer()
+            if (exoPlayer != null) {
+                playerView.player = exoPlayer
+                Log.d("VideoPlayerSection", "ExoPlayer bound to PlayerView (already bound)")
+            } else {
+                Log.w("VideoPlayerSection", "ExoPlayer is null in bound service")
+                onPlayerError("ExoPlayer not initialized")
+            }
+            mediaPlaybackService?.setEpisodeData(
+                complement = episodeDetailComplement,
+                episodes = episodes,
+                query = episodeSourcesQuery,
+                handler = { handleSelectedEpisodeServer(it) },
+                updateStoredWatchState = { updateStoredWatchState(it) },
+                onPlayerError = { error ->
+                    Log.e("VideoPlayerSection", "Player error: $error")
+                    onPlayerError(error)
+                    isLoading = false
+                },
+                onPlayerReady = {
+                    isShowNextEpisode = false
+                    isLoading = false
+                    Log.d("VideoPlayerSection", "Player ready (already bound)")
+                    mediaPlaybackService?.getExoPlayer()?.let { exoPlayer ->
+                        playerView.player = exoPlayer
+                        introOutroHandler = IntroOutroHandler(
+                            player = exoPlayer,
+                            videoData = episodeDetailComplement.sources
+                        ).apply { start() }
+                    }
+                }
+            )
+        } else {
+            val intent = Intent(context, MediaPlaybackService::class.java)
+            try {
+                context.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
+                Log.d("VideoPlayerSection", "Binding to MediaPlaybackService")
+            } catch (e: Exception) {
+                Log.e("VideoPlayerSection", "Failed to bind service", e)
+                onPlayerError("Failed to bind service")
+                isLoading = false
+            }
         }
         onDispose {
-            Log.d("VideoPlayerSection", "Unbinding service and stopping playback")
+            Log.d("VideoPlayerSection", "Disposing VideoPlayerSection")
             try {
-                mediaPlaybackService?.stopService()
-                context.stopService(Intent(context, MediaPlaybackService::class.java))
-                context.unbindService(serviceConnection)
+                // Pause playback to remove foreground state
+                mediaControllerCompat?.transportControls?.pause()
+                mediaPlaybackService?.getExoPlayer()?.pause()
+                Log.d("VideoPlayerSection", "Paused playback before disposal")
+
+                // Stop IntroOutroHandler
+                introOutroHandler?.stop()
+                introOutroHandler = null
+                Log.d("VideoPlayerSection", "Stopped IntroOutroHandler")
+
+                // Check if service should persist
+                val isNotificationActive = mediaPlaybackService?.isForegroundService() == true
+                Log.d("VideoPlayerSection", "isForegroundService: $isNotificationActive")
+                if (!isNotificationActive) {
+                    Log.d("VideoPlayerSection", "Stopping MediaPlaybackService (no notification active)")
+                    mediaPlaybackService?.stopService()
+                    if (!application.isMediaServiceBound()) {
+                        context.unbindService(serviceConnection)
+                        Log.d("VideoPlayerSection", "Unbound service")
+                    } else {
+                        Log.d("VideoPlayerSection", "Service kept bound by AnimeApplication")
+                        application.cleanupService()
+                    }
+                } else {
+                    Log.d("VideoPlayerSection", "Keeping service alive due to foreground notification")
+                }
+                playerView.player = null
+                HlsPlayerUtil.abandonAudioFocus(audioManager)
             } catch (e: IllegalArgumentException) {
                 Log.w("VideoPlayerSection", "Service already unbound", e)
             }
-            playerView.player = null
-            introOutroHandler?.stop()
-            introOutroHandler = null
-            HlsPlayerUtil.abandonAudioFocus(audioManager)
         }
     }
 
@@ -149,12 +219,17 @@ fun VideoPlayerSection(
             query = episodeSourcesQuery,
             handler = { handleSelectedEpisodeServer(it) },
             updateStoredWatchState = { updateStoredWatchState(it) },
-            onPlayerError = onPlayerError,
+            onPlayerError = { error ->
+                Log.e("VideoPlayerSection", "Player error: $error")
+                onPlayerError(error)
+                isLoading = false
+            },
             onPlayerReady = {
                 isShowNextEpisode = false
                 isLoading = false
                 Log.d("VideoPlayerSection", "Player ready for new episode")
                 mediaPlaybackService?.getExoPlayer()?.let { exoPlayer ->
+                    playerView.player = exoPlayer
                     introOutroHandler = IntroOutroHandler(
                         player = exoPlayer,
                         videoData = episodeDetailComplement.sources
@@ -175,18 +250,31 @@ fun VideoPlayerSection(
                         "VideoPlayerSection",
                         "Playback state changed: state=${it.state}, position=${it.position}"
                     )
-                    isLoading =
-                        it.state == PlaybackStateCompat.STATE_BUFFERING || it.state == PlaybackStateCompat.STATE_CONNECTING
+                    isLoading = it.state == PlaybackStateCompat.STATE_BUFFERING ||
+                            it.state == PlaybackStateCompat.STATE_CONNECTING ||
+                            it.state == PlaybackStateCompat.STATE_SKIPPING_TO_NEXT ||
+                            it.state == PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS ||
+                            it.state == PlaybackStateCompat.STATE_SKIPPING_TO_QUEUE_ITEM
+
                     when (it.state) {
                         PlaybackStateCompat.STATE_PLAYING -> {
                             isShowNextEpisode = false
                             isShowResumeOverlay = false
                             (context as? FragmentActivity)?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                             HlsPlayerUtil.requestAudioFocus(audioManager)
+                            Log.d(
+                                "VideoPlayerSection",
+                                "Playing: Audio focus requested, screen kept on"
+                            )
                         }
 
                         PlaybackStateCompat.STATE_PAUSED -> {
                             HlsPlayerUtil.abandonAudioFocus(audioManager)
+                            (context as? FragmentActivity)?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                            Log.d(
+                                "VideoPlayerSection",
+                                "Paused: Audio focus abandoned, screen-on cleared"
+                            )
                         }
 
                         PlaybackStateCompat.STATE_STOPPED -> {
@@ -195,23 +283,79 @@ fun VideoPlayerSection(
                                 currentEpisode = episodeDetailComplement.servers.episodeNo,
                                 setNextEpisodeName = { nextEpisodeName = it }
                             )
+                            HlsPlayerUtil.abandonAudioFocus(audioManager)
+                            (context as? FragmentActivity)?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                            Log.d(
+                                "VideoPlayerSection",
+                                "Stopped: Showing next episode if available"
+                            )
                         }
 
                         PlaybackStateCompat.STATE_ERROR -> {
                             onPlayerError("Playback error: ${state.errorMessage}")
                             Log.e("VideoPlayerSection", "Playback error: ${state.errorMessage}")
+                            HlsPlayerUtil.abandonAudioFocus(audioManager)
+                            (context as? FragmentActivity)?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                         }
 
-                        else -> {}
+                        PlaybackStateCompat.STATE_BUFFERING -> {
+                            isLoading = true
+                            Log.d("VideoPlayerSection", "Buffering: Showing loading indicator")
+                        }
+
+                        PlaybackStateCompat.STATE_NONE -> {
+                            isLoading = false
+                            HlsPlayerUtil.abandonAudioFocus(audioManager)
+                            (context as? FragmentActivity)?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                            Log.d("VideoPlayerSection", "None: Player idle, no media loaded")
+                        }
+
+                        PlaybackStateCompat.STATE_CONNECTING -> {
+                            isLoading = true
+                            Log.d("VideoPlayerSection", "Connecting: Preparing media source")
+                        }
+
+                        PlaybackStateCompat.STATE_FAST_FORWARDING -> {
+                            isLoading = false
+                            isShowNextEpisode = false
+                            isShowResumeOverlay = false
+                            HlsPlayerUtil.requestAudioFocus(audioManager)
+                            Log.d("VideoPlayerSection", "Fast-forwarding: Maintaining audio focus")
+                        }
+
+                        PlaybackStateCompat.STATE_REWINDING -> {
+                            isLoading = false
+                            isShowNextEpisode = false
+                            isShowResumeOverlay = false
+                            HlsPlayerUtil.requestAudioFocus(audioManager)
+                            Log.d("VideoPlayerSection", "Rewinding: Maintaining audio focus")
+                        }
+
+                        PlaybackStateCompat.STATE_SKIPPING_TO_NEXT -> {
+                            isLoading = true
+                            isShowNextEpisode = false
+                            isShowResumeOverlay = false
+                            Log.d("VideoPlayerSection", "Skipping to next: Loading new episode")
+                        }
+
+                        PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS -> {
+                            isLoading = true
+                            isShowNextEpisode = false
+                            isShowResumeOverlay = false
+                            Log.d("VideoPlayerSection", "Skipping to previous: Loading new episode")
+                        }
+
+                        PlaybackStateCompat.STATE_SKIPPING_TO_QUEUE_ITEM -> {
+                            isLoading = true
+                            isShowNextEpisode = false
+                            isShowResumeOverlay = false
+                            Log.d(
+                                "VideoPlayerSection",
+                                "Skipping to queue item: Loading specific episode"
+                            )
+                        }
                     }
                 }
-            }
-
-            override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
-                Log.d(
-                    "VideoPlayerSection",
-                    "Metadata changed: title=${metadata?.getString(MediaMetadataCompat.METADATA_KEY_TITLE)}"
-                )
             }
         }
     }
