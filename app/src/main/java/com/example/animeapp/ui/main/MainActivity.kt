@@ -6,7 +6,6 @@ import android.content.res.Configuration
 import android.os.Bundle
 import android.util.Log
 import android.view.MotionEvent
-import android.view.WindowManager
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
@@ -21,7 +20,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -139,7 +137,7 @@ class MainActivity : AppCompatActivity() {
                             mainState = state.copy(isLandscape = isLandscape),
                             mainAction = mainViewModel::dispatch
                         )
-                        setStatusBarColor(MaterialTheme.colorScheme.surface)
+                        setStatusBarAppearance(MaterialTheme.colorScheme.surface)
                     }
                 }
             }
@@ -162,24 +160,24 @@ class MainActivity : AppCompatActivity() {
         return super.dispatchTouchEvent(ev)
     }
 
-    private fun setStatusBarColor(color: Color) {
-        val window = window
-        window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
-        window.statusBarColor = color.toArgb()
-
+    private fun setStatusBarAppearance(color: Color) {
         val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
-        val useDarkIcons = color.luminance() > 0.5f
-        windowInsetsController.isAppearanceLightStatusBars = useDarkIcons
+        windowInsetsController.isAppearanceLightStatusBars = color.luminance() > 0.5f
     }
 
-    @Deprecated("Deprecated in android.app.Activity")
-    override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean) {
-        super.onPictureInPictureModeChanged(isInPictureInPictureMode)
+    override fun onPictureInPictureModeChanged(
+        isInPictureInPictureMode: Boolean,
+        configuration: Configuration
+    ) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, configuration)
         Log.d(
             "MainActivity",
-            "onPictureInPictureModeChanged: isInPictureInPictureMode=$isInPictureInPictureMode"
+            "onPictureInPictureModeChanged: isInPictureInPictureMode=$isInPictureInPictureMode, configuration=$configuration"
         )
         onPictureInPictureModeChangedListeners.forEach { it(isInPictureInPictureMode) }
+        if (!isInPictureInPictureMode && (application as AnimeApplication).isMediaServiceBound()) {
+            (application as AnimeApplication).getMediaPlaybackService()?.pausePlayer()
+        }
     }
 
     fun addOnPictureInPictureModeChangedListener(listener: (Boolean) -> Unit) {

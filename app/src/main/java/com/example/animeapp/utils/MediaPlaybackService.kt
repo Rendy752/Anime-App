@@ -472,6 +472,13 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         }
     }
 
+    fun pausePlayer() {
+        Log.d("MediaPlaybackService", "pausePlayer called")
+        HlsPlayerUtil.dispatch(PlayerAction.Pause)
+        updateNotification()
+        stopPeriodicWatchStateUpdates()
+    }
+
     fun isForegroundService(): Boolean {
         val isForegroundValue = isForeground.get() && HlsPlayerUtil.state.value.isReady
         Log.d(
