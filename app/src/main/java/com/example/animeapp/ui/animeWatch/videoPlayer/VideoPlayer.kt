@@ -18,11 +18,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.EpisodeSourcesQuery
+import com.example.animeapp.utils.HlsPlayerUtil
 import com.example.animeapp.utils.IntroOutroHandler
 
 @OptIn(UnstableApi::class)
@@ -51,6 +53,7 @@ fun VideoPlayer(
     onFastForward: () -> Unit,
     onRewind: () -> Unit
 ) {
+    val playerState by HlsPlayerUtil.state.collectAsStateWithLifecycle()
     val showIntro = introOutroHandler?.showIntroButton?.value == true
     val showOutro = introOutroHandler?.showOutroButton?.value == true
     var isHolding by remember { mutableStateOf(false) }
@@ -62,21 +65,20 @@ fun VideoPlayer(
     var seekDirection by remember { mutableIntStateOf(0) }
     var seekAmount by remember { mutableLongStateOf(0L) }
     var isSeeking by remember { mutableStateOf(false) }
-    var isPlaying by remember { mutableStateOf(false) }
-    var isPlayerReady by remember { mutableStateOf(false) }
 
     val mediaControllerCallback = remember {
         object : MediaControllerCompat.Callback() {
             override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
                 state?.let {
-                    isPlaying = it.state == PlaybackStateCompat.STATE_PLAYING
-                    isPlayerReady = it.state == PlaybackStateCompat.STATE_PAUSED ||
-                            it.state == PlaybackStateCompat.STATE_PLAYING ||
-                            it.state == PlaybackStateCompat.STATE_BUFFERING
+                    val isPlaying = playerState.isPlaying
+                    val isPlayerReady = playerState.isReady
                     if (isPlaying) {
                         setShowResumeOverlay(false)
                     }
-                    Log.d("VideoPlayer", "Playback state: ${it.state}, isPlaying=$isPlaying, isPlayerReady=$isPlayerReady")
+                    Log.d(
+                        "VideoPlayer",
+                        "Playback state: ${it.state}, isPlaying=$isPlaying, isPlayerReady=$isPlayerReady"
+                    )
                 }
             }
         }
@@ -87,7 +89,10 @@ fun VideoPlayer(
         playerView.useController = !isPipMode
         playerView.controllerShowTimeoutMs = if (isPipMode) 0 else 5000
         playerView.setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
-        Log.d("VideoPlayer", "PlayerView configured: useController=${playerView.useController}, player=${playerView.player}")
+        Log.d(
+            "VideoPlayer",
+            "PlayerView configured: useController=${playerView.useController}, player=${playerView.player}"
+        )
         onDispose {
             mediaController?.unregisterCallback(mediaControllerCallback)
             playerView.useController = true
@@ -95,8 +100,8 @@ fun VideoPlayer(
         }
     }
 
-    LaunchedEffect(isPlayerReady, isShowResumeOverlay, isShowNextEpisode) {
-        if (isPlayerReady && !isPlaying && !isShowResumeOverlay && !isShowNextEpisode) {
+    LaunchedEffect(playerState.isReady, isShowResumeOverlay, isShowNextEpisode) {
+        if (playerState.isReady && !playerState.isPlaying && !isShowResumeOverlay && !isShowNextEpisode) {
             Log.d("VideoPlayer", "Auto-playing video")
             onPlay()
         }
@@ -104,10 +109,16 @@ fun VideoPlayer(
 
     val shouldShowResumeOverlay = isShowResumeOverlay &&
             episodeDetailComplement.lastTimestamp != null &&
-            isPlayerReady &&
-            !isPlaying
+            playerState.isReady &&
+            !playerState.isPlaying
 
-    LaunchedEffect(shouldShowResumeOverlay, isShowNextEpisode, isShowPip, isShowSpeedUp, isShowSeekIndicator) {
+    LaunchedEffect(
+        shouldShowResumeOverlay,
+        isShowNextEpisode,
+        isShowPip,
+        isShowSpeedUp,
+        isShowSeekIndicator
+    ) {
         Log.d(
             "VideoPlayer",
             "UI State: shouldShowResumeOverlay=$shouldShowResumeOverlay, isShowNextEpisode=$isShowNextEpisode, " +

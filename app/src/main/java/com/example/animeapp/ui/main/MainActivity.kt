@@ -1,12 +1,9 @@
 package com.example.animeapp.ui.main
 
 import android.app.PictureInPictureParams
-import android.app.RemoteAction
 import android.content.Intent
 import android.content.res.Configuration
-import android.graphics.drawable.Icon
 import android.os.Bundle
-import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import android.view.MotionEvent
 import android.view.WindowManager
@@ -34,12 +31,13 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.media.session.MediaButtonReceiver
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.animeapp.AnimeApplication
 import com.example.animeapp.ui.common_ui.ConfirmationAlert
 import com.example.animeapp.ui.theme.AppTheme
+import com.example.animeapp.utils.HlsPlayerUtil
+import com.example.animeapp.utils.PipUtil.buildPipActions
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
@@ -174,49 +172,6 @@ class MainActivity : AppCompatActivity() {
         windowInsetsController.isAppearanceLightStatusBars = useDarkIcons
     }
 
-    companion object {
-        fun buildPipActions(activity: MainActivity, isPlaying: Boolean?): List<RemoteAction> {
-            return listOf(
-                RemoteAction(
-                    Icon.createWithResource(
-                        activity,
-                        androidx.media3.session.R.drawable.media3_icon_skip_back_10
-                    ),
-                    "Rewind",
-                    "Seek back 10 seconds",
-                    MediaButtonReceiver.buildMediaButtonPendingIntent(
-                        activity,
-                        PlaybackStateCompat.ACTION_REWIND
-                    )
-                ),
-                RemoteAction(
-                    Icon.createWithResource(
-                        activity,
-                        if (isPlaying == true) androidx.media3.session.R.drawable.media3_icon_pause else androidx.media3.session.R.drawable.media3_icon_play
-                    ),
-                    if (isPlaying == true) "Pause" else "Play",
-                    if (isPlaying == true) "Pause playback" else "Resume playback",
-                    MediaButtonReceiver.buildMediaButtonPendingIntent(
-                        activity,
-                        PlaybackStateCompat.ACTION_PLAY_PAUSE
-                    )
-                ),
-                RemoteAction(
-                    Icon.createWithResource(
-                        activity,
-                        androidx.media3.session.R.drawable.media3_icon_skip_forward_10
-                    ),
-                    "Fast Forward",
-                    "Seek forward 10 seconds",
-                    MediaButtonReceiver.buildMediaButtonPendingIntent(
-                        activity,
-                        PlaybackStateCompat.ACTION_FAST_FORWARD
-                    )
-                )
-            )
-        }
-    }
-
     @Deprecated("Deprecated in android.app.Activity")
     override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode)
@@ -239,8 +194,7 @@ class MainActivity : AppCompatActivity() {
         super.onUserLeaveHint()
         val currentRoute = navController.currentDestination?.route
         if (currentRoute?.startsWith("animeWatch/") == true) {
-            val service = (application as AnimeApplication).getMediaPlaybackService()
-            val isPlaying = service?.isPlayingState?.value == true
+            val isPlaying = HlsPlayerUtil.state.value.isPlaying
             Log.d("MainActivity", "onUserLeaveHint: Entering PiP, isPlaying=$isPlaying")
             enterPictureInPictureMode(
                 PictureInPictureParams.Builder()

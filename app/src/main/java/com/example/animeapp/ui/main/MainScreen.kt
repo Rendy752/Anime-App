@@ -27,7 +27,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
-import com.example.animeapp.AnimeApplication
 import com.example.animeapp.R
 import com.example.animeapp.models.CommonIdentity
 import com.example.animeapp.ui.animeDetail.AnimeDetailScreen
@@ -38,8 +37,10 @@ import com.example.animeapp.ui.animeHome.AnimeHomeScreen
 import com.example.animeapp.ui.animeHome.AnimeHomeViewModel
 import com.example.animeapp.ui.common_ui.MessageDisplay
 import com.example.animeapp.ui.settings.SettingsScreen
+import com.example.animeapp.utils.HlsPlayerUtil
 import com.example.animeapp.utils.Navigation.navigateToAnimeDetail
 import com.example.animeapp.utils.Navigation.navigateToAnimeWatch
+import com.example.animeapp.utils.PipUtil.buildPipActions
 import com.google.gson.Gson
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -223,17 +224,15 @@ fun MainScreen(
                 ) {
                     var isPipMode by remember { mutableStateOf(false) }
                     val activity = LocalActivity.current as? MainActivity
-                    val mediaService =
-                        (activity?.application as? AnimeApplication)?.getMediaPlaybackService()
-                    val isPlaying by mediaService?.isPlayingState?.collectAsStateWithLifecycle()
-                        ?: remember { mutableStateOf(false) }
+                    val playerState by HlsPlayerUtil.state.collectAsStateWithLifecycle()
 
                     DisposableEffect(activity) {
-                        val onPictureInPictureModeChangedCallback: (Boolean) -> Unit = { isInPipMode: Boolean ->
-                            isPipMode = isInPipMode
-                            Log.d("MainScreen", "PiP mode changed: isPipMode=$isInPipMode")
-                            Unit
-                        }
+                        val onPictureInPictureModeChangedCallback: (Boolean) -> Unit =
+                            { isInPipMode: Boolean ->
+                                isPipMode = isInPipMode
+                                Log.d("MainScreen", "PiP mode changed: isPipMode=$isInPipMode")
+                                Unit
+                            }
                         activity?.addOnPictureInPictureModeChangedListener(
                             onPictureInPictureModeChangedCallback
                         )
@@ -244,10 +243,13 @@ fun MainScreen(
                         }
                     }
 
-                    LaunchedEffect(isPipMode, isPlaying) {
+                    LaunchedEffect(isPipMode, playerState.isPlaying) {
                         if (isPipMode && activity != null) {
-                            Log.d("MainScreen", "Updating PiP params: isPlaying=$isPlaying")
-                            val actions = MainActivity.buildPipActions(activity, isPlaying)
+                            Log.d(
+                                "MainScreen",
+                                "Updating PiP params: isPlaying=${playerState.isPlaying}"
+                            )
+                            val actions = buildPipActions(activity, playerState.isPlaying)
                             activity.setPictureInPictureParams(
                                 PictureInPictureParams.Builder()
                                     .setActions(actions)
@@ -264,11 +266,11 @@ fun MainScreen(
                         isPipMode = isPipMode,
                         onEnterPipMode = {
                             if (isConnected && activity != null) {
-                                val service =
-                                    (activity.application as AnimeApplication).getMediaPlaybackService()
-                                val isPlaying = service?.isPlayingState?.value == true
-                                Log.d("MainScreen", "Entering PiP: isPlaying=$isPlaying")
-                                val actions = MainActivity.buildPipActions(activity, isPlaying)
+                                Log.d(
+                                    "MainScreen",
+                                    "Entering PiP: isPlaying=${playerState.isPlaying}"
+                                )
+                                val actions = buildPipActions(activity, playerState.isPlaying)
                                 activity.enterPictureInPictureMode(
                                     PictureInPictureParams.Builder()
                                         .setActions(actions)
