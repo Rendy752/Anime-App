@@ -207,11 +207,6 @@ object HlsPlayerUtil {
                 _state.update { it.copy(error = message) }
                 onError(message)
             }
-        } ?: run {
-            val message = "ExoPlayer is null"
-            Log.e("HlsPlayerUtil", message)
-            _state.update { it.copy(error = message) }
-            onError(message)
         }
     }
 

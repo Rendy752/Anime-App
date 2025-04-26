@@ -23,6 +23,7 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.fragment.app.FragmentActivity
+import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
 import com.example.animeapp.AnimeApplication
@@ -175,12 +176,30 @@ fun VideoPlayerSection(
                 isLoading = false
             }
         }
+
+        val playerListener = object : Player.Listener {
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                if (playbackState == Player.STATE_ENDED) {
+                    Log.d("VideoPlayerSection", "Episode ended, showing next episode overlay")
+                    isShowNextEpisode = updateNextEpisodeName(
+                        episodes = episodes,
+                        currentEpisode = episodeDetailComplement.servers.episodeNo,
+                        setNextEpisodeName = { nextEpisodeName = it }
+                    )
+                    isShowResumeOverlay = false
+                    (context as? FragmentActivity)?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                }
+            }
+        }
+        HlsPlayerUtil.getPlayer()?.addListener(playerListener)
+
         onDispose {
             Log.d("VideoPlayerSection", "Disposing VideoPlayerSection")
             try {
                 mediaControllerCompat?.transportControls?.pause()
                 HlsPlayerUtil.dispatch(PlayerAction.Pause)
                 Log.d("VideoPlayerSection", "Paused playback before disposal")
+                HlsPlayerUtil.getPlayer()?.removeListener(playerListener)
 
                 val isNotificationActive = mediaPlaybackService?.isForegroundService() == true
                 Log.d("VideoPlayerSection", "isForegroundService: $isNotificationActive")
@@ -217,11 +236,12 @@ fun VideoPlayerSection(
         introOutroHandler = null
         HlsPlayerUtil.dispatch(
             PlayerAction.SetMedia(
-            videoData = episodeDetailComplement.sources,
-            lastTimestamp = null,
-            onReady = {},
-            onError = {}
-        ))
+                videoData = episodeDetailComplement.sources,
+                lastTimestamp = null,
+                onReady = {},
+                onError = {}
+            )
+        )
         mediaPlaybackService?.setEpisodeData(
             complement = episodeDetailComplement,
             episodes = episodes,
@@ -282,6 +302,16 @@ fun VideoPlayerSection(
                         }
 
                         PlaybackStateCompat.STATE_PAUSED -> {
+                            val player = HlsPlayerUtil.getPlayer()
+                            if (player?.playbackState == Player.STATE_ENDED) {
+                                Log.d("VideoPlayerSection", "Paused after episode end, showing next episode overlay")
+                                isShowNextEpisode = updateNextEpisodeName(
+                                    episodes = episodes,
+                                    currentEpisode = episodeDetailComplement.servers.episodeNo,
+                                    setNextEpisodeName = { nextEpisodeName = it }
+                                )
+                                isShowResumeOverlay = false
+                            }
                             (context as? FragmentActivity)?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                             Log.d(
                                 "VideoPlayerSection",
@@ -295,6 +325,7 @@ fun VideoPlayerSection(
                                 currentEpisode = episodeDetailComplement.servers.episodeNo,
                                 setNextEpisodeName = { nextEpisodeName = it }
                             )
+                            isShowResumeOverlay = false
                             (context as? FragmentActivity)?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                             Log.d(
                                 "VideoPlayerSection",
