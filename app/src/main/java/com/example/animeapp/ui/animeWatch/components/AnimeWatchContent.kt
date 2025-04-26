@@ -48,9 +48,7 @@ fun AnimeWatchContent(
             Row(modifier = Modifier.fillMaxWidth()) {
                 if (episodeDetailComplement is Resource.Success && isConnected) {
                     VideoPlayerSection(
-                        updateStoredWatchState = { seekPosition ->
-                            updateStoredWatchState(episodeDetailComplement.data, seekPosition)
-                        },
+                        updateStoredWatchState = updateStoredWatchState,
                         episodeDetailComplement = episodeDetailComplement.data,
                         episodes = episodeList,
                         episodeSourcesQuery = query,

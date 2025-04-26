@@ -38,7 +38,7 @@ import com.example.animeapp.utils.PlayerAction
 @OptIn(UnstableApi::class, ExperimentalComposeUiApi::class)
 @Composable
 fun VideoPlayerSection(
-    updateStoredWatchState: (Long?) -> Unit,
+    updateStoredWatchState: (EpisodeDetailComplement, Long?) -> Unit,
     episodeDetailComplement: EpisodeDetailComplement,
     episodes: List<Episode>,
     episodeSourcesQuery: EpisodeSourcesQuery,
@@ -89,7 +89,12 @@ fun VideoPlayerSection(
                     episodes = episodes,
                     query = episodeSourcesQuery,
                     handler = { handleSelectedEpisodeServer(it) },
-                    updateStoredWatchState = { updateStoredWatchState(it) },
+                    updateStoredWatchState = { position ->
+                        updateStoredWatchState(
+                            episodeDetailComplement,
+                            position
+                        )
+                    },
                     onPlayerError = { error ->
                         Log.e("VideoPlayerSection", "Player error: $error")
                         onPlayerError(error)
@@ -135,7 +140,12 @@ fun VideoPlayerSection(
                 episodes = episodes,
                 query = episodeSourcesQuery,
                 handler = { handleSelectedEpisodeServer(it) },
-                updateStoredWatchState = { updateStoredWatchState(it) },
+                updateStoredWatchState = { position ->
+                    updateStoredWatchState(
+                        episodeDetailComplement,
+                        position
+                    )
+                },
                 onPlayerError = { error ->
                     Log.e("VideoPlayerSection", "Player error: $error")
                     onPlayerError(error)
@@ -175,7 +185,10 @@ fun VideoPlayerSection(
                 val isNotificationActive = mediaPlaybackService?.isForegroundService() == true
                 Log.d("VideoPlayerSection", "isForegroundService: $isNotificationActive")
                 if (!isNotificationActive) {
-                    Log.d("VideoPlayerSection", "Stopping MediaPlaybackService (no notification active)")
+                    Log.d(
+                        "VideoPlayerSection",
+                        "Stopping MediaPlaybackService (no notification active)"
+                    )
                     mediaPlaybackService?.stopService()
                     if (!application.isMediaServiceBound()) {
                         context.unbindService(serviceConnection)
@@ -184,7 +197,10 @@ fun VideoPlayerSection(
                         Log.d("VideoPlayerSection", "Service kept bound by AnimeApplication")
                     }
                 } else {
-                    Log.d("VideoPlayerSection", "Keeping service alive due to foreground notification")
+                    Log.d(
+                        "VideoPlayerSection",
+                        "Keeping service alive due to foreground notification"
+                    )
                 }
                 introOutroHandler?.stop()
                 introOutroHandler = null
@@ -199,7 +215,8 @@ fun VideoPlayerSection(
         Log.d("VideoPlayerSection", "episodeSourcesQuery changed: ${episodeSourcesQuery.id}")
         introOutroHandler?.stop()
         introOutroHandler = null
-        HlsPlayerUtil.dispatch(PlayerAction.SetMedia(
+        HlsPlayerUtil.dispatch(
+            PlayerAction.SetMedia(
             videoData = episodeDetailComplement.sources,
             lastTimestamp = null,
             onReady = {},
@@ -210,7 +227,12 @@ fun VideoPlayerSection(
             episodes = episodes,
             query = episodeSourcesQuery,
             handler = { handleSelectedEpisodeServer(it) },
-            updateStoredWatchState = { updateStoredWatchState(it) },
+            updateStoredWatchState = { position ->
+                updateStoredWatchState(
+                    episodeDetailComplement,
+                    position
+                )
+            },
             onPlayerError = { error ->
                 Log.e("VideoPlayerSection", "Player error: $error")
                 onPlayerError(error)
@@ -221,7 +243,7 @@ fun VideoPlayerSection(
                 isLoading = false
                 Log.d("VideoPlayerSection", "Player ready for new episode")
                 HlsPlayerUtil.getPlayer()?.let { player ->
-                    playerView.player = player // Re-ensure binding
+                    playerView.player = player
                     introOutroHandler = IntroOutroHandler(
                         player = player,
                         videoData = episodeDetailComplement.sources

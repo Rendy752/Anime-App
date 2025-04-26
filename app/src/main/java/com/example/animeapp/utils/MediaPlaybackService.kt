@@ -35,8 +35,10 @@ import com.example.animeapp.models.EpisodeSourcesQuery
 import com.example.animeapp.ui.main.MainActivity
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -47,6 +49,7 @@ import java.util.concurrent.atomic.AtomicBoolean
 private const val NOTIFICATION_ID = 123
 private const val CHANNEL_ID = "anime_playback_channel"
 private const val IMAGE_SIZE = 512
+private const val WATCH_STATE_UPDATE_INTERVAL_MS = 5_000L // 5 seconds
 
 class MediaPlaybackService : MediaBrowserServiceCompat() {
     private var mediaSession: MediaSessionCompat? = null
@@ -60,6 +63,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private val handler = Handler(Looper.getMainLooper())
     private val isForeground = AtomicBoolean(false)
+    private var watchStateUpdateJob: Job? = null
 
     private val binder = MediaPlaybackBinder()
 
@@ -312,7 +316,39 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         }
         builder.setState(state, position, 1.0f)
         mediaSession?.setPlaybackState(builder.build())
-        updateNotification() // Always update notification to reflect current state
+        updateNotification()
+    }
+
+    private fun startPeriodicWatchStateUpdates() {
+        watchStateUpdateJob?.cancel() // Cancel any existing job
+        watchStateUpdateJob = coroutineScope.launch {
+            while (true) {
+                val state = HlsPlayerUtil.state.value
+                if (state.isPlaying) {
+                    HlsPlayerUtil.getPlayer()?.let { player ->
+                        val position = player.currentPosition
+                        val duration = player.duration
+                        if (position > 0 && position < duration) {
+                            try {
+                                withTimeout(5_000) {
+                                    updateStoredWatchState?.invoke(position)
+                                    Log.d("MediaPlaybackService", "Periodic watch state update: position=$position")
+                                }
+                            } catch (e: Exception) {
+                                Log.e("MediaPlaybackService", "Failed to save periodic watch state", e)
+                            }
+                        }
+                    }
+                }
+                delay(WATCH_STATE_UPDATE_INTERVAL_MS)
+            }
+        }
+    }
+
+    private fun stopPeriodicWatchStateUpdates() {
+        watchStateUpdateJob?.cancel()
+        watchStateUpdateJob = null
+        Log.d("MediaPlaybackService", "Stopped periodic watch state updates")
     }
 
     private fun observePlayerState() {
@@ -327,6 +363,11 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                     },
                     state.error
                 )
+                if (state.isPlaying) {
+                    startPeriodicWatchStateUpdates()
+                } else {
+                    stopPeriodicWatchStateUpdates()
+                }
                 when (state.playbackState) {
                     Player.STATE_ENDED -> {
                         coroutineScope.launch {
@@ -355,19 +396,16 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                             handleSelectedEpisodeServer?.invoke(episodeSourcesQuery!!)
                         }
                     }
-
                     Player.STATE_READY -> {
                         if (!state.isPlaying) {
                             onPlayerError?.invoke(null)
                             updatePlaybackState(PlaybackStateCompat.STATE_PAUSED)
                         }
-                        updateNotification() // Ensure notification is shown when ready
+                        updateNotification()
                     }
-
                     Player.STATE_BUFFERING -> {
                         updatePlaybackState(PlaybackStateCompat.STATE_BUFFERING)
                     }
-
                     Player.STATE_IDLE -> {
                         onPlayerError?.invoke(null)
                         updatePlaybackState(PlaybackStateCompat.STATE_NONE)
@@ -479,8 +517,9 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         mediaSession?.release()
         mediaSession = null
         handler.removeCallbacksAndMessages(null)
+        stopPeriodicWatchStateUpdates()
         coroutineScope.cancel()
-        stopForeground(STOP_FOREGROUND_REMOVE) // Ensure notification is removed
+        stopForeground(STOP_FOREGROUND_REMOVE)
         isForeground.set(false)
         Log.d("MediaPlaybackService", "Resources released, isForeground=${isForeground.get()}")
     }
@@ -504,11 +543,13 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         override fun onPlay() {
             HlsPlayerUtil.dispatch(PlayerAction.Play)
             updateNotification()
+            startPeriodicWatchStateUpdates()
         }
 
         override fun onPause() {
             HlsPlayerUtil.dispatch(PlayerAction.Pause)
-            updateNotification() // Update notification to show pause state, don't remove
+            updateNotification()
+            stopPeriodicWatchStateUpdates()
         }
 
         override fun onRewind() {
@@ -548,6 +589,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
             HlsPlayerUtil.dispatch(PlayerAction.Pause)
             stopForeground(STOP_FOREGROUND_REMOVE)
             isForeground.set(false)
+            stopPeriodicWatchStateUpdates()
             Log.d(
                 "MediaPlaybackService",
                 "Foreground stopped on stop, isForeground=${isForeground.get()}"
@@ -574,6 +616,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         HlsPlayerUtil.dispatch(PlayerAction.Pause)
         stopForeground(STOP_FOREGROUND_REMOVE)
         isForeground.set(false)
+        stopPeriodicWatchStateUpdates()
         Log.d(
             "MediaPlaybackService",
             "Foreground stopped in stopService, isForeground=${isForeground.get()}"
