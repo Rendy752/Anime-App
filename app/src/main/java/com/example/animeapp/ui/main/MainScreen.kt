@@ -87,17 +87,11 @@ fun MainScreen(
                                 val malId = segments[1].toIntOrNull()
                                 val episodeId = segments[2]
                                 if (malId != null && episodeId.isNotEmpty()) {
-                                    val currentArgs = navBackStackEntry?.arguments
-                                    val currentMalId = currentArgs?.getInt("malId")
-                                    val currentEpisodeId = currentArgs?.getString("episodeId")
-                                    if (currentMalId != malId || currentEpisodeId != episodeId) {
-                                        navController.popBackStack(
-                                            "animeWatch/{malId}/{episodeId}",
-                                            inclusive = true,
-                                            saveState = false
-                                        )
-                                        navController.navigateToAnimeWatch(malId, episodeId)
-                                    }
+                                    navController.popBackStack(
+                                        navController.graph.startDestinationId,
+                                        inclusive = false
+                                    )
+                                    navController.navigateToAnimeWatch(malId, episodeId)
                                 } else {
                                     Toast.makeText(
                                         activity,
