@@ -304,6 +304,21 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         }
     }
 
+    private fun updateMediaMetadata(duration: Long) {
+        episodeDetailComplement?.let { complement ->
+            mediaSession?.setMetadata(
+                MediaMetadataCompat.Builder()
+                    .putString(
+                        MediaMetadataCompat.METADATA_KEY_TITLE,
+                        "Eps. ${complement.number}, ${complement.episodeTitle}"
+                    )
+                    .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, complement.animeTitle)
+                    .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, duration)
+                    .build()
+            )
+        }
+    }
+
     private fun setupPlayerListener() {
         HlsPlayerUtil.getPlayer()?.addListener(object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -318,19 +333,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
             }
 
             override fun onTimelineChanged(timeline: Timeline, reason: Int) {
-                val duration = HlsPlayerUtil.getPlayer()?.duration?.takeIf { it > 0 } ?: 0
-                episodeDetailComplement?.let {
-                    mediaSession?.setMetadata(
-                        MediaMetadataCompat.Builder()
-                            .putString(
-                                MediaMetadataCompat.METADATA_KEY_TITLE,
-                                "Eps. ${it.number}, ${it.episodeTitle}"
-                            )
-                            .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, it.animeTitle)
-                            .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, duration)
-                            .build()
-                    )
-                }
+                updateMediaMetadata(HlsPlayerUtil.getPlayer()?.duration?.takeIf { it > 0 } ?: 0)
                 updateNotification()
             }
 
@@ -464,19 +467,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                 )
             )
 
-            val duration = HlsPlayerUtil.getPlayer()?.duration?.takeIf { it > 0 } ?: 0
-            episodeDetailComplement?.let {
-                mediaSession?.setMetadata(
-                    MediaMetadataCompat.Builder()
-                        .putString(
-                            MediaMetadataCompat.METADATA_KEY_TITLE,
-                            "Eps. ${it.number}, ${it.episodeTitle}"
-                        )
-                        .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, it.animeTitle)
-                        .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, duration)
-                        .build()
-                )
-            }
+            updateMediaMetadata(HlsPlayerUtil.getPlayer()?.duration?.takeIf { it > 0 } ?: 0)
             updateNotification()
         }
     }
