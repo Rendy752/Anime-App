@@ -86,6 +86,7 @@ fun AnimeWatchScreen(
     val screenOffReceiver = remember { ScreenOffReceiver { isScreenOn = false } }
     val screenOnReceiver = remember { ScreenOnReceiver { isScreenOn = true } }
 
+    @Suppress("DEPRECATION")
     val onBackPress: () -> Unit = {
         if (isFullscreen) {
             isFullscreen = false

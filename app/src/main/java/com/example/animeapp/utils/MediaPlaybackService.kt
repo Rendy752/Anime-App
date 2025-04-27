@@ -393,7 +393,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                     HlsPlayerUtil.getPlayer()?.let { player ->
                         val position = player.currentPosition
                         val duration = player.duration
-                        if (position > 0 && position < duration) {
+                        if (position > 10_000 && position < duration) {
                             try {
                                 withTimeout(5_000) {
                                     updateStoredWatchState?.invoke(position)

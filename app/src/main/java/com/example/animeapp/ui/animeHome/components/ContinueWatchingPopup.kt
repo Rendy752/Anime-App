@@ -95,19 +95,12 @@ fun ContinueWatchingPopup(
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Text(
-                                    text = "Eps. ${episodeDetailComplement.number},",
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                                Text(
-                                    text = episodeDetailComplement.episodeTitle,
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                            }
+                            Text(
+                                text = "Eps. ${episodeDetailComplement.number}, ${episodeDetailComplement.episodeTitle}",
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
                         }
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(
