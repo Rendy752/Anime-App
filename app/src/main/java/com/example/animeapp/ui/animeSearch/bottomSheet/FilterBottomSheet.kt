@@ -134,7 +134,8 @@ private fun FilterContent(
                 { filterState.value = filterState.value.copy(type = it) },
                 Modifier
                     .weight(1f)
-                    .padding(end = 4.dp)
+                    .padding(end = 4.dp),
+                false
             )
             DropdownInputField(
                 "Status",
@@ -147,22 +148,18 @@ private fun FilterContent(
             )
         }
         Row(Modifier.fillMaxWidth()) {
-            val selectedRatingDescription by remember {
-                derivedStateOf {
-                    FilterUtils.getRatingDescription(filterState.value.rating)
-                }
-            }
             DropdownInputField(
-                "Rating",
-                FilterUtils.RATING_OPTIONS.map { FilterUtils.getRatingDescription(it) },
-                selectedRatingDescription,
-                { selectedRating ->
-                    filterState.value =
-                        filterState.value.copy(rating = FilterUtils.RATING_OPTIONS.firstOrNull {
-                            FilterUtils.getRatingDescription(it) == selectedRating
-                        } ?: "Any")
+                label = "Rating",
+                options = FilterUtils.RATING_OPTIONS.values.toList(),
+                selectedValue = FilterUtils.RATING_OPTIONS[filterState.value.rating]
+                    ?: filterState.value.rating,
+                onValueChange = { selectedDescription ->
+                    val selectedKey = FilterUtils.RATING_OPTIONS.entries.firstOrNull {
+                        it.value == selectedDescription
+                    }?.key ?: filterState.value.rating
+                    filterState.value = filterState.value.copy(rating = selectedKey)
                 },
-                Modifier
+                modifier = Modifier
                     .weight(1f)
                     .padding(end = 4.dp)
             )

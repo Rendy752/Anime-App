@@ -61,7 +61,8 @@ fun DropdownInputField(
     options: List<String>,
     selectedValue: String,
     onValueChange: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isFormatLabel: Boolean = true,
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -72,7 +73,7 @@ fun DropdownInputField(
     ) {
         OutlinedTextField(
             readOnly = true,
-            value = selectedValue.toTitleCase(),
+            value = if (isFormatLabel) selectedValue.toTitleCase() else selectedValue,
             onValueChange = {},
             label = { Text(label) },
             singleLine = true,
@@ -93,7 +94,7 @@ fun DropdownInputField(
         ) {
             options.forEach { option ->
                 DropdownMenuItem(
-                    text = { Text(option.toTitleCase()) },
+                    text = { Text(if (isFormatLabel) option.toTitleCase() else option) },
                     onClick = {
                         onValueChange(option)
                         expanded = false
