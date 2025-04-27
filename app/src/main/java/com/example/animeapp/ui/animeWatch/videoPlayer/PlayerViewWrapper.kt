@@ -62,122 +62,121 @@ fun PlayerViewWrapper(
     AndroidView(
         factory = { playerView },
         modifier = Modifier.fillMaxSize(),
-        update =
-            { view ->
-                view.setShowPreviousButton(false)
-                view.setShowNextButton(false)
-                view.setShowRewindButton(false)
-                view.setShowFastForwardButton(false)
-                view.setFullscreenButtonState(isFullscreen)
-                view.setShowSubtitleButton(tracks.any { it.kind == "captions" })
-                view.useController = !isPipMode && !isLocked
-                playerView.controllerShowTimeoutMs = if (isPipMode || isLocked) 0 else 5000
-                view.setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
+        update = { view ->
+            view.setShowPreviousButton(false)
+            view.setShowNextButton(false)
+            view.setShowRewindButton(false)
+            view.setShowFastForwardButton(false)
+            view.setFullscreenButtonState(isFullscreen)
+            view.setShowSubtitleButton(tracks.any { it.kind == "captions" })
+            view.useController = !isPipMode && !isLocked
+            playerView.controllerShowTimeoutMs = if (isPipMode || isLocked) 0 else 5000
+            view.setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
 
-                @Suppress("DEPRECATION")
-                view.setFullscreenButtonClickListener {
-                    if (!isLocked) {
-                        onFullscreenChange(!isFullscreen)
-                        (context as? FragmentActivity)?.window?.let { window ->
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                                val controller = window.insetsController
-                                if (!isFullscreen) {
-                                    controller?.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
-                                    controller?.systemBarsBehavior =
-                                        WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-                                } else {
-                                    controller?.show(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
-                                }
+            @Suppress("DEPRECATION")
+            view.setFullscreenButtonClickListener {
+                if (!isLocked) {
+                    onFullscreenChange(!isFullscreen)
+                    (context as? FragmentActivity)?.window?.let { window ->
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                            val controller = window.insetsController
+                            if (!isFullscreen) {
+                                controller?.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
+                                controller?.systemBarsBehavior =
+                                    WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
                             } else {
-                                if (!isFullscreen) {
-                                    window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
-                                } else {
-                                    window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
-                                }
+                                controller?.show(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
+                            }
+                        } else {
+                            if (!isFullscreen) {
+                                window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+                            } else {
+                                window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
                             }
                         }
                     }
                 }
+            }
 
-                var isHolding = false
-                var isFromHolding = false
+            var isHolding = false
+            var isFromHolding = false
 
-                val gestureDetector =
-                    GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
-                        override fun onDoubleTap(e: MotionEvent): Boolean {
-                            if (!isSeeking && !isLocked && mediaController != null) {
-                                val screenWidth = view.width
-                                val tapX = e.x
+            val gestureDetector =
+                GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
+                    override fun onDoubleTap(e: MotionEvent): Boolean {
+                        if (!isSeeking && !isLocked && mediaController != null) {
+                            val screenWidth = view.width
+                            val tapX = e.x
 
-                                if (tapX > screenWidth / 2) {
-                                    onFastForward()
-                                    onSeek(1, 10L)
-                                } else {
-                                    onRewind()
-                                    onSeek(-1, 10L)
-                                }
-                                isSeeking = true
-                                view.showController()
-                                Handler(Looper.getMainLooper()).postDelayed({
-                                    isSeeking = false
-                                }, 1000)
-                                return true
+                            if (tapX > screenWidth / 2) {
+                                onFastForward()
+                                onSeek(1, 10L)
+                            } else {
+                                onRewind()
+                                onSeek(-1, 10L)
                             }
-                            return false
-                        }
-
-                        override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
-                            if (!isSeeking && !isLocked) {
-                                view.performClick()
-                                return true
-                            }
-                            return false
-                        }
-                    })
-
-                view.setOnTouchListener { _, event ->
-                    if (playerView.player == null || isLocked) return@setOnTouchListener false
-                    gestureDetector.onTouchEvent(event)
-                    when (event.action) {
-                        MotionEvent.ACTION_DOWN -> {
-                            isHolding = true
+                            isSeeking = true
+                            view.showController()
                             Handler(Looper.getMainLooper()).postDelayed({
-                                if (isHolding && mediaController?.playbackState?.playbackSpeed != 2f && !isSeeking && mediaController?.playbackState?.state == PlaybackStateCompat.STATE_PLAYING) {
-                                    HlsPlayerUtil.dispatch(PlayerAction.SetPlaybackSpeed(2f))
-                                    view.useController = false
-                                    onSpeedChange(2f, true)
-                                    isFromHolding = true
-                                }
+                                isSeeking = false
                             }, 1000)
+                            return true
                         }
-
-                        MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                            Handler(Looper.getMainLooper()).removeCallbacksAndMessages(null)
-                            if (isFromHolding && mediaController != null) {
-                                HlsPlayerUtil.dispatch(PlayerAction.SetPlaybackSpeed(1f))
-                                view.useController = true
-                                onSpeedChange(1f, false)
-                            }
-                            isHolding = false
-                            isFromHolding = false
-                        }
+                        return false
                     }
-                    onHoldingChange(isHolding, isFromHolding)
-                    true
-                }
 
-                view.setControllerVisibilityListener(PlayerView.ControllerVisibilityListener { visibility ->
-                    if (!isLocked) {
-                        onPipVisibilityChange(visibility == View.VISIBLE)
-                        view.subtitleView?.let { subtitleView ->
-                            val bottomBar = view.findViewById<ViewGroup>(RMedia3.id.exo_bottom_bar)
-                            subtitleView.setPadding(
-                                0, 0, 0,
-                                if (visibility == View.VISIBLE && (isLandscape || (context as? FragmentActivity)?.resources?.configuration?.orientation == Configuration.ORIENTATION_PORTRAIT)) bottomBar.height else 0
-                            )
+                    override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
+                        if (!isSeeking && !isLocked) {
+                            view.performClick()
+                            return true
                         }
+                        return false
                     }
                 })
+
+            view.setOnTouchListener { _, event ->
+                if (playerView.player == null || isLocked) return@setOnTouchListener false
+                gestureDetector.onTouchEvent(event)
+                when (event.action) {
+                    MotionEvent.ACTION_DOWN -> {
+                        isHolding = true
+                        Handler(Looper.getMainLooper()).postDelayed({
+                            if (isHolding && mediaController?.playbackState?.playbackSpeed != 2f && !isSeeking && mediaController?.playbackState?.state == PlaybackStateCompat.STATE_PLAYING) {
+                                HlsPlayerUtil.dispatch(PlayerAction.SetPlaybackSpeed(2f))
+                                view.useController = false
+                                onSpeedChange(2f, true)
+                                isFromHolding = true
+                            }
+                        }, 1000)
+                    }
+
+                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
+                        Handler(Looper.getMainLooper()).removeCallbacksAndMessages(null)
+                        if (isFromHolding && mediaController != null) {
+                            HlsPlayerUtil.dispatch(PlayerAction.SetPlaybackSpeed(1f))
+                            view.useController = true
+                            onSpeedChange(1f, false)
+                        }
+                        isHolding = false
+                        isFromHolding = false
+                    }
+                }
+                onHoldingChange(isHolding, isFromHolding)
+                true
             }
+
+            view.setControllerVisibilityListener(PlayerView.ControllerVisibilityListener { visibility ->
+                if (!isLocked) {
+                    onPipVisibilityChange(visibility == View.VISIBLE)
+                    view.subtitleView?.let { subtitleView ->
+                        val bottomBar = view.findViewById<ViewGroup>(RMedia3.id.exo_bottom_bar)
+                        subtitleView.setPadding(
+                            0, 0, 0,
+                            if (visibility == View.VISIBLE && (isLandscape || (context as? FragmentActivity)?.resources?.configuration?.orientation == Configuration.ORIENTATION_PORTRAIT)) bottomBar.height else 0
+                        )
+                    }
+                }
+            })
+        }
     )
 }
