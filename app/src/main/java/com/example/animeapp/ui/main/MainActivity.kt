@@ -175,7 +175,7 @@ class MainActivity : AppCompatActivity() {
             "onPictureInPictureModeChanged: isInPictureInPictureMode=$isInPictureInPictureMode, configuration=$configuration"
         )
         onPictureInPictureModeChangedListeners.forEach { it(isInPictureInPictureMode) }
-        if (!isInPictureInPictureMode && (application as AnimeApplication).isMediaServiceBound()) {
+        if (!isInPictureInPictureMode) {
             (application as AnimeApplication).getMediaPlaybackService()?.pausePlayer()
         }
     }

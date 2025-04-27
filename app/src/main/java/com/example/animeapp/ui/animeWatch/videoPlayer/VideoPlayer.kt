@@ -171,13 +171,12 @@ fun VideoPlayer(
             onRewind = onRewind
         )
 
-        if (isShowSeekIndicator) {
-            SeekIndicator(
-                seekDirection = seekDirection,
-                seekAmount = seekAmount,
-                modifier = Modifier.align(Alignment.Center)
-            )
-        }
+        SeekIndicator(
+            seekDirection = seekDirection,
+            seekAmount = seekAmount,
+            isVisible = isShowSeekIndicator,
+            modifier = Modifier.align(Alignment.Center)
+        )
 
         if (shouldShowResumeOverlay) {
             ResumePlaybackOverlay(
