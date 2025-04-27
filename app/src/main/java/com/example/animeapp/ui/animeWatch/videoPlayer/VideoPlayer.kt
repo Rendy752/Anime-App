@@ -7,6 +7,7 @@ import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import androidx.annotation.OptIn
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -18,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
@@ -65,6 +67,7 @@ fun VideoPlayer(
     var seekDirection by remember { mutableIntStateOf(0) }
     var seekAmount by remember { mutableLongStateOf(0L) }
     var isSeeking by remember { mutableStateOf(false) }
+    var isLocked by remember { mutableStateOf(false) }
 
     val mediaControllerCallback = remember {
         object : MediaControllerCompat.Callback() {
@@ -84,18 +87,21 @@ fun VideoPlayer(
         }
     }
 
-    DisposableEffect(mediaController, isPipMode) {
+    val shouldShowResumeOverlay = isShowResumeOverlay &&
+            episodeDetailComplement.lastTimestamp != null &&
+            playerState.isReady &&
+            !playerState.isPlaying
+
+    DisposableEffect(
+        mediaController,
+        isPipMode,
+        isLocked,
+        shouldShowResumeOverlay,
+        isShowNextEpisode
+    ) {
         mediaController?.registerCallback(mediaControllerCallback)
-        playerView.useController = !isPipMode
-        playerView.controllerShowTimeoutMs = if (isPipMode) 0 else 5000
-        playerView.setShowBuffering(PlayerView.SHOW_BUFFERING_WHEN_PLAYING)
-        Log.d(
-            "VideoPlayer",
-            "PlayerView configured: useController=${playerView.useController}, player=${playerView.player}"
-        )
         onDispose {
             mediaController?.unregisterCallback(mediaControllerCallback)
-            playerView.useController = true
             Log.d("VideoPlayer", "PlayerView disposed")
         }
     }
@@ -107,22 +113,28 @@ fun VideoPlayer(
         }
     }
 
-    val shouldShowResumeOverlay = isShowResumeOverlay &&
-            episodeDetailComplement.lastTimestamp != null &&
-            playerState.isReady &&
-            !playerState.isPlaying
+    LaunchedEffect(shouldShowResumeOverlay, isShowNextEpisode) {
+        if (shouldShowResumeOverlay || isShowNextEpisode) {
+            playerView.hideController()
+            Log.d(
+                "VideoPlayer",
+                "Hiding controller due to overlay: shouldShowResumeOverlay=$shouldShowResumeOverlay, isShowNextEpisode=$isShowNextEpisode"
+            )
+        }
+    }
 
     LaunchedEffect(
         shouldShowResumeOverlay,
         isShowNextEpisode,
         isShowPip,
         isShowSpeedUp,
-        isShowSeekIndicator
+        isShowSeekIndicator,
+        isLocked
     ) {
         Log.d(
             "VideoPlayer",
             "UI State: shouldShowResumeOverlay=$shouldShowResumeOverlay, isShowNextEpisode=$isShowNextEpisode, " +
-                    "isShowPip=$isShowPip, isShowSpeedUp=$isShowSpeedUp, isShowSeekIndicator=$isShowSeekIndicator"
+                    "isShowPip=$isShowPip, isShowSpeedUp=$isShowSpeedUp, isShowSeekIndicator=$isShowSeekIndicator, isLocked=$isLocked"
         )
     }
 
@@ -135,6 +147,7 @@ fun VideoPlayer(
             onFullscreenChange = onFullscreenChange,
             isFullscreen = isFullscreen,
             isLandscape = isLandscape,
+            isLocked = isLocked || shouldShowResumeOverlay || isShowNextEpisode,
             onPipVisibilityChange = { isShowPip = it },
             onSpeedChange = { speed, isHolding ->
                 speedUpText = "${speed.toInt()}x speed"
@@ -155,7 +168,7 @@ fun VideoPlayer(
                 }, 1000)
             },
             onFastForward = onFastForward,
-            onRewind = onRewind,
+            onRewind = onRewind
         )
 
         if (isShowSeekIndicator) {
@@ -205,7 +218,7 @@ fun VideoPlayer(
             )
         }
 
-        if (!isPipMode && !shouldShowResumeOverlay && !isShowNextEpisode && (showIntro || showOutro)) {
+        if (!isPipMode && !isLocked && !shouldShowResumeOverlay && !isShowNextEpisode && (showIntro || showOutro)) {
             SkipIntroOutroButtons(
                 showIntro = showIntro,
                 showOutro = showOutro,
@@ -217,17 +230,28 @@ fun VideoPlayer(
             )
         }
 
-        if (isShowPip && !isPipMode) {
+        if (isShowPip && !isPipMode && !isLocked && !shouldShowResumeOverlay && !isShowNextEpisode) {
             PipButton(
                 onEnterPipMode = onEnterPipMode,
                 modifier = Modifier.align(Alignment.TopCenter)
             )
         }
 
-        if (isShowSpeedUp && !isPipMode) {
+        if (isShowSpeedUp && !isPipMode && !isLocked && !shouldShowResumeOverlay && !isShowNextEpisode) {
             SpeedUpIndicator(
                 speedText = speedUpText,
                 modifier = Modifier.align(Alignment.TopCenter)
+            )
+        }
+
+        if (!isPipMode) {
+            LockButton(
+                isLocked = isLocked,
+                onLockToggle = { isLocked = !isLocked },
+                isControllerVisible = isShowPip && !shouldShowResumeOverlay && !isShowNextEpisode,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
             )
         }
     }
