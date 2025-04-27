@@ -45,7 +45,9 @@ interface AnimeAPI {
     ): Response<AnimeDetailResponse>
 
     @GET("/v4/random/anime")
-    suspend fun getRandomAnime(): Response<AnimeDetailResponse>
+    suspend fun getRandomAnime(
+        @Query("sfw") sfw: Boolean = true
+    ): Response<AnimeDetailResponse>
 
     @GET("/v4/anime")
     suspend fun getAnimeSearch(

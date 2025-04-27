@@ -136,17 +136,17 @@ fun AnimeSearchItem(
                     )
                     DataTextWithIcon(
                         label = "Rank",
-                        value = anime?.rank?.let { formatNumber(it) },
+                        value = anime?.rank?.formatNumber(),
                         icon = Icons.Filled.Star
                     )
                     DataTextWithIcon(
                         label = "Popularity",
-                        value = formatNumber(anime?.popularity ?: 0),
+                        value = anime?.popularity?.formatNumber(),
                         icon = Icons.AutoMirrored.Filled.TrendingUp
                     )
                     DataTextWithIcon(
                         label = "Members",
-                        value = formatNumber(anime?.members ?: 0),
+                        value = anime?.members?.formatNumber(),
                         icon = Icons.Filled.Groups
                     )
                 }

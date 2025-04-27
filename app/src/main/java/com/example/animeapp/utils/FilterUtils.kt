@@ -27,14 +27,13 @@ object FilterUtils {
     val TYPE_OPTIONS =
         listOf("Any", "TV", "Movie", "OVA", "Special", "ONA", "Music", "CM", "PV", "TV Special")
     val STATUS_OPTIONS = listOf("Any", "Airing", "Complete", "Upcoming")
-    val RATING_OPTIONS = listOf("Any", "G", "PG", "PG13", "R17", "R", "Rx")
+    val RATING_OPTIONS = listOf("Any", "G", "PG", "PG13", "R17", "R")
     private val RATING_DESCRIPTIONS = mapOf(
         "G" to "All Ages",
         "PG" to "Children",
         "PG13" to "Teens 13 or older",
         "R17" to "17+ (violence & profanity)",
-        "R" to "Mild Nudity",
-        "Rx" to "Hentai"
+        "R" to "Mild Nudity"
     )
     val ORDER_BY_OPTIONS = listOf(
         "Any", "mal_id", "title", "start_date", "end_date", "episodes", "score",

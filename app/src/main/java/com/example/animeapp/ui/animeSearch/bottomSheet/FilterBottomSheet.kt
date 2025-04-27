@@ -220,13 +220,23 @@ private fun FilterContent(
             )
         }
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(
-                    checked = filterState.value.enableDateRange,
-                    onCheckedChange = {
-                        filterState.value = filterState.value.copy(enableDateRange = it)
-                    })
-                Text("Enable Date Range")
+            Row(Modifier.fillMaxWidth()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        checked = filterState.value.enableDateRange,
+                        onCheckedChange = {
+                            filterState.value = filterState.value.copy(enableDateRange = it)
+                        })
+                    Text("Enable Date Range")
+                }
+                CheckboxInputField(
+                    "Include Unapproved",
+                    filterState.value.unapproved,
+                    { filterState.value = filterState.value.copy(unapproved = it) },
+                    Modifier
+                        .weight(1f)
+                        .padding(end = 4.dp)
+                )
             }
             if (filterState.value.enableDateRange) {
                 DateRangePickerInline(
@@ -242,24 +252,6 @@ private fun FilterContent(
                         filterState.value = filterState.value.copy(startDate = null, endDate = null)
                     })
             }
-        }
-        Row(Modifier.fillMaxWidth()) {
-            CheckboxInputField(
-                "Include Unapproved",
-                filterState.value.unapproved,
-                { filterState.value = filterState.value.copy(unapproved = it) },
-                Modifier
-                    .weight(1f)
-                    .padding(end = 4.dp)
-            )
-            CheckboxInputField(
-                "SFW Only",
-                filterState.value.sfw,
-                { filterState.value = filterState.value.copy(sfw = it) },
-                Modifier
-                    .weight(1f)
-                    .padding(start = 4.dp)
-            )
         }
     }
 }

@@ -28,27 +28,27 @@ fun NumericDetailSection(animeDetail: AnimeDetail) {
         NumericDetailItem(
             title = stringResource(R.string.score),
             value = animeDetail.score?.toString() ?: "N/A",
-            subValue = animeDetail.scored_by?.let { "${formatNumber(it)} Users" } ?: "N/A",
+            subValue = animeDetail.scored_by?.let { "${it.formatNumber()} Users" } ?: "N/A",
             icon = Icons.Filled.Score
         )
         NumericDetailItem(
             title = stringResource(R.string.ranked),
-            value = animeDetail.rank?.let { "#${formatNumber(it)}" } ?: "N/A",
+            value = animeDetail.rank?.let { "#${it.formatNumber()}" } ?: "N/A",
             icon = Icons.Filled.Star
         )
         NumericDetailItem(
             title = stringResource(R.string.popularity),
-            value = "#${formatNumber(animeDetail.popularity)}",
+            value = "#${animeDetail.popularity.formatNumber()}",
             icon = Icons.AutoMirrored.Filled.TrendingUp
         )
         NumericDetailItem(
             title = stringResource(R.string.members),
-            value = formatNumber(animeDetail.members),
+            value = animeDetail.members.formatNumber(),
             icon = Icons.Filled.Groups
         )
         NumericDetailItem(
             title = stringResource(R.string.favorites),
-            value = formatNumber(animeDetail.favorites),
+            value = animeDetail.favorites.formatNumber(),
             icon = Icons.Filled.Favorite
         )
     }
