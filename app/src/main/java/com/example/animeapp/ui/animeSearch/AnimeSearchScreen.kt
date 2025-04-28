@@ -33,7 +33,7 @@ import com.example.animeapp.ui.animeSearch.results.ResultsSection
 import com.example.animeapp.ui.animeSearch.searchField.SearchFieldSection
 import com.example.animeapp.ui.animeSearch.genreProducerFilterField.GenreProducerFilterFieldSection
 import com.example.animeapp.ui.common_ui.LimitAndPaginationQueryState
-import com.example.animeapp.ui.main.BottomScreen
+import com.example.animeapp.ui.main.components.BottomScreen
 import com.example.animeapp.ui.main.MainState
 import com.example.animeapp.utils.Resource
 

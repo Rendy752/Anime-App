@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.main
+package com.example.animeapp.ui.main.components
 
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition

@@ -9,7 +9,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.animeapp.R
 import com.example.animeapp.ui.animeRecommendations.AnimeRecommendationsScreen
-import com.example.animeapp.ui.main.BottomScreen
+import com.example.animeapp.ui.main.components.BottomScreen
 import com.example.animeapp.ui.theme.AppTheme
 import com.example.animeapp.utils.Resource
 import dagger.hilt.android.testing.HiltAndroidRule
@@ -54,11 +54,7 @@ class AnimeRecommendationsScreenTest {
     fun animeRecommendationsScreen_displaysTitle() {
         composeTestRule.setContent {
             AppTheme {
-                AnimeRecommendationsScreen(
-                    navController = navController,
-                    isConnected = true,
-                    isLandscape = false
-                )
+                AnimeRecommendationsScreen()
                 composeTestRule.onNodeWithText(BottomScreen.Recommendations.label)
                     .assertIsDisplayed()
             }
@@ -73,11 +69,7 @@ class AnimeRecommendationsScreenTest {
 
         composeTestRule.setContent {
             AppTheme {
-                AnimeRecommendationsScreen(
-                    navController = navController,
-                    isConnected = true,
-                    isLandscape = false
-                )
+                AnimeRecommendationsScreen()
                 composeTestRule.onNodeWithText("If you like").assertDoesNotExist()
             }
         }
@@ -88,11 +80,7 @@ class AnimeRecommendationsScreenTest {
         composeTestRule.setContent {
             val currentContext = LocalContext.current
             AppTheme {
-                AnimeRecommendationsScreen(
-                    navController = navController,
-                    isConnected = false,
-                    isLandscape = false
-                )
+                AnimeRecommendationsScreen()
                 composeTestRule.onNodeWithText(currentContext.getString(R.string.no_internet_connection))
                     .assertIsDisplayed()
             }
@@ -108,11 +96,7 @@ class AnimeRecommendationsScreenTest {
         composeTestRule.setContent {
             val currentContext = LocalContext.current
             AppTheme {
-                AnimeRecommendationsScreen(
-                    navController = navController,
-                    isConnected = true,
-                    isLandscape = false
-                )
+                AnimeRecommendationsScreen()
                 composeTestRule.onNodeWithText(currentContext.getString(R.string.error_loading_data))
                     .assertIsDisplayed()
             }
@@ -142,11 +126,7 @@ class AnimeRecommendationsScreenTest {
 
         composeTestRule.setContent {
             AppTheme {
-                AnimeRecommendationsScreen(
-                    navController = navController,
-                    isConnected = true,
-                    isLandscape = false
-                )
+                AnimeRecommendationsScreen()
                 composeTestRule.onNodeWithText("Anime 1").assertIsDisplayed()
                 composeTestRule.onNodeWithText("Anime 2").assertIsDisplayed()
             }
@@ -186,11 +166,7 @@ class AnimeRecommendationsScreenTest {
 
         composeTestRule.setContent {
             AppTheme {
-                AnimeRecommendationsScreen(
-                    navController = navController,
-                    isConnected = true,
-                    isLandscape = true
-                )
+                AnimeRecommendationsScreen()
             }
         }
 

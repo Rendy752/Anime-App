@@ -22,7 +22,7 @@ import com.example.animeapp.R
 import com.example.animeapp.ui.animeRecommendations.recommendations.RecommendationItem
 import com.example.animeapp.ui.animeRecommendations.recommendations.RecommendationItemSkeleton
 import com.example.animeapp.ui.common_ui.MessageDisplay
-import com.example.animeapp.ui.main.BottomScreen
+import com.example.animeapp.ui.main.components.BottomScreen
 import com.example.animeapp.ui.main.MainState
 import com.example.animeapp.utils.Navigation.navigateToAnimeDetail
 import com.example.animeapp.utils.Resource

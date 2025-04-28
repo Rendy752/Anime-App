@@ -36,6 +36,10 @@ import com.example.animeapp.ui.animeWatch.AnimeWatchScreen
 import com.example.animeapp.ui.animeHome.AnimeHomeScreen
 import com.example.animeapp.ui.animeHome.AnimeHomeViewModel
 import com.example.animeapp.ui.common_ui.MessageDisplay
+import com.example.animeapp.ui.main.components.BottomNavigationBar
+import com.example.animeapp.ui.main.components.BottomScreen
+import com.example.animeapp.ui.main.components.getBottomBarEnterTransition
+import com.example.animeapp.ui.main.components.getBottomBarExitTransition
 import com.example.animeapp.ui.settings.SettingsScreen
 import com.example.animeapp.utils.HlsPlayerUtil
 import com.example.animeapp.utils.Navigation.navigateToAnimeDetail

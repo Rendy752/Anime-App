@@ -35,7 +35,7 @@ import com.example.animeapp.ui.animeHome.components.TopAnimeCarouselSkeleton
 import com.example.animeapp.ui.common_ui.LimitAndPaginationQueryState
 import com.example.animeapp.ui.common_ui.LimitAndPaginationSection
 import com.example.animeapp.ui.common_ui.MessageDisplay
-import com.example.animeapp.ui.main.BottomScreen
+import com.example.animeapp.ui.main.components.BottomScreen
 import com.example.animeapp.ui.main.MainState
 import com.example.animeapp.utils.Navigation.navigateToAnimeDetail
 import com.example.animeapp.utils.Resource

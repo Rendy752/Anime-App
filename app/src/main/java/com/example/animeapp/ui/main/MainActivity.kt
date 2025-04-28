@@ -10,7 +10,6 @@ import android.view.MotionEvent
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
-import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
@@ -102,14 +101,6 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            LaunchedEffect(state.isDarkMode) {
-                if (state.isDarkMode) {
-                    AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-                } else {
-                    AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-                }
-            }
-
             BackHandler {
                 mainViewModel.dispatch(MainAction.SetShowQuitDialog(true))
             }
@@ -135,33 +126,30 @@ class MainActivity : AppCompatActivity() {
                 )
             }
 
-            if (!state.themeApplied) {
-                mainViewModel.dispatch(MainAction.SetThemeApplied(true))
-            }
-
-            if (state.themeApplied) {
-                AppTheme(context = this) {
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .pointerInput(Unit) {
-                                detectTapGestures(
-                                    onPress = { resetIdleTimer() },
-                                    onDoubleTap = { resetIdleTimer() },
-                                    onLongPress = { resetIdleTimer() }
-                                )
-                            },
-                        color = MaterialTheme.colorScheme.background
-                    ) {
-                        MainScreen(
-                            navController = navController,
-                            intentChannel = intentChannel,
-                            onResetIdleTimer = resetIdleTimer,
-                            mainState = state.copy(isLandscape = isLandscape),
-                            mainAction = mainViewModel::dispatch
-                        )
-                        setStatusBarAppearance(MaterialTheme.colorScheme.surface)
-                    }
+            AppTheme(
+                isDarkMode = state.isDarkMode,
+                contrastMode = state.contrastMode
+            ) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .pointerInput(Unit) {
+                            detectTapGestures(
+                                onPress = { resetIdleTimer() },
+                                onDoubleTap = { resetIdleTimer() },
+                                onLongPress = { resetIdleTimer() }
+                            )
+                        },
+                    color = MaterialTheme.colorScheme.background
+                ) {
+                    MainScreen(
+                        navController = navController,
+                        intentChannel = intentChannel,
+                        onResetIdleTimer = resetIdleTimer,
+                        mainState = state.copy(isLandscape = isLandscape),
+                        mainAction = mainViewModel::dispatch
+                    )
+                    setStatusBarAppearance(MaterialTheme.colorScheme.surface)
                 }
             }
         }

@@ -1,13 +1,11 @@
 package com.example.animeapp.ui.theme
 
-import android.content.Context
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 
 private val lightScheme = lightColorScheme(
     primary = primaryLight,
@@ -249,15 +247,25 @@ val unspecified_scheme = ColorFamily(
     Color.Unspecified, Color.Unspecified, Color.Unspecified, Color.Unspecified
 )
 
+enum class ContrastMode {
+    Normal, Medium, High
+}
+
 @Composable
 fun AppTheme(
-    context: Context = LocalContext.current,
-    content: @Composable() () -> Unit
+    isDarkMode: Boolean = false,
+    contrastMode: ContrastMode = ContrastMode.Normal,
+    content: @Composable () -> Unit
 ) {
-    val themePrefs = context.getSharedPreferences("theme_prefs", Context.MODE_PRIVATE)
-    val savedDarkMode = themePrefs.getBoolean("is_dark_mode", false)
-
-    val colorScheme = if (savedDarkMode) darkScheme else lightScheme
+    val colorScheme = when {
+        isDarkMode && contrastMode == ContrastMode.High -> highContrastDarkColorScheme
+        isDarkMode && contrastMode == ContrastMode.Medium -> mediumContrastDarkColorScheme
+        isDarkMode && contrastMode == ContrastMode.Normal -> darkScheme
+        contrastMode == ContrastMode.High -> highContrastLightColorScheme
+        contrastMode == ContrastMode.Medium -> mediumContrastLightColorScheme
+        contrastMode == ContrastMode.Normal -> lightScheme
+        else -> lightScheme
+    }
 
     MaterialTheme(
         colorScheme = colorScheme,
