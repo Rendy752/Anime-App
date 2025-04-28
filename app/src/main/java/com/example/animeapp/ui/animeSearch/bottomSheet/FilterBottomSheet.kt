@@ -10,10 +10,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.example.animeapp.R
 import com.example.animeapp.models.AnimeSearchQueryState
 import com.example.animeapp.ui.animeSearch.components.ApplyButton
 import com.example.animeapp.ui.animeSearch.components.ResetButton
@@ -63,7 +61,7 @@ private fun FilterHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            stringResource(R.string.filter),
+            "Filter",
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             style = MaterialTheme.typography.titleLarge,

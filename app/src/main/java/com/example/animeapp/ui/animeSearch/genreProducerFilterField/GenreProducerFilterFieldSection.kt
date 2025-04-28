@@ -13,9 +13,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.example.animeapp.R
 import com.example.animeapp.models.Genre
 import com.example.animeapp.models.Producer
 
@@ -72,7 +70,7 @@ fun GenreProducerFilterFieldSection(
                     )
                 } else {
                     Text(
-                        text = stringResource(id = R.string.genres_field),
+                        text = "Genres",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onPrimary
                     )
@@ -81,7 +79,7 @@ fun GenreProducerFilterFieldSection(
 
             Icon(
                 imageVector = if (isGenresBottomSheetShow) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
-                contentDescription = stringResource(id = R.string.chevron_down),
+                contentDescription = "Chevron Down",
                 tint = MaterialTheme.colorScheme.onPrimary
             )
         }
@@ -118,7 +116,7 @@ fun GenreProducerFilterFieldSection(
                     )
                 } else {
                     Text(
-                        text = stringResource(id = R.string.producers_field),
+                        text = "Producers",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onPrimary
                     )
@@ -127,7 +125,7 @@ fun GenreProducerFilterFieldSection(
 
             Icon(
                 imageVector = if (isProducersBottomSheetShow) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
-                contentDescription = stringResource(id = R.string.chevron_down),
+                contentDescription = "Chevron Down",
                 tint = MaterialTheme.colorScheme.onPrimary
             )
         }

@@ -1,13 +1,11 @@
 package com.example.animeapp.animeRecommendations
 
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.example.animeapp.R
 import com.example.animeapp.ui.animeRecommendations.AnimeRecommendationsScreen
 import com.example.animeapp.ui.main.components.BottomScreen
 import com.example.animeapp.ui.theme.AppTheme
@@ -78,10 +76,9 @@ class AnimeRecommendationsScreenTest {
     @Test
     fun animeRecommendationsScreen_displaysErrorMessage_whenNotConnected() {
         composeTestRule.setContent {
-            val currentContext = LocalContext.current
             AppTheme {
                 AnimeRecommendationsScreen()
-                composeTestRule.onNodeWithText(currentContext.getString(R.string.no_internet_connection))
+                composeTestRule.onNodeWithText("No internet connection")
                     .assertIsDisplayed()
             }
         }
@@ -94,10 +91,9 @@ class AnimeRecommendationsScreenTest {
         whenever(mockViewModel.animeRecommendations).thenReturn(errorState)
 
         composeTestRule.setContent {
-            val currentContext = LocalContext.current
             AppTheme {
                 AnimeRecommendationsScreen()
-                composeTestRule.onNodeWithText(currentContext.getString(R.string.error_loading_data))
+                composeTestRule.onNodeWithText("Error Loading Data")
                     .assertIsDisplayed()
             }
         }

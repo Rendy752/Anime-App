@@ -12,9 +12,7 @@ import androidx.compose.material.icons.filled.Score
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import com.example.animeapp.R
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.utils.TextUtils.formatNumber
 
@@ -26,28 +24,28 @@ fun NumericDetailSection(animeDetail: AnimeDetail) {
             .horizontalScroll(rememberScrollState()),
     ) {
         NumericDetailItem(
-            title = stringResource(R.string.score),
+            title = "Score",
             value = animeDetail.score?.toString() ?: "N/A",
             subValue = animeDetail.scored_by?.let { "${it.formatNumber()} Users" } ?: "N/A",
             icon = Icons.Filled.Score
         )
         NumericDetailItem(
-            title = stringResource(R.string.ranked),
+            title = "Ranked",
             value = animeDetail.rank?.let { "#${it.formatNumber()}" } ?: "N/A",
             icon = Icons.Filled.Star
         )
         NumericDetailItem(
-            title = stringResource(R.string.popularity),
+            title = "Popularity",
             value = "#${animeDetail.popularity.formatNumber()}",
             icon = Icons.AutoMirrored.Filled.TrendingUp
         )
         NumericDetailItem(
-            title = stringResource(R.string.members),
+            title = "Members",
             value = animeDetail.members.formatNumber(),
             icon = Icons.Filled.Groups
         )
         NumericDetailItem(
-            title = stringResource(R.string.favorites),
+            title = "Favorites",
             value = animeDetail.favorites.formatNumber(),
             icon = Icons.Filled.Favorite
         )

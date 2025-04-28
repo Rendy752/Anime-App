@@ -21,11 +21,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.animeapp.R
 import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.ui.common_ui.SkeletonBox
@@ -129,7 +127,7 @@ fun AnimeDetailTopBar(
                                     Icon(
                                         imageVector = Icons.Filled.LiveTv,
                                         tint = MaterialTheme.colorScheme.primary,
-                                        contentDescription = stringResource(id = R.string.watch)
+                                        contentDescription = "Watch"
                                     )
                                 }
                             }
@@ -142,7 +140,7 @@ fun AnimeDetailTopBar(
                         Icon(
                             imageVector = Icons.Filled.Share,
                             tint = MaterialTheme.colorScheme.primary,
-                            contentDescription = stringResource(id = R.string.filter)
+                            contentDescription = "Share"
                         )
                     }
                 }

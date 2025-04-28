@@ -19,11 +19,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import com.example.animeapp.R
 import com.example.animeapp.models.episodeDetailComplementPlaceholder
 import com.example.animeapp.models.listAnimeDetailResponsePlaceholder
 import com.example.animeapp.ui.animeHome.components.ContinueWatchingPopup
@@ -154,11 +152,11 @@ fun AnimeHomeScreen(
                         if (mainState.isConnected) Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
-                        ) { MessageDisplay(stringResource(R.string.error_loading_data)) }
+                        ) { MessageDisplay("Error Loading Data") }
                         else Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
-                        ) { MessageDisplay(stringResource(R.string.no_internet_connection)) }
+                        ) { MessageDisplay("No internet connection") }
                     }
                 }
                 LimitAndPaginationSection(

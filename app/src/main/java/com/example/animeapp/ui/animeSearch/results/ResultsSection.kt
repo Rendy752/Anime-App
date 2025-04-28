@@ -7,9 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavController
-import com.example.animeapp.R
 import com.example.animeapp.models.AnimeSearchResponse
 import com.example.animeapp.models.Genre
 import com.example.animeapp.models.GenresResponse
@@ -40,7 +38,7 @@ fun ResultsSection(
             is Resource.Success -> {
                 if (animeSearchResults.data.data.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        MessageDisplay(stringResource(R.string.no_results_found))
+                        MessageDisplay("No Results Found")
                     }
                 } else {
                     LazyColumn {
@@ -66,7 +64,7 @@ fun ResultsSection(
 
             is Resource.Error -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    MessageDisplay(stringResource(R.string.error_loading_data))
+                    MessageDisplay("Error Loading Data")
                 }
             }
         }
