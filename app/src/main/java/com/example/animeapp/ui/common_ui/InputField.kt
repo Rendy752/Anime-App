@@ -45,8 +45,6 @@ fun NumberInputField(
             } else {
                 isError = true
             }
-
-
         },
         label = { Text(label) },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -142,6 +140,7 @@ fun DateRangePickerInline(
             state = dateRangePickerState,
             modifier = Modifier
                 .fillMaxWidth()
+                .padding(horizontal = 8.dp)
                 .height(400.dp)
         )
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {

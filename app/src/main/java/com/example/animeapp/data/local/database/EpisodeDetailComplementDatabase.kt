@@ -25,7 +25,7 @@ abstract class EpisodeDetailComplementDatabase : RoomDatabase() {
                     context.applicationContext,
                     EpisodeDetailComplementDatabase::class.java,
                     "episode_detail_complement.db"
-                ).fallbackToDestructiveMigration().build()
+                ).fallbackToDestructiveMigration(true).build()
                 INSTANCE = instance
                 instance
             }

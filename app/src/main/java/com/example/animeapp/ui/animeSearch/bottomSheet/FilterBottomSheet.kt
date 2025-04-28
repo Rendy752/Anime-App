@@ -32,11 +32,7 @@ fun FilterBottomSheet(
 
     val filterState = remember { mutableStateOf(FilterUtils.FilterState(queryState)) }
 
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .padding(8.dp)
-    ) {
+    Column(Modifier.fillMaxWidth()) {
         FilterHeader(
             queryState,
             applyFilters,
@@ -124,6 +120,7 @@ private fun FilterContent(
     Column(
         Modifier
             .fillMaxWidth()
+            .padding(8.dp)
             .verticalScroll(scrollState)
     ) {
         Row(Modifier.fillMaxWidth()) {
@@ -147,6 +144,9 @@ private fun FilterContent(
                     .padding(start = 4.dp)
             )
         }
+
+        Spacer(Modifier.height(8.dp))
+
         Row(Modifier.fillMaxWidth()) {
             DropdownInputField(
                 label = "Rating",
@@ -174,6 +174,7 @@ private fun FilterContent(
                 maxValue = 10.0
             )
         }
+
         Row(Modifier.fillMaxWidth()) {
             NumberInputField(
                 "Min Score",
@@ -196,6 +197,7 @@ private fun FilterContent(
                 maxValue = 10.0
             )
         }
+
         Row(Modifier.fillMaxWidth()) {
             DropdownInputField(
                 "Order By",
@@ -216,14 +218,23 @@ private fun FilterContent(
                     .padding(start = 4.dp)
             )
         }
+
+        Spacer(Modifier.height(8.dp))
+
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             Row(Modifier.fillMaxWidth()) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Checkbox(
                         checked = filterState.value.enableDateRange,
                         onCheckedChange = {
                             filterState.value = filterState.value.copy(enableDateRange = it)
-                        })
+                        }
+                    )
                     Text("Enable Date Range")
                 }
                 CheckboxInputField(
@@ -232,7 +243,7 @@ private fun FilterContent(
                     { filterState.value = filterState.value.copy(unapproved = it) },
                     Modifier
                         .weight(1f)
-                        .padding(end = 4.dp)
+                        .padding(start = 4.dp)
                 )
             }
             if (filterState.value.enableDateRange) {
@@ -247,7 +258,8 @@ private fun FilterContent(
                     },
                     {
                         filterState.value = filterState.value.copy(startDate = null, endDate = null)
-                    })
+                    }
+                )
             }
         }
     }

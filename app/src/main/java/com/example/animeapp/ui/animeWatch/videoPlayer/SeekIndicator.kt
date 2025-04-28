@@ -56,7 +56,7 @@ fun SeekIndicator(
                 )
                 .padding(16.dp)
         ) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally,) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 if (seekDirection == 1) {
                     Icon(
                         imageVector = Icons.Default.FastForward,

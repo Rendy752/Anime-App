@@ -7,6 +7,7 @@ import android.os.Build
 import android.view.WindowInsets
 import android.view.WindowManager
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -37,6 +38,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
@@ -61,7 +63,8 @@ fun AnimeWatchScreen(
     isPipMode: Boolean = false,
     onEnterPipMode: () -> Unit = {},
 ) {
-    val viewModel: AnimeWatchViewModel = hiltViewModel()
+    val activity = LocalActivity.current as ViewModelStoreOwner
+    val viewModel: AnimeWatchViewModel = hiltViewModel(activity)
 
     // ViewModel Data
     val animeDetail by viewModel.animeDetail.collectAsStateWithLifecycle()
@@ -193,9 +196,9 @@ fun AnimeWatchScreen(
                     .then(if (mainState.isLandscape) Modifier.weight(0.5f) else Modifier.fillMaxWidth())
                     .then(videoSize)
                 AnimeWatchContent(
-                    animeDetail,
-                    isFavorite.value,
-                    { episodeDetailComplement, seekPosition ->
+                    animeDetail = animeDetail,
+                    isFavorite = isFavorite.value,
+                    updateStoredWatchState = { episodeDetailComplement, seekPosition ->
                         viewModel.updateLastEpisodeWatchedIdAnimeDetailComplement(
                             episodeDetailComplement.id
                         )
@@ -207,23 +210,24 @@ fun AnimeWatchScreen(
                         )
                         viewModel.updateEpisodeDetailComplement(updatedEpisodeDetailComplement)
                     },
-                    { viewModel.getCachedEpisodeDetailComplement(it) },
-                    animeDetailComplement?.episodes,
-                    episodeDetailComplement,
-                    episodeSourcesQuery,
-                    mainState.isConnected,
-                    mainState.isLandscape,
-                    isPipMode,
-                    isFullscreen,
-                    scrollState,
-                    isScreenOn,
-                    onEnterPipMode,
-                    { isFullscreen = it },
-                    { errorMessage = it },
-                    { viewModel.handleSelectedEpisodeServer(it) },
-                    selectedContentIndex,
-                    videoPlayerModifier,
-                    videoSize
+                    getCachedEpisodeDetailComplement = viewModel::getCachedEpisodeDetailComplement,
+                    episodes = animeDetailComplement?.episodes,
+                    episodeDetailComplement = episodeDetailComplement,
+                    episodeSourcesQuery = episodeSourcesQuery,
+                    isConnected = mainState.isConnected,
+                    isLandscape = mainState.isLandscape,
+                    isPipMode = isPipMode,
+                    isFullscreen = isFullscreen,
+                    scrollState = scrollState,
+                    isScreenOn = isScreenOn,
+                    onEnterPipMode = onEnterPipMode,
+                    onFullscreenChange = { isFullscreen = it },
+                    setPipSourceRect = viewModel::setPipSourceRect,
+                    onPlayerError = { errorMessage = it },
+                    handleSelectedEpisodeServer = viewModel::handleSelectedEpisodeServer,
+                    selectedContentIndex = selectedContentIndex,
+                    modifier = videoPlayerModifier,
+                    videoSize = videoSize
                 )
             }
         }

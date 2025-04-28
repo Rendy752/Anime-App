@@ -1,5 +1,6 @@
 package com.example.animeapp.ui.animeSearch
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -36,6 +37,7 @@ import com.example.animeapp.ui.main.BottomScreen
 import com.example.animeapp.ui.main.MainState
 import com.example.animeapp.utils.Resource
 
+@SuppressLint("ConfigurationScreenWidthHeight")
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview
 @Composable
@@ -164,17 +166,15 @@ fun AnimeSearchScreen(
                             )
                             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                             GenreProducerFilterFieldSection(
-                                selectedGenres,
-                                viewModel::setSelectedGenre,
-                                viewModel::applyGenreFilters,
-                                selectedProducers,
-                                viewModel::setSelectedProducer,
-                                viewModel::applyProducerFilters,
-                                isGenresBottomSheetShow,
-                                isProducersBottomSheetShow,
-                                setGenresBottomSheet = {
-                                    isGenresBottomSheetShow = it
-                                },
+                                selectedGenres = selectedGenres,
+                                setSelectedGenre = viewModel::setSelectedGenre,
+                                applyGenreFilters = viewModel::applyGenreFilters,
+                                selectedProducers = selectedProducers,
+                                setSelectedProducer = viewModel::setSelectedProducer,
+                                applyProducerFilters = viewModel::applyProducerFilters,
+                                isGenresBottomSheetShow = isGenresBottomSheetShow,
+                                isProducersBottomSheetShow = isProducersBottomSheetShow,
+                                setGenresBottomSheet = { isGenresBottomSheetShow = it },
                                 setProducersBottomSheet = { isProducersBottomSheetShow = it }
                             )
                             HorizontalDivider(modifier = Modifier.padding(bottom = 8.dp))
@@ -193,7 +193,7 @@ fun AnimeSearchScreen(
                                         )
                                     )
                                 },
-                                false
+                                useHorizontalPager = false
                             )
                         }
                         VerticalDivider()
@@ -204,14 +204,15 @@ fun AnimeSearchScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             ResultsSection(
-                                navController,
-                                animeSearchResults,
-                                selectedGenres,
-                                genres,
-                            ) { genre ->
-                                viewModel.setSelectedGenre(genre)
-                                viewModel.applyGenreFilters()
-                            }
+                                navController = navController,
+                                animeSearchResults = animeSearchResults,
+                                selectedGenres = selectedGenres,
+                                genres = genres,
+                                onGenreClick = { genre ->
+                                    viewModel.setSelectedGenre(genre)
+                                    viewModel.applyGenreFilters()
+                                }
+                            )
                         }
                     }
                 } else {
@@ -225,28 +226,29 @@ fun AnimeSearchScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         GenreProducerFilterFieldSection(
-                            selectedGenres,
-                            viewModel::setSelectedGenre,
-                            viewModel::applyGenreFilters,
-                            selectedProducers,
-                            viewModel::setSelectedProducer,
-                            viewModel::applyProducerFilters,
-                            isGenresBottomSheetShow,
-                            isProducersBottomSheetShow,
+                            selectedGenres = selectedGenres,
+                            setSelectedGenre = viewModel::setSelectedGenre,
+                            applyGenreFilters = viewModel::applyGenreFilters,
+                            selectedProducers = selectedProducers,
+                            setSelectedProducer = viewModel::setSelectedProducer,
+                            applyProducerFilters = viewModel::applyProducerFilters,
+                            isGenresBottomSheetShow = isGenresBottomSheetShow,
+                            isProducersBottomSheetShow = isProducersBottomSheetShow,
                             setGenresBottomSheet = { isGenresBottomSheetShow = it },
                             setProducersBottomSheet = { isProducersBottomSheetShow = it }
                         )
                         HorizontalDivider()
                         Column(modifier = Modifier.weight(1f)) {
                             ResultsSection(
-                                navController,
-                                animeSearchResults,
-                                selectedGenres,
-                                genres,
-                            ) { genre ->
-                                viewModel.setSelectedGenre(genre)
-                                viewModel.applyGenreFilters()
-                            }
+                                navController = navController,
+                                animeSearchResults = animeSearchResults,
+                                selectedGenres = selectedGenres,
+                                genres = genres,
+                                onGenreClick = { genre ->
+                                    viewModel.setSelectedGenre(genre)
+                                    viewModel.applyGenreFilters()
+                                }
+                            )
                         }
                         LimitAndPaginationSection(
                             isVisible = animeSearchResults is Resource.Success,
@@ -269,57 +271,59 @@ fun AnimeSearchScreen(
             }
 
             val configuration = LocalConfiguration.current
-            val screenWidth = configuration.screenWidthDp.dp
-            val screenHeight = configuration.screenHeightDp.dp
-            val bottomPadding = 48.dp
+            val bottomSheetWidthFraction = if (mainState.isLandscape) 0.7f else 0.95f
+            val bottomSheetHeightFraction = if (mainState.isLandscape) 0.9f else 0.6f
             val containerColor = MaterialTheme.colorScheme.surfaceContainer
+            val bottomPadding = 48.dp
             val shape = MaterialTheme.shapes.extraLarge
 
             if (isFilterBottomSheetShow) {
                 ModalBottomSheet(
                     modifier = Modifier
-                        .height(if (mainState.isLandscape) screenHeight * 0.95f else screenHeight * 0.6f)
-                        .width(if (mainState.isLandscape) screenWidth * 0.7f else screenWidth * 0.95f)
+                        .height((configuration.screenHeightDp * bottomSheetHeightFraction).dp)
+                        .width((configuration.screenWidthDp * bottomSheetWidthFraction).dp)
                         .padding(bottom = if (mainState.isLandscape) 0.dp else bottomPadding)
                         .align(Alignment.BottomCenter),
+                    sheetGesturesEnabled = false,
                     containerColor = containerColor,
                     sheetState = sheetState,
                     onDismissRequest = { isFilterBottomSheetShow = false },
-                    shape = shape
+                    shape = shape,
+                    contentWindowInsets = { WindowInsets(0.dp) }
                 ) {
-                    Column(modifier = Modifier.clip(shape)) {
-                        FilterBottomSheet(
-                            queryState = queryState,
-                            applyFilters = viewModel::applyFilters,
-                            resetBottomSheetFilters = viewModel::resetBottomSheetFilters,
-                            onDismiss = { isFilterBottomSheetShow = false }
-                        )
-                    }
+                    FilterBottomSheet(
+                        queryState = queryState,
+                        applyFilters = viewModel::applyFilters,
+                        resetBottomSheetFilters = viewModel::resetBottomSheetFilters,
+                        onDismiss = { isFilterBottomSheetShow = false }
+                    )
                 }
             }
 
             if (isGenresBottomSheetShow) {
                 ModalBottomSheet(
                     modifier = Modifier
-                        .height(if (mainState.isLandscape) screenHeight * 0.95f else screenHeight * 0.6f)
-                        .width(if (mainState.isLandscape) screenWidth * 0.9f else screenWidth * 0.95f)
+                        .height((configuration.screenHeightDp * bottomSheetHeightFraction).dp)
+                        .width((configuration.screenWidthDp * bottomSheetWidthFraction).dp)
                         .padding(bottom = if (mainState.isLandscape) 0.dp else bottomPadding)
                         .align(Alignment.BottomCenter),
                     containerColor = containerColor,
                     sheetState = sheetState,
                     onDismissRequest = { isGenresBottomSheetShow = false },
-                    shape = shape
+                    shape = shape,
+                    contentWindowInsets = { WindowInsets(0.dp) }
                 ) {
                     Column(modifier = Modifier.clip(shape)) {
                         GenresBottomSheet(
-                            queryState,
-                            viewModel::fetchGenres,
-                            genres,
-                            selectedGenres,
-                            viewModel::setSelectedGenre,
-                            viewModel::resetGenreSelection,
-                            viewModel::applyGenreFilters,
-                            onDismiss = { isGenresBottomSheetShow = false })
+                            queryState = queryState,
+                            fetchGenres = viewModel::fetchGenres,
+                            genres = genres,
+                            selectedGenres = selectedGenres,
+                            setSelectedGenre = viewModel::setSelectedGenre,
+                            resetGenreSelection = viewModel::resetGenreSelection,
+                            applyGenreFilters = viewModel::applyGenreFilters,
+                            onDismiss = { isGenresBottomSheetShow = false }
+                        )
                     }
                 }
             }
@@ -327,26 +331,27 @@ fun AnimeSearchScreen(
             if (isProducersBottomSheetShow) {
                 ModalBottomSheet(
                     modifier = Modifier
-                        .height(if (mainState.isLandscape) screenHeight * 0.95f else screenHeight * 0.6f)
-                        .width(if (mainState.isLandscape) screenWidth * 0.9f else screenWidth * 0.95f)
+                        .height((configuration.screenHeightDp * bottomSheetHeightFraction).dp)
+                        .width((configuration.screenWidthDp * bottomSheetWidthFraction).dp)
                         .padding(bottom = if (mainState.isLandscape) 0.dp else bottomPadding)
                         .align(Alignment.BottomCenter),
                     containerColor = containerColor,
                     sheetState = sheetState,
                     onDismissRequest = { isProducersBottomSheetShow = false },
-                    shape = shape
+                    shape = shape,
+                    contentWindowInsets = { WindowInsets(0.dp) }
                 ) {
                     Column(modifier = Modifier.clip(shape)) {
                         ProducersBottomSheet(
-                            queryState,
-                            producers,
-                            viewModel::fetchProducers,
-                            selectedProducers,
-                            producersQueryState,
-                            viewModel::applyProducerQueryStateFilters,
-                            viewModel::setSelectedProducer,
-                            viewModel::applyProducerFilters,
-                            viewModel::resetProducerSelection,
+                            queryState = queryState,
+                            producers = producers,
+                            fetchProducers = viewModel::fetchProducers,
+                            selectedProducers = selectedProducers,
+                            producersQueryState = producersQueryState,
+                            applyProducerQueryStateFilters = viewModel::applyProducerQueryStateFilters,
+                            setSelectedProducer = viewModel::setSelectedProducer,
+                            applyProducerFilters = viewModel::applyProducerFilters,
+                            resetProducerSelection = viewModel::resetProducerSelection,
                             onDismiss = { isProducersBottomSheetShow = false }
                         )
                     }

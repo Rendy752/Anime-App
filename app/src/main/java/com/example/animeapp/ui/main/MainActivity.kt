@@ -3,6 +3,7 @@ package com.example.animeapp.ui.main
 import android.app.PictureInPictureParams
 import android.content.Intent
 import android.content.res.Configuration
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.MotionEvent
@@ -32,6 +33,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.animeapp.AnimeApplication
+import com.example.animeapp.ui.animeWatch.AnimeWatchViewModel
 import com.example.animeapp.ui.common_ui.ConfirmationAlert
 import com.example.animeapp.ui.theme.AppTheme
 import com.example.animeapp.utils.HlsPlayerUtil
@@ -49,10 +51,18 @@ class MainActivity : AppCompatActivity() {
     private var lastInteractionTime = System.currentTimeMillis()
     private val idleTimeoutMillis = TimeUnit.MINUTES.toMillis(1)
     private val intentChannel = Channel<Intent>(Channel.CONFLATED)
+    private lateinit var pipParamsBuilder: PictureInPictureParams.Builder
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
+
+        pipParamsBuilder = PictureInPictureParams.Builder().apply {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                setAutoEnterEnabled(true)
+            }
+            setActions(buildPipActions(this@MainActivity, false))
+        }
 
         intent?.let { intentChannel.trySend(it) }
 
@@ -60,20 +70,33 @@ class MainActivity : AppCompatActivity() {
             navController = rememberNavController()
 
             val mainViewModel: MainViewModel = hiltViewModel()
+            val animeWatchViewModel: AnimeWatchViewModel = hiltViewModel()
             val state by mainViewModel.state.collectAsStateWithLifecycle()
+            val pipSourceRect by animeWatchViewModel.pipSourceRect.collectAsStateWithLifecycle()
 
             val configuration = LocalConfiguration.current
             val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
             val resetIdleTimer = remember { { lastInteractionTime = System.currentTimeMillis() } }
+
+            val currentRoute = navController.currentDestination?.route
+            val isOnWatchScreen = currentRoute?.startsWith("animeWatch/") == true
+
+            LaunchedEffect(isOnWatchScreen, pipSourceRect) {
+                if (isOnWatchScreen && pipSourceRect != null) {
+                    Log.d("MainActivity", "PiP SourceRectHint: $pipSourceRect")
+                    pipParamsBuilder.setSourceRectHint(pipSourceRect)
+                    setPictureInPictureParams(pipParamsBuilder.build())
+                }
+            }
 
             LaunchedEffect(Unit) {
                 while (true) {
                     delay(500)
                     val currentTime = System.currentTimeMillis()
                     val isIdle = currentTime - lastInteractionTime > idleTimeoutMillis
-                    val currentRoute = navController.currentDestination?.route
+                    val route = navController.currentDestination?.route
 
-                    if (isIdle && currentRoute?.startsWith("animeWatch/") == false) {
+                    if (isIdle && route?.startsWith("animeWatch/") == false) {
                         mainViewModel.dispatch(MainAction.SetIsShowIdleDialog(true))
                     }
                 }
@@ -174,9 +197,11 @@ class MainActivity : AppCompatActivity() {
             "MainActivity",
             "onPictureInPictureModeChanged: isInPictureInPictureMode=$isInPictureInPictureMode, configuration=$configuration"
         )
-        onPictureInPictureModeChangedListeners.forEach { it(isInPictureInPictureMode) }
-        if (!isInPictureInPictureMode) {
-            (application as AnimeApplication).getMediaPlaybackService()?.pausePlayer()
+        onPictureInPictureModeChangedListeners.forEach {
+            if (!isInPictureInPictureMode) {
+                (application as AnimeApplication).getMediaPlaybackService()?.pausePlayer()
+            }
+            it(isInPictureInPictureMode)
         }
     }
 
@@ -194,11 +219,8 @@ class MainActivity : AppCompatActivity() {
         if (currentRoute?.startsWith("animeWatch/") == true) {
             val isPlaying = HlsPlayerUtil.state.value.isPlaying
             Log.d("MainActivity", "onUserLeaveHint: Entering PiP, isPlaying=$isPlaying")
-            enterPictureInPictureMode(
-                PictureInPictureParams.Builder()
-                    .setActions(buildPipActions(this, isPlaying))
-                    .build()
-            )
+            pipParamsBuilder.setActions(buildPipActions(this, isPlaying))
+            enterPictureInPictureMode(pipParamsBuilder.build())
         }
     }
 

@@ -24,17 +24,20 @@ import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.Episode
+import com.example.animeapp.models.animeDetailComplementPlaceholder
+import com.example.animeapp.models.episodePlaceholder
 import com.example.animeapp.ui.common_ui.SkeletonBox
 import com.example.animeapp.utils.WatchUtils.getEpisodeBackgroundColor
 import com.example.animeapp.utils.basicContainer
 
+@Preview
 @Composable
 fun EpisodeDetailItem(
-    animeDetailComplement: AnimeDetailComplement,
-    episode: Episode,
-    query: String,
-    getCachedEpisodeDetailComplement: suspend (String) -> EpisodeDetailComplement?,
-    onClick: (String) -> Unit
+    animeDetailComplement: AnimeDetailComplement = animeDetailComplementPlaceholder,
+    episode: Episode = episodePlaceholder,
+    query: String = "",
+    getCachedEpisodeDetailComplement: suspend (String) -> EpisodeDetailComplement? = { null },
+    onClick: (String) -> Unit = {}
 ) {
     var episodeDetailComplement by remember { mutableStateOf<EpisodeDetailComplement?>(null) }
     LaunchedEffect(query) {

@@ -9,12 +9,12 @@ import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
 import android.telephony.TelephonyManager
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
 import com.example.animeapp.models.NetworkStatus
 
 class NetworkStateMonitor(context: Context) {
@@ -48,7 +48,7 @@ class NetworkStateMonitor(context: Context) {
         ) {
             super.onCapabilitiesChanged(network, networkCapabilities)
             _downstreamSpeed.postValue(networkCapabilities.linkDownstreamBandwidthKbps)
-            updateNetworkStatus(networkCapabilities.linkDownstreamBandwidthKbps, context)
+            updateNetworkStatus(networkCapabilities, context)
             postDelayedConnectivityCheck()
         }
     }
@@ -66,53 +66,52 @@ class NetworkStateMonitor(context: Context) {
         val activeNetwork = connectivityManager.activeNetwork ?: run {
             _isConnected.postValue(false)
             _downstreamSpeed.postValue(0)
-            updateNetworkStatus(0, context)
+            updateNetworkStatus(null, context)
             return
         }
 
         val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork) ?: run {
             _isConnected.postValue(false)
             _downstreamSpeed.postValue(0)
-            updateNetworkStatus(0, context)
+            updateNetworkStatus(null, context)
             return
         }
 
         val hasInternet = capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
         _isConnected.postValue(hasInternet)
         _downstreamSpeed.postValue(capabilities.linkDownstreamBandwidthKbps)
-        updateNetworkStatus(capabilities.linkDownstreamBandwidthKbps, context)
+        updateNetworkStatus(capabilities, context)
     }
 
-    private fun updateNetworkStatus(speed: Int, context: Context) {
-        val activeNetwork = connectivityManager.activeNetwork
-        val capabilities = connectivityManager.getNetworkCapabilities(activeNetwork)
-        val networkInfo = connectivityManager.activeNetworkInfo
-
+    private fun updateNetworkStatus(capabilities: NetworkCapabilities?, context: Context) {
         val isAirplaneModeOn = Settings.Global.getInt(
             context.contentResolver,
             Settings.Global.AIRPLANE_MODE_ON,
             0
         ) != 0
 
-        val telephonyManager =
-            context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager?
-        val isCellularDataEnabled =
-            if (telephonyManager != null) {
-                telephonyManager.dataState == TelephonyManager.DATA_CONNECTED || telephonyManager.dataState == TelephonyManager.DATA_CONNECTING
-            } else {
-                false
-            }
-
         var icon: ImageVector = Icons.Filled.WifiOff
         var iconColor: Color = Color.Gray
         var label = "Offline"
+        val speed = capabilities?.linkDownstreamBandwidthKbps ?: 0
 
         if (isAirplaneModeOn) {
             icon = Icons.Filled.AirplanemodeActive
             iconColor = Color.Gray
             label = "Airplane"
-        } else if (activeNetwork == null || capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == false) {
-            if (networkInfo?.type == ConnectivityManager.TYPE_MOBILE && !isCellularDataEnabled) {
+            _networkStatus.postValue(NetworkStatus(icon, label, iconColor))
+            return
+        }
+
+        val telephonyManager =
+            context.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager?
+        val isCellularDataEnabled =
+            telephonyManager?.let {
+                it.dataState == TelephonyManager.DATA_CONNECTED || it.dataState == TelephonyManager.DATA_CONNECTING
+            } == true
+
+        if (capabilities == null || !capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) {
+            if (capabilities?.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) == true && !isCellularDataEnabled) {
                 icon = Icons.Filled.SignalCellularOff
                 iconColor = Color.Gray
                 label = "Cellular Off"
@@ -121,7 +120,7 @@ class NetworkStateMonitor(context: Context) {
                 iconColor = Color.Red
                 label = "No Internet"
             }
-        } else if (capabilities != null) {
+        } else {
             if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
                 when (speed) {
                     in 1..5000 -> {
@@ -163,7 +162,7 @@ class NetworkStateMonitor(context: Context) {
                     }
                 }
             } else {
-                icon = Icons.Filled.WifiOff
+                icon = Icons.Filled.Wifi
                 iconColor = Color.Green
                 label = "Connected"
             }

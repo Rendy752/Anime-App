@@ -5,6 +5,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.graphics.Rect
 import android.os.IBinder
 import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.session.MediaControllerCompat
@@ -50,6 +51,7 @@ fun VideoPlayerSection(
     onFullscreenChange: (Boolean) -> Unit,
     isScreenOn: Boolean,
     isLandscape: Boolean,
+    setPipSourceRect: (Rect?) -> Unit,
     onPlayerError: (String?) -> Unit,
     modifier: Modifier = Modifier,
     videoSize: Modifier
@@ -66,6 +68,12 @@ fun VideoPlayerSection(
     var introOutroHandler by remember { mutableStateOf<IntroOutroHandler?>(null) }
 
     val application = context.applicationContext as AnimeApplication
+
+    LaunchedEffect(playerView) {
+        val rect = Rect()
+        playerView.getGlobalVisibleRect(rect)
+        setPipSourceRect(rect)
+    }
 
     val serviceConnection = remember {
         object : ServiceConnection {
@@ -196,6 +204,7 @@ fun VideoPlayerSection(
         onDispose {
             Log.d("VideoPlayerSection", "Disposing VideoPlayerSection")
             try {
+                setPipSourceRect(null)
                 mediaControllerCompat?.transportControls?.pause()
                 HlsPlayerUtil.dispatch(PlayerAction.Pause)
                 Log.d("VideoPlayerSection", "Paused playback before disposal")
