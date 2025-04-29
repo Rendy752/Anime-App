@@ -20,11 +20,14 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Popup
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.animeapp.models.episodeDetailComplementPlaceholder
 import com.example.animeapp.models.listAnimeDetailResponsePlaceholder
-import com.example.animeapp.ui.animeHome.components.ContinueWatchingPopup
+import com.example.animeapp.ui.common_ui.ContinueWatchingAnime
 import com.example.animeapp.ui.animeHome.components.AnimeSchedulesGrid
 import com.example.animeapp.ui.animeHome.components.AnimeSchedulesGridSkeleton
 import com.example.animeapp.ui.animeHome.components.FilterChipBar
@@ -36,6 +39,7 @@ import com.example.animeapp.ui.common_ui.MessageDisplay
 import com.example.animeapp.ui.main.components.BottomScreen
 import com.example.animeapp.ui.main.MainState
 import com.example.animeapp.utils.Navigation.navigateToAnimeDetail
+import com.example.animeapp.utils.Navigation.navigateToAnimeWatch
 import com.example.animeapp.utils.Resource
 import kotlinx.coroutines.delay
 
@@ -174,12 +178,23 @@ fun AnimeHomeScreen(
                         )
                     }
                 )
-                if (state.isShowPopup) ContinueWatchingPopup(
-                    navController = navController,
-                    episodeDetailComplement = state.continueWatchingEpisode,
-                    isMinimized = state.isMinimized,
-                    onSetMinimize = { action(HomeAction.SetMinimized(it)) }
-                )
+
+                state.continueWatchingEpisode?.let { continueWatchingEpisode ->
+                    if (state.isShowPopup) Popup(
+                        alignment = Alignment.BottomEnd,
+                        offset = IntOffset(0, (-200).dp.value.toInt()),
+                    ) {
+                        ContinueWatchingAnime(
+                            episodeDetailComplement = continueWatchingEpisode,
+                            isMinimized = state.isMinimized,
+                            onSetMinimize = { action(HomeAction.SetMinimized(it)) },
+                            onTitleClick = { navController.navigateToAnimeDetail(it) },
+                            onEpisodeClick = { malId, episodeId ->
+                                navController.navigateToAnimeWatch(malId, episodeId)
+                            }
+                        )
+                    }
+                }
             }
         }
     }

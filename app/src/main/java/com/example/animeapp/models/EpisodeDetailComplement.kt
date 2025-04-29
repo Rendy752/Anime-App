@@ -33,14 +33,14 @@ data class EpisodeDetailComplement(
 ) : Parcelable
 
 val episodeDetailComplementPlaceholder = EpisodeDetailComplement(
-    id = "watch-1",
-    malId = 1,
-    aniwatchId = "1",
-    animeTitle = "Title of Anime",
-    episodeTitle = "Title of Episode",
-    number = 1,
+    id = "naruto-shippuden-355?ep=8203",
+    malId = animeDetailPlaceholder.mal_id,
+    aniwatchId = "naruto-shippuden-355",
+    animeTitle = animeDetailPlaceholder.title,
+    episodeTitle = "Madara Uchiha",
+    number = 322,
     isFiller = false,
-    imageUrl = "https://cdn.myanimelist.net/images/",
+    imageUrl = animeDetailPlaceholder.images.webp.large_image_url,
     servers = episodeServersResponsePlaceholder,
     sources = episodeSourcesResponsePlaceholder,
     sourcesQuery = episodeSourcesQueryPlaceholder,

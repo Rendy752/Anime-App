@@ -14,9 +14,9 @@ fun InfoContentSection(
     animeDetail: AnimeDetail?
 ) {
     if (animeDetail != null) {
-        AnimeHeader(animeDetail)
-        YoutubePreview(animeDetail.trailer.embed_url)
-        DetailCommonBody("Synopsis", animeDetail.synopsis)
+        AnimeHeader(animeDetail = animeDetail)
+        YoutubePreview(embedUrl = animeDetail.trailer.embed_url)
+        DetailCommonBody(title = "Synopsis", body = animeDetail.synopsis)
     } else {
         AnimeHeaderSkeleton()
         YoutubePreviewSkeleton()

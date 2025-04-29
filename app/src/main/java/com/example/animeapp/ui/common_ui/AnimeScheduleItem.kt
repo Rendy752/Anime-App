@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animeHome.components
+package com.example.animeapp.ui.common_ui
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,23 +18,24 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.AnimeDetail
-import com.example.animeapp.ui.common_ui.AsyncImageWithPlaceholder
-import com.example.animeapp.ui.common_ui.ImageRoundedCorner
-import com.example.animeapp.ui.common_ui.SkeletonBox
+import com.example.animeapp.models.animeDetailPlaceholder
 import com.example.animeapp.utils.basicContainer
 
+@Preview
 @Composable
 fun AnimeScheduleItem(
-    animeDetail: AnimeDetail,
-    remainingTime: String,
-    onItemClick: (AnimeDetail) -> Unit
+    modifier: Modifier = Modifier,
+    animeDetail: AnimeDetail = animeDetailPlaceholder,
+    remainingTime: String = "23h 59m",
+    onItemClick: ((AnimeDetail) -> Unit)? = null
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .basicContainer(
                 outerPadding = PaddingValues(0.dp),
                 innerPadding = PaddingValues(0.dp),
-                onItemClick = { onItemClick(animeDetail) })
+                onItemClick = onItemClick?.let { { it(animeDetail) } }
+            )
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
             AsyncImageWithPlaceholder(

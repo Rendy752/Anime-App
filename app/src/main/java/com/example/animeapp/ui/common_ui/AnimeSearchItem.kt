@@ -2,6 +2,7 @@ package com.example.animeapp.ui.common_ui
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
@@ -32,26 +33,20 @@ import com.example.animeapp.utils.shimmerContainer
 
 @Preview
 @Composable
-fun AnimeSearchItemPreview() {
-    AnimeSearchItem(
-        anime = animeDetailPlaceholder,
-        onItemClick = {}
-    )
-}
-
-@Composable
 fun AnimeSearchItem(
-    anime: AnimeDetail? = null,
+    anime: AnimeDetail? = animeDetailPlaceholder,
     selectedGenres: List<Genre> = emptyList(),
     errorTitle: String? = null,
     onGenreClick: ((CommonIdentity) -> Unit)? = null,
     onItemClick: (() -> Unit)? = null,
 ) {
-    val modifier = if (onItemClick != null && anime != null) {
-        Modifier.basicContainer(onItemClick = { onItemClick.invoke() })
-    } else Modifier.basicContainer()
     Column(
-        modifier = modifier
+        modifier = Modifier
+            .basicContainer(
+                onItemClick = if (onItemClick != null && anime != null) {
+                    onItemClick
+                } else null
+            )
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,

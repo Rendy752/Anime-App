@@ -255,10 +255,10 @@ private fun SuccessContent(
 @Composable
 private fun LeftColumnContent(data: AnimeDetail, navController: NavController) {
     Column(modifier = Modifier.padding(8.dp)) {
-        AnimeHeader(data)
-        NumericDetailSection(data)
-        YoutubePreview(data.trailer.embed_url)
-        DetailBodySection(data, navController)
+        AnimeHeader(animeDetail = data)
+        NumericDetailSection(animeDetail = data)
+        YoutubePreview(embedUrl = data.trailer.embed_url)
+        DetailBodySection(animeDetail = data, navController = navController)
     }
 }
 

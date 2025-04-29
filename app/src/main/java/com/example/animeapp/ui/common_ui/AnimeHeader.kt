@@ -28,13 +28,18 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 import com.example.animeapp.models.AnimeDetail
+import com.example.animeapp.models.animeDetailPlaceholder
 
 @OptIn(ExperimentalFoundationApi::class)
+@Preview
 @Composable
-fun AnimeHeader(animeDetail: AnimeDetail) {
+fun AnimeHeader(
+    modifier: Modifier = Modifier,
+    animeDetail: AnimeDetail = animeDetailPlaceholder
+) {
     val context = LocalContext.current
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically

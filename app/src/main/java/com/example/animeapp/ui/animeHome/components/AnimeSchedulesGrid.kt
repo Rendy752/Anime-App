@@ -9,6 +9,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.AnimeDetail
+import com.example.animeapp.ui.common_ui.AnimeScheduleItem
+import com.example.animeapp.ui.common_ui.AnimeScheduleItemSkeleton
 
 @Composable
 fun AnimeSchedulesGrid(
