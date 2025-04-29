@@ -53,10 +53,7 @@ fun AnimeRecommendationsScreen(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        titleContentColor = MaterialTheme.colorScheme.primary
-                    )
+                    }
                 )
                 HorizontalDivider(
                     color = MaterialTheme.colorScheme.surfaceContainer,

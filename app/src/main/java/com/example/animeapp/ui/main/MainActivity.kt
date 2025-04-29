@@ -128,7 +128,8 @@ class MainActivity : AppCompatActivity() {
 
             AppTheme(
                 isDarkMode = state.isDarkMode,
-                contrastMode = state.contrastMode
+                contrastMode = state.contrastMode,
+                colorStyle = state.colorStyle
             ) {
                 Surface(
                     modifier = Modifier

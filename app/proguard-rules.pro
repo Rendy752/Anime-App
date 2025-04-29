@@ -147,4 +147,5 @@
 
 # Prevent R8 from removing unused classes in release builds
 -keep class com.example.animeapp.** { *; }
+-keep class com.example.animeapp.utils.Quad { *; }
 -dontwarn com.example.animeapp.**

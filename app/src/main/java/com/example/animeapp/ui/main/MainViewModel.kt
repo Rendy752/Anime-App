@@ -7,6 +7,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.animeapp.models.NetworkStatus
 import com.example.animeapp.models.networkStatusPlaceholder
+import com.example.animeapp.ui.theme.ColorStyle
 import com.example.animeapp.ui.theme.ContrastMode
 import com.example.animeapp.utils.NetworkStateMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,6 +23,7 @@ import androidx.core.content.edit
 data class MainState(
     val isDarkMode: Boolean = false,
     val contrastMode: ContrastMode = ContrastMode.Normal,
+    val colorStyle: ColorStyle = ColorStyle.Default,
     val showQuitDialog: Boolean = false,
     val isConnected: Boolean = true,
     val networkStatus: NetworkStatus = networkStatusPlaceholder,
@@ -32,6 +34,7 @@ data class MainState(
 sealed class MainAction {
     data class SetDarkMode(val isDark: Boolean) : MainAction()
     data class SetContrastMode(val contrastMode: ContrastMode) : MainAction()
+    data class SetColorStyle(val colorStyle: ColorStyle) : MainAction()
     data class SetShowQuitDialog(val show: Boolean) : MainAction()
     data class SetIsConnected(val connected: Boolean) : MainAction()
     data class SetNetworkStatus(val status: NetworkStatus) : MainAction()
@@ -47,7 +50,9 @@ class MainViewModel @Inject constructor(application: Application) : AndroidViewM
         MainState(
             isDarkMode = themePrefs.getBoolean("is_dark_mode", false),
             contrastMode = themePrefs.getString("contrast_mode", ContrastMode.Normal.name)
-                ?.let { ContrastMode.valueOf(it) } ?: ContrastMode.Normal
+                ?.let { ContrastMode.valueOf(it) } ?: ContrastMode.Normal,
+            colorStyle = themePrefs.getString("color_style", ColorStyle.Default.name)
+                ?.let { ColorStyle.valueOf(it) } ?: ColorStyle.Default
         )
     )
     val state: StateFlow<MainState> = _state.asStateFlow()
@@ -62,6 +67,7 @@ class MainViewModel @Inject constructor(application: Application) : AndroidViewM
         when (action) {
             is MainAction.SetDarkMode -> setDarkMode(action.isDark)
             is MainAction.SetContrastMode -> setContrastMode(action.contrastMode)
+            is MainAction.SetColorStyle -> setColorStyle(action.colorStyle)
             is MainAction.SetShowQuitDialog -> setShowQuitDialog(action.show)
             is MainAction.SetIsConnected -> setIsConnected(action.connected)
             is MainAction.SetNetworkStatus -> setNetworkStatus(action.status)
@@ -77,6 +83,11 @@ class MainViewModel @Inject constructor(application: Application) : AndroidViewM
     private fun setContrastMode(contrastMode: ContrastMode) {
         _state.update { it.copy(contrastMode = contrastMode) }
         themePrefs.edit { putString("contrast_mode", contrastMode.name) }
+    }
+
+    private fun setColorStyle(colorStyle: ColorStyle) {
+        _state.update { it.copy(colorStyle = colorStyle) }
+        themePrefs.edit { putString("color_style", colorStyle.name) }
     }
 
     private fun setShowQuitDialog(show: Boolean) {

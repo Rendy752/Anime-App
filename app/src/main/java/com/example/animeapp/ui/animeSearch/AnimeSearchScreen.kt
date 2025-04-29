@@ -116,10 +116,7 @@ fun AnimeSearchScreen(
                                     )
                                 }
                             }
-                        },
-                        colors = TopAppBarDefaults.topAppBarColors(
-                            titleContentColor = MaterialTheme.colorScheme.primary
-                        )
+                        }
                     )
                     HorizontalDivider(
                         color = MaterialTheme.colorScheme.surfaceContainer,

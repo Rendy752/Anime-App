@@ -14,7 +14,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableStateOf
@@ -144,11 +143,7 @@ fun AnimeDetailTopBar(
                         )
                     }
                 }
-            },
-
-            colors = TopAppBarDefaults.topAppBarColors(
-                titleContentColor = MaterialTheme.colorScheme.primary
-            )
+            }
         )
         HorizontalDivider(
             color = MaterialTheme.colorScheme.surfaceContainer,
