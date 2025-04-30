@@ -39,6 +39,7 @@ import com.example.animeapp.ui.main.components.BottomScreen
 import com.example.animeapp.ui.main.components.getBottomBarEnterTransition
 import com.example.animeapp.ui.main.components.getBottomBarExitTransition
 import com.example.animeapp.ui.settings.SettingsScreen
+import com.example.animeapp.ui.settings.SettingsViewModel
 import com.example.animeapp.utils.HlsPlayerUtil
 import com.example.animeapp.utils.Navigation.navigateToAnimeDetail
 import com.example.animeapp.utils.Navigation.navigateToAnimeWatch
@@ -196,9 +197,13 @@ fun MainScreen(
                     )
                 }
                 composable(BottomScreen.Settings.route) {
+                    val settingsViewModel: SettingsViewModel = hiltViewModel()
+                    val settingsState by settingsViewModel.state.collectAsStateWithLifecycle()
                     SettingsScreen(
                         mainState = mainState,
-                        mainAction = mainAction
+                        mainAction = mainAction,
+                        state = settingsState,
+                        action = remember { settingsViewModel::dispatch }
                     )
                 }
                 composable(

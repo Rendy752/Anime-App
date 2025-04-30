@@ -13,6 +13,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -24,14 +25,24 @@ import com.example.animeapp.ui.settings.components.ColorStyleCard
 import com.example.animeapp.ui.settings.components.ContrastModeChips
 import com.example.animeapp.ui.settings.components.DarkModeToggle
 import com.example.animeapp.ui.theme.ColorStyle
+import com.example.animeapp.utils.Resource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview
 @Composable
 fun SettingsScreen(
     mainState: MainState = MainState(),
-    mainAction: (MainAction) -> Unit = {}
+    mainAction: (MainAction) -> Unit = {},
+    state: SettingsState = SettingsState(),
+    action: (SettingsAction) -> Unit = {}
 ) {
+    val colorStyleCardScrollState = rememberScrollState()
+
+    LaunchedEffect(mainState.isConnected) {
+        if (!mainState.isConnected) return@LaunchedEffect
+        if (state.animeDetailSample is Resource.Error) action(SettingsAction.GetRandomAnime)
+    }
+
     Scaffold(
         topBar = {
             if (!mainState.isLandscape) Column {
@@ -74,6 +85,8 @@ fun SettingsScreen(
             )
             ColorStyle.entries.forEach { style ->
                 ColorStyleCard(
+                    animeDetailSample = state.animeDetailSample,
+                    state = colorStyleCardScrollState,
                     colorStyle = style,
                     isSelected = style == mainState.colorStyle,
                     isDarkMode = mainState.isDarkMode,

@@ -96,9 +96,9 @@ fun AnimeScheduleItem(
 
 @Preview
 @Composable
-fun AnimeScheduleItemSkeleton() {
+fun AnimeScheduleItemSkeleton(modifier: Modifier = Modifier) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .basicContainer(
                 outerPadding = PaddingValues(0.dp),
                 innerPadding = PaddingValues(0.dp)

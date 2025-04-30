@@ -42,9 +42,9 @@ fun ResultsSection(
                     }
                 } else {
                     LazyColumn {
-                        items(animeSearchResults.data.data) { anime ->
+                        items(animeSearchResults.data.data) { animeDetail ->
                             AnimeSearchItem(
-                                anime = anime,
+                                animeDetail = animeDetail,
                                 selectedGenres = selectedGenres,
                                 onGenreClick = { genre ->
                                     val genre =
@@ -54,7 +54,7 @@ fun ResultsSection(
                                     }
                                 },
                                 onItemClick = {
-                                    navController.navigateToAnimeDetail(anime.mal_id)
+                                    navController.navigateToAnimeDetail(animeDetail.mal_id)
                                 }
                             )
                         }

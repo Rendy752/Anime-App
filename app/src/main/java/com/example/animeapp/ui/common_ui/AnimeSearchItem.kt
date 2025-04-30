@@ -34,7 +34,7 @@ import com.example.animeapp.utils.shimmerContainer
 @Preview
 @Composable
 fun AnimeSearchItem(
-    anime: AnimeDetail? = animeDetailPlaceholder,
+    animeDetail: AnimeDetail? = animeDetailPlaceholder,
     selectedGenres: List<Genre> = emptyList(),
     errorTitle: String? = null,
     onGenreClick: ((CommonIdentity) -> Unit)? = null,
@@ -43,7 +43,7 @@ fun AnimeSearchItem(
     Column(
         modifier = Modifier
             .basicContainer(
-                onItemClick = if (onItemClick != null && anime != null) {
+                onItemClick = if (onItemClick != null && animeDetail != null) {
                     onItemClick
                 } else null
             )
@@ -54,9 +54,9 @@ fun AnimeSearchItem(
         ) {
             if (errorTitle.isNullOrEmpty()) {
                 AsyncImageWithPlaceholder(
-                    model = anime?.images?.webp?.large_image_url,
-                    contentDescription = anime?.title,
-                    isAiring = anime?.airing
+                    model = animeDetail?.images?.webp?.large_image_url,
+                    contentDescription = animeDetail?.title,
+                    isAiring = animeDetail?.airing
                 )
             } else {
                 Icon(
@@ -74,7 +74,7 @@ fun AnimeSearchItem(
             ) {
                 Text(
                     modifier = Modifier.fillMaxWidth(),
-                    text = if (errorTitle.isNullOrEmpty()) anime?.title
+                    text = if (errorTitle.isNullOrEmpty()) animeDetail?.title
                         ?: "Unknown Title" else errorTitle,
                     style = MaterialTheme.typography.titleLarge,
                     fontSize = 14.sp,
@@ -90,14 +90,14 @@ fun AnimeSearchItem(
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
-                            text = "${anime?.type ?: "Unknown Type"} (${anime?.episodes} eps) - ${anime?.aired?.prop?.from?.year ?: "Unknown Year"}",
+                            text = "${animeDetail?.type ?: "Unknown Type"} (${animeDetail?.episodes} eps) - ${animeDetail?.aired?.prop?.from?.year ?: "Unknown Year"}",
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.weight(1f),
                             maxLines = 1,
                             textAlign = TextAlign.Center,
                             overflow = TextOverflow.Ellipsis
                         )
-                        if (anime?.approved == true) {
+                        if (animeDetail?.approved == true) {
                             Icon(
                                 imageVector = Icons.Filled.Recommend,
                                 contentDescription = "Approved",
@@ -106,7 +106,7 @@ fun AnimeSearchItem(
                             )
                         }
                     }
-                    anime?.genres?.let { genres ->
+                    animeDetail?.genres?.let { genres ->
                         Row(
                             modifier = Modifier
                                 .horizontalScroll(rememberScrollState()),
@@ -126,22 +126,22 @@ fun AnimeSearchItem(
                     }
                     DataTextWithIcon(
                         label = "Score",
-                        value = anime?.score.toString(),
+                        value = animeDetail?.score.toString(),
                         icon = Icons.Filled.Score
                     )
                     DataTextWithIcon(
                         label = "Rank",
-                        value = anime?.rank?.formatNumber(),
+                        value = animeDetail?.rank?.formatNumber(),
                         icon = Icons.Filled.Star
                     )
                     DataTextWithIcon(
                         label = "Popularity",
-                        value = anime?.popularity?.formatNumber(),
+                        value = animeDetail?.popularity?.formatNumber(),
                         icon = Icons.AutoMirrored.Filled.TrendingUp
                     )
                     DataTextWithIcon(
                         label = "Members",
-                        value = anime?.members?.formatNumber(),
+                        value = animeDetail?.members?.formatNumber(),
                         icon = Icons.Filled.Groups
                     )
                 }

@@ -49,7 +49,7 @@ fun RelationEntryItem(
         isLoading -> AnimeSearchItemSkeleton()
         error != null || animeDetail == null -> AnimeSearchItem(errorTitle = entryName)
         else -> AnimeSearchItem(
-            anime = animeDetail,
+            animeDetail = animeDetail,
             onGenreClick = { genre ->
                 navController.navigateWithFilter(genre, genreFilter = true)
             },

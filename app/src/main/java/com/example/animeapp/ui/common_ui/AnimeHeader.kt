@@ -117,9 +117,9 @@ fun AnimeHeader(
 
 @Preview
 @Composable
-fun AnimeHeaderSkeleton() {
+fun AnimeHeaderSkeleton(modifier: Modifier = Modifier) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .padding(8.dp),
         verticalAlignment = Alignment.CenterVertically
