@@ -31,14 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 
-enum class ImageRoundedCorner {
-    NONE,
-    START,
-    END,
-    TOP,
-    BOTTOM,
-    ALL
-}
+enum class ImageRoundedCorner { NONE, START, END, TOP, BOTTOM, ALL }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -79,12 +72,8 @@ fun AsyncImageWithPlaceholder(
         modifier = modifier
             .size(100.dp, 150.dp)
             .then(
-                if (isClickable) {
-                    Modifier.clickable {
-                        if (model != null) {
-                            showDialog = true
-                        }
-                    }
+                if (isClickable && model != null) {
+                    Modifier.clickable { showDialog = true }
                 } else {
                     Modifier
                 }

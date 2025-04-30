@@ -66,7 +66,8 @@ fun ContinueWatchingAnime(
                 roundedCorners = ImageRoundedCorner.START,
                 modifier = Modifier
                     .width(50.dp)
-                    .height(75.dp)
+                    .height(75.dp),
+                isClickable = episodeDetailComplement.imageUrl != null
             )
             Column(
                 modifier = Modifier
