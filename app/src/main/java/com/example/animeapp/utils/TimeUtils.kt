@@ -65,7 +65,7 @@ object TimeUtils {
         }
     }
 
-    private fun getBroadcastDateTimeThisWeek(
+    fun getBroadcastDateTimeThisWeek(
         broadcastTime: String,
         broadcastTimezone: String,
         broadcastDay: String

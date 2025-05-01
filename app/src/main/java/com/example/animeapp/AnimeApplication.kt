@@ -10,6 +10,7 @@ import android.os.IBinder
 import android.util.Log
 import com.chuckerteam.chucker.api.Chucker
 import com.example.animeapp.BuildConfig.DEBUG
+import com.example.animeapp.utils.AnimeBroadcastNotificationWorker
 import com.example.animeapp.utils.MediaPlaybackService
 import com.example.animeapp.utils.ShakeDetector
 import dagger.hilt.android.HiltAndroidApp
@@ -27,6 +28,7 @@ class AnimeApplication : Application() {
         super.onCreate()
         if (DEBUG) setupSensor()
         bindMediaService()
+        AnimeBroadcastNotificationWorker.schedule(this)
     }
 
     fun bindMediaService() {

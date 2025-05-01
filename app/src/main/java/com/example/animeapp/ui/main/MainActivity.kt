@@ -105,32 +105,33 @@ class MainActivity : AppCompatActivity() {
                 mainViewModel.dispatch(MainAction.SetShowQuitDialog(true))
             }
 
-            if (state.showQuitDialog) {
-                ConfirmationAlert(
-                    title = "Quit AnimeApp?",
-                    message = "Are you sure you want to quit the app?",
-                    onConfirm = { finish() },
-                    onCancel = { mainViewModel.dispatch(MainAction.SetShowQuitDialog(false)) }
-                )
-            }
-
-            if (state.isShowIdleDialog) {
-                ConfirmationAlert(
-                    title = "Are you still there?",
-                    message = "It seems you haven't interacted with the app for a while. Are you want to quit the app?",
-                    onConfirm = { finish() },
-                    onCancel = {
-                        mainViewModel.dispatch(MainAction.SetIsShowIdleDialog(false))
-                        resetIdleTimer()
-                    }
-                )
-            }
 
             AppTheme(
                 isDarkMode = state.isDarkMode,
                 contrastMode = state.contrastMode,
                 colorStyle = state.colorStyle
             ) {
+                if (state.showQuitDialog) {
+                    ConfirmationAlert(
+                        title = "Quit AnimeApp?",
+                        message = "Are you sure you want to quit the app?",
+                        onConfirm = { finish() },
+                        onCancel = { mainViewModel.dispatch(MainAction.SetShowQuitDialog(false)) }
+                    )
+                }
+
+                if (state.isShowIdleDialog) {
+                    ConfirmationAlert(
+                        title = "Are you still there?",
+                        message = "It seems you haven't interacted with the app for a while. Are you want to quit the app?",
+                        onConfirm = { finish() },
+                        onCancel = {
+                            mainViewModel.dispatch(MainAction.SetIsShowIdleDialog(false))
+                            resetIdleTimer()
+                        }
+                    )
+                }
+
                 Surface(
                     modifier = Modifier
                         .fillMaxSize()

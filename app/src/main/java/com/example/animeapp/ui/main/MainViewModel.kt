@@ -1,8 +1,11 @@
 package com.example.animeapp.ui.main
 
 import android.app.Application
+import android.os.Build
 import android.content.Context
+import android.content.pm.PackageManager
 import androidx.compose.runtime.Stable
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.animeapp.models.NetworkStatus
@@ -24,6 +27,7 @@ data class MainState(
     val isDarkMode: Boolean = false,
     val contrastMode: ContrastMode = ContrastMode.Normal,
     val colorStyle: ColorStyle = ColorStyle.Default,
+    val notificationEnabled: Boolean = false,
     val showQuitDialog: Boolean = false,
     val isConnected: Boolean = true,
     val networkStatus: NetworkStatus = networkStatusPlaceholder,
@@ -35,6 +39,7 @@ sealed class MainAction {
     data class SetDarkMode(val isDark: Boolean) : MainAction()
     data class SetContrastMode(val contrastMode: ContrastMode) : MainAction()
     data class SetColorStyle(val colorStyle: ColorStyle) : MainAction()
+    data class SetNotificationEnabled(val enabled: Boolean) : MainAction()
     data class SetShowQuitDialog(val show: Boolean) : MainAction()
     data class SetIsConnected(val connected: Boolean) : MainAction()
     data class SetNetworkStatus(val status: NetworkStatus) : MainAction()
@@ -45,6 +50,8 @@ sealed class MainAction {
 class MainViewModel @Inject constructor(application: Application) : AndroidViewModel(application) {
 
     private val themePrefs = application.getSharedPreferences("theme_prefs", Context.MODE_PRIVATE)
+    private val settingsPrefs =
+        application.getSharedPreferences("settings_prefs", Context.MODE_PRIVATE)
 
     private val _state = MutableStateFlow(
         MainState(
@@ -52,15 +59,19 @@ class MainViewModel @Inject constructor(application: Application) : AndroidViewM
             contrastMode = themePrefs.getString("contrast_mode", ContrastMode.Normal.name)
                 ?.let { ContrastMode.valueOf(it) } ?: ContrastMode.Normal,
             colorStyle = themePrefs.getString("color_style", ColorStyle.Default.name)
-                ?.let { ColorStyle.valueOf(it) } ?: ColorStyle.Default
+                ?.let { ColorStyle.valueOf(it) } ?: ColorStyle.Default,
+            notificationEnabled = settingsPrefs.getBoolean("notifications_enabled", false)
         )
     )
+
     val state: StateFlow<MainState> = _state.asStateFlow()
 
     private val networkStateMonitor = NetworkStateMonitor(application)
 
     init {
         startNetworkMonitoring()
+        println("MainViewModel initialized with notificationEnabled: ${_state.value.notificationEnabled}")
+        checkNotificationPermission()
     }
 
     fun dispatch(action: MainAction) {
@@ -68,10 +79,31 @@ class MainViewModel @Inject constructor(application: Application) : AndroidViewM
             is MainAction.SetDarkMode -> setDarkMode(action.isDark)
             is MainAction.SetContrastMode -> setContrastMode(action.contrastMode)
             is MainAction.SetColorStyle -> setColorStyle(action.colorStyle)
+            is MainAction.SetNotificationEnabled -> setNotificationEnabled(action.enabled)
             is MainAction.SetShowQuitDialog -> setShowQuitDialog(action.show)
             is MainAction.SetIsConnected -> setIsConnected(action.connected)
             is MainAction.SetNetworkStatus -> setNetworkStatus(action.status)
             is MainAction.SetIsShowIdleDialog -> setIsShowIdleDialog(action.show)
+        }
+    }
+
+    fun checkNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val permissionStatus = ContextCompat.checkSelfPermission(
+                getApplication(),
+                "android.permission.POST_NOTIFICATIONS"
+            )
+            val isGranted = permissionStatus == PackageManager.PERMISSION_GRANTED
+            println("POST_NOTIFICATIONS permission status: permissionStatus=$permissionStatus, isGranted=$isGranted")
+            if (isGranted != _state.value.notificationEnabled) {
+                println("Syncing notificationEnabled with permission: newValue=$isGranted")
+                setNotificationEnabled(isGranted)
+            }
+        } else {
+            println("POST_NOTIFICATIONS not required (pre-TIRAMISU), setting notificationEnabled=true")
+            if (!_state.value.notificationEnabled) {
+                setNotificationEnabled(true)
+            }
         }
     }
 
@@ -88,6 +120,15 @@ class MainViewModel @Inject constructor(application: Application) : AndroidViewM
     private fun setColorStyle(colorStyle: ColorStyle) {
         _state.update { it.copy(colorStyle = colorStyle) }
         themePrefs.edit { putString("color_style", colorStyle.name) }
+    }
+
+    private fun setNotificationEnabled(enabled: Boolean) {
+        println("setNotificationEnabled called with enabled=$enabled")
+        _state.update { it.copy(notificationEnabled = enabled) }
+        settingsPrefs.edit { putBoolean("notifications_enabled", enabled) }
+        println("Updated notificationEnabled state to: ${_state.value.notificationEnabled}")
+        val persisted = settingsPrefs.getBoolean("notifications_enabled", true)
+        println("Persisted notifications_enabled in SharedPreferences: $persisted")
     }
 
     private fun setShowQuitDialog(show: Boolean) {

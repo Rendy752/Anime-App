@@ -1,5 +1,12 @@
 package com.example.animeapp.ui.settings
 
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build.VERSION.SDK_INT
+import android.provider.Settings
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,17 +22,21 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.animeapp.ui.main.components.BottomScreen
+import androidx.core.content.ContextCompat
+import com.example.animeapp.ui.common_ui.ToggleWithLabel
 import com.example.animeapp.ui.main.MainAction
 import com.example.animeapp.ui.main.MainState
+import com.example.animeapp.ui.main.MainViewModel
+import com.example.animeapp.ui.main.components.BottomScreen
 import com.example.animeapp.ui.settings.components.ColorStyleCard
 import com.example.animeapp.ui.settings.components.ContrastModeChips
-import com.example.animeapp.ui.settings.components.DarkModeToggle
 import com.example.animeapp.ui.theme.ColorStyle
 import com.example.animeapp.utils.Resource
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview
@@ -34,9 +45,29 @@ fun SettingsScreen(
     mainState: MainState = MainState(),
     mainAction: (MainAction) -> Unit = {},
     state: SettingsState = SettingsState(),
-    action: (SettingsAction) -> Unit = {}
+    action: (SettingsAction) -> Unit = {},
+    mainViewModel: MainViewModel = hiltViewModel()
 ) {
     val colorStyleCardScrollState = rememberScrollState()
+    val context = LocalContext.current
+
+    val settingsLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { _ -> mainViewModel.checkNotificationPermission() }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        mainAction(MainAction.SetNotificationEnabled(isGranted))
+        if (!isGranted) {
+            settingsLauncher.launch(
+                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                    putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                }
+            )
+        }
+        mainViewModel.checkNotificationPermission()
+    }
 
     LaunchedEffect(mainState.isConnected) {
         if (!mainState.isConnected) return@LaunchedEffect
@@ -71,14 +102,65 @@ fun SettingsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            DarkModeToggle(
-                isDarkMode = mainState.isDarkMode,
-                onDarkModeChanged = { mainAction(MainAction.SetDarkMode(it)) }
+            ToggleWithLabel(
+                isActive = mainState.isDarkMode,
+                label = "Dark Mode",
+                description = "Enable dark mode",
+                onToggle = { mainAction(MainAction.SetDarkMode(it)) },
+                modifier = Modifier.padding(vertical = 8.dp)
             )
+
+            ToggleWithLabel(
+                isActive = mainState.notificationEnabled,
+                label = "Notifications",
+                description = "Enable notifications",
+                onToggle = { enable ->
+                    if (enable) {
+                        if (SDK_INT >= 33) {
+                            val permissionStatus = ContextCompat.checkSelfPermission(
+                                context,
+                                "android.permission.POST_NOTIFICATIONS"
+                            )
+                            val isGranted = permissionStatus == PackageManager.PERMISSION_GRANTED
+                            if (isGranted) {
+                                mainAction(MainAction.SetNotificationEnabled(true))
+                            } else {
+                                val shouldShowRequest =
+                                    (context as? ComponentActivity)?.shouldShowRequestPermissionRationale(
+                                        "android.permission.POST_NOTIFICATIONS"
+                                    )
+                                if (shouldShowRequest == true) {
+                                    permissionLauncher.launch("android.permission.POST_NOTIFICATIONS")
+                                } else {
+                                    settingsLauncher.launch(
+                                        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                            putExtra(
+                                                Settings.EXTRA_APP_PACKAGE,
+                                                context.packageName
+                                            )
+                                        }
+                                    )
+                                }
+                            }
+                        } else {
+                            mainAction(MainAction.SetNotificationEnabled(true))
+                        }
+                    } else {
+                        settingsLauncher.launch(
+                            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                            }
+                        )
+                    }
+                },
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+
             ContrastModeChips(
                 selectedContrastMode = mainState.contrastMode,
                 onContrastModeChanged = { mainAction(MainAction.SetContrastMode(it)) }
             )
+
             Text(
                 text = "Color Style",
                 style = MaterialTheme.typography.titleMedium
