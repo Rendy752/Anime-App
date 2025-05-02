@@ -7,7 +7,9 @@ import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import androidx.annotation.OptIn
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -19,7 +21,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
@@ -244,13 +246,13 @@ fun VideoPlayer(
         }
 
         if (!isPipMode) {
+            val isControllerVisible = isShowPip && !shouldShowResumeOverlay && !isShowNextEpisode
             LockButton(
-                isLocked = isLocked,
+                icon = if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
+                contentDescription = if (isLocked) "Unlock player" else "Lock player",
                 onLockToggle = { isLocked = !isLocked },
-                isControllerVisible = isShowPip && !shouldShowResumeOverlay && !isShowNextEpisode,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(16.dp)
+                containerColor = Color.White.copy(alpha = if (isControllerVisible || isLocked) 1f else 0.5f),
+                modifier = Modifier.align(Alignment.TopEnd)
             )
         }
     }

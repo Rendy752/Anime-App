@@ -1,48 +1,34 @@
 package com.example.animeapp.ui.animeWatch.videoPlayer
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 
 @Composable
 fun LockButton(
-    isLocked: Boolean,
+    icon: ImageVector,
+    contentDescription: String,
     onLockToggle: () -> Unit,
-    isControllerVisible: Boolean,
+    containerColor: Color,
     modifier: Modifier = Modifier
 ) {
-    Box(
-        modifier = modifier
-            .background(
-                color = MaterialTheme.colorScheme.primary.copy(alpha = if (isControllerVisible || isLocked) 0.5f else 0.2f),
-                shape = CircleShape
-            )
-            .size(48.dp)
-            .clip(CircleShape)
-            .clickable { onLockToggle() }
+    IconButton(
+        onClick = onLockToggle,
+        modifier = modifier.padding(24.dp),
+        colors = IconButtonDefaults.iconButtonColors(
+            containerColor = containerColor,
+        )
     ) {
-        val icon = if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen
-        val description = if (isLocked) "Unlock player" else "Lock player"
-
         Icon(
-            imageVector = icon,
-            contentDescription = description,
-            tint = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.5f),
-            modifier = Modifier
-                .size(24.dp)
-                .align(Alignment.Center)
+            icon,
+            tint = Color.Black,
+            contentDescription = contentDescription
         )
     }
 }
