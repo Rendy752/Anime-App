@@ -18,6 +18,7 @@ import com.example.animeapp.data.local.dao.AnimeDetailComplementDao
 import com.example.animeapp.data.local.dao.AnimeDetailDao
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.concurrent.TimeUnit
+import androidx.core.content.edit
 
 class AnimeBroadcastNotificationWorker @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -29,23 +30,27 @@ class AnimeBroadcastNotificationWorker @Inject constructor(
     companion object {
         const val CHANNEL_ID = "anime_notifications"
         const val WORK_NAME = "anime_notification_work"
+        private const val PREFS_NOTIFICATIONS_SENT = "notifications_sent"
+        private const val NOTIFICATION_WINDOW_HOURS = 24L
 
         fun schedule(context: Context) {
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
                 .build()
 
-            val workRequest = OneTimeWorkRequestBuilder<AnimeBroadcastNotificationWorker>()
+            val workRequest = PeriodicWorkRequestBuilder<AnimeBroadcastNotificationWorker>(
+                repeatInterval = 1,
+                repeatIntervalTimeUnit = TimeUnit.HOURS
+            )
                 .setConstraints(constraints)
-                .setInitialDelay(5, TimeUnit.MINUTES)
                 .build()
 
-            WorkManager.getInstance(context).enqueueUniqueWork(
+            WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 WORK_NAME,
-                ExistingWorkPolicy.KEEP,
+                ExistingPeriodicWorkPolicy.KEEP,
                 workRequest
             )
-            println("AnimeBroadcastNotificationWorker: Scheduled with 5-minute interval")
+            println("AnimeBroadcastNotificationWorker: Scheduled with 1-hour interval")
         }
     }
 
@@ -57,7 +62,6 @@ class AnimeBroadcastNotificationWorker @Inject constructor(
             println("AnimeBroadcastNotificationWorker: notificationEnabled=$notificationEnabled")
             if (!notificationEnabled) {
                 println("AnimeBroadcastNotificationWorker: Notifications disabled, skipping worker")
-                reEnqueueWorker()
                 return@withContext Result.success()
             }
 
@@ -67,13 +71,16 @@ class AnimeBroadcastNotificationWorker @Inject constructor(
             println("AnimeBroadcastNotificationWorker: Favorites count: ${favorites.size}")
             if (favorites.isEmpty()) {
                 println("AnimeBroadcastNotificationWorker: No favorites found, skipping notification checks")
-                reEnqueueWorker()
                 return@withContext Result.success()
             }
 
             val currentTime = ZonedDateTime.now(ZoneId.systemDefault())
             var hasIncompleteData = false
             favorites.forEach { complement ->
+                if (!complement.isFavorite) {
+                    println("AnimeBroadcastNotificationWorker: Skipping non-favorite: malId=${complement.malId}")
+                    return@forEach
+                }
                 val animeDetail = animeDetailDao.getAnimeDetailById(complement.malId)
                 if (animeDetail == null) {
                     println("AnimeBroadcastNotificationWorker: AnimeDetail not found for malId=${complement.malId}")
@@ -99,11 +106,27 @@ class AnimeBroadcastNotificationWorker @Inject constructor(
 
                     val timeUntilBroadcast = ChronoUnit.MINUTES.between(currentTime, broadcastTime)
                     println("AnimeBroadcastNotificationWorker: Checking ${animeDetail.title}: time until broadcast = $timeUntilBroadcast minutes")
-                    if (timeUntilBroadcast in 0..5) {
-                        sendNotification(
-                            malId = complement.malId,
-                            title = animeDetail.title
-                        )
+                    if (timeUntilBroadcast in 0..60) {
+                        val sentNotifications =
+                            settingsPrefs.getStringSet(PREFS_NOTIFICATIONS_SENT, emptySet())
+                                ?.toMutableSet() ?: mutableSetOf()
+                        val notificationKey = "${complement.malId}_${broadcastTime.toLocalDate()}"
+                        if (!sentNotifications.contains(notificationKey)) {
+                            sendNotification(
+                                malId = complement.malId,
+                                title = animeDetail.title
+                            )
+                            sentNotifications.add(notificationKey)
+                            settingsPrefs.edit {
+                                putStringSet(
+                                    PREFS_NOTIFICATIONS_SENT,
+                                    sentNotifications
+                                )
+                            }
+                            println("AnimeBroadcastNotificationWorker: Recorded notification sent for malId=${complement.malId}, date=${broadcastTime.toLocalDate()}")
+                        } else {
+                            println("AnimeBroadcastNotificationWorker: Skipped duplicate notification for malId=${complement.malId}, date=${broadcastTime.toLocalDate()}")
+                        }
                     }
                 } catch (e: Exception) {
                     println("AnimeBroadcastNotificationWorker: Error processing broadcast time for malId=${complement.malId}, title=${animeDetail.title}: ${e.message}")
@@ -111,15 +134,15 @@ class AnimeBroadcastNotificationWorker @Inject constructor(
                 }
             }
 
+            cleanUpSentNotifications(settingsPrefs, currentTime)
+
             if (hasIncompleteData) {
                 println("AnimeBroadcastNotificationWorker: Some anime have incomplete broadcast data; consider refreshing data")
             }
 
-            reEnqueueWorker()
             Result.success()
         } catch (e: Exception) {
             println("AnimeBroadcastNotificationWorker: Worker error: ${e.message}")
-            reEnqueueWorker()
             Result.retry()
         }
     }
@@ -127,11 +150,12 @@ class AnimeBroadcastNotificationWorker @Inject constructor(
     private fun createNotificationChannel() {
         val name = "Broadcast Notifications"
         val descriptionText = "Notifications for airing anime"
-        val importance = NotificationManager.IMPORTANCE_DEFAULT
+        val importance = NotificationManager.IMPORTANCE_HIGH
         val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
             description = descriptionText
         }
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.createNotificationChannel(channel)
         println("AnimeBroadcastNotificationWorker: Notification channel created: $CHANNEL_ID")
     }
@@ -149,31 +173,43 @@ class AnimeBroadcastNotificationWorker @Inject constructor(
             .setSmallIcon(androidx.media3.session.R.drawable.media3_notification_small_icon)
             .setContentTitle("Anime On Air")
             .setContentText("$title is airing now!")
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
             .build()
 
-        val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+        val notificationManager =
+            context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(malId, notification)
         println("AnimeBroadcastNotificationWorker: Notification sent for $title (malId: $malId)")
     }
 
-    private fun reEnqueueWorker() {
-        val constraints = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
-            .build()
-
-        val workRequest = OneTimeWorkRequestBuilder<AnimeBroadcastNotificationWorker>()
-            .setConstraints(constraints)
-            .setInitialDelay(5, TimeUnit.MINUTES)
-            .build()
-
-        WorkManager.getInstance(context).enqueueUniqueWork(
-            WORK_NAME,
-            ExistingWorkPolicy.REPLACE,
-            workRequest
-        )
-        println("AnimeBroadcastNotificationWorker: Re-enqueued for next run in 5 minutes")
+    private fun cleanUpSentNotifications(
+        prefs: android.content.SharedPreferences,
+        currentTime: ZonedDateTime
+    ) {
+        val sentNotifications =
+            prefs.getStringSet(PREFS_NOTIFICATIONS_SENT, emptySet())?.toMutableSet()
+                ?: mutableSetOf()
+        val iterator = sentNotifications.iterator()
+        while (iterator.hasNext()) {
+            val key = iterator.next()
+            try {
+                val dateStr = key.substringAfterLast("_")
+                val notificationDate = ZonedDateTime.parse(dateStr + "T00:00:00Z").toLocalDate()
+                if (ChronoUnit.HOURS.between(
+                        notificationDate.atStartOfDay(ZoneId.systemDefault()),
+                        currentTime
+                    ) > NOTIFICATION_WINDOW_HOURS
+                ) {
+                    iterator.remove()
+                    println("AnimeBroadcastNotificationWorker: Removed old notification record: $key")
+                }
+            } catch (e: Exception) {
+                println("AnimeBroadcastNotificationWorker: Error cleaning up notification record: $key, ${e.message}")
+                iterator.remove()
+            }
+        }
+        prefs.edit { putStringSet(PREFS_NOTIFICATIONS_SENT, sentNotifications) }
     }
 }

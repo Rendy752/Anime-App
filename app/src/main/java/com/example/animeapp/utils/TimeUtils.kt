@@ -80,6 +80,31 @@ object TimeUtils {
         return ZonedDateTime.of(broadcastDateThisWeek, broadcastLocalTime, broadcastZone)
     }
 
+    /**
+     * Returns a ZonedDateTime for the anime's broadcast in the current week for sorting purposes.
+     * If broadcast data is invalid or missing, returns null, and invalid entries should be sorted last.
+     * @param broadcastTime The broadcast time (e.g., "08:30")
+     * @param broadcastTimezone The broadcast timezone (e.g., "Asia/Tokyo")
+     * @param broadcastDay The broadcast day (e.g., "Sundays")
+     * @return ZonedDateTime for the current week's broadcast, or null if data is invalid
+     */
+    fun getBroadcastDateTimeForSorting(
+        broadcastTime: String?,
+        broadcastTimezone: String?,
+        broadcastDay: String?
+    ): ZonedDateTime? {
+        if (broadcastTime == null || broadcastTimezone == null || broadcastDay == null) {
+            println("TimeUtils: Invalid broadcast data for sorting: time=$broadcastTime, timezone=$broadcastTimezone, day=$broadcastDay")
+            return null
+        }
+        return try {
+            getBroadcastDateTimeThisWeek(broadcastTime, broadcastTimezone, broadcastDay)
+        } catch (e: Exception) {
+            println("TimeUtils: Error parsing broadcast for sorting: time=$broadcastTime, timezone=$broadcastTimezone, day=$broadcastDay, error=${e.message}")
+            null
+        }
+    }
+
     fun isNowWithinBroadcastWindow(
         broadcastTime: String?,
         broadcastTimezone: String?,

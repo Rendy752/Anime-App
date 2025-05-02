@@ -6,6 +6,7 @@ import com.example.animeapp.models.ListAnimeDetailResponse
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ResponseHandler
 import com.example.animeapp.utils.ResponseHandler.safeApiCall
+import com.example.animeapp.utils.TimeUtils
 
 class AnimeHomeRepository(
     private val jikanAPI: AnimeAPI
@@ -27,7 +28,20 @@ class AnimeHomeRepository(
             val handledResponse = ResponseHandler.handleCommonResponse(response)
 
             return when (handledResponse) {
-                is Resource.Success -> Resource.Success(handledResponse.data.copy(data = handledResponse.data.data.distinctBy { it.mal_id }))
+                is Resource.Success -> Resource.Success(
+                    handledResponse.data.copy(
+                        data = handledResponse.data.data
+                            .distinctBy { it.mal_id }
+                            .sortedBy { anime ->
+                                TimeUtils.getBroadcastDateTimeForSorting(
+                                    broadcastTime = anime.broadcast.time,
+                                    broadcastTimezone = anime.broadcast.timezone,
+                                    broadcastDay = anime.broadcast.day
+                                )?.toInstant()?.toEpochMilli() ?: Long.MAX_VALUE
+                            }
+                    )
+                )
+
                 else -> handledResponse
             }
         }
@@ -38,8 +52,10 @@ class AnimeHomeRepository(
         val handledResponse = ResponseHandler.handleCommonResponse(response)
 
         return when (handledResponse) {
-            is Resource.Success -> Resource.Success(handledResponse.data.copy(data = handledResponse.data.data.distinctBy { it.mal_id }
-                .take(10))
+            is Resource.Success -> Resource.Success(
+                handledResponse.data.copy(
+                    data = handledResponse.data.data.distinctBy { it.mal_id }.take(10)
+                )
             )
 
             else -> handledResponse
