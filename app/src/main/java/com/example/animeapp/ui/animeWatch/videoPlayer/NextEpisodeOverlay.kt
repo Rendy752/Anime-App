@@ -1,5 +1,6 @@
 package com.example.animeapp.ui.animeWatch.videoPlayer
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -30,6 +31,7 @@ fun NextEpisodeOverlay(
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Text(
                 text = nextEpisodeName,
@@ -37,35 +39,33 @@ fun NextEpisodeOverlay(
                 color = MaterialTheme.colorScheme.onPrimary,
                 fontWeight = FontWeight.Bold,
             )
-            Row {
-                Column(
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    Icons.Filled.RestartAlt,
                     modifier = Modifier.basicContainer(
                         isTertiary = true,
                         onItemClick = onRestart,
+                        outerPadding = PaddingValues(0.dp),
                         innerPadding = PaddingValues(8.dp)
                     ),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Icon(
-                        Icons.Filled.RestartAlt,
-                        contentDescription = "Restart",
-                        tint = MaterialTheme.colorScheme.onTertiary
-                    )
-                }
-                Column(
+                    contentDescription = "Restart",
+                    tint = MaterialTheme.colorScheme.onTertiary
+                )
+
+                Icon(
+                    Icons.Filled.SkipNext,
                     modifier = Modifier.basicContainer(
                         isPrimary = true,
                         onItemClick = onSkipNext,
+                        outerPadding = PaddingValues(0.dp),
                         innerPadding = PaddingValues(8.dp)
                     ),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Icon(
-                        Icons.Filled.SkipNext,
-                        contentDescription = "Skip Next",
-                        tint = MaterialTheme.colorScheme.onPrimary
-                    )
-                }
+                    contentDescription = "Skip Next",
+                    tint = MaterialTheme.colorScheme.onPrimary
+                )
             }
         }
     }
