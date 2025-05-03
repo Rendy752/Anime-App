@@ -1,6 +1,5 @@
 package com.example.animeapp.ui.animeWatch
 
-import android.graphics.Rect
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.animeapp.models.AnimeDetail
@@ -43,13 +42,6 @@ class AnimeWatchViewModel @Inject constructor(
 
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
-
-    private val _pipSourceRect = MutableStateFlow<Rect?>(null)
-    val pipSourceRect: StateFlow<Rect?> = _pipSourceRect.asStateFlow()
-
-    fun setPipSourceRect(rect: Rect?) {
-        _pipSourceRect.value = rect
-    }
 
     fun setInitialState(malId: Int, episodeId: String) {
         viewModelScope.launch {
@@ -256,10 +248,5 @@ class AnimeWatchViewModel @Inject constructor(
                 _episodeSourcesQuery.value = default.sourcesQuery
             }
         }
-    }
-
-    override fun onCleared() {
-        _pipSourceRect.value = null
-        super.onCleared()
     }
 }

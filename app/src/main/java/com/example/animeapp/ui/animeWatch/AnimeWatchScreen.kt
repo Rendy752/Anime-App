@@ -1,6 +1,6 @@
 package com.example.animeapp.ui.animeWatch
 
-import android.app.Activity
+import android.app.PictureInPictureParams
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Build
@@ -14,54 +14,41 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
-import com.example.animeapp.ui.animeWatch.components.AnimeWatchContent
-import com.example.animeapp.ui.animeWatch.components.AnimeWatchTopBar
+import com.example.animeapp.ui.main.MainActivity
 import com.example.animeapp.ui.main.MainState
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ScreenOffReceiver
 import com.example.animeapp.utils.ScreenOnReceiver
+import com.example.animeapp.utils.PipUtil.buildPipActions
+import com.example.animeapp.ui.animeWatch.components.AnimeWatchContent
+import com.example.animeapp.ui.animeWatch.components.AnimeWatchTopBar
+import com.example.animeapp.utils.HlsPlayerUtil
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Preview
 @Composable
 fun AnimeWatchScreen(
     malId: Int = 0,
     episodeId: String = "",
-    navController: NavHostController = rememberNavController(),
-    mainState: MainState = MainState(),
-    isPipMode: Boolean = false,
-    onEnterPipMode: () -> Unit = {},
+    navController: NavHostController,
+    mainState: MainState,
+    isPipMode: Boolean,
+    onEnterPipMode: () -> Unit
 ) {
     val activity = LocalActivity.current as ViewModelStoreOwner
     val viewModel: AnimeWatchViewModel = hiltViewModel(activity)
@@ -89,11 +76,15 @@ fun AnimeWatchScreen(
     val screenOffReceiver = remember { ScreenOffReceiver { isScreenOn = false } }
     val screenOnReceiver = remember { ScreenOnReceiver { isScreenOn = true } }
 
+    // PiP Handling
+    val activityAsActivity = LocalActivity.current as MainActivity
+    val playerState by HlsPlayerUtil.state.collectAsStateWithLifecycle()
+
     @Suppress("DEPRECATION")
     val onBackPress: () -> Unit = {
         if (isFullscreen) {
             isFullscreen = false
-            (context as? Activity)?.window?.let { window ->
+            activityAsActivity.window?.let { window ->
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                     window.insetsController?.show(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
                 } else {
@@ -107,6 +98,25 @@ fun AnimeWatchScreen(
 
     BackHandler {
         onBackPress()
+    }
+
+    LaunchedEffect(isPipMode, playerState.isPlaying) {
+        if (isPipMode) {
+            val actions = buildPipActions(activityAsActivity, playerState.isPlaying)
+            activityAsActivity.setPictureInPictureParams(
+                PictureInPictureParams.Builder()
+                    .setActions(actions)
+                    .build()
+            )
+        }
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            activityAsActivity.setPictureInPictureParams(
+                PictureInPictureParams.Builder().build()
+            )
+        }
     }
 
     LaunchedEffect(Unit) {
@@ -166,7 +176,7 @@ fun AnimeWatchScreen(
                     viewModel.updateEpisodeDetailComplement(it)
                 }
             )
-        },
+        }
     ) { paddingValues ->
         PullToRefreshBox(
             isRefreshing = isRefreshing,
@@ -185,7 +195,7 @@ fun AnimeWatchScreen(
                     modifier = Modifier.align(Alignment.TopCenter),
                     state = state
                 )
-            },
+            }
         ) {
             val videoSize = if (mainState.isLandscape) Modifier.fillMaxSize()
             else if (!isPipMode && !isFullscreen) Modifier.height(250.dp)
@@ -206,7 +216,7 @@ fun AnimeWatchScreen(
                             isFavorite = isFavorite.value,
                             lastTimestamp = seekPosition,
                             lastWatched = LocalDateTime.now()
-                                .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME),
+                                .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
                         )
                         viewModel.updateEpisodeDetailComplement(updatedEpisodeDetailComplement)
                     },
@@ -222,7 +232,6 @@ fun AnimeWatchScreen(
                     isScreenOn = isScreenOn,
                     onEnterPipMode = onEnterPipMode,
                     onFullscreenChange = { isFullscreen = it },
-                    setPipSourceRect = viewModel::setPipSourceRect,
                     onPlayerError = { errorMessage = it },
                     handleSelectedEpisodeServer = viewModel::handleSelectedEpisodeServer,
                     selectedContentIndex = selectedContentIndex,

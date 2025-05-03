@@ -14,9 +14,7 @@ import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
@@ -32,7 +30,6 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.animeapp.AnimeApplication
-import com.example.animeapp.ui.animeWatch.AnimeWatchViewModel
 import com.example.animeapp.ui.common_ui.ConfirmationAlert
 import com.example.animeapp.ui.theme.AppTheme
 import com.example.animeapp.utils.HlsPlayerUtil
@@ -58,7 +55,7 @@ class MainActivity : AppCompatActivity() {
 
         pipParamsBuilder = PictureInPictureParams.Builder().apply {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                setAutoEnterEnabled(true)
+                setAutoEnterEnabled(false)
             }
             setActions(buildPipActions(this@MainActivity, false))
         }
@@ -69,31 +66,19 @@ class MainActivity : AppCompatActivity() {
             navController = rememberNavController()
 
             val mainViewModel: MainViewModel = hiltViewModel()
-            val animeWatchViewModel: AnimeWatchViewModel = hiltViewModel()
             val state by mainViewModel.state.collectAsStateWithLifecycle()
-            val pipSourceRect by animeWatchViewModel.pipSourceRect.collectAsStateWithLifecycle()
 
             val configuration = LocalConfiguration.current
             val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
             val resetIdleTimer = remember { { lastInteractionTime = System.currentTimeMillis() } }
-
             val currentRoute = navController.currentDestination?.route
-            val isOnWatchScreen = currentRoute?.startsWith("animeWatch/") == true
-
-            LaunchedEffect(isOnWatchScreen, pipSourceRect) {
-                if (isOnWatchScreen && pipSourceRect != null) {
-                    Log.d("MainActivity", "PiP SourceRectHint: $pipSourceRect")
-                    pipParamsBuilder.setSourceRectHint(pipSourceRect)
-                    setPictureInPictureParams(pipParamsBuilder.build())
-                }
-            }
 
             LaunchedEffect(Unit) {
                 while (true) {
                     delay(500)
                     val currentTime = System.currentTimeMillis()
                     val isIdle = currentTime - lastInteractionTime > idleTimeoutMillis
-                    val route = navController.currentDestination?.route
+                    val route = currentRoute
 
                     if (isIdle && route?.startsWith("animeWatch/") == false) {
                         mainViewModel.dispatch(MainAction.SetIsShowIdleDialog(true))
@@ -104,7 +89,6 @@ class MainActivity : AppCompatActivity() {
             BackHandler {
                 mainViewModel.dispatch(MainAction.SetShowQuitDialog(true))
             }
-
 
             AppTheme(
                 isDarkMode = state.isDarkMode,
@@ -206,10 +190,10 @@ class MainActivity : AppCompatActivity() {
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
         val currentRoute = navController.currentDestination?.route
-        if (currentRoute?.startsWith("animeWatch/") == true) {
-            val isPlaying = HlsPlayerUtil.state.value.isPlaying
-            Log.d("MainActivity", "onUserLeaveHint: Entering PiP, isPlaying=$isPlaying")
-            pipParamsBuilder.setActions(buildPipActions(this, isPlaying))
+        val isPlaying = HlsPlayerUtil.state.value.isPlaying
+        Log.d("MainActivity", "onUserLeaveHint: route=$currentRoute, isPlaying=$isPlaying")
+        if (currentRoute?.startsWith("animeWatch/") == true && isPlaying) {
+            pipParamsBuilder.setActions(buildPipActions(this, true))
             enterPictureInPictureMode(pipParamsBuilder.build())
         }
     }

@@ -1,6 +1,5 @@
 package com.example.animeapp.ui.animeWatch.components
 
-import android.graphics.Rect
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -38,7 +37,6 @@ fun AnimeWatchContent(
     isScreenOn: Boolean,
     onEnterPipMode: () -> Unit,
     onFullscreenChange: (Boolean) -> Unit,
-    setPipSourceRect: (Rect?) -> Unit,
     onPlayerError: (String?) -> Unit,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
     selectedContentIndex: Int,
@@ -61,7 +59,6 @@ fun AnimeWatchContent(
                         onFullscreenChange = onFullscreenChange,
                         isScreenOn = isScreenOn,
                         isLandscape = isLandscape,
-                        setPipSourceRect = setPipSourceRect,
                         onPlayerError = onPlayerError,
                         modifier = modifier,
                         videoSize = videoSize
