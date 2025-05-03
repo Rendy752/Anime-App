@@ -338,6 +338,8 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
             }
 
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                HlsPlayerUtil.dispatch(PlayerAction.SeekTo(0))
+                updatePlaybackState(PlaybackStateCompat.STATE_BUFFERING)
                 updateNotification()
             }
         })
