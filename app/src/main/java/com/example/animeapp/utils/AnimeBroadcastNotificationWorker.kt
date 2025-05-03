@@ -13,19 +13,25 @@ import kotlinx.coroutines.withContext
 import java.time.ZonedDateTime
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
-import javax.inject.Inject
 import com.example.animeapp.data.local.dao.AnimeDetailComplementDao
 import com.example.animeapp.data.local.dao.AnimeDetailDao
-import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.concurrent.TimeUnit
 import androidx.core.content.edit
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 
-class AnimeBroadcastNotificationWorker @Inject constructor(
-    @ApplicationContext private val context: Context,
-    params: WorkerParameters,
+class AnimeBroadcastNotificationWorker @AssistedInject constructor(
+    @Assisted private val context: Context,
+    @Assisted private val params: WorkerParameters,
     private val animeDetailComplementDao: AnimeDetailComplementDao,
     private val animeDetailDao: AnimeDetailDao
 ) : CoroutineWorker(context, params) {
+
+    @AssistedFactory
+    interface Factory : ChildWorkerFactory {
+        override fun create(appContext: Context, params: WorkerParameters): AnimeBroadcastNotificationWorker
+    }
 
     companion object {
         const val CHANNEL_ID = "anime_notifications"

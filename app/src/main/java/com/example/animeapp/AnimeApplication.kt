@@ -8,15 +8,21 @@ import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.os.IBinder
 import android.util.Log
+import androidx.work.Configuration
 import com.chuckerteam.chucker.api.Chucker
-import com.example.animeapp.BuildConfig.DEBUG
 import com.example.animeapp.utils.AnimeBroadcastNotificationWorker
+import com.example.animeapp.utils.AnimeWorkerFactory
 import com.example.animeapp.utils.MediaPlaybackService
 import com.example.animeapp.utils.ShakeDetector
 import dagger.hilt.android.HiltAndroidApp
+import javax.inject.Inject
 
 @HiltAndroidApp
-class AnimeApplication : Application() {
+class AnimeApplication : Application(), Configuration.Provider {
+
+    @Inject
+    lateinit var workerFactory: AnimeWorkerFactory
+
     private lateinit var sensorManager: SensorManager
     private lateinit var shakeDetector: ShakeDetector
 
@@ -24,9 +30,19 @@ class AnimeApplication : Application() {
     private var isServiceBound = false
     private var serviceConnection: ServiceConnection? = null
 
+    override val workManagerConfiguration: Configuration
+        get() {
+            Log.d("AnimeApplication", "Providing WorkManager configuration with workerFactory")
+            require(::workerFactory.isInitialized) { "workerFactory not initialized" }
+            return Configuration.Builder()
+                .setWorkerFactory(workerFactory)
+                .build()
+        }
+
     override fun onCreate() {
         super.onCreate()
-        if (DEBUG) setupSensor()
+        Log.d("AnimeApplication", "onCreate: Initializing application, workerFactory initialized: ${::workerFactory.isInitialized}")
+        if (BuildConfig.DEBUG) setupSensor()
         bindMediaService()
         AnimeBroadcastNotificationWorker.schedule(this)
     }
@@ -89,7 +105,7 @@ class AnimeApplication : Application() {
     override fun onTerminate() {
         super.onTerminate()
         cleanupService()
-        if (DEBUG) {
+        if (BuildConfig.DEBUG) {
             sensorManager.unregisterListener(shakeDetector)
         }
     }

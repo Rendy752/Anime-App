@@ -58,6 +58,15 @@
     @dagger.hilt.** *;
 }
 
+# --- WorkManager ---
+-keep class androidx.work.** { *; }
+-keep class com.example.animeapp.utils.AnimeBroadcastNotificationWorker { *; }
+-keep class com.example.animeapp.utils.AnimeWorkerFactory { *; }
+-keep interface com.example.animeapp.utils.ChildWorkerFactory { *; }
+-keepclasseswithmembers class * {
+    @dagger.assisted.AssistedInject <init>(...);
+}
+
 # --- Room ---
 -keep class androidx.room.** { *; }
 -dontwarn androidx.room.**
