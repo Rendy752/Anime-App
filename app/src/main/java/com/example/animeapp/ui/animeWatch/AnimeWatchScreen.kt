@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -80,8 +81,16 @@ fun AnimeWatchScreen(
 
     val onBackPress: () -> Unit = {
         if (isFullscreen) {
-            activityAsActivity.window?.let { window ->
-                FullscreenUtils.handleFullscreenToggle(window, isFullscreen) { isFullscreen = it }
+            (context as? FragmentActivity)?.let { activity ->
+                activity.window?.let { window ->
+                    FullscreenUtils.handleFullscreenToggle(
+                        window = window,
+                        isFullscreen = isFullscreen,
+                        isLandscape = mainState.isLandscape,
+                        activity = activity,
+                        onFullscreenChange = { isFullscreen = it }
+                    )
+                }
             }
         } else {
             navController.popBackStack()

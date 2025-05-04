@@ -96,8 +96,16 @@ fun PlayerViewWrapper(
 
             view.setFullscreenButtonClickListener {
                 if (!isLocked) {
-                    (context as? FragmentActivity)?.window?.let { window ->
-                        FullscreenUtils.handleFullscreenToggle(window, isFullscreen, onFullscreenChange)
+                    (context as? FragmentActivity)?.let { activity ->
+                        activity.window?.let { window ->
+                            FullscreenUtils.handleFullscreenToggle(
+                                window = window,
+                                isFullscreen = isFullscreen,
+                                isLandscape = isLandscape,
+                                activity = activity,
+                                onFullscreenChange = onFullscreenChange
+                            )
+                        }
                     }
                 }
             }
