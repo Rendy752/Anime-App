@@ -3,9 +3,6 @@ package com.example.animeapp.ui.animeWatch
 import android.app.PictureInPictureParams
 import android.content.Intent
 import android.content.IntentFilter
-import android.os.Build
-import android.view.WindowInsets
-import android.view.WindowManager
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.Column
@@ -29,6 +26,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import com.example.animeapp.ui.main.MainActivity
 import com.example.animeapp.ui.main.MainState
+import com.example.animeapp.utils.FullscreenUtils
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ScreenOffReceiver
 import com.example.animeapp.utils.ScreenOnReceiver
@@ -80,16 +78,10 @@ fun AnimeWatchScreen(
     val activityAsActivity = LocalActivity.current as MainActivity
     val playerState by HlsPlayerUtil.state.collectAsStateWithLifecycle()
 
-    @Suppress("DEPRECATION")
     val onBackPress: () -> Unit = {
         if (isFullscreen) {
-            isFullscreen = false
             activityAsActivity.window?.let { window ->
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    window.insetsController?.show(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
-                } else {
-                    window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
-                }
+                FullscreenUtils.handleFullscreenToggle(window, isFullscreen) { isFullscreen = it }
             }
         } else {
             navController.popBackStack()

@@ -2,7 +2,6 @@ package com.example.animeapp.ui.animeWatch.videoPlayer
 
 import android.annotation.SuppressLint
 import android.content.res.Configuration
-import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.support.v4.media.session.MediaControllerCompat
@@ -11,9 +10,6 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
-import android.view.WindowInsets
-import android.view.WindowInsetsController
-import android.view.WindowManager
 import androidx.annotation.OptIn
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
@@ -27,8 +23,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.fragment.app.FragmentActivity
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.example.animeapp.models.Track
+import com.example.animeapp.utils.FullscreenUtils
 import com.example.animeapp.utils.HlsPlayerUtil
 import com.example.animeapp.utils.PlayerAction
 import androidx.media3.ui.R as RMedia3
@@ -67,33 +65,39 @@ fun PlayerViewWrapper(
             view.setShowNextButton(false)
             view.setShowRewindButton(false)
             view.setShowFastForwardButton(false)
-            view.setFullscreenButtonState(isFullscreen)
             view.setShowSubtitleButton(tracks.any { it.kind == "captions" })
             view.useController = !isPipMode && !isLocked
             playerView.controllerShowTimeoutMs = if (isPipMode || isLocked) 0 else 5000
             view.setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
 
-            @Suppress("DEPRECATION")
+            view.resizeMode = if (!isLandscape && isFullscreen) {
+                AspectRatioFrameLayout.RESIZE_MODE_FIT
+            } else {
+                AspectRatioFrameLayout.RESIZE_MODE_FILL
+            }
+
+            view.fitsSystemWindows = !isFullscreen
+            if (isFullscreen) {
+                view.setPadding(0, 0, 0, 0)
+                view.layoutParams = ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT
+                )
+            }
+
+            view.setOnApplyWindowInsetsListener { v, insets ->
+                if (isFullscreen) {
+                    v.setPadding(0, 0, 0, 0)
+                    insets
+                } else {
+                    v.onApplyWindowInsets(insets)
+                }
+            }
+
             view.setFullscreenButtonClickListener {
                 if (!isLocked) {
-                    onFullscreenChange(!isFullscreen)
                     (context as? FragmentActivity)?.window?.let { window ->
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                            val controller = window.insetsController
-                            if (!isFullscreen) {
-                                controller?.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
-                                controller?.systemBarsBehavior =
-                                    WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-                            } else {
-                                controller?.show(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
-                            }
-                        } else {
-                            if (!isFullscreen) {
-                                window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
-                            } else {
-                                window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
-                            }
-                        }
+                        FullscreenUtils.handleFullscreenToggle(window, isFullscreen, onFullscreenChange)
                     }
                 }
             }
