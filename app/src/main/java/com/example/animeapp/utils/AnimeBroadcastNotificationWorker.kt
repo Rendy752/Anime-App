@@ -5,21 +5,26 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
 import androidx.core.app.NotificationCompat
+import androidx.core.graphics.drawable.toBitmap
 import androidx.core.net.toUri
 import androidx.work.*
+import coil.imageLoader
+import coil.request.ImageRequest
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.ZonedDateTime
 import java.time.ZoneId
 import java.time.temporal.ChronoUnit
-import com.example.animeapp.data.local.dao.AnimeDetailComplementDao
-import com.example.animeapp.data.local.dao.AnimeDetailDao
 import java.util.concurrent.TimeUnit
 import androidx.core.content.edit
-import dagger.assisted.Assisted
+import com.example.animeapp.data.local.dao.AnimeDetailComplementDao
+import com.example.animeapp.data.local.dao.AnimeDetailDao
+import com.example.animeapp.R
 import dagger.assisted.AssistedFactory
-import dagger.assisted.AssistedInject
 
 class AnimeBroadcastNotificationWorker @AssistedInject constructor(
     @Assisted private val context: Context,
@@ -30,7 +35,10 @@ class AnimeBroadcastNotificationWorker @AssistedInject constructor(
 
     @AssistedFactory
     interface Factory : ChildWorkerFactory {
-        override fun create(appContext: Context, params: WorkerParameters): AnimeBroadcastNotificationWorker
+        override fun create(
+            appContext: Context,
+            params: WorkerParameters
+        ): AnimeBroadcastNotificationWorker
     }
 
     companion object {
@@ -38,6 +46,7 @@ class AnimeBroadcastNotificationWorker @AssistedInject constructor(
         const val WORK_NAME = "anime_notification_work"
         private const val PREFS_NOTIFICATIONS_SENT = "notifications_sent"
         private const val NOTIFICATION_WINDOW_HOURS = 24L
+        private const val NOTIFICATION_WINDOW_MINUTES = 5L
 
         fun schedule(context: Context) {
             val constraints = Constraints.Builder()
@@ -45,8 +54,8 @@ class AnimeBroadcastNotificationWorker @AssistedInject constructor(
                 .build()
 
             val workRequest = PeriodicWorkRequestBuilder<AnimeBroadcastNotificationWorker>(
-                repeatInterval = 1,
-                repeatIntervalTimeUnit = TimeUnit.HOURS
+                repeatInterval = 15,
+                repeatIntervalTimeUnit = TimeUnit.MINUTES
             )
                 .setConstraints(constraints)
                 .build()
@@ -56,7 +65,7 @@ class AnimeBroadcastNotificationWorker @AssistedInject constructor(
                 ExistingPeriodicWorkPolicy.KEEP,
                 workRequest
             )
-            println("AnimeBroadcastNotificationWorker: Scheduled with 1-hour interval")
+            println("AnimeBroadcastNotificationWorker: Scheduled with 15-minute interval")
         }
     }
 
@@ -112,7 +121,7 @@ class AnimeBroadcastNotificationWorker @AssistedInject constructor(
 
                     val timeUntilBroadcast = ChronoUnit.MINUTES.between(currentTime, broadcastTime)
                     println("AnimeBroadcastNotificationWorker: Checking ${animeDetail.title}: time until broadcast = $timeUntilBroadcast minutes")
-                    if (timeUntilBroadcast in 0..60) {
+                    if (timeUntilBroadcast in 0..NOTIFICATION_WINDOW_MINUTES) {
                         val sentNotifications =
                             settingsPrefs.getStringSet(PREFS_NOTIFICATIONS_SENT, emptySet())
                                 ?.toMutableSet() ?: mutableSetOf()
@@ -120,7 +129,8 @@ class AnimeBroadcastNotificationWorker @AssistedInject constructor(
                         if (!sentNotifications.contains(notificationKey)) {
                             sendNotification(
                                 malId = complement.malId,
-                                title = animeDetail.title
+                                title = animeDetail.title,
+                                imageUrl = animeDetail.images.webp.large_image_url
                             )
                             sentNotifications.add(notificationKey)
                             settingsPrefs.edit {
@@ -155,7 +165,7 @@ class AnimeBroadcastNotificationWorker @AssistedInject constructor(
 
     private fun createNotificationChannel() {
         val name = "Broadcast Notifications"
-        val descriptionText = "Notifications for airing anime"
+        val descriptionText = "Notifications for anime about to air"
         val importance = NotificationManager.IMPORTANCE_HIGH
         val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
             description = descriptionText
@@ -163,10 +173,10 @@ class AnimeBroadcastNotificationWorker @AssistedInject constructor(
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.createNotificationChannel(channel)
-        println("AnimeBroadcastNotificationWorker: Notification channel created: $CHANNEL_ID")
+        println("AnimeBroadcastNotificationWorker: Notification channel created: $CHANNEL_ID, description=$descriptionText")
     }
 
-    private fun sendNotification(malId: Int, title: String) {
+    private suspend fun sendNotification(malId: Int, title: String, imageUrl: String?) {
         val intent = Intent(Intent.ACTION_VIEW, "animeapp://anime/detail/$malId".toUri())
         val pendingIntent = PendingIntent.getActivity(
             context,
@@ -175,19 +185,43 @@ class AnimeBroadcastNotificationWorker @AssistedInject constructor(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(androidx.media3.session.R.drawable.media3_notification_small_icon)
-            .setContentTitle("Anime On Air")
-            .setContentText("$title is airing now!")
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notifications_active_black_24dp)
+            .setContentTitle("Anime About to Air")
+            .setContentText("$title is about to air!")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
             .setAutoCancel(true)
-            .build()
 
+        if (imageUrl != null) {
+            try {
+                val request = ImageRequest.Builder(context)
+                    .data(imageUrl)
+                    .size(512, 512)
+                    .allowHardware(false)
+                    .build()
+                val bitmap = context.imageLoader.execute(request).drawable?.toBitmap()
+                if (bitmap != null) {
+                    builder.setLargeIcon(bitmap)
+                        .setStyle(
+                            NotificationCompat.BigPictureStyle()
+                                .bigPicture(bitmap)
+                                .bigLargeIcon(null as Bitmap?)
+                        )
+                    println("AnimeBroadcastNotificationWorker: Loaded WebP image for notification: $imageUrl")
+                } else {
+                    println("AnimeBroadcastNotificationWorker: Failed to load WebP image for notification: $imageUrl")
+                }
+            } catch (e: Exception) {
+                println("AnimeBroadcastNotificationWorker: Error loading WebP image for notification: $imageUrl, error=${e.message}")
+            }
+        }
+
+        val notification = builder.build()
         val notificationManager =
             context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(malId, notification)
-        println("AnimeBroadcastNotificationWorker: Notification sent for $title (malId: $malId)")
+        println("AnimeBroadcastNotificationWorker: Notification sent for $title (malId: $malId, title='Anime About to Air', text='$title is about to air!')")
     }
 
     private fun cleanUpSentNotifications(
