@@ -1,7 +1,6 @@
 package com.example.animeapp.ui.animeWatch.videoPlayer
 
 import android.annotation.SuppressLint
-import android.content.res.Configuration
 import android.os.Handler
 import android.os.Looper
 import android.support.v4.media.session.MediaControllerCompat
@@ -184,7 +183,7 @@ fun PlayerViewWrapper(
                         val bottomBar = view.findViewById<ViewGroup>(RMedia3.id.exo_bottom_bar)
                         subtitleView.setPadding(
                             0, 0, 0,
-                            if (visibility == View.VISIBLE && (isLandscape || (context as? FragmentActivity)?.resources?.configuration?.orientation == Configuration.ORIENTATION_PORTRAIT)) bottomBar.height else 0
+                            if (visibility == View.VISIBLE && (isLandscape || !isFullscreen)) bottomBar.height else 0
                         )
                     }
                 }
