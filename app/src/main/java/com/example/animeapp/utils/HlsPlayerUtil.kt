@@ -1,11 +1,17 @@
 package com.example.animeapp.utils
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.media.AudioManager.OnAudioFocusChangeListener
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
+import android.view.PixelCopy
+import android.view.SurfaceView
+import android.view.TextureView
 import androidx.annotation.OptIn
 import androidx.core.net.toUri
 import androidx.media3.common.C
@@ -21,6 +27,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.scale
 
 data class PlayerState(
     val isPlaying: Boolean = false,
@@ -53,6 +63,7 @@ object HlsPlayerUtil {
     private var audioFocusChangeListener: OnAudioFocusChangeListener? = null
     private var audioFocusRequest: AudioFocusRequest? = null
     private var audioFocusRequested: Boolean = false
+    private var videoSurface: Any? = null
 
     private val _state = MutableStateFlow(PlayerState())
     val state: StateFlow<PlayerState> = _state.asStateFlow()
@@ -75,6 +86,62 @@ object HlsPlayerUtil {
             is PlayerAction.Rewind -> rewind()
             is PlayerAction.SetPlaybackSpeed -> setPlaybackSpeed(action.speed)
             is PlayerAction.Release -> release()
+        }
+    }
+
+    fun setVideoSurface(surface: Any?) {
+        videoSurface = surface
+        when (surface) {
+            is TextureView -> exoPlayer?.setVideoTextureView(surface)
+            is SurfaceView -> exoPlayer?.setVideoSurfaceView(surface)
+            null -> {
+                exoPlayer?.clearVideoSurface()
+                Log.d("HlsPlayerUtil", "Video surface cleared")
+            }
+
+            else -> Log.w("HlsPlayerUtil", "Unsupported video surface type: ${surface.javaClass}")
+        }
+        Log.d("HlsPlayerUtil", "Video surface set: ${surface?.javaClass?.simpleName}")
+    }
+
+    fun captureFrame(): Bitmap? {
+        return when (val surface = videoSurface) {
+            is TextureView -> {
+                try {
+                    surface.bitmap?.let { bitmap ->
+                        val scaledBitmap = bitmap.scale(512, 512)
+                        if (scaledBitmap != bitmap) bitmap.recycle()
+                        scaledBitmap
+                    }
+                } catch (e: Exception) {
+                    Log.e("HlsPlayerUtil", "Failed to capture frame from TextureView", e)
+                    null
+                }
+            }
+
+            is SurfaceView -> {
+                try {
+                    val bitmap = createBitmap(512, 512)
+                    val latch = CountDownLatch(1)
+                    PixelCopy.request(surface.holder.surface, bitmap, { result ->
+                        if (result == PixelCopy.SUCCESS) {
+                            latch.countDown()
+                        } else {
+                            Log.e("HlsPlayerUtil", "PixelCopy failed: $result")
+                        }
+                    }, Handler(Looper.getMainLooper()))
+                    latch.await(1, TimeUnit.SECONDS)
+                    bitmap
+                } catch (e: Exception) {
+                    Log.e("HlsPlayerUtil", "Failed to capture frame from SurfaceView", e)
+                    null
+                }
+            }
+
+            else -> {
+                Log.w("HlsPlayerUtil", "No video surface available for frame capture")
+                null
+            }
         }
     }
 
@@ -312,6 +379,7 @@ object HlsPlayerUtil {
         audioFocusRequest = null
         audioFocusChangeListener = null
         audioFocusRequested = false
+        videoSurface = null
         _state.update {
             it.copy(
                 isPlaying = false,

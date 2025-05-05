@@ -39,7 +39,7 @@ import com.example.animeapp.utils.PlayerAction
 @OptIn(UnstableApi::class, ExperimentalComposeUiApi::class)
 @Composable
 fun VideoPlayerSection(
-    updateStoredWatchState: (EpisodeDetailComplement, Long?, Long?) -> Unit,
+    updateStoredWatchState: (EpisodeDetailComplement, Long?, Long?, String?) -> Unit,
     episodeDetailComplement: EpisodeDetailComplement,
     episodes: List<Episode>,
     episodeSourcesQuery: EpisodeSourcesQuery,
@@ -78,7 +78,12 @@ fun VideoPlayerSection(
         val player = HlsPlayerUtil.getPlayer()
         if (player != null) {
             playerView.player = player
-            Log.d("VideoPlayerSection", "Player bound to PlayerView")
+            val videoSurface = playerView.videoSurfaceView
+            HlsPlayerUtil.setVideoSurface(videoSurface)
+            Log.d(
+                "VideoPlayerSection",
+                "Player bound to PlayerView, video surface set: ${videoSurface?.javaClass?.simpleName}"
+            )
             introOutroHandler = IntroOutroHandler(
                 player = player,
                 videoData = complement.sources
@@ -95,8 +100,8 @@ fun VideoPlayerSection(
             episodes = episodes,
             query = query,
             handler = { handleSelectedEpisodeServer(it) },
-            updateStoredWatchState = { position, duration ->
-                updateStoredWatchState(complement, position, duration)
+            updateStoredWatchState = { position, duration, screenshot ->
+                updateStoredWatchState(complement, position, duration, screenshot)
             },
             onPlayerError = { error ->
                 Log.e("VideoPlayerSection", "Player error: $error")
@@ -109,6 +114,7 @@ fun VideoPlayerSection(
                 onPlayerError(null)
                 Log.d("VideoPlayerSection", "Player ready")
                 playerView.player = HlsPlayerUtil.getPlayer()
+                HlsPlayerUtil.setVideoSurface(playerView.videoSurfaceView)
                 introOutroHandler?.start()
             }
         )
@@ -133,6 +139,7 @@ fun VideoPlayerSection(
                 Log.w("VideoPlayerSection", "Service disconnected")
                 mediaPlaybackService = null
                 playerView.player = null
+                HlsPlayerUtil.setVideoSurface(null)
                 introOutroHandler?.stop()
                 introOutroHandler = null
                 onPlayerError("Service disconnected")
@@ -218,6 +225,7 @@ fun VideoPlayerSection(
                 introOutroHandler?.stop()
                 introOutroHandler = null
                 playerView.player = null
+                HlsPlayerUtil.setVideoSurface(null)
             } catch (e: IllegalArgumentException) {
                 Log.w("VideoPlayerSection", "Service already unbound", e)
             }
@@ -418,6 +426,7 @@ fun VideoPlayerSection(
             Log.d("VideoPlayerSection", "Disconnecting MediaBrowser")
             mediaControllerCompat?.unregisterCallback(mediaControllerCallback)
             mediaBrowserCompat?.disconnect()
+            HlsPlayerUtil.setVideoSurface(null) // Clear video surface to prevent leaks
         }
     }
 

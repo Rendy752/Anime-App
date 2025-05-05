@@ -20,6 +20,7 @@ data class EpisodeDetailComplement(
     val animeTitle: String,
     val episodeTitle: String,
     val imageUrl: String?,
+    val screenshot: String? = null,
     val number: Int,
     val isFiller: Boolean,
     val servers: EpisodeServersResponse,

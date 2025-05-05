@@ -14,6 +14,7 @@ import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
+import android.util.Base64
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.net.toUri
@@ -24,9 +25,9 @@ import androidx.media3.common.Player
 import androidx.media3.common.Timeline
 import coil.ImageLoader
 import coil.memory.MemoryCache
-import coil.transform.CircleCropTransformation
 import coil.request.ImageRequest
 import coil.request.SuccessResult
+import coil.transform.CircleCropTransformation
 import com.example.animeapp.R
 import androidx.media3.session.R as RMedia3
 import com.example.animeapp.models.Episode
@@ -43,6 +44,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import java.io.ByteArrayOutputStream
 import java.net.URLEncoder
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -58,7 +60,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
     private var episodes: List<Episode> = emptyList()
     private var episodeSourcesQuery: EpisodeSourcesQuery? = null
     private var handleSelectedEpisodeServer: ((EpisodeSourcesQuery) -> Unit)? = null
-    private var updateStoredWatchState: ((Long?, Long?) -> Unit)? = null
+    private var updateStoredWatchState: ((Long?, Long?, String?) -> Unit)? = null
     private var onPlayerError: ((String?) -> Unit)? = null
     private var onPlayerReady: (() -> Unit)? = null
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -153,6 +155,20 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
             (result as? SuccessResult)?.drawable?.let { it as? android.graphics.drawable.BitmapDrawable }?.bitmap
         } catch (e: Exception) {
             Log.e("MediaPlaybackService", "Failed to load image: $url", e)
+            null
+        }
+    }
+
+    private suspend fun captureScreenshot(): String? = withContext(Dispatchers.IO) {
+        try {
+            val bitmap = HlsPlayerUtil.captureFrame() ?: return@withContext null
+            val outputStream = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
+            val byteArray = outputStream.toByteArray()
+            bitmap.recycle()
+            Base64.encodeToString(byteArray, Base64.DEFAULT)
+        } catch (e: Exception) {
+            Log.e("MediaPlaybackService", "Failed to capture screenshot", e)
             null
         }
     }
@@ -365,10 +381,11 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                         if (position > 10_000 && position < duration) {
                             try {
                                 withTimeout(5_000) {
-                                    updateStoredWatchState?.invoke(position, duration)
+                                    val screenshot = captureScreenshot()
+                                    updateStoredWatchState?.invoke(position, duration, screenshot)
                                     Log.d(
                                         "MediaPlaybackService",
-                                        "Periodic watch state update: position=$position"
+                                        "Periodic watch state update: position=$position, screenshot=${screenshot?.take(20)}..."
                                     )
                                 }
                             } catch (e: Exception) {
@@ -412,7 +429,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         episodes: List<Episode>,
         query: EpisodeSourcesQuery,
         handler: (EpisodeSourcesQuery) -> Unit,
-        updateStoredWatchState: (Long?, Long?) -> Unit,
+        updateStoredWatchState: (Long?, Long?, String?) -> Unit,
         onPlayerError: (String?) -> Unit,
         onPlayerReady: () -> Unit
     ) {
@@ -486,7 +503,10 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
             if (player.playbackState == Player.STATE_READY && position > 0 && position < duration) {
                 coroutineScope.launch {
                     try {
-                        withTimeout(5_000) { updateStoredWatchState?.invoke(position, duration) }
+                        withTimeout(5_000) {
+                            val screenshot = captureScreenshot()
+                            updateStoredWatchState?.invoke(position, duration, screenshot)
+                        }
                     } catch (e: Exception) {
                         Log.e("MediaPlaybackService", "Failed to save watch state on destroy", e)
                     }
@@ -578,11 +598,14 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
             stopSelf()
         }
 
-        override fun onSeekTo(position: Long) {
+        override fun onSeekTo(pos: Long) {
+            HlsPlayerUtil.dispatch(PlayerAction.SeekTo(pos))
             val duration = HlsPlayerUtil.getPlayer()?.duration
-            HlsPlayerUtil.dispatch(PlayerAction.SeekTo(position))
-            if (position > 0 && position < (duration ?: Long.MAX_VALUE)) {
-                updateStoredWatchState?.invoke(position, duration)
+            if (pos > 0 && pos < (duration ?: Long.MAX_VALUE)) {
+                coroutineScope.launch {
+                    val screenshot = captureScreenshot()
+                    updateStoredWatchState?.invoke(pos, duration, screenshot)
+                }
             }
             updateNotification()
         }
