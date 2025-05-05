@@ -240,8 +240,8 @@ fun VideoPlayer(
 
         if (isShowSpeedUp && !isPipMode && !isLocked && !shouldShowResumeOverlay && !isShowNextEpisode) {
             SpeedUpIndicator(
-                speedText = speedUpText,
-                modifier = Modifier.align(Alignment.TopCenter)
+                modifier = Modifier.align(Alignment.TopCenter),
+                speedText = speedUpText
             )
         }
 
