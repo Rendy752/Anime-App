@@ -56,6 +56,13 @@ fun PlayerViewWrapper(
         if (!isSeeking || isLocked) playerView.hideController()
     }
 
+    LaunchedEffect(isLandscape, isFullscreen) {
+        playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
+        playerView.postDelayed({
+            playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+        }, 1)
+    }
+
     AndroidView(
         factory = { playerView },
         modifier = Modifier.fillMaxSize(),
@@ -66,7 +73,7 @@ fun PlayerViewWrapper(
             view.setShowFastForwardButton(false)
             view.setShowSubtitleButton(tracks.any { it.kind == "captions" })
             view.useController = !isPipMode && !isLocked
-            playerView.controllerShowTimeoutMs = if (isPipMode || isLocked) 0 else 5000
+            view.controllerShowTimeoutMs = if (isPipMode || isLocked) 0 else 5000
             view.setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
             view.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
 
