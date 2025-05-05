@@ -68,12 +68,7 @@ fun PlayerViewWrapper(
             view.useController = !isPipMode && !isLocked
             playerView.controllerShowTimeoutMs = if (isPipMode || isLocked) 0 else 5000
             view.setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
-
-            view.resizeMode = if (!isLandscape && isFullscreen) {
-                AspectRatioFrameLayout.RESIZE_MODE_FIT
-            } else {
-                AspectRatioFrameLayout.RESIZE_MODE_FILL
-            }
+            view.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
 
             view.fitsSystemWindows = !isFullscreen
             if (isFullscreen) {

@@ -6,8 +6,11 @@ import android.os.Build
 import android.view.View
 import android.view.Window
 import android.view.WindowInsets
-import android.view.WindowInsetsController
 import android.view.WindowManager
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 
 object FullscreenUtils {
     /**
@@ -26,26 +29,14 @@ object FullscreenUtils {
         activity: Activity?,
         onFullscreenChange: (Boolean) -> Unit
     ) {
-        val newFullscreenState = !isFullscreen
 
-        @Suppress("DEPRECATION")
-        window.decorView.systemUiVisibility = if (newFullscreenState) {
-            (View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
-                    or View.SYSTEM_UI_FLAG_LAYOUT_STABLE
-                    or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
-                    or View.SYSTEM_UI_FLAG_FULLSCREEN
-                    or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY)
-        } else {
-            View.SYSTEM_UI_FLAG_VISIBLE
-        }
+        val newFullscreenState = !isFullscreen
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             val controller = window.insetsController
             controller?.let {
                 if (newFullscreenState) {
                     it.hide(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
-                    it.systemBarsBehavior =
-                        WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
                 } else {
                     it.show(WindowInsets.Type.statusBars() or WindowInsets.Type.navigationBars())
                 }
@@ -62,7 +53,9 @@ object FullscreenUtils {
         activity?.let {
             if (newFullscreenState && !isLandscape) {
                 it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-            } else if (!newFullscreenState) {
+            }
+            CoroutineScope(Dispatchers.Main).launch {
+                delay(10000)
                 it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
             }
         }
