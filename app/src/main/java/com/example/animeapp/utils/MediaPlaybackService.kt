@@ -58,7 +58,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
     private var episodes: List<Episode> = emptyList()
     private var episodeSourcesQuery: EpisodeSourcesQuery? = null
     private var handleSelectedEpisodeServer: ((EpisodeSourcesQuery) -> Unit)? = null
-    private var updateStoredWatchState: ((Long?) -> Unit)? = null
+    private var updateStoredWatchState: ((Long?, Long?) -> Unit)? = null
     private var onPlayerError: ((String?) -> Unit)? = null
     private var onPlayerReady: (() -> Unit)? = null
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -365,7 +365,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                         if (position > 10_000 && position < duration) {
                             try {
                                 withTimeout(5_000) {
-                                    updateStoredWatchState?.invoke(position)
+                                    updateStoredWatchState?.invoke(position, duration)
                                     Log.d(
                                         "MediaPlaybackService",
                                         "Periodic watch state update: position=$position"
@@ -412,7 +412,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         episodes: List<Episode>,
         query: EpisodeSourcesQuery,
         handler: (EpisodeSourcesQuery) -> Unit,
-        updateStoredWatchState: (Long?) -> Unit,
+        updateStoredWatchState: (Long?, Long?) -> Unit,
         onPlayerError: (String?) -> Unit,
         onPlayerReady: () -> Unit
     ) {
@@ -486,7 +486,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
             if (player.playbackState == Player.STATE_READY && position > 0 && position < duration) {
                 coroutineScope.launch {
                     try {
-                        withTimeout(5_000) { updateStoredWatchState?.invoke(position) }
+                        withTimeout(5_000) { updateStoredWatchState?.invoke(position, duration) }
                     } catch (e: Exception) {
                         Log.e("MediaPlaybackService", "Failed to save watch state on destroy", e)
                     }
@@ -578,10 +578,11 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
             stopSelf()
         }
 
-        override fun onSeekTo(pos: Long) {
-            HlsPlayerUtil.dispatch(PlayerAction.SeekTo(pos))
-            if (pos > 0 && pos < (HlsPlayerUtil.getPlayer()?.duration ?: Long.MAX_VALUE)) {
-                updateStoredWatchState?.invoke(pos)
+        override fun onSeekTo(position: Long) {
+            val duration = HlsPlayerUtil.getPlayer()?.duration
+            HlsPlayerUtil.dispatch(PlayerAction.SeekTo(position))
+            if (position > 0 && position < (duration ?: Long.MAX_VALUE)) {
+                updateStoredWatchState?.invoke(position, duration)
             }
             updateNotification()
         }

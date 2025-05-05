@@ -28,6 +28,7 @@ data class EpisodeDetailComplement(
     val isFavorite: Boolean = false,
     val lastWatched: String? = null,
     val lastTimestamp: Long? = null,
+    val duration: Long? = null,
     val createdAt: Long = Instant.now().epochSecond,
     var updatedAt: Long = Instant.now().epochSecond
 ) : Parcelable

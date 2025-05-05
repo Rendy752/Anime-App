@@ -208,13 +208,14 @@ fun AnimeWatchScreen(
                 AnimeWatchContent(
                     animeDetail = animeDetail,
                     isFavorite = isFavorite.value,
-                    updateStoredWatchState = { episodeDetailComplement, seekPosition ->
+                    updateStoredWatchState = { episodeDetailComplement, seekPosition, duration ->
                         viewModel.updateLastEpisodeWatchedIdAnimeDetailComplement(
                             episodeDetailComplement.id
                         )
                         val updatedEpisodeDetailComplement = episodeDetailComplement.copy(
                             isFavorite = isFavorite.value,
                             lastTimestamp = seekPosition,
+                            duration = duration,
                             lastWatched = LocalDateTime.now()
                                 .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
                         )

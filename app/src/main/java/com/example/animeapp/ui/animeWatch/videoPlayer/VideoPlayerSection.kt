@@ -39,7 +39,7 @@ import com.example.animeapp.utils.PlayerAction
 @OptIn(UnstableApi::class, ExperimentalComposeUiApi::class)
 @Composable
 fun VideoPlayerSection(
-    updateStoredWatchState: (EpisodeDetailComplement, Long?) -> Unit,
+    updateStoredWatchState: (EpisodeDetailComplement, Long?, Long?) -> Unit,
     episodeDetailComplement: EpisodeDetailComplement,
     episodes: List<Episode>,
     episodeSourcesQuery: EpisodeSourcesQuery,
@@ -95,8 +95,8 @@ fun VideoPlayerSection(
             episodes = episodes,
             query = query,
             handler = { handleSelectedEpisodeServer(it) },
-            updateStoredWatchState = { position ->
-                updateStoredWatchState(complement, position)
+            updateStoredWatchState = { position, duration ->
+                updateStoredWatchState(complement, position, duration)
             },
             onPlayerError = { error ->
                 Log.e("VideoPlayerSection", "Player error: $error")

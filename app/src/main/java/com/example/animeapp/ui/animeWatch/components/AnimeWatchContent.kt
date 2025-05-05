@@ -24,7 +24,7 @@ import com.example.animeapp.utils.Resource
 fun AnimeWatchContent(
     animeDetail: AnimeDetail?,
     isFavorite: Boolean,
-    updateStoredWatchState: (EpisodeDetailComplement, Long?) -> Unit,
+    updateStoredWatchState: (EpisodeDetailComplement, Long?, Long?) -> Unit,
     getCachedEpisodeDetailComplement: suspend (String) -> EpisodeDetailComplement?,
     episodes: List<Episode>?,
     episodeDetailComplement: Resource<EpisodeDetailComplement>,
