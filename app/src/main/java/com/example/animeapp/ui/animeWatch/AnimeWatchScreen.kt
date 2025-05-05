@@ -156,7 +156,6 @@ fun AnimeWatchScreen(
                     duration = SnackbarDuration.Short
                 )
             }
-            errorMessage = null
         }
     }
 
@@ -233,6 +232,7 @@ fun AnimeWatchScreen(
                     isScreenOn = isScreenOn,
                     onEnterPipMode = onEnterPipMode,
                     onFullscreenChange = { isFullscreen = it },
+                    errorMessage = errorMessage,
                     onPlayerError = { errorMessage = it },
                     handleSelectedEpisodeServer = viewModel::handleSelectedEpisodeServer,
                     selectedContentIndex = selectedContentIndex,

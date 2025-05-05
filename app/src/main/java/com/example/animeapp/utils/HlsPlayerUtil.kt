@@ -44,7 +44,6 @@ sealed class PlayerAction {
     data object FastForward : PlayerAction()
     data object Rewind : PlayerAction()
     data class SetPlaybackSpeed(val speed: Float) : PlayerAction()
-    data object ResetForPiP : PlayerAction()
     data object Release : PlayerAction()
 }
 
@@ -75,7 +74,6 @@ object HlsPlayerUtil {
             is PlayerAction.FastForward -> fastForward()
             is PlayerAction.Rewind -> rewind()
             is PlayerAction.SetPlaybackSpeed -> setPlaybackSpeed(action.speed)
-            is PlayerAction.ResetForPiP -> resetForPiP()
             is PlayerAction.Release -> release()
         }
     }
@@ -303,20 +301,8 @@ object HlsPlayerUtil {
         }
     }
 
-    private fun resetForPiP() {
-        exoPlayer?.let { player ->
-            player.setVideoSurface(null)
-            if (player.playbackState == Player.STATE_READY && !player.isPlaying) {
-                player.pause()
-                player.setPlaybackSpeed(0.1f)
-            }
-            Log.d("HlsPlayerUtil", "resetForPiP: videoSurface cleared")
-        }
-    }
-
     private fun release() {
         exoPlayer?.let { player ->
-            player.setVideoSurface(null)
             player.stop()
             player.release()
             Log.d("HlsPlayerUtil", "ExoPlayer released")

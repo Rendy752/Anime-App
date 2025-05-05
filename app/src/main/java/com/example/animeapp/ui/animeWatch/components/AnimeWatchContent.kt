@@ -37,6 +37,7 @@ fun AnimeWatchContent(
     isScreenOn: Boolean,
     onEnterPipMode: () -> Unit,
     onFullscreenChange: (Boolean) -> Unit,
+    errorMessage: String?,
     onPlayerError: (String?) -> Unit,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
     selectedContentIndex: Int,
@@ -59,6 +60,7 @@ fun AnimeWatchContent(
                         onFullscreenChange = onFullscreenChange,
                         isScreenOn = isScreenOn,
                         isLandscape = isLandscape,
+                        errorMessage = errorMessage,
                         onPlayerError = onPlayerError,
                         modifier = modifier,
                         videoSize = videoSize

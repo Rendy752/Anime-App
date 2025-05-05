@@ -51,6 +51,8 @@ fun VideoPlayer(
     setShowNextEpisode: (Boolean) -> Unit,
     nextEpisodeName: String,
     isLandscape: Boolean,
+    errorMessage: String?,
+    onRetry: () -> Unit,
     modifier: Modifier = Modifier,
     videoSize: Modifier,
     onPlay: () -> Unit,
@@ -92,7 +94,8 @@ fun VideoPlayer(
     val shouldShowResumeOverlay = isShowResumeOverlay &&
             episodeDetailComplement.lastTimestamp != null &&
             playerState.isReady &&
-            !playerState.isPlaying
+            !playerState.isPlaying &&
+            errorMessage == null
 
     DisposableEffect(
         mediaController,
@@ -108,19 +111,19 @@ fun VideoPlayer(
         }
     }
 
-    LaunchedEffect(playerState.isReady, isShowResumeOverlay, isShowNextEpisode) {
-        if (playerState.isReady && !playerState.isPlaying && !isShowResumeOverlay && !isShowNextEpisode) {
+    LaunchedEffect(playerState.isReady, isShowResumeOverlay, isShowNextEpisode, errorMessage) {
+        if (playerState.isReady && !playerState.isPlaying && !isShowResumeOverlay && !isShowNextEpisode && errorMessage == null) {
             Log.d("VideoPlayer", "Auto-playing video")
             onPlay()
         }
     }
 
-    LaunchedEffect(shouldShowResumeOverlay, isShowNextEpisode) {
-        if (shouldShowResumeOverlay || isShowNextEpisode) {
+    LaunchedEffect(shouldShowResumeOverlay, isShowNextEpisode, errorMessage) {
+        if (shouldShowResumeOverlay || isShowNextEpisode || errorMessage != null) {
             playerView.hideController()
             Log.d(
                 "VideoPlayer",
-                "Hiding controller due to overlay: shouldShowResumeOverlay=$shouldShowResumeOverlay, isShowNextEpisode=$isShowNextEpisode"
+                "Hiding controller due to overlay: shouldShowResumeOverlay=$shouldShowResumeOverlay, isShowNextEpisode=$isShowNextEpisode, errorMessage=$errorMessage"
             )
         }
     }
@@ -131,12 +134,13 @@ fun VideoPlayer(
         isShowPip,
         isShowSpeedUp,
         isShowSeekIndicator,
-        isLocked
+        isLocked,
+        errorMessage
     ) {
         Log.d(
             "VideoPlayer",
             "UI State: shouldShowResumeOverlay=$shouldShowResumeOverlay, isShowNextEpisode=$isShowNextEpisode, " +
-                    "isShowPip=$isShowPip, isShowSpeedUp=$isShowSpeedUp, isShowSeekIndicator=$isShowSeekIndicator, isLocked=$isLocked"
+                    "isShowPip=$isShowPip, isShowSpeedUp=$isShowSpeedUp, isShowSeekIndicator=$isShowSeekIndicator, isLocked=$isLocked, errorMessage=$errorMessage"
         )
     }
 
@@ -149,7 +153,7 @@ fun VideoPlayer(
             onFullscreenChange = onFullscreenChange,
             isFullscreen = isFullscreen,
             isLandscape = isLandscape,
-            isLocked = isLocked || shouldShowResumeOverlay || isShowNextEpisode,
+            isLocked = isLocked || shouldShowResumeOverlay || isShowNextEpisode || errorMessage != null,
             onPipVisibilityChange = { isShowPip = it },
             onSpeedChange = { speed, isHolding ->
                 speedUpText = "${speed.toInt()}x speed"
@@ -176,7 +180,7 @@ fun VideoPlayer(
         SeekIndicator(
             seekDirection = seekDirection,
             seekAmount = seekAmount,
-            isVisible = isShowSeekIndicator,
+            isVisible = isShowSeekIndicator && errorMessage == null,
             modifier = Modifier.align(Alignment.Center)
         )
 
@@ -219,7 +223,19 @@ fun VideoPlayer(
             )
         }
 
-        if (!isPipMode && !isLocked && !shouldShowResumeOverlay && !isShowNextEpisode && (showIntro || showOutro)) {
+        if (errorMessage != null) {
+            RetryButton(
+                onRetry = {
+                    if (errorMessage.contains("Failed to initialize player: Source error")) handleSelectedEpisodeServer(
+                        episodeSourcesQuery
+                    )
+                    else onRetry
+                },
+                modifier = Modifier.align(Alignment.Center)
+            )
+        }
+
+        if (!isPipMode && !isLocked && !shouldShowResumeOverlay && !isShowNextEpisode && (showIntro || showOutro) && errorMessage == null) {
             SkipIntroOutroButtons(
                 showIntro = showIntro,
                 showOutro = showOutro,
@@ -231,21 +247,21 @@ fun VideoPlayer(
             )
         }
 
-        if (isShowPip && !isPipMode && !isLocked && !shouldShowResumeOverlay && !isShowNextEpisode) {
+        if (isShowPip && !isPipMode && !isLocked && !shouldShowResumeOverlay && !isShowNextEpisode && errorMessage == null) {
             PipButton(
                 onEnterPipMode = onEnterPipMode,
                 modifier = Modifier.align(Alignment.TopCenter)
             )
         }
 
-        if (isShowSpeedUp && !isPipMode && !isLocked && !shouldShowResumeOverlay && !isShowNextEpisode) {
+        if (isShowSpeedUp && !isPipMode && !isLocked && !shouldShowResumeOverlay && !isShowNextEpisode && errorMessage == null) {
             SpeedUpIndicator(
                 modifier = Modifier.align(Alignment.TopCenter),
                 speedText = speedUpText
             )
         }
 
-        if (!isPipMode) {
+        if (!isPipMode && errorMessage == null) {
             val isControllerVisible = isShowPip && !shouldShowResumeOverlay && !isShowNextEpisode
             LockButton(
                 icon = if (isLocked) Icons.Filled.Lock else Icons.Filled.LockOpen,
