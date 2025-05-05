@@ -138,11 +138,15 @@ fun MainScreen(
             ) {
                 composable(BottomScreen.Home.route) {
                     val animeHomeViewModel: AnimeHomeViewModel = hiltViewModel()
-                    val homeState by animeHomeViewModel.state.collectAsStateWithLifecycle()
+                    val homeState by animeHomeViewModel.homeState.collectAsStateWithLifecycle()
+                    val carouselState by animeHomeViewModel.carouselState.collectAsStateWithLifecycle()
+                    val remainingTimes by animeHomeViewModel.remainingTimes.collectAsStateWithLifecycle()
                     AnimeHomeScreen(
-                        state = homeState,
+                        homeState = homeState,
+                        carouselState = carouselState,
+                        remainingTimes = remainingTimes,
+                        onAction = animeHomeViewModel::dispatch,
                         mainState = mainState,
-                        action = remember { animeHomeViewModel::dispatch },
                         currentRoute = currentRoute,
                         navController = navController
                     )

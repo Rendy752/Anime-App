@@ -31,11 +31,13 @@ data class HomeState(
     val continueWatchingEpisode: EpisodeDetailComplement? = null,
     val isRefreshing: Boolean = false,
     val isShowPopup: Boolean = false,
-    val isMinimized: Boolean = false,
-    val autoScrollEnabled: Boolean = true,
-    val carouselLastInteractionTime: Long = Date().time,
+    val isMinimized: Boolean = false
+)
+
+data class CarouselState(
     val currentCarouselPage: Int = 0,
-    val remainingTimes: Map<String, String> = emptyMap()
+    val autoScrollEnabled: Boolean = true,
+    val carouselLastInteractionTime: Long = Date().time
 )
 
 sealed class HomeAction {
@@ -57,8 +59,14 @@ class AnimeHomeViewModel @Inject constructor(
     private val animeEpisodeDetailRepository: AnimeEpisodeDetailRepository
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(HomeState())
-    val state: StateFlow<HomeState> = _state.asStateFlow()
+    private val _homeState = MutableStateFlow(HomeState())
+    val homeState: StateFlow<HomeState> = _homeState.asStateFlow()
+
+    private val _carouselState = MutableStateFlow(CarouselState())
+    val carouselState: StateFlow<CarouselState> = _carouselState.asStateFlow()
+
+    private val _remainingTimes = MutableStateFlow<Map<String, String>>(emptyMap())
+    val remainingTimes: StateFlow<Map<String, String>> = _remainingTimes.asStateFlow()
 
     private var timeUpdateJob: Job? = null
 
@@ -83,56 +91,55 @@ class AnimeHomeViewModel @Inject constructor(
     }
 
     private fun getAnimeSchedules() = viewModelScope.launch {
-        _state.update { it.copy(isRefreshing = true, animeSchedules = Resource.Loading()) }
-        val result = animeHomeRepository.getAnimeSchedules(_state.value.queryState)
-        _state.update { it.copy(isRefreshing = false, animeSchedules = result) }
+        _homeState.update { it.copy(isRefreshing = true, animeSchedules = Resource.Loading()) }
+        val result = animeHomeRepository.getAnimeSchedules(_homeState.value.queryState)
+        _homeState.update { it.copy(isRefreshing = false, animeSchedules = result) }
         if (result is Resource.Success) {
             dispatch(HomeAction.StartUpdatingBroadcastTimes(result.data.data))
         }
     }
 
     private fun getTop10Anime() = viewModelScope.launch {
-        _state.update { it.copy(top10Anime = Resource.Loading()) }
+        _homeState.update { it.copy(top10Anime = Resource.Loading()) }
         val result = animeHomeRepository.getTop10Anime()
-        _state.update { it.copy(top10Anime = result) }
+        _homeState.update { it.copy(top10Anime = result) }
     }
 
     private fun applyFilters(updatedQueryState: AnimeSchedulesSearchQueryState) {
-        _state.update { it.copy(queryState = updatedQueryState) }
+        _homeState.update { it.copy(queryState = updatedQueryState) }
         dispatch(HomeAction.GetAnimeSchedules)
     }
 
     private fun fetchContinueWatchingEpisode() {
         viewModelScope.launch {
-            val episode =
-                animeEpisodeDetailRepository.getCachedLatestWatchedEpisodeDetailComplement()
-            _state.update { it.copy(continueWatchingEpisode = episode) }
-            _state.update { it.copy(isShowPopup = episode != null, isMinimized = false) }
+            val episode = animeEpisodeDetailRepository.getCachedLatestWatchedEpisodeDetailComplement()
+            _homeState.update { it.copy(continueWatchingEpisode = episode) }
+            _homeState.update { it.copy(isShowPopup = episode != null, isMinimized = false) }
             if (episode != null) {
                 delay(10000)
-                _state.update { it.copy(isMinimized = true) }
+                _homeState.update { it.copy(isMinimized = true) }
             }
         }
     }
 
     private fun setMinimized(minimize: Boolean) {
-        _state.update { it.copy(isMinimized = minimize) }
+        _homeState.update { it.copy(isMinimized = minimize) }
     }
 
     private fun setShowPopup(show: Boolean) {
-        _state.update { it.copy(isShowPopup = show) }
+        _homeState.update { it.copy(isShowPopup = show) }
     }
 
     private fun setAutoScrollEnabled(enabled: Boolean) {
-        _state.update { it.copy(autoScrollEnabled = enabled) }
+        _carouselState.update { it.copy(autoScrollEnabled = enabled) }
     }
 
     private fun updateCarouselLastInteractionTime() {
-        _state.update { it.copy(carouselLastInteractionTime = Date().time) }
+        _carouselState.update { it.copy(carouselLastInteractionTime = Date().time) }
     }
 
     private fun setCurrentCarouselPage(page: Int) {
-        _state.update { it.copy(currentCarouselPage = page) }
+        _carouselState.update { it.copy(currentCarouselPage = page) }
     }
 
     private fun startUpdatingBroadcastTimes(animeSchedules: List<AnimeDetail>) {
@@ -150,10 +157,10 @@ class AnimeHomeViewModel @Inject constructor(
                         val remainingTime = calculateRemainingTime(broadcast)
                         animeDetail.mal_id.toString() to remainingTime
                     }
-                    _state.update { it.copy(remainingTimes = updatedTimes) }
+                    _remainingTimes.value = updatedTimes
                 }
             } catch (e: Exception) {
-                _state.update { it.copy(remainingTimes = emptyMap()) }
+                _remainingTimes.value = emptyMap()
                 e.printStackTrace()
             }
         }
