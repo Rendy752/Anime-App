@@ -19,6 +19,7 @@ import com.example.animeapp.utils.Resource
 
 @Composable
 fun ResultsSection(
+    modifier: Modifier = Modifier,
     navController: NavController,
     animeSearchResults: Resource<AnimeSearchResponse>,
     selectedGenres: List<Genre>,
@@ -26,7 +27,7 @@ fun ResultsSection(
     onGenreClick: (Genre) -> Unit
 ) {
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {

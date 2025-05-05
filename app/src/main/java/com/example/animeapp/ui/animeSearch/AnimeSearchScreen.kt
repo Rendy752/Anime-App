@@ -2,6 +2,7 @@ package com.example.animeapp.ui.animeSearch
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -96,7 +97,7 @@ fun AnimeSearchScreen(
 
     Scaffold(
         topBar = {
-            if (genre != null || producer != null) {
+            if (!mainState.isLandscape && (genre != null || producer != null)) {
                 Column {
                     TopAppBar(
                         title = {
@@ -139,77 +140,15 @@ fun AnimeSearchScreen(
                 )
             },
         ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                if (mainState.isLandscape) {
-                    Row {
-                        Column(
-                            modifier = Modifier
-                                .weight(0.5f)
-                                .verticalScroll(rememberScrollState())
-                                .fillMaxHeight()
-                                .clip(MaterialTheme.shapes.extraLarge),
-                            verticalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            SearchFieldSection(
-                                queryState = queryState,
-                                onQueryChanged = viewModel::applyFilters,
-                                isFilterBottomSheetShow = isFilterBottomSheetShow,
-                                resetBottomSheetFilters = viewModel::resetBottomSheetFilters,
-                                onFilterClick = { isFilterBottomSheetShow = true }
-                            )
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                            GenreProducerFilterFieldSection(
-                                selectedGenres = selectedGenres,
-                                setSelectedGenre = viewModel::setSelectedGenre,
-                                applyGenreFilters = viewModel::applyGenreFilters,
-                                selectedProducers = selectedProducers,
-                                setSelectedProducer = viewModel::setSelectedProducer,
-                                applyProducerFilters = viewModel::applyProducerFilters,
-                                isGenresBottomSheetShow = isGenresBottomSheetShow,
-                                isProducersBottomSheetShow = isProducersBottomSheetShow,
-                                setGenresBottomSheet = { isGenresBottomSheetShow = it },
-                                setProducersBottomSheet = { isProducersBottomSheetShow = it }
-                            )
-                            HorizontalDivider(modifier = Modifier.padding(bottom = 8.dp))
-                            LimitAndPaginationSection(
-                                isVisible = animeSearchResults is Resource.Success,
-                                pagination = animeSearchResults.data?.pagination,
-                                query = LimitAndPaginationQueryState(
-                                    queryState.page,
-                                    queryState.limit
-                                ),
-                                onQueryChanged = {
-                                    viewModel.applyFilters(
-                                        queryState.copy(
-                                            page = it.page,
-                                            limit = it.limit
-                                        )
-                                    )
-                                },
-                                useHorizontalPager = false
-                            )
-                        }
-                        VerticalDivider()
-                        Box(
-                            modifier = Modifier
-                                .weight(0.5f)
-                                .fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            ResultsSection(
-                                navController = navController,
-                                animeSearchResults = animeSearchResults,
-                                selectedGenres = selectedGenres,
-                                genres = genres,
-                                onGenreClick = { genre ->
-                                    viewModel.setSelectedGenre(genre)
-                                    viewModel.applyGenreFilters()
-                                }
-                            )
-                        }
-                    }
-                } else {
-                    Column(modifier = Modifier.fillMaxSize()) {
+            if (mainState.isLandscape) {
+                Row(modifier = Modifier.fillMaxSize()) {
+                    Column(
+                        modifier = Modifier
+                            .weight(0.5f)
+                            .fillMaxHeight()
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.SpaceBetween
+                    ) {
                         SearchFieldSection(
                             queryState = queryState,
                             onQueryChanged = viewModel::applyFilters,
@@ -217,7 +156,7 @@ fun AnimeSearchScreen(
                             resetBottomSheetFilters = viewModel::resetBottomSheetFilters,
                             onFilterClick = { isFilterBottomSheetShow = true }
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                         GenreProducerFilterFieldSection(
                             selectedGenres = selectedGenres,
                             setSelectedGenre = viewModel::setSelectedGenre,
@@ -230,19 +169,7 @@ fun AnimeSearchScreen(
                             setGenresBottomSheet = { isGenresBottomSheetShow = it },
                             setProducersBottomSheet = { isProducersBottomSheetShow = it }
                         )
-                        HorizontalDivider()
-                        Column(modifier = Modifier.weight(1f)) {
-                            ResultsSection(
-                                navController = navController,
-                                animeSearchResults = animeSearchResults,
-                                selectedGenres = selectedGenres,
-                                genres = genres,
-                                onGenreClick = { genre ->
-                                    viewModel.setSelectedGenre(genre)
-                                    viewModel.applyGenreFilters()
-                                }
-                            )
-                        }
+                        HorizontalDivider(modifier = Modifier.padding(bottom = 8.dp))
                         LimitAndPaginationSection(
                             isVisible = animeSearchResults is Resource.Success,
                             pagination = animeSearchResults.data?.pagination,
@@ -252,14 +179,77 @@ fun AnimeSearchScreen(
                             ),
                             onQueryChanged = {
                                 viewModel.applyFilters(
-                                    queryState.copy(
-                                        page = it.page,
-                                        limit = it.limit
-                                    )
+                                    queryState.copy(page = it.page, limit = it.limit)
                                 )
-                            }
+                            },
+                            useHorizontalPager = false
                         )
                     }
+
+                    VerticalDivider()
+
+                    ResultsSection(
+                        modifier = Modifier.weight(0.5f),
+                        navController = navController,
+                        animeSearchResults = animeSearchResults,
+                        selectedGenres = selectedGenres,
+                        genres = genres,
+                        onGenreClick = { genre ->
+                            viewModel.setSelectedGenre(genre)
+                            viewModel.applyGenreFilters()
+                        }
+                    )
+                }
+            } else {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    SearchFieldSection(
+                        queryState = queryState,
+                        onQueryChanged = viewModel::applyFilters,
+                        isFilterBottomSheetShow = isFilterBottomSheetShow,
+                        resetBottomSheetFilters = viewModel::resetBottomSheetFilters,
+                        onFilterClick = { isFilterBottomSheetShow = true }
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    GenreProducerFilterFieldSection(
+                        selectedGenres = selectedGenres,
+                        setSelectedGenre = viewModel::setSelectedGenre,
+                        applyGenreFilters = viewModel::applyGenreFilters,
+                        selectedProducers = selectedProducers,
+                        setSelectedProducer = viewModel::setSelectedProducer,
+                        applyProducerFilters = viewModel::applyProducerFilters,
+                        isGenresBottomSheetShow = isGenresBottomSheetShow,
+                        isProducersBottomSheetShow = isProducersBottomSheetShow,
+                        setGenresBottomSheet = { isGenresBottomSheetShow = it },
+                        setProducersBottomSheet = { isProducersBottomSheetShow = it }
+                    )
+
+                    HorizontalDivider()
+
+                    ResultsSection(
+                        modifier = Modifier.weight(1f),
+                        navController = navController,
+                        animeSearchResults = animeSearchResults,
+                        selectedGenres = selectedGenres,
+                        genres = genres,
+                        onGenreClick = { genre ->
+                            viewModel.setSelectedGenre(genre)
+                            viewModel.applyGenreFilters()
+                        }
+                    )
+
+                    LimitAndPaginationSection(
+                        isVisible = animeSearchResults is Resource.Success,
+                        pagination = animeSearchResults.data?.pagination,
+                        query = LimitAndPaginationQueryState(
+                            queryState.page,
+                            queryState.limit
+                        ),
+                        onQueryChanged = {
+                            viewModel.applyFilters(
+                                queryState.copy(page = it.page, limit = it.limit)
+                            )
+                        }
+                    )
                 }
             }
 
