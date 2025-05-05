@@ -16,7 +16,6 @@ import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import androidx.core.graphics.scale
 import androidx.core.net.toUri
 import androidx.media.MediaBrowserServiceCompat
 import androidx.media.session.MediaButtonReceiver
@@ -24,11 +23,10 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.Timeline
 import coil.ImageLoader
+import coil.memory.MemoryCache
+import coil.transform.CircleCropTransformation
 import coil.request.ImageRequest
 import coil.request.SuccessResult
-import coil.size.Precision
-import coil.size.Size
-import coil.transform.Transformation
 import com.example.animeapp.R
 import androidx.media3.session.R as RMedia3
 import com.example.animeapp.models.Episode
@@ -138,49 +136,18 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         )
     }
 
-    private class TopCenterCropTransformation : Transformation {
-        override val cacheKey: String = "TopCenterCropTransformation"
-        override suspend fun transform(input: Bitmap, size: Size): Bitmap {
-            val targetWidth = IMAGE_SIZE
-            val targetHeight = IMAGE_SIZE
-            val scale: Float
-            val srcWidth: Int
-            val srcHeight: Int
-            if (input.width >= input.height) {
-                scale = targetHeight.toFloat() / input.height
-                srcWidth = (targetWidth / scale).toInt()
-                srcHeight = input.height
-            } else {
-                scale = targetWidth.toFloat() / input.width
-                srcWidth = input.width
-                srcHeight = (targetHeight / scale).toInt()
-            }
-            val srcX = (input.width - srcWidth) / 2
-            val srcY = 0
-            return Bitmap.createBitmap(input, srcX, srcY, srcWidth, srcHeight).let { cropped ->
-                val scaled = cropped.scale(targetWidth, targetHeight)
-                if (cropped != scaled) cropped.recycle()
-                scaled
-            }
-        }
-    }
-
     private suspend fun loadImageBitmap(url: String?): Bitmap? = withContext(Dispatchers.IO) {
         if (url.isNullOrEmpty()) return@withContext null
         try {
             val imageLoader = ImageLoader.Builder(this@MediaPlaybackService)
                 .memoryCache {
-                    coil.memory.MemoryCache.Builder(this@MediaPlaybackService).maxSizePercent(0.25)
-                        .build()
+                    MemoryCache.Builder(this@MediaPlaybackService).maxSizePercent(0.25).build()
                 }
                 .build()
             val request = ImageRequest.Builder(this@MediaPlaybackService)
                 .data(url)
                 .size(IMAGE_SIZE, IMAGE_SIZE)
-                .precision(Precision.EXACT)
-                .allowHardware(false)
-                .allowRgb565(false)
-                .transformations(TopCenterCropTransformation())
+                .transformations(CircleCropTransformation())
                 .build()
             val result = imageLoader.execute(request)
             (result as? SuccessResult)?.drawable?.let { it as? android.graphics.drawable.BitmapDrawable }?.bitmap
@@ -399,10 +366,17 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                             try {
                                 withTimeout(5_000) {
                                     updateStoredWatchState?.invoke(position)
-                                    Log.d("MediaPlaybackService", "Periodic watch state update: position=$position")
+                                    Log.d(
+                                        "MediaPlaybackService",
+                                        "Periodic watch state update: position=$position"
+                                    )
                                 }
                             } catch (e: Exception) {
-                                Log.e("MediaPlaybackService", "Failed to save periodic watch state", e)
+                                Log.e(
+                                    "MediaPlaybackService",
+                                    "Failed to save periodic watch state",
+                                    e
+                                )
                             }
                         }
                     }

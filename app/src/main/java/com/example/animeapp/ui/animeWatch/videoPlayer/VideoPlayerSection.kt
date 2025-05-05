@@ -444,7 +444,6 @@ fun VideoPlayerSection(
         nextEpisodeName = nextEpisodeName,
         isLandscape = isLandscape,
         errorMessage = errorMessage,
-        onRetry = { initializePlayer() },
         modifier = modifier,
         videoSize = videoSize,
         onPlay = { mediaControllerCompat?.transportControls?.play() },

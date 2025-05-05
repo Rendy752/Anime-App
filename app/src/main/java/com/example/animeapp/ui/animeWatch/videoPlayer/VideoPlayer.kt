@@ -52,7 +52,6 @@ fun VideoPlayer(
     nextEpisodeName: String,
     isLandscape: Boolean,
     errorMessage: String?,
-    onRetry: () -> Unit,
     modifier: Modifier = Modifier,
     videoSize: Modifier,
     onPlay: () -> Unit,
@@ -225,12 +224,7 @@ fun VideoPlayer(
 
         if (errorMessage != null) {
             RetryButton(
-                onRetry = {
-                    if (errorMessage.contains("Failed to initialize player: Source error")) handleSelectedEpisodeServer(
-                        episodeSourcesQuery
-                    )
-                    else onRetry
-                },
+                onRetry = { handleSelectedEpisodeServer(episodeSourcesQuery) },
                 modifier = Modifier.align(Alignment.Center)
             )
         }
