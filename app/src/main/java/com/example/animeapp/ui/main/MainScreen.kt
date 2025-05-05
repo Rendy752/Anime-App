@@ -14,7 +14,6 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -117,204 +116,198 @@ fun MainScreen(
         onResetIdleTimer()
     }
 
-    Surface(
-        color = MaterialTheme.colorScheme.surface,
-        modifier = Modifier.fillMaxSize()
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .navigationBarsPadding()
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .systemBarsPadding()
-                .navigationBarsPadding()
+        NavHost(
+            navController = navController,
+            startDestination = BottomScreen.Home.route,
+            modifier = Modifier.weight(1f),
+            enterTransition = { getBottomBarEnterTransition(initialState, targetState) },
+            exitTransition = { getBottomBarExitTransition(initialState, targetState) },
+            popEnterTransition = { getBottomBarEnterTransition(initialState, targetState) },
+            popExitTransition = { getBottomBarExitTransition(initialState, targetState) }
         ) {
-            NavHost(
-                navController = navController,
-                startDestination = BottomScreen.Home.route,
-                modifier = Modifier.weight(1f),
-                enterTransition = { getBottomBarEnterTransition(initialState, targetState) },
-                exitTransition = { getBottomBarExitTransition(initialState, targetState) },
-                popEnterTransition = { getBottomBarEnterTransition(initialState, targetState) },
-                popExitTransition = { getBottomBarExitTransition(initialState, targetState) }
+            composable(BottomScreen.Home.route) {
+                val animeHomeViewModel: AnimeHomeViewModel = hiltViewModel()
+                val homeState by animeHomeViewModel.homeState.collectAsStateWithLifecycle()
+                val carouselState by animeHomeViewModel.carouselState.collectAsStateWithLifecycle()
+                val remainingTimes by animeHomeViewModel.remainingTimes.collectAsStateWithLifecycle()
+                AnimeHomeScreen(
+                    homeState = homeState,
+                    carouselState = carouselState,
+                    remainingTimes = remainingTimes,
+                    onAction = animeHomeViewModel::dispatch,
+                    mainState = mainState,
+                    currentRoute = currentRoute,
+                    navController = navController
+                )
+            }
+            composable(BottomScreen.Recommendations.route) {
+                AnimeRecommendationsScreen(
+                    navController = navController,
+                    mainState = mainState
+                )
+            }
+            composable(BottomScreen.Search.route) {
+                AnimeSearchScreen(
+                    navController = navController,
+                    mainState = mainState
+                )
+            }
+            composable(
+                "${BottomScreen.Search.route}/{genreIdentity}/{producerIdentity}",
+                arguments = listOf(
+                    navArgument("genreIdentity") {
+                        type = NavType.StringType
+                        nullable = true
+                    },
+                    navArgument("producerIdentity") {
+                        type = NavType.StringType
+                        nullable = true
+                    }
+                )
             ) {
-                composable(BottomScreen.Home.route) {
-                    val animeHomeViewModel: AnimeHomeViewModel = hiltViewModel()
-                    val homeState by animeHomeViewModel.homeState.collectAsStateWithLifecycle()
-                    val carouselState by animeHomeViewModel.carouselState.collectAsStateWithLifecycle()
-                    val remainingTimes by animeHomeViewModel.remainingTimes.collectAsStateWithLifecycle()
-                    AnimeHomeScreen(
-                        homeState = homeState,
-                        carouselState = carouselState,
-                        remainingTimes = remainingTimes,
-                        onAction = animeHomeViewModel::dispatch,
-                        mainState = mainState,
-                        currentRoute = currentRoute,
-                        navController = navController
-                    )
-                }
-                composable(BottomScreen.Recommendations.route) {
-                    AnimeRecommendationsScreen(
-                        navController = navController,
-                        mainState = mainState
-                    )
-                }
-                composable(BottomScreen.Search.route) {
-                    AnimeSearchScreen(
-                        navController = navController,
-                        mainState = mainState
-                    )
-                }
-                composable(
-                    "${BottomScreen.Search.route}/{genreIdentity}/{producerIdentity}",
-                    arguments = listOf(
-                        navArgument("genreIdentity") {
-                            type = NavType.StringType
-                            nullable = true
-                        },
-                        navArgument("producerIdentity") {
-                            type = NavType.StringType
-                            nullable = true
-                        }
-                    )
-                ) {
-                    val genreIdentityString = it.arguments?.getString("genreIdentity")
-                    val producerIdentityString = it.arguments?.getString("producerIdentity")
-                    val gson = Gson()
-                    val genre = remember(genreIdentityString) {
-                        genreIdentityString?.let {
-                            if (it == "null") null
-                            else gson.fromJson(Uri.decode(it), CommonIdentity::class.java)
-                                .mapToGenre()
-                        }
+                val genreIdentityString = it.arguments?.getString("genreIdentity")
+                val producerIdentityString = it.arguments?.getString("producerIdentity")
+                val gson = Gson()
+                val genre = remember(genreIdentityString) {
+                    genreIdentityString?.let {
+                        if (it == "null") null
+                        else gson.fromJson(Uri.decode(it), CommonIdentity::class.java)
+                            .mapToGenre()
                     }
-                    val producer = remember(producerIdentityString) {
-                        producerIdentityString?.let {
-                            if (it == "null") null
-                            else gson.fromJson(Uri.decode(it), CommonIdentity::class.java)
-                                .mapToProducer()
-                        }
+                }
+                val producer = remember(producerIdentityString) {
+                    producerIdentityString?.let {
+                        if (it == "null") null
+                        else gson.fromJson(Uri.decode(it), CommonIdentity::class.java)
+                            .mapToProducer()
                     }
-                    AnimeSearchScreen(
-                        navController = navController,
-                        mainState = mainState,
-                        genre = genre,
-                        producer = producer
-                    )
                 }
-                composable(BottomScreen.Settings.route) {
-                    val settingsViewModel: SettingsViewModel = hiltViewModel()
-                    val settingsState by settingsViewModel.state.collectAsStateWithLifecycle()
-                    SettingsScreen(
-                        mainState = mainState,
-                        mainAction = mainAction,
-                        state = settingsState,
-                        action = remember { settingsViewModel::dispatch }
-                    )
-                }
-                composable(
-                    "animeDetail/{id}",
-                    arguments = listOf(navArgument("id") { type = NavType.IntType })
-                ) {
-                    AnimeDetailScreen(
-                        id = it.arguments?.getInt("id") ?: 0,
-                        navController = navController,
-                        mainState = mainState
-                    )
-                }
-                composable(
-                    "animeWatch/{malId}/{episodeId}",
-                    arguments = listOf(
-                        navArgument("malId") { type = NavType.IntType },
-                        navArgument("episodeId") { type = NavType.StringType }
-                    )
-                ) {
-                    var isPipMode by remember { mutableStateOf(false) }
-                    val activity = LocalActivity.current as? MainActivity
-                    val playerState by HlsPlayerUtil.state.collectAsStateWithLifecycle()
+                AnimeSearchScreen(
+                    navController = navController,
+                    mainState = mainState,
+                    genre = genre,
+                    producer = producer
+                )
+            }
+            composable(BottomScreen.Settings.route) {
+                val settingsViewModel: SettingsViewModel = hiltViewModel()
+                val settingsState by settingsViewModel.state.collectAsStateWithLifecycle()
+                SettingsScreen(
+                    mainState = mainState,
+                    mainAction = mainAction,
+                    state = settingsState,
+                    action = remember { settingsViewModel::dispatch }
+                )
+            }
+            composable(
+                "animeDetail/{id}",
+                arguments = listOf(navArgument("id") { type = NavType.IntType })
+            ) {
+                AnimeDetailScreen(
+                    id = it.arguments?.getInt("id") ?: 0,
+                    navController = navController,
+                    mainState = mainState
+                )
+            }
+            composable(
+                "animeWatch/{malId}/{episodeId}",
+                arguments = listOf(
+                    navArgument("malId") { type = NavType.IntType },
+                    navArgument("episodeId") { type = NavType.StringType }
+                )
+            ) {
+                var isPipMode by remember { mutableStateOf(false) }
+                val activity = LocalActivity.current as? MainActivity
+                val playerState by HlsPlayerUtil.state.collectAsStateWithLifecycle()
 
-                    DisposableEffect(activity) {
-                        val onPictureInPictureModeChangedCallback: (Boolean) -> Unit =
-                            { isInPipMode: Boolean ->
-                                isPipMode = isInPipMode
-                                Log.d("MainScreen", "PiP mode changed: isPipMode=$isInPipMode")
-                                Unit
-                            }
-                        activity?.addOnPictureInPictureModeChangedListener(
+                DisposableEffect(activity) {
+                    val onPictureInPictureModeChangedCallback: (Boolean) -> Unit =
+                        { isInPipMode: Boolean ->
+                            isPipMode = isInPipMode
+                            Log.d("MainScreen", "PiP mode changed: isPipMode=$isInPipMode")
+                            Unit
+                        }
+                    activity?.addOnPictureInPictureModeChangedListener(
+                        onPictureInPictureModeChangedCallback
+                    )
+                    onDispose {
+                        activity?.removeOnPictureInPictureModeChangedListener(
                             onPictureInPictureModeChangedCallback
                         )
-                        onDispose {
-                            activity?.removeOnPictureInPictureModeChangedListener(
-                                onPictureInPictureModeChangedCallback
-                            )
-                        }
                     }
+                }
 
-                    LaunchedEffect(isPipMode, playerState.isPlaying) {
-                        if (isPipMode && activity != null) {
+                LaunchedEffect(isPipMode, playerState.isPlaying) {
+                    if (isPipMode && activity != null) {
+                        Log.d(
+                            "MainScreen",
+                            "Updating PiP params: isPlaying=${playerState.isPlaying}"
+                        )
+                        val actions = buildPipActions(activity, playerState.isPlaying)
+                        activity.setPictureInPictureParams(
+                            PictureInPictureParams.Builder()
+                                .setActions(actions)
+                                .build()
+                        )
+                    }
+                }
+
+                AnimeWatchScreen(
+                    malId = it.arguments?.getInt("malId") ?: 0,
+                    episodeId = it.arguments?.getString("episodeId") ?: "",
+                    navController = navController,
+                    mainState = mainState,
+                    isPipMode = isPipMode,
+                    onEnterPipMode = {
+                        if (isConnected && activity != null) {
                             Log.d(
                                 "MainScreen",
-                                "Updating PiP params: isPlaying=${playerState.isPlaying}"
+                                "Entering PiP: isPlaying=${playerState.isPlaying}"
                             )
                             val actions = buildPipActions(activity, playerState.isPlaying)
-                            activity.setPictureInPictureParams(
+                            activity.enterPictureInPictureMode(
                                 PictureInPictureParams.Builder()
                                     .setActions(actions)
                                     .build()
                             )
                         }
                     }
-
-                    AnimeWatchScreen(
-                        malId = it.arguments?.getInt("malId") ?: 0,
-                        episodeId = it.arguments?.getString("episodeId") ?: "",
-                        navController = navController,
-                        mainState = mainState,
-                        isPipMode = isPipMode,
-                        onEnterPipMode = {
-                            if (isConnected && activity != null) {
-                                Log.d(
-                                    "MainScreen",
-                                    "Entering PiP: isPlaying=${playerState.isPlaying}"
-                                )
-                                val actions = buildPipActions(activity, playerState.isPlaying)
-                                activity.enterPictureInPictureMode(
-                                    PictureInPictureParams.Builder()
-                                        .setActions(actions)
-                                        .build()
-                                )
-                            }
-                        }
-                    )
-                }
-            }
-            AnimatedVisibility(
-                visible = isCurrentBottomScreen,
-                enter = slideInVertically(
-                    initialOffsetY = { it },
-                    animationSpec = tween(durationMillis = 700, easing = EaseInOut)
-                ),
-                exit = slideOutVertically(
-                    targetOffsetY = { it },
-                    animationSpec = tween(durationMillis = 700, easing = EaseInOut)
-                )
-            ) {
-                BottomNavigationBar(navController = navController)
-            }
-            AnimatedVisibility(
-                visible = !isConnected,
-                enter = slideInVertically(
-                    initialOffsetY = { it },
-                    animationSpec = tween(durationMillis = 700, easing = EaseInOut)
-                ),
-                exit = slideOutVertically(
-                    targetOffsetY = { it },
-                    animationSpec = tween(durationMillis = 700, easing = EaseInOut)
-                )
-            ) {
-                MessageDisplay(
-                    message = "No internet connection",
-                    isRounded = false
                 )
             }
+        }
+        AnimatedVisibility(
+            visible = isCurrentBottomScreen && !mainState.isLandscape,
+            enter = slideInVertically(
+                initialOffsetY = { it },
+                animationSpec = tween(durationMillis = 700, easing = EaseInOut)
+            ),
+            exit = slideOutVertically(
+                targetOffsetY = { it },
+                animationSpec = tween(durationMillis = 700, easing = EaseInOut)
+            )
+        ) {
+            BottomNavigationBar(navController = navController)
+        }
+        AnimatedVisibility(
+            visible = !isConnected,
+            enter = slideInVertically(
+                initialOffsetY = { it },
+                animationSpec = tween(durationMillis = 700, easing = EaseInOut)
+            ),
+            exit = slideOutVertically(
+                targetOffsetY = { it },
+                animationSpec = tween(durationMillis = 700, easing = EaseInOut)
+            )
+        ) {
+            MessageDisplay(
+                message = "No internet connection",
+                isRounded = false
+            )
         }
     }
 }

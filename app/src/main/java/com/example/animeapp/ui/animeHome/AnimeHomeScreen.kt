@@ -5,8 +5,10 @@ import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -84,7 +86,10 @@ fun AnimeHomeScreen(
             onRefresh = { onAction(HomeAction.GetAnimeSchedules) },
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
+                .then(
+                    if (mainState.isLandscape) Modifier.padding(paddingValues)
+                    else Modifier.consumeWindowInsets(paddingValues)
+                ),
             state = pullToRefreshState,
             indicator = {
                 PullToRefreshDefaults.Indicator(
@@ -146,7 +151,10 @@ fun AnimeHomeScreen(
 
                     is Resource.Success -> {
                         homeState.animeSchedules.data.let { animeSchedules ->
-                            Column(modifier = Modifier.weight(1f)) {
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.Center
+                            ) {
                                 AnimeSchedulesGrid(
                                     animeSchedules = animeSchedules.data,
                                     remainingTimes = remainingTimes,

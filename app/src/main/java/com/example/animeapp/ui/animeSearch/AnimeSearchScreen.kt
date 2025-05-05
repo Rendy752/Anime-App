@@ -96,7 +96,7 @@ fun AnimeSearchScreen(
 
     Scaffold(
         topBar = {
-            if (!mainState.isLandscape) {
+            if (genre != null || producer != null) {
                 Column {
                     TopAppBar(
                         title = {
@@ -108,13 +108,11 @@ fun AnimeSearchScreen(
                             )
                         },
                         navigationIcon = {
-                            if (genre != null || producer != null) {
-                                IconButton(onClick = { navController.popBackStack() }) {
-                                    Icon(
-                                        Icons.AutoMirrored.Filled.ArrowBack,
-                                        contentDescription = "Back"
-                                    )
-                                }
+                            IconButton(onClick = { navController.popBackStack() }) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Back"
+                                )
                             }
                         }
                     )
@@ -129,9 +127,7 @@ fun AnimeSearchScreen(
         PullToRefreshBox(
             isRefreshing = isRefreshing,
             onRefresh = { viewModel.applyFilters(queryState) },
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
+            modifier = Modifier.padding(paddingValues),
             state = state,
             indicator = {
                 PullToRefreshDefaults.Indicator(

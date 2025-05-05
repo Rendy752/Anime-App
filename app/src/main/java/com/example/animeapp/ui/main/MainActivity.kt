@@ -126,7 +126,7 @@ class MainActivity : AppCompatActivity() {
                                 onLongPress = { resetIdleTimer() }
                             )
                         },
-                    color = MaterialTheme.colorScheme.background
+                    color = MaterialTheme.colorScheme.surface
                 ) {
                     MainScreen(
                         navController = navController,
