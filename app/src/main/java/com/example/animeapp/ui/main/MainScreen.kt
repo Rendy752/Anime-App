@@ -27,6 +27,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
 import com.example.animeapp.models.CommonIdentity
 import com.example.animeapp.ui.animeDetail.AnimeDetailScreen
+import com.example.animeapp.ui.animeDetail.AnimeDetailViewModel
 import com.example.animeapp.ui.animeRecommendations.AnimeRecommendationsScreen
 import com.example.animeapp.ui.animeSearch.AnimeSearchScreen
 import com.example.animeapp.ui.animeWatch.AnimeWatchScreen
@@ -139,7 +140,7 @@ fun MainScreen(
                     homeState = homeState,
                     carouselState = carouselState,
                     remainingTimes = remainingTimes,
-                    onAction = animeHomeViewModel::dispatch,
+                    onAction = animeHomeViewModel::onAction,
                     mainState = mainState,
                     currentRoute = currentRoute,
                     navController = navController
@@ -201,17 +202,23 @@ fun MainScreen(
                     mainState = mainState,
                     mainAction = mainAction,
                     state = settingsState,
-                    action = remember { settingsViewModel::dispatch }
+                    action = settingsViewModel::onAction
                 )
             }
             composable(
                 "animeDetail/{id}",
                 arguments = listOf(navArgument("id") { type = NavType.IntType })
             ) {
+                val viewModel: AnimeDetailViewModel = hiltViewModel()
+                val detailState by viewModel.detailState.collectAsStateWithLifecycle()
+                val episodeFilterState by viewModel.episodeFilterState.collectAsStateWithLifecycle()
                 AnimeDetailScreen(
                     id = it.arguments?.getInt("id") ?: 0,
                     navController = navController,
-                    mainState = mainState
+                    mainState = mainState,
+                    detailState = detailState,
+                    episodeFilterState = episodeFilterState,
+                    onAction = viewModel::onAction
                 )
             }
             composable(

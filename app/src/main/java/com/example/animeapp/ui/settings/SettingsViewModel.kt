@@ -30,10 +30,10 @@ class SettingsViewModel @Inject constructor(
     val state: StateFlow<SettingsState> = _state.asStateFlow()
 
     init {
-        dispatch(SettingsAction.GetRandomAnime)
+        onAction(SettingsAction.GetRandomAnime)
     }
 
-    fun dispatch(action: SettingsAction) {
+    fun onAction(action: SettingsAction) {
         when (action) {
             SettingsAction.GetRandomAnime -> getRandomAnime()
         }

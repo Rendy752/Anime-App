@@ -16,23 +16,17 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
 import com.example.animeapp.BuildConfig.YOUTUBE_URL
 import com.example.animeapp.models.AnimeDetail
-import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.NameAndUrl
 import com.example.animeapp.ui.animeDetail.components.AnimeDetailTopBar
 import com.example.animeapp.ui.animeDetail.clickableList.ClickableListSection
@@ -62,69 +56,66 @@ private fun convertToNameAndUrl(list: List<String>?): List<NameAndUrl>? =
     }
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Preview
 @Composable
 fun AnimeDetailScreen(
-    id: Int = 20,
-    navController: NavHostController = rememberNavController(),
-    mainState: MainState = MainState()
+    id: Int,
+    navController: NavHostController,
+    mainState: MainState,
+    detailState: DetailState,
+    episodeFilterState: EpisodeFilterState,
+    onAction: (DetailAction) -> Unit
 ) {
-    val viewModel: AnimeDetailViewModel = hiltViewModel()
-
-    val animeDetail by viewModel.animeDetail.collectAsStateWithLifecycle()
-    val animeDetailComplement by viewModel.animeDetailComplement.collectAsStateWithLifecycle()
-    val defaultEpisodeId by viewModel.defaultEpisodeId.collectAsStateWithLifecycle()
-
     val context = LocalContext.current
-    val leftScrollState = rememberLazyListState()
-    val rightScrollState = rememberLazyListState()
+    val portraitScrollState = rememberLazyListState()
+    val landscapeScrollState = rememberLazyListState()
 
     val currentAnimeIdState = rememberSaveable { mutableIntStateOf(id) }
     val currentAnimeId = currentAnimeIdState.intValue
 
     LaunchedEffect(mainState.isConnected) {
-        if (mainState.isConnected && animeDetail is Resource.Error) viewModel.handleAnimeDetail(
-            currentAnimeId
-        )
+        if (mainState.isConnected && detailState.animeDetail is Resource.Error) {
+            onAction(DetailAction.LoadAnimeDetail(currentAnimeId))
+        }
     }
 
-    LaunchedEffect(currentAnimeId) { viewModel.handleAnimeDetail(currentAnimeId) }
-
-    LaunchedEffect(animeDetail) {
-        if (animeDetail is Resource.Success) viewModel.handleEpisodes()
+    LaunchedEffect(currentAnimeId) {
+        onAction(DetailAction.LoadAnimeDetail(currentAnimeId))
     }
 
     Scaffold(topBar = {
         AnimeDetailTopBar(
-            animeDetail = animeDetail,
-            animeDetailComplement = animeDetailComplement,
-            defaultEpisodeId = defaultEpisodeId,
+            animeDetail = detailState.animeDetail,
+            animeDetailComplement = detailState.animeDetailComplement,
+            defaultEpisodeId = detailState.defaultEpisodeId,
             navController = navController,
-            onFavoriteToggle = { viewModel.handleToggleFavorite(it) }
+            onFavoriteToggle = { onAction(DetailAction.ToggleFavorite(it)) }
         )
     }) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize()) {
-            when (animeDetail) {
+            when (detailState.animeDetail) {
                 is Resource.Loading -> LoadingContent(paddingValues, mainState.isLandscape)
                 is Resource.Success -> {
                     SuccessContent(
-                        paddingValues,
-                        animeDetail?.data?.data,
-                        animeDetailComplement,
-                        defaultEpisodeId,
-                        navController,
-                        context,
-                        mainState.isLandscape,
-                        leftScrollState,
-                        rightScrollState,
-                        viewModel
-                    ) { newAnimeId -> currentAnimeIdState.intValue = newAnimeId }
+                        paddingValues = paddingValues,
+                        animeDetailData = detailState.animeDetail.data.data,
+                        detailState = detailState,
+                        episodeFilterState = episodeFilterState,
+                        navController = navController,
+                        context = context,
+                        isLandscape = mainState.isLandscape,
+                        portraitScrollState = portraitScrollState,
+                        landscapeScrollState = landscapeScrollState,
+                        onAction = onAction,
+                        onAnimeIdChange = { newAnimeId ->
+                            currentAnimeIdState.intValue = newAnimeId
+                        }
+                    )
                 }
 
                 is Resource.Error -> Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
-                ) { MessageDisplay(animeDetail?.message ?: "Error") }
+                ) { MessageDisplay(detailState.animeDetail.message ?: "Error") }
 
                 else -> Box(
                     modifier = Modifier.fillMaxSize(),
@@ -196,36 +187,41 @@ private fun RightColumnContentSkeleton() {
 private fun SuccessContent(
     paddingValues: PaddingValues,
     animeDetailData: AnimeDetail?,
-    animeDetailComplement: Resource<AnimeDetailComplement?>?,
-    defaultEpisodeId: String?,
+    detailState: DetailState,
+    episodeFilterState: EpisodeFilterState,
     navController: NavController,
     context: Context,
     isLandscape: Boolean,
-    leftScrollState: LazyListState,
-    rightScrollState: LazyListState,
-    viewModel: AnimeDetailViewModel,
+    portraitScrollState: LazyListState,
+    landscapeScrollState: LazyListState,
+    onAction: (DetailAction) -> Unit,
     onAnimeIdChange: (Int) -> Unit
 ) {
-    animeDetailData?.let { data ->
+    animeDetailData?.let { animeDetail ->
         if (isLandscape) {
             Row(
                 modifier = Modifier
                     .padding(paddingValues)
                     .fillMaxSize()
             ) {
-                LazyColumn(modifier = Modifier.weight(1f), state = leftScrollState) {
-                    item { LeftColumnContent(data, navController) }
+                LazyColumn(modifier = Modifier.weight(1f), state = portraitScrollState) {
+                    item {
+                        LeftColumnContent(
+                            animeDetail = animeDetail,
+                            navController = navController
+                        )
+                    }
                 }
-                LazyColumn(modifier = Modifier.weight(1f), state = rightScrollState) {
+                LazyColumn(modifier = Modifier.weight(1f), state = landscapeScrollState) {
                     item {
                         RightColumnContent(
-                            viewModel,
-                            data,
-                            animeDetailComplement,
-                            defaultEpisodeId,
-                            navController,
-                            context,
-                            onAnimeIdChange
+                            animeDetail = animeDetail,
+                            detailState = detailState,
+                            episodeFilterState = episodeFilterState,
+                            navController = navController,
+                            context = context,
+                            onAction = onAction,
+                            onAnimeIdChange = onAnimeIdChange
                         )
                     }
                 }
@@ -234,17 +230,18 @@ private fun SuccessContent(
             LazyColumn(
                 modifier = Modifier
                     .padding(paddingValues)
-                    .fillMaxSize()
+                    .fillMaxSize(),
+                state = portraitScrollState
             ) {
                 item {
                     VerticalColumnContent(
-                        viewModel,
-                        data,
-                        animeDetailComplement,
-                        defaultEpisodeId,
-                        navController,
-                        context,
-                        onAnimeIdChange
+                        animeDetail = animeDetail,
+                        detailState = detailState,
+                        episodeFilterState = episodeFilterState,
+                        navController = navController,
+                        context = context,
+                        onAction = onAction,
+                        onAnimeIdChange = onAnimeIdChange
                     )
                 }
             }
@@ -253,23 +250,23 @@ private fun SuccessContent(
 }
 
 @Composable
-private fun LeftColumnContent(data: AnimeDetail, navController: NavController) {
+private fun LeftColumnContent(animeDetail: AnimeDetail, navController: NavController) {
     Column(modifier = Modifier.padding(8.dp)) {
-        AnimeHeader(animeDetail = data)
-        NumericDetailSection(animeDetail = data)
-        YoutubePreview(embedUrl = data.trailer.embed_url)
-        DetailBodySection(animeDetail = data, navController = navController)
+        AnimeHeader(animeDetail = animeDetail)
+        NumericDetailSection(animeDetail = animeDetail)
+        YoutubePreview(embedUrl = animeDetail.trailer.embed_url)
+        DetailBodySection(animeDetail = animeDetail, navController = navController)
     }
 }
 
 @Composable
 private fun RightColumnContent(
-    viewModel: AnimeDetailViewModel,
     animeDetail: AnimeDetail,
-    animeDetailComplement: Resource<AnimeDetailComplement?>?,
-    defaultEpisodeId: String?,
+    detailState: DetailState,
+    episodeFilterState: EpisodeFilterState,
     navController: NavController,
     context: Context,
+    onAction: (DetailAction) -> Unit,
     onAnimeIdChange: (Int) -> Unit
 ) {
     Column(modifier = Modifier.padding(8.dp)) {
@@ -278,25 +275,27 @@ private fun RightColumnContent(
             "Synopsis" to animeDetail.synopsis,
         ).forEach { DetailCommonBody(it.first, it.second) }
         RelationSection(
-            navController,
-            animeDetail.relations,
-            { animeId -> viewModel.getAnimeDetail(animeId) },
-            { animeId -> onAnimeIdChange(animeId) })
+            navController = navController,
+            relations = animeDetail.relations,
+            detailState = detailState,
+            onAction = onAction,
+            onItemClickListener = onAnimeIdChange
+        )
         EpisodesDetailSection(
-            animeDetail,
-            animeDetailComplement,
-            { viewModel.getCachedEpisodeDetailComplement(it) },
-            { viewModel.handleEpisodes(true) },
-            { episodeId ->
-                defaultEpisodeId?.let {
-                    if (animeDetailComplement is Resource.Success) {
+            animeDetail = animeDetail,
+            detailState = detailState,
+            episodeFilterState = episodeFilterState,
+            onEpisodeClick = { episodeId ->
+                detailState.defaultEpisodeId?.let {
+                    if (detailState.animeDetailComplement is Resource.Success) {
                         navController.navigateToAnimeWatch(
                             malId = animeDetail.mal_id,
                             episodeId = episodeId,
                         )
                     }
                 }
-            }
+            },
+            onAction = onAction
         )
         CommonListContent(animeDetail, context)
     }
@@ -304,24 +303,24 @@ private fun RightColumnContent(
 
 @Composable
 private fun VerticalColumnContent(
-    viewModel: AnimeDetailViewModel,
-    data: AnimeDetail,
-    animeDetailComplement: Resource<AnimeDetailComplement?>?,
-    defaultEpisodeId: String?,
+    animeDetail: AnimeDetail,
+    detailState: DetailState,
+    episodeFilterState: EpisodeFilterState,
     navController: NavController,
     context: Context,
+    onAction: (DetailAction) -> Unit,
     onAnimeIdChange: (Int) -> Unit
 ) {
     Column(modifier = Modifier.padding(8.dp)) {
-        LeftColumnContent(data, navController)
+        LeftColumnContent(animeDetail = animeDetail, navController = navController)
         RightColumnContent(
-            viewModel,
-            data,
-            animeDetailComplement,
-            defaultEpisodeId,
-            navController,
-            context,
-            onAnimeIdChange
+            animeDetail = animeDetail,
+            detailState = detailState,
+            episodeFilterState = episodeFilterState,
+            navController = navController,
+            context = context,
+            onAction = onAction,
+            onAnimeIdChange = onAnimeIdChange
         )
     }
 }

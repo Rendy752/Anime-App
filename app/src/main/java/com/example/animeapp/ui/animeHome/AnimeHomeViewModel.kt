@@ -71,11 +71,11 @@ class AnimeHomeViewModel @Inject constructor(
     private var timeUpdateJob: Job? = null
 
     init {
-        dispatch(HomeAction.GetAnimeSchedules)
-        dispatch(HomeAction.GetTop10Anime)
+        onAction(HomeAction.GetAnimeSchedules)
+        onAction(HomeAction.GetTop10Anime)
     }
 
-    fun dispatch(action: HomeAction) {
+    fun onAction(action: HomeAction) {
         when (action) {
             HomeAction.GetAnimeSchedules -> getAnimeSchedules()
             HomeAction.GetTop10Anime -> getTop10Anime()
@@ -95,7 +95,7 @@ class AnimeHomeViewModel @Inject constructor(
         val result = animeHomeRepository.getAnimeSchedules(_homeState.value.queryState)
         _homeState.update { it.copy(isRefreshing = false, animeSchedules = result) }
         if (result is Resource.Success) {
-            dispatch(HomeAction.StartUpdatingBroadcastTimes(result.data.data))
+            onAction(HomeAction.StartUpdatingBroadcastTimes(result.data.data))
         }
     }
 
@@ -107,7 +107,7 @@ class AnimeHomeViewModel @Inject constructor(
 
     private fun applyFilters(updatedQueryState: AnimeSchedulesSearchQueryState) {
         _homeState.update { it.copy(queryState = updatedQueryState) }
-        dispatch(HomeAction.GetAnimeSchedules)
+        onAction(HomeAction.GetAnimeSchedules)
     }
 
     private fun fetchContinueWatchingEpisode() {

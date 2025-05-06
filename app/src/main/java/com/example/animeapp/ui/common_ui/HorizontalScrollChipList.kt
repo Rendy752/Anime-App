@@ -12,8 +12,7 @@ fun HorizontalScrollChipList(
     dataList: List<String>,
 ) {
     Row(
-        modifier = Modifier
-            .horizontalScroll(rememberScrollState()),
+        modifier = Modifier.horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         dataList.forEach { data -> FilterChipView(data) }
