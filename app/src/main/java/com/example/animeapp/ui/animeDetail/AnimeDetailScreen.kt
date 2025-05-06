@@ -80,6 +80,8 @@ fun AnimeDetailScreen(
 
     LaunchedEffect(currentAnimeId) {
         onAction(DetailAction.LoadAnimeDetail(currentAnimeId))
+        portraitScrollState.animateScrollToItem(0)
+        landscapeScrollState.animateScrollToItem(0)
     }
 
     Scaffold(topBar = {
@@ -93,7 +95,12 @@ fun AnimeDetailScreen(
     }) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize()) {
             when (detailState.animeDetail) {
-                is Resource.Loading -> LoadingContent(paddingValues, mainState.isLandscape)
+                is Resource.Loading -> LoadingContent(
+                    paddingValues = paddingValues,
+                    isLandscape = mainState.isLandscape,
+                    scrollState = portraitScrollState,
+                )
+
                 is Resource.Success -> {
                     SuccessContent(
                         paddingValues = paddingValues,
@@ -127,11 +134,16 @@ fun AnimeDetailScreen(
 }
 
 @Composable
-private fun LoadingContent(paddingValues: PaddingValues, isLandscape: Boolean) {
+private fun LoadingContent(
+    paddingValues: PaddingValues,
+    isLandscape: Boolean,
+    scrollState: LazyListState
+) {
     LazyColumn(
         modifier = Modifier
             .padding(paddingValues)
-            .fillMaxSize()
+            .fillMaxSize(),
+        state = scrollState
     ) {
         if (isLandscape) {
             item {

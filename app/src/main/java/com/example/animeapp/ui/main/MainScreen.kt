@@ -33,6 +33,7 @@ import com.example.animeapp.ui.animeSearch.AnimeSearchScreen
 import com.example.animeapp.ui.animeWatch.AnimeWatchScreen
 import com.example.animeapp.ui.animeHome.AnimeHomeScreen
 import com.example.animeapp.ui.animeHome.AnimeHomeViewModel
+import com.example.animeapp.ui.animeRecommendations.AnimeRecommendationsViewModel
 import com.example.animeapp.ui.common_ui.MessageDisplay
 import com.example.animeapp.ui.main.components.BottomNavigationBar
 import com.example.animeapp.ui.main.components.BottomScreen
@@ -147,9 +148,13 @@ fun MainScreen(
                 )
             }
             composable(BottomScreen.Recommendations.route) {
+                val viewModel: AnimeRecommendationsViewModel = hiltViewModel()
+                val recommendationsState by viewModel.recommendationsState.collectAsStateWithLifecycle()
                 AnimeRecommendationsScreen(
                     navController = navController,
-                    mainState = mainState
+                    mainState = mainState,
+                    recommendationsState = recommendationsState,
+                    onAction = viewModel::onAction
                 )
             }
             composable(BottomScreen.Search.route) {

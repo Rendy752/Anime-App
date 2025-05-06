@@ -13,12 +13,8 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
 import com.example.animeapp.ui.animeRecommendations.recommendations.RecommendationItem
 import com.example.animeapp.ui.animeRecommendations.recommendations.RecommendationItemSkeleton
 import com.example.animeapp.ui.common_ui.MessageDisplay
@@ -28,16 +24,13 @@ import com.example.animeapp.utils.Resource
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Preview
 @Composable
 fun AnimeRecommendationsScreen(
-    navController: NavHostController = rememberNavController(),
-    mainState: MainState = MainState(),
+    navController: NavHostController,
+    mainState: MainState,
+    recommendationsState: RecommendationsState,
+    onAction: (RecommendationsAction) -> Unit,
 ) {
-    val viewModel: AnimeRecommendationsViewModel = hiltViewModel()
-
-    val animeRecommendations by viewModel.animeRecommendations.collectAsStateWithLifecycle()
-    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val pullToRefreshState = rememberPullToRefreshState()
 
     val portraitScrollState = rememberLazyListState()
@@ -51,23 +44,23 @@ fun AnimeRecommendationsScreen(
         derivedStateOf { landscapeScrollState.firstVisibleItemIndex > 10 }
     }
 
-    LaunchedEffect(mainState.isConnected) {
-        if (mainState.isConnected && animeRecommendations is Resource.Error) {
-            viewModel.getAnimeRecommendations()
+    LaunchedEffect(mainState.isConnected, recommendationsState.animeRecommendations) {
+        if (mainState.isConnected && recommendationsState.animeRecommendations is Resource.Error) {
+            onAction(RecommendationsAction.LoadRecommendations)
         }
     }
 
     Scaffold { paddingValues ->
         PullToRefreshBox(
-            isRefreshing = isRefreshing,
-            onRefresh = { viewModel.getAnimeRecommendations() },
+            isRefreshing = recommendationsState.isRefreshing,
+            onRefresh = { onAction(RecommendationsAction.LoadRecommendations) },
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
             state = pullToRefreshState,
             indicator = {
                 PullToRefreshDefaults.Indicator(
-                    isRefreshing = isRefreshing,
+                    isRefreshing = recommendationsState.isRefreshing,
                     containerColor = MaterialTheme.colorScheme.primary,
                     color = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.align(Alignment.TopCenter),
@@ -75,7 +68,7 @@ fun AnimeRecommendationsScreen(
                 )
             }
         ) {
-            when (animeRecommendations) {
+            when (recommendationsState.animeRecommendations) {
                 is Resource.Loading -> {
                     if (!mainState.isLandscape) {
                         LazyColumn(state = portraitScrollState) {
@@ -96,7 +89,7 @@ fun AnimeRecommendationsScreen(
                 }
 
                 is Resource.Success -> {
-                    animeRecommendations.data?.data?.let { animeRecommendations ->
+                    recommendationsState.animeRecommendations.data.data.let { animeRecommendations ->
                         if (!mainState.isLandscape) {
                             Box {
                                 LazyColumn(
@@ -195,7 +188,8 @@ fun AnimeRecommendationsScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         MessageDisplay(
-                            animeRecommendations.message ?: "Error Loading Data"
+                            recommendationsState.animeRecommendations.message
+                                ?: "Error Loading Data"
                         )
                     }
                 }

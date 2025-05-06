@@ -9,32 +9,50 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+data class RecommendationsState(
+    val animeRecommendations: Resource<AnimeRecommendationResponse> = Resource.Loading(),
+    val isRefreshing: Boolean = false,
+)
+
+sealed class RecommendationsAction {
+    object LoadRecommendations : RecommendationsAction()
+}
 
 @HiltViewModel
 class AnimeRecommendationsViewModel @Inject constructor(
     private val animeRecommendationsRepository: AnimeRecommendationsRepository
 ) : ViewModel() {
-    private val _animeRecommendations =
-        MutableStateFlow<Resource<AnimeRecommendationResponse>>(Resource.Loading())
-    val animeRecommendations: StateFlow<Resource<AnimeRecommendationResponse>> =
-        _animeRecommendations.asStateFlow()
 
-    private val _isRefreshing = MutableStateFlow(false)
-    val isRefreshing: StateFlow<Boolean> = _isRefreshing.asStateFlow()
-
-    private var animeRecommendationsPage = 1
+    private val _recommendationsState = MutableStateFlow(RecommendationsState())
+    val recommendationsState: StateFlow<RecommendationsState> = _recommendationsState.asStateFlow()
 
     init {
-        getAnimeRecommendations()
+        onAction(RecommendationsAction.LoadRecommendations)
     }
 
-    fun getAnimeRecommendations() = viewModelScope.launch {
-        _isRefreshing.value = true
-        _animeRecommendations.value = Resource.Loading()
-        _animeRecommendations.value =
-            animeRecommendationsRepository.getAnimeRecommendations(animeRecommendationsPage)
-        _isRefreshing.value = false
+    fun onAction(action: RecommendationsAction) {
+        when (action) {
+            is RecommendationsAction.LoadRecommendations -> loadRecommendations()
+        }
+    }
+
+    private fun loadRecommendations() = viewModelScope.launch {
+        _recommendationsState.update {
+            it.copy(
+                isRefreshing = true,
+                animeRecommendations = Resource.Loading()
+            )
+        }
+        val result = animeRecommendationsRepository.getAnimeRecommendations()
+        _recommendationsState.update {
+            it.copy(
+                animeRecommendations = result,
+                isRefreshing = false
+            )
+        }
     }
 }
