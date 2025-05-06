@@ -426,7 +426,7 @@ fun VideoPlayerSection(
             Log.d("VideoPlayerSection", "Disconnecting MediaBrowser")
             mediaControllerCompat?.unregisterCallback(mediaControllerCallback)
             mediaBrowserCompat?.disconnect()
-            HlsPlayerUtil.setVideoSurface(null) // Clear video surface to prevent leaks
+            HlsPlayerUtil.setVideoSurface(null)
         }
     }
 

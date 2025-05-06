@@ -39,7 +39,7 @@ fun AnimeWatchContent(
     onFullscreenChange: (Boolean) -> Unit,
     errorMessage: String?,
     onPlayerError: (String?) -> Unit,
-    handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
+    handleSelectedEpisodeServer: (EpisodeSourcesQuery, Boolean, Boolean) -> Unit,
     selectedContentIndex: Int,
     modifier: Modifier,
     videoSize: Modifier
@@ -53,7 +53,7 @@ fun AnimeWatchContent(
                         episodeDetailComplement = episodeDetailComplement.data,
                         episodes = episodeList,
                         episodeSourcesQuery = query,
-                        handleSelectedEpisodeServer = handleSelectedEpisodeServer,
+                        handleSelectedEpisodeServer = { handleSelectedEpisodeServer(it, false, true) },
                         isPipMode = isPipMode,
                         onEnterPipMode = onEnterPipMode,
                         isFullscreen = isFullscreen,
@@ -90,7 +90,7 @@ fun AnimeWatchContent(
                                     episodes,
                                     episodeSourcesQuery
                                 ) {
-                                    handleSelectedEpisodeServer(it)
+                                    handleSelectedEpisodeServer(it, false, false)
                                 }
                             } else {
                                 InfoContentSection(animeDetail)
@@ -114,7 +114,7 @@ fun AnimeWatchContent(
                             episodeDetailComplement,
                             episodes,
                             episodeSourcesQuery
-                        ) { handleSelectedEpisodeServer(it) }
+                        ) { handleSelectedEpisodeServer(it, false, false) }
                         InfoContentSection(animeDetail)
                     }
                 }
