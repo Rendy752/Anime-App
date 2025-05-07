@@ -30,7 +30,7 @@ import com.example.animeapp.AnimeApplication
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.EpisodeSourcesQuery
-import com.example.animeapp.utils.HlsPlayerUtil
+import com.example.animeapp.utils.HlsPlayerUtils
 import com.example.animeapp.utils.IntroOutroHandler
 import com.example.animeapp.utils.MediaPlaybackService
 import com.example.animeapp.utils.PlayerAction
@@ -75,11 +75,11 @@ fun VideoPlayerSection(
         episodes: List<Episode>,
         query: EpisodeSourcesQuery
     ) {
-        val player = HlsPlayerUtil.getPlayer()
+        val player = HlsPlayerUtils.getPlayer()
         if (player != null) {
             playerView.player = player
             val videoSurface = playerView.videoSurfaceView
-            HlsPlayerUtil.setVideoSurface(videoSurface)
+            HlsPlayerUtils.setVideoSurface(videoSurface)
             Log.d(
                 "VideoPlayerSection",
                 "Player bound to PlayerView, video surface set: ${videoSurface?.javaClass?.simpleName}"
@@ -113,8 +113,8 @@ fun VideoPlayerSection(
                 isLoading = false
                 onPlayerError(null)
                 Log.d("VideoPlayerSection", "Player ready")
-                playerView.player = HlsPlayerUtil.getPlayer()
-                HlsPlayerUtil.setVideoSurface(playerView.videoSurfaceView)
+                playerView.player = HlsPlayerUtils.getPlayer()
+                HlsPlayerUtils.setVideoSurface(playerView.videoSurfaceView)
                 introOutroHandler?.start()
             }
         )
@@ -139,7 +139,7 @@ fun VideoPlayerSection(
                 Log.w("VideoPlayerSection", "Service disconnected")
                 mediaPlaybackService = null
                 playerView.player = null
-                HlsPlayerUtil.setVideoSurface(null)
+                HlsPlayerUtils.setVideoSurface(null)
                 introOutroHandler?.stop()
                 introOutroHandler = null
                 onPlayerError("Service disconnected")
@@ -192,15 +192,15 @@ fun VideoPlayerSection(
                 }
             }
         }
-        HlsPlayerUtil.getPlayer()?.addListener(playerListener)
+        HlsPlayerUtils.getPlayer()?.addListener(playerListener)
 
         onDispose {
             Log.d("VideoPlayerSection", "Disposing VideoPlayerSection")
             try {
                 mediaControllerCompat?.transportControls?.pause()
-                HlsPlayerUtil.dispatch(PlayerAction.Pause)
+                HlsPlayerUtils.dispatch(PlayerAction.Pause)
                 Log.d("VideoPlayerSection", "Paused playback before disposal")
-                HlsPlayerUtil.getPlayer()?.removeListener(playerListener)
+                HlsPlayerUtils.getPlayer()?.removeListener(playerListener)
 
                 val isNotificationActive = mediaPlaybackService?.isForegroundService() == true
                 Log.d("VideoPlayerSection", "isForegroundService: $isNotificationActive")
@@ -225,7 +225,7 @@ fun VideoPlayerSection(
                 introOutroHandler?.stop()
                 introOutroHandler = null
                 playerView.player = null
-                HlsPlayerUtil.setVideoSurface(null)
+                HlsPlayerUtils.setVideoSurface(null)
             } catch (e: IllegalArgumentException) {
                 Log.w("VideoPlayerSection", "Service already unbound", e)
             }
@@ -236,7 +236,7 @@ fun VideoPlayerSection(
         Log.d("VideoPlayerSection", "episodeSourcesQuery changed: ${episodeSourcesQuery.id}")
         introOutroHandler?.stop()
         introOutroHandler = null
-        HlsPlayerUtil.dispatch(
+        HlsPlayerUtils.dispatch(
             PlayerAction.SetMedia(
                 videoData = episodeDetailComplement.sources,
                 lastTimestamp = null,
@@ -279,7 +279,7 @@ fun VideoPlayerSection(
                         }
 
                         PlaybackStateCompat.STATE_PAUSED -> {
-                            val player = HlsPlayerUtil.getPlayer()
+                            val player = HlsPlayerUtils.getPlayer()
                             if (player?.playbackState == Player.STATE_ENDED) {
                                 Log.d(
                                     "VideoPlayerSection",
@@ -426,7 +426,7 @@ fun VideoPlayerSection(
             Log.d("VideoPlayerSection", "Disconnecting MediaBrowser")
             mediaControllerCompat?.unregisterCallback(mediaControllerCallback)
             mediaBrowserCompat?.disconnect()
-            HlsPlayerUtil.setVideoSurface(null)
+            HlsPlayerUtils.setVideoSurface(null)
         }
     }
 
@@ -456,8 +456,8 @@ fun VideoPlayerSection(
         modifier = modifier,
         videoSize = videoSize,
         onPlay = { mediaControllerCompat?.transportControls?.play() },
-        onFastForward = { HlsPlayerUtil.dispatch(PlayerAction.FastForward) },
-        onRewind = { HlsPlayerUtil.dispatch(PlayerAction.Rewind) }
+        onFastForward = { HlsPlayerUtils.dispatch(PlayerAction.FastForward) },
+        onRewind = { HlsPlayerUtils.dispatch(PlayerAction.Rewind) }
     )
 }
 

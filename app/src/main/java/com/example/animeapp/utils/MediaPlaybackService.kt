@@ -87,7 +87,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
     override fun onCreate() {
         super.onCreate()
         Log.d("MediaPlaybackService", "Service created")
-        HlsPlayerUtil.dispatch(PlayerAction.InitializePlayer(this))
+        HlsPlayerUtils.dispatch(PlayerAction.InitializePlayer(this))
         initializeMediaSession()
         createNotificationChannel()
         observePlayerState()
@@ -161,7 +161,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
 
     private suspend fun captureScreenshot(): String? = withContext(Dispatchers.IO) {
         try {
-            val bitmap = HlsPlayerUtil.captureFrame() ?: return@withContext null
+            val bitmap = HlsPlayerUtils.captureFrame() ?: return@withContext null
             val outputStream = ByteArrayOutputStream()
             bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
             val byteArray = outputStream.toByteArray()
@@ -175,13 +175,13 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
 
     private fun updateNotification() {
         coroutineScope.launch {
-            val state = HlsPlayerUtil.state.value
+            val state = HlsPlayerUtils.state.value
             if (!state.isReady) {
                 Log.d("MediaPlaybackService", "Skipping notification update: player not ready")
                 return@launch
             }
 
-            val player = HlsPlayerUtil.getPlayer() ?: return@launch
+            val player = HlsPlayerUtils.getPlayer() ?: return@launch
             val mediaMetadata = mediaSession?.controller?.metadata
             val duration = player.duration.takeIf { it > 0 }?.toInt() ?: 0
             val position = player.currentPosition.takeIf { it >= 0 }?.toInt() ?: 0
@@ -303,7 +303,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
     }
 
     private fun setupPlayerListener() {
-        HlsPlayerUtil.getPlayer()?.addListener(object : Player.Listener {
+        HlsPlayerUtils.getPlayer()?.addListener(object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 if (isPlaying) {
                     onPlayerError?.invoke(null)
@@ -316,12 +316,12 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
             }
 
             override fun onTimelineChanged(timeline: Timeline, reason: Int) {
-                updateMediaMetadata(HlsPlayerUtil.getPlayer()?.duration?.takeIf { it > 0 } ?: 0)
+                updateMediaMetadata(HlsPlayerUtils.getPlayer()?.duration?.takeIf { it > 0 } ?: 0)
                 updateNotification()
             }
 
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-                HlsPlayerUtil.dispatch(PlayerAction.SeekTo(0))
+                HlsPlayerUtils.dispatch(PlayerAction.SeekTo(0))
                 updatePlaybackState(PlaybackStateCompat.STATE_BUFFERING)
                 updateNotification()
             }
@@ -332,7 +332,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         notificationUpdateJob?.cancel()
         notificationUpdateJob = coroutineScope.launch {
             while (true) {
-                val state = HlsPlayerUtil.state.value
+                val state = HlsPlayerUtils.state.value
                 if (state.isReady) {
                     updateNotification()
                     Log.d("MediaPlaybackService", "Periodic notification update triggered")
@@ -349,7 +349,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
     }
 
     private fun updatePlaybackState(state: Int, errorMessage: String? = null) {
-        val position = HlsPlayerUtil.getPlayer()?.currentPosition?.takeIf { it >= 0 } ?: 0
+        val position = HlsPlayerUtils.getPlayer()?.currentPosition?.takeIf { it >= 0 } ?: 0
         val builder = PlaybackStateCompat.Builder()
             .setActions(
                 PlaybackStateCompat.ACTION_PLAY or
@@ -373,9 +373,9 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         watchStateUpdateJob?.cancel()
         watchStateUpdateJob = coroutineScope.launch {
             while (true) {
-                val state = HlsPlayerUtil.state.value
+                val state = HlsPlayerUtils.state.value
                 if (state.isPlaying) {
-                    HlsPlayerUtil.getPlayer()?.let { player ->
+                    HlsPlayerUtils.getPlayer()?.let { player ->
                         val position = player.currentPosition
                         val duration = player.duration
                         if (position > 10_000 && position < duration) {
@@ -411,7 +411,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
 
     private fun observePlayerState() {
         coroutineScope.launch {
-            HlsPlayerUtil.state.collectLatest { state ->
+            HlsPlayerUtils.state.collectLatest { state ->
                 Log.d("MediaPlaybackService", "State changed: $state")
                 if (state.error != null) {
                     updatePlaybackState(PlaybackStateCompat.STATE_ERROR, state.error)
@@ -451,7 +451,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                 return@launch
             }
 
-            HlsPlayerUtil.dispatch(
+            HlsPlayerUtils.dispatch(
                 PlayerAction.SetMedia(
                     videoData = complement.sources,
                     lastTimestamp = complement.lastTimestamp,
@@ -460,23 +460,23 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                 )
             )
 
-            updateMediaMetadata(HlsPlayerUtil.getPlayer()?.duration?.takeIf { it > 0 } ?: 0)
+            updateMediaMetadata(HlsPlayerUtils.getPlayer()?.duration?.takeIf { it > 0 } ?: 0)
             updateNotification()
         }
     }
 
     fun pausePlayer() {
         Log.d("MediaPlaybackService", "pausePlayer called")
-        HlsPlayerUtil.dispatch(PlayerAction.Pause)
+        HlsPlayerUtils.dispatch(PlayerAction.Pause)
         updateNotification()
         stopPeriodicWatchStateUpdates()
     }
 
     fun isForegroundService(): Boolean {
-        val isForegroundValue = isForeground.get() && HlsPlayerUtil.state.value.isReady
+        val isForegroundValue = isForeground.get() && HlsPlayerUtils.state.value.isReady
         Log.d(
             "MediaPlaybackService",
-            "isForegroundService called, returning $isForegroundValue (isForeground=${isForeground.get()}, isReady=${HlsPlayerUtil.state.value.isReady})"
+            "isForegroundService called, returning $isForegroundValue (isForeground=${isForeground.get()}, isReady=${HlsPlayerUtils.state.value.isReady})"
         )
         return isForegroundValue
     }
@@ -484,7 +484,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
     override fun onTaskRemoved(rootIntent: Intent?) {
         super.onTaskRemoved(rootIntent)
         Log.d("MediaPlaybackService", "Task removed, stopping service")
-        HlsPlayerUtil.dispatch(PlayerAction.Pause)
+        HlsPlayerUtils.dispatch(PlayerAction.Pause)
         stopForeground(STOP_FOREGROUND_REMOVE)
         isForeground.set(false)
         Log.d(
@@ -497,7 +497,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
     override fun onDestroy() {
         super.onDestroy()
         Log.d("MediaPlaybackService", "Service destroyed")
-        HlsPlayerUtil.getPlayer()?.let { player ->
+        HlsPlayerUtils.getPlayer()?.let { player ->
             val position = player.currentPosition
             val duration = player.duration
             if (player.playbackState == Player.STATE_READY && position > 0 && position < duration) {
@@ -513,7 +513,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                 }
             }
         }
-        HlsPlayerUtil.dispatch(PlayerAction.Release)
+        HlsPlayerUtils.dispatch(PlayerAction.Release)
         mediaSession?.release()
         mediaSession = null
         handler.removeCallbacksAndMessages(null)
@@ -542,24 +542,24 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
 
     inner class MediaSessionCallback : MediaSessionCompat.Callback() {
         override fun onPlay() {
-            HlsPlayerUtil.dispatch(PlayerAction.Play)
+            HlsPlayerUtils.dispatch(PlayerAction.Play)
             updateNotification()
             startPeriodicWatchStateUpdates()
         }
 
         override fun onPause() {
-            HlsPlayerUtil.dispatch(PlayerAction.Pause)
+            HlsPlayerUtils.dispatch(PlayerAction.Pause)
             updateNotification()
             stopPeriodicWatchStateUpdates()
         }
 
         override fun onRewind() {
-            HlsPlayerUtil.dispatch(PlayerAction.Rewind)
+            HlsPlayerUtils.dispatch(PlayerAction.Rewind)
             updateNotification()
         }
 
         override fun onFastForward() {
-            HlsPlayerUtil.dispatch(PlayerAction.FastForward)
+            HlsPlayerUtils.dispatch(PlayerAction.FastForward)
             updateNotification()
         }
 
@@ -587,7 +587,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         }
 
         override fun onStop() {
-            HlsPlayerUtil.dispatch(PlayerAction.Pause)
+            HlsPlayerUtils.dispatch(PlayerAction.Pause)
             stopForeground(STOP_FOREGROUND_REMOVE)
             isForeground.set(false)
             stopPeriodicWatchStateUpdates()
@@ -599,8 +599,8 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         }
 
         override fun onSeekTo(pos: Long) {
-            HlsPlayerUtil.dispatch(PlayerAction.SeekTo(pos))
-            val duration = HlsPlayerUtil.getPlayer()?.duration
+            HlsPlayerUtils.dispatch(PlayerAction.SeekTo(pos))
+            val duration = HlsPlayerUtils.getPlayer()?.duration
             if (pos > 0 && pos < (duration ?: Long.MAX_VALUE)) {
                 coroutineScope.launch {
                     val screenshot = captureScreenshot()
@@ -611,14 +611,14 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         }
 
         override fun onSetPlaybackSpeed(speed: Float) {
-            HlsPlayerUtil.dispatch(PlayerAction.SetPlaybackSpeed(speed))
+            HlsPlayerUtils.dispatch(PlayerAction.SetPlaybackSpeed(speed))
             updateNotification()
         }
     }
 
     fun stopService() {
         Log.d("MediaPlaybackService", "stopService called")
-        HlsPlayerUtil.dispatch(PlayerAction.Pause)
+        HlsPlayerUtils.dispatch(PlayerAction.Pause)
         stopForeground(STOP_FOREGROUND_REMOVE)
         isForeground.set(false)
         stopPeriodicWatchStateUpdates()

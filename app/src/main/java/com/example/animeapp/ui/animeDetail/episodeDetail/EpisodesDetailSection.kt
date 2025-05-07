@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavBackStackEntry
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.ui.animeDetail.DetailAction
 import com.example.animeapp.ui.animeDetail.DetailState
@@ -38,6 +39,7 @@ fun EpisodesDetailSection(
     animeDetail: AnimeDetail,
     detailState: DetailState,
     episodeFilterState: EpisodeFilterState,
+    navBackStackEntry: NavBackStackEntry?,
     onEpisodeClick: (String) -> Unit,
     onAction: (DetailAction) -> Unit
 ) {
@@ -115,7 +117,7 @@ fun EpisodesDetailSection(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = 8.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             if (data.episodes.size >= 4) {
@@ -129,9 +131,7 @@ fun EpisodesDetailSection(
                                         )
                                     },
                                     placeholder = "Search",
-                                    modifier = Modifier
-                                        .weight(1f)
-                                        .padding(end = 4.dp)
+                                    modifier = Modifier.weight(1f)
                                 )
                             }
                             if (animeDetail.airing) RetryButton(
@@ -147,7 +147,8 @@ fun EpisodesDetailSection(
                         LazyColumn(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .heightIn(max = 400.dp)
+                                .heightIn(max = 400.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             if (filteredEpisodes.isEmpty() && episodeFilterState.episodeQuery.title.isNotEmpty()) {
                                 item {
@@ -156,12 +157,14 @@ fun EpisodesDetailSection(
                             } else {
                                 items(filteredEpisodes) { episode ->
                                     EpisodeDetailItem(
+                                        animeDetail = animeDetail,
                                         animeDetailComplement = data,
                                         episode = episode,
                                         detailState = detailState,
                                         query = episodeFilterState.episodeQuery.title,
                                         onAction = onAction,
-                                        onClick = onEpisodeClick
+                                        onClick = onEpisodeClick,
+                                        navBackStackEntry = navBackStackEntry
                                     )
                                 }
                             }

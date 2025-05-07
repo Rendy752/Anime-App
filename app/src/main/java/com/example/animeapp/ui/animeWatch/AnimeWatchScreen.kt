@@ -34,7 +34,7 @@ import com.example.animeapp.utils.ScreenOnReceiver
 import com.example.animeapp.utils.PipUtil.buildPipActions
 import com.example.animeapp.ui.animeWatch.components.AnimeWatchContent
 import com.example.animeapp.ui.animeWatch.components.AnimeWatchTopBar
-import com.example.animeapp.utils.HlsPlayerUtil
+import com.example.animeapp.utils.HlsPlayerUtils
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -77,7 +77,7 @@ fun AnimeWatchScreen(
 
     // PiP Handling
     val activityAsActivity = LocalActivity.current as MainActivity
-    val playerState by HlsPlayerUtil.state.collectAsStateWithLifecycle()
+    val playerState by HlsPlayerUtils.state.collectAsStateWithLifecycle()
 
     val onBackPress: () -> Unit = {
         if (isFullscreen) {

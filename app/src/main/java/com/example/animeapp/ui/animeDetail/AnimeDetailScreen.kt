@@ -297,6 +297,7 @@ private fun RightColumnContent(
             animeDetail = animeDetail,
             detailState = detailState,
             episodeFilterState = episodeFilterState,
+            navBackStackEntry = navController.currentBackStackEntry,
             onEpisodeClick = { episodeId ->
                 detailState.defaultEpisodeId?.let {
                     if (detailState.animeDetailComplement is Resource.Success) {

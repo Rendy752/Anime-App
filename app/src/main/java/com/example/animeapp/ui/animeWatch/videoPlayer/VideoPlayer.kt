@@ -28,7 +28,7 @@ import androidx.media3.ui.PlayerView
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.EpisodeSourcesQuery
-import com.example.animeapp.utils.HlsPlayerUtil
+import com.example.animeapp.utils.HlsPlayerUtils
 import com.example.animeapp.utils.IntroOutroHandler
 
 @OptIn(UnstableApi::class)
@@ -58,7 +58,7 @@ fun VideoPlayer(
     onFastForward: () -> Unit,
     onRewind: () -> Unit
 ) {
-    val playerState by HlsPlayerUtil.state.collectAsStateWithLifecycle()
+    val playerState by HlsPlayerUtils.state.collectAsStateWithLifecycle()
     val showIntro = introOutroHandler?.showIntroButton?.value == true
     val showOutro = introOutroHandler?.showOutroButton?.value == true
     var isHolding by remember { mutableStateOf(false) }

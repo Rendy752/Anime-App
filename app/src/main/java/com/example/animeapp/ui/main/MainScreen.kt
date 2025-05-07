@@ -41,7 +41,7 @@ import com.example.animeapp.ui.main.components.getBottomBarEnterTransition
 import com.example.animeapp.ui.main.components.getBottomBarExitTransition
 import com.example.animeapp.ui.settings.SettingsScreen
 import com.example.animeapp.ui.settings.SettingsViewModel
-import com.example.animeapp.utils.HlsPlayerUtil
+import com.example.animeapp.utils.HlsPlayerUtils
 import com.example.animeapp.utils.Navigation.navigateToAnimeDetail
 import com.example.animeapp.utils.Navigation.navigateToAnimeWatch
 import com.example.animeapp.utils.PipUtil.buildPipActions
@@ -235,7 +235,7 @@ fun MainScreen(
             ) {
                 var isPipMode by remember { mutableStateOf(false) }
                 val activity = LocalActivity.current as? MainActivity
-                val playerState by HlsPlayerUtil.state.collectAsStateWithLifecycle()
+                val playerState by HlsPlayerUtils.state.collectAsStateWithLifecycle()
 
                 DisposableEffect(activity) {
                     val onPictureInPictureModeChangedCallback: (Boolean) -> Unit =

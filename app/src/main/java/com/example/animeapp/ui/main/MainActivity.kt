@@ -32,7 +32,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.animeapp.AnimeApplication
 import com.example.animeapp.ui.common_ui.ConfirmationAlert
 import com.example.animeapp.ui.theme.AppTheme
-import com.example.animeapp.utils.HlsPlayerUtil
+import com.example.animeapp.utils.HlsPlayerUtils
 import com.example.animeapp.utils.PipUtil.buildPipActions
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.channels.Channel
@@ -190,7 +190,7 @@ class MainActivity : AppCompatActivity() {
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
         val currentRoute = navController.currentDestination?.route
-        val isPlaying = HlsPlayerUtil.state.value.isPlaying
+        val isPlaying = HlsPlayerUtils.state.value.isPlaying
         Log.d("MainActivity", "onUserLeaveHint: route=$currentRoute, isPlaying=$isPlaying")
         if (currentRoute?.startsWith("animeWatch/") == true && isPlaying) {
             pipParamsBuilder.setActions(buildPipActions(this, true))

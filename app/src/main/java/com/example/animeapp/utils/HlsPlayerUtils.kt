@@ -57,7 +57,7 @@ sealed class PlayerAction {
     data object Release : PlayerAction()
 }
 
-object HlsPlayerUtil {
+object HlsPlayerUtils {
     private var exoPlayer: ExoPlayer? = null
     private var audioManager: AudioManager? = null
     private var audioFocusChangeListener: OnAudioFocusChangeListener? = null
@@ -109,7 +109,7 @@ object HlsPlayerUtil {
             is TextureView -> {
                 try {
                     surface.bitmap?.let { bitmap ->
-                        val scaledBitmap = bitmap.scale(512, 512)
+                        val scaledBitmap = bitmap.scale(512, 288)
                         if (scaledBitmap != bitmap) bitmap.recycle()
                         scaledBitmap
                     }
@@ -121,7 +121,7 @@ object HlsPlayerUtil {
 
             is SurfaceView -> {
                 try {
-                    val bitmap = createBitmap(512, 512)
+                    val bitmap = createBitmap(512, 288)
                     val latch = CountDownLatch(1)
                     PixelCopy.request(surface.holder.surface, bitmap, { result ->
                         if (result == PixelCopy.SUCCESS) {
