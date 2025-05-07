@@ -13,6 +13,7 @@ import com.chuckerteam.chucker.api.Chucker
 import com.example.animeapp.utils.AnimeBroadcastNotificationWorker
 import com.example.animeapp.utils.AnimeWorkerFactory
 import com.example.animeapp.utils.MediaPlaybackService
+import com.example.animeapp.utils.NotificationDebugUtil
 import com.example.animeapp.utils.ShakeDetector
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
@@ -22,6 +23,9 @@ class AnimeApplication : Application(), Configuration.Provider {
 
     @Inject
     lateinit var workerFactory: AnimeWorkerFactory
+
+    @Inject
+    lateinit var notificationDebugUtil: NotificationDebugUtil
 
     private lateinit var sensorManager: SensorManager
     private lateinit var shakeDetector: ShakeDetector
@@ -41,8 +45,16 @@ class AnimeApplication : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
-        Log.d("AnimeApplication", "onCreate: Initializing application, workerFactory initialized: ${::workerFactory.isInitialized}")
-        if (BuildConfig.DEBUG) setupSensor()
+        Log.d(
+            "AnimeApplication",
+            "onCreate: Initializing application, workerFactory initialized: ${::workerFactory.isInitialized}"
+        )
+        if (BuildConfig.DEBUG) {
+            setupSensor()
+//            CoroutineScope(Dispatchers.IO).launch {
+//                notificationDebugUtil.sendDebugNotification()
+//            }
+        }
         bindMediaService()
         AnimeBroadcastNotificationWorker.schedule(this)
     }
@@ -52,7 +64,8 @@ class AnimeApplication : Application(), Configuration.Provider {
             serviceConnection = object : ServiceConnection {
                 override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
                     Log.d("AnimeApplication", "MediaPlaybackService connected")
-                    mediaPlaybackService = (service as MediaPlaybackService.MediaPlaybackBinder).getService()
+                    mediaPlaybackService =
+                        (service as MediaPlaybackService.MediaPlaybackBinder).getService()
                     isServiceBound = true
                 }
 
@@ -97,7 +110,10 @@ class AnimeApplication : Application(), Configuration.Provider {
                 service.stopService()
                 unbindMediaService()
             } else {
-                Log.d("AnimeApplication", "Keeping MediaPlaybackService alive due to foreground state")
+                Log.d(
+                    "AnimeApplication",
+                    "Keeping MediaPlaybackService alive due to foreground state"
+                )
             }
         }
     }
