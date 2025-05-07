@@ -127,10 +127,10 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
     private fun createNotificationChannel() {
         val channel = NotificationChannel(
             CHANNEL_ID,
-            "Anime Video Playback",
+            "Video Playback",
             NotificationManager.IMPORTANCE_DEFAULT
         ).apply {
-            description = "Channel for anime video playback controls"
+            description = "Channel for video playback controls"
             setShowBadge(false)
         }
         (getSystemService(NOTIFICATION_SERVICE) as NotificationManager).createNotificationChannel(
