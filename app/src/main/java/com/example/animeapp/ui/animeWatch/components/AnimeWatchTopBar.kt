@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.NetworkStatus
 import com.example.animeapp.ui.common_ui.SkeletonBox
+import com.example.animeapp.ui.theme.favoriteEpisode
 import com.example.animeapp.utils.Resource
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -109,7 +110,7 @@ fun AnimeWatchTopBar(
                             Icon(
                                 imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                                 contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
-                                tint = MaterialTheme.colorScheme.tertiary
+                                tint = favoriteEpisode
                             )
                         }
                     }

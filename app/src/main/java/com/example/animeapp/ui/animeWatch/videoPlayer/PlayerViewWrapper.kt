@@ -18,11 +18,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.fragment.app.FragmentActivity
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.AspectRatioFrameLayout
+import androidx.media3.ui.CaptionStyleCompat
 import androidx.media3.ui.PlayerView
 import com.example.animeapp.models.Track
 import com.example.animeapp.utils.FullscreenUtils
@@ -71,6 +74,18 @@ fun PlayerViewWrapper(
             view.setShowNextButton(false)
             view.setShowRewindButton(false)
             view.setShowFastForwardButton(false)
+            view.subtitleView?.apply {
+                setStyle(
+                    CaptionStyleCompat(
+                        Color.White.toArgb(),
+                        Color.Transparent.toArgb(),
+                        Color.Transparent.toArgb(),
+                        CaptionStyleCompat.EDGE_TYPE_OUTLINE,
+                        Color.Black.toArgb(),
+                        null
+                    )
+                )
+            }
             view.setShowSubtitleButton(tracks.any { it.kind == "captions" })
             view.useController = !isPipMode && !isLocked
             view.controllerShowTimeoutMs = if (isPipMode || isLocked) 0 else 5000

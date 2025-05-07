@@ -26,6 +26,7 @@ import androidx.navigation.NavController
 import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.ui.common_ui.SkeletonBox
+import com.example.animeapp.ui.theme.favoriteEpisode
 import com.example.animeapp.utils.Navigation.navigateToAnimeWatch
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ShareUtils
@@ -105,7 +106,7 @@ fun AnimeDetailTopBar(
                             Icon(
                                 imageVector = if (isFavorite.value) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                                 contentDescription = if (isFavorite.value) "Remove from favorites" else "Add to favorites",
-                                tint = MaterialTheme.colorScheme.tertiary
+                                tint = favoriteEpisode
                             )
                         }
                     }
