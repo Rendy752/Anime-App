@@ -92,9 +92,10 @@ object FilterUtils {
     fun filterEpisodes(
         episodes: List<Episode>,
         query: EpisodeQueryState,
-        episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>
+        episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
+        lastEpisodeWatchedId: String? = null
     ): List<Episode> {
-        return episodes.filter { episode ->
+        val filteredEpisodes = episodes.filter { episode ->
             val matchesTitle = query.title.isBlank() ||
                     episode.name.contains(query.title, ignoreCase = true) ||
                     episode.episodeNo.toString().contains(query.title, ignoreCase = true)
@@ -116,6 +117,13 @@ object FilterUtils {
             } != false
 
             matchesTitle && matchesFavorite && matchesWatched
+        }
+
+        return if (lastEpisodeWatchedId != null) {
+            val (lastWatched, others) = filteredEpisodes.partition { it.episodeId == lastEpisodeWatchedId }
+            lastWatched + others
+        } else {
+            filteredEpisodes
         }
     }
 }

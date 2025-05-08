@@ -114,7 +114,7 @@ fun EpisodeDetailItem(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 animeDetailComplement.lastEpisodeWatchedId?.let { lastEpisodeWatchedId ->
-                    if (episodeDetailComplement?.id == lastEpisodeWatchedId) {
+                    if (episode.episodeId == lastEpisodeWatchedId) {
                         Text(
                             text = "Last Watched",
                             modifier = Modifier

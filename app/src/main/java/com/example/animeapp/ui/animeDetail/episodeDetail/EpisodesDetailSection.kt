@@ -148,7 +148,8 @@ fun EpisodesDetailSection(
                         val filteredEpisodes = FilterUtils.filterEpisodes(
                             episodes = data.episodes.reversed(),
                             query = episodeFilterState.episodeQuery,
-                            episodeDetailComplements = detailState.episodeDetailComplements
+                            episodeDetailComplements = detailState.episodeDetailComplements,
+                            lastEpisodeWatchedId = data.lastEpisodeWatchedId
                         )
                         LazyColumn(
                             modifier = Modifier
