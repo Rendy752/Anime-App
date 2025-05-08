@@ -157,12 +157,12 @@ fun EpisodeDetailItem(
             }
         }
 
-        if (progress != null) {
+        progress?.let {
             LinearProgressIndicator(
-                progress = { progress },
+                progress = { it },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(8.dp)
+                    .height(4.dp)
                     .clip(RoundedCornerShape(bottomStart = 8.dp, bottomEnd = 8.dp)),
                 color = MaterialTheme.colorScheme.primary,
                 trackColor = MaterialTheme.colorScheme.primaryContainer
