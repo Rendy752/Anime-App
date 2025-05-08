@@ -1,6 +1,7 @@
 package com.example.animeapp.ui.animeDetail.numericDetail
 
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
@@ -13,6 +14,7 @@ import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.utils.TextUtils.formatNumber
 
@@ -22,6 +24,7 @@ fun NumericDetailSection(animeDetail: AnimeDetail) {
         modifier = Modifier
             .fillMaxWidth()
             .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         NumericDetailItem(
             title = "Score",
@@ -59,6 +62,7 @@ fun NumericDetailSectionSkeleton() {
         modifier = Modifier
             .fillMaxWidth()
             .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         repeat(5) {
             NumericDetailItemSkeleton()

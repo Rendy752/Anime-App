@@ -72,15 +72,15 @@ fun ColorStyleCard(
                     style = MaterialTheme.typography.bodySmall
                 )
             }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 350.dp)
-                    .horizontalScroll(state),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                MaterialTheme(colorScheme = colorScheme) {
+            MaterialTheme(colorScheme = colorScheme) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 350.dp)
+                        .horizontalScroll(state),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     if (animeDetailSample is Resource.Loading) AnimeScheduleItemSkeleton(
                         modifier = Modifier.widthIn(max = 160.dp)
                     )

@@ -47,6 +47,7 @@ fun EpisodeNavigationButton(
                     episode?.filler == true,
                     episodeDetailComplement
                 ),
+                outerPadding = PaddingValues(0.dp),
                 innerPadding = PaddingValues(8.dp),
                 onItemClick = {
                     episode?.let { episode ->
@@ -100,6 +101,7 @@ fun EpisodeNavigationButtonSkeleton(modifier: Modifier = Modifier, isPrevious: B
         modifier = modifier
             .basicContainer(
                 backgroundBrush = getEpisodeBackgroundColor(false),
+                outerPadding = PaddingValues(0.dp),
                 innerPadding = PaddingValues(8.dp)
             )
             .fillMaxWidth()

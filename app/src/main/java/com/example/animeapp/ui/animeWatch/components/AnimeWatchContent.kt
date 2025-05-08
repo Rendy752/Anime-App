@@ -3,13 +3,17 @@ package com.example.animeapp.ui.animeWatch.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
@@ -53,7 +57,13 @@ fun AnimeWatchContent(
                         episodeDetailComplement = episodeDetailComplement.data,
                         episodes = episodeList,
                         episodeSourcesQuery = query,
-                        handleSelectedEpisodeServer = { handleSelectedEpisodeServer(it, false, true) },
+                        handleSelectedEpisodeServer = {
+                            handleSelectedEpisodeServer(
+                                it,
+                                false,
+                                true
+                            )
+                        },
                         isPipMode = isPipMode,
                         onEnterPipMode = onEnterPipMode,
                         isFullscreen = isFullscreen,
@@ -74,6 +84,7 @@ fun AnimeWatchContent(
                 if (isLandscape && !isPipMode && !isFullscreen) {
                     LazyColumn(
                         modifier = Modifier
+                            .padding(8.dp)
                             .fillMaxSize()
                             .weight(0.5f),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -83,17 +94,18 @@ fun AnimeWatchContent(
                         item {
                             if (selectedContentIndex == 0) {
                                 WatchContentSection(
-                                    animeDetail,
-                                    isFavorite,
-                                    getCachedEpisodeDetailComplement,
-                                    episodeDetailComplement,
-                                    episodes,
-                                    episodeSourcesQuery
-                                ) {
-                                    handleSelectedEpisodeServer(it, false, false)
-                                }
+                                    animeDetail = animeDetail,
+                                    isFavorite = isFavorite,
+                                    getCachedEpisodeDetailComplement = getCachedEpisodeDetailComplement,
+                                    episodeDetailComplement = episodeDetailComplement,
+                                    episodes = episodes,
+                                    episodeSourcesQuery = episodeSourcesQuery,
+                                    handleSelectedEpisodeServer = {
+                                        handleSelectedEpisodeServer(it, false, false)
+                                    }
+                                )
                             } else {
-                                InfoContentSection(animeDetail)
+                                InfoContentSection(animeDetail = animeDetail)
                             }
                         }
                     }
@@ -101,20 +113,26 @@ fun AnimeWatchContent(
             }
             if (!isLandscape && !isPipMode && !isFullscreen) {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .fillMaxSize(),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center,
                     state = scrollState
                 ) {
                     item {
                         WatchContentSection(
-                            animeDetail,
-                            isFavorite,
-                            getCachedEpisodeDetailComplement,
-                            episodeDetailComplement,
-                            episodes,
-                            episodeSourcesQuery
-                        ) { handleSelectedEpisodeServer(it, false, false) }
+                            animeDetail = animeDetail,
+                            isFavorite = isFavorite,
+                            getCachedEpisodeDetailComplement = getCachedEpisodeDetailComplement,
+                            episodeDetailComplement = episodeDetailComplement,
+                            episodes = episodes,
+                            episodeSourcesQuery = episodeSourcesQuery,
+                            handleSelectedEpisodeServer = {
+                                handleSelectedEpisodeServer(it, false, false)
+                            }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
                         InfoContentSection(animeDetail)
                     }
                 }

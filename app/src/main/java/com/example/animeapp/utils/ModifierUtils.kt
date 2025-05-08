@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -79,24 +78,3 @@ fun Modifier.basicContainer(
 
     return modifier.padding(innerPadding)
 }
-
-@Composable
-fun Modifier.shimmerContainer(): Modifier =
-    this
-        .padding(8.dp)
-        .clip(RoundedCornerShape(16.dp))
-        .border(
-            width = 1.dp,
-            color = MaterialTheme.colorScheme.surfaceContainerHighest,
-            shape = RoundedCornerShape(16.dp)
-        )
-        .background(
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.5f),
-                    MaterialTheme.colorScheme.surfaceContainerLowest.copy(alpha = 0.5f)
-                )
-            )
-        )
-        .fillMaxWidth()
-        .padding(16.dp)

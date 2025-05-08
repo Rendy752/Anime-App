@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.animeapp.models.AnimeSearchResponse
 import com.example.animeapp.models.Genre
@@ -32,7 +33,10 @@ fun ResultsSection(
         verticalArrangement = Arrangement.Center
     ) {
         when (animeSearchResults) {
-            is Resource.Loading -> LazyColumn {
+            is Resource.Loading -> LazyColumn(
+                modifier = Modifier.padding(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 items(3) { AnimeSearchItemSkeleton() }
             }
 
@@ -42,7 +46,10 @@ fun ResultsSection(
                         MessageDisplay("No Results Found")
                     }
                 } else {
-                    LazyColumn {
+                    LazyColumn(
+                        modifier = Modifier.padding(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         items(animeSearchResults.data.data) { animeDetail ->
                             AnimeSearchItem(
                                 animeDetail = animeDetail,

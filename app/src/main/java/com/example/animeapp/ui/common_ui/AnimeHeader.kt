@@ -39,9 +39,7 @@ fun AnimeHeader(
 ) {
     val context = LocalContext.current
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(8.dp),
+        modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         AsyncImageWithPlaceholder(
@@ -119,9 +117,7 @@ fun AnimeHeader(
 @Composable
 fun AnimeHeaderSkeleton(modifier: Modifier = Modifier) {
     Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(8.dp),
+        modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         SkeletonBox(width = 200.dp, height = 300.dp)

@@ -1,8 +1,9 @@
 package com.example.animeapp.ui.animeWatch.watchContent
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -27,8 +28,12 @@ fun WatchEpisode(
     val gridState = rememberLazyGridState()
     Column(
         modifier = Modifier
-            .basicContainer()
-            .fillMaxWidth()
+            .basicContainer(
+                outerPadding = PaddingValues(0.dp),
+                innerPadding = PaddingValues(8.dp)
+            )
+            .fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         EpisodeJump(episodes = episodes, gridState = gridState)
 
@@ -42,11 +47,8 @@ fun WatchEpisode(
             )
         } else EpisodeNavigationSkeleton()
 
-        HorizontalDivider(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp)
-        )
+        HorizontalDivider(modifier = Modifier.fillMaxWidth())
+
         EpisodeSelectionGrid(
             episodes = episodes,
             getCachedEpisodeDetailComplement = getCachedEpisodeDetailComplement,

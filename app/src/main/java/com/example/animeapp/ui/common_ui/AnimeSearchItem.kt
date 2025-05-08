@@ -29,7 +29,6 @@ import com.example.animeapp.models.Genre
 import com.example.animeapp.models.animeDetailPlaceholder
 import com.example.animeapp.utils.TextUtils.formatNumber
 import com.example.animeapp.utils.basicContainer
-import com.example.animeapp.utils.shimmerContainer
 
 @Preview
 @Composable
@@ -43,6 +42,7 @@ fun AnimeSearchItem(
     Column(
         modifier = Modifier
             .basicContainer(
+                outerPadding = PaddingValues(0.dp),
                 onItemClick = if (onItemClick != null && animeDetail != null) {
                     onItemClick
                 } else null
@@ -154,9 +154,7 @@ fun AnimeSearchItem(
 @Composable
 fun AnimeSearchItemSkeleton() {
     Column(
-        modifier = Modifier
-            .shimmerContainer()
-            .fillMaxWidth()
+        modifier = Modifier.basicContainer(outerPadding = PaddingValues(0.dp))
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,

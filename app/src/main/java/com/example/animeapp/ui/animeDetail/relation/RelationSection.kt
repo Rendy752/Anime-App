@@ -2,6 +2,7 @@ package com.example.animeapp.ui.animeDetail.relation
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
@@ -32,7 +33,7 @@ fun RelationSection(
 
     Column(
         modifier = Modifier
-            .basicContainer()
+            .basicContainer(outerPadding = PaddingValues(0.dp))
             .fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

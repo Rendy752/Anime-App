@@ -3,6 +3,7 @@ package com.example.animeapp.ui.animeDetail.episodeDetail
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
@@ -45,7 +46,7 @@ fun EpisodesDetailSection(
 ) {
     Column(
         modifier = modifier
-            .basicContainer()
+            .basicContainer(outerPadding = PaddingValues(0.dp))
             .fillMaxWidth()
     ) {
         Row(
@@ -81,27 +82,32 @@ fun EpisodesDetailSection(
         )
         when (detailState.animeDetailComplement) {
             is Resource.Loading -> {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Row(
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    SearchViewSkeleton(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        SearchViewSkeleton(
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(end = 4.dp)
-                        )
-                        if (animeDetail.airing) SkeletonBox(
-                            modifier = modifier
-                                .clip(RoundedCornerShape(16.dp))
-                                .background(MaterialTheme.colorScheme.primaryContainer),
-                            height = 56.dp,
-                            width = 56.dp
-                        )
-                    }
+                            .weight(1f)
+                            .padding(end = 4.dp)
+                    )
+                    if (animeDetail.airing) SkeletonBox(
+                        modifier = modifier
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(MaterialTheme.colorScheme.primaryContainer),
+                        height = 56.dp,
+                        width = 56.dp
+                    )
+                }
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 400.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     repeat(3) {
                         EpisodeDetailItemSkeleton()
                     }

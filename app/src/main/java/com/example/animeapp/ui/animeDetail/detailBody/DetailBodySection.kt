@@ -2,6 +2,7 @@ package com.example.animeapp.ui.animeDetail.detailBody
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
@@ -34,7 +35,7 @@ import com.example.animeapp.utils.Navigation.navigateWithFilter
 fun DetailBodySection(animeDetail: AnimeDetail, navController: NavController) {
     Column(
         modifier = Modifier
-            .basicContainer()
+            .basicContainer(outerPadding = PaddingValues(0.dp))
             .fillMaxWidth()
     ) {
         Row(
@@ -104,7 +105,7 @@ fun DetailBodySection(animeDetail: AnimeDetail, navController: NavController) {
 fun DetailBodySectionSkeleton() {
     Column(
         modifier = Modifier
-            .basicContainer()
+            .basicContainer(outerPadding = PaddingValues(0.dp))
             .fillMaxWidth()
     ) {
         Row(
