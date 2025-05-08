@@ -26,12 +26,11 @@ import androidx.core.content.ContextCompat
 import com.example.animeapp.ui.common_ui.ToggleWithLabel
 import com.example.animeapp.ui.main.MainAction
 import com.example.animeapp.ui.main.MainState
-import com.example.animeapp.ui.main.MainViewModel
 import com.example.animeapp.ui.settings.components.ColorStyleCard
 import com.example.animeapp.ui.settings.components.ContrastModeChips
 import com.example.animeapp.ui.theme.ColorStyle
 import com.example.animeapp.utils.Resource
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavBackStackEntry
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview
@@ -41,14 +40,14 @@ fun SettingsScreen(
     mainAction: (MainAction) -> Unit = {},
     state: SettingsState = SettingsState(),
     action: (SettingsAction) -> Unit = {},
-    mainViewModel: MainViewModel = hiltViewModel()
+    navBackStackEntry: NavBackStackEntry? = null
 ) {
     val colorStyleCardScrollState = rememberScrollState()
     val context = LocalContext.current
 
     val settingsLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
-    ) { _ -> mainViewModel.checkNotificationPermission() }
+    ) { _ -> mainAction(MainAction.CheckNotificationPermission) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
@@ -61,7 +60,7 @@ fun SettingsScreen(
                 }
             )
         }
-        mainViewModel.checkNotificationPermission()
+        mainAction(MainAction.CheckNotificationPermission)
     }
 
     LaunchedEffect(mainState.isConnected) {
@@ -148,7 +147,8 @@ fun SettingsScreen(
                     isSelected = style == mainState.colorStyle,
                     isDarkMode = mainState.isDarkMode,
                     contrastMode = mainState.contrastMode,
-                    onColorStyleSelected = { mainAction(MainAction.SetColorStyle(style)) }
+                    onColorStyleSelected = { mainAction(MainAction.SetColorStyle(style)) },
+                    navBackStackEntry = navBackStackEntry
                 )
             }
         }

@@ -25,6 +25,8 @@ import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.ui.animeDetail.DetailAction
 import com.example.animeapp.ui.animeDetail.DetailState
 import com.example.animeapp.ui.animeDetail.EpisodeFilterState
+import com.example.animeapp.ui.common_ui.EpisodeDetailItem
+import com.example.animeapp.ui.common_ui.EpisodeDetailItemSkeleton
 import com.example.animeapp.ui.common_ui.MessageDisplay
 import com.example.animeapp.ui.common_ui.RetryButton
 import com.example.animeapp.ui.common_ui.SearchView
@@ -165,9 +167,9 @@ fun EpisodesDetailSection(
                                 items(filteredEpisodes) { episode ->
                                     EpisodeDetailItem(
                                         animeDetail = animeDetail,
-                                        animeDetailComplement = data,
+                                        lastEpisodeWatchedId = data.lastEpisodeWatchedId,
                                         episode = episode,
-                                        detailState = detailState,
+                                        episodeDetailComplement = detailState.episodeDetailComplements[episode.episodeId]?.data,
                                         query = episodeFilterState.episodeQuery.title,
                                         onAction = onAction,
                                         onClick = onEpisodeClick,

@@ -35,14 +35,15 @@ import com.example.animeapp.models.animeDetailPlaceholder
 @Composable
 fun AnimeHeader(
     modifier: Modifier = Modifier,
-    animeDetail: AnimeDetail = animeDetailPlaceholder
+    animeDetail: AnimeDetail = animeDetailPlaceholder,
+    showImage: Boolean = true
 ) {
     val context = LocalContext.current
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        AsyncImageWithPlaceholder(
+        if (showImage) AsyncImageWithPlaceholder(
             model = animeDetail.images.webp.large_image_url,
             contentDescription = animeDetail.title,
             isAiring = animeDetail.airing,
@@ -115,12 +116,12 @@ fun AnimeHeader(
 
 @Preview
 @Composable
-fun AnimeHeaderSkeleton(modifier: Modifier = Modifier) {
+fun AnimeHeaderSkeleton(modifier: Modifier = Modifier, showImage: Boolean = true) {
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        SkeletonBox(width = 200.dp, height = 300.dp)
+        if (showImage) SkeletonBox(width = 200.dp, height = 300.dp)
 
         Column(
             modifier = Modifier

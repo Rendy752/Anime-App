@@ -44,6 +44,7 @@ sealed class MainAction {
     data class SetIsConnected(val connected: Boolean) : MainAction()
     data class SetNetworkStatus(val status: NetworkStatus) : MainAction()
     data class SetIsShowIdleDialog(val show: Boolean) : MainAction()
+    data object CheckNotificationPermission : MainAction()
 }
 
 @HiltViewModel
@@ -84,6 +85,7 @@ class MainViewModel @Inject constructor(application: Application) : AndroidViewM
             is MainAction.SetIsConnected -> setIsConnected(action.connected)
             is MainAction.SetNetworkStatus -> setNetworkStatus(action.status)
             is MainAction.SetIsShowIdleDialog -> setIsShowIdleDialog(action.show)
+            is MainAction.CheckNotificationPermission -> checkNotificationPermission()
         }
     }
 

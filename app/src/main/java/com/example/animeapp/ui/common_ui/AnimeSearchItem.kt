@@ -33,6 +33,7 @@ import com.example.animeapp.utils.basicContainer
 @Preview
 @Composable
 fun AnimeSearchItem(
+    modifier: Modifier = Modifier,
     animeDetail: AnimeDetail? = animeDetailPlaceholder,
     selectedGenres: List<Genre> = emptyList(),
     errorTitle: String? = null,
@@ -40,7 +41,7 @@ fun AnimeSearchItem(
     onItemClick: (() -> Unit)? = null,
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .basicContainer(
                 outerPadding = PaddingValues(0.dp),
                 onItemClick = if (onItemClick != null && animeDetail != null) {
@@ -152,9 +153,9 @@ fun AnimeSearchItem(
 
 @Preview
 @Composable
-fun AnimeSearchItemSkeleton() {
+fun AnimeSearchItemSkeleton(modifier: Modifier = Modifier) {
     Column(
-        modifier = Modifier.basicContainer(outerPadding = PaddingValues(0.dp))
+        modifier = modifier.basicContainer(outerPadding = PaddingValues(0.dp))
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,

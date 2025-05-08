@@ -207,7 +207,8 @@ fun MainScreen(
                     mainState = mainState,
                     mainAction = mainAction,
                     state = settingsState,
-                    action = settingsViewModel::onAction
+                    action = settingsViewModel::onAction,
+                    navBackStackEntry = navBackStackEntry
                 )
             }
             composable(

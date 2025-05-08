@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animeDetail.episodeDetail
+package com.example.animeapp.ui.common_ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -24,47 +24,48 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavBackStackEntry
 import com.example.animeapp.models.AnimeDetail
-import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.Episode
+import com.example.animeapp.models.EpisodeDetailComplement
+import com.example.animeapp.models.animeDetailComplementPlaceholder
+import com.example.animeapp.models.animeDetailPlaceholder
+import com.example.animeapp.models.episodeDetailComplementPlaceholder
+import com.example.animeapp.models.episodePlaceholder
 import com.example.animeapp.ui.animeDetail.DetailAction
-import com.example.animeapp.ui.animeDetail.DetailState
-import com.example.animeapp.ui.common_ui.ScreenshotDisplay
-import com.example.animeapp.ui.common_ui.SkeletonBox
-import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.WatchUtils.getEpisodeBackgroundColor
 import com.example.animeapp.utils.basicContainer
 
+@Preview
 @Composable
 fun EpisodeDetailItem(
-    animeDetail: AnimeDetail,
-    animeDetailComplement: AnimeDetailComplement,
-    episode: Episode,
-    detailState: DetailState,
-    query: String,
-    onAction: (DetailAction) -> Unit,
-    onClick: (String) -> Unit,
-    navBackStackEntry: NavBackStackEntry?
+    modifier: Modifier = Modifier,
+    animeDetail: AnimeDetail = animeDetailPlaceholder,
+    lastEpisodeWatchedId: String? = animeDetailComplementPlaceholder.lastEpisodeWatchedId,
+    episode: Episode = episodePlaceholder,
+    episodeDetailComplement: EpisodeDetailComplement? = episodeDetailComplementPlaceholder,
+    query: String = "a",
+    onAction: (DetailAction) -> Unit = {},
+    onClick: (String) -> Unit = {},
+    navBackStackEntry: NavBackStackEntry? = null,
+    titleMaxLines: Int? = null
 ) {
     val lifecycleState by navBackStackEntry?.lifecycle?.currentStateFlow?.collectAsStateWithLifecycle()
         ?: return
 
     LaunchedEffect(episode.episodeId, lifecycleState) {
-        if (detailState.episodeDetailComplements[episode.episodeId] == null || lifecycleState.isAtLeast(
+        if (episodeDetailComplement == null || lifecycleState.isAtLeast(
                 Lifecycle.State.RESUMED
             )
         ) {
             onAction(DetailAction.LoadEpisodeDetailComplement(episode.episodeId))
         }
     }
-
-    val episodeDetailComplementResource = detailState.episodeDetailComplements[episode.episodeId]
-    val episodeDetailComplement = (episodeDetailComplementResource as? Resource.Success)?.data
 
     val progress = episodeDetailComplement?.let { complement ->
         if (complement.lastTimestamp != null && complement.duration != null && complement.lastTimestamp < complement.duration) {
@@ -75,7 +76,7 @@ fun EpisodeDetailItem(
     }
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .basicContainer(
                 onItemClick = { onClick(episode.episodeId) },
                 backgroundBrush = getEpisodeBackgroundColor(
@@ -114,7 +115,9 @@ fun EpisodeDetailItem(
                 Text(
                     text = highlightText(episode.name, query),
                     style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = titleMaxLines ?: Int.MAX_VALUE,
+                    overflow = TextOverflow.Ellipsis
                 )
 
                 Row(
@@ -127,8 +130,8 @@ fun EpisodeDetailItem(
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    animeDetailComplement.lastEpisodeWatchedId?.let { lastEpisodeWatchedId ->
-                        if (episode.episodeId == lastEpisodeWatchedId) {
+                    lastEpisodeWatchedId?.let {
+                        if (episode.episodeId == it) {
                             Text(
                                 text = "Last Watched",
                                 modifier = Modifier
@@ -159,7 +162,7 @@ fun EpisodeDetailItem(
                 progress = { progress },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(4.dp)
+                    .height(8.dp)
                     .clip(RoundedCornerShape(bottomStart = 8.dp, bottomEnd = 8.dp)),
                 color = MaterialTheme.colorScheme.primary,
                 trackColor = MaterialTheme.colorScheme.primaryContainer
@@ -189,9 +192,9 @@ fun highlightText(text: String, query: String): AnnotatedString {
 
 @Preview
 @Composable
-fun EpisodeDetailItemSkeleton() {
+fun EpisodeDetailItemSkeleton(modifier: Modifier = Modifier) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .basicContainer(
                 roundedCornerShape = RoundedCornerShape(8.dp),
                 outerPadding = PaddingValues(0.dp),
