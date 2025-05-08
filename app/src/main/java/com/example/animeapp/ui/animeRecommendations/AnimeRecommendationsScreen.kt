@@ -1,5 +1,8 @@
 package com.example.animeapp.ui.animeRecommendations
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -105,16 +108,20 @@ fun AnimeRecommendationsScreen(
                                         )
                                     }
                                 }
-                                if (showScrollToTopPortrait) {
+                                AnimatedVisibility(
+                                    visible = showScrollToTopPortrait,
+                                    modifier = Modifier
+                                        .align(Alignment.BottomEnd)
+                                        .padding(16.dp),
+                                    enter = scaleIn(initialScale = 0.0f),
+                                    exit = scaleOut(targetScale = 0.0f)
+                                ) {
                                     FloatingActionButton(
                                         onClick = {
                                             coroutineScope.launch {
                                                 portraitScrollState.animateScrollToItem(0)
                                             }
                                         },
-                                        modifier = Modifier
-                                            .align(Alignment.BottomEnd)
-                                            .padding(16.dp),
                                         containerColor = MaterialTheme.colorScheme.primary,
                                         contentColor = MaterialTheme.colorScheme.onPrimary
                                     ) {
@@ -154,7 +161,14 @@ fun AnimeRecommendationsScreen(
                                                 )
                                             }
                                         }
-                                        if ((columnIndex == 0 && showScrollToTopPortrait) || (columnIndex == 1 && showScrollToTopLandscape)) {
+                                        androidx.compose.animation.AnimatedVisibility(
+                                            visible = if (columnIndex == 0) showScrollToTopPortrait else showScrollToTopLandscape,
+                                            modifier = Modifier
+                                                .align(Alignment.BottomEnd)
+                                                .padding(16.dp),
+                                            enter = scaleIn(initialScale = 0.0f),
+                                            exit = scaleOut(targetScale = 0.0f)
+                                        ) {
                                             FloatingActionButton(
                                                 onClick = {
                                                     coroutineScope.launch {
@@ -163,9 +177,6 @@ fun AnimeRecommendationsScreen(
                                                         state.animateScrollToItem(0)
                                                     }
                                                 },
-                                                modifier = Modifier
-                                                    .align(Alignment.BottomEnd)
-                                                    .padding(16.dp),
                                                 containerColor = MaterialTheme.colorScheme.primary,
                                                 contentColor = MaterialTheme.colorScheme.onPrimary
                                             ) {
