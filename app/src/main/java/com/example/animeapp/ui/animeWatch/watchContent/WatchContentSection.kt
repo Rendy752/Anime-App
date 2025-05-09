@@ -14,7 +14,8 @@ import com.example.animeapp.utils.Resource
 fun WatchContentSection(
     animeDetail: AnimeDetail?,
     isFavorite: Boolean,
-    getCachedEpisodeDetailComplement: suspend (String) -> EpisodeDetailComplement?,
+    episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
+    onLoadEpisodeDetailComplement: (String) -> Unit,
     episodeDetailComplement: Resource<EpisodeDetailComplement>,
     episodes: List<Episode>,
     episodeSourcesQuery: EpisodeSourcesQuery?,
@@ -40,7 +41,8 @@ fun WatchContentSection(
             WatchHeaderSkeleton()
         }
         if (episodes.size > 1) WatchEpisode(
-            getCachedEpisodeDetailComplement = getCachedEpisodeDetailComplement,
+            episodeDetailComplements = episodeDetailComplements,
+            onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,
             episodeDetailComplement = episodeDetailComplement,
             episodes = episodes,
             episodeSourcesQuery = episodeSourcesQuery,

@@ -385,7 +385,8 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                                     updateStoredWatchState?.invoke(position, duration, screenshot)
                                     Log.d(
                                         "MediaPlaybackService",
-                                        "Periodic watch state update: position=$position, screenshot=${screenshot?.take(20)}..."
+                                        "Periodic watch state update: position=$position, " +
+                                                "screenshot=${screenshot?.take(20)}..."
                                     )
                                 }
                             } catch (e: Exception) {

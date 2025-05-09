@@ -10,7 +10,6 @@ import android.support.v4.media.MediaBrowserCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
-import android.view.WindowManager
 import androidx.annotation.OptIn
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -39,7 +38,7 @@ import com.example.animeapp.utils.PlayerAction
 @OptIn(UnstableApi::class, ExperimentalComposeUiApi::class)
 @Composable
 fun VideoPlayerSection(
-    updateStoredWatchState: (EpisodeDetailComplement, Long?, Long?, String?) -> Unit,
+    updateStoredWatchState: (Long?, Long?, String?) -> Unit,
     episodeDetailComplement: EpisodeDetailComplement,
     episodes: List<Episode>,
     episodeSourcesQuery: EpisodeSourcesQuery,
@@ -101,7 +100,7 @@ fun VideoPlayerSection(
             query = query,
             handler = { handleSelectedEpisodeServer(it) },
             updateStoredWatchState = { position, duration, screenshot ->
-                updateStoredWatchState(complement, position, duration, screenshot)
+                updateStoredWatchState(position, duration, screenshot)
             },
             onPlayerError = { error ->
                 Log.e("VideoPlayerSection", "Player error: $error")
@@ -188,7 +187,7 @@ fun VideoPlayerSection(
                         setNextEpisodeName = { nextEpisodeName = it }
                     )
                     isShowResumeOverlay = false
-                    (context as? FragmentActivity)?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    (context as? FragmentActivity)?.window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                 }
             }
         }
@@ -260,115 +259,9 @@ fun VideoPlayerSection(
         object : MediaControllerCompat.Callback() {
             override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
                 state?.let {
-                    Log.d(
-                        "VideoPlayerSection",
-                        "Playback state changed: state=${it.state}, position=${it.position}"
-                    )
-                    isLoading = it.state == PlaybackStateCompat.STATE_BUFFERING ||
-                            it.state == PlaybackStateCompat.STATE_CONNECTING ||
-                            it.state == PlaybackStateCompat.STATE_SKIPPING_TO_NEXT ||
-                            it.state == PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS ||
-                            it.state == PlaybackStateCompat.STATE_SKIPPING_TO_QUEUE_ITEM
-
-                    when (it.state) {
-                        PlaybackStateCompat.STATE_PLAYING -> {
-                            isShowNextEpisode = false
-                            isShowResumeOverlay = false
-                            (context as? FragmentActivity)?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                            Log.d("VideoPlayerSection", "Playing: Screen kept on")
-                        }
-
-                        PlaybackStateCompat.STATE_PAUSED -> {
-                            val player = HlsPlayerUtils.getPlayer()
-                            if (player?.playbackState == Player.STATE_ENDED) {
-                                Log.d(
-                                    "VideoPlayerSection",
-                                    "Paused after episode end, showing next episode overlay"
-                                )
-                                isShowNextEpisode = updateNextEpisodeName(
-                                    episodes = episodes,
-                                    currentEpisode = episodeDetailComplement.servers.episodeNo,
-                                    setNextEpisodeName = { nextEpisodeName = it }
-                                )
-                                isShowResumeOverlay = false
-                            }
-                            (context as? FragmentActivity)?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                            Log.d("VideoPlayerSection", "Paused: Screen-on cleared")
-                        }
-
-                        PlaybackStateCompat.STATE_STOPPED -> {
-                            isShowNextEpisode = updateNextEpisodeName(
-                                episodes = episodes,
-                                currentEpisode = episodeDetailComplement.servers.episodeNo,
-                                setNextEpisodeName = { nextEpisodeName = it }
-                            )
-                            isShowResumeOverlay = false
-                            (context as? FragmentActivity)?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                            Log.d(
-                                "VideoPlayerSection",
-                                "Stopped: Showing next episode if available"
-                            )
-                        }
-
-                        PlaybackStateCompat.STATE_ERROR -> {
-                            onPlayerError("Playback error: ${state.errorMessage}")
-                            Log.e("VideoPlayerSection", "Playback error: ${state.errorMessage}")
-                            (context as? FragmentActivity)?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                        }
-
-                        PlaybackStateCompat.STATE_BUFFERING -> {
-                            isLoading = true
-                            Log.d("VideoPlayerSection", "Buffering: Showing loading indicator")
-                        }
-
-                        PlaybackStateCompat.STATE_NONE -> {
-                            isLoading = false
-                            (context as? FragmentActivity)?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                            Log.d("VideoPlayerSection", "None: Player idle, no media loaded")
-                        }
-
-                        PlaybackStateCompat.STATE_CONNECTING -> {
-                            isLoading = true
-                            Log.d("VideoPlayerSection", "Connecting: Preparing media source")
-                        }
-
-                        PlaybackStateCompat.STATE_FAST_FORWARDING -> {
-                            isLoading = false
-                            isShowNextEpisode = false
-                            isShowResumeOverlay = false
-                            Log.d("VideoPlayerSection", "Fast-forwarding")
-                        }
-
-                        PlaybackStateCompat.STATE_REWINDING -> {
-                            isLoading = false
-                            isShowNextEpisode = false
-                            isShowResumeOverlay = false
-                            Log.d("VideoPlayerSection", "Rewinding")
-                        }
-
-                        PlaybackStateCompat.STATE_SKIPPING_TO_NEXT -> {
-                            isLoading = true
-                            isShowNextEpisode = false
-                            isShowResumeOverlay = false
-                            Log.d("VideoPlayerSection", "Skipping to next: Loading new episode")
-                        }
-
-                        PlaybackStateCompat.STATE_SKIPPING_TO_PREVIOUS -> {
-                            isLoading = true
-                            isShowNextEpisode = false
-                            isShowResumeOverlay = false
-                            Log.d("VideoPlayerSection", "Skipping to previous: Loading new episode")
-                        }
-
-                        PlaybackStateCompat.STATE_SKIPPING_TO_QUEUE_ITEM -> {
-                            isLoading = true
-                            isShowNextEpisode = false
-                            isShowResumeOverlay = false
-                            Log.d(
-                                "VideoPlayerSection",
-                                "Skipping to queue item: Loading specific episode"
-                            )
-                        }
+                    val isPlaying = state.state == PlaybackStateCompat.STATE_PLAYING
+                    if (isPlaying) {
+                        isShowResumeOverlay = false
                     }
                 }
             }

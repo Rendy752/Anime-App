@@ -13,7 +13,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -35,14 +34,10 @@ import com.example.animeapp.utils.basicContainer
 fun WatchEpisodeItem(
     currentEpisode: EpisodeDetailComplement?,
     episode: Episode,
-    getCachedEpisodeDetailComplement: suspend (String) -> EpisodeDetailComplement?,
+    episodeDetailComplement: EpisodeDetailComplement?,
     onEpisodeClick: (String) -> Unit,
     isSelected: Boolean
 ) {
-    var episodeDetailComplement by remember { mutableStateOf<EpisodeDetailComplement?>(null) }
-    LaunchedEffect(currentEpisode) {
-        episodeDetailComplement = getCachedEpisodeDetailComplement(episode.episodeId)
-    }
     val isCurrentEpisode =
         if (currentEpisode != null) currentEpisode.servers.episodeNo == episode.episodeNo else false
     var showTooltip by remember { mutableStateOf(false) }

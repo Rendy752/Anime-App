@@ -14,10 +14,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.example.animeapp.models.AnimeDetail
-import com.example.animeapp.models.Episode
-import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.EpisodeSourcesQuery
+import com.example.animeapp.ui.animeWatch.WatchState
+import com.example.animeapp.ui.animeWatch.PlayerUiState
 import com.example.animeapp.ui.animeWatch.infoContent.InfoContentSection
 import com.example.animeapp.ui.animeWatch.videoPlayer.VideoPlayerSection
 import com.example.animeapp.ui.animeWatch.watchContent.WatchContentSection
@@ -26,51 +25,37 @@ import com.example.animeapp.utils.Resource
 
 @Composable
 fun AnimeWatchContent(
-    animeDetail: AnimeDetail?,
-    isFavorite: Boolean,
-    updateStoredWatchState: (EpisodeDetailComplement, Long?, Long?, String?) -> Unit,
-    getCachedEpisodeDetailComplement: suspend (String) -> EpisodeDetailComplement?,
-    episodes: List<Episode>?,
-    episodeDetailComplement: Resource<EpisodeDetailComplement>,
-    episodeSourcesQuery: EpisodeSourcesQuery?,
+    watchState: WatchState,
+    playerUiState: PlayerUiState,
+    updateStoredWatchState: (Long?, Long?, String?) -> Unit,
+    onLoadEpisodeDetailComplement: (String) -> Unit,
     isConnected: Boolean,
     isLandscape: Boolean,
-    isPipMode: Boolean,
-    isFullscreen: Boolean,
     scrollState: LazyListState,
-    isScreenOn: Boolean,
     onEnterPipMode: () -> Unit,
     onFullscreenChange: (Boolean) -> Unit,
-    errorMessage: String?,
     onPlayerError: (String?) -> Unit,
-    handleSelectedEpisodeServer: (EpisodeSourcesQuery, Boolean, Boolean) -> Unit,
-    selectedContentIndex: Int,
+    handleSelectedEpisodeServer: (EpisodeSourcesQuery, Boolean) -> Unit,
     modifier: Modifier,
     videoSize: Modifier
 ) {
-    episodes?.let { episodeList ->
-        episodeSourcesQuery?.let { query ->
+    watchState.animeDetailComplement?.episodes?.let { episodeList ->
+        watchState.episodeSourcesQuery.let { query ->
             Row(modifier = Modifier.fillMaxWidth()) {
-                if (episodeDetailComplement is Resource.Success && isConnected) {
+                if (watchState.episodeDetailComplement is Resource.Success && isConnected) {
                     VideoPlayerSection(
                         updateStoredWatchState = updateStoredWatchState,
-                        episodeDetailComplement = episodeDetailComplement.data,
+                        episodeDetailComplement = watchState.episodeDetailComplement.data,
                         episodes = episodeList,
                         episodeSourcesQuery = query,
-                        handleSelectedEpisodeServer = {
-                            handleSelectedEpisodeServer(
-                                it,
-                                false,
-                                true
-                            )
-                        },
-                        isPipMode = isPipMode,
+                        handleSelectedEpisodeServer = { handleSelectedEpisodeServer(it, true) },
+                        isPipMode = playerUiState.isPipMode,
                         onEnterPipMode = onEnterPipMode,
-                        isFullscreen = isFullscreen,
+                        isFullscreen = playerUiState.isFullscreen,
                         onFullscreenChange = onFullscreenChange,
-                        isScreenOn = isScreenOn,
+                        isScreenOn = watchState.isScreenOn,
                         isLandscape = isLandscape,
-                        errorMessage = errorMessage,
+                        errorMessage = watchState.errorMessage,
                         onPlayerError = onPlayerError,
                         modifier = modifier,
                         videoSize = videoSize
@@ -81,7 +66,7 @@ fun AnimeWatchContent(
                     }
                 }
 
-                if (isLandscape && !isPipMode && !isFullscreen) {
+                if (isLandscape && !playerUiState.isPipMode && !playerUiState.isFullscreen) {
                     LazyColumn(
                         modifier = Modifier
                             .padding(8.dp)
@@ -92,26 +77,27 @@ fun AnimeWatchContent(
                         state = scrollState
                     ) {
                         item {
-                            if (selectedContentIndex == 0) {
+                            if (watchState.selectedContentIndex == 0) {
                                 WatchContentSection(
-                                    animeDetail = animeDetail,
-                                    isFavorite = isFavorite,
-                                    getCachedEpisodeDetailComplement = getCachedEpisodeDetailComplement,
-                                    episodeDetailComplement = episodeDetailComplement,
-                                    episodes = episodes,
-                                    episodeSourcesQuery = episodeSourcesQuery,
+                                    animeDetail = watchState.animeDetail,
+                                    isFavorite = watchState.isFavorite,
+                                    episodeDetailComplements = watchState.episodeDetailComplements,
+                                    onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,
+                                    episodeDetailComplement = watchState.episodeDetailComplement,
+                                    episodes = episodeList,
+                                    episodeSourcesQuery = query,
                                     handleSelectedEpisodeServer = {
-                                        handleSelectedEpisodeServer(it, false, false)
+                                        handleSelectedEpisodeServer(it, false)
                                     }
                                 )
                             } else {
-                                InfoContentSection(animeDetail = animeDetail)
+                                InfoContentSection(animeDetail = watchState.animeDetail)
                             }
                         }
                     }
                 }
             }
-            if (!isLandscape && !isPipMode && !isFullscreen) {
+            if (!isLandscape && !playerUiState.isPipMode && !playerUiState.isFullscreen) {
                 LazyColumn(
                     modifier = Modifier
                         .padding(8.dp)
@@ -122,18 +108,17 @@ fun AnimeWatchContent(
                 ) {
                     item {
                         WatchContentSection(
-                            animeDetail = animeDetail,
-                            isFavorite = isFavorite,
-                            getCachedEpisodeDetailComplement = getCachedEpisodeDetailComplement,
-                            episodeDetailComplement = episodeDetailComplement,
-                            episodes = episodes,
-                            episodeSourcesQuery = episodeSourcesQuery,
-                            handleSelectedEpisodeServer = {
-                                handleSelectedEpisodeServer(it, false, false)
-                            }
+                            animeDetail = watchState.animeDetail,
+                            isFavorite = watchState.isFavorite,
+                            episodeDetailComplements = watchState.episodeDetailComplements,
+                            onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,
+                            episodeDetailComplement = watchState.episodeDetailComplement,
+                            episodes = episodeList,
+                            episodeSourcesQuery = query,
+                            handleSelectedEpisodeServer = { handleSelectedEpisodeServer(it, false) }
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        InfoContentSection(animeDetail)
+                        InfoContentSection(animeDetail = watchState.animeDetail)
                     }
                 }
             }

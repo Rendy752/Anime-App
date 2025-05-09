@@ -19,7 +19,8 @@ import com.example.animeapp.utils.basicContainer
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WatchEpisode(
-    getCachedEpisodeDetailComplement: suspend (String) -> EpisodeDetailComplement?,
+    episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
+    onLoadEpisodeDetailComplement: (String) -> Unit,
     episodeDetailComplement: Resource<EpisodeDetailComplement>,
     episodes: List<Episode>,
     episodeSourcesQuery: EpisodeSourcesQuery?,
@@ -40,7 +41,8 @@ fun WatchEpisode(
         if (episodeDetailComplement is Resource.Success) {
             EpisodeNavigation(
                 episodeDetailComplement = episodeDetailComplement.data,
-                getCachedEpisodeDetailComplement = getCachedEpisodeDetailComplement,
+                episodeDetailComplements = episodeDetailComplements,
+                onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,
                 episodes = episodes,
                 episodeSourcesQuery = episodeSourcesQuery,
                 handleSelectedEpisodeServer = handleSelectedEpisodeServer,
@@ -51,7 +53,8 @@ fun WatchEpisode(
 
         EpisodeSelectionGrid(
             episodes = episodes,
-            getCachedEpisodeDetailComplement = getCachedEpisodeDetailComplement,
+            episodeDetailComplements = episodeDetailComplements,
+            onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,
             episodeDetailComplement = if (episodeDetailComplement is Resource.Success) episodeDetailComplement.data else null,
             episodeSourcesQuery = episodeSourcesQuery,
             handleSelectedEpisodeServer = handleSelectedEpisodeServer,

@@ -19,11 +19,13 @@ import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.EpisodeSourcesQuery
 import com.example.animeapp.utils.Debounce
+import com.example.animeapp.utils.Resource
 
 @Composable
 fun EpisodeSelectionGrid(
     episodes: List<Episode>,
-    getCachedEpisodeDetailComplement: suspend (String) -> EpisodeDetailComplement?,
+    episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
+    onLoadEpisodeDetailComplement: (String) -> Unit,
     episodeDetailComplement: EpisodeDetailComplement?,
     episodeSourcesQuery: EpisodeSourcesQuery?,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
@@ -35,7 +37,6 @@ fun EpisodeSelectionGrid(
     LaunchedEffect(episodeDetailComplement) {
         if (episodeDetailComplement?.servers?.episodeId != null) {
             setSelectedEpisodeId(episodeDetailComplement.servers.episodeId)
-
         }
         if (currentEpisodeNo != null) {
             val index = episodes.indexOfFirst { it.episodeNo == currentEpisodeNo }
@@ -70,10 +71,16 @@ fun EpisodeSelectionGrid(
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(episodes) { episode ->
+            LaunchedEffect(episode.episodeId) {
+                if (episodeDetailComplements[episode.episodeId] == null) {
+                    onLoadEpisodeDetailComplement(episode.episodeId)
+                }
+            }
+            val complementResource = episodeDetailComplements[episode.episodeId]
             WatchEpisodeItem(
                 currentEpisode = episodeDetailComplement,
                 episode = episode,
-                getCachedEpisodeDetailComplement = getCachedEpisodeDetailComplement,
+                episodeDetailComplement = if (complementResource is Resource.Success) complementResource.data else null,
                 onEpisodeClick = { episodeId ->
                     setSelectedEpisodeId(episodeId)
                     debounce.query(episodeId)

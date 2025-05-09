@@ -18,6 +18,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -35,6 +36,8 @@ import com.example.animeapp.ui.animeWatch.AnimeWatchScreen
 import com.example.animeapp.ui.animeHome.AnimeHomeScreen
 import com.example.animeapp.ui.animeHome.AnimeHomeViewModel
 import com.example.animeapp.ui.animeRecommendations.AnimeRecommendationsViewModel
+import com.example.animeapp.ui.animeWatch.AnimeWatchViewModel
+import com.example.animeapp.ui.animeWatch.WatchAction
 import com.example.animeapp.ui.common_ui.MessageDisplay
 import com.example.animeapp.ui.main.components.BottomNavigationBar
 import com.example.animeapp.ui.main.components.BottomScreen
@@ -247,33 +250,27 @@ fun MainScreen(
                     navArgument("episodeId") { type = NavType.StringType }
                 )
             ) {
-                var isPipMode by remember { mutableStateOf(false) }
-                val activity = LocalActivity.current as? MainActivity
+                val viewModel: AnimeWatchViewModel = hiltViewModel(LocalActivity.current as ViewModelStoreOwner)
+                val watchState by viewModel.watchState.collectAsStateWithLifecycle()
+                val playerUiState by viewModel.playerUiState.collectAsStateWithLifecycle()
                 val playerState by HlsPlayerUtils.state.collectAsStateWithLifecycle()
+                val activity = LocalActivity.current as? MainActivity
 
                 DisposableEffect(activity) {
-                    val onPictureInPictureModeChangedCallback: (Boolean) -> Unit =
-                        { isInPipMode: Boolean ->
-                            isPipMode = isInPipMode
-                            Log.d("MainScreen", "PiP mode changed: isPipMode=$isInPipMode")
-                            Unit
-                        }
-                    activity?.addOnPictureInPictureModeChangedListener(
-                        onPictureInPictureModeChangedCallback
-                    )
+                    val onPictureInPictureModeChangedCallback: (Boolean) -> Unit = { isInPipMode: Boolean ->
+                        viewModel.onAction(WatchAction.SetPipMode(isInPipMode))
+                        Log.d("MainScreen", "PiP mode changed: isInPipMode=$isInPipMode")
+                        Unit
+                    }
+                    activity?.addOnPictureInPictureModeChangedListener(onPictureInPictureModeChangedCallback)
                     onDispose {
-                        activity?.removeOnPictureInPictureModeChangedListener(
-                            onPictureInPictureModeChangedCallback
-                        )
+                        activity?.removeOnPictureInPictureModeChangedListener(onPictureInPictureModeChangedCallback)
                     }
                 }
 
-                LaunchedEffect(isPipMode, playerState.isPlaying) {
-                    if (isPipMode && activity != null) {
-                        Log.d(
-                            "MainScreen",
-                            "Updating PiP params: isPlaying=${playerState.isPlaying}"
-                        )
+                LaunchedEffect(playerUiState.isPipMode, playerState.isPlaying) {
+                    if (playerUiState.isPipMode && activity != null) {
+                        Log.d("MainScreen", "Updating PiP params: isPlaying=${playerState.isPlaying}")
                         val actions = buildPipActions(activity, playerState.isPlaying)
                         activity.setPictureInPictureParams(
                             PictureInPictureParams.Builder()
@@ -283,24 +280,30 @@ fun MainScreen(
                     }
                 }
 
+                DisposableEffect(Unit) {
+                    onDispose {
+                        activity?.setPictureInPictureParams(PictureInPictureParams.Builder().build())
+                    }
+                }
+
                 AnimeWatchScreen(
                     malId = it.arguments?.getInt("malId") ?: 0,
                     episodeId = it.arguments?.getString("episodeId") ?: "",
                     navController = navController,
                     mainState = mainState,
-                    isPipMode = isPipMode,
+                    watchState = watchState,
+                    playerUiState = playerUiState,
+                    onAction = viewModel::onAction,
                     onEnterPipMode = {
                         if (isConnected && activity != null) {
-                            Log.d(
-                                "MainScreen",
-                                "Entering PiP: isPlaying=${playerState.isPlaying}"
-                            )
+                            Log.d("MainScreen", "Entering PiP: isPlaying=${playerState.isPlaying}")
                             val actions = buildPipActions(activity, playerState.isPlaying)
                             activity.enterPictureInPictureMode(
                                 PictureInPictureParams.Builder()
                                     .setActions(actions)
                                     .build()
                             )
+                            viewModel.onAction(WatchAction.SetPipMode(true))
                         }
                     }
                 )

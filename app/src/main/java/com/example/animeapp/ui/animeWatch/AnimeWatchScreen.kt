@@ -1,10 +1,8 @@
 package com.example.animeapp.ui.animeWatch
 
-import android.app.PictureInPictureParams
 import android.content.Intent
 import android.content.IntentFilter
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,20 +19,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.ViewModelStoreOwner
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
-import com.example.animeapp.ui.main.MainActivity
 import com.example.animeapp.ui.main.MainState
 import com.example.animeapp.utils.FullscreenUtils
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ScreenOffReceiver
 import com.example.animeapp.utils.ScreenOnReceiver
-import com.example.animeapp.utils.PipUtil.buildPipActions
 import com.example.animeapp.ui.animeWatch.components.AnimeWatchContent
 import com.example.animeapp.ui.animeWatch.components.AnimeWatchTopBar
-import com.example.animeapp.utils.HlsPlayerUtils
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -46,28 +38,16 @@ fun AnimeWatchScreen(
     episodeId: String = "",
     navController: NavHostController,
     mainState: MainState,
-    isPipMode: Boolean,
+    watchState: WatchState,
+    playerUiState: PlayerUiState,
+    onAction: (WatchAction) -> Unit,
     onEnterPipMode: () -> Unit
 ) {
-    val activity = LocalActivity.current as ViewModelStoreOwner
-    val viewModel: AnimeWatchViewModel = hiltViewModel(activity)
-
-    // ViewModel Data
-    val animeDetail by viewModel.animeDetail.collectAsStateWithLifecycle()
-    val animeDetailComplement by viewModel.animeDetailComplement.collectAsStateWithLifecycle()
-    val episodeDetailComplement by viewModel.episodeDetailComplement.collectAsStateWithLifecycle()
-    val episodeSourcesQuery by viewModel.episodeSourcesQuery.collectAsStateWithLifecycle()
-    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
-
     // UI State
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
-    val isFavorite = remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf<String?>(null) }
-    var isFullscreen by remember { mutableStateOf(false) }
     val scrollState = rememberLazyListState()
     val state = rememberPullToRefreshState()
-    var selectedContentIndex by remember { mutableIntStateOf(0) }
 
     // Device State
     var isScreenOn by remember { mutableStateOf(true) }
@@ -75,20 +55,16 @@ fun AnimeWatchScreen(
     val screenOffReceiver = remember { ScreenOffReceiver { isScreenOn = false } }
     val screenOnReceiver = remember { ScreenOnReceiver { isScreenOn = true } }
 
-    // PiP Handling
-    val activityAsActivity = LocalActivity.current as MainActivity
-    val playerState by HlsPlayerUtils.state.collectAsStateWithLifecycle()
-
     val onBackPress: () -> Unit = {
-        if (isFullscreen) {
+        if (playerUiState.isFullscreen) {
             (context as? FragmentActivity)?.let { activity ->
                 activity.window?.let { window ->
                     FullscreenUtils.handleFullscreenToggle(
                         window = window,
-                        isFullscreen = isFullscreen,
+                        isFullscreen = true,
                         isLandscape = mainState.isLandscape,
                         activity = activity,
-                        onFullscreenChange = { isFullscreen = it }
+                        onFullscreenChange = { onAction(WatchAction.SetFullscreen(it)) }
                     )
                 }
             }
@@ -101,40 +77,18 @@ fun AnimeWatchScreen(
         onBackPress()
     }
 
-    LaunchedEffect(isPipMode, playerState.isPlaying) {
-        if (isPipMode) {
-            val actions = buildPipActions(activityAsActivity, playerState.isPlaying)
-            activityAsActivity.setPictureInPictureParams(
-                PictureInPictureParams.Builder()
-                    .setActions(actions)
-                    .build()
-            )
-        }
-    }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            activityAsActivity.setPictureInPictureParams(
-                PictureInPictureParams.Builder().build()
-            )
-        }
-    }
-
     LaunchedEffect(Unit) {
         scope.launch {
-            viewModel.setInitialState(malId, episodeId)
+            onAction(WatchAction.SetInitialState(malId, episodeId))
         }
     }
 
-    LaunchedEffect(episodeDetailComplement) {
-        if (episodeDetailComplement is Resource.Success) {
-            isFavorite.value = episodeDetailComplement.data?.isFavorite == true
-        }
-        if (episodeDetailComplement is Resource.Error) {
+    LaunchedEffect(watchState.episodeDetailComplement) {
+        if (watchState.episodeDetailComplement is Resource.Error) {
             snackbarHostState.showSnackbar(
                 "Failed to fetch episode sources, returning to the previous episode. Check your internet connection or try again later after 1 hour."
             )
-            viewModel.handleSelectedEpisodeServer(episodeSourcesQuery)
+            onAction(WatchAction.HandleSelectedEpisodeServer(watchState.episodeSourcesQuery))
         }
     }
 
@@ -148,8 +102,8 @@ fun AnimeWatchScreen(
         }
     }
 
-    LaunchedEffect(errorMessage) {
-        errorMessage?.let { message ->
+    LaunchedEffect(watchState.errorMessage) {
+        watchState.errorMessage?.let { message ->
             scope.launch {
                 snackbarHostState.showSnackbar(
                     message = message,
@@ -159,29 +113,37 @@ fun AnimeWatchScreen(
         }
     }
 
+    LaunchedEffect(isScreenOn) {
+        onAction(WatchAction.SetScreenOn(isScreenOn))
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            if (!isPipMode && !isFullscreen) AnimeWatchTopBar(
-                animeDetail?.title,
-                isFavorite.value,
-                mainState.isLandscape,
-                mainState.networkStatus,
-                selectedContentIndex,
-                { selectedContentIndex = it },
-                episodeDetailComplement,
-                { onBackPress() },
-                {
-                    isFavorite.value = it.isFavorite
-                    viewModel.updateEpisodeDetailComplement(it)
+            if (!playerUiState.isPipMode && !playerUiState.isFullscreen) AnimeWatchTopBar(
+                title = watchState.animeDetail?.title,
+                isFavorite = watchState.isFavorite,
+                isLandscape = mainState.isLandscape,
+                networkStatus = mainState.networkStatus,
+                selectedContentIndex = watchState.selectedContentIndex,
+                onContentIndexChange = { onAction(WatchAction.SetSelectedContentIndex(it)) },
+                episodeDetailComplement = watchState.episodeDetailComplement,
+                onHandleBackPress = onBackPress,
+                onFavoriteToggle = { updatedComplement ->
+                    onAction(WatchAction.SetFavorite(updatedComplement.isFavorite))
                 }
             )
         }
     ) { paddingValues ->
         PullToRefreshBox(
-            isRefreshing = isRefreshing,
+            isRefreshing = watchState.isRefreshing,
             onRefresh = {
-                viewModel.handleSelectedEpisodeServer(episodeSourcesQuery, isRefresh = true)
+                onAction(
+                    WatchAction.HandleSelectedEpisodeServer(
+                        watchState.episodeSourcesQuery,
+                        isRefresh = true
+                    )
+                )
             },
             modifier = Modifier
                 .fillMaxSize()
@@ -189,7 +151,7 @@ fun AnimeWatchScreen(
             state = state,
             indicator = {
                 PullToRefreshDefaults.Indicator(
-                    isRefreshing = isRefreshing,
+                    isRefreshing = watchState.isRefreshing,
                     containerColor = MaterialTheme.colorScheme.primary,
                     color = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.align(Alignment.TopCenter),
@@ -198,7 +160,7 @@ fun AnimeWatchScreen(
             }
         ) {
             val videoSize = if (mainState.isLandscape) Modifier.fillMaxSize()
-            else if (!isPipMode && !isFullscreen) Modifier.height(250.dp)
+            else if (!playerUiState.isPipMode && !playerUiState.isFullscreen) Modifier.height(250.dp)
             else Modifier.fillMaxSize()
 
             Column(modifier = Modifier.fillMaxSize()) {
@@ -206,38 +168,44 @@ fun AnimeWatchScreen(
                     .then(if (mainState.isLandscape) Modifier.weight(0.5f) else Modifier.fillMaxWidth())
                     .then(videoSize)
                 AnimeWatchContent(
-                    animeDetail = animeDetail,
-                    isFavorite = isFavorite.value,
-                    updateStoredWatchState = { episodeDetailComplement, seekPosition, duration, screenshot ->
-                        viewModel.updateLastEpisodeWatchedIdAnimeDetailComplement(
-                            episodeDetailComplement.id
-                        )
-                        val updatedEpisodeDetailComplement = episodeDetailComplement.copy(
-                            screenshot = screenshot,
-                            isFavorite = isFavorite.value,
-                            lastTimestamp = seekPosition,
-                            duration = duration,
-                            lastWatched = LocalDateTime.now()
-                                .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-                        )
-                        viewModel.updateEpisodeDetailComplement(updatedEpisodeDetailComplement)
+                    watchState = watchState,
+                    playerUiState = playerUiState,
+                    updateStoredWatchState = { position, duration, screenshot ->
+                        val updatedComplement =
+                            (watchState.episodeDetailComplement as? Resource.Success)?.data?.copy(
+                                isFavorite = watchState.isFavorite,
+                                lastTimestamp = position,
+                                duration = duration,
+                                screenshot = screenshot,
+                                lastWatched = LocalDateTime.now()
+                                    .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                            )
+                        updatedComplement?.let {
+                            onAction(WatchAction.UpdateEpisodeDetailComplement(it))
+                            onAction(WatchAction.UpdateLastEpisodeWatchedId(it.id))
+                        }
                     },
-                    getCachedEpisodeDetailComplement = viewModel::getCachedEpisodeDetailComplement,
-                    episodes = animeDetailComplement?.episodes,
-                    episodeDetailComplement = episodeDetailComplement,
-                    episodeSourcesQuery = episodeSourcesQuery,
+                    onLoadEpisodeDetailComplement = {
+                        onAction(
+                            WatchAction.LoadEpisodeDetailComplement(
+                                it
+                            )
+                        )
+                    },
                     isConnected = mainState.isConnected,
                     isLandscape = mainState.isLandscape,
-                    isPipMode = isPipMode,
-                    isFullscreen = isFullscreen,
                     scrollState = scrollState,
-                    isScreenOn = isScreenOn,
                     onEnterPipMode = onEnterPipMode,
-                    onFullscreenChange = { isFullscreen = it },
-                    errorMessage = errorMessage,
-                    onPlayerError = { errorMessage = it },
-                    handleSelectedEpisodeServer = viewModel::handleSelectedEpisodeServer,
-                    selectedContentIndex = selectedContentIndex,
+                    onFullscreenChange = { onAction(WatchAction.SetFullscreen(it)) },
+                    onPlayerError = { onAction(WatchAction.SetErrorMessage(it)) },
+                    handleSelectedEpisodeServer = { episodeSourcesQuery, isRefresh ->
+                        onAction(
+                            WatchAction.HandleSelectedEpisodeServer(
+                                episodeSourcesQuery = episodeSourcesQuery,
+                                isRefresh = isRefresh
+                            )
+                        )
+                    },
                     modifier = videoPlayerModifier,
                     videoSize = videoSize
                 )
