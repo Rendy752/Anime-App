@@ -191,6 +191,7 @@ fun AnimeSearchScreen(
                     ResultsSection(
                         modifier = Modifier.weight(0.5f),
                         navController = navController,
+                        query = queryState.query,
                         animeSearchResults = animeSearchResults,
                         selectedGenres = selectedGenres,
                         genres = genres,
@@ -228,6 +229,7 @@ fun AnimeSearchScreen(
                     ResultsSection(
                         modifier = Modifier.weight(1f),
                         navController = navController,
+                        query = queryState.query,
                         animeSearchResults = animeSearchResults,
                         selectedGenres = selectedGenres,
                         genres = genres,

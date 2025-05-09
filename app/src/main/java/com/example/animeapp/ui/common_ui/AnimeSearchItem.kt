@@ -35,6 +35,7 @@ import com.example.animeapp.utils.basicContainer
 fun AnimeSearchItem(
     modifier: Modifier = Modifier,
     animeDetail: AnimeDetail? = animeDetailPlaceholder,
+    query: String = "",
     selectedGenres: List<Genre> = emptyList(),
     errorTitle: String? = null,
     onGenreClick: ((CommonIdentity) -> Unit)? = null,
@@ -73,10 +74,10 @@ fun AnimeSearchItem(
                     .weight(1f)
                     .padding(end = 16.dp),
             ) {
+                val title = if (errorTitle.isNullOrEmpty()) animeDetail?.title ?: "Unknown Title" else errorTitle
                 Text(
                     modifier = Modifier.fillMaxWidth(),
-                    text = if (errorTitle.isNullOrEmpty()) animeDetail?.title
-                        ?: "Unknown Title" else errorTitle,
+                    text = highlightText(title, query),
                     style = MaterialTheme.typography.titleLarge,
                     fontSize = 14.sp,
                     maxLines = 2,

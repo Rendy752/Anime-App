@@ -41,6 +41,8 @@ import com.example.animeapp.ui.theme.ColorStyle
 import com.example.animeapp.ui.theme.ContrastMode
 import com.example.animeapp.utils.ColorUtils
 import com.example.animeapp.utils.Resource
+import java.text.SimpleDateFormat
+import java.util.Date
 
 @Composable
 fun ColorStyleCard(
@@ -97,7 +99,7 @@ fun ColorStyleCard(
                     )
 
                     Column(
-                        modifier = Modifier.widthIn(max = 400.dp),
+                        modifier = Modifier.widthIn(max = 300.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
@@ -112,6 +114,7 @@ fun ColorStyleCard(
                                 name = animeDetailSample.data?.title ?: episodePlaceholder.name
                             ),
                             episodeDetailComplement = episodeDetailComplementPlaceholder.copy(
+                                lastWatched = SimpleDateFormat.getDateInstance().format(Date()),
                                 lastTimestamp = 260_000L,
                                 duration = 300_000L
                             ),
@@ -119,7 +122,7 @@ fun ColorStyleCard(
                                 if (it.length > 3) it.take(3) else it
                             },
                             navBackStackEntry = navBackStackEntry,
-                            titleMaxLines = 2
+                            titleMaxLines = 3
                         )
 
                         ContinueWatchingAnime(

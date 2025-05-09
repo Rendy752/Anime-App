@@ -22,6 +22,7 @@ import com.example.animeapp.utils.Resource
 fun ResultsSection(
     modifier: Modifier = Modifier,
     navController: NavController,
+    query: String,
     animeSearchResults: Resource<AnimeSearchResponse>,
     selectedGenres: List<Genre>,
     genres: Resource<GenresResponse>,
@@ -53,6 +54,7 @@ fun ResultsSection(
                         items(animeSearchResults.data.data) { animeDetail ->
                             AnimeSearchItem(
                                 animeDetail = animeDetail,
+                                query = query,
                                 selectedGenres = selectedGenres,
                                 onGenreClick = { genre ->
                                     val genre =

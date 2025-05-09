@@ -1,6 +1,7 @@
 package com.example.animeapp.ui.common_ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -21,8 +22,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -33,7 +32,6 @@ import androidx.navigation.NavBackStackEntry
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
-import com.example.animeapp.models.animeDetailComplementPlaceholder
 import com.example.animeapp.models.animeDetailPlaceholder
 import com.example.animeapp.models.episodeDetailComplementPlaceholder
 import com.example.animeapp.models.episodePlaceholder
@@ -41,15 +39,14 @@ import com.example.animeapp.ui.animeDetail.DetailAction
 import com.example.animeapp.utils.WatchUtils.getEpisodeBackgroundColor
 import com.example.animeapp.utils.basicContainer
 
-@Preview
 @Composable
 fun EpisodeDetailItem(
     modifier: Modifier = Modifier,
     animeDetail: AnimeDetail = animeDetailPlaceholder,
-    lastEpisodeWatchedId: String? = animeDetailComplementPlaceholder.lastEpisodeWatchedId,
+    lastEpisodeWatchedId: String? = null,
     episode: Episode = episodePlaceholder,
     episodeDetailComplement: EpisodeDetailComplement? = episodeDetailComplementPlaceholder,
-    query: String = "a",
+    query: String = "",
     onAction: (DetailAction) -> Unit = {},
     onClick: (String) -> Unit = {},
     navBackStackEntry: NavBackStackEntry? = null,
@@ -59,10 +56,7 @@ fun EpisodeDetailItem(
         ?: return
 
     LaunchedEffect(episode.episodeId, lifecycleState) {
-        if (episodeDetailComplement == null || lifecycleState.isAtLeast(
-                Lifecycle.State.RESUMED
-            )
-        ) {
+        if (episodeDetailComplement == null || lifecycleState.isAtLeast(Lifecycle.State.RESUMED)) {
             onAction(DetailAction.LoadEpisodeDetailComplement(episode.episodeId))
         }
     }
@@ -75,7 +69,7 @@ fun EpisodeDetailItem(
         }
     }
 
-    Column(
+    Box(
         modifier = modifier
             .basicContainer(
                 onItemClick = { onClick(episode.episodeId) },
@@ -98,7 +92,6 @@ fun EpisodeDetailItem(
         ) {
             ScreenshotDisplay(
                 modifier = Modifier
-                    .width(120.dp)
                     .fillMaxHeight()
                     .weight(0.4f),
                 imageUrl = animeDetail.images.webp.large_image_url,
@@ -108,8 +101,7 @@ fun EpisodeDetailItem(
             Column(
                 modifier = Modifier
                     .weight(0.6f)
-                    .fillMaxHeight()
-                    .padding(vertical = 8.dp),
+                    .fillMaxHeight(),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
@@ -127,6 +119,7 @@ fun EpisodeDetailItem(
                 ) {
                     Text(
                         text = "Ep. ${episode.episodeNo}",
+                        fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -161,6 +154,7 @@ fun EpisodeDetailItem(
             LinearProgressIndicator(
                 progress = { it },
                 modifier = Modifier
+                    .align(Alignment.BottomCenter)
                     .fillMaxWidth()
                     .height(4.dp)
                     .clip(RoundedCornerShape(bottomStart = 8.dp, bottomEnd = 8.dp)),
@@ -171,29 +165,10 @@ fun EpisodeDetailItem(
     }
 }
 
-@Composable
-fun highlightText(text: String, query: String): AnnotatedString {
-    val annotatedString = AnnotatedString.Builder(text)
-    if (query.isNotBlank()) {
-        val startIndex = text.indexOf(query, ignoreCase = true)
-        if (startIndex != -1) {
-            annotatedString.addStyle(
-                style = SpanStyle(
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.tertiary
-                ),
-                start = startIndex,
-                end = startIndex + query.length
-            )
-        }
-    }
-    return annotatedString.toAnnotatedString()
-}
-
 @Preview
 @Composable
 fun EpisodeDetailItemSkeleton(modifier: Modifier = Modifier) {
-    Column(
+    Box(
         modifier = modifier
             .basicContainer(
                 roundedCornerShape = RoundedCornerShape(8.dp),
@@ -213,7 +188,6 @@ fun EpisodeDetailItemSkeleton(modifier: Modifier = Modifier) {
             SkeletonBox(
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
-                    .width(120.dp)
                     .aspectRatio(16f / 9f)
                     .weight(0.4f)
             )
@@ -221,8 +195,7 @@ fun EpisodeDetailItemSkeleton(modifier: Modifier = Modifier) {
             Column(
                 modifier = Modifier
                     .weight(0.6f)
-                    .fillMaxHeight()
-                    .padding(vertical = 8.dp),
+                    .fillMaxHeight(),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 SkeletonBox(
@@ -252,6 +225,7 @@ fun EpisodeDetailItemSkeleton(modifier: Modifier = Modifier) {
 
         SkeletonBox(
             modifier = Modifier
+                .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .height(4.dp)
                 .clip(RoundedCornerShape(bottomStart = 8.dp, bottomEnd = 8.dp))
