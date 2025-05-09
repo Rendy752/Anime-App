@@ -28,7 +28,6 @@ data class WatchState(
     val isFavorite: Boolean = false,
     val errorMessage: String? = null,
     val selectedContentIndex: Int = 0,
-    val isScreenOn: Boolean = true
 )
 
 data class PlayerUiState(
@@ -65,7 +64,6 @@ sealed class WatchAction {
     data class SetSelectedContentIndex(val index: Int) : WatchAction()
     data class SetErrorMessage(val message: String?) : WatchAction()
     data class SetFavorite(val isFavorite: Boolean, val updateComplement: Boolean = true) : WatchAction()
-    data class SetScreenOn(val isScreenOn: Boolean) : WatchAction()
 }
 
 @HiltViewModel
@@ -107,7 +105,6 @@ class AnimeWatchViewModel @Inject constructor(
                     updateFavoriteInComplement(action.isFavorite)
                 }
             }
-            is WatchAction.SetScreenOn -> _watchState.update { it.copy(isScreenOn = action.isScreenOn) }
         }
     }
 
@@ -120,7 +117,7 @@ class AnimeWatchViewModel @Inject constructor(
 
             animeDetailComplement?.let { complement ->
                 val defaultEpisode = if (complement.lastEpisodeWatchedId != null) {
-                    animeEpisodeDetailRepository.getCachedEpisodeDetailComplement(complement.lastEpisodeWatchedId)
+                    getCachedEpisodeDetailComplement(complement.lastEpisodeWatchedId)
                 } else {
                     animeEpisodeDetailRepository.getCachedDefaultEpisodeDetailComplementByMalId(malId)
                 }
@@ -308,7 +305,7 @@ class AnimeWatchViewModel @Inject constructor(
                 episodeDetailComplements = it.episodeDetailComplements + (episodeId to Resource.Loading())
             )
         }
-        val cachedComplement = animeEpisodeDetailRepository.getCachedEpisodeDetailComplement(episodeId)
+        val cachedComplement = getCachedEpisodeDetailComplement(episodeId)
         if (cachedComplement != null) {
             _watchState.update {
                 it.copy(
@@ -386,9 +383,8 @@ class AnimeWatchViewModel @Inject constructor(
         }
     }
 
-    private fun getCachedEpisodeDetailComplement(episodeId: String): EpisodeDetailComplement? {
-        val complementResource = _watchState.value.episodeDetailComplements[episodeId]
-        return if (complementResource is Resource.Success) complementResource.data else null
+    private suspend fun getCachedEpisodeDetailComplement(episodeId: String): EpisodeDetailComplement? {
+        return animeEpisodeDetailRepository.getCachedEpisodeDetailComplement(episodeId)
     }
 
     private fun restoreDefaultValues(episodeDetailComplement: EpisodeDetailComplement?) {

@@ -113,21 +113,13 @@ fun AnimeWatchScreen(
         }
     }
 
-    LaunchedEffect(isScreenOn) {
-        onAction(WatchAction.SetScreenOn(isScreenOn))
-    }
-
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             if (!playerUiState.isPipMode && !playerUiState.isFullscreen) AnimeWatchTopBar(
-                title = watchState.animeDetail?.title,
-                isFavorite = watchState.isFavorite,
-                isLandscape = mainState.isLandscape,
-                networkStatus = mainState.networkStatus,
-                selectedContentIndex = watchState.selectedContentIndex,
+                watchState = watchState,
+                mainState = mainState,
                 onContentIndexChange = { onAction(WatchAction.SetSelectedContentIndex(it)) },
-                episodeDetailComplement = watchState.episodeDetailComplement,
                 onHandleBackPress = onBackPress,
                 onFavoriteToggle = { updatedComplement ->
                     onAction(WatchAction.SetFavorite(updatedComplement.isFavorite))
@@ -169,7 +161,9 @@ fun AnimeWatchScreen(
                     .then(videoSize)
                 AnimeWatchContent(
                     watchState = watchState,
+                    isScreenOn = isScreenOn,
                     playerUiState = playerUiState,
+                    mainState = mainState,
                     updateStoredWatchState = { position, duration, screenshot ->
                         val updatedComplement =
                             (watchState.episodeDetailComplement as? Resource.Success)?.data?.copy(
@@ -186,14 +180,8 @@ fun AnimeWatchScreen(
                         }
                     },
                     onLoadEpisodeDetailComplement = {
-                        onAction(
-                            WatchAction.LoadEpisodeDetailComplement(
-                                it
-                            )
-                        )
+                        onAction(WatchAction.LoadEpisodeDetailComplement(it))
                     },
-                    isConnected = mainState.isConnected,
-                    isLandscape = mainState.isLandscape,
                     scrollState = scrollState,
                     onEnterPipMode = onEnterPipMode,
                     onFullscreenChange = { onAction(WatchAction.SetFullscreen(it)) },

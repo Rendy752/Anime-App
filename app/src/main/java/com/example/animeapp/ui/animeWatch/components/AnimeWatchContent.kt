@@ -21,16 +21,17 @@ import com.example.animeapp.ui.animeWatch.infoContent.InfoContentSection
 import com.example.animeapp.ui.animeWatch.videoPlayer.VideoPlayerSection
 import com.example.animeapp.ui.animeWatch.watchContent.WatchContentSection
 import com.example.animeapp.ui.common_ui.SkeletonBox
+import com.example.animeapp.ui.main.MainState
 import com.example.animeapp.utils.Resource
 
 @Composable
 fun AnimeWatchContent(
     watchState: WatchState,
+    isScreenOn: Boolean,
     playerUiState: PlayerUiState,
+    mainState: MainState,
     updateStoredWatchState: (Long?, Long?, String?) -> Unit,
     onLoadEpisodeDetailComplement: (String) -> Unit,
-    isConnected: Boolean,
-    isLandscape: Boolean,
     scrollState: LazyListState,
     onEnterPipMode: () -> Unit,
     onFullscreenChange: (Boolean) -> Unit,
@@ -42,10 +43,11 @@ fun AnimeWatchContent(
     watchState.animeDetailComplement?.episodes?.let { episodeList ->
         watchState.episodeSourcesQuery.let { query ->
             Row(modifier = Modifier.fillMaxWidth()) {
-                if (watchState.episodeDetailComplement is Resource.Success && isConnected) {
+                if (watchState.episodeDetailComplement is Resource.Success && mainState.isConnected) {
                     VideoPlayerSection(
                         updateStoredWatchState = updateStoredWatchState,
-                        episodeDetailComplement = watchState.episodeDetailComplement.data,
+                        watchState = watchState,
+                        isScreenOn = isScreenOn,
                         episodes = episodeList,
                         episodeSourcesQuery = query,
                         handleSelectedEpisodeServer = { handleSelectedEpisodeServer(it, true) },
@@ -53,9 +55,7 @@ fun AnimeWatchContent(
                         onEnterPipMode = onEnterPipMode,
                         isFullscreen = playerUiState.isFullscreen,
                         onFullscreenChange = onFullscreenChange,
-                        isScreenOn = watchState.isScreenOn,
-                        isLandscape = isLandscape,
-                        errorMessage = watchState.errorMessage,
+                        isLandscape = mainState.isLandscape,
                         onPlayerError = onPlayerError,
                         modifier = modifier,
                         videoSize = videoSize
@@ -66,7 +66,7 @@ fun AnimeWatchContent(
                     }
                 }
 
-                if (isLandscape && !playerUiState.isPipMode && !playerUiState.isFullscreen) {
+                if (mainState.isLandscape && !playerUiState.isPipMode && !playerUiState.isFullscreen) {
                     LazyColumn(
                         modifier = Modifier
                             .padding(8.dp)
@@ -97,7 +97,7 @@ fun AnimeWatchContent(
                     }
                 }
             }
-            if (!isLandscape && !playerUiState.isPipMode && !playerUiState.isFullscreen) {
+            if (!mainState.isLandscape && !playerUiState.isPipMode && !playerUiState.isFullscreen) {
                 LazyColumn(
                     modifier = Modifier
                         .padding(8.dp)

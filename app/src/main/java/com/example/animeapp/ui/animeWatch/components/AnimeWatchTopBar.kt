@@ -25,8 +25,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.EpisodeDetailComplement
-import com.example.animeapp.models.NetworkStatus
+import com.example.animeapp.ui.animeWatch.WatchState
 import com.example.animeapp.ui.common_ui.SkeletonBox
+import com.example.animeapp.ui.main.MainState
 import com.example.animeapp.ui.theme.favoriteEpisode
 import com.example.animeapp.utils.Resource
 import kotlinx.coroutines.Job
@@ -36,13 +37,9 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnimeWatchTopBar(
-    title: String?,
-    isFavorite: Boolean,
-    isLandscape: Boolean,
-    networkStatus: NetworkStatus?,
-    selectedContentIndex: Int,
+    watchState: WatchState,
+    mainState: MainState,
     onContentIndexChange: (Int) -> Unit,
-    episodeDetailComplement: Resource<EpisodeDetailComplement>,
     onHandleBackPress: () -> Unit,
     onFavoriteToggle: (EpisodeDetailComplement) -> Unit
 ) {
@@ -64,8 +61,8 @@ fun AnimeWatchTopBar(
                 }
             },
             title = {
-                if (title != null) Text(
-                    title,
+                if (watchState.animeDetail?.title != null) Text(
+                    watchState.animeDetail.title,
                     modifier = Modifier.padding(end = 8.dp),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -81,7 +78,7 @@ fun AnimeWatchTopBar(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    networkStatus?.let {
+                    mainState.networkStatus.let {
                         Row {
                             Text(
                                 text = it.label,
@@ -95,21 +92,25 @@ fun AnimeWatchTopBar(
                             )
                         }
                     }
-                    if (isLandscape) ContentSegmentedButton(
-                        selectedIndex = selectedContentIndex,
+                    if (mainState.isLandscape) ContentSegmentedButton(
+                        selectedIndex = watchState.selectedContentIndex,
                         onSelectedIndexChange = onContentIndexChange
                     )
-                    if (episodeDetailComplement is Resource.Success) {
+                    if (watchState.episodeDetailComplement is Resource.Success) {
                         IconButton(onClick = {
                             debounceJob.value?.cancel()
                             debounceJob.value = scope.launch {
                                 delay(300)
-                                onFavoriteToggle(episodeDetailComplement.data.copy(isFavorite = !isFavorite))
+                                onFavoriteToggle(
+                                    watchState.episodeDetailComplement.data.copy(
+                                        isFavorite = !watchState.isFavorite
+                                    )
+                                )
                             }
                         }) {
                             Icon(
-                                imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                                contentDescription = if (isFavorite) "Remove from favorites" else "Add to favorites",
+                                imageVector = if (watchState.isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                                contentDescription = if (watchState.isFavorite) "Remove from favorites" else "Add to favorites",
                                 tint = favoriteEpisode
                             )
                         }
