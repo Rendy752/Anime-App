@@ -26,8 +26,9 @@ import androidx.navigation.NavController
 import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.ui.common_ui.SkeletonBox
+import com.example.animeapp.ui.main.navigation.NavRoute
+import com.example.animeapp.ui.main.navigation.navigateTo
 import com.example.animeapp.ui.theme.favoriteEpisode
-import com.example.animeapp.utils.Navigation.navigateToAnimeWatch
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ShareUtils
 import kotlinx.coroutines.Job
@@ -118,10 +119,12 @@ fun AnimeDetailTopBar(
                         animeDetailComplement.data.let { animeDetailComplement ->
                             animeDetailComplement.episodes?.let { episodes ->
                                 IconButton(onClick = {
-                                    navController.navigateToAnimeWatch(
-                                        malId = animeDetailData.mal_id,
-                                        episodeId = animeDetailComplement.lastEpisodeWatchedId
-                                            ?: defaultEpisodeId,
+                                    navController.navigateTo(
+                                        NavRoute.AnimeWatch.fromParams(
+                                            malId = animeDetailData.mal_id,
+                                            episodeId = animeDetailComplement.lastEpisodeWatchedId
+                                                ?: defaultEpisodeId
+                                        )
                                     )
                                 }) {
                                     Icon(

@@ -18,8 +18,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import com.example.animeapp.models.Genre
-import com.example.animeapp.models.Producer
 import com.example.animeapp.ui.animeSearch.bottomSheet.FilterBottomSheet
 import com.example.animeapp.ui.animeSearch.bottomSheet.GenresBottomSheet
 import com.example.animeapp.ui.animeSearch.bottomSheet.ProducersBottomSheet
@@ -29,7 +27,6 @@ import com.example.animeapp.ui.animeSearch.searchField.SearchFieldSection
 import com.example.animeapp.ui.common_ui.LimitAndPaginationQueryState
 import com.example.animeapp.ui.common_ui.LimitAndPaginationSection
 import com.example.animeapp.ui.main.MainState
-import com.example.animeapp.ui.main.components.BottomScreen
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import com.example.animeapp.utils.Resource
@@ -41,8 +38,8 @@ import com.example.animeapp.utils.Resource
 fun AnimeSearchScreen(
     navController: NavHostController = rememberNavController(),
     mainState: MainState = MainState(),
-    genre: Genre? = null,
-    producer: Producer? = null,
+    genreId: Int? = null,
+    producerId: Int? = null,
     searchState: SearchState = SearchState(),
     filterSelectionState: FilterSelectionState = FilterSelectionState(),
     onAction: (SearchAction) -> Unit = {}
@@ -53,45 +50,28 @@ fun AnimeSearchScreen(
     var isProducersBottomSheetShow by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    fun handleInitialFetch() {
-        if (genre != null) {
-            onAction(SearchAction.ApplyGenreFilters)
-        } else if (producer != null) {
-            onAction(SearchAction.ApplyProducerFilters)
-        } else if (searchState.animeSearchResults.data == null) {
-            onAction(SearchAction.SearchAnime)
-        }
-    }
-
     LaunchedEffect(mainState.isConnected) {
         if (!mainState.isConnected) return@LaunchedEffect
 
         if (searchState.genres is Resource.Error) onAction(SearchAction.FetchGenres)
         if (searchState.producers is Resource.Error) onAction(SearchAction.FetchProducers)
         if (searchState.animeSearchResults is Resource.Error) {
-            handleInitialFetch()
+            onAction(SearchAction.HandleInitialFetch(genreId = genreId, producerId = producerId))
         }
     }
 
     LaunchedEffect(Unit) {
-        if (searchState.genres !is Resource.Success) onAction(SearchAction.FetchGenres)
-        if (searchState.producers !is Resource.Success) onAction(SearchAction.FetchProducers)
-        if (genre != null) {
-            onAction(SearchAction.SetSelectedGenre(genre))
-        } else if (producer != null) {
-            onAction(SearchAction.SetSelectedProducer(producer))
-        }
-        handleInitialFetch()
+        onAction(SearchAction.HandleInitialFetch(genreId, producerId))
     }
 
     Scaffold(
         topBar = {
-            if (!mainState.isLandscape && (genre != null || producer != null)) {
+            if (!mainState.isLandscape && (genreId != null || producerId != null)) {
                 Column {
                     TopAppBar(
                         title = {
                             Text(
-                                text = BottomScreen.Search.label,
+                                text = "Search",
                                 modifier = Modifier.padding(end = 8.dp),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
@@ -127,7 +107,7 @@ fun AnimeSearchScreen(
                     modifier = Modifier.align(Alignment.TopCenter),
                     state = state
                 )
-            },
+            }
         ) {
             if (mainState.isLandscape) {
                 Row(modifier = Modifier.fillMaxSize()) {
@@ -150,10 +130,14 @@ fun AnimeSearchScreen(
                         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                         GenreProducerFilterFieldSection(
                             selectedGenres = filterSelectionState.selectedGenres,
-                            setSelectedGenre = { genre -> onAction(SearchAction.SetSelectedGenre(genre)) },
+                            setSelectedGenre = { genre ->
+                                onAction(SearchAction.SetSelectedGenre(genre))
+                            },
                             applyGenreFilters = { onAction(SearchAction.ApplyGenreFilters) },
                             selectedProducers = filterSelectionState.selectedProducers,
-                            setSelectedProducer = { producer -> onAction(SearchAction.SetSelectedProducer(producer)) },
+                            setSelectedProducer = { producer ->
+                                onAction(SearchAction.SetSelectedProducer(producer))
+                            },
                             applyProducerFilters = { onAction(SearchAction.ApplyProducerFilters) },
                             isGenresBottomSheetShow = isGenresBottomSheetShow,
                             isProducersBottomSheetShow = isProducersBottomSheetShow,
@@ -171,7 +155,10 @@ fun AnimeSearchScreen(
                             onQueryChanged = { updatedQuery ->
                                 onAction(
                                     SearchAction.ApplyFilters(
-                                        searchState.queryState.copy(page = updatedQuery.page, limit = updatedQuery.limit)
+                                        searchState.queryState.copy(
+                                            page = updatedQuery.page,
+                                            limit = updatedQuery.limit
+                                        )
                                     )
                                 )
                             },
@@ -208,10 +195,14 @@ fun AnimeSearchScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                     GenreProducerFilterFieldSection(
                         selectedGenres = filterSelectionState.selectedGenres,
-                        setSelectedGenre = { genre -> onAction(SearchAction.SetSelectedGenre(genre)) },
+                        setSelectedGenre = { genre ->
+                            onAction(SearchAction.SetSelectedGenre(genre))
+                        },
                         applyGenreFilters = { onAction(SearchAction.ApplyGenreFilters) },
                         selectedProducers = filterSelectionState.selectedProducers,
-                        setSelectedProducer = { producer -> onAction(SearchAction.SetSelectedProducer(producer)) },
+                        setSelectedProducer = { producer ->
+                            onAction(SearchAction.SetSelectedProducer(producer))
+                        },
                         applyProducerFilters = { onAction(SearchAction.ApplyProducerFilters) },
                         isGenresBottomSheetShow = isGenresBottomSheetShow,
                         isProducersBottomSheetShow = isProducersBottomSheetShow,
@@ -244,7 +235,10 @@ fun AnimeSearchScreen(
                         onQueryChanged = { updatedQuery ->
                             onAction(
                                 SearchAction.ApplyFilters(
-                                    searchState.queryState.copy(page = updatedQuery.page, limit = updatedQuery.limit)
+                                    searchState.queryState.copy(
+                                        page = updatedQuery.page,
+                                        limit = updatedQuery.limit
+                                    )
                                 )
                             )
                         }
@@ -303,7 +297,9 @@ fun AnimeSearchScreen(
                             fetchGenres = { onAction(SearchAction.FetchGenres) },
                             genres = searchState.genres,
                             selectedGenres = filterSelectionState.selectedGenres,
-                            setSelectedGenre = { genre -> onAction(SearchAction.SetSelectedGenre(genre)) },
+                            setSelectedGenre = { genre ->
+                                onAction(SearchAction.SetSelectedGenre(genre))
+                            },
                             resetGenreSelection = { onAction(SearchAction.ResetGenreSelection) },
                             applyGenreFilters = { onAction(SearchAction.ApplyGenreFilters) },
                             onDismiss = { isGenresBottomSheetShow = false }
@@ -333,9 +329,13 @@ fun AnimeSearchScreen(
                             selectedProducers = filterSelectionState.selectedProducers,
                             producersQueryState = searchState.producersQueryState,
                             applyProducerQueryStateFilters = { updatedQueryState ->
-                                onAction(SearchAction.ApplyProducerQueryStateFilters(updatedQueryState))
+                                onAction(
+                                    SearchAction.ApplyProducerQueryStateFilters(updatedQueryState)
+                                )
                             },
-                            setSelectedProducer = { producer -> onAction(SearchAction.SetSelectedProducer(producer)) },
+                            setSelectedProducer = { producer ->
+                                onAction(SearchAction.SetSelectedProducer(producer))
+                            },
                             applyProducerFilters = { onAction(SearchAction.ApplyProducerFilters) },
                             resetProducerSelection = { onAction(SearchAction.ResetProducerSelection) },
                             onDismiss = { isProducersBottomSheetShow = false }

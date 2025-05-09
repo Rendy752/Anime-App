@@ -38,9 +38,8 @@ import com.example.animeapp.ui.common_ui.LimitAndPaginationQueryState
 import com.example.animeapp.ui.common_ui.LimitAndPaginationSection
 import com.example.animeapp.ui.common_ui.MessageDisplay
 import com.example.animeapp.ui.main.MainState
-import com.example.animeapp.ui.main.components.BottomScreen
-import com.example.animeapp.utils.Navigation.navigateToAnimeDetail
-import com.example.animeapp.utils.Navigation.navigateToAnimeWatch
+import com.example.animeapp.ui.main.navigation.NavRoute
+import com.example.animeapp.ui.main.navigation.navigateTo
 import com.example.animeapp.utils.Resource
 import kotlinx.coroutines.delay
 
@@ -57,13 +56,15 @@ fun AnimeHomeScreen(
     remainingTimes: Map<String, String> = emptyMap(),
     onAction: (HomeAction) -> Unit = {},
     mainState: MainState = MainState(),
-    currentRoute: String? = BottomScreen.Home.route,
+    currentRoute: String? = NavRoute.Home.route,
     navController: NavHostController = rememberNavController()
 ) {
     val pullToRefreshState = rememberPullToRefreshState()
 
     LaunchedEffect(currentRoute) {
-        if (currentRoute == BottomScreen.Home.route) onAction(HomeAction.FetchContinueWatchingEpisode)
+        if (currentRoute == NavRoute.Home.route) {
+            onAction(HomeAction.FetchContinueWatchingEpisode)
+        }
     }
 
     LaunchedEffect(homeState.isMinimized) {
@@ -75,6 +76,7 @@ fun AnimeHomeScreen(
 
     LaunchedEffect(mainState.isConnected) {
         if (!mainState.isConnected) return@LaunchedEffect
+
         if (homeState.animeSchedules is Resource.Error) onAction(HomeAction.GetAnimeSchedules)
         if (homeState.top10Anime is Resource.Error) onAction(HomeAction.GetTop10Anime)
     }
@@ -156,7 +158,7 @@ fun AnimeHomeScreen(
                                     remainingTimes = remainingTimes,
                                     isLandscape = mainState.isLandscape,
                                     onItemClick = { anime ->
-                                        navController.navigateToAnimeDetail(anime.mal_id)
+                                        navController.navigateTo(NavRoute.AnimeDetail.fromId(anime.mal_id))
                                     }
                                 )
                             }
@@ -199,9 +201,13 @@ fun AnimeHomeScreen(
                             episodeDetailComplement = continueWatchingEpisode,
                             isMinimized = homeState.isMinimized,
                             onSetMinimize = { onAction(HomeAction.SetMinimized(it)) },
-                            onTitleClick = { navController.navigateToAnimeDetail(it) },
+                            onTitleClick = { navController.navigateTo(NavRoute.AnimeDetail.fromId(it)) },
                             onEpisodeClick = { malId, episodeId ->
-                                navController.navigateToAnimeWatch(malId, episodeId)
+                                navController.navigateTo(
+                                    NavRoute.AnimeWatch.fromParams(
+                                        malId = malId, episodeId = episodeId
+                                    )
+                                )
                             }
                         )
                     }

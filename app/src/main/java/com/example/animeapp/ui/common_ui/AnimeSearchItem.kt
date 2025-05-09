@@ -24,7 +24,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.animeapp.models.AnimeDetail
-import com.example.animeapp.models.CommonIdentity
 import com.example.animeapp.models.Genre
 import com.example.animeapp.models.animeDetailPlaceholder
 import com.example.animeapp.utils.TextUtils.formatNumber
@@ -38,7 +37,7 @@ fun AnimeSearchItem(
     query: String = "",
     selectedGenres: List<Genre> = emptyList(),
     errorTitle: String? = null,
-    onGenreClick: ((CommonIdentity) -> Unit)? = null,
+    onGenreClick: ((Int) -> Unit)? = null,
     onItemClick: (() -> Unit)? = null,
 ) {
     Column(
@@ -74,7 +73,8 @@ fun AnimeSearchItem(
                     .weight(1f)
                     .padding(end = 16.dp),
             ) {
-                val title = if (errorTitle.isNullOrEmpty()) animeDetail?.title ?: "Unknown Title" else errorTitle
+                val title = if (errorTitle.isNullOrEmpty()) animeDetail?.title
+                    ?: "Unknown Title" else errorTitle
                 Text(
                     modifier = Modifier.fillMaxWidth(),
                     text = highlightText(title, query),
@@ -120,7 +120,7 @@ fun AnimeSearchItem(
                                     text = data.name,
                                     checked = isSelected,
                                     onCheckedChange = {
-                                        onGenreClick?.invoke(data)
+                                        onGenreClick?.invoke(data.mal_id)
                                     }
                                 )
                             }

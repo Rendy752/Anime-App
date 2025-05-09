@@ -1,8 +1,14 @@
 package com.example.animeapp.models
 
 import android.os.Parcelable
+import androidx.room.Entity
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
+
+@Entity(
+    tableName = "genre",
+    primaryKeys = ["mal_id"]
+)
 
 @Serializable
 @Parcelize

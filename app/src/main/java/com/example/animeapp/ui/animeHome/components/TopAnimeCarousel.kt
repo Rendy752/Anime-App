@@ -16,7 +16,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.animeapp.models.AnimeDetail
-import com.example.animeapp.utils.Navigation.navigateToAnimeDetail
+import com.example.animeapp.ui.main.navigation.NavRoute
+import com.example.animeapp.ui.main.navigation.navigateTo
 import kotlinx.coroutines.delay
 import java.util.Date
 
@@ -84,7 +85,7 @@ fun TopAnimeCarousel(
                 val animeDetail = topAnimeList[index]
                 Box(modifier = Modifier.fillMaxWidth()) {
                     TopAnimeItem(animeDetail = animeDetail, onItemClick = { malId ->
-                        navController.navigateToAnimeDetail(malId)
+                        navController.navigateTo(NavRoute.AnimeDetail.fromId(malId))
                     })
                 }
             }

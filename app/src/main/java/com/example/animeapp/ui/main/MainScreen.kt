@@ -2,7 +2,6 @@ package com.example.animeapp.ui.main
 
 import android.app.PictureInPictureParams
 import android.content.Intent
-import android.net.Uri
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.compose.LocalActivity
@@ -14,42 +13,37 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.navArgument
-import com.example.animeapp.models.CommonIdentity
 import com.example.animeapp.ui.animeDetail.AnimeDetailScreen
 import com.example.animeapp.ui.animeDetail.AnimeDetailViewModel
+import com.example.animeapp.ui.animeHome.AnimeHomeScreen
+import com.example.animeapp.ui.animeHome.AnimeHomeViewModel
 import com.example.animeapp.ui.animeRecommendations.AnimeRecommendationsScreen
+import com.example.animeapp.ui.animeRecommendations.AnimeRecommendationsViewModel
 import com.example.animeapp.ui.animeSearch.AnimeSearchScreen
 import com.example.animeapp.ui.animeSearch.AnimeSearchViewModel
 import com.example.animeapp.ui.animeWatch.AnimeWatchScreen
-import com.example.animeapp.ui.animeHome.AnimeHomeScreen
-import com.example.animeapp.ui.animeHome.AnimeHomeViewModel
-import com.example.animeapp.ui.animeRecommendations.AnimeRecommendationsViewModel
 import com.example.animeapp.ui.animeWatch.AnimeWatchViewModel
 import com.example.animeapp.ui.animeWatch.WatchAction
 import com.example.animeapp.ui.common_ui.MessageDisplay
-import com.example.animeapp.ui.main.components.BottomNavigationBar
-import com.example.animeapp.ui.main.components.BottomScreen
-import com.example.animeapp.ui.main.components.getBottomBarEnterTransition
-import com.example.animeapp.ui.main.components.getBottomBarExitTransition
+import com.example.animeapp.ui.main.navigation.BottomNavigationBar
+import com.example.animeapp.ui.main.navigation.getBottomBarEnterTransition
+import com.example.animeapp.ui.main.navigation.getBottomBarExitTransition
+import com.example.animeapp.ui.main.navigation.NavRoute
+import com.example.animeapp.ui.main.navigation.navigateTo
 import com.example.animeapp.ui.settings.SettingsScreen
 import com.example.animeapp.ui.settings.SettingsViewModel
 import com.example.animeapp.utils.HlsPlayerUtils
-import com.example.animeapp.utils.Navigation.navigateToAnimeDetail
-import com.example.animeapp.utils.Navigation.navigateToAnimeWatch
 import com.example.animeapp.utils.PipUtil.buildPipActions
-import com.google.gson.Gson
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -67,9 +61,8 @@ fun MainScreen(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute by rememberUpdatedState(navBackStackEntry?.destination?.route)
     val isConnected by rememberUpdatedState(mainState.isConnected)
-
     val isCurrentBottomScreen by remember(currentRoute) {
-        derivedStateOf { BottomScreen.entries.any { it.route == currentRoute } }
+        derivedStateOf { NavRoute.bottomRoutes.any { it.route == currentRoute } }
     }
 
     LaunchedEffect(Unit) {
@@ -84,31 +77,21 @@ fun MainScreen(
                             segments.size >= 2 && segments[0] == "detail" -> {
                                 val animeId = segments[1].toIntOrNull()
                                 if (animeId != null) {
-                                    navController.navigateToAnimeDetail(animeId)
+                                    navController.navigateTo(NavRoute.AnimeDetail.fromId(animeId))
                                 } else {
-                                    Toast.makeText(activity, "Invalid anime ID", Toast.LENGTH_SHORT)
-                                        .show()
+                                    Toast.makeText(activity, "Invalid anime ID", Toast.LENGTH_SHORT).show()
                                 }
                             }
-
                             segments.size >= 3 && segments[0] == "watch" -> {
                                 val malId = segments[1].toIntOrNull()
                                 val episodeId = segments[2]
                                 if (malId != null && episodeId.isNotEmpty()) {
-                                    navController.popBackStack(
-                                        navController.graph.startDestinationId,
-                                        inclusive = false
-                                    )
-                                    navController.navigateToAnimeWatch(malId, episodeId)
+                                    navController.popBackStack(navController.graph.startDestinationId, inclusive = false)
+                                    navController.navigateTo(NavRoute.AnimeWatch.fromParams(malId, episodeId))
                                 } else {
-                                    Toast.makeText(
-                                        activity,
-                                        "Invalid watch parameters",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                                    Toast.makeText(activity, "Invalid watch parameters", Toast.LENGTH_SHORT).show()
                                 }
                             }
-
                             else -> {
                                 Toast.makeText(activity, "Invalid URL", Toast.LENGTH_SHORT).show()
                             }
@@ -129,29 +112,29 @@ fun MainScreen(
     ) {
         NavHost(
             navController = navController,
-            startDestination = BottomScreen.Home.route,
+            startDestination = NavRoute.Home.route,
             modifier = Modifier.weight(1f),
             enterTransition = { getBottomBarEnterTransition(initialState, targetState) },
             exitTransition = { getBottomBarExitTransition(initialState, targetState) },
             popEnterTransition = { getBottomBarEnterTransition(initialState, targetState) },
             popExitTransition = { getBottomBarExitTransition(initialState, targetState) }
         ) {
-            composable(BottomScreen.Home.route) {
-                val animeHomeViewModel: AnimeHomeViewModel = hiltViewModel()
-                val homeState by animeHomeViewModel.homeState.collectAsStateWithLifecycle()
-                val carouselState by animeHomeViewModel.carouselState.collectAsStateWithLifecycle()
-                val remainingTimes by animeHomeViewModel.remainingTimes.collectAsStateWithLifecycle()
+            composable(NavRoute.Home.route) {
+                val viewModel: AnimeHomeViewModel = hiltViewModel()
+                val homeState by viewModel.homeState.collectAsStateWithLifecycle()
+                val carouselState by viewModel.carouselState.collectAsStateWithLifecycle()
+                val remainingTimes by viewModel.remainingTimes.collectAsStateWithLifecycle()
                 AnimeHomeScreen(
                     homeState = homeState,
                     carouselState = carouselState,
                     remainingTimes = remainingTimes,
-                    onAction = animeHomeViewModel::onAction,
+                    onAction = viewModel::onAction,
                     mainState = mainState,
                     currentRoute = currentRoute,
                     navController = navController
                 )
             }
-            composable(BottomScreen.Recommendations.route) {
+            composable(NavRoute.Recommendations.route) {
                 val viewModel: AnimeRecommendationsViewModel = hiltViewModel()
                 val recommendationsState by viewModel.recommendationsState.collectAsStateWithLifecycle()
                 AnimeRecommendationsScreen(
@@ -161,7 +144,7 @@ fun MainScreen(
                     onAction = viewModel::onAction
                 )
             }
-            composable(BottomScreen.Search.route) {
+            composable(NavRoute.Search.route) {
                 val viewModel: AnimeSearchViewModel = hiltViewModel()
                 val searchState by viewModel.searchState.collectAsStateWithLifecycle()
                 val filterSelectionState by viewModel.filterSelectionState.collectAsStateWithLifecycle()
@@ -174,68 +157,44 @@ fun MainScreen(
                 )
             }
             composable(
-                "${BottomScreen.Search.route}/{genreIdentity}/{producerIdentity}",
-                arguments = listOf(
-                    navArgument("genreIdentity") {
-                        type = NavType.StringType
-                        nullable = true
-                    },
-                    navArgument("producerIdentity") {
-                        type = NavType.StringType
-                        nullable = true
-                    }
-                )
-            ) {
+                route = NavRoute.SearchWithFilter.ROUTE_PATTERN,
+                arguments = NavRoute.SearchWithFilter().arguments
+            ) { backStackEntry ->
                 val viewModel: AnimeSearchViewModel = hiltViewModel()
                 val searchState by viewModel.searchState.collectAsStateWithLifecycle()
                 val filterSelectionState by viewModel.filterSelectionState.collectAsStateWithLifecycle()
-                val genreIdentityString = it.arguments?.getString("genreIdentity")
-                val producerIdentityString = it.arguments?.getString("producerIdentity")
-                val gson = Gson()
-                val genre = remember(genreIdentityString) {
-                    genreIdentityString?.let {
-                        if (it == "null") null
-                        else gson.fromJson(Uri.decode(it), CommonIdentity::class.java)
-                            .mapToGenre()
-                    }
-                }
-                val producer = remember(producerIdentityString) {
-                    producerIdentityString?.let {
-                        if (it == "null") null
-                        else gson.fromJson(Uri.decode(it), CommonIdentity::class.java)
-                            .mapToProducer()
-                    }
-                }
+                val genreId = backStackEntry.arguments?.getString("genreId")?.toIntOrNull()
+                val producerId = backStackEntry.arguments?.getString("producerId")?.toIntOrNull()
                 AnimeSearchScreen(
                     navController = navController,
                     mainState = mainState,
-                    genre = genre,
-                    producer = producer,
+                    genreId = genreId,
+                    producerId = producerId,
                     searchState = searchState,
                     filterSelectionState = filterSelectionState,
                     onAction = viewModel::onAction
                 )
             }
-            composable(BottomScreen.Settings.route) {
-                val settingsViewModel: SettingsViewModel = hiltViewModel()
-                val settingsState by settingsViewModel.state.collectAsStateWithLifecycle()
+            composable(NavRoute.Settings.route) {
+                val viewModel: SettingsViewModel = hiltViewModel()
+                val settingsState by viewModel.state.collectAsStateWithLifecycle()
                 SettingsScreen(
                     mainState = mainState,
                     mainAction = mainAction,
                     state = settingsState,
-                    action = settingsViewModel::onAction,
+                    action = viewModel::onAction,
                     navBackStackEntry = navBackStackEntry
                 )
             }
             composable(
-                "animeDetail/{id}",
-                arguments = listOf(navArgument("id") { type = NavType.IntType })
-            ) {
+                route = NavRoute.AnimeDetail.ROUTE_PATTERN,
+                arguments = NavRoute.AnimeDetail(0).arguments
+            ) { backStackEntry ->
                 val viewModel: AnimeDetailViewModel = hiltViewModel()
                 val detailState by viewModel.detailState.collectAsStateWithLifecycle()
                 val episodeFilterState by viewModel.episodeFilterState.collectAsStateWithLifecycle()
                 AnimeDetailScreen(
-                    id = it.arguments?.getInt("id") ?: 0,
+                    id = backStackEntry.arguments?.getInt("id") ?: 0,
                     navController = navController,
                     mainState = mainState,
                     detailState = detailState,
@@ -244,12 +203,9 @@ fun MainScreen(
                 )
             }
             composable(
-                "animeWatch/{malId}/{episodeId}",
-                arguments = listOf(
-                    navArgument("malId") { type = NavType.IntType },
-                    navArgument("episodeId") { type = NavType.StringType }
-                )
-            ) {
+                route = NavRoute.AnimeWatch.ROUTE_PATTERN,
+                arguments = NavRoute.AnimeWatch(0, "").arguments
+            ) { backStackEntry ->
                 val viewModel: AnimeWatchViewModel = hiltViewModel(LocalActivity.current as ViewModelStoreOwner)
                 val watchState by viewModel.watchState.collectAsStateWithLifecycle()
                 val playerUiState by viewModel.playerUiState.collectAsStateWithLifecycle()
@@ -257,7 +213,7 @@ fun MainScreen(
                 val activity = LocalActivity.current as? MainActivity
 
                 DisposableEffect(activity) {
-                    val onPictureInPictureModeChangedCallback: (Boolean) -> Unit = { isInPipMode: Boolean ->
+                    val onPictureInPictureModeChangedCallback: (Boolean) -> Unit = { isInPipMode ->
                         viewModel.onAction(WatchAction.SetPipMode(isInPipMode))
                         Log.d("MainScreen", "PiP mode changed: isInPipMode=$isInPipMode")
                         Unit
@@ -287,8 +243,8 @@ fun MainScreen(
                 }
 
                 AnimeWatchScreen(
-                    malId = it.arguments?.getInt("malId") ?: 0,
-                    episodeId = it.arguments?.getString("episodeId") ?: "",
+                    malId = backStackEntry.arguments?.getInt("malId") ?: 0,
+                    episodeId = backStackEntry.arguments?.getString("episodeId") ?: "",
                     navController = navController,
                     mainState = mainState,
                     watchState = watchState,

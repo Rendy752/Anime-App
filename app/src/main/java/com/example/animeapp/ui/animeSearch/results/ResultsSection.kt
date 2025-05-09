@@ -15,7 +15,8 @@ import com.example.animeapp.models.GenresResponse
 import com.example.animeapp.ui.common_ui.AnimeSearchItem
 import com.example.animeapp.ui.common_ui.AnimeSearchItemSkeleton
 import com.example.animeapp.ui.common_ui.MessageDisplay
-import com.example.animeapp.utils.Navigation.navigateToAnimeDetail
+import com.example.animeapp.ui.main.navigation.NavRoute
+import com.example.animeapp.ui.main.navigation.navigateTo
 import com.example.animeapp.utils.Resource
 
 @Composable
@@ -56,15 +57,13 @@ fun ResultsSection(
                                 animeDetail = animeDetail,
                                 query = query,
                                 selectedGenres = selectedGenres,
-                                onGenreClick = { genre ->
+                                onGenreClick = { genreClickedId ->
                                     val genre =
-                                        genres.data?.data?.find { it.mal_id == genre.mal_id }
-                                    genre?.let {
-                                        onGenreClick(genre)
-                                    }
+                                        genres.data?.data?.find { it.mal_id == genreClickedId }
+                                    genre?.let { onGenreClick(genre) }
                                 },
                                 onItemClick = {
-                                    navController.navigateToAnimeDetail(animeDetail.mal_id)
+                                    navController.navigateTo(NavRoute.AnimeDetail.fromId(animeDetail.mal_id))
                                 }
                             )
                         }

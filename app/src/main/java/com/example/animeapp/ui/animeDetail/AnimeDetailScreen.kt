@@ -74,22 +74,20 @@ fun AnimeDetailScreen(
                     landscapeScrollState = landscapeScrollState,
                 )
 
-                is Resource.Success -> {
-                    SuccessContent(
-                        animeDetailData = detailState.animeDetail.data.data,
-                        detailState = detailState,
-                        episodeFilterState = episodeFilterState,
-                        navController = navController,
-                        context = context,
-                        isLandscape = mainState.isLandscape,
-                        portraitScrollState = portraitScrollState,
-                        landscapeScrollState = landscapeScrollState,
-                        onAction = onAction,
-                        onAnimeIdChange = { newAnimeId ->
-                            currentAnimeIdState.intValue = newAnimeId
-                        }
-                    )
-                }
+                is Resource.Success -> SuccessContent(
+                    animeDetailData = detailState.animeDetail.data.data,
+                    detailState = detailState,
+                    episodeFilterState = episodeFilterState,
+                    navController = navController,
+                    context = context,
+                    isLandscape = mainState.isLandscape,
+                    portraitScrollState = portraitScrollState,
+                    landscapeScrollState = landscapeScrollState,
+                    onAction = onAction,
+                    onAnimeIdChange = { newAnimeId ->
+                        currentAnimeIdState.intValue = newAnimeId
+                    }
+                )
 
                 is Resource.Error -> Box(
                     modifier = Modifier.fillMaxSize(),

@@ -7,7 +7,6 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.animeapp.ui.animeRecommendations.AnimeRecommendationsScreen
-import com.example.animeapp.ui.main.components.BottomScreen
 import com.example.animeapp.ui.theme.AppTheme
 import com.example.animeapp.utils.Resource
 import dagger.hilt.android.testing.HiltAndroidRule
@@ -58,8 +57,6 @@ class AnimeRecommendationsScreenTest {
                     recommendationsState = mock(),
                     onAction = mock()
                 )
-                composeTestRule.onNodeWithText(BottomScreen.Recommendations.label)
-                    .assertIsDisplayed()
             }
         }
     }

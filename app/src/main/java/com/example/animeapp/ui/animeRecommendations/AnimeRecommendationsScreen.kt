@@ -23,7 +23,8 @@ import com.example.animeapp.ui.animeRecommendations.recommendations.Recommendati
 import com.example.animeapp.ui.animeRecommendations.recommendations.RecommendationItemSkeleton
 import com.example.animeapp.ui.common_ui.MessageDisplay
 import com.example.animeapp.ui.main.MainState
-import com.example.animeapp.utils.Navigation.navigateToAnimeDetail
+import com.example.animeapp.ui.main.navigation.NavRoute
+import com.example.animeapp.ui.main.navigation.navigateTo
 import com.example.animeapp.utils.Resource
 import kotlinx.coroutines.launch
 
@@ -130,7 +131,11 @@ fun AnimeRecommendationsScreen(
                                         RecommendationItem(
                                             recommendation = recommendation,
                                             onItemClick = { malId ->
-                                                navController.navigateToAnimeDetail(malId)
+                                                navController.navigateTo(
+                                                    NavRoute.AnimeDetail.fromId(
+                                                        malId
+                                                    )
+                                                )
                                             },
                                             modifier = if (index == 0) Modifier.padding(top = statusBarPadding) else Modifier
                                         )
@@ -185,8 +190,8 @@ fun AnimeRecommendationsScreen(
                                                     RecommendationItem(
                                                         recommendation = recommendation,
                                                         onItemClick = { malId ->
-                                                            navController.navigateToAnimeDetail(
-                                                                malId
+                                                            navController.navigateTo(
+                                                                NavRoute.AnimeDetail.fromId(malId)
                                                             )
                                                         },
                                                         modifier = if (index == 0) Modifier.padding(

@@ -30,8 +30,9 @@ import com.example.animeapp.ui.animeDetail.relation.RelationSection
 import com.example.animeapp.ui.common_ui.AnimeHeader
 import com.example.animeapp.ui.common_ui.DetailCommonBody
 import com.example.animeapp.ui.common_ui.YoutubePreview
+import com.example.animeapp.ui.main.navigation.NavRoute
+import com.example.animeapp.ui.main.navigation.navigateTo
 import com.example.animeapp.utils.AnimeTitleFinder.normalizeTitle
-import com.example.animeapp.utils.Navigation.navigateToAnimeWatch
 import com.example.animeapp.utils.Resource
 
 @Composable
@@ -166,9 +167,11 @@ private fun RightColumnContent(
             onEpisodeClick = { episodeId ->
                 detailState.defaultEpisodeId?.let {
                     if (detailState.animeDetailComplement is Resource.Success) {
-                        navController.navigateToAnimeWatch(
-                            malId = animeDetail.mal_id,
-                            episodeId = episodeId,
+                        navController.navigateTo(
+                            NavRoute.AnimeWatch.fromParams(
+                                malId = animeDetail.mal_id,
+                                episodeId = episodeId
+                            )
                         )
                     }
                 }

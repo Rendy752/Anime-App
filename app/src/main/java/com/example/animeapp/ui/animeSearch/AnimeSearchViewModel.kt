@@ -12,6 +12,7 @@ import com.example.animeapp.models.ProducersSearchQueryState
 import com.example.animeapp.repository.AnimeSearchRepository
 import com.example.animeapp.utils.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,11 +35,17 @@ data class FilterSelectionState(
 )
 
 sealed class SearchAction {
+    data class HandleInitialFetch(val genreId: Int? = null, val producerId: Int? = null) :
+        SearchAction()
+
     object SearchAnime : SearchAction()
     object FetchGenres : SearchAction()
     object FetchProducers : SearchAction()
+    data class SetProducerIdParam(val malId: Int) : SearchAction()
     data class ApplyFilters(val updatedQueryState: AnimeSearchQueryState) : SearchAction()
-    data class ApplyProducerQueryStateFilters(val updatedQueryState: ProducersSearchQueryState) : SearchAction()
+    data class ApplyProducerQueryStateFilters(val updatedQueryState: ProducersSearchQueryState) :
+        SearchAction()
+
     data class SetSelectedGenre(val genre: Genre) : SearchAction()
     data class SetSelectedProducer(val producer: Producer) : SearchAction()
     object ApplyGenreFilters : SearchAction()
@@ -59,17 +66,23 @@ class AnimeSearchViewModel @Inject constructor(
     private val _filterSelectionState = MutableStateFlow(FilterSelectionState())
     val filterSelectionState: StateFlow<FilterSelectionState> = _filterSelectionState.asStateFlow()
 
+    private var hasFetched = false
+
     init {
         onAction(SearchAction.FetchGenres)
         onAction(SearchAction.FetchProducers)
-        onAction(SearchAction.SearchAnime)
     }
 
     fun onAction(action: SearchAction) {
         when (action) {
+            is SearchAction.HandleInitialFetch -> handleInitialFetch(
+                action.genreId, action.producerId
+            )
+
             SearchAction.SearchAnime -> searchAnime()
             SearchAction.FetchGenres -> fetchGenres()
             SearchAction.FetchProducers -> fetchProducers()
+            is SearchAction.SetProducerIdParam -> setProducerIdParam(action.malId)
             is SearchAction.ApplyFilters -> applyFilters(action.updatedQueryState)
             is SearchAction.ApplyProducerQueryStateFilters -> applyProducerQueryStateFilters(action.updatedQueryState)
             is SearchAction.SetSelectedGenre -> setSelectedGenre(action.genre)
@@ -82,13 +95,53 @@ class AnimeSearchViewModel @Inject constructor(
         }
     }
 
+    private fun handleInitialFetch(genreId: Int?, producerId: Int?) {
+        if (hasFetched) return
+        hasFetched = true
+
+        viewModelScope.launch {
+            _searchState.update {
+                it.copy(isRefreshing = true, animeSearchResults = Resource.Loading())
+            }
+
+            if (genreId != null) {
+                while (_searchState.value.genres !is Resource.Success) {
+                    delay(100)
+                }
+                _searchState.value.genres.data?.data?.find { it.mal_id == genreId }?.let { genre ->
+                    onAction(SearchAction.SetSelectedGenre(genre))
+                }
+            }
+
+            if (producerId != null) {
+                val producerResult = animeSearchRepository.getProducer(producerId)
+                if (producerResult is Resource.Success) {
+                    onAction(SearchAction.SetSelectedProducer(producerResult.data.data))
+                }
+            }
+
+            if (genreId != null) {
+                onAction(SearchAction.ApplyGenreFilters)
+            } else if (producerId != null) {
+                onAction(SearchAction.ApplyProducerFilters)
+            } else if (_searchState.value.animeSearchResults.data == null) {
+                onAction(SearchAction.SearchAnime)
+            }
+        }
+    }
+
     private fun searchAnime() {
         viewModelScope.launch {
             val queryState = _searchState.value.queryState
             if (queryState.query.isBlank() && queryState.isDefault() && queryState.isGenresDefault() && queryState.isProducersDefault()) {
                 getRandomAnime()
             } else {
-                _searchState.update { it.copy(isRefreshing = true, animeSearchResults = Resource.Loading()) }
+                _searchState.update {
+                    it.copy(
+                        isRefreshing = true,
+                        animeSearchResults = Resource.Loading()
+                    )
+                }
                 val result = animeSearchRepository.searchAnime(queryState)
                 _searchState.update { it.copy(isRefreshing = false, animeSearchResults = result) }
             }
@@ -97,7 +150,12 @@ class AnimeSearchViewModel @Inject constructor(
 
     private fun getRandomAnime() {
         viewModelScope.launch {
-            _searchState.update { it.copy(isRefreshing = true, animeSearchResults = Resource.Loading()) }
+            _searchState.update {
+                it.copy(
+                    isRefreshing = true,
+                    animeSearchResults = Resource.Loading()
+                )
+            }
             val result = animeSearchRepository.getRandomAnime()
             _searchState.update { it.copy(isRefreshing = false, animeSearchResults = result) }
         }
@@ -106,7 +164,19 @@ class AnimeSearchViewModel @Inject constructor(
     private fun fetchGenres() {
         viewModelScope.launch {
             _searchState.update { it.copy(genres = Resource.Loading()) }
-            val result = animeSearchRepository.getGenres()
+            val cachedGenre = animeSearchRepository.getCachedGenres()
+            val result = if (cachedGenre.isNotEmpty()) {
+                Resource.Success(GenresResponse(data = cachedGenre))
+            } else {
+                animeSearchRepository.getGenres()
+            }
+
+            if (cachedGenre.isEmpty() && result is Resource.Success) {
+                result.data.data.forEach {
+                    animeSearchRepository.insertCachedGenre(it)
+                }
+            }
+
             _searchState.update { it.copy(genres = result) }
         }
     }
@@ -116,6 +186,15 @@ class AnimeSearchViewModel @Inject constructor(
             _searchState.update { it.copy(producers = Resource.Loading()) }
             val result = animeSearchRepository.getProducers(_searchState.value.producersQueryState)
             _searchState.update { it.copy(producers = result) }
+        }
+    }
+
+    private fun setProducerIdParam(malId: Int) {
+        viewModelScope.launch {
+            val producer = animeSearchRepository.getProducer(malId)
+            if (producer is Resource.Success) {
+                onAction(SearchAction.SetSelectedProducer(producer.data.data))
+            }
         }
     }
 
@@ -152,22 +231,26 @@ class AnimeSearchViewModel @Inject constructor(
     }
 
     private fun applyGenreFilters() {
-        val genreIds = _filterSelectionState.value.selectedGenres.joinToString(",") { it.mal_id.toString() }
+        val genreIds =
+            _filterSelectionState.value.selectedGenres.joinToString(",") { it.mal_id.toString() }
         if (genreIds.isBlank()) {
             onAction(SearchAction.ResetGenreSelection)
             return
         }
-        val updatedQueryState = _searchState.value.queryState.defaultLimitAndPage().copy(genres = genreIds)
+        val updatedQueryState =
+            _searchState.value.queryState.defaultLimitAndPage().copy(genres = genreIds)
         onAction(SearchAction.ApplyFilters(updatedQueryState))
     }
 
     private fun applyProducerFilters() {
-        val producerIds = _filterSelectionState.value.selectedProducers.joinToString(",") { it.mal_id.toString() }
+        val producerIds =
+            _filterSelectionState.value.selectedProducers.joinToString(",") { it.mal_id.toString() }
         if (producerIds.isBlank()) {
             onAction(SearchAction.ResetProducerSelection)
             return
         }
-        val updatedQueryState = _searchState.value.queryState.defaultLimitAndPage().copy(producers = producerIds)
+        val updatedQueryState =
+            _searchState.value.queryState.defaultLimitAndPage().copy(producers = producerIds)
         onAction(SearchAction.ApplyFilters(updatedQueryState))
     }
 
