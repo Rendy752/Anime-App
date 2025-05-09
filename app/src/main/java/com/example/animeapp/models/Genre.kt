@@ -17,11 +17,6 @@ data class Genre(
     val name: String,
     val url: String,
     val count: Int
-): Parcelable
+) : Parcelable
 
-val genrePlaceholder = Genre(
-    mal_id = 0,
-    name = "",
-    url = "",
-    count = 0
-)
+val genrePlaceholder = Genre(mal_id = 1, name = "Action", url = "", count = 0)

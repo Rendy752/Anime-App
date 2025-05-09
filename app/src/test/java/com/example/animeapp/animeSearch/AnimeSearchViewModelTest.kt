@@ -1,252 +1,292 @@
 package com.example.animeapp.animeSearch
 
-import com.example.animeapp.models.AnimeSearchResponse
-import com.example.animeapp.models.Genre
-import com.example.animeapp.models.GenresResponse
-import com.example.animeapp.models.JpgImage
-import com.example.animeapp.models.Producer
-import com.example.animeapp.models.ProducerImage
-import com.example.animeapp.models.ProducersResponse
-import com.example.animeapp.models.Title
-import com.example.animeapp.models.defaultCompletePagination
-import com.example.animeapp.models.genrePlaceholder
-import com.example.animeapp.models.producerPlaceholder
+import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import com.example.animeapp.models.*
 import com.example.animeapp.repository.AnimeSearchRepository
 import com.example.animeapp.ui.animeSearch.AnimeSearchViewModel
 import com.example.animeapp.ui.animeSearch.SearchAction
 import com.example.animeapp.utils.Resource
-import io.mockk.coEvery
-import io.mockk.coVerify
-import io.mockk.every
-import io.mockk.mockk
+import io.mockk.*
+import io.mockk.impl.annotations.MockK
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Before
+import org.junit.Rule
 import org.junit.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
+@ExperimentalCoroutinesApi
 class AnimeSearchViewModelTest {
 
+    @get:Rule
+    val instantExecutorRule = InstantTaskExecutorRule()
+
     private lateinit var viewModel: AnimeSearchViewModel
-    private val repository: AnimeSearchRepository = mockk()
-    private val testDispatcher = StandardTestDispatcher()
+    private lateinit var testDispatcher: TestDispatcher
+
+    @MockK
+    private lateinit var animeSearchRepository: AnimeSearchRepository
 
     @Before
     fun setup() {
+        MockKAnnotations.init(this, relaxUnitFun = true)
+        testDispatcher = StandardTestDispatcher()
         Dispatchers.setMain(testDispatcher)
-        coEvery { repository.getGenres() } returns Resource.Success(GenresResponse(listOf()))
-        coEvery { repository.getProducers(any()) } returns Resource.Success(ProducersResponse(defaultCompletePagination, listOf()))
-        coEvery { repository.searchAnime(any()) } returns Resource.Success(AnimeSearchResponse(emptyList(), defaultCompletePagination))
-        coEvery { repository.getRandomAnime() } returns Resource.Success(AnimeSearchResponse(emptyList(), defaultCompletePagination))
-        viewModel = AnimeSearchViewModel(repository)
+        coEvery { animeSearchRepository.getCachedGenres() } returns emptyList()
+        coEvery { animeSearchRepository.getGenres() } returns Resource.Success(GenresResponse(data = emptyList()))
+        coEvery { animeSearchRepository.getProducers(any()) } returns Resource.Success(
+            ProducersResponse(data = emptyList(), pagination = defaultCompletePagination)
+        )
+        coEvery { animeSearchRepository.insertCachedGenre(any()) } just Runs
+        viewModel = AnimeSearchViewModel(animeSearchRepository)
+        runTest { advanceUntilIdle() }
     }
 
     @After
     fun tearDown() {
         Dispatchers.resetMain()
+        clearAllMocks()
     }
 
     @Test
-    fun `searchAnime with empty query and default filters should call getRandomAnime`() = runTest {
-        val mockAnimeDetailResponse = mockk<AnimeSearchResponse> {
-            every { data } returns emptyList()
-            every { pagination } returns defaultCompletePagination
+    fun `init should fetch genres and producers`() = runTest {
+        val genres = listOf(genrePlaceholder)
+        val producers = listOf(producerPlaceholder)
+        coEvery { animeSearchRepository.getCachedGenres() } returns emptyList()
+        coEvery { animeSearchRepository.getGenres() } returns Resource.Success(GenresResponse(data = genres))
+        coEvery { animeSearchRepository.getProducers(any()) } returns Resource.Success(
+            ProducersResponse(data = producers, pagination = defaultCompletePagination)
+        )
+        coEvery { animeSearchRepository.insertCachedGenre(any()) } just Runs
+
+        viewModel = AnimeSearchViewModel(animeSearchRepository)
+        advanceUntilIdle()
+
+        val state = viewModel.searchState.value
+        assertEquals(Resource.Success(GenresResponse(data = genres)), state.genres)
+        assertEquals(
+            Resource.Success(
+                ProducersResponse(
+                    data = producers,
+                    pagination = defaultCompletePagination
+                )
+            ),
+            state.producers
+        )
+        coVerify { animeSearchRepository.getCachedGenres() }
+        coVerify { animeSearchRepository.getGenres() }
+        coVerify { animeSearchRepository.getProducers(any()) }
+    }
+
+    @Test
+    fun `fetchGenres should use cached genres if available`() = runTest {
+        val cachedGenres = listOf(genrePlaceholder)
+        coEvery { animeSearchRepository.getCachedGenres() } returns cachedGenres
+        coEvery { animeSearchRepository.getGenres() } returns Resource.Success(GenresResponse(data = emptyList()))
+        coEvery { animeSearchRepository.insertCachedGenre(any()) } just Runs
+
+        clearMocks(animeSearchRepository, answers = false)
+        viewModel = AnimeSearchViewModel(animeSearchRepository)
+        advanceUntilIdle()
+        viewModel.onAction(SearchAction.FetchGenres)
+        advanceUntilIdle()
+
+        val state = viewModel.searchState.value
+        assertEquals(Resource.Success(GenresResponse(data = cachedGenres)), state.genres)
+        coVerify { animeSearchRepository.getCachedGenres() }
+        coVerify(exactly = 0) { animeSearchRepository.getGenres() }
+        coVerify(exactly = 0) { animeSearchRepository.insertCachedGenre(any()) }
+    }
+
+    @Test
+    fun `handleInitialFetch with genreId should set genre and apply filters`() = runTest {
+        val genreId = 1
+        val genre = genrePlaceholder.copy(mal_id = genreId)
+        val genres = listOf(genre)
+        val searchResponse =
+            AnimeSearchResponse(data = emptyList(), pagination = defaultCompletePagination)
+        coEvery { animeSearchRepository.getGenres() } returns Resource.Success(GenresResponse(data = genres))
+        coEvery { animeSearchRepository.searchAnime(any()) } returns Resource.Success(searchResponse)
+        coEvery { animeSearchRepository.getRandomAnime() } returns Resource.Success(searchResponse)
+
+        viewModel = AnimeSearchViewModel(animeSearchRepository)
+        advanceUntilIdle()
+        viewModel.onAction(SearchAction.HandleInitialFetch(genreId = genreId))
+        advanceUntilIdle()
+
+        val state = viewModel.searchState.value
+        val filterState = viewModel.filterSelectionState.value
+        assertEquals(listOf(genre), filterState.selectedGenres)
+        assertEquals(Resource.Success(searchResponse), state.animeSearchResults)
+        assertFalse(state.isRefreshing)
+        assertEquals(genreId.toString(), state.queryState.genres)
+        coVerify { animeSearchRepository.searchAnime(match { it.genres == genreId.toString() }) }
+    }
+
+    @Test
+    fun `handleInitialFetch with producerId should set producer and apply filters`() = runTest {
+        val producerId = 1
+        val producer = producerPlaceholder.copy(mal_id = producerId)
+        val searchResponse =
+            AnimeSearchResponse(data = emptyList(), pagination = defaultCompletePagination)
+        coEvery { animeSearchRepository.getProducer(producerId) } returns Resource.Success(
+            ProducerResponse(data = producer)
+        )
+        coEvery { animeSearchRepository.searchAnime(any()) } returns Resource.Success(searchResponse)
+        coEvery { animeSearchRepository.getRandomAnime() } returns Resource.Success(searchResponse)
+
+        viewModel = AnimeSearchViewModel(animeSearchRepository)
+        advanceUntilIdle()
+        viewModel.onAction(SearchAction.HandleInitialFetch(producerId = producerId))
+        advanceUntilIdle()
+
+        val state = viewModel.searchState.value
+        val filterState = viewModel.filterSelectionState.value
+        assertEquals(listOf(producer), filterState.selectedProducers)
+        assertEquals(Resource.Success(searchResponse), state.animeSearchResults)
+        assertFalse(state.isRefreshing)
+        assertEquals(producerId.toString(), state.queryState.producers)
+        coVerify { animeSearchRepository.searchAnime(match { it.producers == producerId.toString() }) }
+    }
+
+    @Test
+    fun `handleInitialFetch with no parameters should fetch random anime if no results`() =
+        runTest {
+            val searchResponse =
+                AnimeSearchResponse(data = emptyList(), pagination = defaultCompletePagination)
+            coEvery { animeSearchRepository.getRandomAnime() } returns Resource.Success(
+                searchResponse
+            )
+
+            viewModel = AnimeSearchViewModel(animeSearchRepository)
+            advanceUntilIdle()
+            viewModel.onAction(SearchAction.HandleInitialFetch())
+            advanceUntilIdle()
+
+            val state = viewModel.searchState.value
+            assertEquals(Resource.Success(searchResponse), state.animeSearchResults)
+            assertFalse(state.isRefreshing)
+            coVerify { animeSearchRepository.getRandomAnime() }
+            coVerify(exactly = 0) { animeSearchRepository.searchAnime(any()) }
         }
 
-        coEvery { repository.getRandomAnime() } returns Resource.Success(mockAnimeDetailResponse)
+    @Test
+    fun `handleInitialFetch should not trigger again if already fetched`() = runTest {
+        val searchResponse =
+            AnimeSearchResponse(data = emptyList(), pagination = defaultCompletePagination)
+        coEvery { animeSearchRepository.getRandomAnime() } returns Resource.Success(searchResponse)
 
-        viewModel.onAction(SearchAction.SearchAnime)
-        testDispatcher.scheduler.advanceUntilIdle()
+        viewModel = AnimeSearchViewModel(animeSearchRepository)
+        advanceUntilIdle()
+        viewModel.onAction(SearchAction.HandleInitialFetch())
+        advanceUntilIdle()
+        viewModel.onAction(SearchAction.HandleInitialFetch(genreId = 1))
+        advanceUntilIdle()
 
-        coVerify { repository.getRandomAnime() }
-        val state = viewModel.searchState.first()
-        assertEquals(Resource.Success(mockAnimeDetailResponse), state.animeSearchResults)
+        coVerify(exactly = 1) { animeSearchRepository.getRandomAnime() }
+        coVerify(exactly = 0) { animeSearchRepository.searchAnime(any()) }
     }
 
     @Test
-    fun `searchAnime with query should call searchAnime from repository`() = runTest {
-        val queryState = viewModel.searchState.value.queryState.copy(query = "Naruto")
-        viewModel.onAction(SearchAction.ApplyFilters(queryState))
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        coVerify { repository.searchAnime(queryState) }
-    }
-
-    @Test
-    fun `fetchGenres should update genres state`() = runTest {
-        val genres = listOf(
-            Genre(mal_id = 1, name = "Action", url = "action.com", count = 100),
-            Genre(mal_id = 2, name = "Adventure", url = "adventure.com", count = 200)
+    fun `resetBottomSheetFilters should reset specific queryState fields and call searchAnime`() = runTest {
+        val initialQueryState = AnimeSearchQueryState(
+            query = "test",
+            genres = "1",
+            producers = "2",
+            page = 1,
+            limit = 10,
+            sfw = true,
+            type = "tv",
+            status = "airing"
         )
-        val genresResponse = GenresResponse(genres)
+        val searchResponse = AnimeSearchResponse(data = emptyList(), pagination = defaultCompletePagination)
+        coEvery { animeSearchRepository.searchAnime(any()) } returns Resource.Success(searchResponse)
 
-        coEvery { repository.getGenres() } returns Resource.Success(genresResponse)
+        viewModel = AnimeSearchViewModel(animeSearchRepository)
+        advanceUntilIdle()
+        viewModel.onAction(SearchAction.ApplyFilters(initialQueryState))
+        advanceUntilIdle()
+        viewModel.onAction(SearchAction.ResetBottomSheetFilters)
+        advanceUntilIdle()
 
-        viewModel.onAction(SearchAction.FetchGenres)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        val state = viewModel.searchState.first()
-        assertEquals(Resource.Success(genresResponse), state.genres)
+        val state = viewModel.searchState.value
+        val expectedQueryState = AnimeSearchQueryState(
+            query = "test",
+            genres = "1",
+            producers = "2",
+            page = 1,
+            limit = 10,
+            sfw = true,
+            type = null,
+            status = null,
+            rating = null,
+            score = null,
+            minScore = null,
+            maxScore = null,
+            orderBy = null,
+            sort = null,
+            startDate = null,
+            endDate = null,
+            unapproved = null
+        )
+        assertEquals(expectedQueryState, state.queryState)
+        assertEquals(Resource.Success(searchResponse), state.animeSearchResults)
+        assertFalse(state.isRefreshing)
+        coVerify {
+            animeSearchRepository.searchAnime(
+                match {
+                    it.query == "test" && it.genres == "1" && it.producers == "2"
+                }
+            )
+        }
     }
 
     @Test
-    fun `setSelectedGenre should update selected genres`() = runTest {
+    fun `setSelectedGenre should toggle genre in filterSelectionState`() = runTest {
         val genre = genrePlaceholder
 
+        viewModel = AnimeSearchViewModel(animeSearchRepository)
+        advanceUntilIdle()
         viewModel.onAction(SearchAction.SetSelectedGenre(genre))
-        testDispatcher.scheduler.advanceUntilIdle()
+        advanceUntilIdle()
 
-        val state = viewModel.filterSelectionState.first()
-        assertEquals(listOf(genre), state.selectedGenres)
+        val filterState = viewModel.filterSelectionState.value
+        assertEquals(listOf(genre), filterState.selectedGenres)
+
+        viewModel.onAction(SearchAction.SetSelectedGenre(genre))
+        advanceUntilIdle()
+
+        assertEquals(emptyList<Genre>(), viewModel.filterSelectionState.value.selectedGenres)
     }
 
     @Test
     fun `applyGenreFilters should update queryState and call searchAnime`() = runTest {
-        val genre = genrePlaceholder.copy(mal_id = 1)
+        val genre = genrePlaceholder
+        val genres = listOf(genre)
+        val searchResponse =
+            AnimeSearchResponse(data = emptyList(), pagination = defaultCompletePagination)
+        coEvery { animeSearchRepository.getGenres() } returns Resource.Success(GenresResponse(data = genres))
+        coEvery { animeSearchRepository.searchAnime(any()) } returns Resource.Success(searchResponse)
+
+        viewModel = AnimeSearchViewModel(animeSearchRepository)
+        advanceUntilIdle()
         viewModel.onAction(SearchAction.SetSelectedGenre(genre))
-        val searchResponse = AnimeSearchResponse(
-            data = emptyList(),
-            pagination = defaultCompletePagination
-        )
-        coEvery { repository.searchAnime(any()) } returns Resource.Success(searchResponse)
-
+        advanceUntilIdle()
         viewModel.onAction(SearchAction.ApplyGenreFilters)
-        testDispatcher.scheduler.advanceUntilIdle()
+        advanceUntilIdle()
 
-        val state = viewModel.searchState.first()
+        val state = viewModel.searchState.value
         assertEquals("1", state.queryState.genres)
         assertEquals(Resource.Success(searchResponse), state.animeSearchResults)
-    }
-
-    @Test
-    fun `resetGenreSelection should clear selected genres and reset queryState`() = runTest {
-        val genre = genrePlaceholder
-        viewModel.onAction(SearchAction.SetSelectedGenre(genre))
-        viewModel.onAction(SearchAction.ApplyGenreFilters)
-
-        val mockAnimeDetailResponse = mockk<AnimeSearchResponse> {
-            every { data } returns emptyList()
-            every { pagination } returns defaultCompletePagination
-        }
-        coEvery { repository.getRandomAnime() } returns Resource.Success(mockAnimeDetailResponse)
-
-        viewModel.onAction(SearchAction.ResetGenreSelection)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        val searchState = viewModel.searchState.first()
-        val filterState = viewModel.filterSelectionState.first()
-        assertEquals(emptyList<Genre>(), filterState.selectedGenres)
-        assertEquals(null, searchState.queryState.genres)
-    }
-
-    @Test
-    fun `fetchProducers should update producers state`() = runTest {
-        val producers = listOf(
-            Producer(
-                mal_id = 1,
-                url = "producer1.com",
-                titles = listOf(Title(type = "Japanese", title = "Producer 1")),
-                images = ProducerImage(jpg = JpgImage(image_url = "image1.com")),
-                favorites = 100,
-                established = "2000",
-                about = "About Producer 1",
-                count = 10
-            ),
-            Producer(
-                mal_id = 2,
-                url = "producer2.com",
-                titles = listOf(Title(type = "Japanese", title = "Producer 2")),
-                images = ProducerImage(jpg = JpgImage(image_url = "image2.com")),
-                favorites = 200,
-                established = "2010",
-                about = "About Producer 2",
-                count = 20
-            )
-        )
-        val producersResponse = ProducersResponse(
-            pagination = defaultCompletePagination,
-            data = producers
-        )
-
-        coEvery { repository.getProducers(any()) } returns Resource.Success(producersResponse)
-
-        viewModel.onAction(SearchAction.FetchProducers)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        val state = viewModel.searchState.first()
-        assertEquals(Resource.Success(producersResponse), state.producers)
-    }
-
-    @Test
-    fun `setSelectedProducer should update selected producers`() = runTest {
-        val producer = producerPlaceholder
-
-        viewModel.onAction(SearchAction.SetSelectedProducer(producer))
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        val state = viewModel.filterSelectionState.first()
-        assertEquals(listOf(producer), state.selectedProducers)
-    }
-
-    @Test
-    fun `applyProducerFilters should update queryState and call searchAnime`() = runTest {
-        val producer = producerPlaceholder.copy(mal_id = 1)
-        viewModel.onAction(SearchAction.SetSelectedProducer(producer))
-        val searchResponse = AnimeSearchResponse(
-            data = emptyList(),
-            pagination = defaultCompletePagination
-        )
-        coEvery { repository.searchAnime(any()) } returns Resource.Success(searchResponse)
-
-        viewModel.onAction(SearchAction.ApplyProducerFilters)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        val state = viewModel.searchState.first()
-        assertEquals("1", state.queryState.producers)
-        assertEquals(Resource.Success(searchResponse), state.animeSearchResults)
-    }
-
-    @Test
-    fun `resetProducerSelection should clear selected producers and reset queryState`() = runTest {
-        val producer = producerPlaceholder
-        viewModel.onAction(SearchAction.SetSelectedProducer(producer))
-        viewModel.onAction(SearchAction.ApplyProducerFilters)
-
-        val mockAnimeDetailResponse = mockk<AnimeSearchResponse> {
-            every { data } returns emptyList()
-            every { pagination } returns defaultCompletePagination
-        }
-        coEvery { repository.getRandomAnime() } returns Resource.Success(mockAnimeDetailResponse)
-
-        viewModel.onAction(SearchAction.ResetProducerSelection)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        val searchState = viewModel.searchState.first()
-        val filterState = viewModel.filterSelectionState.first()
-        assertEquals(emptyList<Producer>(), filterState.selectedProducers)
-        assertEquals(null, searchState.queryState.producers)
-    }
-
-    @Test
-    fun `resetBottomSheetFilters should reset queryState and call searchAnime`() = runTest {
-        val initialQueryState = viewModel.searchState.value.queryState.copy(
-            query = "Naruto", genres = "1",
-            producers = "1", page = 1, limit = 10, maxScore = 10.0, minScore = 5.0, type = "TV"
-        )
-        viewModel.onAction(SearchAction.ApplyFilters(initialQueryState))
-
-        viewModel.onAction(SearchAction.ResetBottomSheetFilters)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        val state = viewModel.searchState.first()
-        assertEquals(initialQueryState.resetBottomSheetFilters(), state.queryState)
-        coVerify { repository.searchAnime(initialQueryState.resetBottomSheetFilters()) }
+        assertFalse(state.isRefreshing)
+        coVerify(exactly = 1) { animeSearchRepository.searchAnime(match { it.genres == "1" }) }
     }
 }
