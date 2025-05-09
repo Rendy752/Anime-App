@@ -30,6 +30,7 @@ import com.example.animeapp.ui.animeDetail.AnimeDetailScreen
 import com.example.animeapp.ui.animeDetail.AnimeDetailViewModel
 import com.example.animeapp.ui.animeRecommendations.AnimeRecommendationsScreen
 import com.example.animeapp.ui.animeSearch.AnimeSearchScreen
+import com.example.animeapp.ui.animeSearch.AnimeSearchViewModel
 import com.example.animeapp.ui.animeWatch.AnimeWatchScreen
 import com.example.animeapp.ui.animeHome.AnimeHomeScreen
 import com.example.animeapp.ui.animeHome.AnimeHomeViewModel
@@ -158,9 +159,15 @@ fun MainScreen(
                 )
             }
             composable(BottomScreen.Search.route) {
+                val viewModel: AnimeSearchViewModel = hiltViewModel()
+                val searchState by viewModel.searchState.collectAsStateWithLifecycle()
+                val filterSelectionState by viewModel.filterSelectionState.collectAsStateWithLifecycle()
                 AnimeSearchScreen(
                     navController = navController,
-                    mainState = mainState
+                    mainState = mainState,
+                    searchState = searchState,
+                    filterSelectionState = filterSelectionState,
+                    onAction = viewModel::onAction
                 )
             }
             composable(
@@ -176,6 +183,9 @@ fun MainScreen(
                     }
                 )
             ) {
+                val viewModel: AnimeSearchViewModel = hiltViewModel()
+                val searchState by viewModel.searchState.collectAsStateWithLifecycle()
+                val filterSelectionState by viewModel.filterSelectionState.collectAsStateWithLifecycle()
                 val genreIdentityString = it.arguments?.getString("genreIdentity")
                 val producerIdentityString = it.arguments?.getString("producerIdentity")
                 val gson = Gson()
@@ -197,7 +207,10 @@ fun MainScreen(
                     navController = navController,
                     mainState = mainState,
                     genre = genre,
-                    producer = producer
+                    producer = producer,
+                    searchState = searchState,
+                    filterSelectionState = filterSelectionState,
+                    onAction = viewModel::onAction
                 )
             }
             composable(BottomScreen.Settings.route) {
