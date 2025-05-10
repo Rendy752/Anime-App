@@ -36,7 +36,6 @@ class AnimeSearchRepositoryTest {
 
     @Test
     fun `getAnimeSearch returns success with valid response`() = runTest {
-        // Arrange
         val queryState = AnimeSearchQueryState(
             query = "Naruto",
             page = 1,
@@ -77,11 +76,9 @@ class AnimeSearchRepositoryTest {
             )
         } returns Response.success(responseData)
 
-        // Act
         val result = repository.searchAnime(queryState)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // Assert
         if (result !is Resource.Success) {
             println("Unexpected result: $result")
             if (result is Resource.Error) {
@@ -117,7 +114,6 @@ class AnimeSearchRepositoryTest {
 
     @Test
     fun `getAnimeSearch returns error with exception`() = runTest {
-        // Arrange
         val queryState = AnimeSearchQueryState(query = "Naruto")
         coEvery {
             animeApi.getAnimeSearch(
@@ -143,11 +139,9 @@ class AnimeSearchRepositoryTest {
             )
         } throws RuntimeException("Network error")
 
-        // Act
         val result = repository.searchAnime(queryState)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // Assert
         if (result !is Resource.Error) {
             println("Unexpected result: $result")
         }
@@ -180,16 +174,13 @@ class AnimeSearchRepositoryTest {
 
     @Test
     fun `getRandomAnime returns success with single anime`() = runTest {
-        // Arrange
         val animeData = mockk<AnimeDetail>()
         val responseData = AnimeDetailResponse(data = animeData)
         coEvery { animeApi.getRandomAnime(sfw = true) } returns Response.success(responseData)
 
-        // Act
         val result = repository.getRandomAnime()
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // Assert
         if (result !is Resource.Success) {
             println("Unexpected result: $result")
         }
@@ -202,14 +193,11 @@ class AnimeSearchRepositoryTest {
 
     @Test
     fun `getRandomAnime returns error with exception`() = runTest {
-        // Arrange
         coEvery { animeApi.getRandomAnime(sfw = true) } throws RuntimeException("API error")
 
-        // Act
         val result = repository.getRandomAnime()
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // Assert
         if (result !is Resource.Error) {
             println("Unexpected result: $result")
         }
@@ -220,15 +208,12 @@ class AnimeSearchRepositoryTest {
 
     @Test
     fun `getGenres returns success with valid response`() = runTest {
-        // Arrange
         val responseData = GenresResponse(data = listOf(mockk()))
         coEvery { animeApi.getGenres() } returns Response.success(responseData)
 
-        // Act
         val result = repository.getGenres()
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // Assert
         if (result !is Resource.Success) {
             println("Unexpected result: $result")
         }
@@ -239,14 +224,11 @@ class AnimeSearchRepositoryTest {
 
     @Test
     fun `getGenres returns error with exception`() = runTest {
-        // Arrange
         coEvery { animeApi.getGenres() } throws RuntimeException("Network error")
 
-        // Act
         val result = repository.getGenres()
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // Assert
         if (result !is Resource.Error) {
             println("Unexpected result: $result")
         }
@@ -257,7 +239,6 @@ class AnimeSearchRepositoryTest {
 
     @Test
     fun `getProducers returns success with valid response`() = runTest {
-        // Arrange
         val queryState = ProducersSearchQueryState(
             query = "Studio",
             page = 1,
@@ -275,11 +256,9 @@ class AnimeSearchRepositoryTest {
             )
         } returns Response.success(responseData)
 
-        // Act
         val result = repository.getProducers(queryState)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // Assert
         if (result !is Resource.Success) {
             println("Unexpected result: $result")
         }
@@ -290,17 +269,14 @@ class AnimeSearchRepositoryTest {
 
     @Test
     fun `getProducers returns error with exception`() = runTest {
-        // Arrange
         val queryState = ProducersSearchQueryState(query = "Studio")
         coEvery {
             animeApi.getProducers(any(), any(), any(), any(), any(), any())
         } throws RuntimeException("API error")
 
-        // Act
         val result = repository.getProducers(queryState)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // Assert
         if (result !is Resource.Error) {
             println("Unexpected result: $result")
         }
@@ -311,16 +287,13 @@ class AnimeSearchRepositoryTest {
 
     @Test
     fun `getProducer returns success with valid response`() = runTest {
-        // Arrange
         val malId = 1
         val responseData = ProducerResponse(data = mockk())
         coEvery { animeApi.getProducer(malId) } returns Response.success(responseData)
 
-        // Act
         val result = repository.getProducer(malId)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // Assert
         if (result !is Resource.Success) {
             println("Unexpected result: $result")
         }
@@ -331,15 +304,12 @@ class AnimeSearchRepositoryTest {
 
     @Test
     fun `getProducer returns error with exception`() = runTest {
-        // Arrange
         val malId = 1
         coEvery { animeApi.getProducer(malId) } throws RuntimeException("Not found")
 
-        // Act
         val result = repository.getProducer(malId)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // Assert
         if (result !is Resource.Error) {
             println("Unexpected result: $result")
         }
@@ -350,33 +320,27 @@ class AnimeSearchRepositoryTest {
 
     @Test
     fun `getCachedGenres returns list from Dao`() = runTest {
-        // Arrange
         val genres = listOf(
             genrePlaceholder.copy(mal_id = 1, name = "Action"),
             genrePlaceholder.copy(mal_id = 2, name = "Adventure")
         )
         coEvery { genreDao.getGenres() } returns genres
 
-        // Act
         val result = repository.getCachedGenres()
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // Assert
         Assert.assertEquals(genres, result)
         coVerify { genreDao.getGenres() }
     }
 
     @Test
     fun `insertCachedGenre calls Dao insert`() = runTest {
-        // Arrange
         val genre = genrePlaceholder.copy(mal_id = 1, name = "Action")
         coEvery { genreDao.insertGenre(genre) } returns Unit
 
-        // Act
         repository.insertCachedGenre(genre)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        // Assert
         coVerify { genreDao.insertGenre(genre) }
     }
 }
