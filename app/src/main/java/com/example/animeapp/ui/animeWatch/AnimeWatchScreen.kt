@@ -160,6 +160,7 @@ fun AnimeWatchScreen(
                     .then(if (mainState.isLandscape) Modifier.weight(0.5f) else Modifier.fillMaxWidth())
                     .then(videoSize)
                 AnimeWatchContent(
+                    navController = navController,
                     watchState = watchState,
                     isScreenOn = isScreenOn,
                     playerUiState = playerUiState,

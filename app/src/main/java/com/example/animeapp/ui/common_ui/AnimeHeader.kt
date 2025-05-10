@@ -27,8 +27,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
+import androidx.navigation.NavController
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.animeDetailPlaceholder
+import com.example.animeapp.ui.main.navigation.NavRoute
+import com.example.animeapp.ui.main.navigation.navigateTo
 
 @OptIn(ExperimentalFoundationApi::class)
 @Preview
@@ -36,7 +39,8 @@ import com.example.animeapp.models.animeDetailPlaceholder
 fun AnimeHeader(
     modifier: Modifier = Modifier,
     animeDetail: AnimeDetail = animeDetailPlaceholder,
-    showImage: Boolean = true
+    showImage: Boolean = true,
+    navController: NavController? = null
 ) {
     val context = LocalContext.current
     Row(
@@ -69,6 +73,11 @@ fun AnimeHeader(
                         .weight(1f)
                         .combinedClickable(
                             onClick = {
+                                navController?.navigateTo(
+                                    NavRoute.AnimeDetail.fromId(animeDetail.mal_id)
+                                )
+                            },
+                            onDoubleClick = {
                                 val intent = Intent(Intent.ACTION_VIEW, animeDetail.url.toUri())
                                 context.startActivity(intent)
                             },

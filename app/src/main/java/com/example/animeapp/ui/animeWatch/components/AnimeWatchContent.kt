@@ -14,6 +14,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 import com.example.animeapp.models.EpisodeSourcesQuery
 import com.example.animeapp.ui.animeWatch.WatchState
 import com.example.animeapp.ui.animeWatch.PlayerUiState
@@ -26,6 +27,7 @@ import com.example.animeapp.utils.Resource
 
 @Composable
 fun AnimeWatchContent(
+    navController: NavController,
     watchState: WatchState,
     isScreenOn: Boolean,
     playerUiState: PlayerUiState,
@@ -91,7 +93,7 @@ fun AnimeWatchContent(
                                     }
                                 )
                             } else {
-                                InfoContentSection(animeDetail = watchState.animeDetail)
+                                InfoContentSection(animeDetail = watchState.animeDetail, navController = navController)
                             }
                         }
                     }
@@ -118,7 +120,7 @@ fun AnimeWatchContent(
                             handleSelectedEpisodeServer = { handleSelectedEpisodeServer(it, false) }
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        InfoContentSection(animeDetail = watchState.animeDetail)
+                        InfoContentSection(animeDetail = watchState.animeDetail, navController = navController)
                     }
                 }
             }
