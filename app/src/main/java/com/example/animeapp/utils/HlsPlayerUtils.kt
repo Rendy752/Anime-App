@@ -32,29 +32,29 @@ import java.util.concurrent.TimeUnit
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.scale
 
-data class PlayerState(
+data class HlsPlayerState(
     val isPlaying: Boolean = false,
     val playbackState: Int = Player.STATE_IDLE,
     val error: String? = null,
     val isReady: Boolean = false
 )
 
-sealed class PlayerAction {
-    data class InitializePlayer(val context: Context) : PlayerAction()
+sealed class HlsPlayerAction {
+    data class InitializeHlsPlayer(val context: Context) : HlsPlayerAction()
     data class SetMedia(
         val videoData: EpisodeSourcesResponse,
         val lastTimestamp: Long? = null,
         val onReady: () -> Unit = {},
         val onError: (String) -> Unit = {}
-    ) : PlayerAction()
+    ) : HlsPlayerAction()
 
-    data object Play : PlayerAction()
-    data object Pause : PlayerAction()
-    data class SeekTo(val positionMs: Long) : PlayerAction()
-    data object FastForward : PlayerAction()
-    data object Rewind : PlayerAction()
-    data class SetPlaybackSpeed(val speed: Float) : PlayerAction()
-    data object Release : PlayerAction()
+    data object Play : HlsPlayerAction()
+    data object Pause : HlsPlayerAction()
+    data class SeekTo(val positionMs: Long) : HlsPlayerAction()
+    data object FastForward : HlsPlayerAction()
+    data object Rewind : HlsPlayerAction()
+    data class SetPlaybackSpeed(val speed: Float) : HlsPlayerAction()
+    data object Release : HlsPlayerAction()
 }
 
 object HlsPlayerUtils {
@@ -65,27 +65,27 @@ object HlsPlayerUtils {
     private var audioFocusRequested: Boolean = false
     private var videoSurface: Any? = null
 
-    private val _state = MutableStateFlow(PlayerState())
-    val state: StateFlow<PlayerState> = _state.asStateFlow()
+    private val _state = MutableStateFlow(HlsPlayerState())
+    val state: StateFlow<HlsPlayerState> = _state.asStateFlow()
 
     @OptIn(UnstableApi::class)
-    fun dispatch(action: PlayerAction) {
+    fun dispatch(action: HlsPlayerAction) {
         when (action) {
-            is PlayerAction.InitializePlayer -> initializePlayer(action.context)
-            is PlayerAction.SetMedia -> setMedia(
+            is HlsPlayerAction.InitializeHlsPlayer -> initializePlayer(action.context)
+            is HlsPlayerAction.SetMedia -> setMedia(
                 action.videoData,
                 action.lastTimestamp,
                 action.onReady,
                 action.onError
             )
 
-            is PlayerAction.Play -> play()
-            is PlayerAction.Pause -> pause()
-            is PlayerAction.SeekTo -> seekTo(action.positionMs)
-            is PlayerAction.FastForward -> fastForward()
-            is PlayerAction.Rewind -> rewind()
-            is PlayerAction.SetPlaybackSpeed -> setPlaybackSpeed(action.speed)
-            is PlayerAction.Release -> release()
+            is HlsPlayerAction.Play -> play()
+            is HlsPlayerAction.Pause -> pause()
+            is HlsPlayerAction.SeekTo -> seekTo(action.positionMs)
+            is HlsPlayerAction.FastForward -> fastForward()
+            is HlsPlayerAction.Rewind -> rewind()
+            is HlsPlayerAction.SetPlaybackSpeed -> setPlaybackSpeed(action.speed)
+            is HlsPlayerAction.Release -> release()
         }
     }
 
@@ -328,8 +328,8 @@ object HlsPlayerUtils {
                 audioFocusChangeListener = OnAudioFocusChangeListener { focusChange ->
                     Log.d("HlsPlayerUtil", "Audio focus changed: $focusChange")
                     when (focusChange) {
-                        AudioManager.AUDIOFOCUS_LOSS -> dispatch(PlayerAction.Pause)
-                        AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> dispatch(PlayerAction.Pause)
+                        AudioManager.AUDIOFOCUS_LOSS -> dispatch(HlsPlayerAction.Pause)
+                        AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> dispatch(HlsPlayerAction.Pause)
                         AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
                             exoPlayer?.volume = 0.5f
                         }

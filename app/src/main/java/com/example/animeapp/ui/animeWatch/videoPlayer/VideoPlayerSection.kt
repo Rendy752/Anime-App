@@ -33,7 +33,8 @@ import com.example.animeapp.ui.animeWatch.WatchState
 import com.example.animeapp.utils.HlsPlayerUtils
 import com.example.animeapp.utils.IntroOutroHandler
 import com.example.animeapp.utils.MediaPlaybackService
-import com.example.animeapp.utils.PlayerAction
+import com.example.animeapp.utils.HlsPlayerAction
+import com.example.animeapp.utils.HlsPlayerState
 
 @SuppressLint("ImplicitSamInstance")
 @OptIn(UnstableApi::class, ExperimentalComposeUiApi::class)
@@ -45,6 +46,7 @@ fun VideoPlayerSection(
     episodes: List<Episode>,
     episodeSourcesQuery: EpisodeSourcesQuery,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
+    hlsPlayerState: HlsPlayerState,
     isPipMode: Boolean,
     onEnterPipMode: () -> Unit,
     isFullscreen: Boolean,
@@ -203,7 +205,7 @@ fun VideoPlayerSection(
             Log.d("VideoPlayerSection", "Disposing VideoPlayerSection")
             try {
                 mediaControllerCompat?.transportControls?.pause()
-                HlsPlayerUtils.dispatch(PlayerAction.Pause)
+                HlsPlayerUtils.dispatch(HlsPlayerAction.Pause)
                 Log.d("VideoPlayerSection", "Paused playback before disposal")
                 HlsPlayerUtils.getPlayer()?.removeListener(playerListener)
 
@@ -244,7 +246,7 @@ fun VideoPlayerSection(
 
         watchState.episodeDetailComplement.data?.let {
             HlsPlayerUtils.dispatch(
-                PlayerAction.SetMedia(
+                HlsPlayerAction.SetMedia(
                     videoData = it.sources,
                     lastTimestamp = null,
                     onReady = {},
@@ -339,6 +341,7 @@ fun VideoPlayerSection(
     watchState.episodeDetailComplement.data?.let {
         VideoPlayer(
             playerView = playerView,
+            hlsPlayerState = hlsPlayerState,
             introOutroHandler = introOutroHandler,
             mediaController = mediaControllerCompat,
             episodeDetailComplement = it,
@@ -359,8 +362,8 @@ fun VideoPlayerSection(
             modifier = modifier,
             videoSize = videoSize,
             onPlay = { mediaControllerCompat?.transportControls?.play() },
-            onFastForward = { HlsPlayerUtils.dispatch(PlayerAction.FastForward) },
-            onRewind = { HlsPlayerUtils.dispatch(PlayerAction.Rewind) }
+            onFastForward = { HlsPlayerUtils.dispatch(HlsPlayerAction.FastForward) },
+            onRewind = { HlsPlayerUtils.dispatch(HlsPlayerAction.Rewind) }
         )
     }
 }

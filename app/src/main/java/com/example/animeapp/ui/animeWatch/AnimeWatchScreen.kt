@@ -25,11 +25,13 @@ import com.example.animeapp.utils.FullscreenUtils
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ScreenOffReceiver
 import com.example.animeapp.utils.ScreenOnReceiver
-import com.example.animeapp.ui.animeWatch.components.AnimeWatchContent
 import com.example.animeapp.ui.animeWatch.components.AnimeWatchTopBar
+import com.example.animeapp.ui.animeWatch.components.AnimeWatchContent
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import com.example.animeapp.ui.main.MainActivity
+import com.example.animeapp.utils.HlsPlayerState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,19 +42,24 @@ fun AnimeWatchScreen(
     mainState: MainState,
     watchState: WatchState,
     playerUiState: PlayerUiState,
+    hlsPlayerState: HlsPlayerState,
     onAction: (WatchAction) -> Unit,
     onEnterPipMode: () -> Unit
 ) {
-    // UI State
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val scrollState = rememberLazyListState()
     val state = rememberPullToRefreshState()
 
-    // Device State
     var isScreenOn by remember { mutableStateOf(true) }
     val context = LocalContext.current
-    val screenOffReceiver = remember { ScreenOffReceiver { isScreenOn = false } }
+    val activity = context as? MainActivity
+    val screenOffReceiver = remember {
+        ScreenOffReceiver {
+            isScreenOn = false
+            activity?.exitPipModeIfActive()
+        }
+    }
     val screenOnReceiver = remember { ScreenOnReceiver { isScreenOn = true } }
 
     val onBackPress: () -> Unit = {
@@ -164,6 +171,7 @@ fun AnimeWatchScreen(
                     watchState = watchState,
                     isScreenOn = isScreenOn,
                     playerUiState = playerUiState,
+                    hlsPlayerState = hlsPlayerState,
                     mainState = mainState,
                     updateStoredWatchState = { position, duration, screenshot ->
                         val updatedComplement =

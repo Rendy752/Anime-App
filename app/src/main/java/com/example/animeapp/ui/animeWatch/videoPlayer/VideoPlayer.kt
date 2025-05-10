@@ -22,19 +22,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.EpisodeSourcesQuery
-import com.example.animeapp.utils.HlsPlayerUtils
+import com.example.animeapp.utils.HlsPlayerState
 import com.example.animeapp.utils.IntroOutroHandler
 
 @OptIn(UnstableApi::class)
 @Composable
 fun VideoPlayer(
     playerView: PlayerView,
+    hlsPlayerState: HlsPlayerState,
     introOutroHandler: IntroOutroHandler?,
     mediaController: MediaControllerCompat?,
     episodeDetailComplement: EpisodeDetailComplement,
@@ -58,7 +58,6 @@ fun VideoPlayer(
     onFastForward: () -> Unit,
     onRewind: () -> Unit
 ) {
-    val playerState by HlsPlayerUtils.state.collectAsStateWithLifecycle()
     val showIntro = introOutroHandler?.showIntroButton?.value == true
     val showOutro = introOutroHandler?.showOutroButton?.value == true
     var isHolding by remember { mutableStateOf(false) }
@@ -76,8 +75,8 @@ fun VideoPlayer(
         object : MediaControllerCompat.Callback() {
             override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
                 state?.let {
-                    val isPlaying = playerState.isPlaying
-                    val isPlayerReady = playerState.isReady
+                    val isPlaying = hlsPlayerState.isPlaying
+                    val isPlayerReady = hlsPlayerState.isReady
                     if (isPlaying) {
                         setShowResumeOverlay(false)
                     }
@@ -92,8 +91,8 @@ fun VideoPlayer(
 
     val shouldShowResumeOverlay = isShowResumeOverlay &&
             episodeDetailComplement.lastTimestamp != null &&
-            playerState.isReady &&
-            !playerState.isPlaying &&
+            hlsPlayerState.isReady &&
+            !hlsPlayerState.isPlaying &&
             errorMessage == null
 
     DisposableEffect(
@@ -110,8 +109,8 @@ fun VideoPlayer(
         }
     }
 
-    LaunchedEffect(playerState.isReady, isShowResumeOverlay, isShowNextEpisode, errorMessage) {
-        if (playerState.isReady && !playerState.isPlaying && !isShowResumeOverlay && !isShowNextEpisode && errorMessage == null) {
+    LaunchedEffect(hlsPlayerState.isReady, isShowResumeOverlay, isShowNextEpisode, errorMessage) {
+        if (hlsPlayerState.isReady && !hlsPlayerState.isPlaying && !isShowResumeOverlay && !isShowNextEpisode && errorMessage == null) {
             Log.d("VideoPlayer", "Auto-playing video")
             onPlay()
         }

@@ -3,6 +3,7 @@ package com.example.animeapp.ui.main
 import android.app.PictureInPictureParams
 import android.content.Intent
 import android.util.Log
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
@@ -209,7 +210,7 @@ fun MainScreen(
                 val viewModel: AnimeWatchViewModel = hiltViewModel(LocalActivity.current as ViewModelStoreOwner)
                 val watchState by viewModel.watchState.collectAsStateWithLifecycle()
                 val playerUiState by viewModel.playerUiState.collectAsStateWithLifecycle()
-                val playerState by HlsPlayerUtils.state.collectAsStateWithLifecycle()
+                val hlsPlayerState by HlsPlayerUtils.state.collectAsStateWithLifecycle()
                 val activity = LocalActivity.current as? MainActivity
 
                 DisposableEffect(activity) {
@@ -224,10 +225,17 @@ fun MainScreen(
                     }
                 }
 
-                LaunchedEffect(playerUiState.isPipMode, playerState.isPlaying) {
+                LaunchedEffect(playerUiState.isPipMode, hlsPlayerState.isPlaying) {
+                    activity?.window?.let { window ->
+                        if (hlsPlayerState.isPlaying && !playerUiState.isPipMode) {
+                            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                        } else {
+                            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                        }
+                    }
                     if (playerUiState.isPipMode && activity != null) {
-                        Log.d("MainScreen", "Updating PiP params: isPlaying=${playerState.isPlaying}")
-                        val actions = buildPipActions(activity, playerState.isPlaying)
+                        Log.d("MainScreen", "Updating PiP params: isPlaying=${hlsPlayerState.isPlaying}")
+                        val actions = buildPipActions(activity, hlsPlayerState.isPlaying)
                         activity.setPictureInPictureParams(
                             PictureInPictureParams.Builder()
                                 .setActions(actions)
@@ -239,6 +247,7 @@ fun MainScreen(
                 DisposableEffect(Unit) {
                     onDispose {
                         activity?.setPictureInPictureParams(PictureInPictureParams.Builder().build())
+                        activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                     }
                 }
 
@@ -249,11 +258,12 @@ fun MainScreen(
                     mainState = mainState,
                     watchState = watchState,
                     playerUiState = playerUiState,
+                    hlsPlayerState = hlsPlayerState,
                     onAction = viewModel::onAction,
                     onEnterPipMode = {
                         if (isConnected && activity != null) {
-                            Log.d("MainScreen", "Entering PiP: isPlaying=${playerState.isPlaying}")
-                            val actions = buildPipActions(activity, playerState.isPlaying)
+                            Log.d("MainScreen", "Entering PiP: isPlaying=${hlsPlayerState.isPlaying}")
+                            val actions = buildPipActions(activity, hlsPlayerState.isPlaying)
                             activity.enterPictureInPictureMode(
                                 PictureInPictureParams.Builder()
                                     .setActions(actions)

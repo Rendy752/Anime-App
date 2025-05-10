@@ -30,7 +30,7 @@ import androidx.media3.ui.PlayerView
 import com.example.animeapp.models.Track
 import com.example.animeapp.utils.FullscreenUtils
 import com.example.animeapp.utils.HlsPlayerUtils
-import com.example.animeapp.utils.PlayerAction
+import com.example.animeapp.utils.HlsPlayerAction
 import androidx.media3.ui.R as RMedia3
 
 @SuppressLint("ClickableViewAccessibility")
@@ -170,7 +170,7 @@ fun PlayerViewWrapper(
                         isHolding = true
                         Handler(Looper.getMainLooper()).postDelayed({
                             if (isHolding && mediaController?.playbackState?.playbackSpeed != 2f && !isSeeking && mediaController?.playbackState?.state == PlaybackStateCompat.STATE_PLAYING) {
-                                HlsPlayerUtils.dispatch(PlayerAction.SetPlaybackSpeed(2f))
+                                HlsPlayerUtils.dispatch(HlsPlayerAction.SetPlaybackSpeed(2f))
                                 view.useController = false
                                 onSpeedChange(2f, true)
                                 isFromHolding = true
@@ -181,7 +181,7 @@ fun PlayerViewWrapper(
                     MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                         Handler(Looper.getMainLooper()).removeCallbacksAndMessages(null)
                         if (isFromHolding && mediaController != null) {
-                            HlsPlayerUtils.dispatch(PlayerAction.SetPlaybackSpeed(1f))
+                            HlsPlayerUtils.dispatch(HlsPlayerAction.SetPlaybackSpeed(1f))
                             view.useController = true
                             onSpeedChange(1f, false)
                         }

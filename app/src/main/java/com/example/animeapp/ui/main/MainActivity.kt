@@ -209,4 +209,10 @@ class MainActivity : AppCompatActivity() {
         Log.d("MainActivity", "onDestroy")
         (applicationContext as AnimeApplication).cleanupService()
     }
+
+    fun exitPipModeIfActive() {
+        if (isInPictureInPictureMode) {
+            moveTaskToBack(true)
+        }
+    }
 }

@@ -23,6 +23,7 @@ import com.example.animeapp.ui.animeWatch.videoPlayer.VideoPlayerSection
 import com.example.animeapp.ui.animeWatch.watchContent.WatchContentSection
 import com.example.animeapp.ui.common_ui.SkeletonBox
 import com.example.animeapp.ui.main.MainState
+import com.example.animeapp.utils.HlsPlayerState
 import com.example.animeapp.utils.Resource
 
 @Composable
@@ -31,6 +32,7 @@ fun AnimeWatchContent(
     watchState: WatchState,
     isScreenOn: Boolean,
     playerUiState: PlayerUiState,
+    hlsPlayerState: HlsPlayerState,
     mainState: MainState,
     updateStoredWatchState: (Long?, Long?, String?) -> Unit,
     onLoadEpisodeDetailComplement: (String) -> Unit,
@@ -53,6 +55,7 @@ fun AnimeWatchContent(
                         episodes = episodeList,
                         episodeSourcesQuery = query,
                         handleSelectedEpisodeServer = { handleSelectedEpisodeServer(it, true) },
+                        hlsPlayerState = hlsPlayerState,
                         isPipMode = playerUiState.isPipMode,
                         onEnterPipMode = onEnterPipMode,
                         isFullscreen = playerUiState.isFullscreen,
