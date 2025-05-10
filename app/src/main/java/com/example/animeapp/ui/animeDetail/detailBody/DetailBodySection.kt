@@ -2,6 +2,7 @@ package com.example.animeapp.ui.animeDetail.detailBody
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
@@ -27,14 +28,15 @@ import com.example.animeapp.ui.common_ui.ClickableDataTextWithIcon
 import com.example.animeapp.ui.common_ui.ClickableItem
 import com.example.animeapp.ui.common_ui.DataTextWithIcon
 import com.example.animeapp.ui.common_ui.DataTextWithIconSkeleton
+import com.example.animeapp.ui.main.navigation.NavRoute
+import com.example.animeapp.ui.main.navigation.navigateTo
 import com.example.animeapp.utils.basicContainer
-import com.example.animeapp.utils.Navigation.navigateWithFilter
 
 @Composable
 fun DetailBodySection(animeDetail: AnimeDetail, navController: NavController) {
     Column(
         modifier = Modifier
-            .basicContainer()
+            .basicContainer(outerPadding = PaddingValues(0.dp))
             .fillMaxWidth()
     ) {
         Row(
@@ -60,7 +62,12 @@ fun DetailBodySection(animeDetail: AnimeDetail, navController: NavController) {
 
                 val genreItems = animeDetail.genres?.map { genre ->
                     ClickableItem(genre.name) {
-                        navController.navigateWithFilter(genre, genreFilter = true)
+                        navController.navigateTo(
+                            NavRoute.SearchWithFilter.fromFilter(
+                                genreId = genre.mal_id,
+                                producerId = null
+                            )
+                        )
                     }
                 }
                 ClickableDataTextWithIcon("Genres", genreItems, Icons.AutoMirrored.Filled.Label)
@@ -70,21 +77,36 @@ fun DetailBodySection(animeDetail: AnimeDetail, navController: NavController) {
             ) {
                 val studioItems = animeDetail.studios?.map { studio ->
                     ClickableItem(studio.name) {
-                        navController.navigateWithFilter(studio)
+                        navController.navigateTo(
+                            NavRoute.SearchWithFilter.fromFilter(
+                                genreId = null,
+                                producerId = studio.mal_id
+                            )
+                        )
                     }
                 }
                 ClickableDataTextWithIcon("Studios", studioItems, Icons.Default.Apartment)
 
                 val producerItems = animeDetail.producers?.map { producer ->
                     ClickableItem(producer.name) {
-                        navController.navigateWithFilter(producer)
+                        navController.navigateTo(
+                            NavRoute.SearchWithFilter.fromFilter(
+                                genreId = null,
+                                producerId = producer.mal_id
+                            )
+                        )
                     }
                 }
                 ClickableDataTextWithIcon("Producers", producerItems, Icons.Default.Apartment)
 
                 val licensorItems = animeDetail.licensors?.map { licensor ->
                     ClickableItem(licensor.name) {
-                        navController.navigateWithFilter(licensor)
+                        navController.navigateTo(
+                            NavRoute.SearchWithFilter.fromFilter(
+                                genreId = null,
+                                producerId = licensor.mal_id
+                            )
+                        )
                     }
                 }
                 ClickableDataTextWithIcon("Licensors", licensorItems, Icons.Default.Apartment)
@@ -104,7 +126,7 @@ fun DetailBodySection(animeDetail: AnimeDetail, navController: NavController) {
 fun DetailBodySectionSkeleton() {
     Column(
         modifier = Modifier
-            .basicContainer()
+            .basicContainer(outerPadding = PaddingValues(0.dp))
             .fillMaxWidth()
     ) {
         Row(

@@ -1,8 +1,9 @@
 package com.example.animeapp.ui.animeWatch.watchContent
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -18,7 +19,8 @@ import com.example.animeapp.utils.basicContainer
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WatchEpisode(
-    getCachedEpisodeDetailComplement: suspend (String) -> EpisodeDetailComplement?,
+    episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
+    onLoadEpisodeDetailComplement: (String) -> Unit,
     episodeDetailComplement: Resource<EpisodeDetailComplement>,
     episodes: List<Episode>,
     episodeSourcesQuery: EpisodeSourcesQuery?,
@@ -27,29 +29,32 @@ fun WatchEpisode(
     val gridState = rememberLazyGridState()
     Column(
         modifier = Modifier
-            .basicContainer()
-            .fillMaxWidth()
+            .basicContainer(
+                outerPadding = PaddingValues(0.dp),
+                innerPadding = PaddingValues(8.dp)
+            )
+            .fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         EpisodeJump(episodes = episodes, gridState = gridState)
 
         if (episodeDetailComplement is Resource.Success) {
             EpisodeNavigation(
                 episodeDetailComplement = episodeDetailComplement.data,
-                getCachedEpisodeDetailComplement = getCachedEpisodeDetailComplement,
+                episodeDetailComplements = episodeDetailComplements,
+                onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,
                 episodes = episodes,
                 episodeSourcesQuery = episodeSourcesQuery,
                 handleSelectedEpisodeServer = handleSelectedEpisodeServer,
             )
         } else EpisodeNavigationSkeleton()
 
-        HorizontalDivider(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 8.dp)
-        )
+        HorizontalDivider(modifier = Modifier.fillMaxWidth())
+
         EpisodeSelectionGrid(
             episodes = episodes,
-            getCachedEpisodeDetailComplement = getCachedEpisodeDetailComplement,
+            episodeDetailComplements = episodeDetailComplements,
+            onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,
             episodeDetailComplement = if (episodeDetailComplement is Resource.Success) episodeDetailComplement.data else null,
             episodeSourcesQuery = episodeSourcesQuery,
             handleSelectedEpisodeServer = handleSelectedEpisodeServer,

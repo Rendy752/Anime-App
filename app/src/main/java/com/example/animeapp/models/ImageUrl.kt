@@ -13,3 +13,11 @@ data class ImageUrl(
     val large_image_url: String?,
     val maximum_image_url: String?
 ): Parcelable
+
+val imageUrlPlaceholder = ImageUrl(
+    image_url = "",
+    small_image_url = "",
+    medium_image_url = "",
+    large_image_url = "",
+    maximum_image_url = ""
+)

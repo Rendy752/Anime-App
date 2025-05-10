@@ -1,5 +1,6 @@
 package com.example.animeapp.ui.animeWatch.watchContent
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -13,17 +14,18 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.EpisodeSourcesQuery
 import com.example.animeapp.utils.Debounce
+import com.example.animeapp.utils.Resource
 
 @Composable
 fun EpisodeSelectionGrid(
     episodes: List<Episode>,
-    getCachedEpisodeDetailComplement: suspend (String) -> EpisodeDetailComplement?,
+    episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
+    onLoadEpisodeDetailComplement: (String) -> Unit,
     episodeDetailComplement: EpisodeDetailComplement?,
     episodeSourcesQuery: EpisodeSourcesQuery?,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
@@ -35,7 +37,6 @@ fun EpisodeSelectionGrid(
     LaunchedEffect(episodeDetailComplement) {
         if (episodeDetailComplement?.servers?.episodeId != null) {
             setSelectedEpisodeId(episodeDetailComplement.servers.episodeId)
-
         }
         if (currentEpisodeNo != null) {
             val index = episodes.indexOfFirst { it.episodeNo == currentEpisodeNo }
@@ -65,35 +66,27 @@ fun EpisodeSelectionGrid(
             .fillMaxWidth()
             .heightIn(max = 300.dp)
             .wrapContentHeight(),
-        columns = GridCells.Fixed(4),
+        columns = GridCells.Adaptive(minSize = 48.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         items(episodes) { episode ->
+            LaunchedEffect(episode.episodeId) {
+                if (episodeDetailComplements[episode.episodeId] == null) {
+                    onLoadEpisodeDetailComplement(episode.episodeId)
+                }
+            }
+            val complementResource = episodeDetailComplements[episode.episodeId]
             WatchEpisodeItem(
                 currentEpisode = episodeDetailComplement,
                 episode = episode,
-                getCachedEpisodeDetailComplement = getCachedEpisodeDetailComplement,
+                episodeDetailComplement = if (complementResource is Resource.Success) complementResource.data else null,
                 onEpisodeClick = { episodeId ->
                     setSelectedEpisodeId(episodeId)
                     debounce.query(episodeId)
                 },
                 isSelected = episode.episodeId == selectedEpisodeId
             )
-        }
-    }
-}
-
-@Preview
-@Composable
-fun EpisodeSelectionGridSkeleton(episodesSize: Int = 12) {
-    LazyVerticalGrid(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(max = 300.dp)
-            .wrapContentHeight(),
-        columns = GridCells.Fixed(4),
-    ) {
-        items(episodesSize) {
-            WatchEpisodeItemSkeleton()
         }
     }
 }

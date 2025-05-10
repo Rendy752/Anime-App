@@ -10,10 +10,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.example.animeapp.R
 import com.example.animeapp.models.AnimeSearchQueryState
 import com.example.animeapp.ui.animeSearch.components.ApplyButton
 import com.example.animeapp.ui.animeSearch.components.ResetButton
@@ -32,11 +30,7 @@ fun FilterBottomSheet(
 
     val filterState = remember { mutableStateOf(FilterUtils.FilterState(queryState)) }
 
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .padding(8.dp)
-    ) {
+    Column(Modifier.fillMaxWidth()) {
         FilterHeader(
             queryState,
             applyFilters,
@@ -67,7 +61,7 @@ private fun FilterHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            stringResource(R.string.filter),
+            "Filter",
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             style = MaterialTheme.typography.titleLarge,
@@ -124,6 +118,7 @@ private fun FilterContent(
     Column(
         Modifier
             .fillMaxWidth()
+            .padding(8.dp)
             .verticalScroll(scrollState)
     ) {
         Row(Modifier.fillMaxWidth()) {
@@ -134,7 +129,8 @@ private fun FilterContent(
                 { filterState.value = filterState.value.copy(type = it) },
                 Modifier
                     .weight(1f)
-                    .padding(end = 4.dp)
+                    .padding(end = 4.dp),
+                false
             )
             DropdownInputField(
                 "Status",
@@ -146,23 +142,22 @@ private fun FilterContent(
                     .padding(start = 4.dp)
             )
         }
+
+        Spacer(Modifier.height(8.dp))
+
         Row(Modifier.fillMaxWidth()) {
-            val selectedRatingDescription by remember {
-                derivedStateOf {
-                    FilterUtils.getRatingDescription(filterState.value.rating)
-                }
-            }
             DropdownInputField(
-                "Rating",
-                FilterUtils.RATING_OPTIONS.map { FilterUtils.getRatingDescription(it) },
-                selectedRatingDescription,
-                { selectedRating ->
-                    filterState.value =
-                        filterState.value.copy(rating = FilterUtils.RATING_OPTIONS.firstOrNull {
-                            FilterUtils.getRatingDescription(it) == selectedRating
-                        } ?: "Any")
+                label = "Rating",
+                options = FilterUtils.RATING_OPTIONS.values.toList(),
+                selectedValue = FilterUtils.RATING_OPTIONS[filterState.value.rating]
+                    ?: filterState.value.rating,
+                onValueChange = { selectedDescription ->
+                    val selectedKey = FilterUtils.RATING_OPTIONS.entries.firstOrNull {
+                        it.value == selectedDescription
+                    }?.key ?: filterState.value.rating
+                    filterState.value = filterState.value.copy(rating = selectedKey)
                 },
-                Modifier
+                modifier = Modifier
                     .weight(1f)
                     .padding(end = 4.dp)
             )
@@ -177,6 +172,7 @@ private fun FilterContent(
                 maxValue = 10.0
             )
         }
+
         Row(Modifier.fillMaxWidth()) {
             NumberInputField(
                 "Min Score",
@@ -199,6 +195,7 @@ private fun FilterContent(
                 maxValue = 10.0
             )
         }
+
         Row(Modifier.fillMaxWidth()) {
             DropdownInputField(
                 "Order By",
@@ -219,14 +216,33 @@ private fun FilterContent(
                     .padding(start = 4.dp)
             )
         }
+
+        Spacer(Modifier.height(8.dp))
+
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Checkbox(
-                    checked = filterState.value.enableDateRange,
-                    onCheckedChange = {
-                        filterState.value = filterState.value.copy(enableDateRange = it)
-                    })
-                Text("Enable Date Range")
+            Row(Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(
+                        checked = filterState.value.enableDateRange,
+                        onCheckedChange = {
+                            filterState.value = filterState.value.copy(enableDateRange = it)
+                        }
+                    )
+                    Text("Enable Date Range")
+                }
+                CheckboxInputField(
+                    "Include Unapproved",
+                    filterState.value.unapproved,
+                    { filterState.value = filterState.value.copy(unapproved = it) },
+                    Modifier
+                        .weight(1f)
+                        .padding(start = 4.dp)
+                )
             }
             if (filterState.value.enableDateRange) {
                 DateRangePickerInline(
@@ -240,26 +256,9 @@ private fun FilterContent(
                     },
                     {
                         filterState.value = filterState.value.copy(startDate = null, endDate = null)
-                    })
+                    }
+                )
             }
-        }
-        Row(Modifier.fillMaxWidth()) {
-            CheckboxInputField(
-                "Include Unapproved",
-                filterState.value.unapproved,
-                { filterState.value = filterState.value.copy(unapproved = it) },
-                Modifier
-                    .weight(1f)
-                    .padding(end = 4.dp)
-            )
-            CheckboxInputField(
-                "SFW Only",
-                filterState.value.sfw,
-                { filterState.value = filterState.value.copy(sfw = it) },
-                Modifier
-                    .weight(1f)
-                    .padding(start = 4.dp)
-            )
         }
     }
 }

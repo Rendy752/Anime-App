@@ -33,6 +33,7 @@ fun WatchHeader(
                     episode.filler,
                     episodeDetailComplement.copy(isFavorite = isFavorite)
                 ),
+                outerPadding = PaddingValues(0.dp),
                 innerPadding = PaddingValues(0.dp)
             )
             .fillMaxWidth(),
@@ -64,6 +65,7 @@ fun WatchHeaderSkeleton(
                     episode.filler,
                     episodeDetailComplement
                 ),
+                outerPadding = PaddingValues(0.dp),
                 innerPadding = PaddingValues(0.dp)
             )
             .fillMaxWidth(),

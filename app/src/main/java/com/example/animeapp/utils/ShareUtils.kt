@@ -3,6 +3,7 @@ package com.example.animeapp.utils
 import android.content.Context
 import android.content.Intent
 import com.example.animeapp.models.AnimeDetail
+import com.example.animeapp.utils.TextUtils.formatSynopsis
 
 object ShareUtils {
     fun shareAnimeDetail(context: Context, animeDetail: AnimeDetail?) {
@@ -12,7 +13,7 @@ object ShareUtils {
             val animeScore = detail.score ?: "0"
             val animeGenres = detail.genres?.joinToString(", ") { it.name }
 
-            val animeSynopsis = TextUtils.formatSynopsis(detail.synopsis ?: "-")
+            val animeSynopsis = detail.synopsis?.formatSynopsis()
             val animeTrailerUrl = detail.trailer.url ?: ""
             val malId = detail.mal_id
             val customUrl = "animeapp://anime/detail/$malId"
@@ -39,7 +40,7 @@ object ShareUtils {
             --------
             Synopsis
             --------
-            $animeSynopsis
+            ${animeSynopsis ?: "No synopsis available."}
             $trailerSection
 
             Web URL: $animeUrl

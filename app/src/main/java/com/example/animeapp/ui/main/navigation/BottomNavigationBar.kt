@@ -1,6 +1,12 @@
-package com.example.animeapp.ui.main
+package com.example.animeapp.ui.main.navigation
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -11,7 +17,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 
@@ -19,29 +24,48 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 fun BottomNavigationBar(navController: NavHostController) {
     NavigationBar(
         containerColor = MaterialTheme.colorScheme.surfaceContainer,
-        contentColor = MaterialTheme.colorScheme.onSurface,
+        contentColor = MaterialTheme.colorScheme.onSurface
     ) {
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = navBackStackEntry?.destination?.route
-        BottomScreen.entries.forEach { screen ->
+        NavRoute.bottomRoutes.forEach { screen ->
             NavigationBarItem(
                 modifier = Modifier.padding(horizontal = 4.dp),
-                icon = screen.icon,
+                icon = when (screen) {
+                    NavRoute.Home -> {
+                        { Icon(Icons.Filled.Home, contentDescription = "Home") }
+                    }
+
+                    NavRoute.Recommendations -> {
+                        {
+                            Icon(
+                                Icons.AutoMirrored.Filled.List,
+                                contentDescription = "Recommendations"
+                            )
+                        }
+                    }
+
+                    NavRoute.Search -> {
+                        { Icon(Icons.Filled.Search, contentDescription = "Search") }
+                    }
+
+                    NavRoute.Settings -> {
+                        { Icon(Icons.Filled.Settings, contentDescription = "Settings") }
+                    }
+
+                    else -> {
+                        {}
+                    }
+                },
                 label = {
                     Text(
-                        text = screen.label, maxLines = 1, overflow = TextOverflow.Ellipsis,
+                        text = screen.route.replaceFirstChar { it.uppercase() },
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 },
                 selected = currentRoute == screen.route,
-                onClick = {
-                    navController.navigate(screen.route) {
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            saveState = true
-                        }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
+                onClick = { navController.navigateTo(screen) },
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = MaterialTheme.colorScheme.primary,
                     selectedTextColor = MaterialTheme.colorScheme.primary,

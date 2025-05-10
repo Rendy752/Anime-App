@@ -1,34 +1,39 @@
 package com.example.animeapp.ui.animeDetail.relation
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.models.Relation
-import com.example.animeapp.utils.Resource
+import com.example.animeapp.ui.animeDetail.DetailAction
+import com.example.animeapp.ui.animeDetail.DetailState
 import com.example.animeapp.utils.basicContainer
 
 @Composable
 fun RelationSection(
     navController: NavController,
     relations: List<Relation>?,
-    getAnimeDetail: suspend (Int) -> Resource<AnimeDetailResponse>,
+    detailState: DetailState,
+    onAction: (DetailAction) -> Unit,
     onItemClickListener: (Int) -> Unit
 ) {
     if (relations.isNullOrEmpty()) return
 
     Column(
         modifier = Modifier
-            .basicContainer()
+            .basicContainer(outerPadding = PaddingValues(0.dp))
             .fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -49,8 +54,9 @@ fun RelationSection(
             items(relations) { relation ->
                 RelationEntryColumn(
                     relation = relation,
-                    getAnimeDetail = getAnimeDetail,
+                    detailState = detailState,
                     navController = navController,
+                    onAction = onAction,
                     onItemClickListener = onItemClickListener
                 )
             }

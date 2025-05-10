@@ -1,3 +1,4 @@
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import java.util.Properties
 
 plugins {
@@ -41,7 +42,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -66,6 +68,13 @@ android {
     hilt {
         enableAggregatingTask = true
     }
+    tasks.withType<Test> {
+        jvmArgs("-XX:+EnableDynamicAgentLoading")
+        testLogging {
+            showStackTraces = true
+            exceptionFormat = TestExceptionFormat.FULL
+        }
+    }
 }
 
 dependencies {
@@ -82,7 +91,6 @@ dependencies {
     implementation(libs.compose.navigation)
     implementation(libs.compose.ui.text.google.fonts)
     implementation(libs.compose.material.icons.extended)
-    implementation(libs.compose.material)
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.compose.ui.test.manifest)
 
@@ -94,6 +102,9 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)
+
+    // Worker
+    implementation(libs.androidx.work.runtime.ktx)
 
     // Coroutines
     implementation(libs.kotlinx.coroutines.android)
@@ -145,13 +156,10 @@ dependencies {
     kaptAndroidTest(libs.hilt.android.compiler)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.compose.ui.test.junit4)
-    androidTestImplementation(libs.mockito.kotlin)
 
     // Mocking Libraries
-    testImplementation(libs.mockito.core)
-    implementation(libs.mockito.core)
-    androidTestImplementation(libs.mockito.android)
     testImplementation(libs.mockk)
+    androidTestImplementation(libs.mockk)
 
     // --- Coroutines Testing ---
     androidTestImplementation(libs.kotlinx.coroutines.test)

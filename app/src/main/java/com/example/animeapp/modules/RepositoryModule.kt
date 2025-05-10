@@ -3,6 +3,7 @@ package com.example.animeapp.modules
 import com.example.animeapp.data.local.dao.AnimeDetailComplementDao
 import com.example.animeapp.data.local.dao.AnimeDetailDao
 import com.example.animeapp.data.local.dao.EpisodeDetailComplementDao
+import com.example.animeapp.data.local.dao.GenreDao
 import com.example.animeapp.data.remote.api.AnimeAPI
 import com.example.animeapp.di.AnimeRunwayApi
 import com.example.animeapp.di.JikanApi
@@ -46,7 +47,10 @@ object RepositoryModule {
     }
 
     @Provides
-    fun provideAnimeSearchRepository(@JikanApi animeAPI: AnimeAPI): AnimeSearchRepository {
-        return AnimeSearchRepository(animeAPI)
+    fun provideAnimeSearchRepository(
+        @JikanApi animeAPI: AnimeAPI,
+        genreDao: GenreDao
+    ): AnimeSearchRepository {
+        return AnimeSearchRepository(animeAPI, genreDao)
     }
 }

@@ -1,12 +1,11 @@
 package com.example.animeapp.ui.animeWatch.videoPlayer
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
@@ -40,6 +39,7 @@ fun ResumePlaybackOverlay(
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.padding(top = if (!isPipMode) 16.dp else 0.dp)
         ) {
             Text(
@@ -53,11 +53,15 @@ fun ResumePlaybackOverlay(
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onPrimary
             )
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 Row(
                     modifier = Modifier.basicContainer(
                         isTertiary = true,
                         onItemClick = onRestart,
+                        outerPadding = PaddingValues(0.dp),
                         innerPadding = PaddingValues(8.dp)
                     ),
                     verticalAlignment = Alignment.CenterVertically
@@ -72,11 +76,12 @@ fun ResumePlaybackOverlay(
                         color = MaterialTheme.colorScheme.onTertiary
                     )
                 }
-                Spacer(modifier = Modifier.width(16.dp))
+
                 Row(
                     modifier = Modifier.basicContainer(
                         isPrimary = true,
                         onItemClick = { onResume(lastTimestamp) },
+                        outerPadding = PaddingValues(0.dp),
                         innerPadding = PaddingValues(8.dp)
                     ),
                     verticalAlignment = Alignment.CenterVertically

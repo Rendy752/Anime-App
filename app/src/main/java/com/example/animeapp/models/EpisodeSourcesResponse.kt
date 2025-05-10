@@ -21,5 +21,5 @@ val episodeSourcesResponsePlaceholder = EpisodeSourcesResponse(
     outro = timeRangePlaceholder,
     sources = listOf(sourcePlaceholder),
     anilistID = 1,
-    malID = 1
+    malID = 1735
 )

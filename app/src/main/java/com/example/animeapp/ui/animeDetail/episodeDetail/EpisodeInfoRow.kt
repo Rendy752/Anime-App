@@ -25,7 +25,6 @@ fun EpisodeInfoRow(
     )
 
     val nonNullCounts = counts.filterNotNull()
-
     if (nonNullCounts.isNotEmpty()) {
         Row(
             modifier = modifier.fillMaxWidth(),

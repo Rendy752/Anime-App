@@ -8,6 +8,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.example.animeapp.utils.TextUtils.toTitleCase
 import java.time.LocalDate
 
 @Composable
@@ -18,7 +19,7 @@ fun NumberInputField(
     modifier: Modifier = Modifier,
     minValue: Double? = null,
     maxValue: Double? = null
-){
+) {
     var isError by remember { mutableStateOf(false) }
 
     OutlinedTextField(
@@ -44,8 +45,6 @@ fun NumberInputField(
             } else {
                 isError = true
             }
-
-
         },
         label = { Text(label) },
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
@@ -60,7 +59,8 @@ fun DropdownInputField(
     options: List<String>,
     selectedValue: String,
     onValueChange: (String) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isFormatLabel: Boolean = true,
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -71,21 +71,28 @@ fun DropdownInputField(
     ) {
         OutlinedTextField(
             readOnly = true,
-            value = selectedValue,
+            value = if (isFormatLabel) selectedValue.toTitleCase() else selectedValue,
             onValueChange = {},
             label = { Text(label) },
             singleLine = true,
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-            modifier = Modifier.menuAnchor().fillMaxWidth()
+            modifier = Modifier
+                .menuAnchor(
+                    type = ExposedDropdownMenuAnchorType.PrimaryEditable,
+                    enabled = true
+                )
+                .fillMaxWidth()
         )
         ExposedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false },
-            modifier = Modifier.exposedDropdownSize(true).fillMaxWidth()
+            modifier = Modifier
+                .exposedDropdownSize(matchAnchorWidth = true)
+                .fillMaxWidth()
         ) {
             options.forEach { option ->
                 DropdownMenuItem(
-                    text = { Text(option) },
+                    text = { Text(if (isFormatLabel) option.toTitleCase() else option) },
                     onClick = {
                         onValueChange(option)
                         expanded = false
@@ -133,6 +140,7 @@ fun DateRangePickerInline(
             state = dateRangePickerState,
             modifier = Modifier
                 .fillMaxWidth()
+                .padding(horizontal = 8.dp)
                 .height(400.dp)
         )
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
@@ -145,9 +153,14 @@ fun DateRangePickerInline(
         }
     }
 
-    LaunchedEffect(dateRangePickerState.selectedStartDateMillis, dateRangePickerState.selectedEndDateMillis) {
-        val newStartDate = dateRangePickerState.selectedStartDateMillis?.let { LocalDate.ofEpochDay(it / 86400000) }
-        val newEndDate = dateRangePickerState.selectedEndDateMillis?.let { LocalDate.ofEpochDay(it / 86400000) }
+    LaunchedEffect(
+        dateRangePickerState.selectedStartDateMillis,
+        dateRangePickerState.selectedEndDateMillis
+    ) {
+        val newStartDate =
+            dateRangePickerState.selectedStartDateMillis?.let { LocalDate.ofEpochDay(it / 86400000) }
+        val newEndDate =
+            dateRangePickerState.selectedEndDateMillis?.let { LocalDate.ofEpochDay(it / 86400000) }
 
         if (newStartDate != startDate || newEndDate != endDate) {
             onDateRangeSelected(Pair(newStartDate, newEndDate))

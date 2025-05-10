@@ -1,5 +1,6 @@
 package com.example.animeapp.ui.animeSearch
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -10,114 +11,80 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.hilt.navigation.compose.hiltViewModel
-import com.example.animeapp.ui.animeSearch.bottomSheet.FilterBottomSheet
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import com.example.animeapp.models.Genre
-import com.example.animeapp.models.Producer
+import com.example.animeapp.ui.animeSearch.bottomSheet.FilterBottomSheet
 import com.example.animeapp.ui.animeSearch.bottomSheet.GenresBottomSheet
 import com.example.animeapp.ui.animeSearch.bottomSheet.ProducersBottomSheet
-import com.example.animeapp.ui.common_ui.LimitAndPaginationSection
+import com.example.animeapp.ui.animeSearch.genreProducerFilterField.GenreProducerFilterFieldSection
 import com.example.animeapp.ui.animeSearch.results.ResultsSection
 import com.example.animeapp.ui.animeSearch.searchField.SearchFieldSection
-import com.example.animeapp.ui.animeSearch.genreProducerFilterField.GenreProducerFilterFieldSection
 import com.example.animeapp.ui.common_ui.LimitAndPaginationQueryState
-import com.example.animeapp.ui.main.BottomScreen
+import com.example.animeapp.ui.common_ui.LimitAndPaginationSection
 import com.example.animeapp.ui.main.MainState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import com.example.animeapp.utils.Resource
 
+@SuppressLint("ConfigurationScreenWidthHeight")
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview
 @Composable
 fun AnimeSearchScreen(
     navController: NavHostController = rememberNavController(),
     mainState: MainState = MainState(),
-    genre: Genre? = null,
-    producer: Producer? = null,
+    genreId: Int? = null,
+    producerId: Int? = null,
+    searchState: SearchState = SearchState(),
+    filterSelectionState: FilterSelectionState = FilterSelectionState(),
+    onAction: (SearchAction) -> Unit = {}
 ) {
-    val viewModel: AnimeSearchViewModel = hiltViewModel()
-
-    val queryState by viewModel.queryState.collectAsStateWithLifecycle()
-    val animeSearchResults by viewModel.animeSearchResults.collectAsStateWithLifecycle()
-
-    val genres by viewModel.genres.collectAsStateWithLifecycle()
-    val selectedGenres by viewModel.selectedGenres.collectAsStateWithLifecycle()
-
-    val producers by viewModel.producers.collectAsStateWithLifecycle()
-    val selectedProducers by viewModel.selectedProducers.collectAsStateWithLifecycle()
-    val producersQueryState by viewModel.producersQueryState.collectAsStateWithLifecycle()
-    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
     val state = rememberPullToRefreshState()
     var isFilterBottomSheetShow by remember { mutableStateOf(false) }
     var isGenresBottomSheetShow by remember { mutableStateOf(false) }
     var isProducersBottomSheetShow by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
-    fun handleInitialFetch() {
-        if (genre != null) {
-            viewModel.applyGenreFilters()
-        } else if (producer != null) {
-            viewModel.applyProducerFilters()
-        } else if (animeSearchResults.data == null) viewModel.searchAnime()
-    }
-
     LaunchedEffect(mainState.isConnected) {
         if (!mainState.isConnected) return@LaunchedEffect
 
-        if (genres is Resource.Error) viewModel.fetchGenres()
-        if (producers is Resource.Error) viewModel.fetchProducers()
-        if (animeSearchResults is Resource.Error) {
-            handleInitialFetch()
+        if (searchState.genres is Resource.Error) onAction(SearchAction.FetchGenres)
+        if (searchState.producers is Resource.Error) onAction(SearchAction.FetchProducers)
+        if (searchState.animeSearchResults is Resource.Error) {
+            onAction(SearchAction.HandleInitialFetch(genreId = genreId, producerId = producerId))
         }
     }
 
     LaunchedEffect(Unit) {
-        if (genres !is Resource.Success) viewModel.fetchGenres()
-        if (producers !is Resource.Success) viewModel.fetchProducers()
-        if (genre != null) {
-            viewModel.setSelectedGenre(genre)
-        } else if (producer != null) {
-            viewModel.setSelectedProducer(producer)
-        }
-        handleInitialFetch()
+        onAction(SearchAction.HandleInitialFetch(genreId, producerId))
     }
 
     Scaffold(
         topBar = {
-            if (!mainState.isLandscape) {
+            if (!mainState.isLandscape && (genreId != null || producerId != null)) {
                 Column {
                     TopAppBar(
                         title = {
                             Text(
-                                text = BottomScreen.Search.label,
+                                text = "Search",
                                 modifier = Modifier.padding(end = 8.dp),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis
                             )
                         },
                         navigationIcon = {
-                            if (genre != null || producer != null) {
-                                IconButton(onClick = { navController.popBackStack() }) {
-                                    Icon(
-                                        Icons.AutoMirrored.Filled.ArrowBack,
-                                        contentDescription = "Back"
-                                    )
-                                }
+                            IconButton(onClick = { navController.popBackStack() }) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = "Back"
+                                )
                             }
-                        },
-                        colors = TopAppBarDefaults.topAppBarColors(
-                            titleContentColor = MaterialTheme.colorScheme.primary
-                        )
+                        }
                     )
                     HorizontalDivider(
                         color = MaterialTheme.colorScheme.surfaceContainer,
@@ -128,198 +95,215 @@ fun AnimeSearchScreen(
         }
     ) { paddingValues ->
         PullToRefreshBox(
-            isRefreshing = isRefreshing,
-            onRefresh = { viewModel.applyFilters(queryState) },
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
+            isRefreshing = searchState.isRefreshing,
+            onRefresh = { onAction(SearchAction.ApplyFilters(searchState.queryState)) },
+            modifier = Modifier.padding(paddingValues),
             state = state,
             indicator = {
                 PullToRefreshDefaults.Indicator(
-                    isRefreshing = isRefreshing,
+                    isRefreshing = searchState.isRefreshing,
                     containerColor = MaterialTheme.colorScheme.primary,
                     color = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.align(Alignment.TopCenter),
                     state = state
                 )
-            },
+            }
         ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                if (mainState.isLandscape) {
-                    Row {
-                        Column(
-                            modifier = Modifier
-                                .weight(0.5f)
-                                .verticalScroll(rememberScrollState())
-                                .fillMaxHeight()
-                                .clip(MaterialTheme.shapes.extraLarge),
-                            verticalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            SearchFieldSection(
-                                queryState = queryState,
-                                onQueryChanged = viewModel::applyFilters,
-                                isFilterBottomSheetShow = isFilterBottomSheetShow,
-                                resetBottomSheetFilters = viewModel::resetBottomSheetFilters,
-                                onFilterClick = { isFilterBottomSheetShow = true }
-                            )
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                            GenreProducerFilterFieldSection(
-                                selectedGenres,
-                                viewModel::setSelectedGenre,
-                                viewModel::applyGenreFilters,
-                                selectedProducers,
-                                viewModel::setSelectedProducer,
-                                viewModel::applyProducerFilters,
-                                isGenresBottomSheetShow,
-                                isProducersBottomSheetShow,
-                                setGenresBottomSheet = {
-                                    isGenresBottomSheetShow = it
-                                },
-                                setProducersBottomSheet = { isProducersBottomSheetShow = it }
-                            )
-                            HorizontalDivider(modifier = Modifier.padding(bottom = 8.dp))
-                            LimitAndPaginationSection(
-                                isVisible = animeSearchResults is Resource.Success,
-                                pagination = animeSearchResults.data?.pagination,
-                                query = LimitAndPaginationQueryState(
-                                    queryState.page,
-                                    queryState.limit
-                                ),
-                                onQueryChanged = {
-                                    viewModel.applyFilters(
-                                        queryState.copy(
-                                            page = it.page,
-                                            limit = it.limit
-                                        )
-                                    )
-                                },
-                                false
-                            )
-                        }
-                        VerticalDivider()
-                        Box(
-                            modifier = Modifier
-                                .weight(0.5f)
-                                .fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            ResultsSection(
-                                navController,
-                                animeSearchResults,
-                                selectedGenres,
-                                genres,
-                            ) { genre ->
-                                viewModel.setSelectedGenre(genre)
-                                viewModel.applyGenreFilters()
-                            }
-                        }
-                    }
-                } else {
-                    Column(modifier = Modifier.fillMaxSize()) {
+            if (mainState.isLandscape) {
+                Row(modifier = Modifier.fillMaxSize()) {
+                    Column(
+                        modifier = Modifier
+                            .weight(0.5f)
+                            .fillMaxHeight()
+                            .verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.SpaceBetween
+                    ) {
                         SearchFieldSection(
-                            queryState = queryState,
-                            onQueryChanged = viewModel::applyFilters,
+                            queryState = searchState.queryState,
+                            onQueryChanged = { updatedQueryState ->
+                                onAction(SearchAction.ApplyFilters(updatedQueryState))
+                            },
                             isFilterBottomSheetShow = isFilterBottomSheetShow,
-                            resetBottomSheetFilters = viewModel::resetBottomSheetFilters,
+                            resetBottomSheetFilters = { onAction(SearchAction.ResetBottomSheetFilters) },
                             onFilterClick = { isFilterBottomSheetShow = true }
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                         GenreProducerFilterFieldSection(
-                            selectedGenres,
-                            viewModel::setSelectedGenre,
-                            viewModel::applyGenreFilters,
-                            selectedProducers,
-                            viewModel::setSelectedProducer,
-                            viewModel::applyProducerFilters,
-                            isGenresBottomSheetShow,
-                            isProducersBottomSheetShow,
+                            selectedGenres = filterSelectionState.selectedGenres,
+                            setSelectedGenre = { genre ->
+                                onAction(SearchAction.SetSelectedGenre(genre))
+                            },
+                            applyGenreFilters = { onAction(SearchAction.ApplyGenreFilters) },
+                            selectedProducers = filterSelectionState.selectedProducers,
+                            setSelectedProducer = { producer ->
+                                onAction(SearchAction.SetSelectedProducer(producer))
+                            },
+                            applyProducerFilters = { onAction(SearchAction.ApplyProducerFilters) },
+                            isGenresBottomSheetShow = isGenresBottomSheetShow,
+                            isProducersBottomSheetShow = isProducersBottomSheetShow,
                             setGenresBottomSheet = { isGenresBottomSheetShow = it },
                             setProducersBottomSheet = { isProducersBottomSheetShow = it }
                         )
-                        HorizontalDivider()
-                        Column(modifier = Modifier.weight(1f)) {
-                            ResultsSection(
-                                navController,
-                                animeSearchResults,
-                                selectedGenres,
-                                genres,
-                            ) { genre ->
-                                viewModel.setSelectedGenre(genre)
-                                viewModel.applyGenreFilters()
-                            }
-                        }
+                        HorizontalDivider(modifier = Modifier.padding(bottom = 8.dp))
                         LimitAndPaginationSection(
-                            isVisible = animeSearchResults is Resource.Success,
-                            pagination = animeSearchResults.data?.pagination,
+                            isVisible = searchState.animeSearchResults is Resource.Success,
+                            pagination = searchState.animeSearchResults.data?.pagination,
                             query = LimitAndPaginationQueryState(
-                                queryState.page,
-                                queryState.limit
+                                searchState.queryState.page,
+                                searchState.queryState.limit
                             ),
-                            onQueryChanged = {
-                                viewModel.applyFilters(
-                                    queryState.copy(
-                                        page = it.page,
-                                        limit = it.limit
+                            onQueryChanged = { updatedQuery ->
+                                onAction(
+                                    SearchAction.ApplyFilters(
+                                        searchState.queryState.copy(
+                                            page = updatedQuery.page,
+                                            limit = updatedQuery.limit
+                                        )
                                     )
                                 )
-                            }
+                            },
+                            useHorizontalPager = false
                         )
                     }
+
+                    VerticalDivider()
+
+                    ResultsSection(
+                        modifier = Modifier.weight(0.5f),
+                        navController = navController,
+                        query = searchState.queryState.query,
+                        animeSearchResults = searchState.animeSearchResults,
+                        selectedGenres = filterSelectionState.selectedGenres,
+                        genres = searchState.genres,
+                        onGenreClick = { genre ->
+                            onAction(SearchAction.SetSelectedGenre(genre))
+                            onAction(SearchAction.ApplyGenreFilters)
+                        }
+                    )
+                }
+            } else {
+                Column(modifier = Modifier.fillMaxSize()) {
+                    SearchFieldSection(
+                        queryState = searchState.queryState,
+                        onQueryChanged = { updatedQueryState ->
+                            onAction(SearchAction.ApplyFilters(updatedQueryState))
+                        },
+                        isFilterBottomSheetShow = isFilterBottomSheetShow,
+                        resetBottomSheetFilters = { onAction(SearchAction.ResetBottomSheetFilters) },
+                        onFilterClick = { isFilterBottomSheetShow = true }
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    GenreProducerFilterFieldSection(
+                        selectedGenres = filterSelectionState.selectedGenres,
+                        setSelectedGenre = { genre ->
+                            onAction(SearchAction.SetSelectedGenre(genre))
+                        },
+                        applyGenreFilters = { onAction(SearchAction.ApplyGenreFilters) },
+                        selectedProducers = filterSelectionState.selectedProducers,
+                        setSelectedProducer = { producer ->
+                            onAction(SearchAction.SetSelectedProducer(producer))
+                        },
+                        applyProducerFilters = { onAction(SearchAction.ApplyProducerFilters) },
+                        isGenresBottomSheetShow = isGenresBottomSheetShow,
+                        isProducersBottomSheetShow = isProducersBottomSheetShow,
+                        setGenresBottomSheet = { isGenresBottomSheetShow = it },
+                        setProducersBottomSheet = { isProducersBottomSheetShow = it }
+                    )
+
+                    HorizontalDivider()
+
+                    ResultsSection(
+                        modifier = Modifier.weight(1f),
+                        navController = navController,
+                        query = searchState.queryState.query,
+                        animeSearchResults = searchState.animeSearchResults,
+                        selectedGenres = filterSelectionState.selectedGenres,
+                        genres = searchState.genres,
+                        onGenreClick = { genre ->
+                            onAction(SearchAction.SetSelectedGenre(genre))
+                            onAction(SearchAction.ApplyGenreFilters)
+                        }
+                    )
+
+                    LimitAndPaginationSection(
+                        isVisible = searchState.animeSearchResults is Resource.Success,
+                        pagination = searchState.animeSearchResults.data?.pagination,
+                        query = LimitAndPaginationQueryState(
+                            searchState.queryState.page,
+                            searchState.queryState.limit
+                        ),
+                        onQueryChanged = { updatedQuery ->
+                            onAction(
+                                SearchAction.ApplyFilters(
+                                    searchState.queryState.copy(
+                                        page = updatedQuery.page,
+                                        limit = updatedQuery.limit
+                                    )
+                                )
+                            )
+                        }
+                    )
                 }
             }
 
             val configuration = LocalConfiguration.current
-            val screenWidth = configuration.screenWidthDp.dp
-            val screenHeight = configuration.screenHeightDp.dp
-            val bottomPadding = 48.dp
+            val bottomSheetWidthFraction = if (mainState.isLandscape) 0.7f else 0.95f
+            val bottomSheetHeightFraction = if (mainState.isLandscape) 0.9f else 0.6f
             val containerColor = MaterialTheme.colorScheme.surfaceContainer
+            val bottomPadding = 48.dp
             val shape = MaterialTheme.shapes.extraLarge
 
             if (isFilterBottomSheetShow) {
                 ModalBottomSheet(
                     modifier = Modifier
-                        .height(if (mainState.isLandscape) screenHeight * 0.95f else screenHeight * 0.6f)
-                        .width(if (mainState.isLandscape) screenWidth * 0.7f else screenWidth * 0.95f)
+                        .height((configuration.screenHeightDp * bottomSheetHeightFraction).dp)
+                        .width((configuration.screenWidthDp * bottomSheetWidthFraction).dp)
                         .padding(bottom = if (mainState.isLandscape) 0.dp else bottomPadding)
                         .align(Alignment.BottomCenter),
+                    sheetGesturesEnabled = false,
                     containerColor = containerColor,
                     sheetState = sheetState,
                     onDismissRequest = { isFilterBottomSheetShow = false },
-                    shape = shape
+                    shape = shape,
+                    contentWindowInsets = { WindowInsets(0.dp) }
                 ) {
-                    Column(modifier = Modifier.clip(shape)) {
-                        FilterBottomSheet(
-                            queryState = queryState,
-                            applyFilters = viewModel::applyFilters,
-                            resetBottomSheetFilters = viewModel::resetBottomSheetFilters,
-                            onDismiss = { isFilterBottomSheetShow = false }
-                        )
-                    }
+                    FilterBottomSheet(
+                        queryState = searchState.queryState,
+                        applyFilters = { updatedQueryState ->
+                            onAction(SearchAction.ApplyFilters(updatedQueryState))
+                        },
+                        resetBottomSheetFilters = { onAction(SearchAction.ResetBottomSheetFilters) },
+                        onDismiss = { isFilterBottomSheetShow = false }
+                    )
                 }
             }
 
             if (isGenresBottomSheetShow) {
                 ModalBottomSheet(
                     modifier = Modifier
-                        .height(if (mainState.isLandscape) screenHeight * 0.95f else screenHeight * 0.6f)
-                        .width(if (mainState.isLandscape) screenWidth * 0.9f else screenWidth * 0.95f)
+                        .height((configuration.screenHeightDp * bottomSheetHeightFraction).dp)
+                        .width((configuration.screenWidthDp * bottomSheetWidthFraction).dp)
                         .padding(bottom = if (mainState.isLandscape) 0.dp else bottomPadding)
                         .align(Alignment.BottomCenter),
                     containerColor = containerColor,
                     sheetState = sheetState,
                     onDismissRequest = { isGenresBottomSheetShow = false },
-                    shape = shape
+                    shape = shape,
+                    contentWindowInsets = { WindowInsets(0.dp) }
                 ) {
                     Column(modifier = Modifier.clip(shape)) {
                         GenresBottomSheet(
-                            queryState,
-                            viewModel::fetchGenres,
-                            genres,
-                            selectedGenres,
-                            viewModel::setSelectedGenre,
-                            viewModel::resetGenreSelection,
-                            viewModel::applyGenreFilters,
-                            onDismiss = { isGenresBottomSheetShow = false })
+                            queryState = searchState.queryState,
+                            fetchGenres = { onAction(SearchAction.FetchGenres) },
+                            genres = searchState.genres,
+                            selectedGenres = filterSelectionState.selectedGenres,
+                            setSelectedGenre = { genre ->
+                                onAction(SearchAction.SetSelectedGenre(genre))
+                            },
+                            resetGenreSelection = { onAction(SearchAction.ResetGenreSelection) },
+                            applyGenreFilters = { onAction(SearchAction.ApplyGenreFilters) },
+                            onDismiss = { isGenresBottomSheetShow = false }
+                        )
                     }
                 }
             }
@@ -327,26 +311,33 @@ fun AnimeSearchScreen(
             if (isProducersBottomSheetShow) {
                 ModalBottomSheet(
                     modifier = Modifier
-                        .height(if (mainState.isLandscape) screenHeight * 0.95f else screenHeight * 0.6f)
-                        .width(if (mainState.isLandscape) screenWidth * 0.9f else screenWidth * 0.95f)
+                        .height((configuration.screenHeightDp * bottomSheetHeightFraction).dp)
+                        .width((configuration.screenWidthDp * bottomSheetWidthFraction).dp)
                         .padding(bottom = if (mainState.isLandscape) 0.dp else bottomPadding)
                         .align(Alignment.BottomCenter),
                     containerColor = containerColor,
                     sheetState = sheetState,
                     onDismissRequest = { isProducersBottomSheetShow = false },
-                    shape = shape
+                    shape = shape,
+                    contentWindowInsets = { WindowInsets(0.dp) }
                 ) {
                     Column(modifier = Modifier.clip(shape)) {
                         ProducersBottomSheet(
-                            queryState,
-                            producers,
-                            viewModel::fetchProducers,
-                            selectedProducers,
-                            producersQueryState,
-                            viewModel::applyProducerQueryStateFilters,
-                            viewModel::setSelectedProducer,
-                            viewModel::applyProducerFilters,
-                            viewModel::resetProducerSelection,
+                            queryState = searchState.queryState,
+                            producers = searchState.producers,
+                            fetchProducers = { onAction(SearchAction.FetchProducers) },
+                            selectedProducers = filterSelectionState.selectedProducers,
+                            producersQueryState = searchState.producersQueryState,
+                            applyProducerQueryStateFilters = { updatedQueryState ->
+                                onAction(
+                                    SearchAction.ApplyProducerQueryStateFilters(updatedQueryState)
+                                )
+                            },
+                            setSelectedProducer = { producer ->
+                                onAction(SearchAction.SetSelectedProducer(producer))
+                            },
+                            applyProducerFilters = { onAction(SearchAction.ApplyProducerFilters) },
+                            resetProducerSelection = { onAction(SearchAction.ResetProducerSelection) },
                             onDismiss = { isProducersBottomSheetShow = false }
                         )
                     }

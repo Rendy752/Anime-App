@@ -1,101 +1,154 @@
 package com.example.animeapp.ui.settings
 
-import androidx.appcompat.app.AppCompatDelegate
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.os.Build.VERSION.SDK_INT
+import android.provider.Settings
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.scale
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.animeapp.R
-import com.example.animeapp.ui.main.BottomScreen
+import androidx.core.content.ContextCompat
+import com.example.animeapp.ui.common_ui.ToggleWithLabel
 import com.example.animeapp.ui.main.MainAction
 import com.example.animeapp.ui.main.MainState
+import com.example.animeapp.ui.settings.components.ColorStyleCard
+import com.example.animeapp.ui.settings.components.ContrastModeChips
+import com.example.animeapp.ui.theme.ColorStyle
+import com.example.animeapp.utils.Resource
+import androidx.navigation.NavBackStackEntry
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview
 @Composable
 fun SettingsScreen(
     mainState: MainState = MainState(),
-    mainAction: (MainAction) -> Unit = {}
+    mainAction: (MainAction) -> Unit = {},
+    state: SettingsState = SettingsState(),
+    action: (SettingsAction) -> Unit = {},
+    navBackStackEntry: NavBackStackEntry? = null
 ) {
-    Scaffold(
-        topBar = {
-            Column {
-                TopAppBar(
-                    title = {
-                        Text(
-                            text = BottomScreen.Settings.label,
-                            modifier = Modifier.padding(end = 8.dp),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        titleContentColor = MaterialTheme.colorScheme.primary
-                    )
-                )
-                HorizontalDivider(
-                    color = MaterialTheme.colorScheme.surfaceContainer,
-                    thickness = 2.dp
-                )
-            }
-        },
-    ) { paddingValues ->
+    val colorStyleCardScrollState = rememberScrollState()
+    val context = LocalContext.current
+
+    val settingsLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { _ -> mainAction(MainAction.CheckNotificationPermission) }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        mainAction(MainAction.SetNotificationEnabled(isGranted))
+        if (!isGranted) {
+            settingsLauncher.launch(
+                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                    putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                }
+            )
+        }
+        mainAction(MainAction.CheckNotificationPermission)
+    }
+
+    LaunchedEffect(mainState.isConnected) {
+        if (!mainState.isConnected) return@LaunchedEffect
+        if (state.animeDetailSample is Resource.Error) action(SettingsAction.GetRandomAnime)
+    }
+
+    Scaffold { paddingValues ->
         Column(
             modifier = Modifier
-                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(paddingValues)
-                .padding(16.dp)
+                .padding(start = 8.dp, end = 8.dp, bottom = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text(text = stringResource(id = R.string.dark_mode))
-                    Text(
-                        text = stringResource(id = R.string.dark_mode_description),
-                        fontSize = 12.sp
-                    )
-                }
+            ToggleWithLabel(
+                isActive = mainState.isDarkMode,
+                label = "Dark Mode",
+                description = "Enable dark mode",
+                onToggle = { mainAction(MainAction.SetDarkMode(it)) },
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
 
-                val animatedScale by animateFloatAsState(
-                    targetValue = if (mainState.isDarkMode) 1.2f else 1f,
-                    label = "scale"
-                )
-
-                Switch(
-                    checked = mainState.isDarkMode,
-                    modifier = Modifier
-                        .scale(animatedScale)
-                        .padding(10.dp),
-                    onCheckedChange = { checked ->
-                        mainAction(MainAction.SetDarkMode(checked))
-                        if (checked) {
-                            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+            ToggleWithLabel(
+                isActive = mainState.notificationEnabled,
+                label = "Notifications",
+                description = "Enable notifications",
+                onToggle = { enable ->
+                    if (enable) {
+                        if (SDK_INT >= 33) {
+                            val permissionStatus = ContextCompat.checkSelfPermission(
+                                context,
+                                "android.permission.POST_NOTIFICATIONS"
+                            )
+                            val isGranted = permissionStatus == PackageManager.PERMISSION_GRANTED
+                            if (isGranted) {
+                                mainAction(MainAction.SetNotificationEnabled(true))
+                            } else {
+                                val shouldShowRequest =
+                                    (context as? ComponentActivity)?.shouldShowRequestPermissionRationale(
+                                        "android.permission.POST_NOTIFICATIONS"
+                                    )
+                                if (shouldShowRequest == true) {
+                                    permissionLauncher.launch("android.permission.POST_NOTIFICATIONS")
+                                } else {
+                                    settingsLauncher.launch(
+                                        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                            putExtra(
+                                                Settings.EXTRA_APP_PACKAGE,
+                                                context.packageName
+                                            )
+                                        }
+                                    )
+                                }
+                            }
                         } else {
-                            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+                            mainAction(MainAction.SetNotificationEnabled(true))
                         }
+                    } else {
+                        settingsLauncher.launch(
+                            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                            }
+                        )
                     }
+                },
+                modifier = Modifier.padding(vertical = 8.dp)
+            )
+
+            ContrastModeChips(
+                selectedContrastMode = mainState.contrastMode,
+                onContrastModeChanged = { mainAction(MainAction.SetContrastMode(it)) }
+            )
+
+            Text(
+                text = "Color Style",
+                style = MaterialTheme.typography.titleMedium
+            )
+            ColorStyle.entries.forEach { style ->
+                ColorStyleCard(
+                    animeDetailSample = state.animeDetailSample,
+                    state = colorStyleCardScrollState,
+                    colorStyle = style,
+                    isSelected = style == mainState.colorStyle,
+                    isDarkMode = mainState.isDarkMode,
+                    contrastMode = mainState.contrastMode,
+                    onColorStyleSelected = { mainAction(MainAction.SetColorStyle(style)) },
+                    navBackStackEntry = navBackStackEntry
                 )
             }
         }

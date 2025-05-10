@@ -13,15 +13,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.models.Relation
-import com.example.animeapp.utils.Resource
+import com.example.animeapp.ui.animeDetail.DetailAction
+import com.example.animeapp.ui.animeDetail.DetailState
 
 @Composable
 fun RelationEntryColumn(
     relation: Relation,
-    getAnimeDetail: suspend (Int) -> Resource<AnimeDetailResponse>,
+    detailState: DetailState,
     navController: NavController,
+    onAction: (DetailAction) -> Unit,
     onItemClickListener: (Int) -> Unit
 ) {
     Column {
@@ -41,8 +42,9 @@ fun RelationEntryColumn(
                 RelationEntryItem(
                     entryId = entry.mal_id,
                     entryName = entry.name,
-                    getAnimeDetail = getAnimeDetail,
+                    detailState = detailState,
                     navController = navController,
+                    onAction = onAction,
                     onItemClickListener = onItemClickListener
                 )
             }

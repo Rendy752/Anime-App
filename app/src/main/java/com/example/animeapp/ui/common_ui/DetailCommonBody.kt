@@ -2,6 +2,7 @@ package com.example.animeapp.ui.common_ui
 
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
@@ -21,7 +22,7 @@ fun DetailCommonBody(title: String, body: String?) {
     if (body != null && body.isNotBlank()) {
         Column(
             modifier = Modifier
-                .basicContainer()
+                .basicContainer(outerPadding = PaddingValues(0.dp))
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -49,7 +50,7 @@ fun DetailCommonBody(title: String, body: String?) {
 fun DetailCommonBodySkeleton(title: String? = "Title") {
     Column(
         modifier = Modifier
-            .basicContainer()
+            .basicContainer(outerPadding = PaddingValues(0.dp))
             .fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

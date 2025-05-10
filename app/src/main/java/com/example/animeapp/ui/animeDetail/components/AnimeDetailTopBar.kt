@@ -14,22 +14,21 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.animeapp.R
 import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.ui.common_ui.SkeletonBox
-import com.example.animeapp.utils.Navigation.navigateToAnimeWatch
+import com.example.animeapp.ui.main.navigation.NavRoute
+import com.example.animeapp.ui.main.navigation.navigateTo
+import com.example.animeapp.ui.theme.favoriteEpisode
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ShareUtils
 import kotlinx.coroutines.Job
@@ -108,7 +107,7 @@ fun AnimeDetailTopBar(
                             Icon(
                                 imageVector = if (isFavorite.value) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                                 contentDescription = if (isFavorite.value) "Remove from favorites" else "Add to favorites",
-                                tint = MaterialTheme.colorScheme.tertiary
+                                tint = favoriteEpisode
                             )
                         }
                     }
@@ -120,16 +119,18 @@ fun AnimeDetailTopBar(
                         animeDetailComplement.data.let { animeDetailComplement ->
                             animeDetailComplement.episodes?.let { episodes ->
                                 IconButton(onClick = {
-                                    navController.navigateToAnimeWatch(
-                                        malId = animeDetailData.mal_id,
-                                        episodeId = animeDetailComplement.lastEpisodeWatchedId
-                                            ?: defaultEpisodeId,
+                                    navController.navigateTo(
+                                        NavRoute.AnimeWatch.fromParams(
+                                            malId = animeDetailData.mal_id,
+                                            episodeId = animeDetailComplement.lastEpisodeWatchedId
+                                                ?: defaultEpisodeId
+                                        )
                                     )
                                 }) {
                                     Icon(
                                         imageVector = Icons.Filled.LiveTv,
                                         tint = MaterialTheme.colorScheme.primary,
-                                        contentDescription = stringResource(id = R.string.watch)
+                                        contentDescription = "Watch"
                                     )
                                 }
                             }
@@ -142,15 +143,11 @@ fun AnimeDetailTopBar(
                         Icon(
                             imageVector = Icons.Filled.Share,
                             tint = MaterialTheme.colorScheme.primary,
-                            contentDescription = stringResource(id = R.string.filter)
+                            contentDescription = "Share"
                         )
                     }
                 }
-            },
-
-            colors = TopAppBarDefaults.topAppBarColors(
-                titleContentColor = MaterialTheme.colorScheme.primary
-            )
+            }
         )
         HorizontalDivider(
             color = MaterialTheme.colorScheme.surfaceContainer,

@@ -2,6 +2,7 @@ package com.example.animeapp.ui.common_ui
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
@@ -23,35 +24,30 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.animeapp.models.AnimeDetail
-import com.example.animeapp.models.CommonIdentity
 import com.example.animeapp.models.Genre
 import com.example.animeapp.models.animeDetailPlaceholder
 import com.example.animeapp.utils.TextUtils.formatNumber
 import com.example.animeapp.utils.basicContainer
-import com.example.animeapp.utils.shimmerContainer
 
 @Preview
 @Composable
-fun AnimeSearchItemPreview() {
-    AnimeSearchItem(
-        anime = animeDetailPlaceholder,
-        onItemClick = {}
-    )
-}
-
-@Composable
 fun AnimeSearchItem(
-    anime: AnimeDetail? = null,
+    modifier: Modifier = Modifier,
+    animeDetail: AnimeDetail? = animeDetailPlaceholder,
+    query: String = "",
     selectedGenres: List<Genre> = emptyList(),
     errorTitle: String? = null,
-    onGenreClick: ((CommonIdentity) -> Unit)? = null,
+    onGenreClick: ((Int) -> Unit)? = null,
     onItemClick: (() -> Unit)? = null,
 ) {
-    val modifier = if (onItemClick != null && anime != null) {
-        Modifier.basicContainer(onItemClick = { onItemClick.invoke() })
-    } else Modifier.basicContainer()
     Column(
         modifier = modifier
+            .basicContainer(
+                outerPadding = PaddingValues(0.dp),
+                onItemClick = if (onItemClick != null && animeDetail != null) {
+                    onItemClick
+                } else null
+            )
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -59,9 +55,9 @@ fun AnimeSearchItem(
         ) {
             if (errorTitle.isNullOrEmpty()) {
                 AsyncImageWithPlaceholder(
-                    model = anime?.images?.webp?.large_image_url,
-                    contentDescription = anime?.title,
-                    isAiring = anime?.airing
+                    model = animeDetail?.images?.webp?.large_image_url,
+                    contentDescription = animeDetail?.title,
+                    isAiring = animeDetail?.airing
                 )
             } else {
                 Icon(
@@ -77,10 +73,11 @@ fun AnimeSearchItem(
                     .weight(1f)
                     .padding(end = 16.dp),
             ) {
+                val title = if (errorTitle.isNullOrEmpty()) animeDetail?.title
+                    ?: "Unknown Title" else errorTitle
                 Text(
                     modifier = Modifier.fillMaxWidth(),
-                    text = if (errorTitle.isNullOrEmpty()) anime?.title
-                        ?: "Unknown Title" else errorTitle,
+                    text = highlightText(title, query),
                     style = MaterialTheme.typography.titleLarge,
                     fontSize = 14.sp,
                     maxLines = 2,
@@ -95,14 +92,14 @@ fun AnimeSearchItem(
                         horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
-                            text = "${anime?.type ?: "Unknown Type"} (${anime?.episodes} eps) - ${anime?.aired?.prop?.from?.year ?: "Unknown Year"}",
+                            text = "${animeDetail?.type ?: "Unknown Type"} (${animeDetail?.episodes} eps) - ${animeDetail?.aired?.prop?.from?.year ?: "Unknown Year"}",
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.weight(1f),
                             maxLines = 1,
                             textAlign = TextAlign.Center,
                             overflow = TextOverflow.Ellipsis
                         )
-                        if (anime?.approved == true) {
+                        if (animeDetail?.approved == true) {
                             Icon(
                                 imageVector = Icons.Filled.Recommend,
                                 contentDescription = "Approved",
@@ -111,7 +108,7 @@ fun AnimeSearchItem(
                             )
                         }
                     }
-                    anime?.genres?.let { genres ->
+                    animeDetail?.genres?.let { genres ->
                         Row(
                             modifier = Modifier
                                 .horizontalScroll(rememberScrollState()),
@@ -123,7 +120,7 @@ fun AnimeSearchItem(
                                     text = data.name,
                                     checked = isSelected,
                                     onCheckedChange = {
-                                        onGenreClick?.invoke(data)
+                                        onGenreClick?.invoke(data.mal_id)
                                     }
                                 )
                             }
@@ -131,22 +128,22 @@ fun AnimeSearchItem(
                     }
                     DataTextWithIcon(
                         label = "Score",
-                        value = anime?.score.toString(),
+                        value = animeDetail?.score.toString(),
                         icon = Icons.Filled.Score
                     )
                     DataTextWithIcon(
                         label = "Rank",
-                        value = anime?.rank?.let { formatNumber(it) },
+                        value = animeDetail?.rank?.formatNumber(),
                         icon = Icons.Filled.Star
                     )
                     DataTextWithIcon(
                         label = "Popularity",
-                        value = formatNumber(anime?.popularity ?: 0),
+                        value = animeDetail?.popularity?.formatNumber(),
                         icon = Icons.AutoMirrored.Filled.TrendingUp
                     )
                     DataTextWithIcon(
                         label = "Members",
-                        value = formatNumber(anime?.members ?: 0),
+                        value = animeDetail?.members?.formatNumber(),
                         icon = Icons.Filled.Groups
                     )
                 }
@@ -157,11 +154,9 @@ fun AnimeSearchItem(
 
 @Preview
 @Composable
-fun AnimeSearchItemSkeleton() {
+fun AnimeSearchItemSkeleton(modifier: Modifier = Modifier) {
     Column(
-        modifier = Modifier
-            .shimmerContainer()
-            .fillMaxWidth()
+        modifier = modifier.basicContainer(outerPadding = PaddingValues(0.dp))
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,

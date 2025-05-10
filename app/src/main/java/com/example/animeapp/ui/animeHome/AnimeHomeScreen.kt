@@ -5,10 +5,11 @@ import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -19,25 +20,26 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Popup
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
-import com.example.animeapp.R
 import com.example.animeapp.models.episodeDetailComplementPlaceholder
 import com.example.animeapp.models.listAnimeDetailResponsePlaceholder
-import com.example.animeapp.ui.animeHome.components.ContinueWatchingPopup
 import com.example.animeapp.ui.animeHome.components.AnimeSchedulesGrid
 import com.example.animeapp.ui.animeHome.components.AnimeSchedulesGridSkeleton
 import com.example.animeapp.ui.animeHome.components.FilterChipBar
 import com.example.animeapp.ui.animeHome.components.TopAnimeCarousel
 import com.example.animeapp.ui.animeHome.components.TopAnimeCarouselSkeleton
+import com.example.animeapp.ui.common_ui.ContinueWatchingAnime
 import com.example.animeapp.ui.common_ui.LimitAndPaginationQueryState
 import com.example.animeapp.ui.common_ui.LimitAndPaginationSection
 import com.example.animeapp.ui.common_ui.MessageDisplay
-import com.example.animeapp.ui.main.BottomScreen
 import com.example.animeapp.ui.main.MainState
-import com.example.animeapp.utils.Navigation.navigateToAnimeDetail
+import com.example.animeapp.ui.main.navigation.NavRoute
+import com.example.animeapp.ui.main.navigation.navigateTo
 import com.example.animeapp.utils.Resource
 import kotlinx.coroutines.delay
 
@@ -45,50 +47,57 @@ import kotlinx.coroutines.delay
 @Preview
 @Composable
 fun AnimeHomeScreen(
-    state: HomeState = HomeState(
+    homeState: HomeState = HomeState(
         animeSchedules = Resource.Success(listAnimeDetailResponsePlaceholder),
         continueWatchingEpisode = episodeDetailComplementPlaceholder,
         isShowPopup = true
     ),
+    carouselState: CarouselState = CarouselState(),
+    remainingTimes: Map<String, String> = emptyMap(),
+    onAction: (HomeAction) -> Unit = {},
     mainState: MainState = MainState(),
-    action: (HomeAction) -> Unit = {},
-    currentRoute: String? = BottomScreen.Home.route,
+    currentRoute: String? = NavRoute.Home.route,
     navController: NavHostController = rememberNavController()
 ) {
     val pullToRefreshState = rememberPullToRefreshState()
 
     LaunchedEffect(currentRoute) {
-        if (currentRoute == BottomScreen.Home.route) action(HomeAction.FetchContinueWatchingEpisode)
+        if (currentRoute == NavRoute.Home.route) {
+            onAction(HomeAction.FetchContinueWatchingEpisode)
+        }
     }
 
-    LaunchedEffect(state.isMinimized) {
-        if (!state.isMinimized) delay(10000)
-        action(HomeAction.SetMinimized(true))
+    LaunchedEffect(homeState.isMinimized) {
+        if (!homeState.isMinimized) {
+            delay(10000)
+            onAction(HomeAction.SetMinimized(true))
+        }
     }
 
     LaunchedEffect(mainState.isConnected) {
         if (!mainState.isConnected) return@LaunchedEffect
-        if (state.animeSchedules is Resource.Error) action(HomeAction.GetAnimeSchedules)
-        if (state.top10Anime is Resource.Error) action(HomeAction.GetTop10Anime)
+
+        if (homeState.animeSchedules is Resource.Error) onAction(HomeAction.GetAnimeSchedules)
+        if (homeState.top10Anime is Resource.Error) onAction(HomeAction.GetTop10Anime)
     }
 
     Scaffold { paddingValues ->
         PullToRefreshBox(
-            isRefreshing = state.isRefreshing,
-            onRefresh = { action(HomeAction.GetAnimeSchedules) },
+            isRefreshing = homeState.isRefreshing,
+            onRefresh = { onAction(HomeAction.GetAnimeSchedules) },
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
+                .consumeWindowInsets(paddingValues),
             state = pullToRefreshState,
             indicator = {
                 PullToRefreshDefaults.Indicator(
-                    isRefreshing = state.isRefreshing,
+                    isRefreshing = homeState.isRefreshing,
                     containerColor = MaterialTheme.colorScheme.primary,
                     color = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.align(Alignment.TopCenter),
                     state = pullToRefreshState
                 )
-            },
+            }
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
                 AnimatedVisibility(
@@ -103,18 +112,18 @@ fun AnimeHomeScreen(
                     )
                 ) {
                     Column {
-                        when (state.top10Anime) {
+                        when (homeState.top10Anime) {
                             is Resource.Success -> {
                                 TopAnimeCarousel(
-                                    topAnimeList = state.top10Anime.data.data,
-                                    currentCarouselPage = state.currentCarouselPage,
-                                    autoScrollEnabled = state.autoScrollEnabled,
-                                    carouselLastInteractionTime = state.carouselLastInteractionTime,
-                                    onPageChanged = { action(HomeAction.SetCurrentCarouselPage(it)) },
+                                    topAnimeList = homeState.top10Anime.data.data,
+                                    currentCarouselPage = carouselState.currentCarouselPage,
+                                    autoScrollEnabled = carouselState.autoScrollEnabled,
+                                    carouselLastInteractionTime = carouselState.carouselLastInteractionTime,
+                                    onPageChanged = { onAction(HomeAction.SetCurrentCarouselPage(it)) },
                                     onAutoScrollEnabledChanged = {
-                                        action(HomeAction.SetAutoScrollEnabled(it))
+                                        onAction(HomeAction.SetAutoScrollEnabled(it))
                                     },
-                                    onCarouselInteraction = { action(HomeAction.UpdateCarouselLastInteractionTime) },
+                                    onCarouselInteraction = { onAction(HomeAction.UpdateCarouselLastInteractionTime) },
                                     navController = navController
                                 )
                             }
@@ -127,22 +136,29 @@ fun AnimeHomeScreen(
                                 TopAnimeCarouselSkeleton(isError = true)
                             }
                         }
-                        FilterChipBar(state = state, action = action)
+                        FilterChipBar(
+                            queryState = homeState.queryState,
+                            onApplyFilters = { onAction(HomeAction.ApplyFilters(it)) }
+                        )
                     }
                 }
-                when (state.animeSchedules) {
+                when (homeState.animeSchedules) {
                     is Resource.Loading -> {
                         AnimeSchedulesGridSkeleton(mainState.isLandscape)
                     }
 
                     is Resource.Success -> {
-                        state.animeSchedules.data.let { animeSchedules ->
-                            Column(modifier = Modifier.weight(1f)) {
+                        homeState.animeSchedules.data.let { animeSchedules ->
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.Center
+                            ) {
                                 AnimeSchedulesGrid(
                                     animeSchedules = animeSchedules.data,
+                                    remainingTimes = remainingTimes,
                                     isLandscape = mainState.isLandscape,
                                     onItemClick = { anime ->
-                                        navController.navigateToAnimeDetail(anime.mal_id)
+                                        navController.navigateTo(NavRoute.AnimeDetail.fromId(anime.mal_id))
                                     }
                                 )
                             }
@@ -153,34 +169,49 @@ fun AnimeHomeScreen(
                         if (mainState.isConnected) Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
-                        ) { MessageDisplay(stringResource(R.string.error_loading_data)) }
+                        ) { MessageDisplay("Error Loading Data") }
                         else Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
-                        ) { MessageDisplay(stringResource(R.string.no_internet_connection)) }
+                        ) { MessageDisplay("No internet connection") }
                     }
                 }
                 LimitAndPaginationSection(
-                    isVisible = state.animeSchedules is Resource.Success && !mainState.isLandscape,
-                    pagination = state.animeSchedules.data?.pagination,
+                    isVisible = homeState.animeSchedules is Resource.Success && !mainState.isLandscape,
+                    pagination = homeState.animeSchedules.data?.pagination,
                     query = LimitAndPaginationQueryState(
-                        state.queryState.page,
-                        state.queryState.limit
+                        homeState.queryState.page,
+                        homeState.queryState.limit
                     ),
                     onQueryChanged = {
-                        action(
+                        onAction(
                             HomeAction.ApplyFilters(
-                                state.queryState.copy(page = it.page, limit = it.limit)
+                                homeState.queryState.copy(page = it.page, limit = it.limit)
                             )
                         )
                     }
                 )
-                if (state.isShowPopup) ContinueWatchingPopup(
-                    navController = navController,
-                    episodeDetailComplement = state.continueWatchingEpisode,
-                    isMinimized = state.isMinimized,
-                    onSetMinimize = { action(HomeAction.SetMinimized(it)) }
-                )
+
+                homeState.continueWatchingEpisode?.let { continueWatchingEpisode ->
+                    if (homeState.isShowPopup) Popup(
+                        alignment = Alignment.BottomEnd,
+                        offset = IntOffset(0, (-200).dp.value.toInt()),
+                    ) {
+                        ContinueWatchingAnime(
+                            episodeDetailComplement = continueWatchingEpisode,
+                            isMinimized = homeState.isMinimized,
+                            onSetMinimize = { onAction(HomeAction.SetMinimized(it)) },
+                            onTitleClick = { navController.navigateTo(NavRoute.AnimeDetail.fromId(it)) },
+                            onEpisodeClick = { malId, episodeId ->
+                                navController.navigateTo(
+                                    NavRoute.AnimeWatch.fromParams(
+                                        malId = malId, episodeId = episodeId
+                                    )
+                                )
+                            }
+                        )
+                    }
+                }
             }
         }
     }

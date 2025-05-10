@@ -36,11 +36,7 @@ data class Items(
 ) {
     companion object {
         fun default(): Items {
-            return Items(
-                count = 1,
-                total = 1,
-                per_page = 1
-            )
+            return Items(count = 0, total = 0, per_page = 25)
         }
     }
 }
