@@ -30,7 +30,7 @@ fun ClickableListSection(
     if (items != null && items.isNotEmpty()) {
         Column(
             modifier = Modifier
-                .basicContainer()
+                .basicContainer(outerPadding = PaddingValues(0.dp))
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
@@ -83,7 +83,7 @@ fun ClickableListSection(
 fun ClickableListSectionSkeleton(title: String? = "Title") {
     Column(
         modifier = Modifier
-            .basicContainer()
+            .basicContainer(outerPadding = PaddingValues(0.dp))
             .fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

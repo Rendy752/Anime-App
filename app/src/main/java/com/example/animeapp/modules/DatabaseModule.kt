@@ -4,9 +4,11 @@ import android.content.Context
 import com.example.animeapp.data.local.dao.AnimeDetailComplementDao
 import com.example.animeapp.data.local.dao.AnimeDetailDao
 import com.example.animeapp.data.local.dao.EpisodeDetailComplementDao
+import com.example.animeapp.data.local.dao.GenreDao
 import com.example.animeapp.data.local.database.AnimeDetailComplementDatabase
 import com.example.animeapp.data.local.database.AnimeDetailDatabase
 import com.example.animeapp.data.local.database.EpisodeDetailComplementDatabase
+import com.example.animeapp.data.local.database.GenreDatabase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -52,5 +54,17 @@ object DatabaseModule {
     @Singleton
     fun provideEpisodeDetailComplementDao(database: EpisodeDetailComplementDatabase): EpisodeDetailComplementDao {
         return database.getEpisodeDetailComplementDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideGenreDatabase(@ApplicationContext context: Context): GenreDatabase {
+        return GenreDatabase.getDatabase(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideGenreDao(database: GenreDatabase): GenreDao {
+        return database.getGenreDao()
     }
 }

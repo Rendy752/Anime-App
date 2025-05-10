@@ -12,6 +12,6 @@ data class Source(
 ) : Parcelable
 
 val sourcePlaceholder = Source(
-    url = "",
-    type = ""
+    url = "http://example.com",
+    type = "captions"
 )

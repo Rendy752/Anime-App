@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import android.webkit.WebView
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.tooling.preview.Preview
@@ -19,7 +20,7 @@ fun YoutubePreview(embedUrl: String?) {
     if (!embedUrl.isNullOrBlank()) {
         Column(
             modifier = Modifier
-                .basicContainer()
+                .basicContainer(outerPadding = PaddingValues(0.dp))
                 .fillMaxWidth()
         ) {
             Box(
@@ -69,7 +70,7 @@ private fun extractVideoId(embedUrl: String): String? {
 fun YoutubePreviewSkeleton() {
     Column(
         modifier = Modifier
-            .basicContainer()
+            .basicContainer(outerPadding = PaddingValues(0.dp))
             .fillMaxWidth()
     ) {
         Box(

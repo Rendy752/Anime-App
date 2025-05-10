@@ -34,7 +34,7 @@ fun FilterChipView(
         onClick = {
             if (onCheckedChange != null) onCheckedChange()
         },
-        label = { Text(text) },
+        label = { Text(text, style = MaterialTheme.typography.bodyMedium) },
         leadingIcon = {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 if (checked == true) {

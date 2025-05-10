@@ -20,6 +20,7 @@ data class EpisodeDetailComplement(
     val animeTitle: String,
     val episodeTitle: String,
     val imageUrl: String?,
+    val screenshot: String? = null,
     val number: Int,
     val isFiller: Boolean,
     val servers: EpisodeServersResponse,
@@ -28,23 +29,28 @@ data class EpisodeDetailComplement(
     val isFavorite: Boolean = false,
     val lastWatched: String? = null,
     val lastTimestamp: Long? = null,
+    val duration: Long? = null,
     val createdAt: Long = Instant.now().epochSecond,
     var updatedAt: Long = Instant.now().epochSecond
 ) : Parcelable
 
 val episodeDetailComplementPlaceholder = EpisodeDetailComplement(
-    id = "watch-1",
-    malId = 1,
-    aniwatchId = "1",
-    animeTitle = "Title of Anime",
+    id = "lorem-ipsum-123?ep=123",
+    malId = 1735,
+    aniwatchId = "anime-1735",
+    animeTitle = "Naruto: Shippuuden",
     episodeTitle = "Title of Episode",
+    imageUrl = "https://cdn.myanimelist.net/images/anime/1565/111305l.webp",
+    screenshot = null,
     number = 1,
     isFiller = false,
-    imageUrl = "https://cdn.myanimelist.net/images/",
     servers = episodeServersResponsePlaceholder,
     sources = episodeSourcesResponsePlaceholder,
     sourcesQuery = episodeSourcesQueryPlaceholder,
     isFavorite = false,
     lastWatched = null,
     lastTimestamp = null,
+    duration = null,
+    createdAt = 1746872830,
+    updatedAt = 1746872830
 )

@@ -1,8 +1,14 @@
 package com.example.animeapp.ui.animeRecommendations
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
@@ -10,92 +16,103 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.rememberNavController
-import com.example.animeapp.R
 import com.example.animeapp.ui.animeRecommendations.recommendations.RecommendationItem
 import com.example.animeapp.ui.animeRecommendations.recommendations.RecommendationItemSkeleton
 import com.example.animeapp.ui.common_ui.MessageDisplay
-import com.example.animeapp.ui.main.BottomScreen
 import com.example.animeapp.ui.main.MainState
-import com.example.animeapp.utils.Navigation.navigateToAnimeDetail
+import com.example.animeapp.ui.main.navigation.NavRoute
+import com.example.animeapp.ui.main.navigation.navigateTo
 import com.example.animeapp.utils.Resource
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Preview
 @Composable
 fun AnimeRecommendationsScreen(
-    navController: NavHostController = rememberNavController(),
-    mainState: MainState = MainState(),
+    navController: NavHostController,
+    mainState: MainState,
+    recommendationsState: RecommendationsState,
+    onAction: (RecommendationsAction) -> Unit,
 ) {
-    val viewModel: AnimeRecommendationsViewModel = hiltViewModel()
+    val pullToRefreshState = rememberPullToRefreshState()
 
-    val animeRecommendations by viewModel.animeRecommendations.collectAsStateWithLifecycle()
-    val isRefreshing by viewModel.isRefreshing.collectAsStateWithLifecycle()
-    val state = rememberPullToRefreshState()
+    val portraitScrollState = rememberLazyListState()
+    val landscapeScrollState = rememberLazyListState()
+    val coroutineScope = rememberCoroutineScope()
 
-    LaunchedEffect(mainState.isConnected) {
-        if (mainState.isConnected && animeRecommendations is Resource.Error) viewModel.getAnimeRecommendations()
+    val showScrollToTopPortrait by remember {
+        derivedStateOf { portraitScrollState.firstVisibleItemIndex > 10 }
+    }
+    val showScrollToTopLandscape by remember {
+        derivedStateOf { landscapeScrollState.firstVisibleItemIndex > 10 }
     }
 
-    Scaffold(
-        topBar = {
-            Column {
-                TopAppBar(
-                    title = {
-                        Text(
-                            text = BottomScreen.Recommendations.label,
-                            modifier = Modifier.padding(end = 8.dp),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(
-                        titleContentColor = MaterialTheme.colorScheme.primary
-                    )
-                )
-                HorizontalDivider(
-                    color = MaterialTheme.colorScheme.surfaceContainer,
-                    thickness = 2.dp
-                )
-            }
-        },
-    ) { paddingValues ->
+    val density = LocalDensity.current
+    val statusBarPadding = with(density) {
+        WindowInsets.systemBars.getTop(density).toDp()
+    }
+
+    LaunchedEffect(mainState.isConnected, recommendationsState.animeRecommendations) {
+        if (mainState.isConnected && recommendationsState.animeRecommendations is Resource.Error) {
+            onAction(RecommendationsAction.LoadRecommendations)
+        }
+    }
+
+    Scaffold { paddingValues ->
         PullToRefreshBox(
-            isRefreshing = isRefreshing,
-            onRefresh = { viewModel.getAnimeRecommendations() },
+            isRefreshing = recommendationsState.isRefreshing,
+            onRefresh = { onAction(RecommendationsAction.LoadRecommendations) },
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
-            state = state,
+                .consumeWindowInsets(paddingValues),
+            state = pullToRefreshState,
             indicator = {
                 PullToRefreshDefaults.Indicator(
-                    isRefreshing = isRefreshing,
+                    isRefreshing = recommendationsState.isRefreshing,
                     containerColor = MaterialTheme.colorScheme.primary,
                     color = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.align(Alignment.TopCenter),
-                    state = state
+                    state = pullToRefreshState
                 )
-            },
+            }
         ) {
-            Column(
-                modifier = Modifier.fillMaxSize()
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 8.dp)
             ) {
-                when (animeRecommendations) {
+                when (recommendationsState.animeRecommendations) {
                     is Resource.Loading -> {
                         if (!mainState.isLandscape) {
-                            LazyColumn { items(3) { RecommendationItemSkeleton() } }
+                            LazyColumn(
+                                modifier = Modifier.fillMaxSize(),
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                state = portraitScrollState
+                            ) {
+                                itemsIndexed((0 until 3).toList()) { index, _ ->
+                                    RecommendationItemSkeleton(
+                                        modifier = if (index == 0) Modifier.padding(top = statusBarPadding) else Modifier
+                                    )
+                                }
+                            }
                         } else {
-                            Row(modifier = Modifier.fillMaxSize()) {
-                                repeat(2) {
-                                    LazyColumn(modifier = Modifier.weight(1f)) {
-                                        items(2) { RecommendationItemSkeleton() }
+                            Row(
+                                modifier = Modifier.fillMaxSize(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                repeat(2) { columnIndex ->
+                                    LazyColumn(
+                                        modifier = Modifier.weight(1f),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                                        state = if (columnIndex == 0) portraitScrollState else landscapeScrollState
+                                    ) {
+                                        itemsIndexed((0 until 2).toList()) { index, _ ->
+                                            RecommendationItemSkeleton(
+                                                modifier = if (index == 0) Modifier.padding(top = statusBarPadding) else Modifier
+                                            )
+                                        }
                                     }
                                 }
                             }
@@ -103,35 +120,110 @@ fun AnimeRecommendationsScreen(
                     }
 
                     is Resource.Success -> {
-                        animeRecommendations.data?.data?.let { animeRecommendations ->
+                        recommendationsState.animeRecommendations.data.data.let { animeRecommendations ->
                             if (!mainState.isLandscape) {
-                                LazyColumn {
-                                    items(animeRecommendations) {
+                                LazyColumn(
+                                    modifier = Modifier.fillMaxSize(),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                                    state = portraitScrollState
+                                ) {
+                                    itemsIndexed(animeRecommendations) { index, recommendation ->
                                         RecommendationItem(
-                                            recommendation = it,
+                                            recommendation = recommendation,
                                             onItemClick = { malId ->
-                                                navController.navigateToAnimeDetail(malId)
+                                                navController.navigateTo(
+                                                    NavRoute.AnimeDetail.fromId(
+                                                        malId
+                                                    )
+                                                )
+                                            },
+                                            modifier = if (index == 0) Modifier.padding(top = statusBarPadding) else Modifier
+                                        )
+                                    }
+                                }
+                                AnimatedVisibility(
+                                    visible = showScrollToTopPortrait,
+                                    modifier = Modifier
+                                        .align(Alignment.BottomEnd)
+                                        .padding(16.dp),
+                                    enter = scaleIn(initialScale = 0.0f),
+                                    exit = scaleOut(targetScale = 0.0f)
+                                ) {
+                                    FloatingActionButton(
+                                        onClick = {
+                                            coroutineScope.launch {
+                                                portraitScrollState.animateScrollToItem(0)
                                             }
+                                        },
+                                        containerColor = MaterialTheme.colorScheme.primary,
+                                        contentColor = MaterialTheme.colorScheme.onPrimary
+                                    ) {
+                                        Icon(
+                                            Icons.Filled.ArrowUpward,
+                                            contentDescription = "Scroll to top"
                                         )
                                     }
                                 }
                             } else {
-                                val listSize = animeRecommendations.size
-                                val itemsPerColumn = (listSize + 1) / 2
-                                Row(modifier = Modifier.fillMaxSize()) {
+                                Row(
+                                    modifier = Modifier.fillMaxSize(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
                                     repeat(2) { columnIndex ->
+                                        val listSize = animeRecommendations.size
+                                        val itemsPerColumn = (listSize + 1) / 2
                                         val startIndex = columnIndex * itemsPerColumn
                                         val endIndex = minOf(startIndex + itemsPerColumn, listSize)
                                         val columnItems =
                                             animeRecommendations.subList(startIndex, endIndex)
-                                        LazyColumn(modifier = Modifier.weight(1f)) {
-                                            items(columnItems) {
-                                                RecommendationItem(
-                                                    recommendation = it,
-                                                    onItemClick = { malId ->
-                                                        navController.navigateToAnimeDetail(malId)
-                                                    }
-                                                )
+                                        Box(
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .fillMaxHeight()
+                                        ) {
+                                            LazyColumn(
+                                                modifier = Modifier.fillMaxSize(),
+                                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                                state = if (columnIndex == 0) portraitScrollState else landscapeScrollState
+                                            ) {
+                                                itemsIndexed(columnItems) { index, recommendation ->
+                                                    RecommendationItem(
+                                                        recommendation = recommendation,
+                                                        onItemClick = { malId ->
+                                                            navController.navigateTo(
+                                                                NavRoute.AnimeDetail.fromId(malId)
+                                                            )
+                                                        },
+                                                        modifier = if (index == 0) Modifier.padding(
+                                                            top = statusBarPadding
+                                                        ) else Modifier
+                                                    )
+                                                }
+                                            }
+                                            androidx.compose.animation.AnimatedVisibility(
+                                                visible = if (columnIndex == 0) showScrollToTopPortrait else showScrollToTopLandscape,
+                                                modifier = Modifier
+                                                    .align(Alignment.BottomEnd)
+                                                    .padding(16.dp),
+                                                enter = scaleIn(initialScale = 0.0f),
+                                                exit = scaleOut(targetScale = 0.0f)
+                                            ) {
+                                                FloatingActionButton(
+                                                    onClick = {
+                                                        coroutineScope.launch {
+                                                            val state =
+                                                                if (columnIndex == 0) portraitScrollState else landscapeScrollState
+                                                            state.animateScrollToItem(0)
+                                                        }
+                                                    },
+                                                    containerColor = MaterialTheme.colorScheme.primary,
+                                                    contentColor = MaterialTheme.colorScheme.onPrimary
+                                                ) {
+                                                    Icon(
+                                                        Icons.Filled.ArrowUpward,
+                                                        contentDescription = "Scroll to top"
+                                                    )
+                                                }
                                             }
                                         }
                                     }
@@ -146,8 +238,8 @@ fun AnimeRecommendationsScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             MessageDisplay(
-                                animeRecommendations.message
-                                    ?: stringResource(R.string.error_loading_data)
+                                recommendationsState.animeRecommendations.message
+                                    ?: "Error Loading Data"
                             )
                         }
                     }

@@ -2,10 +2,17 @@ package com.example.animeapp.utils
 
 import com.example.animeapp.models.AnimeSearchQueryState
 import com.example.animeapp.models.Episode
+import com.example.animeapp.models.EpisodeDetailComplement
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 object FilterUtils {
+
+    data class EpisodeQueryState(
+        val title: String = "",
+        val isFavorite: Boolean? = null,
+        val isWatched: Boolean? = null
+    )
 
     data class FilterState(
         val queryState: AnimeSearchQueryState,
@@ -27,14 +34,13 @@ object FilterUtils {
     val TYPE_OPTIONS =
         listOf("Any", "TV", "Movie", "OVA", "Special", "ONA", "Music", "CM", "PV", "TV Special")
     val STATUS_OPTIONS = listOf("Any", "Airing", "Complete", "Upcoming")
-    val RATING_OPTIONS = listOf("Any", "G", "PG", "PG13", "R17", "R", "Rx")
-    private val RATING_DESCRIPTIONS = mapOf(
+    val RATING_OPTIONS = mapOf(
+        "Any" to "Any",
         "G" to "All Ages",
         "PG" to "Children",
         "PG13" to "Teens 13 or older",
         "R17" to "17+ (violence & profanity)",
-        "R" to "Mild Nudity",
-        "Rx" to "Hentai"
+        "R" to "Mild Nudity"
     )
     val ORDER_BY_OPTIONS = listOf(
         "Any", "mal_id", "title", "start_date", "end_date", "episodes", "score",
@@ -78,23 +84,46 @@ object FilterUtils {
         )
     }
 
-    fun getRatingDescription(ratingCode: String): String {
-        return RATING_DESCRIPTIONS[ratingCode] ?: ratingCode
-    }
-
     private fun formatDate(date: LocalDate): String {
         val formatter = DateTimeFormatter.ISO_LOCAL_DATE
         return date.format(formatter)
     }
 
-    fun filterEpisodes(episodes: List<Episode>, query: String): List<Episode> {
-        return if (query.isBlank()) {
-            episodes
+    fun filterEpisodes(
+        episodes: List<Episode>,
+        query: EpisodeQueryState,
+        episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
+        lastEpisodeWatchedId: String? = null
+    ): List<Episode> {
+        val filteredEpisodes = episodes.filter { episode ->
+            val matchesTitle = query.title.isBlank() ||
+                    episode.name.contains(query.title, ignoreCase = true) ||
+                    episode.episodeNo.toString().contains(query.title, ignoreCase = true)
+
+            val matchesFavorite = query.isFavorite?.let { isFavorite ->
+                val complement = episodeDetailComplements[episode.episodeId]
+                complement is Resource.Success && complement.data.isFavorite == isFavorite
+            } != false
+
+            val matchesWatched = query.isWatched?.let { isWatched ->
+                val complement = episodeDetailComplements[episode.episodeId]
+                if (complement is Resource.Success) {
+                    val isActuallyWatched =
+                        complement.data.lastWatched != null && complement.data.lastTimestamp != null
+                    isActuallyWatched == isWatched
+                } else {
+                    false
+                }
+            } != false
+
+            matchesTitle && matchesFavorite && matchesWatched
+        }
+
+        return if (lastEpisodeWatchedId != null) {
+            val (lastWatched, others) = filteredEpisodes.partition { it.episodeId == lastEpisodeWatchedId }
+            lastWatched + others
         } else {
-            episodes.filter { episode ->
-                episode.episodeNo.toString().contains(query, ignoreCase = true) ||
-                        episode.name.contains(query, ignoreCase = true)
-            }
+            filteredEpisodes
         }
     }
 }

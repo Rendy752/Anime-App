@@ -1,5 +1,6 @@
 package com.example.animeapp.modules
 
+import android.app.Application
 import android.content.Context
 import com.example.animeapp.BuildConfig.DEBUG
 import com.chuckerteam.chucker.api.ChuckerCollector
@@ -10,6 +11,7 @@ import com.example.animeapp.data.remote.api.EpisodeSourcesCacheInterceptor
 import com.example.animeapp.data.remote.api.RetrofitInstance
 import com.example.animeapp.di.AnimeRunwayApi
 import com.example.animeapp.di.JikanApi
+import com.example.animeapp.utils.NetworkStateMonitor
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -73,5 +75,11 @@ object NetworkModule {
     @AnimeRunwayApi
     fun provideAnimeRunwayAPI(retrofitInstance: RetrofitInstance): AnimeAPI {
         return retrofitInstance.animeRunwayApi
+    }
+
+    @Provides
+    @Singleton
+    fun provideNetworkStateMonitor(application: Application): NetworkStateMonitor {
+        return NetworkStateMonitor(application)
     }
 }

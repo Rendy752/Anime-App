@@ -5,6 +5,7 @@ import com.example.animeapp.models.AnimeRecommendationResponse
 import com.example.animeapp.models.defaultPagination
 import com.example.animeapp.repository.AnimeRecommendationsRepository
 import com.example.animeapp.ui.animeRecommendations.AnimeRecommendationsViewModel
+import com.example.animeapp.ui.animeRecommendations.RecommendationsAction
 import com.example.animeapp.utils.Resource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -39,7 +40,6 @@ class AnimeRecommendationsViewModelTest {
     fun setup() {
         MockitoAnnotations.openMocks(this)
         Dispatchers.setMain(testDispatcher)
-        viewModel = AnimeRecommendationsViewModel(repository)
     }
 
     @After
@@ -48,29 +48,34 @@ class AnimeRecommendationsViewModelTest {
     }
 
     @Test
-    fun `getAnimeRecommendations error`() = runTest {
-        `when`(repository.getAnimeRecommendations(1)).thenReturn(
+    fun `loadAnimeRecommendations error`() = runTest {
+        `when`(repository.getAnimeRecommendations()).thenReturn(
             Resource.Error("Internal Server Error")
         )
 
-        viewModel.getAnimeRecommendations()
+        viewModel = AnimeRecommendationsViewModel(repository)
+        viewModel.onAction(RecommendationsAction.LoadRecommendations)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        val state = viewModel.animeRecommendations.first()
-        assert(state is Resource.Error)
-        assertEquals("Internal Server Error", (state as Resource.Error).message)
+        val state = viewModel.recommendationsState.first()
+        assert(state.animeRecommendations is Resource.Error)
+        assertEquals("Internal Server Error", (state.animeRecommendations as Resource.Error).message)
+        assertEquals(false, state.isRefreshing)
     }
 
     @Test
     fun `refreshing state is updated correctly`() = runTest {
         val mockResponse =
             AnimeRecommendationResponse(data = emptyList(), pagination = defaultPagination)
-        `when`(repository.getAnimeRecommendations(1)).thenReturn(Resource.Success(mockResponse))
+        `when`(repository.getAnimeRecommendations()).thenReturn(Resource.Success(mockResponse))
 
-        viewModel.getAnimeRecommendations()
+        viewModel = AnimeRecommendationsViewModel(repository)
+        viewModel.onAction(RecommendationsAction.LoadRecommendations)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        val refreshingState = viewModel.isRefreshing.first()
-        assertEquals(false, refreshingState)
+        val state = viewModel.recommendationsState.first()
+        assert(state.animeRecommendations is Resource.Success)
+        assertEquals(mockResponse, (state.animeRecommendations as Resource.Success).data)
+        assertEquals(false, state.isRefreshing)
     }
 }

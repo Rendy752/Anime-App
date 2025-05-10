@@ -1,6 +1,7 @@
 package com.example.animeapp.ui.animeDetail.numericDetail
 
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
@@ -12,9 +13,8 @@ import androidx.compose.material.icons.filled.Score
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import com.example.animeapp.R
+import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.utils.TextUtils.formatNumber
 
@@ -24,31 +24,32 @@ fun NumericDetailSection(animeDetail: AnimeDetail) {
         modifier = Modifier
             .fillMaxWidth()
             .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         NumericDetailItem(
-            title = stringResource(R.string.score),
+            title = "Score",
             value = animeDetail.score?.toString() ?: "N/A",
-            subValue = animeDetail.scored_by?.let { "${formatNumber(it)} Users" } ?: "N/A",
+            subValue = animeDetail.scored_by?.let { "${it.formatNumber()} Users" } ?: "N/A",
             icon = Icons.Filled.Score
         )
         NumericDetailItem(
-            title = stringResource(R.string.ranked),
-            value = animeDetail.rank?.let { "#${formatNumber(it)}" } ?: "N/A",
+            title = "Ranked",
+            value = animeDetail.rank?.let { "#${it.formatNumber()}" } ?: "N/A",
             icon = Icons.Filled.Star
         )
         NumericDetailItem(
-            title = stringResource(R.string.popularity),
-            value = "#${formatNumber(animeDetail.popularity)}",
+            title = "Popularity",
+            value = "#${animeDetail.popularity.formatNumber()}",
             icon = Icons.AutoMirrored.Filled.TrendingUp
         )
         NumericDetailItem(
-            title = stringResource(R.string.members),
-            value = formatNumber(animeDetail.members),
+            title = "Members",
+            value = animeDetail.members.formatNumber(),
             icon = Icons.Filled.Groups
         )
         NumericDetailItem(
-            title = stringResource(R.string.favorites),
-            value = formatNumber(animeDetail.favorites),
+            title = "Favorites",
+            value = animeDetail.favorites.formatNumber(),
             icon = Icons.Filled.Favorite
         )
     }
@@ -61,6 +62,7 @@ fun NumericDetailSectionSkeleton() {
         modifier = Modifier
             .fillMaxWidth()
             .horizontalScroll(rememberScrollState()),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         repeat(5) {
             NumericDetailItemSkeleton()

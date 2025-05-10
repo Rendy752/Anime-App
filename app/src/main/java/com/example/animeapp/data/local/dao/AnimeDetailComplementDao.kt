@@ -24,4 +24,7 @@ interface AnimeDetailComplementDao {
 
     @Update
     suspend fun updateAnimeDetailComplement(animeDetailComplement: AnimeDetailComplement)
+
+    @Query("SELECT * FROM anime_detail_complement WHERE isFavorite = 1")
+    suspend fun getAllFavorites(): List<AnimeDetailComplement>
 }

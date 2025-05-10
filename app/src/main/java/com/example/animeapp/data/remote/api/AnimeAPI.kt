@@ -9,6 +9,7 @@ import com.example.animeapp.models.EpisodeServersResponse
 import com.example.animeapp.models.EpisodeSourcesResponse
 import com.example.animeapp.models.EpisodesResponse
 import com.example.animeapp.models.GenresResponse
+import com.example.animeapp.models.ProducerResponse
 import com.example.animeapp.models.ProducersResponse
 import retrofit2.Response
 import retrofit2.http.GET
@@ -45,7 +46,9 @@ interface AnimeAPI {
     ): Response<AnimeDetailResponse>
 
     @GET("/v4/random/anime")
-    suspend fun getRandomAnime(): Response<AnimeDetailResponse>
+    suspend fun getRandomAnime(
+        @Query("sfw") sfw: Boolean = true
+    ): Response<AnimeDetailResponse>
 
     @GET("/v4/anime")
     suspend fun getAnimeSearch(
@@ -82,6 +85,11 @@ interface AnimeAPI {
         @Query("sort") sort: String? = null,
         @Query("letter") letter: String? = null
     ): Response<ProducersResponse>
+
+    @GET("/v4/producers/{id}")
+    suspend fun getProducer(
+        @Path("id") id: Int
+    ): Response<ProducerResponse>
 
     @GET("/aniwatch/search")
     suspend fun getAnimeAniwatchSearch(

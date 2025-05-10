@@ -7,56 +7,63 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.example.animeapp.R
 import com.example.animeapp.models.AnimeSearchResponse
 import com.example.animeapp.models.Genre
 import com.example.animeapp.models.GenresResponse
 import com.example.animeapp.ui.common_ui.AnimeSearchItem
 import com.example.animeapp.ui.common_ui.AnimeSearchItemSkeleton
 import com.example.animeapp.ui.common_ui.MessageDisplay
-import com.example.animeapp.utils.Navigation.navigateToAnimeDetail
+import com.example.animeapp.ui.main.navigation.NavRoute
+import com.example.animeapp.ui.main.navigation.navigateTo
 import com.example.animeapp.utils.Resource
 
 @Composable
 fun ResultsSection(
+    modifier: Modifier = Modifier,
     navController: NavController,
+    query: String,
     animeSearchResults: Resource<AnimeSearchResponse>,
     selectedGenres: List<Genre>,
     genres: Resource<GenresResponse>,
     onGenreClick: (Genre) -> Unit
 ) {
     Column(
-        modifier = Modifier.fillMaxSize(),
+        modifier = modifier.fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         when (animeSearchResults) {
-            is Resource.Loading -> LazyColumn {
+            is Resource.Loading -> LazyColumn(
+                modifier = Modifier.padding(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 items(3) { AnimeSearchItemSkeleton() }
             }
 
             is Resource.Success -> {
                 if (animeSearchResults.data.data.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        MessageDisplay(stringResource(R.string.no_results_found))
+                        MessageDisplay("No Results Found")
                     }
                 } else {
-                    LazyColumn {
-                        items(animeSearchResults.data.data) { anime ->
+                    LazyColumn(
+                        modifier = Modifier.padding(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(animeSearchResults.data.data) { animeDetail ->
                             AnimeSearchItem(
-                                anime = anime,
+                                animeDetail = animeDetail,
+                                query = query,
                                 selectedGenres = selectedGenres,
-                                onGenreClick = { genre ->
+                                onGenreClick = { genreClickedId ->
                                     val genre =
-                                        genres.data?.data?.find { it.mal_id == genre.mal_id }
-                                    genre?.let {
-                                        onGenreClick(genre)
-                                    }
+                                        genres.data?.data?.find { it.mal_id == genreClickedId }
+                                    genre?.let { onGenreClick(genre) }
                                 },
                                 onItemClick = {
-                                    navController.navigateToAnimeDetail(anime.mal_id)
+                                    navController.navigateTo(NavRoute.AnimeDetail.fromId(animeDetail.mal_id))
                                 }
                             )
                         }
@@ -66,7 +73,7 @@ fun ResultsSection(
 
             is Resource.Error -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    MessageDisplay(stringResource(R.string.error_loading_data))
+                    MessageDisplay("Error Loading Data")
                 }
             }
         }

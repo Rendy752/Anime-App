@@ -18,14 +18,10 @@ data class Producer(
 ) : Parcelable
 
 val producerPlaceholder = Producer(
-    mal_id = 0,
+    mal_id = 1,
     url = "",
     titles = emptyList(),
-    images = ProducerImage(
-        jpg = JpgImage(
-            image_url = ""
-        )
-    ),
+    images = ProducerImage(jpg = JpgImage(image_url = "")),
     favorites = 0,
     established = "",
     about = "",

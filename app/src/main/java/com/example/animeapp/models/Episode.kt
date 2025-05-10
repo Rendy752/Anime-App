@@ -16,6 +16,6 @@ data class Episode(
 val episodePlaceholder = Episode(
     name = "Title of Episode",
     episodeNo = 1,
-    episodeId = "watch-1",
+    episodeId = "lorem-ipsum-123?ep=123",
     filler = false
 )

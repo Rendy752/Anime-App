@@ -23,3 +23,18 @@ data class EpisodeTypeNumber(
     val sub: Int? = null,
     val dub: Int? = null
 )
+
+private val episodeTypeNumberPlaceholder = EpisodeTypeNumber(
+    eps = 1,
+    sub = 0,
+    dub = 0
+)
+
+val animeAniwatchPlaceholder = AnimeAniwatch(
+    id = "anime-1735",
+    name = "Naruto: Shippuuden",
+    img = "",
+    episodes = episodeTypeNumberPlaceholder,
+    duration = "",
+    rated = false,
+)

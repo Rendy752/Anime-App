@@ -1,18 +1,24 @@
 package com.example.animeapp.repository
 
+import com.example.animeapp.data.local.dao.GenreDao
 import com.example.animeapp.data.remote.api.AnimeAPI
 import com.example.animeapp.models.AnimeSearchQueryState
 import com.example.animeapp.models.AnimeSearchResponse
+import com.example.animeapp.models.Genre
 import com.example.animeapp.models.GenresResponse
+import com.example.animeapp.models.ProducerResponse
 import com.example.animeapp.models.ProducersResponse
 import com.example.animeapp.models.ProducersSearchQueryState
 import com.example.animeapp.models.defaultCompletePagination
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ResponseHandler
 import com.example.animeapp.utils.ResponseHandler.safeApiCall
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 class AnimeSearchRepository(
-    private val jikanAPI: AnimeAPI
+    private val jikanAPI: AnimeAPI,
+    private val genreDao: GenreDao
 ) {
     suspend fun searchAnime(
         queryState: AnimeSearchQueryState
@@ -81,4 +87,19 @@ class AnimeSearchRepository(
             return ResponseHandler.handleCommonResponse(response)
         }
     }
+
+    suspend fun getProducer(malId: Int): Resource<ProducerResponse> {
+        val response = safeApiCall { jikanAPI.getProducer(malId) }
+        return ResponseHandler.handleCommonResponse(response)
+    }
+
+    suspend fun getCachedGenres(): List<Genre> =
+        withContext(Dispatchers.IO) {
+            genreDao.getGenres()
+        }
+
+    suspend fun insertCachedGenre(genre: Genre) =
+        withContext(Dispatchers.IO) {
+            genreDao.insertGenre(genre)
+        }
 }

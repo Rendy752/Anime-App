@@ -12,6 +12,6 @@ data class Server(
 ): Parcelable
 
 val serverPlaceholder = Server(
-    serverName = "Server Name",
+    serverName = "vidstreaming",
     serverId = 1
 )

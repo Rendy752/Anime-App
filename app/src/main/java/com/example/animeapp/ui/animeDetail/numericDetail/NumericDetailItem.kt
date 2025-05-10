@@ -2,6 +2,7 @@ package com.example.animeapp.ui.animeDetail.numericDetail
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -31,7 +32,7 @@ fun NumericDetailItem(
 ) {
     Column(
         modifier = Modifier
-            .basicContainer()
+            .basicContainer(outerPadding = PaddingValues(0.dp))
             .height(120.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
@@ -75,7 +76,7 @@ fun NumericDetailItem(
 fun NumericDetailItemSkeleton() {
     Column(
         modifier = Modifier
-            .basicContainer()
+            .basicContainer(outerPadding = PaddingValues(0.dp))
             .width(90.dp)
             .height(120.dp),
         horizontalAlignment = Alignment.CenterHorizontally,

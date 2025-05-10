@@ -1,15 +1,12 @@
 package com.example.animeapp.animeRecommendations
 
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import com.example.animeapp.R
 import com.example.animeapp.ui.animeRecommendations.AnimeRecommendationsScreen
-import com.example.animeapp.ui.main.BottomScreen
 import com.example.animeapp.ui.theme.AppTheme
 import com.example.animeapp.utils.Resource
 import dagger.hilt.android.testing.HiltAndroidRule
@@ -55,12 +52,11 @@ class AnimeRecommendationsScreenTest {
         composeTestRule.setContent {
             AppTheme {
                 AnimeRecommendationsScreen(
-                    navController = navController,
-                    isConnected = true,
-                    isLandscape = false
+                    navController = mock(),
+                    mainState = mock(),
+                    recommendationsState = mock(),
+                    onAction = mock()
                 )
-                composeTestRule.onNodeWithText(BottomScreen.Recommendations.label)
-                    .assertIsDisplayed()
             }
         }
     }
@@ -69,14 +65,17 @@ class AnimeRecommendationsScreenTest {
     fun animeRecommendationsScreen_displaysLoading() {
         val loadingState =
             MutableStateFlow<Resource<AnimeRecommendationResponse>>(Resource.Loading())
-        whenever(mockViewModel.animeRecommendations).thenReturn(loadingState)
+        whenever(mockViewModel.recommendationsState.value.animeRecommendations).thenReturn(
+            loadingState.value
+        )
 
         composeTestRule.setContent {
             AppTheme {
                 AnimeRecommendationsScreen(
-                    navController = navController,
-                    isConnected = true,
-                    isLandscape = false
+                    navController = mock(),
+                    mainState = mock(),
+                    recommendationsState = mock(),
+                    onAction = mock()
                 )
                 composeTestRule.onNodeWithText("If you like").assertDoesNotExist()
             }
@@ -86,14 +85,14 @@ class AnimeRecommendationsScreenTest {
     @Test
     fun animeRecommendationsScreen_displaysErrorMessage_whenNotConnected() {
         composeTestRule.setContent {
-            val currentContext = LocalContext.current
             AppTheme {
                 AnimeRecommendationsScreen(
-                    navController = navController,
-                    isConnected = false,
-                    isLandscape = false
+                    navController = mock(),
+                    mainState = mock(),
+                    recommendationsState = mock(),
+                    onAction = mock()
                 )
-                composeTestRule.onNodeWithText(currentContext.getString(R.string.no_internet_connection))
+                composeTestRule.onNodeWithText("No internet connection")
                     .assertIsDisplayed()
             }
         }
@@ -103,17 +102,19 @@ class AnimeRecommendationsScreenTest {
     fun animeRecommendationsScreen_displaysErrorMessage_whenLoadingFailsAndConnected() {
         val errorState =
             MutableStateFlow<Resource<AnimeRecommendationResponse>>(Resource.Error("Failed to load"))
-        whenever(mockViewModel.animeRecommendations).thenReturn(errorState)
+        whenever(mockViewModel.recommendationsState.value.animeRecommendations).thenReturn(
+            errorState.value
+        )
 
         composeTestRule.setContent {
-            val currentContext = LocalContext.current
             AppTheme {
                 AnimeRecommendationsScreen(
-                    navController = navController,
-                    isConnected = true,
-                    isLandscape = false
+                    navController = mock(),
+                    mainState = mock(),
+                    recommendationsState = mock(),
+                    onAction = mock()
                 )
-                composeTestRule.onNodeWithText(currentContext.getString(R.string.error_loading_data))
+                composeTestRule.onNodeWithText("Error Loading Data")
                     .assertIsDisplayed()
             }
         }
@@ -138,14 +139,17 @@ class AnimeRecommendationsScreenTest {
                     )
                 )
             )
-        whenever(mockViewModel.animeRecommendations).thenReturn(successState)
+        whenever(mockViewModel.recommendationsState.value.animeRecommendations).thenReturn(
+            successState.value
+        )
 
         composeTestRule.setContent {
             AppTheme {
                 AnimeRecommendationsScreen(
-                    navController = navController,
-                    isConnected = true,
-                    isLandscape = false
+                    navController = mock(),
+                    mainState = mock(),
+                    recommendationsState = mock(),
+                    onAction = mock()
                 )
                 composeTestRule.onNodeWithText("Anime 1").assertIsDisplayed()
                 composeTestRule.onNodeWithText("Anime 2").assertIsDisplayed()
@@ -182,14 +186,17 @@ class AnimeRecommendationsScreenTest {
                     )
                 )
             )
-        whenever(mockViewModel.animeRecommendations).thenReturn(successState)
+        whenever(mockViewModel.recommendationsState.value.animeRecommendations).thenReturn(
+            successState.value
+        )
 
         composeTestRule.setContent {
             AppTheme {
                 AnimeRecommendationsScreen(
-                    navController = navController,
-                    isConnected = true,
-                    isLandscape = true
+                    navController = mock(),
+                    mainState = mock(),
+                    recommendationsState = mock(),
+                    onAction = mock()
                 )
             }
         }

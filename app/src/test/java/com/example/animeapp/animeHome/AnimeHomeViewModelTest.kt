@@ -11,6 +11,7 @@ import com.example.animeapp.repository.AnimeHomeRepository
 import com.example.animeapp.ui.animeHome.HomeAction
 import com.example.animeapp.ui.animeHome.HomeState
 import com.example.animeapp.ui.animeHome.AnimeHomeViewModel
+import com.example.animeapp.ui.animeHome.CarouselState
 import com.example.animeapp.utils.Resource
 import io.mockk.clearMocks
 import io.mockk.coEvery
@@ -61,19 +62,20 @@ class AnimeHomeViewModelTest {
     }
 
     @Test
-    fun `Initial state and GetAnimeSchedules dispatch`() = runTest {
+    fun `Initial state and GetAnimeSchedules onAction`() = runTest {
         val viewModel = AnimeHomeViewModel(animeHomeRepository, animeEpisodeDetailRepository)
 
         val initialState = HomeState()
-        assertTrue(viewModel.state.value.animeSchedules is Resource.Loading)
-        assertTrue(viewModel.state.value.top10Anime is Resource.Loading)
-        assertEquals(initialState.queryState, viewModel.state.value.queryState)
-        assertEquals(initialState.continueWatchingEpisode, viewModel.state.value.continueWatchingEpisode)
-        assertEquals(initialState.isRefreshing, viewModel.state.value.isRefreshing)
-        assertEquals(initialState.isShowPopup, viewModel.state.value.isShowPopup)
-        assertEquals(initialState.isMinimized, viewModel.state.value.isMinimized)
-        assertEquals(initialState.currentCarouselPage, viewModel.state.value.currentCarouselPage)
-        assertEquals(initialState.autoScrollEnabled, viewModel.state.value.autoScrollEnabled)
+        val carouselState = CarouselState()
+        assertTrue(viewModel.homeState.value.animeSchedules is Resource.Loading)
+        assertTrue(viewModel.homeState.value.top10Anime is Resource.Loading)
+        assertEquals(initialState.queryState, viewModel.homeState.value.queryState)
+        assertEquals(initialState.continueWatchingEpisode, viewModel.homeState.value.continueWatchingEpisode)
+        assertEquals(initialState.isRefreshing, viewModel.homeState.value.isRefreshing)
+        assertEquals(initialState.isShowPopup, viewModel.homeState.value.isShowPopup)
+        assertEquals(initialState.isMinimized, viewModel.homeState.value.isMinimized)
+        assertEquals(carouselState.currentCarouselPage, viewModel.carouselState.value.currentCarouselPage)
+        assertEquals(carouselState.autoScrollEnabled, viewModel.carouselState.value.autoScrollEnabled)
     }
 
     @Test
@@ -86,10 +88,10 @@ class AnimeHomeViewModelTest {
         )
         coEvery { animeHomeRepository.getAnimeSchedules(any()) } returns mockResponse
 
-        viewModel.dispatch(HomeAction.GetAnimeSchedules)
+        viewModel.onAction(HomeAction.GetAnimeSchedules)
 
-        assertFalse(viewModel.state.value.isRefreshing)
-        assertEquals(mockResponse, viewModel.state.value.animeSchedules)
+        assertFalse(viewModel.homeState.value.isRefreshing)
+        assertEquals(mockResponse, viewModel.homeState.value.animeSchedules)
     }
 
     @Test
@@ -98,13 +100,13 @@ class AnimeHomeViewModelTest {
         val mockResponse = Resource.Error<ListAnimeDetailResponse>(errorMessage)
         coEvery { animeHomeRepository.getAnimeSchedules(any()) } returns mockResponse
 
-        assertFalse(viewModel.state.value.isRefreshing)
-        assertNull(viewModel.state.value.animeSchedules.data)
+        assertFalse(viewModel.homeState.value.isRefreshing)
+        assertNull(viewModel.homeState.value.animeSchedules.data)
 
-        viewModel.dispatch(HomeAction.GetAnimeSchedules)
+        viewModel.onAction(HomeAction.GetAnimeSchedules)
 
-        assertFalse(viewModel.state.value.isRefreshing)
-        assertEquals(mockResponse, viewModel.state.value.animeSchedules)
+        assertFalse(viewModel.homeState.value.isRefreshing)
+        assertEquals(mockResponse, viewModel.homeState.value.animeSchedules)
     }
 
     @Test
@@ -117,9 +119,9 @@ class AnimeHomeViewModelTest {
         )
         coEvery { animeHomeRepository.getTop10Anime() } returns mockResponse
 
-        viewModel.dispatch(HomeAction.GetTop10Anime)
+        viewModel.onAction(HomeAction.GetTop10Anime)
 
-        assertEquals(mockResponse, viewModel.state.value.top10Anime)
+        assertEquals(mockResponse, viewModel.homeState.value.top10Anime)
     }
 
     @Test
@@ -128,23 +130,23 @@ class AnimeHomeViewModelTest {
         val mockResponse = Resource.Error<ListAnimeDetailResponse>(errorMessage)
         coEvery { animeHomeRepository.getTop10Anime() } returns mockResponse
 
-        assertNull(viewModel.state.value.top10Anime.data)
+        assertNull(viewModel.homeState.value.top10Anime.data)
 
-        viewModel.dispatch(HomeAction.GetTop10Anime)
+        viewModel.onAction(HomeAction.GetTop10Anime)
 
-        assertEquals(mockResponse, viewModel.state.value.top10Anime)
+        assertEquals(mockResponse, viewModel.homeState.value.top10Anime)
     }
 
     @Test
-    fun `ApplyFilters dispatch and state update`() = runTest {
-        val initialQueryState = viewModel.state.value.queryState
+    fun `ApplyFilters onAction and state update`() = runTest {
+        val initialQueryState = viewModel.homeState.value.queryState
         val newQueryState = initialQueryState.copy(filter = "monday")
 
         coEvery { animeHomeRepository.getAnimeSchedules(newQueryState) } returns Resource.Loading()
 
-        viewModel.dispatch(HomeAction.ApplyFilters(newQueryState))
+        viewModel.onAction(HomeAction.ApplyFilters(newQueryState))
 
-        assertEquals(newQueryState, viewModel.state.value.queryState)
+        assertEquals(newQueryState, viewModel.homeState.value.queryState)
 
         coVerify(exactly = 1) { animeHomeRepository.getAnimeSchedules(newQueryState) }
     }
@@ -153,11 +155,11 @@ class AnimeHomeViewModelTest {
     fun `FetchContinueWatchingEpisode no cached episode`() = runTest {
         coEvery { animeEpisodeDetailRepository.getCachedLatestWatchedEpisodeDetailComplement() } returns null
 
-        viewModel.dispatch(HomeAction.FetchContinueWatchingEpisode)
+        viewModel.onAction(HomeAction.FetchContinueWatchingEpisode)
 
-        assertNull(viewModel.state.value.continueWatchingEpisode)
-        assertFalse(viewModel.state.value.isShowPopup)
-        assertFalse(viewModel.state.value.isMinimized)
+        assertNull(viewModel.homeState.value.continueWatchingEpisode)
+        assertFalse(viewModel.homeState.value.isShowPopup)
+        assertFalse(viewModel.homeState.value.isMinimized)
     }
 
     @Test
@@ -165,35 +167,35 @@ class AnimeHomeViewModelTest {
         val mockEpisode = episodeDetailComplementPlaceholder
         coEvery { animeEpisodeDetailRepository.getCachedLatestWatchedEpisodeDetailComplement() } returns mockEpisode
 
-        viewModel.dispatch(HomeAction.FetchContinueWatchingEpisode)
+        viewModel.onAction(HomeAction.FetchContinueWatchingEpisode)
 
-        assertEquals(mockEpisode, viewModel.state.value.continueWatchingEpisode)
-        assertTrue(viewModel.state.value.isShowPopup)
-        assertFalse(viewModel.state.value.isMinimized)
+        assertEquals(mockEpisode, viewModel.homeState.value.continueWatchingEpisode)
+        assertTrue(viewModel.homeState.value.isShowPopup)
+        assertFalse(viewModel.homeState.value.isMinimized)
     }
 
     @Test
     fun `SetMinimized true`() = runTest {
-        viewModel.dispatch(HomeAction.SetMinimized(true))
-        assertEquals(true, viewModel.state.value.isMinimized)
+        viewModel.onAction(HomeAction.SetMinimized(true))
+        assertEquals(true, viewModel.homeState.value.isMinimized)
     }
 
     @Test
     fun `SetMinimized false`() = runTest {
-        viewModel.dispatch(HomeAction.SetMinimized(false))
-        assertEquals(false, viewModel.state.value.isMinimized)
+        viewModel.onAction(HomeAction.SetMinimized(false))
+        assertEquals(false, viewModel.homeState.value.isMinimized)
     }
 
     @Test
     fun `SetShowPopup true`() = runTest {
-        viewModel.dispatch(HomeAction.SetShowPopup(true))
-        assertEquals(true, viewModel.state.value.isShowPopup)
+        viewModel.onAction(HomeAction.SetShowPopup(true))
+        assertEquals(true, viewModel.homeState.value.isShowPopup)
     }
 
     @Test
     fun `SetShowPopup false`() = runTest {
-        viewModel.dispatch(HomeAction.SetShowPopup(false))
-        assertEquals(false, viewModel.state.value.isShowPopup)
+        viewModel.onAction(HomeAction.SetShowPopup(false))
+        assertEquals(false, viewModel.homeState.value.isShowPopup)
     }
 
     @Test
@@ -204,9 +206,9 @@ class AnimeHomeViewModelTest {
 
         coEvery { animeHomeRepository.getAnimeSchedules(defaultQueryState) } returns Resource.Loading()
 
-        viewModel.dispatch(HomeAction.ApplyFilters(defaultQueryState))
+        viewModel.onAction(HomeAction.ApplyFilters(defaultQueryState))
 
-        assertEquals(defaultQueryState, viewModel.state.value.queryState)
+        assertEquals(defaultQueryState, viewModel.homeState.value.queryState)
         coVerify(exactly = 1) { animeHomeRepository.getAnimeSchedules(defaultQueryState) }
     }
 
@@ -214,11 +216,11 @@ class AnimeHomeViewModelTest {
     fun `Edge case  FetchContinueWatchingEpisode repository empty`() = runTest {
         coEvery { animeEpisodeDetailRepository.getCachedLatestWatchedEpisodeDetailComplement() } returns null
 
-        viewModel.dispatch(HomeAction.FetchContinueWatchingEpisode)
+        viewModel.onAction(HomeAction.FetchContinueWatchingEpisode)
 
-        assertNull(viewModel.state.value.continueWatchingEpisode)
-        assertFalse(viewModel.state.value.isShowPopup)
-        assertFalse(viewModel.state.value.isMinimized)
+        assertNull(viewModel.homeState.value.continueWatchingEpisode)
+        assertFalse(viewModel.homeState.value.isShowPopup)
+        assertFalse(viewModel.homeState.value.isMinimized)
     }
 
     @Test
@@ -232,15 +234,15 @@ class AnimeHomeViewModelTest {
 
         coEvery { animeHomeRepository.getAnimeSchedules(any()) } returns mockResponseSuccess
 
-        viewModel.dispatch(HomeAction.ApplyFilters(AnimeSchedulesSearchQueryState(filter = "monday")))
-        viewModel.dispatch(HomeAction.ApplyFilters(AnimeSchedulesSearchQueryState(filter = "tuesday")))
-        viewModel.dispatch(HomeAction.ApplyFilters(AnimeSchedulesSearchQueryState(filter = "wednesday")))
+        viewModel.onAction(HomeAction.ApplyFilters(AnimeSchedulesSearchQueryState(filter = "monday")))
+        viewModel.onAction(HomeAction.ApplyFilters(AnimeSchedulesSearchQueryState(filter = "tuesday")))
+        viewModel.onAction(HomeAction.ApplyFilters(AnimeSchedulesSearchQueryState(filter = "wednesday")))
 
         advanceTimeBy(1)
 
         assertEquals(
             AnimeSchedulesSearchQueryState(filter = "wednesday"),
-            viewModel.state.value.queryState
+            viewModel.homeState.value.queryState
         )
 
         coVerify(exactly = 3) { animeHomeRepository.getAnimeSchedules(any()) }

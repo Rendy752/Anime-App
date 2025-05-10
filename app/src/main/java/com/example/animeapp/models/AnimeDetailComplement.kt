@@ -28,15 +28,15 @@ data class AnimeDetailComplement(
 ) : Parcelable
 
 val animeDetailComplementPlaceholder = AnimeDetailComplement(
-    id = "",
-    malId = 0,
+    id = "anime-1735",
+    malId = 1735,
     isFavorite = false,
-    eps = 0,
+    eps = 1,
     sub = 0,
     dub = 0,
     lastEpisodeWatchedId = null,
     episodes = listOf(episodePlaceholder),
-    lastEpisodeUpdatedAt = Instant.now().epochSecond,
-    createdAt = Instant.now().epochSecond,
-    updatedAt = Instant.now().epochSecond
+    lastEpisodeUpdatedAt = 1746872831,
+    createdAt = 1746872831,
+    updatedAt = 1746872831
 )

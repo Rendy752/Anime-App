@@ -3,6 +3,7 @@ package com.example.animeapp.utils
 import android.util.Log
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.mutableStateOf
+import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import com.example.animeapp.models.EpisodeSourcesResponse
 import kotlinx.coroutines.CoroutineScope
@@ -15,15 +16,21 @@ class IntroOutroHandler(
     private val player: ExoPlayer,
     private val videoData: EpisodeSourcesResponse
 ) {
-
     private var introSkipped = false
     private var outroSkipped = true
     private var job: Job? = null
     val showIntroButton: MutableState<Boolean> = mutableStateOf(false)
     val showOutroButton: MutableState<Boolean> = mutableStateOf(false)
 
+    private val playerListener = object : Player.Listener {
+        override fun onIsPlayingChanged(isPlaying: Boolean) {
+            if (isPlaying) start() else stop()
+        }
+    }
+
     fun start() {
         if (job?.isActive != true) {
+            player.addListener(playerListener)
             job = CoroutineScope(Dispatchers.Main).launch {
                 while (true) {
                     runHandlerLogic()
@@ -69,7 +76,10 @@ class IntroOutroHandler(
     fun stop() {
         job?.cancel()
         job = null
+        player.removeListener(playerListener)
         showIntroButton.value = false
         showOutroButton.value = false
+        introSkipped = false
+        outroSkipped = true
     }
 }

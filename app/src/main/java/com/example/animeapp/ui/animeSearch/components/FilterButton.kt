@@ -8,9 +8,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import com.example.animeapp.R
 
 @Composable
 fun CancelButton(
@@ -26,8 +24,7 @@ fun CancelButton(
         )
     ) {
         Text(
-            text = stringResource(id = R.string.cancel),
-            maxLines = 1,
+            text = "Cancel", maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
     }
@@ -57,7 +54,7 @@ fun ResetButton(
         )
     ) {
         Text(
-            stringResource(R.string.reset), maxLines = 1,
+            text = "Reset", maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
     }
@@ -91,7 +88,7 @@ fun ApplyButton(
         )
     ) {
         Text(
-            stringResource(R.string.apply), maxLines = 1,
+            text = "Apply", maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
     }

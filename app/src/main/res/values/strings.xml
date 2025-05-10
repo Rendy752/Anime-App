@@ -1,23 +1,5 @@
 <resources>
     <string name="app_name">AnimeApp</string>
-    <string name="dark_mode">Dark Mode</string>
-    <string name="dark_mode_description">Enable dark mode</string>
-    <string name="score">Score</string>
-    <string name="ranked">Ranked</string>
-    <string name="popularity">Popularity</string>
-    <string name="members">Members</string>
-    <string name="favorites">Favorites</string>
-    <string name="watch">Watch</string>
-    <string name="search_anime">Search Anime</string>
-    <string name="filter">Filter</string>
-    <string name="apply">Apply</string>
-    <string name="genres_field">Genres</string>
-    <string name="producers_field">Producers</string>
-    <string name="chevron_down">Chevron Down</string>
-    <string name="reset">Reset</string>
-    <string name="search_producer">Search Producer</string>
-    <string name="no_internet_connection">No internet connection</string>
-    <string name="error_loading_data">Error Loading Data</string>
-    <string name="no_results_found">No results found.</string>
-    <string name="cancel">Cancel</string>
+    <string name="permission_access_media_service_description">Allows access to the anime media playback service.</string>
+    <string name="permission_access_media_service_label">Access Anime Media Service</string>
 </resources>

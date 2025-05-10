@@ -1,12 +1,6 @@
 package com.example.animeapp.utils
 
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import com.example.animeapp.models.Broadcast
-import kotlinx.coroutines.delay
 import org.ocpsoft.prettytime.PrettyTime
 import java.time.DayOfWeek
 import java.time.Instant
@@ -71,7 +65,7 @@ object TimeUtils {
         }
     }
 
-    private fun getBroadcastDateTimeThisWeek(
+    fun getBroadcastDateTimeThisWeek(
         broadcastTime: String,
         broadcastTimezone: String,
         broadcastDay: String
@@ -84,6 +78,31 @@ object TimeUtils {
         val dayOfWeek = DayOfWeek.valueOf(broadcastDay.removeSuffix("s").uppercase(Locale.ENGLISH))
         val broadcastDateThisWeek = firstDayOfWeek.with(TemporalAdjusters.nextOrSame(dayOfWeek))
         return ZonedDateTime.of(broadcastDateThisWeek, broadcastLocalTime, broadcastZone)
+    }
+
+    /**
+     * Returns a ZonedDateTime for the anime's broadcast in the current week for sorting purposes.
+     * If broadcast data is invalid or missing, returns null, and invalid entries should be sorted last.
+     * @param broadcastTime The broadcast time (e.g., "08:30")
+     * @param broadcastTimezone The broadcast timezone (e.g., "Asia/Tokyo")
+     * @param broadcastDay The broadcast day (e.g., "Sundays")
+     * @return ZonedDateTime for the current week's broadcast, or null if data is invalid
+     */
+    fun getBroadcastDateTimeForSorting(
+        broadcastTime: String?,
+        broadcastTimezone: String?,
+        broadcastDay: String?
+    ): ZonedDateTime? {
+        if (broadcastTime == null || broadcastTimezone == null || broadcastDay == null) {
+            println("TimeUtils: Invalid broadcast data for sorting: time=$broadcastTime, timezone=$broadcastTimezone, day=$broadcastDay")
+            return null
+        }
+        return try {
+            getBroadcastDateTimeThisWeek(broadcastTime, broadcastTimezone, broadcastDay)
+        } catch (e: Exception) {
+            println("TimeUtils: Error parsing broadcast for sorting: time=$broadcastTime, timezone=$broadcastTimezone, day=$broadcastDay, error=${e.message}")
+            null
+        }
     }
 
     fun isNowWithinBroadcastWindow(
@@ -162,78 +181,55 @@ object TimeUtils {
         }
     }
 
-    @Composable
-    fun rememberBroadcastTimeRemaining(broadcast: Broadcast): State<String> {
-        val remainingTime = remember { mutableStateOf("") }
+    fun calculateRemainingTime(broadcast: Broadcast): String {
+        return try {
+            val broadcastZoneId = ZoneId.of(broadcast.timezone)
+            val currentZoneId = ZoneId.systemDefault()
+            val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 
-        LaunchedEffect(broadcast) {
-            try {
-                val broadcastDateTimeThisWeek =
-                    getBroadcastDateTimeThisWeek(
-                        broadcast.time!!,
-                        broadcast.timezone!!,
-                        broadcast.day!!
-                    )
-                val broadcastZoneId = ZoneId.of(broadcast.timezone)
-                val currentZoneId = ZoneId.systemDefault()
-                val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+            val nowAligned = ZonedDateTime.now(currentZoneId)
+            val nowBroadcast = nowAligned.withZoneSameInstant(broadcastZoneId)
 
-                while (true) {
-                    val nowCurrent = ZonedDateTime.now(currentZoneId)
-                    val nextSecond = nowCurrent.plusSeconds(1).withNano(0)
-                    val delayMillis = ChronoUnit.MILLIS.between(nowCurrent, nextSecond)
-                    delay(delayMillis)
-
-                    val nowAligned = ZonedDateTime.now(currentZoneId)
-                    val nowBroadcast = nowAligned.withZoneSameInstant(broadcastZoneId)
-
-                    if (isNowWithinBroadcastWindow(
-                            broadcast.time,
-                            broadcast.timezone,
-                            broadcast.day
-                        )
-                    ) {
-                        remainingTime.value = "On Air"
-                    } else {
-                        val broadcastLocalTime = LocalTime.parse(broadcast.time, timeFormatter)
-                        var nextBroadcast = broadcastDateTimeThisWeek
-                            .with(
-                                TemporalAdjusters.nextOrSame(
-                                    DayOfWeek.valueOf(
-                                        broadcast.day.removeSuffix(
-                                            "s"
-                                        ).uppercase(Locale.ENGLISH)
-                                    )
-                                )
+            if (isNowWithinBroadcastWindow(broadcast.time, broadcast.timezone, broadcast.day)) {
+                "On Air"
+            } else {
+                val broadcastLocalTime = LocalTime.parse(broadcast.time, timeFormatter)
+                val broadcastDateTimeThisWeek = getBroadcastDateTimeThisWeek(
+                    broadcast.time!!,
+                    broadcast.timezone!!,
+                    broadcast.day!!
+                )
+                var nextBroadcast = broadcastDateTimeThisWeek
+                    .with(
+                        TemporalAdjusters.nextOrSame(
+                            DayOfWeek.valueOf(
+                                broadcast.day.removeSuffix("s").uppercase(Locale.ENGLISH)
                             )
-                            .withHour(broadcastLocalTime.hour)
-                            .withMinute(broadcastLocalTime.minute)
-                            .withSecond(0)
-                            .withNano(0)
+                        )
+                    )
+                    .withHour(broadcastLocalTime.hour)
+                    .withMinute(broadcastLocalTime.minute)
+                    .withSecond(0)
+                    .withNano(0)
 
-                        if (!nowBroadcast.isBefore(nextBroadcast)) {
-                            nextBroadcast = nextBroadcast.plusWeeks(1)
-                        }
-
-                        val timeDifference =
-                            ChronoUnit.MINUTES.between(nowBroadcast, nextBroadcast)
-                        val days = timeDifference / (24 * 60)
-                        val hours = (timeDifference % (24 * 60)) / 60
-                        val minutes = timeDifference % 60
-
-                        remainingTime.value = when {
-                            days > 0 -> "${days}d ${hours}h ${minutes}m"
-                            hours > 0 -> "${hours}h ${minutes}m"
-                            minutes >= 0 -> "${minutes}m"
-                            else -> "On Air"
-                        }
-                    }
+                if (!nowBroadcast.isBefore(nextBroadcast)) {
+                    nextBroadcast = nextBroadcast.plusWeeks(1)
                 }
-            } catch (e: Exception) {
-                remainingTime.value = ""
-                e.printStackTrace()
+
+                val timeDifference = ChronoUnit.MINUTES.between(nowBroadcast, nextBroadcast)
+                val days = timeDifference / (24 * 60)
+                val hours = (timeDifference % (24 * 60)) / 60
+                val minutes = timeDifference % 60
+
+                when {
+                    days > 0 -> "${days}d ${hours}h ${minutes}m"
+                    hours > 0 -> "${hours}h ${minutes}m"
+                    minutes >= 0 -> "${minutes}m"
+                    else -> "On Air"
+                }
             }
+        } catch (_: Exception) {
+            ""
         }
-        return remainingTime
     }
 }

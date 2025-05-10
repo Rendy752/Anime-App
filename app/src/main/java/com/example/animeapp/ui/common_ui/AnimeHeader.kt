@@ -27,19 +27,27 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
+import androidx.navigation.NavController
 import com.example.animeapp.models.AnimeDetail
+import com.example.animeapp.models.animeDetailPlaceholder
+import com.example.animeapp.ui.main.navigation.NavRoute
+import com.example.animeapp.ui.main.navigation.navigateTo
 
 @OptIn(ExperimentalFoundationApi::class)
+@Preview
 @Composable
-fun AnimeHeader(animeDetail: AnimeDetail) {
+fun AnimeHeader(
+    modifier: Modifier = Modifier,
+    animeDetail: AnimeDetail = animeDetailPlaceholder,
+    showImage: Boolean = true,
+    navController: NavController? = null
+) {
     val context = LocalContext.current
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp),
+        modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        AsyncImageWithPlaceholder(
+        if (showImage) AsyncImageWithPlaceholder(
             model = animeDetail.images.webp.large_image_url,
             contentDescription = animeDetail.title,
             isAiring = animeDetail.airing,
@@ -65,6 +73,11 @@ fun AnimeHeader(animeDetail: AnimeDetail) {
                         .weight(1f)
                         .combinedClickable(
                             onClick = {
+                                navController?.navigateTo(
+                                    NavRoute.AnimeDetail.fromId(animeDetail.mal_id)
+                                )
+                            },
+                            onDoubleClick = {
                                 val intent = Intent(Intent.ACTION_VIEW, animeDetail.url.toUri())
                                 context.startActivity(intent)
                             },
@@ -112,14 +125,12 @@ fun AnimeHeader(animeDetail: AnimeDetail) {
 
 @Preview
 @Composable
-fun AnimeHeaderSkeleton() {
+fun AnimeHeaderSkeleton(modifier: Modifier = Modifier, showImage: Boolean = true) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp),
+        modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        SkeletonBox(width = 200.dp, height = 300.dp)
+        if (showImage) SkeletonBox(width = 200.dp, height = 300.dp)
 
         Column(
             modifier = Modifier

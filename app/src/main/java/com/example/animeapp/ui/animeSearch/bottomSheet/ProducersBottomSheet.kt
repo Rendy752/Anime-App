@@ -10,10 +10,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.animeapp.R
 import com.example.animeapp.models.AnimeSearchQueryState
 import com.example.animeapp.models.Producer
 import com.example.animeapp.models.ProducersResponse
@@ -104,7 +102,7 @@ fun ProducersBottomSheet(
                     query = it
                     debounce.query(it)
                 },
-                placeholder = stringResource(id = R.string.search_producer),
+                placeholder = "Search Producer",
                 modifier = Modifier.fillMaxWidth()
             )
         }

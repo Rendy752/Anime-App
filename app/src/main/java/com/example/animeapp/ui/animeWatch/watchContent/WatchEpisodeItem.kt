@@ -6,13 +6,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -22,13 +22,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import com.example.animeapp.models.Episode
 import com.example.animeapp.models.EpisodeDetailComplement
-import com.example.animeapp.ui.common_ui.SkeletonBox
 import com.example.animeapp.utils.WatchUtils.getEpisodeBackgroundColor
 import com.example.animeapp.utils.basicContainer
 
@@ -36,14 +34,10 @@ import com.example.animeapp.utils.basicContainer
 fun WatchEpisodeItem(
     currentEpisode: EpisodeDetailComplement?,
     episode: Episode,
-    getCachedEpisodeDetailComplement: suspend (String) -> EpisodeDetailComplement?,
+    episodeDetailComplement: EpisodeDetailComplement?,
     onEpisodeClick: (String) -> Unit,
     isSelected: Boolean
 ) {
-    var episodeDetailComplement by remember { mutableStateOf<EpisodeDetailComplement?>(null) }
-    LaunchedEffect(currentEpisode) {
-        episodeDetailComplement = getCachedEpisodeDetailComplement(episode.episodeId)
-    }
     val isCurrentEpisode =
         if (currentEpisode != null) currentEpisode.servers.episodeNo == episode.episodeNo else false
     var showTooltip by remember { mutableStateOf(false) }
@@ -56,7 +50,7 @@ fun WatchEpisodeItem(
 
     Surface(
         modifier = Modifier
-            .padding(8.dp)
+            .widthIn(min = 48.dp, max = 100.dp)
             .clip(RoundedCornerShape(16.dp))
             .border(
                 width = 1.dp,
@@ -64,7 +58,6 @@ fun WatchEpisodeItem(
                 shape = RoundedCornerShape(16.dp)
             ),
     ) {
-
         Box(
             modifier = Modifier
                 .aspectRatio(1f)
@@ -111,36 +104,6 @@ fun WatchEpisodeItem(
                     )
                 }
             }
-        }
-    }
-}
-
-
-@Preview
-@Composable
-fun WatchEpisodeItemSkeleton() {
-    Surface(
-        modifier = Modifier
-            .padding(8.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.surfaceContainerHighest,
-                shape = RoundedCornerShape(16.dp)
-            ),
-    ) {
-        Box(
-            modifier = Modifier
-                .aspectRatio(1f)
-                .basicContainer(
-                    backgroundBrush = getEpisodeBackgroundColor(false),
-                    outerPadding = PaddingValues(0.dp),
-                    innerPadding = PaddingValues(0.dp),
-                )
-                .padding(16.dp),
-            contentAlignment = Alignment.Center
-        ) {
-            SkeletonBox(width = 20.dp, height = 20.dp)
         }
     }
 }

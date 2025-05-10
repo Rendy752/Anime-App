@@ -15,7 +15,7 @@ data class EpisodeServersResponse(
 ): Parcelable
 
 val episodeServersResponsePlaceholder = EpisodeServersResponse(
-    episodeId = "watch-1",
+    episodeId = "lorem-ipsum-123?ep=123",
     episodeNo = 1,
     sub = listOf(serverPlaceholder),
     dub = listOf(serverPlaceholder),

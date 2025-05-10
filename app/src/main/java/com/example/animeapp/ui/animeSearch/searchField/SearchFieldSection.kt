@@ -13,11 +13,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.example.animeapp.R
 import com.example.animeapp.models.AnimeSearchQueryState
 import com.example.animeapp.ui.common_ui.SearchView
 import com.example.animeapp.utils.Debounce
@@ -59,7 +57,7 @@ fun SearchFieldSection(
                     query = it
                     debounce.query(it)
                 },
-                placeholder = stringResource(id = R.string.search_anime),
+                placeholder = "Search Anime",
                 modifier = Modifier
                     .weight(1f)
                     .onGloballyPositioned { coordinates ->
@@ -98,7 +96,7 @@ fun SearchFieldSection(
                 Icon(
                     imageVector = Icons.Filled.FilterList,
                     tint = MaterialTheme.colorScheme.onPrimary,
-                    contentDescription = stringResource(id = R.string.filter)
+                    contentDescription = "Open Filter"
                 )
             }
         }

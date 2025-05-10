@@ -9,10 +9,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.AnimeDetail
+import com.example.animeapp.ui.common_ui.AnimeScheduleItem
+import com.example.animeapp.ui.common_ui.AnimeScheduleItemSkeleton
 
 @Composable
 fun AnimeSchedulesGrid(
     animeSchedules: List<AnimeDetail>,
+    remainingTimes: Map<String, String>,
     isLandscape: Boolean,
     onItemClick: (AnimeDetail) -> Unit
 ) {
@@ -22,8 +25,12 @@ fun AnimeSchedulesGrid(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(animeSchedules) { animeDetail ->
-            AnimeScheduleItem(animeDetail = animeDetail, onItemClick = onItemClick)
+        items(animeSchedules, key = { it.mal_id }) { animeDetail ->
+            AnimeScheduleItem(
+                animeDetail = animeDetail,
+                remainingTime = remainingTimes[animeDetail.mal_id.toString()] ?: "",
+                onItemClick = onItemClick
+            )
         }
     }
 }
