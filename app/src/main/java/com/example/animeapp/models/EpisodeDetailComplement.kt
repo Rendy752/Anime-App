@@ -36,17 +36,21 @@ data class EpisodeDetailComplement(
 
 val episodeDetailComplementPlaceholder = EpisodeDetailComplement(
     id = "lorem-ipsum-123?ep=123",
-    malId = 123,
-    aniwatchId = "lorem-ipsum-123",
-    animeTitle = "Anime Title",
-    episodeTitle = "Episode Title",
-    number = 123,
+    malId = 1735,
+    aniwatchId = "anime-1735",
+    animeTitle = "Naruto: Shippuuden",
+    episodeTitle = "Title of Episode",
+    imageUrl = "https://cdn.myanimelist.net/images/anime/1565/111305l.webp",
+    screenshot = null,
+    number = 1,
     isFiller = false,
-    imageUrl = null,
     servers = episodeServersResponsePlaceholder,
     sources = episodeSourcesResponsePlaceholder,
     sourcesQuery = episodeSourcesQueryPlaceholder,
     isFavorite = false,
     lastWatched = null,
     lastTimestamp = null,
+    duration = null,
+    createdAt = 1746872830,
+    updatedAt = 1746872830
 )

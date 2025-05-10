@@ -1,4 +1,4 @@
-package com.example.animeapp.animeEpisodeDetail
+package com.example.animeapp.animeDetail
 
 import com.example.animeapp.data.local.dao.AnimeDetailDao
 import com.example.animeapp.data.local.dao.AnimeDetailComplementDao

@@ -93,11 +93,6 @@ fun AnimeDetailScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) { MessageDisplay(detailState.animeDetail.message ?: "Error") }
-
-                else -> Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) { MessageDisplay("Empty") }
             }
         }
     }
