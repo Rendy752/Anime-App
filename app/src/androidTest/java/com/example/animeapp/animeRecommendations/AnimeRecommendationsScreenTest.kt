@@ -11,18 +11,21 @@ import com.example.animeapp.ui.theme.AppTheme
 import com.example.animeapp.utils.Resource
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
-import org.junit.Before
-import org.junit.Rule
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.mockito.kotlin.mock
-import org.mockito.kotlin.whenever
+import io.mockk.every
+import io.mockk.mockk
 import com.example.animeapp.models.AnimeRecommendationResponse
 import com.example.animeapp.models.animeRecommendationPlaceholder
 import com.example.animeapp.models.defaultPagination
 import com.example.animeapp.ui.animeRecommendations.AnimeRecommendationsViewModel
+import com.example.animeapp.ui.animeRecommendations.RecommendationsState
+import com.example.animeapp.ui.main.MainState
+import com.example.animeapp.ui.main.MainViewModel
 import dagger.hilt.android.testing.BindValue
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
+import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 @HiltAndroidTest
@@ -35,7 +38,8 @@ class AnimeRecommendationsScreenTest {
     val composeTestRule = createComposeRule()
 
     @BindValue
-    val mockViewModel: AnimeRecommendationsViewModel = mock()
+    val mockMainViewModel: MainViewModel = mockk(relaxed = true)
+    val mockViewModel: AnimeRecommendationsViewModel = mockk(relaxed = true)
 
     private lateinit var navController: NavController
 
@@ -52,72 +56,95 @@ class AnimeRecommendationsScreenTest {
         composeTestRule.setContent {
             AppTheme {
                 AnimeRecommendationsScreen(
-                    navController = mock(),
-                    mainState = mock(),
-                    recommendationsState = mock(),
-                    onAction = mock()
+                    navController = mockk(relaxed = true),
+                    mainState = mockk(relaxed = true),
+                    recommendationsState = mockk(relaxed = true),
+                    onAction = mockk(relaxed = true)
                 )
             }
         }
+        // Add assertion if title exists, e.g.:
+        // composeTestRule.onNodeWithText("Recommendations").assertIsDisplayed()
     }
 
     @Test
     fun animeRecommendationsScreen_displaysLoading() {
-        val loadingState =
-            MutableStateFlow<Resource<AnimeRecommendationResponse>>(Resource.Loading())
-        whenever(mockViewModel.recommendationsState.value.animeRecommendations).thenReturn(
-            loadingState.value
-        )
+        val loadingState = Resource.Loading<AnimeRecommendationResponse>()
+        val recommendationsState: RecommendationsState = mockk {
+            every { animeRecommendations } returns loadingState
+        }
+        every { mockViewModel.recommendationsState } returns mockk<StateFlow<RecommendationsState>> {
+            every { value } returns recommendationsState
+        }
 
         composeTestRule.setContent {
             AppTheme {
                 AnimeRecommendationsScreen(
-                    navController = mock(),
-                    mainState = mock(),
-                    recommendationsState = mock(),
-                    onAction = mock()
+                    navController = mockk(relaxed = true),
+                    mainState = mockk(relaxed = true),
+                    recommendationsState = recommendationsState,
+                    onAction = mockk(relaxed = true)
                 )
-                composeTestRule.onNodeWithText("If you like").assertDoesNotExist()
             }
         }
+        composeTestRule.onNodeWithText("If you like").assertDoesNotExist()
     }
 
     @Test
     fun animeRecommendationsScreen_displaysErrorMessage_whenNotConnected() {
+        val mainState: MainState = mockk {
+            every { isConnected } returns false
+        }
+        val recommendationsState: RecommendationsState = mockk {
+            every { animeRecommendations } returns Resource.Error("No internet connection")
+        }
+        every { mockViewModel.recommendationsState } returns mockk<StateFlow<RecommendationsState>> {
+            every { value } returns recommendationsState
+        }
+        every { mockMainViewModel.state } returns mockk<StateFlow<MainState>> {
+            every { value } returns mainState
+        }
+
         composeTestRule.setContent {
             AppTheme {
                 AnimeRecommendationsScreen(
-                    navController = mock(),
-                    mainState = mock(),
-                    recommendationsState = mock(),
-                    onAction = mock()
+                    navController = mockk(relaxed = true),
+                    mainState = mainState,
+                    recommendationsState = recommendationsState,
+                    onAction = mockk(relaxed = true)
                 )
-                composeTestRule.onNodeWithText("No internet connection")
-                    .assertIsDisplayed()
             }
         }
+        composeTestRule.onNodeWithText("No internet connection").assertIsDisplayed()
     }
 
     @Test
     fun animeRecommendationsScreen_displaysErrorMessage_whenLoadingFailsAndConnected() {
-        val errorState =
-            MutableStateFlow<Resource<AnimeRecommendationResponse>>(Resource.Error("Failed to load"))
-        whenever(mockViewModel.recommendationsState.value.animeRecommendations).thenReturn(
-            errorState.value
-        )
+        val errorState = Resource.Error<AnimeRecommendationResponse>("Failed to load")
+        val mainState: MainState = mockk {
+            every { isConnected } returns true
+        }
+        val recommendationsState: RecommendationsState = mockk {
+            every { animeRecommendations } returns errorState
+        }
+        every { mockViewModel.recommendationsState } returns mockk<StateFlow<RecommendationsState>> {
+            every { value } returns recommendationsState
+        }
+        every { mockMainViewModel.state } returns mockk<StateFlow<MainState>> {
+            every { value } returns mainState
+        }
 
         composeTestRule.setContent {
             AppTheme {
                 AnimeRecommendationsScreen(
-                    navController = mock(),
-                    mainState = mock(),
-                    recommendationsState = mock(),
-                    onAction = mock()
+                    navController = mockk(relaxed = true),
+                    mainState = mainState,
+                    recommendationsState = recommendationsState,
+                    onAction = mockk(relaxed = true)
                 )
-                composeTestRule.onNodeWithText("Error Loading Data")
-                    .assertIsDisplayed()
             }
         }
+        composeTestRule.onNodeWithText("Error Loading Data").assertIsDisplayed()
     }
 
     @Test
@@ -128,33 +155,37 @@ class AnimeRecommendationsScreenTest {
                 entry = listOf(),
                 content = "Anime 1"
             ),
-            animeRecommendationPlaceholder.copy(mal_id = "2", entry = listOf(), content = "Anime 2")
-        )
-        val successState =
-            MutableStateFlow(
-                Resource.Success(
-                    AnimeRecommendationResponse(
-                        recommendations,
-                        defaultPagination
-                    )
-                )
+            animeRecommendationPlaceholder.copy(
+                mal_id = "2",
+                entry = listOf(),
+                content = "Anime 2"
             )
-        whenever(mockViewModel.recommendationsState.value.animeRecommendations).thenReturn(
-            successState.value
         )
+        val successState = Resource.Success(
+            AnimeRecommendationResponse(
+                recommendations,
+                defaultPagination
+            )
+        )
+        val recommendationsState: RecommendationsState = mockk {
+            every { animeRecommendations } returns successState
+        }
+        every { mockViewModel.recommendationsState } returns mockk<StateFlow<RecommendationsState>> {
+            every { value } returns recommendationsState
+        }
 
         composeTestRule.setContent {
             AppTheme {
                 AnimeRecommendationsScreen(
-                    navController = mock(),
-                    mainState = mock(),
-                    recommendationsState = mock(),
-                    onAction = mock()
+                    navController = mockk(relaxed = true),
+                    mainState = mockk(relaxed = true),
+                    recommendationsState = recommendationsState,
+                    onAction = mockk(relaxed = true)
                 )
-                composeTestRule.onNodeWithText("Anime 1").assertIsDisplayed()
-                composeTestRule.onNodeWithText("Anime 2").assertIsDisplayed()
             }
         }
+        composeTestRule.onNodeWithText("Anime 1").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Anime 2").assertIsDisplayed()
     }
 
     @Test
@@ -175,32 +206,35 @@ class AnimeRecommendationsScreenTest {
                 entry = listOf(),
                 content = "Anime 3"
             ),
-            animeRecommendationPlaceholder.copy(mal_id = "4", entry = listOf(), content = "Anime 4")
-        )
-        val successState =
-            MutableStateFlow(
-                Resource.Success(
-                    AnimeRecommendationResponse(
-                        recommendations,
-                        defaultPagination
-                    )
-                )
+            animeRecommendationPlaceholder.copy(
+                mal_id = "4",
+                entry = listOf(),
+                content = "Anime 4"
             )
-        whenever(mockViewModel.recommendationsState.value.animeRecommendations).thenReturn(
-            successState.value
         )
+        val successState = Resource.Success(
+            AnimeRecommendationResponse(
+                recommendations,
+                defaultPagination
+            )
+        )
+        val recommendationsState: RecommendationsState = mockk {
+            every { animeRecommendations } returns successState
+        }
+        every { mockViewModel.recommendationsState } returns mockk<StateFlow<RecommendationsState>> {
+            every { value } returns recommendationsState
+        }
 
         composeTestRule.setContent {
             AppTheme {
                 AnimeRecommendationsScreen(
-                    navController = mock(),
-                    mainState = mock(),
-                    recommendationsState = mock(),
-                    onAction = mock()
+                    navController = mockk(relaxed = true),
+                    mainState = mockk(relaxed = true),
+                    recommendationsState = recommendationsState,
+                    onAction = mockk(relaxed = true)
                 )
             }
         }
-
         composeTestRule.onNodeWithText("Anime 1").assertIsDisplayed()
         composeTestRule.onNodeWithText("Anime 3").assertIsDisplayed()
     }
