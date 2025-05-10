@@ -1,4 +1,4 @@
-package com.example.animeapp.animeDetail
+package com.example.animeapp.repository
 
 import com.example.animeapp.data.local.dao.AnimeDetailDao
 import com.example.animeapp.data.local.dao.AnimeDetailComplementDao
@@ -11,7 +11,6 @@ import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.EpisodeServersResponse
 import com.example.animeapp.models.EpisodeSourcesResponse
 import com.example.animeapp.models.EpisodesResponse
-import com.example.animeapp.repository.AnimeEpisodeDetailRepository
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.TimeUtils
 import io.mockk.coEvery

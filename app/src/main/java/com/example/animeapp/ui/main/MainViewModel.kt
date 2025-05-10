@@ -1,11 +1,12 @@
 package com.example.animeapp.ui.main
 
 import android.app.Application
-import android.os.Build
 import android.content.Context
 import android.content.pm.PackageManager
+import android.os.Build
 import androidx.compose.runtime.Stable
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.animeapp.models.NetworkStatus
@@ -20,7 +21,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import androidx.core.content.edit
 
 @Stable
 data class MainState(
@@ -48,7 +48,10 @@ sealed class MainAction {
 }
 
 @HiltViewModel
-class MainViewModel @Inject constructor(application: Application) : AndroidViewModel(application) {
+class MainViewModel @Inject constructor(
+    application: Application,
+    private val networkStateMonitor: NetworkStateMonitor
+) : AndroidViewModel(application) {
 
     private val themePrefs = application.getSharedPreferences("theme_prefs", Context.MODE_PRIVATE)
     private val settingsPrefs =
@@ -66,8 +69,6 @@ class MainViewModel @Inject constructor(application: Application) : AndroidViewM
     )
 
     val state: StateFlow<MainState> = _state.asStateFlow()
-
-    private val networkStateMonitor = NetworkStateMonitor(application)
 
     init {
         startNetworkMonitoring()
@@ -163,7 +164,7 @@ class MainViewModel @Inject constructor(application: Application) : AndroidViewM
         }
     }
 
-    override fun onCleared() {
+    public override fun onCleared() {
         super.onCleared()
         networkStateMonitor.stopMonitoring()
     }

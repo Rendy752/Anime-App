@@ -1,8 +1,7 @@
-package com.example.animeapp.animeRecommendations
+package com.example.animeapp.repository
 
 import com.example.animeapp.data.remote.api.AnimeAPI
 import com.example.animeapp.models.AnimeRecommendationResponse
-import com.example.animeapp.repository.AnimeRecommendationsRepository
 import com.example.animeapp.utils.Resource
 import kotlinx.coroutines.runBlocking
 import okhttp3.ResponseBody.Companion.toResponseBody
