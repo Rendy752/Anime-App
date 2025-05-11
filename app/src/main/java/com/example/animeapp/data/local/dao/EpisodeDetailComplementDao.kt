@@ -14,7 +14,7 @@ interface EpisodeDetailComplementDao {
     suspend fun insertEpisodeDetailComplement(episodeDetailComplement: EpisodeDetailComplement)
 
     @Query("SELECT * FROM episode_detail_complement WHERE id = :id")
-    fun getEpisodeDetailComplementById(id: String): EpisodeDetailComplement?
+    suspend fun getEpisodeDetailComplementById(id: String): EpisodeDetailComplement?
 
     @Query(
         """
@@ -29,14 +29,69 @@ interface EpisodeDetailComplementDao {
             LIMIT 1
         """
     )
-    fun getDefaultEpisodeDetailComplementByMalId(malId: Int): EpisodeDetailComplement
+    suspend fun getDefaultEpisodeDetailComplementByMalId(malId: Int): EpisodeDetailComplement
 
     @Query("SELECT * FROM episode_detail_complement WHERE lastWatched IS NOT NULL AND lastTimestamp IS NOT NULL ORDER BY lastWatched DESC LIMIT 1")
-    fun getLatestWatchedEpisodeDetailComplement(): EpisodeDetailComplement?
+    suspend fun getLatestWatchedEpisodeDetailComplement(): EpisodeDetailComplement?
 
     @Delete
     suspend fun deleteEpisodeDetailComplement(episodeDetailComplement: EpisodeDetailComplement)
 
     @Update
     suspend fun updateEpisodeDetailComplement(episodeDetailComplement: EpisodeDetailComplement)
+
+    @Query(
+        """
+            SELECT * FROM episode_detail_complement
+            WHERE lastWatched IS NOT NULL AND lastTimestamp IS NOT NULL
+            AND (:isFavorite IS NULL OR isFavorite = :isFavorite)
+            AND (:searchQuery = '' OR animeTitle LIKE '%' || :searchQuery || '%' OR episodeTitle LIKE '%' || :searchQuery || '%')
+            ORDER BY
+                CASE
+                    WHEN :sortBy = 'LastWatchedDesc' THEN lastTimestamp
+                    ELSE 0
+                END DESC,
+                CASE
+                    WHEN :sortBy = 'LastWatchedAsc' THEN lastTimestamp
+                    ELSE 0
+                END ASC,
+                CASE
+                    WHEN :sortBy = 'AnimeTitleAsc' THEN animeTitle
+                    ELSE ''
+                END ASC,
+                CASE
+                    WHEN :sortBy = 'AnimeTitleDesc' THEN animeTitle
+                    ELSE ''
+                END DESC,
+                CASE
+                    WHEN :sortBy = 'EpisodeTitleAsc' THEN episodeTitle
+                    ELSE ''
+                END ASC,
+                CASE
+                    WHEN :sortBy = 'EpisodeTitleDesc' THEN episodeTitle
+                    ELSE ''
+                END DESC
+            LIMIT :limit OFFSET :offset
+        """
+    )
+    suspend fun getPaginatedEpisodeHistory(
+        searchQuery: String,
+        isFavorite: Boolean?,
+        sortBy: String,
+        limit: Int,
+        offset: Int
+    ): List<EpisodeDetailComplement>
+
+    @Query(
+        """
+            SELECT COUNT(*) FROM episode_detail_complement
+            WHERE lastWatched IS NOT NULL AND lastTimestamp IS NOT NULL
+            AND (:isFavorite IS NULL OR isFavorite = :isFavorite)
+            AND (:searchQuery = '' OR animeTitle LIKE '%' || :searchQuery || '%' OR episodeTitle LIKE '%' || :searchQuery || '%')
+        """
+    )
+    suspend fun getEpisodeHistoryCount(
+        searchQuery: String,
+        isFavorite: Boolean?
+    ): Int
 }

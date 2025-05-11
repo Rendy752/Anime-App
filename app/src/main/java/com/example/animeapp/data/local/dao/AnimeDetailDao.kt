@@ -14,7 +14,7 @@ interface AnimeDetailDao {
     suspend fun insertAnimeDetail(animeDetail: AnimeDetail)
 
     @Query("SELECT * FROM anime_detail WHERE mal_id = :id")
-    fun getAnimeDetailById(id: Int): AnimeDetail?
+    suspend fun getAnimeDetailById(id: Int): AnimeDetail?
 
     @Update
     suspend fun updateAnimeDetail(animeDetail: AnimeDetail)

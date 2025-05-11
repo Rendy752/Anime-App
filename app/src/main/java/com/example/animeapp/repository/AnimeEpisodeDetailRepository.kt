@@ -10,9 +10,9 @@ import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.models.EpisodeServersResponse
 import com.example.animeapp.models.EpisodesResponse
-import com.example.animeapp.utils.TimeUtils
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ResponseHandler
+import com.example.animeapp.utils.TimeUtils
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import com.example.animeapp.utils.ResponseHandler.safeApiCall
@@ -169,4 +169,40 @@ class AnimeEpisodeDetailRepository(
                 )
             )
         }
+
+    suspend fun getPaginatedEpisodeHistory(
+        searchQuery: String,
+        isFavorite: Boolean?,
+        sortBy: String,
+        limit: Int,
+        offset: Int
+    ): Resource<List<EpisodeDetailComplement>> = withContext(Dispatchers.IO) {
+        try {
+            val episodes = episodeDetailComplementDao.getPaginatedEpisodeHistory(
+                searchQuery = searchQuery,
+                isFavorite = isFavorite,
+                sortBy = sortBy,
+                limit = limit,
+                offset = offset
+            )
+            Resource.Success(episodes)
+        } catch (e: Exception) {
+            Resource.Error("Failed to fetch episode history: ${e.message}")
+        }
+    }
+
+    suspend fun getEpisodeHistoryCount(
+        searchQuery: String,
+        isFavorite: Boolean?
+    ): Resource<Int> = withContext(Dispatchers.IO) {
+        try {
+            val count = episodeDetailComplementDao.getEpisodeHistoryCount(
+                searchQuery = searchQuery,
+                isFavorite = isFavorite
+            )
+            Resource.Success(count)
+        } catch (e: Exception) {
+            Resource.Error("Failed to fetch episode history count: ${e.message}")
+        }
+    }
 }

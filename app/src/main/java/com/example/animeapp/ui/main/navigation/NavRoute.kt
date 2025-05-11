@@ -20,6 +20,10 @@ sealed interface NavRoute {
         override val route = "search"
     }
 
+    object History : NavRoute {
+        override val route = "history"
+    }
+
     object Settings : NavRoute {
         override val route = "settings"
     }
@@ -66,7 +70,7 @@ sealed interface NavRoute {
     }
 
     companion object {
-        val bottomRoutes = listOf(Home, Recommendations, Search, Settings)
+        val bottomRoutes = listOf(Home, Recommendations, Search, History, Settings)
         val orderedBottomRoutes = bottomRoutes
     }
 }
