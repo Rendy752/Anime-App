@@ -103,7 +103,7 @@ class MainViewModelTest {
         val editor = mockk<SharedPreferences.Editor>(relaxed = true)
         every { themePrefs.edit() } returns editor
 
-        viewModel.dispatch(MainAction.SetDarkMode(true))
+        viewModel.onAction(MainAction.SetDarkMode(true))
         advanceUntilIdle()
 
         val state = viewModel.state.value
@@ -117,7 +117,7 @@ class MainViewModelTest {
         val editor = mockk<SharedPreferences.Editor>(relaxed = true)
         every { themePrefs.edit() } returns editor
 
-        viewModel.dispatch(MainAction.SetContrastMode(ContrastMode.High))
+        viewModel.onAction(MainAction.SetContrastMode(ContrastMode.High))
         advanceUntilIdle()
 
         val state = viewModel.state.value
@@ -131,7 +131,7 @@ class MainViewModelTest {
         val editor = mockk<SharedPreferences.Editor>(relaxed = true)
         every { themePrefs.edit() } returns editor
 
-        viewModel.dispatch(MainAction.SetColorStyle(ColorStyle.Monochrome))
+        viewModel.onAction(MainAction.SetColorStyle(ColorStyle.Monochrome))
         advanceUntilIdle()
 
         val state = viewModel.state.value
@@ -145,7 +145,7 @@ class MainViewModelTest {
         val editor = mockk<SharedPreferences.Editor>(relaxed = true)
         every { settingsPrefs.edit() } returns editor
 
-        viewModel.dispatch(MainAction.SetNotificationEnabled(true))
+        viewModel.onAction(MainAction.SetNotificationEnabled(true))
         advanceUntilIdle()
 
         val state = viewModel.state.value
@@ -156,7 +156,7 @@ class MainViewModelTest {
 
     @Test
     fun `SetShowQuitDialog should update showQuitDialog`() = runTest {
-        viewModel.dispatch(MainAction.SetShowQuitDialog(true))
+        viewModel.onAction(MainAction.SetShowQuitDialog(true))
         advanceUntilIdle()
 
         val state = viewModel.state.value
@@ -165,7 +165,7 @@ class MainViewModelTest {
 
     @Test
     fun `SetIsConnected should update isConnected`() = runTest {
-        viewModel.dispatch(MainAction.SetIsConnected(false))
+        viewModel.onAction(MainAction.SetIsConnected(false))
         advanceUntilIdle()
 
         val state = viewModel.state.value
@@ -180,7 +180,7 @@ class MainViewModelTest {
             color = Color.Red
         )
 
-        viewModel.dispatch(MainAction.SetNetworkStatus(newStatus))
+        viewModel.onAction(MainAction.SetNetworkStatus(newStatus))
         advanceUntilIdle()
 
         val state = viewModel.state.value
@@ -189,7 +189,7 @@ class MainViewModelTest {
 
     @Test
     fun `SetIsShowIdleDialog should update isShowIdleDialog`() = runTest {
-        viewModel.dispatch(MainAction.SetIsShowIdleDialog(true))
+        viewModel.onAction(MainAction.SetIsShowIdleDialog(true))
         advanceUntilIdle()
 
         val state = viewModel.state.value

@@ -76,7 +76,7 @@ class MainViewModel @Inject constructor(
         checkNotificationPermission()
     }
 
-    fun dispatch(action: MainAction) {
+    fun onAction(action: MainAction) {
         when (action) {
             is MainAction.SetDarkMode -> setDarkMode(action.isDark)
             is MainAction.SetContrastMode -> setContrastMode(action.contrastMode)
@@ -154,12 +154,12 @@ class MainViewModel @Inject constructor(
         networkStateMonitor.startMonitoring(getApplication())
         networkStateMonitor.isConnected.observeForever { isNetworkAvailable ->
             viewModelScope.launch {
-                dispatch(MainAction.SetIsConnected(isNetworkAvailable))
+                onAction(MainAction.SetIsConnected(isNetworkAvailable))
             }
         }
         networkStateMonitor.networkStatus.observeForever { status ->
             viewModelScope.launch {
-                dispatch(MainAction.SetNetworkStatus(status))
+                onAction(MainAction.SetNetworkStatus(status))
             }
         }
     }

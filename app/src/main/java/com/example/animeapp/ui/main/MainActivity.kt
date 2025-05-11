@@ -64,30 +64,19 @@ class MainActivity : AppCompatActivity() {
 
         setContent {
             navController = rememberNavController()
-
             val mainViewModel: MainViewModel = hiltViewModel()
             val state by mainViewModel.state.collectAsStateWithLifecycle()
 
             val configuration = LocalConfiguration.current
             val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-            val resetIdleTimer = remember { { lastInteractionTime = System.currentTimeMillis() } }
-            val currentRoute = navController.currentDestination?.route
+            val resetIdleTimer = { lastInteractionTime = System.currentTimeMillis() }
 
             LaunchedEffect(Unit) {
-                while (true) {
-                    delay(500)
-                    val currentTime = System.currentTimeMillis()
-                    val isIdle = currentTime - lastInteractionTime > idleTimeoutMillis
-                    val route = currentRoute
-
-                    if (isIdle && route?.startsWith("animeWatch/") == false) {
-                        mainViewModel.dispatch(MainAction.SetIsShowIdleDialog(true))
-                    }
-                }
+                startIdleDetection { mainViewModel.onAction(MainAction.SetIsShowIdleDialog(it)) }
             }
 
             BackHandler {
-                mainViewModel.dispatch(MainAction.SetShowQuitDialog(true))
+                mainViewModel.onAction(MainAction.SetShowQuitDialog(true))
             }
 
             AppTheme(
@@ -100,17 +89,17 @@ class MainActivity : AppCompatActivity() {
                         title = "Quit AnimeApp?",
                         message = "Are you sure you want to quit the app?",
                         onConfirm = { finish() },
-                        onCancel = { mainViewModel.dispatch(MainAction.SetShowQuitDialog(false)) }
+                        onCancel = { mainViewModel.onAction(MainAction.SetShowQuitDialog(false)) }
                     )
                 }
 
                 if (state.isShowIdleDialog) {
                     ConfirmationAlert(
                         title = "Are you still there?",
-                        message = "It seems you haven't interacted with the app for a while. Are you want to quit the app?",
+                        message = "It seems you haven't interacted with the app for a while. Would you like to quit the app?",
                         onConfirm = { finish() },
                         onCancel = {
-                            mainViewModel.dispatch(MainAction.SetIsShowIdleDialog(false))
+                            mainViewModel.onAction(MainAction.SetIsShowIdleDialog(false))
                             resetIdleTimer()
                         }
                     )
@@ -125,6 +114,12 @@ class MainActivity : AppCompatActivity() {
                                 onDoubleTap = { resetIdleTimer() },
                                 onLongPress = { resetIdleTimer() }
                             )
+                            awaitPointerEventScope {
+                                while (true) {
+                                    awaitPointerEvent()
+                                    resetIdleTimer()
+                                }
+                            }
                         },
                     color = MaterialTheme.colorScheme.surface
                 ) {
@@ -133,7 +128,7 @@ class MainActivity : AppCompatActivity() {
                         intentChannel = intentChannel,
                         onResetIdleTimer = resetIdleTimer,
                         mainState = state.copy(isLandscape = isLandscape),
-                        mainAction = mainViewModel::dispatch
+                        mainAction = mainViewModel::onAction
                     )
                     setStatusBarAppearance(MaterialTheme.colorScheme.surface)
                 }
@@ -150,6 +145,7 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         intent.let { intentChannel.trySend(it) }
+        lastInteractionTime = System.currentTimeMillis()
     }
 
     override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
@@ -213,6 +209,27 @@ class MainActivity : AppCompatActivity() {
     fun exitPipModeIfActive() {
         if (isInPictureInPictureMode) {
             moveTaskToBack(true)
+        }
+    }
+
+    private fun startIdleDetection(action: (Boolean) -> Unit) {
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                while (true) {
+                    delay(500)
+                    val currentTime = System.currentTimeMillis()
+                    val isIdle = currentTime - lastInteractionTime > idleTimeoutMillis
+                    val currentRoute = navController.currentDestination?.route
+                    Log.d(
+                        "MainActivity",
+                        "Idle check: isIdle=$isIdle, route=$currentRoute, timeSinceLastInteraction=${(currentTime - lastInteractionTime) / 1000}s"
+                    )
+
+                    if (isIdle && currentRoute?.startsWith("animeWatch/") == false) {
+                        action(true)
+                    }
+                }
+            }
         }
     }
 }
