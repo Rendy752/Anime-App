@@ -45,7 +45,7 @@ AnimeApp is a comprehensive, anime-themed Android application using Kotlin and J
             <img src="https://github.com/user-attachments/assets/a3be233e-6aa7-42f9-9695-7a2c5055ee7c" width="300" alt="Recommendations Anime Skeleton Loading">
           </td>
           <td style="text-align: center">
-            <img src="https://github.com/user-attachments/assets/38629370-f6f5-4dce-bd43-0fdbae9640b8" width="300" alt="Recommendations Anime Portrait">
+            <img src="https://github.com/user-attachments/assets/5f659c66-37f2-432d-a39a-ec4128990c5c" width="300" alt="Recommendations Anime Portrait">
           </td>
            <td style="text-align: center">
             <img src="https://github.com/user-attachments/assets/6691f185-ad85-4276-8054-81222a56ac80" width="700" alt="Recommendations Anime Landscape">
@@ -93,7 +93,7 @@ AnimeApp is a comprehensive, anime-themed Android application using Kotlin and J
             <img src="https://github.com/user-attachments/assets/bf8e664d-aba9-4b2d-8b5b-8d06fb5d4fcd" width="300" alt="Detail Anime First Half">
           </td>
            <td style="text-align: center">
-            <img src="https://github.com/user-attachments/assets/bdc59915-7b41-4a76-8216-90a6b4fd9ab4" width="300" alt="Detail Anime Second Half">
+            <img src="https://github.com/user-attachments/assets/51528d95-6d41-4a23-83fe-1da13d9b6b88" width="300" alt="Detail Anime Second Half">
           </td>
            <td style="text-align: center">
             <img src="https://github.com/user-attachments/assets/b47c9e8e-d827-4b78-9fa9-f53f1baaa716" width="700" alt="Detail Anime Landscape">
@@ -105,10 +105,10 @@ AnimeApp is a comprehensive, anime-themed Android application using Kotlin and J
       <table>
         <tr>
           <td style="text-align: center">
-            <img src="https://github.com/user-attachments/assets/a495fc53-d7b1-4a4d-b6ab-19f852c5980b" width="300" alt="Streaming Anime Skeleton Loading">
+            <img src="https://github.com/user-attachments/assets/6723d000-77e8-45e4-a0d2-f484d831c3db" width="300" alt="Streaming Anime Skeleton Loading">
           </td>
           <td style="text-align: center">
-            <img src="https://github.com/user-attachments/assets/3966c51e-dbe0-4884-92ee-b39bd4761831" width="300" alt="Streaming Anime Portrait">
+            <img src="https://github.com/user-attachments/assets/25320fea-1a36-48df-a7d8-0702f336539e" width="300" alt="Streaming Anime Portrait">
           </td>
            <td style="text-align: center">
             <img src="https://github.com/user-attachments/assets/6166cbce-370e-458f-a254-3bbdfb7f23c5" width="700" alt="Streaming Anime Landscape">
@@ -116,11 +116,36 @@ AnimeApp is a comprehensive, anime-themed Android application using Kotlin and J
         </tr>
       </table>
     * Store episode streaming data, server and source in **Room Persistence Library**.
-    * Support **Picture in Picture (PiP)** mode.
+    * Support **Picture in Picture (PiP)** mode with with **play/pause** and **seek** controls.
       <table>
         <tr>
            <td style="text-align: center">
-            <img src="https://github.com/user-attachments/assets/8d65fc55-6f77-43eb-800b-b531f2e551fe" width="700" alt="Streaming Anime PiP">
+            <img src="https://github.com/user-attachments/assets/dd796d95-9a43-4c51-97e0-746146ca3b0a" width="300" alt="Streaming Anime PiP">
+          </td>
+        </tr>
+      </table>
+* **Media Playback Controls**:
+    * Rich media playback notifications with **play/pause**, **next/previous** episode, and **seek** controls, accessible from the lock screen or notification shade.
+    * Deep linking to specific episodes via notifications, allowing users to resume watching seamlessly.
+    * Periodic watch state updates (position, duration, screenshots) stored locally for accurate Continue Watching functionality.
+      <table>
+         <tr>
+            <td style="text-align: center">
+               <img src="https://github.com/user-attachments/assets/d2464155-e7c4-47b6-9391-c39749f7fa88" width="300" alt="Media Playback 1">
+            </td>
+            <td style="text-align: center">
+               <img src="https://github.com/user-attachments/assets/7d5ea1cc-dc87-45be-a4a0-190bc2e73b4b" width="300" alt="Media Playback 2">
+            </td>
+         </tr>
+      </table>
+* **Airing Notifications**:
+    * Automated notifications for favorite anime airing soon, powered by a WorkManager-based scheduler checking every 15 minutes.
+    * Notifications include anime title, airing time, and a deep link to the anime’s detail page, with options to view details or dismiss.
+    * Configurable via the settings screen, with permission handling for Android 13+.
+      <table>
+         <tr>
+            <td style="text-align: center">
+            <img src="https://github.com/user-attachments/assets/31f6ffb6-07c9-4dab-900b-768cbbbf20a6" width="300" alt="Media Playback 1">
           </td>
         </tr>
       </table>
@@ -129,15 +154,28 @@ AnimeApp is a comprehensive, anime-themed Android application using Kotlin and J
     * Caching of frequently accessed anime data, enabling offline browsing and faster loading times.
     * User saved lists, and watch histories stored locally.
 * **User-Friendly Interface:**
-    * Intuitive and visually appealing interface, designed for optimal user experience on Android devices.
-    * Clean and organized layout for easy navigation and content discovery.
-    * Dark mode support for comfortable viewing in low-light environments.
+    * Intuitive Jetpack Compose-based UI optimized for Android, with **dark mode**, **normal/medium/high** contrast modes, and **customizable color styles** (Default, Vibrant, Monochrome).
+      <table>
+        <tr>
+           <td style="text-align: center">
+            <img src="https://github.com/user-attachments/assets/a2a06c40-b92d-45cb-9f54-e6b17dbad91a" width="300" alt="Dark and Contrast Modes Setting">
+          </td>
+        </tr>
+      </table>
+    * Color style previews showcase real anime data (fetched randomly via API) in settings, ensuring an engaging and accurate representation of the selected scheme.
+      <table>
+        <tr>
+           <td style="text-align: center">
+            <img src="https://github.com/user-attachments/assets/9208aa3b-4190-4f4b-85e4-13c9ad597c82" width="300" alt="Color Style Previews">
+          </td>
+        </tr>
+      </table>
     * Loading Skeletons provide visual feedback during data loading, improving the perceived performance of the app.
     * Idle checking to optimize resource usage and enhance the user experience, the app incorporates an idle detection mechanism.
       <table>
         <tr>
           <td style="text-align: center">
-            <img src="https://github.com/user-attachments/assets/457b5d24-0f2f-4e35-817a-8a48c05760f1" width="300" alt="Idle Check">
+            <img src="https://github.com/user-attachments/assets/3fb03333-5185-4c2d-8948-8eeeb3fc1aa2" width="300" alt="Idle Check">
           </td>
         </tr>
      </table>
@@ -147,7 +185,6 @@ AnimeApp is a comprehensive, anime-themed Android application using Kotlin and J
 AnimeApp utilizes GitHub Actions for Continuous Integration and Continuous Delivery (CI/CD). This automated workflow ensures code quality and facilitates smoother development by:
 
 * **Automated Building and Testing:** On every code push to the `main`, `feature/*`, and `enhancement/*` branches, and on pull requests targeting these branches, GitHub Actions automatically checks out the code, sets up the Java environment, and runs unit tests and lint checks.
-* **Secret Management:** API keys are securely managed as GitHub Secrets, ensuring they are not exposed in the codebase.
 * **Dependency Caching:** Gradle dependencies are cached between builds, significantly speeding up the CI process.
 * **APK Building:** Upon successful tests and lint checks, a debug APK of the application is automatically built.
 
