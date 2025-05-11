@@ -97,7 +97,6 @@ class AnimeSearchViewModel @Inject constructor(
 
     private fun handleInitialFetch(genreId: Int?, producerId: Int?) {
         if (hasFetched) return
-        hasFetched = true
 
         viewModelScope.launch {
             _searchState.update {
@@ -143,6 +142,7 @@ class AnimeSearchViewModel @Inject constructor(
                     )
                 }
                 val result = animeSearchRepository.searchAnime(queryState)
+                hasFetched = result is Resource.Success
                 _searchState.update { it.copy(isRefreshing = false, animeSearchResults = result) }
             }
         }
@@ -157,6 +157,7 @@ class AnimeSearchViewModel @Inject constructor(
                 )
             }
             val result = animeSearchRepository.getRandomAnime()
+            hasFetched = result is Resource.Success
             _searchState.update { it.copy(isRefreshing = false, animeSearchResults = result) }
         }
     }

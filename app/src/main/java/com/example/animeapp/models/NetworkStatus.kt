@@ -8,11 +8,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 data class NetworkStatus(
     val icon: ImageVector,
     val label: String,
-    val color: Color
+    val iconColor: Color
 )
 
 val networkStatusPlaceholder = NetworkStatus(
     icon = Icons.Filled.SignalCellularOff,
     label = "No signal",
-    color = Color.Gray
+    iconColor = Color.Gray
 )

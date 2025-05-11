@@ -82,13 +82,13 @@ fun AnimeWatchTopBar(
                         Row {
                             Text(
                                 text = it.label,
-                                color = if (it.color == MaterialTheme.colorScheme.onError) MaterialTheme.colorScheme.onError
+                                color = if (it.iconColor == MaterialTheme.colorScheme.onError) MaterialTheme.colorScheme.onError
                                 else MaterialTheme.colorScheme.onSurface
                             )
                             Icon(
                                 imageVector = it.icon,
                                 contentDescription = it.label,
-                                tint = it.color
+                                tint = it.iconColor
                             )
                         }
                     }

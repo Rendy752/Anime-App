@@ -3,7 +3,8 @@ package com.example.animeapp.ui.animeSearch.results
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,6 +23,7 @@ import com.example.animeapp.utils.Resource
 @Composable
 fun ResultsSection(
     modifier: Modifier = Modifier,
+    resultsSectionScrollState: LazyListState,
     navController: NavController,
     query: String,
     animeSearchResults: Resource<AnimeSearchResponse>,
@@ -36,10 +38,16 @@ fun ResultsSection(
     ) {
         when (animeSearchResults) {
             is Resource.Loading -> LazyColumn(
-                modifier = Modifier.padding(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                state = resultsSectionScrollState
             ) {
-                items(3) { AnimeSearchItemSkeleton() }
+                itemsIndexed((0 until 3).toList()) { index, _ ->
+                    AnimeSearchItemSkeleton(
+                        modifier = Modifier.padding(
+                            top = if (index == 0) 8.dp else 0.dp, start = 8.dp, end = 8.dp
+                        )
+                    )
+                }
             }
 
             is Resource.Success -> {
@@ -49,11 +57,16 @@ fun ResultsSection(
                     }
                 } else {
                     LazyColumn(
-                        modifier = Modifier.padding(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        state = resultsSectionScrollState
                     ) {
-                        items(animeSearchResults.data.data) { animeDetail ->
+                        itemsIndexed(animeSearchResults.data.data) { index, animeDetail ->
                             AnimeSearchItem(
+                                modifier = Modifier.padding(
+                                    top = if (index == 0) 8.dp else 0.dp,
+                                    start = 8.dp,
+                                    end = 8.dp
+                                ),
                                 animeDetail = animeDetail,
                                 query = query,
                                 selectedGenres = selectedGenres,

@@ -5,7 +5,6 @@ import android.content.Intent
 import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.view.MotionEvent
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -163,10 +162,6 @@ class MainActivity : AppCompatActivity() {
         configuration: Configuration
     ) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, configuration)
-        Log.d(
-            "MainActivity",
-            "onPictureInPictureModeChanged: isInPictureInPictureMode=$isInPictureInPictureMode, configuration=$configuration"
-        )
         onPictureInPictureModeChangedListeners.forEach {
             if (!isInPictureInPictureMode) {
                 (application as AnimeApplication).getMediaPlaybackService()?.pausePlayer()
@@ -187,7 +182,6 @@ class MainActivity : AppCompatActivity() {
         super.onUserLeaveHint()
         val currentRoute = navController.currentDestination?.route
         val isPlaying = HlsPlayerUtils.state.value.isPlaying
-        Log.d("MainActivity", "onUserLeaveHint: route=$currentRoute, isPlaying=$isPlaying")
         if (currentRoute?.startsWith("animeWatch/") == true && isPlaying) {
             pipParamsBuilder.setActions(buildPipActions(this, true))
             enterPictureInPictureMode(pipParamsBuilder.build())
@@ -196,13 +190,11 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPause() {
         super.onPause()
-        Log.d("MainActivity", "onPause")
         (applicationContext as AnimeApplication).cleanupService()
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        Log.d("MainActivity", "onDestroy")
         (applicationContext as AnimeApplication).cleanupService()
     }
 
@@ -220,11 +212,6 @@ class MainActivity : AppCompatActivity() {
                     val currentTime = System.currentTimeMillis()
                     val isIdle = currentTime - lastInteractionTime > idleTimeoutMillis
                     val currentRoute = navController.currentDestination?.route
-                    Log.d(
-                        "MainActivity",
-                        "Idle check: isIdle=$isIdle, route=$currentRoute, timeSinceLastInteraction=${(currentTime - lastInteractionTime) / 1000}s"
-                    )
-
                     if (isIdle && currentRoute?.startsWith("animeWatch/") == false) {
                         action(true)
                     }

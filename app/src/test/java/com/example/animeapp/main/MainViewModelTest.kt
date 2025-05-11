@@ -47,7 +47,7 @@ class MainViewModelTest {
     private val mockNetworkStatus = NetworkStatus(
         icon = Icons.Filled.Wifi,
         label = "10000 Kbps",
-        color = Color.Green
+        iconColor = Color.Green
     )
 
     @Before
@@ -95,7 +95,7 @@ class MainViewModelTest {
         assertEquals(ColorStyle.Default, state.colorStyle)
         assertEquals(true, state.isConnected)
         assertEquals(mockNetworkStatus, state.networkStatus)
-        verify { networkStateMonitor.startMonitoring(application) }
+        verify { networkStateMonitor.startMonitoring() }
     }
 
     @Test
@@ -177,7 +177,7 @@ class MainViewModelTest {
         val newStatus = NetworkStatus(
             icon = Icons.Filled.WifiOff,
             label = "No Internet",
-            color = Color.Red
+            iconColor = Color.Red
         )
 
         viewModel.onAction(MainAction.SetNetworkStatus(newStatus))
@@ -216,7 +216,7 @@ class MainViewModelTest {
                 NetworkStatus(
                     icon = Icons.Filled.WifiOff,
                     label = "No Internet",
-                    color = Color.Red
+                    iconColor = Color.Red
                 )
             )
         }
@@ -230,10 +230,10 @@ class MainViewModelTest {
             NetworkStatus(
                 icon = Icons.Filled.WifiOff,
                 label = "No Internet",
-                color = Color.Red
+                iconColor = Color.Red
             ),
             state.networkStatus
         )
-        verify { networkStateMonitor.startMonitoring(application) }
+        verify { networkStateMonitor.startMonitoring() }
     }
 }

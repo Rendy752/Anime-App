@@ -2,6 +2,7 @@ package com.example.animeapp.ui.animeSearch
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -45,6 +46,8 @@ fun AnimeSearchScreen(
     onAction: (SearchAction) -> Unit = {}
 ) {
     val state = rememberPullToRefreshState()
+    val leftFilterScrollState = rememberScrollState()
+    val resultsSectionScrollState = rememberLazyListState()
     var isFilterBottomSheetShow by remember { mutableStateOf(false) }
     var isGenresBottomSheetShow by remember { mutableStateOf(false) }
     var isProducersBottomSheetShow by remember { mutableStateOf(false) }
@@ -115,7 +118,7 @@ fun AnimeSearchScreen(
                         modifier = Modifier
                             .weight(0.5f)
                             .fillMaxHeight()
-                            .verticalScroll(rememberScrollState()),
+                            .verticalScroll(leftFilterScrollState),
                         verticalArrangement = Arrangement.SpaceBetween
                     ) {
                         SearchFieldSection(
@@ -170,6 +173,7 @@ fun AnimeSearchScreen(
 
                     ResultsSection(
                         modifier = Modifier.weight(0.5f),
+                        resultsSectionScrollState = resultsSectionScrollState,
                         navController = navController,
                         query = searchState.queryState.query,
                         animeSearchResults = searchState.animeSearchResults,
@@ -214,6 +218,7 @@ fun AnimeSearchScreen(
 
                     ResultsSection(
                         modifier = Modifier.weight(1f),
+                        resultsSectionScrollState = resultsSectionScrollState,
                         navController = navController,
                         query = searchState.queryState.query,
                         animeSearchResults = searchState.animeSearchResults,

@@ -23,7 +23,7 @@ fun MessageDisplay(message: String, isError: Boolean = true, isRounded: Boolean 
                     0.dp
                 ),
                 outerPadding = if (isRounded) PaddingValues(8.dp) else PaddingValues(0.dp),
-                innerPadding = if (isRounded) PaddingValues(16.dp) else PaddingValues(8.dp)
+                innerPadding = if (isRounded) PaddingValues(16.dp) else PaddingValues(4.dp)
             )
             .fillMaxWidth(),
         color = MaterialTheme.colorScheme.onError,
