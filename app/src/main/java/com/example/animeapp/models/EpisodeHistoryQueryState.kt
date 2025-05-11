@@ -8,7 +8,7 @@ data class EpisodeHistoryQueryState(
     val isFavorite: Boolean? = null,
     val sortBy: SortBy = SortBy.LastWatchedDesc,
     val page: Int = 1,
-    val limit: Int = 25
+    val limit: Int = 10
 ) {
     enum class SortBy {
         LastWatchedDesc,

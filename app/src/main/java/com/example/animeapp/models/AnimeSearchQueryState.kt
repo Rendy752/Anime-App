@@ -1,11 +1,9 @@
 package com.example.animeapp.models
 
-import com.example.animeapp.utils.Limit
-
 data class AnimeSearchQueryState(
     val query: String = "",
     val page: Int = 1,
-    val limit: Int? = Limit.DEFAULT_LIMIT,
+    val limit: Int? = 10,
 
     val type: String? = null,
     val score: Double? = null,
@@ -49,18 +47,18 @@ data class AnimeSearchQueryState(
     }
 
     fun defaultLimitAndPage(): AnimeSearchQueryState {
-        return copy(page = 1, limit = Limit.DEFAULT_LIMIT)
+        return copy(page = 1, limit = 10)
     }
 
     fun resetGenres(): AnimeSearchQueryState {
         return copy(
-            page = 1, limit = Limit.DEFAULT_LIMIT, genres = null, genresExclude = null
+            page = 1, limit = 10, genres = null, genresExclude = null
         )
     }
 
     fun resetProducers(): AnimeSearchQueryState {
         return copy(
-            page = 1, limit = Limit.DEFAULT_LIMIT, producers = null
+            page = 1, limit = 10, producers = null
         )
     }
 
