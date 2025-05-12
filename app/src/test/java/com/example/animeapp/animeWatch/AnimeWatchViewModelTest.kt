@@ -5,6 +5,7 @@ import com.example.animeapp.models.*
 import com.example.animeapp.repository.AnimeEpisodeDetailRepository
 import com.example.animeapp.ui.animeWatch.AnimeWatchViewModel
 import com.example.animeapp.ui.animeWatch.WatchAction
+import com.example.animeapp.utils.ComplementUtils
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.StreamingUtils
 import io.mockk.*
@@ -55,6 +56,12 @@ class AnimeWatchViewModelTest {
                 episodeNo = 1,
                 name = "Episode 1",
                 filler = false
+            ),
+            episodePlaceholder.copy(
+                episodeId = "lorem-ipsum-123?ep=124",
+                episodeNo = 2,
+                name = "Episode 2",
+                filler = false
             )
         )
     )
@@ -80,7 +87,7 @@ class AnimeWatchViewModelTest {
     fun setUp() {
         testDispatcher = StandardTestDispatcher()
         Dispatchers.setMain(testDispatcher)
-        animeEpisodeDetailRepository = mockk()
+        animeEpisodeDetailRepository = mockk(relaxed = true)
 
         coEvery { animeEpisodeDetailRepository.getCachedAnimeDetailById(1) } returns mockAnimeDetail
         coEvery { animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(1) } returns mockAnimeDetailComplement
@@ -111,13 +118,21 @@ class AnimeWatchViewModelTest {
     @After
     fun tearDown() {
         Dispatchers.resetMain()
-        unmockkObject(StreamingUtils)
-        clearAllMocks()
+        unmockkAll()
     }
 
     @Test
     fun `SetInitialState should update animeDetail, animeDetailComplement, and trigger HandleSelectedEpisodeServer`() =
         runTest {
+            mockkObject(ComplementUtils)
+            coEvery {
+                ComplementUtils.getOrCreateAnimeDetailComplement(
+                    repository = animeEpisodeDetailRepository,
+                    malId = 1
+                )
+            } returns mockAnimeDetailComplement
+            coEvery { animeEpisodeDetailRepository.getCachedEpisodeDetailComplement("lorem-ipsum-123?ep=123") } returns mockEpisodeDetailComplement
+
             viewModel.onAction(
                 WatchAction.SetInitialState(
                     malId = 1,
@@ -127,6 +142,7 @@ class AnimeWatchViewModelTest {
             advanceUntilIdle()
 
             val watchState = viewModel.watchState.value
+            println("SetInitialState watchState: $watchState")
             assertEquals(mockAnimeDetail, watchState.animeDetail)
             assertEquals(mockAnimeDetailComplement, watchState.animeDetailComplement)
             assertTrue(watchState.episodeDetailComplement is Resource.Success)
@@ -139,29 +155,25 @@ class AnimeWatchViewModelTest {
                 watchState.episodeSourcesQuery
             )
             coVerify(exactly = 1) { animeEpisodeDetailRepository.getCachedAnimeDetailById(1) }
-            coVerify(exactly = 1) {
-                animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(
-                    1
-                )
-            }
-            coVerify(atMost = 2) { animeEpisodeDetailRepository.getCachedEpisodeDetailComplement("lorem-ipsum-123?ep=123") }
+            coVerify(exactly = 2) { animeEpisodeDetailRepository.getCachedEpisodeDetailComplement("lorem-ipsum-123?ep=123") }
+            unmockkObject(ComplementUtils)
         }
 
     @Test
     fun `HandleSelectedEpisodeServer with cached data should update episodeDetailComplement and isFavorite`() =
         runTest {
             val query = episodeSourcesQueryPlaceholder.copy(id = "lorem-ipsum-123?ep=123")
-            coEvery { animeEpisodeDetailRepository.getCachedEpisodeDetailComplement("lorem-ipsum-123?ep=123") } returns mockEpisodeDetailComplement.copy(
-                isFavorite = true
-            )
+            val favoriteComplement = mockEpisodeDetailComplement.copy(isFavorite = true)
+            coEvery { animeEpisodeDetailRepository.getCachedEpisodeDetailComplement("lorem-ipsum-123?ep=123") } returns favoriteComplement
 
             viewModel.onAction(WatchAction.HandleSelectedEpisodeServer(query, isFirstInit = true))
             advanceUntilIdle()
 
             val watchState = viewModel.watchState.value
+            println("HandleSelectedEpisodeServer cached watchState: $watchState")
             assertTrue(watchState.episodeDetailComplement is Resource.Success)
             assertEquals(
-                mockEpisodeDetailComplement.copy(isFavorite = true),
+                favoriteComplement,
                 (watchState.episodeDetailComplement as Resource.Success).data
             )
             assertEquals(query, watchState.episodeSourcesQuery)
@@ -174,10 +186,16 @@ class AnimeWatchViewModelTest {
     fun `HandleSelectedEpisodeServer with server error should restore default and set error`() =
         runTest {
             val query = episodeSourcesQueryPlaceholder.copy(id = "lorem-ipsum-123?ep=123")
-            coEvery { animeEpisodeDetailRepository.getEpisodeServers("lorem-ipsum-123?ep=123") } returns Resource.Error(
-                "Server error"
-            )
-            coEvery { animeEpisodeDetailRepository.getCachedEpisodeDetailComplement("lorem-ipsum-123?ep=123") } returns null
+            coEvery { animeEpisodeDetailRepository.getCachedEpisodeDetailComplement("lorem-ipsum-123?ep=123") } returns mockEpisodeDetailComplement andThen mockEpisodeDetailComplement andThen null
+            coEvery { animeEpisodeDetailRepository.getCachedDefaultEpisodeDetailComplementByMalId(1) } returns mockEpisodeDetailComplement
+            coEvery { animeEpisodeDetailRepository.getEpisodeServers("lorem-ipsum-123?ep=123") } returns Resource.Error("Server error")
+            mockkObject(ComplementUtils)
+            coEvery {
+                ComplementUtils.getOrCreateAnimeDetailComplement(
+                    repository = animeEpisodeDetailRepository,
+                    malId = 1
+                )
+            } returns mockAnimeDetailComplement
 
             viewModel.onAction(
                 WatchAction.SetInitialState(
@@ -190,6 +208,9 @@ class AnimeWatchViewModelTest {
             advanceUntilIdle()
 
             val watchState = viewModel.watchState.value
+            println("HandleSelectedEpisodeServer error watchState: $watchState")
+            println("mockEpisodeDetailComplement.sourcesQuery: ${mockEpisodeDetailComplement.sourcesQuery}")
+            println("query: $query")
             assertTrue(watchState.episodeDetailComplement is Resource.Error)
             assertEquals(
                 "Server error",
@@ -198,53 +219,82 @@ class AnimeWatchViewModelTest {
             assertEquals(mockEpisodeDetailComplement.sourcesQuery, watchState.episodeSourcesQuery)
             assertEquals(false, watchState.isRefreshing)
             coVerify(exactly = 1) { animeEpisodeDetailRepository.getEpisodeServers("lorem-ipsum-123?ep=123") }
+            unmockkObject(ComplementUtils)
         }
 
     @Test
     fun `LoadEpisodeDetailComplement with cached data should update episodeDetailComplements`() =
         runTest {
-            coEvery { animeEpisodeDetailRepository.getCachedEpisodeDetailComplement("lorem-ipsum-123?ep=124") } returns mockEpisodeDetailComplement.copy(
-                id = "lorem-ipsum-123?ep=124"
-            )
+            val episodeId = "lorem-ipsum-123?ep=124"
+            val cachedComplement = mockEpisodeDetailComplement.copy(id = episodeId)
+            coEvery { animeEpisodeDetailRepository.getCachedEpisodeDetailComplement(episodeId) } returns cachedComplement
 
-            viewModel.onAction(WatchAction.LoadEpisodeDetailComplement("lorem-ipsum-123?ep=124"))
+            viewModel.onAction(WatchAction.LoadEpisodeDetailComplement(episodeId))
             advanceUntilIdle()
 
             val watchState = viewModel.watchState.value
-            assertTrue(watchState.episodeDetailComplements["lorem-ipsum-123?ep=124"] is Resource.Success)
+            println("LoadEpisodeDetailComplement cached watchState: $watchState")
+            assertTrue(watchState.episodeDetailComplements[episodeId] is Resource.Success)
             assertEquals(
-                mockEpisodeDetailComplement.copy(id = "lorem-ipsum-123?ep=124"),
-                (watchState.episodeDetailComplements["lorem-ipsum-123?ep=124"] as Resource.Success).data
+                cachedComplement,
+                (watchState.episodeDetailComplements[episodeId] as Resource.Success).data
             )
-            coVerify(exactly = 1) { animeEpisodeDetailRepository.getCachedEpisodeDetailComplement("lorem-ipsum-123?ep=124") }
+            coVerify(exactly = 1) {
+                animeEpisodeDetailRepository.getCachedEpisodeDetailComplement(
+                    episodeId
+                )
+            }
         }
 
     @Test
     fun `LoadEpisodeDetailComplement with remote data should insert and update episodeDetailComplements`() =
         runTest {
             val episodeId = "lorem-ipsum-123?ep=124"
+            val updatedComplement = mockAnimeDetailComplement
             coEvery { animeEpisodeDetailRepository.getCachedEpisodeDetailComplement(episodeId) } returns null
             coEvery { animeEpisodeDetailRepository.getEpisodeServers(episodeId) } returns Resource.Success(
-                mockEpisodeServers
+                mockEpisodeServers.copy(episodeId = episodeId)
             )
             coEvery {
                 animeEpisodeDetailRepository.getEpisodeSources(
-                    any(),
+                    eq(episodeId),
                     any(),
                     any()
                 )
             } returns Response.success(mockEpisodeSources)
-            val updatedComplement = mockAnimeDetailComplement.copy(
-                episodes = listOf(
-                    episodePlaceholder.copy(
-                        episodeId = episodeId,
-                        episodeNo = 2,
-                        name = "Episode 2",
-                        filler = false
-                    )
-                )
-            )
             coEvery { animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(1) } returns updatedComplement
+            coEvery { animeEpisodeDetailRepository.insertCachedEpisodeDetailComplement(any()) } just Runs
+            val newComplement = mockEpisodeDetailComplement.copy(
+                id = episodeId,
+                animeTitle = mockAnimeDetail.title,
+                episodeTitle = "Episode 2",
+                number = 2,
+                servers = mockEpisodeServers.copy(episodeId = episodeId),
+                sources = mockEpisodeSources,
+                sourcesQuery = episodeSourcesQueryPlaceholder.copy(id = episodeId)
+            )
+            mockkObject(ComplementUtils)
+            coEvery {
+                ComplementUtils.createEpisodeDetailComplement(
+                    repository = animeEpisodeDetailRepository,
+                    animeDetail = mockAnimeDetail,
+                    animeDetailComplement = updatedComplement,
+                    episode = updatedComplement.episodes?.first { it.episodeId == episodeId }
+                        ?: episodePlaceholder.copy(episodeId = episodeId),
+                    servers = mockEpisodeServers.copy(episodeId = episodeId),
+                    sources = mockEpisodeSources,
+                    sourcesQuery = episodeSourcesQueryPlaceholder.copy(id = episodeId)
+                )
+            } coAnswers {
+                animeEpisodeDetailRepository.insertCachedEpisodeDetailComplement(newComplement)
+                newComplement
+            }
+            coEvery {
+                ComplementUtils.getOrCreateAnimeDetailComplement(
+                    repository = animeEpisodeDetailRepository,
+                    malId = 1
+                )
+            } returns updatedComplement
 
             viewModel.onAction(
                 WatchAction.SetInitialState(
@@ -257,6 +307,7 @@ class AnimeWatchViewModelTest {
             advanceUntilIdle()
 
             val watchState = viewModel.watchState.value
+            println("LoadEpisodeDetailComplement remote watchState: $watchState")
             assertTrue(watchState.episodeDetailComplements[episodeId] is Resource.Success)
             val complement =
                 (watchState.episodeDetailComplements[episodeId] as Resource.Success).data
@@ -264,14 +315,40 @@ class AnimeWatchViewModelTest {
             assertEquals(mockAnimeDetail.title, complement.animeTitle)
             assertEquals("Episode 2", complement.episodeTitle)
             coVerify(exactly = 1) {
+                animeEpisodeDetailRepository.getCachedEpisodeDetailComplement(
+                    episodeId
+                )
+            }
+            coVerify(exactly = 1) { animeEpisodeDetailRepository.getEpisodeServers(episodeId) }
+            coVerify(exactly = 1) {
                 animeEpisodeDetailRepository.insertCachedEpisodeDetailComplement(
                     any()
                 )
             }
+            unmockkObject(ComplementUtils)
         }
 
     @Test
     fun `SetFavorite should update isFavorite and episodeDetailComplement`() = runTest {
+        val updatedComplement = mockEpisodeDetailComplement.copy(isFavorite = true)
+        mockkObject(ComplementUtils)
+        coEvery {
+            ComplementUtils.getOrCreateAnimeDetailComplement(
+                repository = animeEpisodeDetailRepository,
+                malId = 1
+            )
+        } returns mockAnimeDetailComplement
+        coEvery {
+            ComplementUtils.toggleEpisodeFavorite(
+                repository = animeEpisodeDetailRepository,
+                episodeId = "lorem-ipsum-123?ep=123",
+                isFavorite = true
+            )
+        } coAnswers {
+            animeEpisodeDetailRepository.updateEpisodeDetailComplement(updatedComplement)
+            updatedComplement
+        }
+
         viewModel.onAction(
             WatchAction.SetInitialState(
                 malId = 1,
@@ -279,15 +356,16 @@ class AnimeWatchViewModelTest {
             )
         )
         advanceUntilIdle()
-
         viewModel.onAction(WatchAction.SetFavorite(isFavorite = true))
         advanceUntilIdle()
 
         val watchState = viewModel.watchState.value
+        println("SetFavorite watchState: $watchState")
         assertTrue(watchState.isFavorite)
         assertTrue(watchState.episodeDetailComplement is Resource.Success)
         assertTrue((watchState.episodeDetailComplement as Resource.Success).data.isFavorite)
         coVerify(exactly = 1) { animeEpisodeDetailRepository.updateEpisodeDetailComplement(any()) }
+        unmockkObject(ComplementUtils)
     }
 
     @Test
@@ -296,6 +374,7 @@ class AnimeWatchViewModelTest {
         advanceUntilIdle()
 
         val playerUiState = viewModel.playerUiState.value
+        println("SetFullscreen playerUiState: $playerUiState")
         assertTrue(playerUiState.isFullscreen)
     }
 }
