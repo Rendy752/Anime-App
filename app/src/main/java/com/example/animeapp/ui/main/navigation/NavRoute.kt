@@ -71,6 +71,5 @@ sealed interface NavRoute {
 
     companion object {
         val bottomRoutes = listOf(Home, Recommendations, Search, History, Settings)
-        val orderedBottomRoutes = bottomRoutes
     }
 }

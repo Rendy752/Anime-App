@@ -16,8 +16,8 @@ fun getBottomBarEnterTransition(
     val initialRoute = initialState.destination.route
     val targetRoute = targetState.destination.route
     return if (initialRoute in NavRoute.bottomRoutes.map { it.route } && targetRoute in NavRoute.bottomRoutes.map { it.route }) {
-        val initialIndex = NavRoute.orderedBottomRoutes.indexOfFirst { it.route == initialRoute }
-        val targetIndex = NavRoute.orderedBottomRoutes.indexOfFirst { it.route == targetRoute }
+        val initialIndex = NavRoute.bottomRoutes.indexOfFirst { it.route == initialRoute }
+        val targetIndex = NavRoute.bottomRoutes.indexOfFirst { it.route == targetRoute }
         val slideOffset: (Int) -> Int = when {
             targetIndex > initialIndex -> { fullWidth -> fullWidth }
             targetIndex < initialIndex -> { fullWidth -> -fullWidth }
@@ -36,8 +36,8 @@ fun getBottomBarExitTransition(
     val initialRoute = initialState.destination.route
     val targetRoute = targetState.destination.route
     return if (initialRoute in NavRoute.bottomRoutes.map { it.route } && targetRoute in NavRoute.bottomRoutes.map { it.route }) {
-        val initialIndex = NavRoute.orderedBottomRoutes.indexOfFirst { it.route == initialRoute }
-        val targetIndex = NavRoute.orderedBottomRoutes.indexOfFirst { it.route == targetRoute }
+        val initialIndex = NavRoute.bottomRoutes.indexOfFirst { it.route == initialRoute }
+        val targetIndex = NavRoute.bottomRoutes.indexOfFirst { it.route == targetRoute }
         val slideOffset: (Int) -> Int = when {
             targetIndex > initialIndex -> { fullWidth -> -fullWidth }
             targetIndex < initialIndex -> { fullWidth -> fullWidth }
