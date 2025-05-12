@@ -69,11 +69,6 @@ class AnimeDetailViewModelTest {
         coEvery {
             StreamingUtils.getEpisodeQuery(any(), any())
         } returns episodeSourcesQueryPlaceholder
-        coEvery {
-            animeEpisodeDetailRepository.updateCachedAnimeDetailComplementWithEpisodes(
-                any(), any(), any()
-            )
-        } returns animeDetailComplementPlaceholder.copy(episodes = listOf(episodePlaceholder))
         coEvery { animeEpisodeDetailRepository.getEpisodeServers("lorem-ipsum-123?ep=123") } returns Resource.Success(
             episodeServersResponsePlaceholder
         )

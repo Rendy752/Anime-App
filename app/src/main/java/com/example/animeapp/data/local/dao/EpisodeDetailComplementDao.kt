@@ -47,30 +47,19 @@ interface EpisodeDetailComplementDao {
             AND (:isFavorite IS NULL OR isFavorite = :isFavorite)
             AND (:searchQuery = '' OR animeTitle LIKE '%' || :searchQuery || '%' OR episodeTitle LIKE '%' || :searchQuery || '%')
             ORDER BY
-                CASE
-                    WHEN :sortBy = 'LastWatchedDesc' THEN lastTimestamp
-                    ELSE 0
+                lastWatched DESC,
+                CASE :sortBy
+                    WHEN 'LastWatchedAsc' THEN lastWatched
+                    WHEN 'AnimeTitleAsc' THEN animeTitle
+                    WHEN 'AnimeTitleDesc' THEN animeTitle
+                    WHEN 'EpisodeTitleAsc' THEN episodeTitle
+                    WHEN 'EpisodeTitleDesc' THEN episodeTitle
+                END ASC,
+                CASE :sortBy
+                    WHEN 'AnimeTitleDesc' THEN animeTitle
+                    WHEN 'EpisodeTitleDesc' THEN episodeTitle
                 END DESC,
-                CASE
-                    WHEN :sortBy = 'LastWatchedAsc' THEN lastTimestamp
-                    ELSE 0
-                END ASC,
-                CASE
-                    WHEN :sortBy = 'AnimeTitleAsc' THEN animeTitle
-                    ELSE ''
-                END ASC,
-                CASE
-                    WHEN :sortBy = 'AnimeTitleDesc' THEN animeTitle
-                    ELSE ''
-                END DESC,
-                CASE
-                    WHEN :sortBy = 'EpisodeTitleAsc' THEN episodeTitle
-                    ELSE ''
-                END ASC,
-                CASE
-                    WHEN :sortBy = 'EpisodeTitleDesc' THEN episodeTitle
-                    ELSE ''
-                END DESC
+                episodeTitle ASC
             LIMIT :limit OFFSET :offset
         """
     )
