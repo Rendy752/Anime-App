@@ -189,10 +189,6 @@ fun EpisodesDetailSection(
                     message = detailState.animeDetailComplement.message ?: "Error loading episodes"
                 )
             }
-
-            else -> {
-                MessageDisplay(message = "Episode data not available")
-            }
         }
     }
 }
