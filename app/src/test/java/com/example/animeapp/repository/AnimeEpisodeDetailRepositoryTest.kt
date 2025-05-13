@@ -410,7 +410,8 @@ class AnimeEpisodeDetailRepositoryTest {
         val queryState = EpisodeHistoryQueryState(
             searchQuery = "test",
             isFavorite = true,
-            sortBy = EpisodeHistoryQueryState.SortBy.EpisodeTitleAsc,
+            sortBy = EpisodeHistoryQueryState.SortBy.EpisodeTitle,
+            isAscending = true,
             page = 1,
             limit = 10
         )
@@ -419,7 +420,8 @@ class AnimeEpisodeDetailRepositoryTest {
             episodeDetailComplementDao.getPaginatedEpisodeHistory(
                 searchQuery = "test",
                 isFavorite = true,
-                sortBy = "EpisodeTitleAsc",
+                sortBy = EpisodeHistoryQueryState.SortBy.EpisodeTitle.name,
+                isAscending = true,
                 limit = 10,
                 offset = 0
             )
@@ -434,7 +436,8 @@ class AnimeEpisodeDetailRepositoryTest {
             episodeDetailComplementDao.getPaginatedEpisodeHistory(
                 searchQuery = "test",
                 isFavorite = true,
-                sortBy = "EpisodeTitleAsc",
+                sortBy = EpisodeHistoryQueryState.SortBy.EpisodeTitle.name,
+                isAscending = true,
                 limit = 10,
                 offset = 0
             )
@@ -446,7 +449,8 @@ class AnimeEpisodeDetailRepositoryTest {
         val queryState = EpisodeHistoryQueryState(
             searchQuery = "test",
             isFavorite = true,
-            sortBy = EpisodeHistoryQueryState.SortBy.EpisodeTitleAsc,
+            sortBy = EpisodeHistoryQueryState.SortBy.EpisodeTitle,
+            isAscending = true,
             page = 1,
             limit = 10
         )
@@ -454,7 +458,8 @@ class AnimeEpisodeDetailRepositoryTest {
             episodeDetailComplementDao.getPaginatedEpisodeHistory(
                 searchQuery = "test",
                 isFavorite = true,
-                sortBy = "EpisodeTitleAsc",
+                sortBy = EpisodeHistoryQueryState.SortBy.EpisodeTitle.name,
+                isAscending = true,
                 limit = 10,
                 offset = 0
             )
@@ -469,7 +474,8 @@ class AnimeEpisodeDetailRepositoryTest {
             episodeDetailComplementDao.getPaginatedEpisodeHistory(
                 searchQuery = "test",
                 isFavorite = true,
-                sortBy = "EpisodeTitleAsc",
+                sortBy = EpisodeHistoryQueryState.SortBy.EpisodeTitle.name,
+                isAscending = true,
                 limit = 10,
                 offset = 0
             )

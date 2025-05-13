@@ -3,9 +3,9 @@ package com.example.animeapp.data.local.dao
 import androidx.room.Dao
 import androidx.room.Delete
 import androidx.room.Insert
+import androidx.room.Query
 import androidx.room.Update
 import androidx.room.OnConflictStrategy
-import androidx.room.Query
 import com.example.animeapp.models.EpisodeDetailComplement
 
 @Dao
@@ -47,17 +47,33 @@ interface EpisodeDetailComplementDao {
             AND (:isFavorite IS NULL OR isFavorite = :isFavorite)
             AND (:searchQuery = '' OR animeTitle LIKE '%' || :searchQuery || '%' OR episodeTitle LIKE '%' || :searchQuery || '%')
             ORDER BY
-                lastWatched DESC,
-                CASE :sortBy
-                    WHEN 'LastWatchedAsc' THEN lastWatched
-                    WHEN 'AnimeTitleAsc' THEN animeTitle
-                    WHEN 'AnimeTitleDesc' THEN animeTitle
-                    WHEN 'EpisodeTitleAsc' THEN episodeTitle
-                    WHEN 'EpisodeTitleDesc' THEN episodeTitle
+                CASE
+                    WHEN :isAscending THEN
+                        CASE :sortBy
+                            WHEN 'LastWatched' THEN lastWatched
+                            WHEN 'AnimeTitle' THEN animeTitle
+                            WHEN 'EpisodeTitle' THEN episodeTitle
+                        END
+                    ELSE
+                        CASE :sortBy
+                            WHEN 'LastWatched' THEN ''
+                            WHEN 'AnimeTitle' THEN ''
+                            WHEN 'EpisodeTitle' THEN ''
+                        END
                 END ASC,
-                CASE :sortBy
-                    WHEN 'AnimeTitleDesc' THEN animeTitle
-                    WHEN 'EpisodeTitleDesc' THEN episodeTitle
+                CASE
+                    WHEN NOT :isAscending THEN
+                        CASE :sortBy
+                            WHEN 'LastWatched' THEN lastWatched
+                            WHEN 'AnimeTitle' THEN animeTitle
+                            WHEN 'EpisodeTitle' THEN episodeTitle
+                        END
+                    ELSE
+                        CASE :sortBy
+                            WHEN 'LastWatched' THEN ''
+                            WHEN 'AnimeTitle' THEN ''
+                            WHEN 'EpisodeTitle' THEN ''
+                        END
                 END DESC,
                 episodeTitle ASC
             LIMIT :limit OFFSET :offset
@@ -67,6 +83,7 @@ interface EpisodeDetailComplementDao {
         searchQuery: String,
         isFavorite: Boolean?,
         sortBy: String,
+        isAscending: Boolean,
         limit: Int,
         offset: Int
     ): List<EpisodeDetailComplement>

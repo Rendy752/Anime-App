@@ -98,6 +98,7 @@ class AnimeEpisodeDetailRepository(
                     searchQuery = queryState.searchQuery,
                     isFavorite = queryState.isFavorite,
                     sortBy = queryState.sortBy.name,
+                    isAscending = queryState.isAscending,
                     limit = queryState.limit,
                     offset = (queryState.page - 1) * queryState.limit
                 )
