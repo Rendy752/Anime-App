@@ -59,7 +59,7 @@ fun EpisodeInfoRow(
 @Composable
 fun EpisodeInfoRowSkeleton(modifier: Modifier = Modifier) {
     Row(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier,
         horizontalArrangement = Arrangement.End,
     ) {
         repeat(3) {

@@ -42,7 +42,7 @@ fun EpisodeInfoItem(
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.padding(8.dp)
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
                 icon?.invoke()
                 Spacer(modifier = Modifier.width(4.dp))
@@ -62,7 +62,7 @@ fun EpisodeInfoItemSkeleton(
     hasRight: Boolean
 ) {
     val width = 60.dp
-    val height = 32.dp
+    val height = 28.dp
 
     val leftShape = if (isFirst) RoundedCornerShape(percent = 50) else RoundedCornerShape(0.dp)
     val rightShape =
