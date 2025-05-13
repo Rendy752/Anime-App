@@ -6,11 +6,12 @@ import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
-import java.time.OffsetDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
+import java.time.format.DateTimeFormatterBuilder
 import java.time.format.TextStyle
+import java.time.temporal.ChronoField
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalAdjusters
 import java.util.Date
@@ -54,10 +55,18 @@ object TimeUtils {
     fun formatDateToAgo(dateString: String): String {
         return try {
             val prettyTime = PrettyTime(Locale.getDefault())
-            val dateTimeFormatter =
-                DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.getDefault())
-            val offsetDateTime = OffsetDateTime.parse(dateString, dateTimeFormatter)
-            val date = Date.from(offsetDateTime.toInstant())
+            val formatter = DateTimeFormatterBuilder()
+                .appendPattern("yyyy-MM-dd'T'HH:mm:ss")
+                .optionalStart()
+                .appendFraction(ChronoField.NANO_OF_SECOND, 1, 9, true)
+                .optionalEnd()
+                .optionalStart()
+                .appendOffsetId()
+                .optionalEnd()
+                .toFormatter(Locale.getDefault())
+            val zonedDateTime =
+                ZonedDateTime.parse(dateString, formatter.withZone(ZoneId.systemDefault()))
+            val date = Date.from(zonedDateTime.toInstant())
             prettyTime.format(date)
         } catch (e: Exception) {
             println("Error parsing date: ${e.message}")

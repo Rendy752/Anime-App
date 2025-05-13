@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animeDetail.episodeDetail
+package com.example.animeapp.ui.common_ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -14,7 +14,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.animeapp.ui.common_ui.SkeletonBox
 
 @Composable
 fun EpisodeInfoItem(

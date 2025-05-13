@@ -50,6 +50,11 @@ fun HistoryContent(
                                 AnimeEpisodeAccordion(
                                     anime = anime,
                                     episodes = episodes,
+                                    onAnimeTitleClick = {
+                                        navController.navigateTo(
+                                            NavRoute.AnimeDetail.fromId(anime.malId)
+                                        )
+                                    },
                                     onAnimeFavoriteToggle = { isFavorite ->
                                         onAction(EpisodeHistoryAction.ToggleAnimeFavorite(anime.malId, isFavorite))
                                     },
