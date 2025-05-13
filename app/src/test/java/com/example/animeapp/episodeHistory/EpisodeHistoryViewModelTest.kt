@@ -107,7 +107,8 @@ class EpisodeHistoryViewModelTest {
                 EpisodeHistoryQueryState(
                     searchQuery = "",
                     isFavorite = null,
-                    sortBy = EpisodeHistoryQueryState.SortBy.LastWatchedDesc,
+                    sortBy = EpisodeHistoryQueryState.SortBy.LastWatched,
+                    isAscending = false,
                     page = 1,
                     limit = 10
                 ),
@@ -146,7 +147,8 @@ class EpisodeHistoryViewModelTest {
             EpisodeHistoryQueryState(
                 searchQuery = "",
                 isFavorite = null,
-                sortBy = EpisodeHistoryQueryState.SortBy.LastWatchedDesc,
+                sortBy = EpisodeHistoryQueryState.SortBy.LastWatched,
+                isAscending = false,
                 page = 1,
                 limit = 10
             ),
@@ -161,7 +163,8 @@ class EpisodeHistoryViewModelTest {
         val updatedQueryState = EpisodeHistoryQueryState(
             searchQuery = "Test",
             isFavorite = true,
-            sortBy = EpisodeHistoryQueryState.SortBy.EpisodeTitleAsc,
+            sortBy = EpisodeHistoryQueryState.SortBy.EpisodeTitle,
+            isAscending = true,
             page = 2,
             limit = 10
         )
