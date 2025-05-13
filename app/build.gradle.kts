@@ -51,22 +51,35 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
     }
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+    }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_17
-        targetCompatibility = JavaVersion.VERSION_17
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
     }
     kotlinOptions {
-        jvmTarget = "17"
+        jvmTarget = "21"
     }
     buildFeatures {
         compose = true
         buildConfig = true
     }
     composeOptions.apply {
-        this.kotlinCompilerExtensionVersion = "1.5.15"
+        kotlinCompilerExtensionVersion = "2.1.10"
     }
     hilt {
         enableAggregatingTask = true
+    }
+
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+            isReturnDefaultValues = true
+        }
     }
     tasks.withType<Test> {
         jvmArgs("-XX:+EnableDynamicAgentLoading")
