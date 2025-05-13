@@ -247,54 +247,10 @@ class AnimeWatchViewModelTest {
         }
 
     @Test
-    fun `LoadEpisodeDetailComplement with remote data should insert and update episodeDetailComplements`() =
+    fun `LoadEpisodeDetailComplement with no cached data should set error in episodeDetailComplements`() =
         runTest {
             val episodeId = "lorem-ipsum-123?ep=124"
-            val updatedComplement = mockAnimeDetailComplement
             coEvery { animeEpisodeDetailRepository.getCachedEpisodeDetailComplement(episodeId) } returns null
-            coEvery { animeEpisodeDetailRepository.getEpisodeServers(episodeId) } returns Resource.Success(
-                mockEpisodeServers.copy(episodeId = episodeId)
-            )
-            coEvery {
-                animeEpisodeDetailRepository.getEpisodeSources(
-                    eq(episodeId),
-                    any(),
-                    any()
-                )
-            } returns Response.success(mockEpisodeSources)
-            coEvery { animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(1) } returns updatedComplement
-            coEvery { animeEpisodeDetailRepository.insertCachedEpisodeDetailComplement(any()) } just Runs
-            val newComplement = mockEpisodeDetailComplement.copy(
-                id = episodeId,
-                animeTitle = mockAnimeDetail.title,
-                episodeTitle = "Episode 2",
-                number = 2,
-                servers = mockEpisodeServers.copy(episodeId = episodeId),
-                sources = mockEpisodeSources,
-                sourcesQuery = episodeSourcesQueryPlaceholder.copy(id = episodeId)
-            )
-            mockkObject(ComplementUtils)
-            coEvery {
-                ComplementUtils.createEpisodeDetailComplement(
-                    repository = animeEpisodeDetailRepository,
-                    animeDetail = mockAnimeDetail,
-                    animeDetailComplement = updatedComplement,
-                    episode = updatedComplement.episodes?.first { it.episodeId == episodeId }
-                        ?: episodePlaceholder.copy(episodeId = episodeId),
-                    servers = mockEpisodeServers.copy(episodeId = episodeId),
-                    sources = mockEpisodeSources,
-                    sourcesQuery = episodeSourcesQueryPlaceholder.copy(id = episodeId)
-                )
-            } coAnswers {
-                animeEpisodeDetailRepository.insertCachedEpisodeDetailComplement(newComplement)
-                newComplement
-            }
-            coEvery {
-                ComplementUtils.getOrCreateAnimeDetailComplement(
-                    repository = animeEpisodeDetailRepository,
-                    malId = 1
-                )
-            } returns updatedComplement
 
             viewModel.onAction(
                 WatchAction.SetInitialState(
@@ -307,25 +263,24 @@ class AnimeWatchViewModelTest {
             advanceUntilIdle()
 
             val watchState = viewModel.watchState.value
-            println("LoadEpisodeDetailComplement remote watchState: $watchState")
-            assertTrue(watchState.episodeDetailComplements[episodeId] is Resource.Success)
-            val complement =
-                (watchState.episodeDetailComplements[episodeId] as Resource.Success).data
-            assertEquals(episodeId, complement.id)
-            assertEquals(mockAnimeDetail.title, complement.animeTitle)
-            assertEquals("Episode 2", complement.episodeTitle)
+            println("LoadEpisodeDetailComplement no cached watchState: $watchState")
+            assertTrue(watchState.episodeDetailComplements[episodeId] is Resource.Error)
+            assertEquals(
+                "Episode detail complement not found",
+                (watchState.episodeDetailComplements[episodeId] as Resource.Error).message
+            )
             coVerify(exactly = 1) {
-                animeEpisodeDetailRepository.getCachedEpisodeDetailComplement(
-                    episodeId
-                )
+                animeEpisodeDetailRepository.getCachedEpisodeDetailComplement(episodeId)
             }
-            coVerify(exactly = 1) { animeEpisodeDetailRepository.getEpisodeServers(episodeId) }
-            coVerify(exactly = 1) {
-                animeEpisodeDetailRepository.insertCachedEpisodeDetailComplement(
-                    any()
-                )
+            coVerify(exactly = 0) {
+                animeEpisodeDetailRepository.insertCachedEpisodeDetailComplement(any())
             }
-            unmockkObject(ComplementUtils)
+            coVerify(exactly = 0) {
+                animeEpisodeDetailRepository.getEpisodeServers(episodeId)
+            }
+            coVerify(exactly = 0) {
+                animeEpisodeDetailRepository.getEpisodeSources(any(), any(), any())
+            }
         }
 
     @Test

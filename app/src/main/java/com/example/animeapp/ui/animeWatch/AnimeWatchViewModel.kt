@@ -391,64 +391,12 @@ class AnimeWatchViewModel @Inject constructor(
             return@launch
         }
 
-        val animeDetail = _watchState.value.animeDetail ?: return@launch
-        val animeDetailComplement = _watchState.value.animeDetailComplement ?: return@launch
-        val episode =
-            animeDetailComplement.episodes?.find { it.episodeId == episodeId } ?: return@launch
-        val serversResponse = animeEpisodeDetailRepository.getEpisodeServers(episodeId)
-        if (serversResponse !is Resource.Success) {
-            _watchState.update {
-                it.copy(
-                    episodeDetailComplements = it.episodeDetailComplements + (episodeId to Resource.Error(
-                        serversResponse.message ?: "Failed to fetch episode servers"
-                    ))
-                )
-            }
-            return@launch
-        }
-
-        val sourcesResponse = StreamingUtils.getEpisodeSources(
-            serversResponse,
-            { id, server, category ->
-                animeEpisodeDetailRepository.getEpisodeSources(
-                    id,
-                    server,
-                    category
-                )
-            },
-            episodeSourcesQueryPlaceholder.copy(id = episodeId)
-        )
-        if (sourcesResponse !is Resource.Success) {
-            _watchState.update {
-                it.copy(
-                    episodeDetailComplements = it.episodeDetailComplements + (episodeId to Resource.Error(
-                        sourcesResponse.message ?: "Failed to fetch episode sources"
-                    ))
-                )
-            }
-            return@launch
-        }
-
-        serversResponse.data.let { servers ->
-            sourcesResponse.data.let { sources ->
-                ComplementUtils.createEpisodeDetailComplement(
-                    repository = animeEpisodeDetailRepository,
-                    animeDetail = animeDetail,
-                    animeDetailComplement = animeDetailComplement,
-                    episode = episode,
-                    servers = servers,
-                    sources = sources,
-                    sourcesQuery = episodeSourcesQueryPlaceholder.copy(id = episodeId)
-                )?.let { complement ->
-                    _watchState.update {
-                        it.copy(
-                            episodeDetailComplements = it.episodeDetailComplements + (episodeId to Resource.Success(
-                                complement
-                            ))
-                        )
-                    }
-                }
-            }
+        _watchState.update {
+            it.copy(
+                episodeDetailComplements = it.episodeDetailComplements + (episodeId to Resource.Error(
+                    "Episode detail complement not found"
+                ))
+            )
         }
     }
 
