@@ -48,6 +48,7 @@ fun HistoryContent(
                         results.data.forEach { (anime, episodes) ->
                             item {
                                 AnimeEpisodeAccordion(
+                                    searchQuery = state.queryState.searchQuery,
                                     anime = anime,
                                     episodes = episodes,
                                     onAnimeTitleClick = {

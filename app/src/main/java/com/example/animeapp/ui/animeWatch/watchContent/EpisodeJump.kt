@@ -5,11 +5,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.lazy.grid.LazyGridState
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -24,6 +21,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.Episode
+import com.example.animeapp.ui.common_ui.SearchView
+import com.example.animeapp.utils.Debounce
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,8 +31,25 @@ fun EpisodeJump(
     episodes: List<Episode>,
     gridState: LazyGridState
 ) {
+    val scope = rememberCoroutineScope()
     var episodeNumberInput by remember { mutableStateOf("") }
-    val coroutineScope = rememberCoroutineScope()
+    val debounce = remember(episodeNumberInput) {
+        Debounce(scope, 500L) { newQuery ->
+            val filteredValue = newQuery.filter { it.isDigit() }
+            val intValue = filteredValue.toIntOrNull()
+            if (intValue == null || (intValue >= 1 && intValue <= episodes.size)) {
+                episodeNumberInput = filteredValue
+                intValue?.let { episodeNo ->
+                    val index = episodes.indexOfFirst { it.episodeNo == episodeNo }
+                    if (index != -1) {
+                        scope.launch {
+                            gridState.animateScrollToItem(index)
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -59,34 +75,15 @@ fun EpisodeJump(
             )
         }
 
-        OutlinedTextField(
-            value = episodeNumberInput,
-            onValueChange = { newValue ->
-                val filteredValue = newValue.filter { it.isDigit() }
-                val intValue = filteredValue.toIntOrNull()
-                if (intValue == null || (intValue >= 1 && intValue <= episodes.size)) {
-                    episodeNumberInput = filteredValue
-                    intValue?.let { episodeNo ->
-                        val index = episodes.indexOfFirst { it.episodeNo == episodeNo }
-                        if (index != -1) {
-                            coroutineScope.launch {
-                                gridState.animateScrollToItem(index)
-                            }
-                        }
-                    }
-                }
+        SearchView(
+            query = episodeNumberInput,
+            onQueryChange = {
+                episodeNumberInput = it
+                debounce.query(it)
             },
-            label = { Text("Jump to Episode") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.weight(0.5f),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.primary,
-                cursorColor = MaterialTheme.colorScheme.primary,
-                focusedLabelColor = MaterialTheme.colorScheme.primary,
-                unfocusedLabelColor = MaterialTheme.colorScheme.primary,
-            )
+            keyboardType = KeyboardType.Number,
+            placeholder = "Jump to Episode",
+            modifier = Modifier.weight(0.5f)
         )
     }
 }

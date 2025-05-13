@@ -1,28 +1,36 @@
 package com.example.animeapp.ui.episodeHistory.components
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.EpisodeHistoryQueryState
+import com.example.animeapp.ui.common_ui.SearchView
 import com.example.animeapp.ui.episodeHistory.EpisodeHistoryAction
+import com.example.animeapp.utils.Debounce
 
 @Composable
 fun FilterContent(
     queryState: EpisodeHistoryQueryState,
     onAction: (EpisodeHistoryAction) -> Unit
 ) {
-    var searchQuery by remember { mutableStateOf(queryState.searchQuery) }
+    val scope = rememberCoroutineScope()
+    var searchQuery by remember(queryState) { mutableStateOf(queryState.searchQuery) }
+    val debounce = remember(queryState) {
+        Debounce(scope, 500L) { newQuery ->
+            onAction(
+                EpisodeHistoryAction.ApplyFilters(queryState.copy(searchQuery = newQuery, page = 1))
+            )
+        }
+    }
     var isFavoriteFilter by remember { mutableStateOf(queryState.isFavorite) }
     var sortBy by remember { mutableStateOf(queryState.sortBy) }
     var isAscending by remember { mutableStateOf(queryState.isAscending) }
@@ -40,25 +48,14 @@ fun FilterContent(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        OutlinedTextField(
-            value = searchQuery,
-            onValueChange = { query ->
-                searchQuery = query
-                onAction(
-                    EpisodeHistoryAction.ApplyFilters(
-                        queryState.copy(searchQuery = query, page = 1)
-                    )
-                )
+        SearchView(
+            query = searchQuery,
+            onQueryChange = {
+                searchQuery = it
+                debounce.query(it)
             },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text("Search Anime or Episode") },
-            leadingIcon = { Icon(Icons.Filled.Search, contentDescription = "Search") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
-            singleLine = true,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = MaterialTheme.colorScheme.primary,
-                unfocusedBorderColor = MaterialTheme.colorScheme.outline
-            )
+            placeholder = "Search Anime or Episode",
+            modifier = Modifier.fillMaxWidth()
         )
 
         Row(
@@ -103,7 +100,11 @@ fun FilterContent(
                 ) {
                     EpisodeHistoryQueryState.SortBy.entries.forEach { sortOption ->
                         DropdownMenuItem(
-                            text = { Text(sortOption.name.replace("([A-Z])".toRegex(), " $1").trim()) },
+                            text = {
+                                Text(
+                                    sortOption.name.replace("([A-Z])".toRegex(), " $1").trim()
+                                )
+                            },
                             onClick = {
                                 sortBy = sortOption
                                 onAction(

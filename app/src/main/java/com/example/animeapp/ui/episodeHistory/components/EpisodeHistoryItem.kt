@@ -11,10 +11,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.ui.common_ui.ScreenshotDisplay
+import com.example.animeapp.ui.common_ui.highlightText
 import com.example.animeapp.utils.TimeUtils
 import com.example.animeapp.utils.TimeUtils.formatTimestamp
 import com.example.animeapp.utils.WatchUtils.getEpisodeBackgroundColor
@@ -23,6 +26,8 @@ import kotlin.math.roundToInt
 
 @Composable
 fun EpisodeHistoryItem(
+    searchQuery: String,
+    isFirstItem: Boolean,
     episode: EpisodeDetailComplement,
     onClick: () -> Unit,
     onFavoriteToggle: (Boolean) -> Unit
@@ -33,6 +38,12 @@ fun EpisodeHistoryItem(
             .basicContainer(
                 outerPadding = PaddingValues(0.dp),
                 innerPadding = PaddingValues(8.dp),
+                roundedCornerShape = RoundedCornerShape(
+                    topStart = if (isFirstItem) 0.dp else 16.dp,
+                    topEnd = if (isFirstItem) 0.dp else 16.dp,
+                    bottomStart = 16.dp,
+                    bottomEnd = 16.dp
+                ),
                 backgroundBrush = getEpisodeBackgroundColor(episode.isFiller),
                 onItemClick = { onClick() }
             )
@@ -54,9 +65,12 @@ fun EpisodeHistoryItem(
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Text(
-                text = "Ep ${episode.number}: ${episode.episodeTitle}",
+                text = buildAnnotatedString {
+                    append("Ep ${episode.number}: ")
+                    append(highlightText(episode.episodeTitle, searchQuery))
+                },
                 style = MaterialTheme.typography.bodyMedium,
-                maxLines = 2,
+                fontWeight = FontWeight.Bold,
                 overflow = TextOverflow.Ellipsis
             )
             Row(
@@ -69,16 +83,14 @@ fun EpisodeHistoryItem(
                         modifier = Modifier.padding(end = if (episode.lastWatched != null) 4.dp else 0.dp),
                         text = "${formatTimestamp(timestamp)} " +
                                 "${episode.duration?.let { "/ ${formatTimestamp(it)}" }}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = MaterialTheme.typography.bodySmall
                     )
                 }
                 episode.lastWatched?.let { lastWatched ->
                     Text(
                         modifier = Modifier.padding(start = if (episode.lastTimestamp != null) 4.dp else 0.dp),
                         text = "~ ${TimeUtils.formatDateToAgo(lastWatched)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = MaterialTheme.typography.bodySmall
                     )
                 }
             }
@@ -104,7 +116,6 @@ fun EpisodeHistoryItem(
                 Text(
                     text = "$percentage%",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 8.dp)
                 )
             }

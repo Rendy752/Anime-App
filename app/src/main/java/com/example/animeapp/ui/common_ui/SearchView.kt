@@ -2,6 +2,7 @@ package com.example.animeapp.ui.common_ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
@@ -9,6 +10,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
@@ -18,6 +20,7 @@ fun SearchView(
     query: String,
     onQueryChange: (String) -> Unit,
     placeholder: String,
+    keyboardType: KeyboardType = KeyboardType.Text,
     modifier: Modifier = Modifier
 ) {
     OutlinedTextField(
@@ -51,6 +54,7 @@ fun SearchView(
                 fontWeight = MaterialTheme.typography.bodyMedium.fontWeight,
             )
         },
+        keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         singleLine = true,
         shape = RoundedCornerShape(8.dp),
         colors = OutlinedTextFieldDefaults.colors(

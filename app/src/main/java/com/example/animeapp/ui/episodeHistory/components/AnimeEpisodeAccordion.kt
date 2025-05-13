@@ -24,10 +24,12 @@ import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.ui.common_ui.EpisodeInfoRow
 import com.example.animeapp.ui.common_ui.AsyncImageWithPlaceholder
 import com.example.animeapp.ui.common_ui.ImageRoundedCorner
+import com.example.animeapp.ui.common_ui.highlightText
 import com.example.animeapp.utils.basicContainer
 
 @Composable
 fun AnimeEpisodeAccordion(
+    searchQuery: String,
     anime: AnimeDetailComplement,
     episodes: List<EpisodeDetailComplement>,
     onAnimeTitleClick: () -> Unit,
@@ -63,7 +65,6 @@ fun AnimeEpisodeAccordion(
                     model = representativeEpisode?.imageUrl,
                     contentDescription = "Anime Image",
                     modifier = Modifier.size(72.dp, 108.dp),
-                    isAiring = null,
                     roundedCorners = ImageRoundedCorner.ALL
                 )
                 Column(
@@ -74,10 +75,12 @@ fun AnimeEpisodeAccordion(
                 ) {
                     Text(
                         modifier = Modifier.clickable(onClick = onAnimeTitleClick),
-                        text = representativeEpisode?.animeTitle ?: "Anime ID: ${anime.malId}",
+                        text = highlightText(
+                            representativeEpisode?.animeTitle ?: "Anime ID: ${anime.malId}",
+                            searchQuery
+                        ),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary,
-                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
                     Row(
@@ -127,8 +130,10 @@ fun AnimeEpisodeAccordion(
                         .padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    episodes.forEach { episode ->
+                    episodes.forEachIndexed { index, episode ->
                         EpisodeHistoryItem(
+                            searchQuery = searchQuery,
+                            isFirstItem = index == 0,
                             episode = episode,
                             onClick = { onEpisodeClick(episode) },
                             onFavoriteToggle = { isFavorite ->
