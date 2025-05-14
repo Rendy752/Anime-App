@@ -166,8 +166,7 @@ val animeDetailPlaceholder = AnimeDetail(
             name = "Shueisha",
             url = "https://myanimelist.net/anime/producer/1365/Shueisha"
         ),
-
-        ),
+    ),
     licensors = listOf(
         CommonIdentity(
             mal_id = 119,

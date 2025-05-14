@@ -18,7 +18,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
-import retrofit2.Response
 
 @ExperimentalCoroutinesApi
 class AnimeWatchViewModelTest {
@@ -102,15 +101,17 @@ class AnimeWatchViewModelTest {
                 any(),
                 any()
             )
-        } returns Response.success(mockEpisodeSources)
+        } returns Resource.Success(mockEpisodeSources)
         coEvery { animeEpisodeDetailRepository.insertCachedEpisodeDetailComplement(any()) } just Runs
         coEvery { animeEpisodeDetailRepository.updateCachedAnimeDetailComplement(any()) } just Runs
         coEvery { animeEpisodeDetailRepository.updateEpisodeDetailComplement(any()) } just Runs
 
         mockkObject(StreamingUtils)
-        coEvery { StreamingUtils.getEpisodeSources(any(), any(), any()) } returns Resource.Success(
-            mockEpisodeSources
-        )
+        coEvery {
+            StreamingUtils.getEpisodeSources(
+                any(), any(), any()
+            )
+        } returns Pair(Resource.Success(mockEpisodeSources), mockk())
 
         viewModel = AnimeWatchViewModel(animeEpisodeDetailRepository)
     }
@@ -188,7 +189,9 @@ class AnimeWatchViewModelTest {
             val query = episodeSourcesQueryPlaceholder.copy(id = "lorem-ipsum-123?ep=123")
             coEvery { animeEpisodeDetailRepository.getCachedEpisodeDetailComplement("lorem-ipsum-123?ep=123") } returns mockEpisodeDetailComplement andThen mockEpisodeDetailComplement andThen null
             coEvery { animeEpisodeDetailRepository.getCachedDefaultEpisodeDetailComplementByMalId(1) } returns mockEpisodeDetailComplement
-            coEvery { animeEpisodeDetailRepository.getEpisodeServers("lorem-ipsum-123?ep=123") } returns Resource.Error("Server error")
+            coEvery { animeEpisodeDetailRepository.getEpisodeServers("lorem-ipsum-123?ep=123") } returns Resource.Error(
+                "Server error"
+            )
             mockkObject(ComplementUtils)
             coEvery {
                 ComplementUtils.getOrCreateAnimeDetailComplement(

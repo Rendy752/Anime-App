@@ -82,7 +82,7 @@ object ComplementUtils {
         servers: EpisodeServersResponse,
         sources: EpisodeSourcesResponse,
         sourcesQuery: EpisodeSourcesQuery
-    ): EpisodeDetailComplement? = withContext(Dispatchers.IO) {
+    ): EpisodeDetailComplement = withContext(Dispatchers.IO) {
         val complement = EpisodeDetailComplement(
             id = episode.episodeId,
             malId = animeDetail.mal_id,

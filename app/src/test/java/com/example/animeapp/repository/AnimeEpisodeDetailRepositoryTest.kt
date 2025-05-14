@@ -389,8 +389,8 @@ class AnimeEpisodeDetailRepositoryTest {
         val result = repository.getAnimeAniwatchSearch(keyword)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        assertTrue(result.isSuccessful)
-        assertEquals(searchResponse, result.body())
+        assertTrue(result is Resource.Success)
+        assertEquals(searchResponse, (result as Resource.Success).data)
         coVerify { runwayAPI.getAnimeAniwatchSearch(keyword) }
     }
 
@@ -408,8 +408,8 @@ class AnimeEpisodeDetailRepositoryTest {
         val result = repository.getAnimeAniwatchSearch(keyword)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        assertTrue(!result.isSuccessful)
-        assertEquals("Server error", result.errorBody()?.string())
+        assertTrue(result is Resource.Error)
+        assertEquals("Server error", (result as Resource.Error).message)
         coVerify { runwayAPI.getAnimeAniwatchSearch(keyword) }
     }
 
@@ -426,12 +426,15 @@ class AnimeEpisodeDetailRepositoryTest {
                 category
             )
         } returns Response.success(sourcesResponse)
+        coEvery { ResponseHandler.handleCommonResponse(any<Response<EpisodeSourcesResponse>>()) } returns Resource.Success(
+            sourcesResponse
+        )
 
         val result = repository.getEpisodeSources(episodeId, server, category)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        assertTrue(result.isSuccessful)
-        assertEquals(sourcesResponse, result.body())
+        assertTrue(result is Resource.Success)
+        assertEquals(sourcesResponse, (result as Resource.Success).data)
         coVerify { runwayAPI.getEpisodeSources(episodeId, server, category) }
     }
 
@@ -444,12 +447,15 @@ class AnimeEpisodeDetailRepositoryTest {
             500,
             "Server error".toResponseBody()
         )
+        coEvery { ResponseHandler.handleCommonResponse(any<Response<EpisodeSourcesResponse>>()) } returns Resource.Error(
+            "Server error"
+        )
 
         val result = repository.getEpisodeSources(episodeId, server, category)
         testDispatcher.scheduler.advanceUntilIdle()
 
-        assertTrue(!result.isSuccessful)
-        assertEquals("Server error", result.errorBody()?.string())
+        assertTrue(result is Resource.Error)
+        assertEquals("Server error", (result as Resource.Error).message)
         coVerify { runwayAPI.getEpisodeSources(episodeId, server, category) }
     }
 

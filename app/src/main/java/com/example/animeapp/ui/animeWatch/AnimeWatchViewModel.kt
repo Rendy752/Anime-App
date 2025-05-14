@@ -190,7 +190,7 @@ class AnimeWatchViewModel @Inject constructor(
                     } else {
                         val episodeServersResource =
                             Resource.Success(cachedEpisodeDetailComplement.servers)
-                        val episodeSourcesResource = StreamingUtils.getEpisodeSources(
+                        val (episodeSourcesResource) = StreamingUtils.getEpisodeSources(
                             episodeServersResource,
                             { id, server, category ->
                                 animeEpisodeDetailRepository.getEpisodeSources(
@@ -253,7 +253,7 @@ class AnimeWatchViewModel @Inject constructor(
                 return@launch
             }
 
-            val episodeSourcesResource = StreamingUtils.getEpisodeSources(
+            val (episodeSourcesResource) = StreamingUtils.getEpisodeSources(
                 episodeServersResource,
                 { id, server, category ->
                     animeEpisodeDetailRepository.getEpisodeSources(
@@ -310,7 +310,7 @@ class AnimeWatchViewModel @Inject constructor(
                                         servers = servers,
                                         sources = sources,
                                         sourcesQuery = episodeSourcesQuery
-                                    )?.let { remoteEpisodeDetailComplement ->
+                                    ).let { remoteEpisodeDetailComplement ->
                                         _watchState.update {
                                             it.copy(
                                                 episodeDetailComplement = Resource.Success(

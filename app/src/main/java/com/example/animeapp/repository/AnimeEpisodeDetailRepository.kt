@@ -93,13 +93,17 @@ class AnimeEpisodeDetailRepository(
     }
 
     suspend fun getAnimeAniwatchSearch(keyword: String) =
-        safeApiCall { runwayAPI.getAnimeAniwatchSearch(keyword) }
+        ResponseHandler.handleCommonResponse(safeApiCall { runwayAPI.getAnimeAniwatchSearch(keyword) })
 
     suspend fun getEpisodeServers(episodeId: String): Resource<EpisodeServersResponse> =
         ResponseHandler.handleCommonResponse(safeApiCall { runwayAPI.getEpisodeServers(episodeId) })
 
     suspend fun getEpisodeSources(episodeId: String, server: String, category: String) =
-        safeApiCall { runwayAPI.getEpisodeSources(episodeId, server, category) }
+        ResponseHandler.handleCommonResponse(safeApiCall {
+            runwayAPI.getEpisodeSources(
+                episodeId, server, category
+            )
+        })
 
     suspend fun getEpisodes(id: String): Resource<EpisodesResponse> =
         ResponseHandler.handleCommonResponse(safeApiCall { runwayAPI.getEpisodes(id) })
