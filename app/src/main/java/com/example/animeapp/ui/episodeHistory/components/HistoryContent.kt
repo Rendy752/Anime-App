@@ -56,16 +56,22 @@ fun HistoryContent(
                                             NavRoute.AnimeDetail.fromId(anime.malId)
                                         )
                                     },
-                                    onAnimeFavoriteToggle = { isFavorite ->
-                                        onAction(EpisodeHistoryAction.ToggleAnimeFavorite(anime.malId, isFavorite))
-                                    },
                                     onEpisodeClick = { episode ->
                                         navController.navigateTo(
                                             NavRoute.AnimeWatch.fromParams(episode.malId, episode.id)
                                         )
                                     },
+                                    onAnimeFavoriteToggle = { isFavorite ->
+                                        onAction(EpisodeHistoryAction.ToggleAnimeFavorite(anime.malId, isFavorite))
+                                    },
                                     onEpisodeFavoriteToggle = { episodeId, isFavorite ->
                                         onAction(EpisodeHistoryAction.ToggleEpisodeFavorite(episodeId, isFavorite))
+                                    },
+                                    onAnimeDelete = { malId ->
+                                        onAction(EpisodeHistoryAction.DeleteAnime(malId))
+                                    },
+                                    onEpisodeDelete = { episodeId ->
+                                        onAction(EpisodeHistoryAction.DeleteEpisode(episodeId))
                                     }
                                 )
                             }

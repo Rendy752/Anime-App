@@ -8,6 +8,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.style.TextOverflow
@@ -15,11 +16,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.EpisodeDetailComplement
+import com.example.animeapp.ui.common_ui.DebouncedIconButton
 import com.example.animeapp.ui.common_ui.EpisodeInfoRow
 import com.example.animeapp.ui.common_ui.EpisodeInfoRowSkeleton
 import com.example.animeapp.ui.common_ui.ImageCardWithContent
 import com.example.animeapp.ui.common_ui.SkeletonBox
 import com.example.animeapp.ui.common_ui.highlightText
+import com.example.animeapp.ui.theme.favoriteEpisode
 
 @Composable
 fun AccordionItem(
@@ -30,6 +33,7 @@ fun AccordionItem(
     onItemClick: () -> Unit,
     onAnimeTitleClick: () -> Unit,
     onAnimeFavoriteToggle: (Boolean) -> Unit,
+    onDeleteClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     ImageCardWithContent(
@@ -62,24 +66,41 @@ fun AccordionItem(
             }
         },
         rightContent = {
-            IconButton(
-                onClick = { onAnimeFavoriteToggle(!anime.isFavorite) },
-                modifier = Modifier.semantics {
-                    stateDescription =
-                        if (anime.isFavorite) "Remove from favorites" else "Add to favorites"
-                }
+            Column(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                DebouncedIconButton(
+                    onClick = { onAnimeFavoriteToggle(!anime.isFavorite) },
+                    modifier = Modifier.semantics {
+                        stateDescription =
+                            if (anime.isFavorite) "Remove from favorites" else "Add to favorites"
+                    }
+                ) {
+                    Icon(
+                        imageVector = if (anime.isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                        contentDescription = "Toggle Anime Favorite",
+                        tint = favoriteEpisode
+                    )
+                }
+                IconButton(
+                    onClick = onDeleteClick,
+                    modifier = Modifier.semantics {
+                        contentDescription = "Delete Anime"
+                    }
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
                 Icon(
-                    imageVector = if (anime.isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                    contentDescription = "Toggle Anime Favorite",
-                    tint = if (anime.isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+                    imageVector = if (isExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                    contentDescription = if (isExpanded) "Collapse" else "Expand",
+                    tint = MaterialTheme.colorScheme.primary
                 )
             }
-            Icon(
-                imageVector = if (isExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                contentDescription = if (isExpanded) "Collapse" else "Expand",
-                tint = MaterialTheme.colorScheme.primary
-            )
         },
         modifier = modifier,
         height = 160.dp

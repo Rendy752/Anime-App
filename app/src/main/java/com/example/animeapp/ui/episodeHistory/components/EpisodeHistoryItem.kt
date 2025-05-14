@@ -3,9 +3,11 @@ package com.example.animeapp.ui.episodeHistory.components
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -16,10 +18,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.EpisodeDetailComplement
+import com.example.animeapp.ui.common_ui.ConfirmationAlert
 import com.example.animeapp.ui.common_ui.ScreenshotDisplay
 import com.example.animeapp.ui.common_ui.highlightText
+import com.example.animeapp.ui.common_ui.DebouncedIconButton
+import com.example.animeapp.ui.theme.favoriteEpisode
 import com.example.animeapp.utils.TimeUtils
-import com.example.animeapp.utils.TimeUtils.formatTimestamp
 import com.example.animeapp.utils.WatchUtils.getEpisodeBackgroundColor
 import com.example.animeapp.utils.basicContainer
 import kotlin.math.roundToInt
@@ -30,8 +34,22 @@ fun EpisodeHistoryItem(
     isFirstItem: Boolean,
     episode: EpisodeDetailComplement,
     onClick: () -> Unit,
-    onFavoriteToggle: (Boolean) -> Unit
+    onFavoriteToggle: (Boolean) -> Unit,
+    onDelete: () -> Unit
 ) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
+
+    if (showDeleteDialog) {
+        ConfirmationAlert(
+            title = "Delete Episode",
+            message = "Are you sure you want to delete Episode History ${episode.number}: ${episode.episodeTitle}?",
+            confirmText = "Delete",
+            onConfirm = { onDelete() },
+            cancelText = "Cancel",
+            onCancel = { showDeleteDialog = false }
+        )
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -81,8 +99,8 @@ fun EpisodeHistoryItem(
                 episode.lastTimestamp?.let { timestamp ->
                     Text(
                         modifier = Modifier.padding(end = if (episode.lastWatched != null) 4.dp else 0.dp),
-                        text = "${formatTimestamp(timestamp)} " +
-                                "${episode.duration?.let { "/ ${formatTimestamp(it)}" }}",
+                        text = "${TimeUtils.formatTimestamp(timestamp)} " +
+                                "${episode.duration?.let { "/ ${TimeUtils.formatTimestamp(it)}" }}",
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
@@ -120,18 +138,33 @@ fun EpisodeHistoryItem(
                 )
             }
         }
-        IconButton(
-            onClick = { onFavoriteToggle(!episode.isFavorite) },
-            modifier = Modifier.semantics {
-                contentDescription =
-                    if (episode.isFavorite) "Remove episode from favorites" else "Add episode to favorites"
-            }
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(
-                imageVector = if (episode.isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                contentDescription = null,
-                tint = if (episode.isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            DebouncedIconButton(
+                onClick = { onFavoriteToggle(!episode.isFavorite) },
+                modifier = Modifier.semantics {
+                    contentDescription =
+                        if (episode.isFavorite) "Remove episode from favorites" else "Add episode to favorites"
+                }
+            ) {
+                Icon(
+                    imageVector = if (episode.isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                    contentDescription = null,
+                    tint = favoriteEpisode
+                )
+            }
+            IconButton(
+                onClick = { showDeleteDialog = true },
+                modifier = Modifier.semantics { contentDescription = "Delete Episode" }
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Delete,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error
+                )
+            }
         }
     }
 }

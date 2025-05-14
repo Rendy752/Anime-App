@@ -20,6 +20,7 @@ import retrofit2.Response
 import java.time.Instant
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertFalse
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AnimeEpisodeDetailRepositoryTest {
@@ -65,7 +66,7 @@ class AnimeEpisodeDetailRepositoryTest {
         }
         val animeDetail = mockk<AnimeDetail> {
             every { mal_id } returns animeId
-            every { airing } returns false // isDataNeedUpdate = false
+            every { airing } returns false
             every { this@mockk.broadcast } returns broadcast
         }
         val animeDetailResponse = AnimeDetailResponse(animeDetail)
@@ -97,7 +98,9 @@ class AnimeEpisodeDetailRepositoryTest {
         val animeDetailResponse = AnimeDetailResponse(animeDetail)
         coEvery { animeDetailDao.getAnimeDetailById(animeId) } returns null
         coEvery { jikanAPI.getAnimeDetail(animeId) } returns Response.success(animeDetailResponse)
-        coEvery { ResponseHandler.handleCommonResponse(any<Response<AnimeDetailResponse>>()) } returns Resource.Success(animeDetailResponse)
+        coEvery { ResponseHandler.handleCommonResponse(any<Response<AnimeDetailResponse>>()) } returns Resource.Success(
+            animeDetailResponse
+        )
         coEvery { animeDetailDao.insertAnimeDetail(animeDetail) } returns Unit
 
         val result = repository.getAnimeDetail(animeId)
@@ -121,7 +124,7 @@ class AnimeEpisodeDetailRepositoryTest {
         }
         val animeDetail = mockk<AnimeDetail> {
             every { mal_id } returns animeId
-            every { airing } returns true // isDataNeedUpdate = true
+            every { airing } returns true
             every { this@mockk.broadcast } returns broadcast
         }
         val newAnimeDetail = mockk<AnimeDetail> {
@@ -137,7 +140,9 @@ class AnimeEpisodeDetailRepositoryTest {
             TimeUtils.isEpisodeAreUpToDate("12:00", "Asia/Tokyo", "Monday", lastEpisodeUpdatedAt)
         } returns true
         coEvery { jikanAPI.getAnimeDetail(animeId) } returns Response.success(animeDetailResponse)
-        coEvery { ResponseHandler.handleCommonResponse(any<Response<AnimeDetailResponse>>()) } returns Resource.Success(animeDetailResponse)
+        coEvery { ResponseHandler.handleCommonResponse(any<Response<AnimeDetailResponse>>()) } returns Resource.Success(
+            animeDetailResponse
+        )
         coEvery { animeDetailDao.insertAnimeDetail(newAnimeDetail) } returns Unit
 
         val result = repository.getAnimeDetail(animeId)
@@ -155,8 +160,13 @@ class AnimeEpisodeDetailRepositoryTest {
     fun `getAnimeDetail returns error when remote call fails`() = runTest {
         val animeId = 123
         coEvery { animeDetailDao.getAnimeDetailById(animeId) } returns null
-        coEvery { jikanAPI.getAnimeDetail(animeId) } returns Response.error(500, "Server error".toResponseBody())
-        coEvery { ResponseHandler.handleCommonResponse(any<Response<AnimeDetailResponse>>()) } returns Resource.Error("Server error")
+        coEvery { jikanAPI.getAnimeDetail(animeId) } returns Response.error(
+            500,
+            "Server error".toResponseBody()
+        )
+        coEvery { ResponseHandler.handleCommonResponse(any<Response<AnimeDetailResponse>>()) } returns Resource.Error(
+            "Server error"
+        )
 
         val result = repository.getAnimeDetail(animeId)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -276,7 +286,13 @@ class AnimeEpisodeDetailRepositoryTest {
         val updatedComplement = mockk<EpisodeDetailComplement>()
         val capturedComplement = slot<EpisodeDetailComplement>()
         coEvery { episodeDetailComplement.copy(updatedAt = any()) } returns updatedComplement
-        coEvery { episodeDetailComplementDao.updateEpisodeDetailComplement(capture(capturedComplement)) } returns Unit
+        coEvery {
+            episodeDetailComplementDao.updateEpisodeDetailComplement(
+                capture(
+                    capturedComplement
+                )
+            )
+        } returns Unit
         every { updatedComplement.updatedAt } returns Instant.now().epochSecond
 
         repository.updateEpisodeDetailComplement(episodeDetailComplement)
@@ -292,7 +308,9 @@ class AnimeEpisodeDetailRepositoryTest {
         val id = "anime_123"
         val episodesResponse = mockk<EpisodesResponse>()
         coEvery { runwayAPI.getEpisodes(id) } returns Response.success(episodesResponse)
-        coEvery { ResponseHandler.handleCommonResponse(any<Response<EpisodesResponse>>()) } returns Resource.Success(episodesResponse)
+        coEvery { ResponseHandler.handleCommonResponse(any<Response<EpisodesResponse>>()) } returns Resource.Success(
+            episodesResponse
+        )
 
         val result = repository.getEpisodes(id)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -305,8 +323,13 @@ class AnimeEpisodeDetailRepositoryTest {
     @Test
     fun `getEpisodes returns error when api call fails`() = runTest {
         val id = "anime_123"
-        coEvery { runwayAPI.getEpisodes(id) } returns Response.error(500, "Server error".toResponseBody())
-        coEvery { ResponseHandler.handleCommonResponse(any<Response<EpisodesResponse>>()) } returns Resource.Error("Server error")
+        coEvery { runwayAPI.getEpisodes(id) } returns Response.error(
+            500,
+            "Server error".toResponseBody()
+        )
+        coEvery { ResponseHandler.handleCommonResponse(any<Response<EpisodesResponse>>()) } returns Resource.Error(
+            "Server error"
+        )
 
         val result = repository.getEpisodes(id)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -321,7 +344,9 @@ class AnimeEpisodeDetailRepositoryTest {
         val episodeId = "episode_123"
         val serversResponse = mockk<EpisodeServersResponse>()
         coEvery { runwayAPI.getEpisodeServers(episodeId) } returns Response.success(serversResponse)
-        coEvery { ResponseHandler.handleCommonResponse(any<Response<EpisodeServersResponse>>()) } returns Resource.Success(serversResponse)
+        coEvery { ResponseHandler.handleCommonResponse(any<Response<EpisodeServersResponse>>()) } returns Resource.Success(
+            serversResponse
+        )
 
         val result = repository.getEpisodeServers(episodeId)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -334,8 +359,13 @@ class AnimeEpisodeDetailRepositoryTest {
     @Test
     fun `getEpisodeServers returns error when api call fails`() = runTest {
         val episodeId = "episode_123"
-        coEvery { runwayAPI.getEpisodeServers(episodeId) } returns Response.error(500, "Server error".toResponseBody())
-        coEvery { ResponseHandler.handleCommonResponse(any<Response<EpisodeServersResponse>>()) } returns Resource.Error("Server error")
+        coEvery { runwayAPI.getEpisodeServers(episodeId) } returns Response.error(
+            500,
+            "Server error".toResponseBody()
+        )
+        coEvery { ResponseHandler.handleCommonResponse(any<Response<EpisodeServersResponse>>()) } returns Resource.Error(
+            "Server error"
+        )
 
         val result = repository.getEpisodeServers(episodeId)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -349,8 +379,12 @@ class AnimeEpisodeDetailRepositoryTest {
     fun `getAnimeAniwatchSearch returns success with valid response`() = runTest {
         val keyword = "naruto"
         val searchResponse = mockk<AnimeAniwatchSearchResponse>()
-        coEvery { runwayAPI.getAnimeAniwatchSearch(keyword) } returns Response.success(searchResponse)
-        coEvery { ResponseHandler.handleCommonResponse(any<Response<AnimeAniwatchSearchResponse>>()) } returns Resource.Success(searchResponse)
+        coEvery { runwayAPI.getAnimeAniwatchSearch(keyword) } returns Response.success(
+            searchResponse
+        )
+        coEvery { ResponseHandler.handleCommonResponse(any<Response<AnimeAniwatchSearchResponse>>()) } returns Resource.Success(
+            searchResponse
+        )
 
         val result = repository.getAnimeAniwatchSearch(keyword)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -363,8 +397,13 @@ class AnimeEpisodeDetailRepositoryTest {
     @Test
     fun `getAnimeAniwatchSearch returns error when api call fails`() = runTest {
         val keyword = "naruto"
-        coEvery { runwayAPI.getAnimeAniwatchSearch(keyword) } returns Response.error(500, "Server error".toResponseBody())
-        coEvery { ResponseHandler.handleCommonResponse(any<Response<AnimeAniwatchSearchResponse>>()) } returns Resource.Error("Server error")
+        coEvery { runwayAPI.getAnimeAniwatchSearch(keyword) } returns Response.error(
+            500,
+            "Server error".toResponseBody()
+        )
+        coEvery { ResponseHandler.handleCommonResponse(any<Response<AnimeAniwatchSearchResponse>>()) } returns Resource.Error(
+            "Server error"
+        )
 
         val result = repository.getAnimeAniwatchSearch(keyword)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -380,7 +419,13 @@ class AnimeEpisodeDetailRepositoryTest {
         val server = "server1"
         val category = "category1"
         val sourcesResponse = mockk<EpisodeSourcesResponse>()
-        coEvery { runwayAPI.getEpisodeSources(episodeId, server, category) } returns Response.success(sourcesResponse)
+        coEvery {
+            runwayAPI.getEpisodeSources(
+                episodeId,
+                server,
+                category
+            )
+        } returns Response.success(sourcesResponse)
 
         val result = repository.getEpisodeSources(episodeId, server, category)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -395,7 +440,10 @@ class AnimeEpisodeDetailRepositoryTest {
         val episodeId = "episode_123"
         val server = "server1"
         val category = "category1"
-        coEvery { runwayAPI.getEpisodeSources(episodeId, server, category) } returns Response.error(500, "Server error".toResponseBody())
+        coEvery { runwayAPI.getEpisodeSources(episodeId, server, category) } returns Response.error(
+            500,
+            "Server error".toResponseBody()
+        )
 
         val result = repository.getEpisodeSources(episodeId, server, category)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -410,8 +458,7 @@ class AnimeEpisodeDetailRepositoryTest {
         val queryState = EpisodeHistoryQueryState(
             searchQuery = "test",
             isFavorite = true,
-            sortBy = EpisodeHistoryQueryState.SortBy.EpisodeTitle,
-            isAscending = true,
+            sortBy = EpisodeHistoryQueryState.SortBy.NewestFirst,
             page = 1,
             limit = 10
         )
@@ -420,8 +467,7 @@ class AnimeEpisodeDetailRepositoryTest {
             episodeDetailComplementDao.getPaginatedEpisodeHistory(
                 searchQuery = "test",
                 isFavorite = true,
-                sortBy = EpisodeHistoryQueryState.SortBy.EpisodeTitle.name,
-                isAscending = true,
+                sortBy = "NewestFirst",
                 limit = 10,
                 offset = 0
             )
@@ -436,8 +482,7 @@ class AnimeEpisodeDetailRepositoryTest {
             episodeDetailComplementDao.getPaginatedEpisodeHistory(
                 searchQuery = "test",
                 isFavorite = true,
-                sortBy = EpisodeHistoryQueryState.SortBy.EpisodeTitle.name,
-                isAscending = true,
+                sortBy = "NewestFirst",
                 limit = 10,
                 offset = 0
             )
@@ -449,8 +494,7 @@ class AnimeEpisodeDetailRepositoryTest {
         val queryState = EpisodeHistoryQueryState(
             searchQuery = "test",
             isFavorite = true,
-            sortBy = EpisodeHistoryQueryState.SortBy.EpisodeTitle,
-            isAscending = true,
+            sortBy = EpisodeHistoryQueryState.SortBy.NewestFirst,
             page = 1,
             limit = 10
         )
@@ -458,8 +502,7 @@ class AnimeEpisodeDetailRepositoryTest {
             episodeDetailComplementDao.getPaginatedEpisodeHistory(
                 searchQuery = "test",
                 isFavorite = true,
-                sortBy = EpisodeHistoryQueryState.SortBy.EpisodeTitle.name,
-                isAscending = true,
+                sortBy = "NewestFirst",
                 limit = 10,
                 offset = 0
             )
@@ -469,13 +512,15 @@ class AnimeEpisodeDetailRepositoryTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertTrue(result is Resource.Error)
-        assertEquals("Failed to fetch episode history: Database error", (result as Resource.Error).message)
+        assertEquals(
+            "Failed to fetch episode history: Database error",
+            (result as Resource.Error).message
+        )
         coVerify {
             episodeDetailComplementDao.getPaginatedEpisodeHistory(
                 searchQuery = "test",
                 isFavorite = true,
-                sortBy = EpisodeHistoryQueryState.SortBy.EpisodeTitle.name,
-                isAscending = true,
+                sortBy = "NewestFirst",
                 limit = 10,
                 offset = 0
             )
@@ -486,7 +531,12 @@ class AnimeEpisodeDetailRepositoryTest {
     fun `getEpisodeHistoryCount returns success with valid count`() = runTest {
         val searchQuery = "test"
         val isFavorite = true
-        coEvery { episodeDetailComplementDao.getEpisodeHistoryCount(searchQuery, isFavorite) } returns 42
+        coEvery {
+            episodeDetailComplementDao.getEpisodeHistoryCount(
+                searchQuery,
+                isFavorite
+            )
+        } returns 42
 
         val result = repository.getEpisodeHistoryCount(searchQuery, isFavorite)
         testDispatcher.scheduler.advanceUntilIdle()
@@ -500,13 +550,80 @@ class AnimeEpisodeDetailRepositoryTest {
     fun `getEpisodeHistoryCount returns error when dao throws exception`() = runTest {
         val searchQuery = "test"
         val isFavorite = true
-        coEvery { episodeDetailComplementDao.getEpisodeHistoryCount(searchQuery, isFavorite) } throws RuntimeException("Database error")
+        coEvery {
+            episodeDetailComplementDao.getEpisodeHistoryCount(
+                searchQuery,
+                isFavorite
+            )
+        } throws RuntimeException("Database error")
 
         val result = repository.getEpisodeHistoryCount(searchQuery, isFavorite)
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertTrue(result is Resource.Error)
-        assertEquals("Failed to fetch episode history count: Database error", (result as Resource.Error).message)
+        assertEquals(
+            "Failed to fetch episode history count: Database error",
+            (result as Resource.Error).message
+        )
         coVerify { episodeDetailComplementDao.getEpisodeHistoryCount(searchQuery, isFavorite) }
+    }
+
+    @Test
+    fun `deleteAnimeDetailComplement returns true when anime exists`() = runTest {
+        val malId = 123
+        val animeDetailComplement = mockk<AnimeDetailComplement>()
+        coEvery { animeDetailComplementDao.getAnimeDetailComplementByMalId(malId) } returns animeDetailComplement
+        coEvery { animeDetailComplementDao.deleteAnimeDetailComplement(animeDetailComplement) } returns Unit
+        coEvery { episodeDetailComplementDao.deleteEpisodeDetailComplementByMalId(malId) } returns Unit
+
+        val result = repository.deleteAnimeDetailComplement(malId)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(result)
+        coVerify { animeDetailComplementDao.getAnimeDetailComplementByMalId(malId) }
+        coVerify { animeDetailComplementDao.deleteAnimeDetailComplement(animeDetailComplement) }
+        coVerify { episodeDetailComplementDao.deleteEpisodeDetailComplementByMalId(malId) }
+    }
+
+    @Test
+    fun `deleteAnimeDetailComplement returns false when anime does not exist`() = runTest {
+        val malId = 123
+        coEvery { animeDetailComplementDao.getAnimeDetailComplementByMalId(malId) } returns null
+
+        val result = repository.deleteAnimeDetailComplement(malId)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(result)
+        coVerify { animeDetailComplementDao.getAnimeDetailComplementByMalId(malId) }
+        coVerify(exactly = 0) { animeDetailComplementDao.deleteAnimeDetailComplement(any()) }
+        coVerify(exactly = 0) { episodeDetailComplementDao.deleteEpisodeDetailComplementByMalId(any()) }
+    }
+
+    @Test
+    fun `deleteEpisodeDetailComplement returns true when episode exists`() = runTest {
+        val episodeId = "episode_123"
+        val episodeDetailComplement = mockk<EpisodeDetailComplement>()
+        coEvery { episodeDetailComplementDao.getEpisodeDetailComplementById(episodeId) } returns episodeDetailComplement
+        coEvery { episodeDetailComplementDao.deleteEpisodeDetailComplement(episodeDetailComplement) } returns Unit
+
+        val result = repository.deleteEpisodeDetailComplement(episodeId)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertTrue(result)
+        coVerify { episodeDetailComplementDao.getEpisodeDetailComplementById(episodeId) }
+        coVerify { episodeDetailComplementDao.deleteEpisodeDetailComplement(episodeDetailComplement) }
+    }
+
+    @Test
+    fun `deleteEpisodeDetailComplement returns false when episode does not exist`() = runTest {
+        val episodeId = "episode_123"
+        coEvery { episodeDetailComplementDao.getEpisodeDetailComplementById(episodeId) } returns null
+
+        val result = repository.deleteEpisodeDetailComplement(episodeId)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertFalse(result)
+        coVerify { episodeDetailComplementDao.getEpisodeDetailComplementById(episodeId) }
+        coVerify(exactly = 0) { episodeDetailComplementDao.deleteEpisodeDetailComplement(any()) }
     }
 }

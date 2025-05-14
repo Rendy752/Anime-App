@@ -16,6 +16,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.EpisodeDetailComplement
+import com.example.animeapp.ui.common_ui.ConfirmationAlert
 
 @Composable
 fun AnimeEpisodeAccordion(
@@ -23,12 +24,26 @@ fun AnimeEpisodeAccordion(
     anime: AnimeDetailComplement,
     episodes: List<EpisodeDetailComplement>,
     onAnimeTitleClick: () -> Unit,
-    onAnimeFavoriteToggle: (Boolean) -> Unit,
     onEpisodeClick: (EpisodeDetailComplement) -> Unit,
-    onEpisodeFavoriteToggle: (String, Boolean) -> Unit
+    onAnimeFavoriteToggle: (Boolean) -> Unit,
+    onEpisodeFavoriteToggle: (String, Boolean) -> Unit,
+    onAnimeDelete: (Int) -> Unit,
+    onEpisodeDelete: (String) -> Unit
 ) {
     var isExpanded by remember { mutableStateOf(true) }
+    var showDeleteDialog by remember { mutableStateOf(false) }
     val representativeEpisode = episodes.firstOrNull()
+
+    if (showDeleteDialog) {
+        ConfirmationAlert(
+            title = "Delete Anime",
+            message = "Are you sure you want to delete ${representativeEpisode?.episodeTitle} and all its episode history?",
+            confirmText = "Delete",
+            onConfirm = { onAnimeDelete(anime.malId) },
+            cancelText = "Cancel",
+            onCancel = { showDeleteDialog = false }
+        )
+    }
 
     Card(
         modifier = Modifier
@@ -51,6 +66,7 @@ fun AnimeEpisodeAccordion(
                 onAnimeFavoriteToggle = { isFavorite ->
                     onAnimeFavoriteToggle(isFavorite)
                 },
+                onDeleteClick = { showDeleteDialog = true }
             )
             AnimatedVisibility(
                 visible = isExpanded,
@@ -71,7 +87,8 @@ fun AnimeEpisodeAccordion(
                             onClick = { onEpisodeClick(episode) },
                             onFavoriteToggle = { isFavorite ->
                                 onEpisodeFavoriteToggle(episode.id, isFavorite)
-                            }
+                            },
+                            onDelete = { onEpisodeDelete(episode.id) }
                         )
                     }
                 }

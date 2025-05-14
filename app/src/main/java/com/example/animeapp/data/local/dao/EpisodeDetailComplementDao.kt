@@ -37,6 +37,9 @@ interface EpisodeDetailComplementDao {
     @Delete
     suspend fun deleteEpisodeDetailComplement(episodeDetailComplement: EpisodeDetailComplement)
 
+    @Query("DELETE FROM episode_detail_complement WHERE malId = :malId")
+    suspend fun deleteEpisodeDetailComplementByMalId(malId: Int)
+
     @Update
     suspend fun updateEpisodeDetailComplement(episodeDetailComplement: EpisodeDetailComplement)
 
@@ -47,33 +50,11 @@ interface EpisodeDetailComplementDao {
             AND (:isFavorite IS NULL OR isFavorite = :isFavorite)
             AND (:searchQuery = '' OR animeTitle LIKE '%' || :searchQuery || '%' OR episodeTitle LIKE '%' || :searchQuery || '%')
             ORDER BY
-                CASE
-                    WHEN :isAscending THEN
-                        CASE :sortBy
-                            WHEN 'LastWatched' THEN lastWatched
-                            WHEN 'AnimeTitle' THEN animeTitle
-                            WHEN 'EpisodeTitle' THEN episodeTitle
-                        END
-                    ELSE
-                        CASE :sortBy
-                            WHEN 'LastWatched' THEN ''
-                            WHEN 'AnimeTitle' THEN ''
-                            WHEN 'EpisodeTitle' THEN ''
-                        END
-                END ASC,
-                CASE
-                    WHEN NOT :isAscending THEN
-                        CASE :sortBy
-                            WHEN 'LastWatched' THEN lastWatched
-                            WHEN 'AnimeTitle' THEN animeTitle
-                            WHEN 'EpisodeTitle' THEN episodeTitle
-                        END
-                    ELSE
-                        CASE :sortBy
-                            WHEN 'LastWatched' THEN ''
-                            WHEN 'AnimeTitle' THEN ''
-                            WHEN 'EpisodeTitle' THEN ''
-                        END
+                CASE :sortBy
+                    WHEN 'NewestFirst' THEN lastWatched
+                    WHEN 'AnimeTitle' THEN animeTitle
+                    WHEN 'EpisodeTitle' THEN episodeTitle
+                    WHEN 'EpisodeNumber' THEN number
                 END DESC,
                 episodeTitle ASC
             LIMIT :limit OFFSET :offset
@@ -83,7 +64,6 @@ interface EpisodeDetailComplementDao {
         searchQuery: String,
         isFavorite: Boolean?,
         sortBy: String,
-        isAscending: Boolean,
         limit: Int,
         offset: Int
     ): List<EpisodeDetailComplement>

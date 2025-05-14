@@ -15,25 +15,24 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.AnimeDetailResponse
+import com.example.animeapp.ui.common_ui.DebouncedIconButton
 import com.example.animeapp.ui.common_ui.SkeletonBox
 import com.example.animeapp.ui.main.navigation.NavRoute
 import com.example.animeapp.ui.main.navigation.navigateTo
 import com.example.animeapp.ui.theme.favoriteEpisode
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ShareUtils
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,17 +44,9 @@ fun AnimeDetailTopBar(
     onFavoriteToggle: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
-    val scope = rememberCoroutineScope()
-    val debounceJob = remember { mutableStateOf<Job?>(null) }
     val isFavorite = remember { mutableStateOf(false) }
     animeDetailComplement?.data?.isFavorite?.let {
         if (animeDetailComplement is Resource.Success) isFavorite.value = it
-    }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            debounceJob.value?.cancel()
-        }
     }
 
     Column {
@@ -94,19 +85,21 @@ fun AnimeDetailTopBar(
             actions = {
                 animeDetail?.data?.data?.let { animeDetailData ->
                     if (animeDetailComplement is Resource.Success) {
-                        IconButton(onClick = {
-                            isFavorite.value = !isFavorite.value
-                            debounceJob.value?.cancel()
-                            debounceJob.value = scope.launch {
-                                delay(300)
+                        DebouncedIconButton(
+                            onClick = {
+                                isFavorite.value = !isFavorite.value
                                 animeDetailComplement.data?.let {
                                     onFavoriteToggle(isFavorite.value)
                                 }
+                            },
+                            modifier = Modifier.semantics {
+                                contentDescription =
+                                    if (isFavorite.value) "Remove from favorites" else "Add to favorites"
                             }
-                        }) {
+                        ) {
                             Icon(
                                 imageVector = if (isFavorite.value) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                                contentDescription = if (isFavorite.value) "Remove from favorites" else "Add to favorites",
+                                contentDescription = null,
                                 tint = favoriteEpisode
                             )
                         }

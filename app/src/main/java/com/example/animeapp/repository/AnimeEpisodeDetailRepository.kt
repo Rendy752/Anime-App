@@ -62,6 +62,13 @@ class AnimeEpisodeDetailRepository(
             updatedAnimeDetailComplement.copy(updatedAt = Instant.now().epochSecond)
         )
 
+    suspend fun deleteAnimeDetailComplement(malId: Int): Boolean {
+        val anime = getCachedAnimeDetailComplementByMalId(malId) ?: return false
+        animeDetailComplementDao.deleteAnimeDetailComplement(anime)
+        episodeDetailComplementDao.deleteEpisodeDetailComplementByMalId(malId)
+        return true
+    }
+
     suspend fun getCachedLatestWatchedEpisodeDetailComplement(): EpisodeDetailComplement? =
         episodeDetailComplementDao.getLatestWatchedEpisodeDetailComplement()
 
@@ -74,6 +81,17 @@ class AnimeEpisodeDetailRepository(
     suspend fun insertCachedEpisodeDetailComplement(episodeDetailComplement: EpisodeDetailComplement) =
         episodeDetailComplementDao.insertEpisodeDetailComplement(episodeDetailComplement)
 
+    suspend fun updateEpisodeDetailComplement(episodeDetailComplement: EpisodeDetailComplement) =
+        episodeDetailComplementDao.updateEpisodeDetailComplement(
+            episodeDetailComplement.copy(updatedAt = Instant.now().epochSecond)
+        )
+
+    suspend fun deleteEpisodeDetailComplement(id: String): Boolean {
+        val episode = getCachedEpisodeDetailComplement(id) ?: return false
+        episodeDetailComplementDao.deleteEpisodeDetailComplement(episode)
+        return true
+    }
+
     suspend fun getAnimeAniwatchSearch(keyword: String) =
         safeApiCall { runwayAPI.getAnimeAniwatchSearch(keyword) }
 
@@ -82,11 +100,6 @@ class AnimeEpisodeDetailRepository(
 
     suspend fun getEpisodeSources(episodeId: String, server: String, category: String) =
         safeApiCall { runwayAPI.getEpisodeSources(episodeId, server, category) }
-
-    suspend fun updateEpisodeDetailComplement(episodeDetailComplement: EpisodeDetailComplement) =
-        episodeDetailComplementDao.updateEpisodeDetailComplement(
-            episodeDetailComplement.copy(updatedAt = Instant.now().epochSecond)
-        )
 
     suspend fun getEpisodes(id: String): Resource<EpisodesResponse> =
         ResponseHandler.handleCommonResponse(safeApiCall { runwayAPI.getEpisodes(id) })
@@ -98,7 +111,6 @@ class AnimeEpisodeDetailRepository(
                     searchQuery = queryState.searchQuery,
                     isFavorite = queryState.isFavorite,
                     sortBy = queryState.sortBy.name,
-                    isAscending = queryState.isAscending,
                     limit = queryState.limit,
                     offset = (queryState.page - 1) * queryState.limit
                 )
