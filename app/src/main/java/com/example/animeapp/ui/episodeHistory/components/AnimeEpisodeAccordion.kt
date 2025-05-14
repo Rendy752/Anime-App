@@ -17,15 +17,15 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.EpisodeDetailComplement
+import com.example.animeapp.models.animeDetailComplementPlaceholder
 import com.example.animeapp.ui.common_ui.ConfirmationAlert
 
 @Preview
 @Composable
 fun AnimeEpisodeAccordion(
     searchQuery: String = "",
-    anime: AnimeDetailComplement? = null,
+    anime: AnimeDetailComplement = animeDetailComplementPlaceholder,
     episodes: List<EpisodeDetailComplement> = emptyList(),
-    loading: Boolean = false,
     onAnimeTitleClick: () -> Unit = {},
     onEpisodeClick: (EpisodeDetailComplement) -> Unit = {},
     onAnimeFavoriteToggle: (Boolean) -> Unit = {},
@@ -37,7 +37,7 @@ fun AnimeEpisodeAccordion(
     var showDeleteDialog by remember { mutableStateOf(false) }
     val representativeEpisode = episodes.firstOrNull()
 
-    if (showDeleteDialog && anime != null) {
+    if (showDeleteDialog) {
         ConfirmationAlert(
             title = "Delete Anime",
             message = "Are you sure you want to delete ${representativeEpisode?.episodeTitle} and all its episode history?",
@@ -59,22 +59,18 @@ fun AnimeEpisodeAccordion(
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column {
-            if (loading || anime == null) {
-                AccordionItemSkeleton()
-            } else {
-                AccordionItem(
-                    anime = anime,
-                    representativeEpisode = representativeEpisode,
-                    searchQuery = searchQuery,
-                    isExpanded = isExpanded,
-                    onItemClick = { isExpanded = !isExpanded },
-                    onAnimeTitleClick = { onAnimeTitleClick() },
-                    onAnimeFavoriteToggle = { isFavorite ->
-                        onAnimeFavoriteToggle(isFavorite)
-                    },
-                    onDeleteClick = { showDeleteDialog = true }
-                )
-            }
+            AccordionItem(
+                anime = anime,
+                representativeEpisode = representativeEpisode,
+                searchQuery = searchQuery,
+                isExpanded = isExpanded,
+                onItemClick = { isExpanded = !isExpanded },
+                onAnimeTitleClick = { onAnimeTitleClick() },
+                onAnimeFavoriteToggle = { isFavorite ->
+                    onAnimeFavoriteToggle(isFavorite)
+                },
+                onDeleteClick = { showDeleteDialog = true }
+            )
             AnimatedVisibility(
                 visible = isExpanded,
                 enter = expandVertically() + fadeIn(),
@@ -86,24 +82,46 @@ fun AnimeEpisodeAccordion(
                         .padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    if (loading) {
-                        repeat(2) { index ->
-                            EpisodeHistoryItemSkeleton(isFirstItem = index == 0)
-                        }
-                    } else {
-                        episodes.forEachIndexed { index, episode ->
-                            EpisodeHistoryItem(
-                                searchQuery = searchQuery,
-                                isFirstItem = index == 0,
-                                episode = episode,
-                                onClick = { onEpisodeClick(episode) },
-                                onFavoriteToggle = { isFavorite ->
-                                    onEpisodeFavoriteToggle(episode.id, isFavorite)
-                                },
-                                onDelete = { onEpisodeDelete(episode.id) }
-                            )
-                        }
+                    episodes.forEachIndexed { index, episode ->
+                        EpisodeHistoryItem(
+                            searchQuery = searchQuery,
+                            isFirstItem = index == 0,
+                            episode = episode,
+                            onClick = { onEpisodeClick(episode) },
+                            onFavoriteToggle = { isFavorite ->
+                                onEpisodeFavoriteToggle(episode.id, isFavorite)
+                            },
+                            onDelete = { onEpisodeDelete(episode.id) }
+                        )
                     }
+                }
+            }
+        }
+    }
+}
+
+@Preview
+@Composable
+fun AnimeEpisodeAccordionSkeleton() {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp)),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column {
+            AccordionItemSkeleton()
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                repeat(2) { index ->
+                    EpisodeHistoryItemSkeleton(isFirstItem = index == 0)
                 }
             }
         }

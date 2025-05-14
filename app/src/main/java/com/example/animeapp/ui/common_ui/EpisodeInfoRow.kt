@@ -58,6 +58,8 @@ fun EpisodeInfoRow(
 @Preview
 @Composable
 fun EpisodeInfoRowSkeleton(modifier: Modifier = Modifier) {
+    val colors = listOf(subColor, dubColor, epsColor)
+
     Row(
         modifier = modifier,
         horizontalArrangement = Arrangement.End,
@@ -66,7 +68,8 @@ fun EpisodeInfoRowSkeleton(modifier: Modifier = Modifier) {
             EpisodeInfoItemSkeleton(
                 isFirst = it == 0,
                 isLast = it == 2,
-                hasRight = it < 2
+                hasRight = it < 2,
+                color = colors[it]
             )
         }
     }

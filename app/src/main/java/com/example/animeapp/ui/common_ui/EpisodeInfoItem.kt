@@ -59,7 +59,8 @@ fun EpisodeInfoItem(
 fun EpisodeInfoItemSkeleton(
     isFirst: Boolean,
     isLast: Boolean,
-    hasRight: Boolean
+    hasRight: Boolean,
+    color: Color
 ) {
     val width = 60.dp
     val height = 28.dp
@@ -79,7 +80,7 @@ fun EpisodeInfoItemSkeleton(
                         bottomEnd = rightShape.bottomEnd
                     )
                 )
-                .background(MaterialTheme.colorScheme.primary),
+                .background(color),
             width = width,
             height = height,
         )

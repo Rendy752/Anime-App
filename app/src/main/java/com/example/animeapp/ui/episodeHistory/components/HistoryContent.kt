@@ -33,12 +33,7 @@ fun HistoryContent(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(2) {
-                        AnimeEpisodeAccordion(
-                            searchQuery = state.queryState.searchQuery,
-                            loading = true
-                        )
-                    }
+                    items(2) { AnimeEpisodeAccordionSkeleton() }
                 }
             }
 
