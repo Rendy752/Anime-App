@@ -33,7 +33,7 @@ fun SearchView(
             Icon(
                 Icons.Filled.Search,
                 contentDescription = "Search",
-                tint = MaterialTheme.colorScheme.tertiary
+                tint = MaterialTheme.colorScheme.onPrimary
             )
         },
         trailingIcon = {
@@ -42,7 +42,7 @@ fun SearchView(
                     Icon(
                         Icons.Filled.Close,
                         contentDescription = "Clear",
-                        tint = MaterialTheme.colorScheme.error
+                        tint = MaterialTheme.colorScheme.onPrimary
                     )
                 }
             }

@@ -290,6 +290,7 @@ fun AnimeSearchScreen(
                         .width((configuration.screenWidthDp * bottomSheetWidthFraction).dp)
                         .padding(bottom = if (mainState.isLandscape) 0.dp else bottomPadding)
                         .align(Alignment.BottomCenter),
+                    sheetGesturesEnabled = false,
                     containerColor = containerColor,
                     sheetState = sheetState,
                     onDismissRequest = { isGenresBottomSheetShow = false },
@@ -320,6 +321,7 @@ fun AnimeSearchScreen(
                         .width((configuration.screenWidthDp * bottomSheetWidthFraction).dp)
                         .padding(bottom = if (mainState.isLandscape) 0.dp else bottomPadding)
                         .align(Alignment.BottomCenter),
+                    sheetGesturesEnabled = false,
                     containerColor = containerColor,
                     sheetState = sheetState,
                     onDismissRequest = { isProducersBottomSheetShow = false },
