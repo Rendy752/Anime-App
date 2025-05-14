@@ -1,16 +1,17 @@
 package com.example.animeapp.ui.episodeHistory.components
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -22,7 +23,6 @@ import com.example.animeapp.ui.common_ui.EpisodeInfoRowSkeleton
 import com.example.animeapp.ui.common_ui.ImageCardWithContent
 import com.example.animeapp.ui.common_ui.SkeletonBox
 import com.example.animeapp.ui.common_ui.highlightText
-import com.example.animeapp.ui.theme.favoriteEpisode
 
 @Composable
 fun AccordionItem(
@@ -33,8 +33,7 @@ fun AccordionItem(
     onItemClick: () -> Unit,
     onAnimeTitleClick: () -> Unit,
     onAnimeFavoriteToggle: (Boolean) -> Unit,
-    onDeleteClick: () -> Unit,
-    modifier: Modifier = Modifier
+    onDeleteClick: () -> Unit
 ) {
     ImageCardWithContent(
         imageUrl = representativeEpisode?.imageUrl,
@@ -67,42 +66,37 @@ fun AccordionItem(
         },
         rightContent = {
             Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.2f)),
+                verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                DebouncedIconButton(
-                    onClick = { onAnimeFavoriteToggle(!anime.isFavorite) },
-                    modifier = Modifier.semantics {
-                        stateDescription =
-                            if (anime.isFavorite) "Remove from favorites" else "Add to favorites"
-                    }
-                ) {
+                DebouncedIconButton(onClick = { onAnimeFavoriteToggle(!anime.isFavorite) }) {
                     Icon(
                         imageVector = if (anime.isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                         contentDescription = "Toggle Anime Favorite",
-                        tint = favoriteEpisode
+                        tint = MaterialTheme.colorScheme.tertiary
                     )
                 }
-                IconButton(
-                    onClick = onDeleteClick,
-                    modifier = Modifier.semantics {
-                        contentDescription = "Delete Anime"
-                    }
-                ) {
+
+                IconButton(onClick = onDeleteClick) {
                     Icon(
                         imageVector = Icons.Filled.Delete,
-                        contentDescription = null,
+                        contentDescription = "Delete Anime",
                         tint = MaterialTheme.colorScheme.error
                     )
                 }
-                Icon(
-                    imageVector = if (isExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                    contentDescription = if (isExpanded) "Collapse" else "Expand",
-                    tint = MaterialTheme.colorScheme.primary
-                )
+
+                IconButton(onClick = onItemClick) {
+                    Icon(
+                        imageVector = if (isExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                        contentDescription = if (isExpanded) "Collapse" else "Expand",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
             }
         },
-        modifier = modifier,
         height = 160.dp
     )
 }
@@ -156,22 +150,35 @@ fun AccordionItemSkeleton(modifier: Modifier = Modifier) {
                 EpisodeInfoRowSkeleton()
             }
 
-            Row(
-                horizontalArrangement = Arrangement.End,
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.2f)),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Column(
-                    modifier = Modifier.padding(top = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    repeat(3) {
-                        SkeletonBox(
-                            modifier = Modifier.padding(horizontal = 16.dp),
-                            width = 24.dp,
-                            height = 24.dp
-                        )
-                    }
+                DebouncedIconButton(onClick = {}) {
+                    Icon(
+                        imageVector = Icons.Filled.FavoriteBorder,
+                        contentDescription = "Toggle Anime Favorite",
+                        tint = MaterialTheme.colorScheme.tertiary
+                    )
+                }
+
+                IconButton(onClick = { }) {
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = "Delete Anime",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+
+                IconButton(onClick = {}) {
+                    Icon(
+                        imageVector = Icons.Filled.ExpandLess,
+                        contentDescription = "Collapse",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                 }
             }
         }

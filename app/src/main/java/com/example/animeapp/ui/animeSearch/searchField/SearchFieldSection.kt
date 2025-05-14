@@ -95,7 +95,7 @@ fun SearchFieldSection(
             ) {
                 Icon(
                     imageVector = Icons.Filled.FilterList,
-                    tint = MaterialTheme.colorScheme.onPrimary,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     contentDescription = "Open Filter"
                 )
             }

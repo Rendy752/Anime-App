@@ -27,7 +27,6 @@ import com.example.animeapp.ui.animeWatch.WatchState
 import com.example.animeapp.ui.common_ui.DebouncedIconButton
 import com.example.animeapp.ui.common_ui.SkeletonBox
 import com.example.animeapp.ui.main.MainState
-import com.example.animeapp.ui.theme.favoriteEpisode
 import com.example.animeapp.utils.Resource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -102,7 +101,7 @@ fun AnimeWatchTopBar(
                             Icon(
                                 imageVector = if (watchState.isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                                 contentDescription = null,
-                                tint = favoriteEpisode
+                                tint = MaterialTheme.colorScheme.tertiary
                             )
                         }
                     }

@@ -33,7 +33,7 @@ fun SearchView(
             Icon(
                 Icons.Filled.Search,
                 contentDescription = "Search",
-                tint = MaterialTheme.colorScheme.tertiaryContainer
+                tint = MaterialTheme.colorScheme.tertiary
             )
         },
         trailingIcon = {
@@ -50,7 +50,7 @@ fun SearchView(
         placeholder = {
             Text(
                 text = placeholder,
-                color = MaterialTheme.colorScheme.onPrimary,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
                 fontWeight = MaterialTheme.typography.bodyMedium.fontWeight,
             )
         },
@@ -58,7 +58,7 @@ fun SearchView(
         singleLine = true,
         shape = RoundedCornerShape(8.dp),
         colors = OutlinedTextFieldDefaults.colors(
-            focusedTextColor = MaterialTheme.colorScheme.onPrimary,
+            focusedTextColor = MaterialTheme.colorScheme.onPrimaryContainer,
             unfocusedTextColor = MaterialTheme.colorScheme.onPrimaryContainer,
             cursorColor = MaterialTheme.colorScheme.onPrimaryContainer,
             focusedContainerColor = MaterialTheme.colorScheme.primary,

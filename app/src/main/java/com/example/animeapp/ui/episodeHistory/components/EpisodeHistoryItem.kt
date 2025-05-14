@@ -24,7 +24,6 @@ import com.example.animeapp.ui.common_ui.ScreenshotDisplay
 import com.example.animeapp.ui.common_ui.highlightText
 import com.example.animeapp.ui.common_ui.DebouncedIconButton
 import com.example.animeapp.ui.common_ui.SkeletonBox
-import com.example.animeapp.ui.theme.favoriteEpisode
 import com.example.animeapp.utils.TimeUtils
 import com.example.animeapp.utils.WatchUtils.getEpisodeBackgroundColor
 import com.example.animeapp.utils.basicContainer
@@ -44,7 +43,7 @@ fun EpisodeHistoryItem(
     if (showDeleteDialog) {
         ConfirmationAlert(
             title = "Delete Episode",
-            message = "Are you sure you want to delete Episode History ${episode.number}: ${episode.episodeTitle}?",
+            message = "Are you sure you want to delete Episode ${episode.number}: ${episode.episodeTitle} from your watch history?",
             confirmText = "Delete",
             onConfirm = { onDelete() },
             cancelText = "Cancel",
@@ -154,7 +153,7 @@ fun EpisodeHistoryItem(
                 Icon(
                     imageVector = if (episode.isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                     contentDescription = null,
-                    tint = favoriteEpisode
+                    tint = MaterialTheme.colorScheme.tertiary
                 )
             }
             IconButton(

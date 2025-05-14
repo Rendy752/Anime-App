@@ -3,6 +3,7 @@ package com.example.animeapp.ui.episodeHistory
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -27,6 +28,7 @@ fun EpisodeHistoryScreen(
     onAction: (EpisodeHistoryAction) -> Unit
 ) {
     val pullToRefreshState = rememberPullToRefreshState()
+    val historyListState = rememberLazyListState()
 
     LaunchedEffect(currentRoute) {
         if (currentRoute == NavRoute.History.route) {
@@ -63,6 +65,7 @@ fun EpisodeHistoryScreen(
                 )
                 HistoryContent(
                     navController = navController,
+                    listState = historyListState,
                     state = historyState,
                     onAction = onAction
                 )

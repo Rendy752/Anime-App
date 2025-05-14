@@ -73,7 +73,8 @@ fun FilterContent(
                 leadingIcon = {
                     Icon(
                         if (isFavoriteFilter == true) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                        contentDescription = "Favorite Filter"
+                        contentDescription = "Favorite Filter",
+                        tint = MaterialTheme.colorScheme.tertiary
                     )
                 },
                 colors = FilterChipDefaults.filterChipColors(

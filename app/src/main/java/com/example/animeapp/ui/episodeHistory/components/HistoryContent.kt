@@ -2,6 +2,7 @@ package com.example.animeapp.ui.episodeHistory.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,6 +20,7 @@ import com.example.animeapp.utils.Resource
 @Composable
 fun HistoryContent(
     navController: NavHostController,
+    listState: LazyListState,
     state: EpisodeHistoryState,
     onAction: (EpisodeHistoryAction) -> Unit
 ) {
@@ -45,6 +47,7 @@ fun HistoryContent(
                     ) { MessageDisplay("No episodes found") }
                 } else {
                     LazyColumn(
+                        state = listState,
                         modifier = Modifier.weight(1f),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {

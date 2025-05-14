@@ -40,7 +40,7 @@ fun AnimeEpisodeAccordion(
     if (showDeleteDialog) {
         ConfirmationAlert(
             title = "Delete Anime",
-            message = "Are you sure you want to delete ${representativeEpisode?.episodeTitle} and all its episode history?",
+            message = "Are you sure you want to delete ${representativeEpisode?.animeTitle} and all its episode history?",
             confirmText = "Delete",
             onConfirm = { onAnimeDelete(anime.malId) },
             cancelText = "Cancel",

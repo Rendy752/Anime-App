@@ -47,7 +47,8 @@ fun ContrastModeChips(
                     onClick = { onContrastModeChanged(mode) },
                     label = { Text(mode.name) },
                     colors = FilterChipDefaults.filterChipColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
                     ),
                     modifier = Modifier.semantics {
                         contentDescription = "Contrast mode ${mode.name}"

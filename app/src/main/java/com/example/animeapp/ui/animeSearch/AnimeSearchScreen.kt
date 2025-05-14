@@ -22,7 +22,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.animeapp.ui.animeSearch.bottomSheet.FilterBottomSheet
 import com.example.animeapp.ui.animeSearch.bottomSheet.GenresBottomSheet
 import com.example.animeapp.ui.animeSearch.bottomSheet.ProducersBottomSheet
-import com.example.animeapp.ui.animeSearch.genreProducerFilterField.GenreProducerFilterFieldSection
+import com.example.animeapp.ui.animeSearch.searchField.GenreProducerFilterFieldSection
 import com.example.animeapp.ui.animeSearch.results.ResultsSection
 import com.example.animeapp.ui.animeSearch.searchField.SearchFieldSection
 import com.example.animeapp.ui.common_ui.LimitAndPaginationQueryState

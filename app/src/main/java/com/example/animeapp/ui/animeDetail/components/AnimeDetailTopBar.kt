@@ -30,7 +30,6 @@ import com.example.animeapp.ui.common_ui.DebouncedIconButton
 import com.example.animeapp.ui.common_ui.SkeletonBox
 import com.example.animeapp.ui.main.navigation.NavRoute
 import com.example.animeapp.ui.main.navigation.navigateTo
-import com.example.animeapp.ui.theme.favoriteEpisode
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ShareUtils
 
@@ -100,7 +99,7 @@ fun AnimeDetailTopBar(
                             Icon(
                                 imageVector = if (isFavorite.value) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                                 contentDescription = null,
-                                tint = favoriteEpisode
+                                tint = MaterialTheme.colorScheme.tertiary
                             )
                         }
                     }

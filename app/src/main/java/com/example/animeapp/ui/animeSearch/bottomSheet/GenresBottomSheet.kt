@@ -26,8 +26,8 @@ import com.example.animeapp.models.GenresResponse
 import com.example.animeapp.ui.animeSearch.components.ApplyButton
 import com.example.animeapp.ui.animeSearch.components.CancelButton
 import com.example.animeapp.ui.animeSearch.components.ResetButton
-import com.example.animeapp.ui.animeSearch.genreProducerFilterField.FilterChipFlow
-import com.example.animeapp.ui.animeSearch.genreProducerFilterField.FilterChipFlowSkeleton
+import com.example.animeapp.ui.animeSearch.searchField.FilterChipFlow
+import com.example.animeapp.ui.animeSearch.searchField.FilterChipFlowSkeleton
 import com.example.animeapp.ui.common_ui.RetryButton
 import com.example.animeapp.utils.Resource
 
