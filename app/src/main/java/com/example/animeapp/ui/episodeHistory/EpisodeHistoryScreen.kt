@@ -14,10 +14,13 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.ui.Alignment
+import com.example.animeapp.ui.main.navigation.NavRoute
+import com.example.animeapp.utils.Resource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EpisodeHistoryScreen(
+    currentRoute: String?,
     navController: NavHostController,
     mainState: MainState,
     historyState: EpisodeHistoryState,
@@ -25,8 +28,14 @@ fun EpisodeHistoryScreen(
 ) {
     val pullToRefreshState = rememberPullToRefreshState()
 
+    LaunchedEffect(currentRoute) {
+        if (currentRoute == NavRoute.History.route) {
+            onAction(EpisodeHistoryAction.FetchHistory)
+        }
+    }
+
     LaunchedEffect(mainState.isConnected, historyState.episodeHistoryResults) {
-        if (mainState.isConnected && historyState.episodeHistoryResults is com.example.animeapp.utils.Resource.Error) {
+        if (mainState.isConnected && historyState.episodeHistoryResults is Resource.Error) {
             onAction(EpisodeHistoryAction.FetchHistory)
         }
     }

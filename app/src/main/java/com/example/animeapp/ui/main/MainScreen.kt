@@ -197,6 +197,7 @@ fun MainScreen(
                 val viewModel: EpisodeHistoryViewModel = hiltViewModel()
                 val historyState by viewModel.historyState.collectAsStateWithLifecycle()
                 EpisodeHistoryScreen(
+                    currentRoute = currentRoute,
                     navController = navController,
                     mainState = mainState,
                     historyState = historyState,
