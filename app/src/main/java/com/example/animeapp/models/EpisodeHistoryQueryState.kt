@@ -8,9 +8,6 @@ data class EpisodeHistoryQueryState(
     val limit: Int = 10
 ) {
     enum class SortBy {
-        NewestFirst,
-        AnimeTitle,
-        EpisodeTitle,
-        EpisodeNumber
+        NewestFirst, AnimeTitle, EpisodeTitle, EpisodeNumber
     }
 }

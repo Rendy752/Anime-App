@@ -13,28 +13,31 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.ui.common_ui.ConfirmationAlert
 
+@Preview
 @Composable
 fun AnimeEpisodeAccordion(
-    searchQuery: String,
-    anime: AnimeDetailComplement,
-    episodes: List<EpisodeDetailComplement>,
-    onAnimeTitleClick: () -> Unit,
-    onEpisodeClick: (EpisodeDetailComplement) -> Unit,
-    onAnimeFavoriteToggle: (Boolean) -> Unit,
-    onEpisodeFavoriteToggle: (String, Boolean) -> Unit,
-    onAnimeDelete: (Int) -> Unit,
-    onEpisodeDelete: (String) -> Unit
+    searchQuery: String = "",
+    anime: AnimeDetailComplement? = null,
+    episodes: List<EpisodeDetailComplement> = emptyList(),
+    loading: Boolean = false,
+    onAnimeTitleClick: () -> Unit = {},
+    onEpisodeClick: (EpisodeDetailComplement) -> Unit = {},
+    onAnimeFavoriteToggle: (Boolean) -> Unit = {},
+    onEpisodeFavoriteToggle: (String, Boolean) -> Unit = { _, _ -> },
+    onAnimeDelete: (Int) -> Unit = {},
+    onEpisodeDelete: (String) -> Unit = {}
 ) {
     var isExpanded by remember { mutableStateOf(true) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     val representativeEpisode = episodes.firstOrNull()
 
-    if (showDeleteDialog) {
+    if (showDeleteDialog && anime != null) {
         ConfirmationAlert(
             title = "Delete Anime",
             message = "Are you sure you want to delete ${representativeEpisode?.episodeTitle} and all its episode history?",
@@ -56,18 +59,22 @@ fun AnimeEpisodeAccordion(
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column {
-            AccordionItem(
-                anime = anime,
-                representativeEpisode = representativeEpisode,
-                searchQuery = searchQuery,
-                isExpanded = isExpanded,
-                onItemClick = { isExpanded = !isExpanded },
-                onAnimeTitleClick = { onAnimeTitleClick() },
-                onAnimeFavoriteToggle = { isFavorite ->
-                    onAnimeFavoriteToggle(isFavorite)
-                },
-                onDeleteClick = { showDeleteDialog = true }
-            )
+            if (loading || anime == null) {
+                AccordionItemSkeleton()
+            } else {
+                AccordionItem(
+                    anime = anime,
+                    representativeEpisode = representativeEpisode,
+                    searchQuery = searchQuery,
+                    isExpanded = isExpanded,
+                    onItemClick = { isExpanded = !isExpanded },
+                    onAnimeTitleClick = { onAnimeTitleClick() },
+                    onAnimeFavoriteToggle = { isFavorite ->
+                        onAnimeFavoriteToggle(isFavorite)
+                    },
+                    onDeleteClick = { showDeleteDialog = true }
+                )
+            }
             AnimatedVisibility(
                 visible = isExpanded,
                 enter = expandVertically() + fadeIn(),
@@ -79,17 +86,23 @@ fun AnimeEpisodeAccordion(
                         .padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    episodes.forEachIndexed { index, episode ->
-                        EpisodeHistoryItem(
-                            searchQuery = searchQuery,
-                            isFirstItem = index == 0,
-                            episode = episode,
-                            onClick = { onEpisodeClick(episode) },
-                            onFavoriteToggle = { isFavorite ->
-                                onEpisodeFavoriteToggle(episode.id, isFavorite)
-                            },
-                            onDelete = { onEpisodeDelete(episode.id) }
-                        )
+                    if (loading) {
+                        repeat(2) { index ->
+                            EpisodeHistoryItemSkeleton(isFirstItem = index == 0)
+                        }
+                    } else {
+                        episodes.forEachIndexed { index, episode ->
+                            EpisodeHistoryItem(
+                                searchQuery = searchQuery,
+                                isFirstItem = index == 0,
+                                episode = episode,
+                                onClick = { onEpisodeClick(episode) },
+                                onFavoriteToggle = { isFavorite ->
+                                    onEpisodeFavoriteToggle(episode.id, isFavorite)
+                                },
+                                onDelete = { onEpisodeDelete(episode.id) }
+                            )
+                        }
                     }
                 }
             }

@@ -2,7 +2,6 @@ package com.example.animeapp.ui.episodeHistory.components
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -10,6 +9,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.animeapp.ui.common_ui.LimitAndPaginationQueryState
 import com.example.animeapp.ui.common_ui.LimitAndPaginationSection
+import com.example.animeapp.ui.common_ui.MessageDisplay
 import com.example.animeapp.ui.episodeHistory.EpisodeHistoryAction
 import com.example.animeapp.ui.episodeHistory.EpisodeHistoryState
 import com.example.animeapp.ui.main.navigation.NavRoute
@@ -29,17 +29,25 @@ fun HistoryContent(
     ) {
         when (val results = state.episodeHistoryResults) {
             is Resource.Loading -> {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
+                LazyColumn(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(2) {
+                        AnimeEpisodeAccordion(
+                            searchQuery = state.queryState.searchQuery,
+                            loading = true
+                        )
+                    }
+                }
             }
+
             is Resource.Success -> {
                 if (results.data.isEmpty()) {
-                    Text(
-                        text = "No episodes found",
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                    )
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.Center
+                    ) { MessageDisplay("No episodes found") }
                 } else {
                     LazyColumn(
                         modifier = Modifier.weight(1f),
@@ -58,14 +66,27 @@ fun HistoryContent(
                                     },
                                     onEpisodeClick = { episode ->
                                         navController.navigateTo(
-                                            NavRoute.AnimeWatch.fromParams(episode.malId, episode.id)
+                                            NavRoute.AnimeWatch.fromParams(
+                                                episode.malId,
+                                                episode.id
+                                            )
                                         )
                                     },
                                     onAnimeFavoriteToggle = { isFavorite ->
-                                        onAction(EpisodeHistoryAction.ToggleAnimeFavorite(anime.malId, isFavorite))
+                                        onAction(
+                                            EpisodeHistoryAction.ToggleAnimeFavorite(
+                                                anime.malId,
+                                                isFavorite
+                                            )
+                                        )
                                     },
                                     onEpisodeFavoriteToggle = { episodeId, isFavorite ->
-                                        onAction(EpisodeHistoryAction.ToggleEpisodeFavorite(episodeId, isFavorite))
+                                        onAction(
+                                            EpisodeHistoryAction.ToggleEpisodeFavorite(
+                                                episodeId,
+                                                isFavorite
+                                            )
+                                        )
                                     },
                                     onAnimeDelete = { malId ->
                                         onAction(EpisodeHistoryAction.DeleteAnime(malId))
@@ -79,13 +100,12 @@ fun HistoryContent(
                     }
                 }
             }
+
             is Resource.Error -> {
-                Text(
-                    text = results.message ?: "Error loading history",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
-                )
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) { MessageDisplay(results.message ?: "Error loading history") }
             }
         }
 

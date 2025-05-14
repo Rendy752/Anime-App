@@ -161,11 +161,16 @@ fun AccordionItemSkeleton(modifier: Modifier = Modifier) {
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(
+                    modifier = Modifier.padding(top = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     repeat(3) {
-                        SkeletonBox(width = 24.dp, height = 24.dp)
+                        SkeletonBox(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            width = 24.dp,
+                            height = 24.dp
+                        )
                     }
                 }
             }
