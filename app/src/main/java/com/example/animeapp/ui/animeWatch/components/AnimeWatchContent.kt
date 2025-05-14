@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,6 +47,7 @@ fun AnimeWatchContent(
 ) {
     watchState.animeDetailComplement?.episodes?.let { episodeList ->
         watchState.episodeSourcesQuery.let { query ->
+            val serverScrollState = rememberScrollState()
             Row(modifier = Modifier.fillMaxWidth()) {
                 if (watchState.episodeDetailComplement is Resource.Success && mainState.isConnected) {
                     VideoPlayerSection(
@@ -91,6 +93,7 @@ fun AnimeWatchContent(
                                     episodeDetailComplement = watchState.episodeDetailComplement,
                                     episodes = episodeList,
                                     episodeSourcesQuery = query,
+                                    serverScrollState = serverScrollState,
                                     handleSelectedEpisodeServer = {
                                         handleSelectedEpisodeServer(it, false)
                                     }
@@ -120,6 +123,7 @@ fun AnimeWatchContent(
                             episodeDetailComplement = watchState.episodeDetailComplement,
                             episodes = episodeList,
                             episodeSourcesQuery = query,
+                            serverScrollState = serverScrollState,
                             handleSelectedEpisodeServer = { handleSelectedEpisodeServer(it, false) }
                         )
                         Spacer(modifier = Modifier.height(8.dp))
