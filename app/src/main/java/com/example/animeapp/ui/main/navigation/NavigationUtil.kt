@@ -6,7 +6,7 @@ import java.net.URLEncoder
 
 fun NavController.navigateTo(route: NavRoute) {
     when (route) {
-        is NavRoute.Home, NavRoute.Recommendations, NavRoute.Search, NavRoute.Settings -> {
+        is NavRoute.Home, NavRoute.Recommendations, NavRoute.Search, NavRoute.History, NavRoute.Settings -> {
             navigate(route.route) {
                 popUpTo(graph.findStartDestination().id) { saveState = true }
                 launchSingleTop = true

@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animeDetail.episodeDetail
+package com.example.animeapp.ui.common_ui
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.Composable
@@ -26,10 +26,7 @@ fun EpisodeInfoRow(
 
     val nonNullCounts = counts.filterNotNull()
     if (nonNullCounts.isNotEmpty()) {
-        Row(
-            modifier = modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End,
-        ) {
+        Row(modifier = modifier) {
             var firstNonNullIndex = -1
             var lastNonNullIndex = -1
 
@@ -61,15 +58,18 @@ fun EpisodeInfoRow(
 @Preview
 @Composable
 fun EpisodeInfoRowSkeleton(modifier: Modifier = Modifier) {
+    val colors = listOf(subColor, dubColor, epsColor)
+
     Row(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier,
         horizontalArrangement = Arrangement.End,
     ) {
         repeat(3) {
             EpisodeInfoItemSkeleton(
                 isFirst = it == 0,
                 isLast = it == 2,
-                hasRight = it < 2
+                hasRight = it < 2,
+                color = colors[it]
             )
         }
     }

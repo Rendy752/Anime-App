@@ -44,7 +44,7 @@ fun SearchFieldSection(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 8.dp, end = 8.dp, top = 8.dp),
+            .padding(horizontal = 8.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -95,7 +95,7 @@ fun SearchFieldSection(
             ) {
                 Icon(
                     imageVector = Icons.Filled.FilterList,
-                    tint = MaterialTheme.colorScheme.onPrimary,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     contentDescription = "Open Filter"
                 )
             }

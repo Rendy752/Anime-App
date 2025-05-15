@@ -3,61 +3,75 @@ package com.example.animeapp.utils
 import com.example.animeapp.models.EpisodeServersResponse
 import com.example.animeapp.models.EpisodeSourcesQuery
 import com.example.animeapp.models.EpisodeSourcesResponse
-import retrofit2.Response
 
 object StreamingUtils {
-    fun getEpisodeQuery(
+    private fun getDefaultEpisodeQueries(
         response: Resource<EpisodeServersResponse>,
         episodeId: String
-    ): EpisodeSourcesQuery? {
-        val episodeServers = response.data ?: return null
-        return episodeServers.let {
-            when {
-                it.sub.isNotEmpty() -> EpisodeSourcesQuery(
-                    episodeId,
-                    it.sub.first().serverName,
-                    "sub"
-                )
+    ): List<EpisodeSourcesQuery> {
+        val episodeServers = response.data ?: return emptyList()
+        val queries = mutableListOf<EpisodeSourcesQuery>()
 
-                it.dub.isNotEmpty() -> EpisodeSourcesQuery(
-                    episodeId,
-                    it.dub.first().serverName,
-                    "dub"
-                )
-
-                it.raw.isNotEmpty() -> EpisodeSourcesQuery(
-                    episodeId,
-                    it.raw.first().serverName,
-                    "raw"
-                )
-
-                else -> null
-            }
+        episodeServers.sub.reversed().forEach { server ->
+            queries.add(EpisodeSourcesQuery(episodeId, server.serverName, "sub"))
         }
+
+        episodeServers.dub.reversed().forEach { server ->
+            queries.add(EpisodeSourcesQuery(episodeId, server.serverName, "dub"))
+        }
+
+        episodeServers.raw.reversed().forEach { server ->
+            queries.add(EpisodeSourcesQuery(episodeId, server.serverName, "raw"))
+        }
+
+        return queries
     }
 
     suspend fun getEpisodeSources(
         response: Resource<EpisodeServersResponse>,
-        getEpisodeSources: suspend (String, String, String) -> Response<EpisodeSourcesResponse>,
+        getEpisodeSources: suspend (String, String, String) -> Resource<EpisodeSourcesResponse>,
         episodeSourcesQuery: EpisodeSourcesQuery? = null
-    ): Resource<EpisodeSourcesResponse> {
-        val episodeServers = response.data
-        val episodeDefaultId = episodeServers?.episodeId
-            ?: return Resource.Error("No default episode found")
+    ): Pair<Resource<EpisodeSourcesResponse>, EpisodeSourcesQuery?> {
+        val episodeDefaultId = response.data?.episodeId
+            ?: return Pair(Resource.Error("No default episode found"), null)
 
-        val episodeQuery = episodeSourcesQuery ?: getEpisodeQuery(response, episodeDefaultId)
-        ?: return Resource.Error("No episode servers found")
-
-        return try {
-            ResponseHandler.handleCommonResponse(
-                getEpisodeSources(
-                    episodeQuery.id,
-                    episodeQuery.server,
-                    episodeQuery.category
-                )
-            )
-        } catch (e: Exception) {
-            Resource.Error(e.message ?: "An error occurred")
+        val allQueries = getDefaultEpisodeQueries(response, episodeDefaultId)
+        if (allQueries.isEmpty()) {
+            return Pair(Resource.Error("No episode servers found"), null)
         }
+
+        val queriesToTry = mutableListOf<EpisodeSourcesQuery>()
+        if (episodeSourcesQuery != null) {
+            queriesToTry.add(episodeSourcesQuery)
+        }
+        queriesToTry.addAll(allQueries)
+
+        val usedServers = mutableSetOf<String>()
+
+        for (query in queriesToTry) {
+            val serverKey = "${query.server}-${query.category}"
+            if (serverKey in usedServers) {
+                continue
+            }
+            usedServers.add(serverKey)
+
+            try {
+                val result = getEpisodeSources(
+                    query.id,
+                    query.server,
+                    query.category
+                )
+                if (result is Resource.Success) {
+                    return Pair(result, query)
+                }
+            } catch (e: Exception) {
+                println("Failed to fetch sources for server ${query.server} (${query.category}): ${e.message}")
+            }
+        }
+
+        return Pair(
+            Resource.Error("All available servers failed to provide episode sources"),
+            null
+        )
     }
 }

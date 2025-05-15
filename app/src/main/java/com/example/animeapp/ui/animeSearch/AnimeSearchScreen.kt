@@ -2,6 +2,7 @@ package com.example.animeapp.ui.animeSearch
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -21,7 +22,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.animeapp.ui.animeSearch.bottomSheet.FilterBottomSheet
 import com.example.animeapp.ui.animeSearch.bottomSheet.GenresBottomSheet
 import com.example.animeapp.ui.animeSearch.bottomSheet.ProducersBottomSheet
-import com.example.animeapp.ui.animeSearch.genreProducerFilterField.GenreProducerFilterFieldSection
+import com.example.animeapp.ui.animeSearch.searchField.GenreProducerFilterFieldSection
 import com.example.animeapp.ui.animeSearch.results.ResultsSection
 import com.example.animeapp.ui.animeSearch.searchField.SearchFieldSection
 import com.example.animeapp.ui.common_ui.LimitAndPaginationQueryState
@@ -45,6 +46,8 @@ fun AnimeSearchScreen(
     onAction: (SearchAction) -> Unit = {}
 ) {
     val state = rememberPullToRefreshState()
+    val leftFilterScrollState = rememberScrollState()
+    val resultsSectionScrollState = rememberLazyListState()
     var isFilterBottomSheetShow by remember { mutableStateOf(false) }
     var isGenresBottomSheetShow by remember { mutableStateOf(false) }
     var isProducersBottomSheetShow by remember { mutableStateOf(false) }
@@ -115,7 +118,7 @@ fun AnimeSearchScreen(
                         modifier = Modifier
                             .weight(0.5f)
                             .fillMaxHeight()
-                            .verticalScroll(rememberScrollState()),
+                            .verticalScroll(leftFilterScrollState),
                         verticalArrangement = Arrangement.SpaceBetween
                     ) {
                         SearchFieldSection(
@@ -170,6 +173,7 @@ fun AnimeSearchScreen(
 
                     ResultsSection(
                         modifier = Modifier.weight(0.5f),
+                        resultsSectionScrollState = resultsSectionScrollState,
                         navController = navController,
                         query = searchState.queryState.query,
                         animeSearchResults = searchState.animeSearchResults,
@@ -192,7 +196,7 @@ fun AnimeSearchScreen(
                         resetBottomSheetFilters = { onAction(SearchAction.ResetBottomSheetFilters) },
                         onFilterClick = { isFilterBottomSheetShow = true }
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
                     GenreProducerFilterFieldSection(
                         selectedGenres = filterSelectionState.selectedGenres,
                         setSelectedGenre = { genre ->
@@ -210,10 +214,9 @@ fun AnimeSearchScreen(
                         setProducersBottomSheet = { isProducersBottomSheetShow = it }
                     )
 
-                    HorizontalDivider()
-
                     ResultsSection(
                         modifier = Modifier.weight(1f),
+                        resultsSectionScrollState = resultsSectionScrollState,
                         navController = navController,
                         query = searchState.queryState.query,
                         animeSearchResults = searchState.animeSearchResults,
@@ -285,6 +288,7 @@ fun AnimeSearchScreen(
                         .width((configuration.screenWidthDp * bottomSheetWidthFraction).dp)
                         .padding(bottom = if (mainState.isLandscape) 0.dp else bottomPadding)
                         .align(Alignment.BottomCenter),
+                    sheetGesturesEnabled = false,
                     containerColor = containerColor,
                     sheetState = sheetState,
                     onDismissRequest = { isGenresBottomSheetShow = false },
@@ -315,6 +319,7 @@ fun AnimeSearchScreen(
                         .width((configuration.screenWidthDp * bottomSheetWidthFraction).dp)
                         .padding(bottom = if (mainState.isLandscape) 0.dp else bottomPadding)
                         .align(Alignment.BottomCenter),
+                    sheetGesturesEnabled = false,
                     containerColor = containerColor,
                     sheetState = sheetState,
                     onDismissRequest = { isProducersBottomSheetShow = false },

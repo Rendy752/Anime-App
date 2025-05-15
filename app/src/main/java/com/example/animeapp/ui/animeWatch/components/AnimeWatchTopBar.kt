@@ -16,23 +16,18 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.EpisodeDetailComplement
 import com.example.animeapp.ui.animeWatch.WatchState
+import com.example.animeapp.ui.common_ui.DebouncedIconButton
 import com.example.animeapp.ui.common_ui.SkeletonBox
 import com.example.animeapp.ui.main.MainState
-import com.example.animeapp.ui.theme.favoriteEpisode
 import com.example.animeapp.utils.Resource
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,13 +38,6 @@ fun AnimeWatchTopBar(
     onHandleBackPress: () -> Unit,
     onFavoriteToggle: (EpisodeDetailComplement) -> Unit
 ) {
-    val scope = rememberCoroutineScope()
-    val debounceJob = remember { mutableStateOf<Job?>(null) }
-
-    DisposableEffect(Unit) {
-        onDispose { debounceJob.value?.cancel() }
-    }
-
     Column {
         TopAppBar(
             navigationIcon = {
@@ -82,13 +70,13 @@ fun AnimeWatchTopBar(
                         Row {
                             Text(
                                 text = it.label,
-                                color = if (it.color == MaterialTheme.colorScheme.onError) MaterialTheme.colorScheme.onError
+                                color = if (it.iconColor == MaterialTheme.colorScheme.onError) MaterialTheme.colorScheme.onError
                                 else MaterialTheme.colorScheme.onSurface
                             )
                             Icon(
                                 imageVector = it.icon,
                                 contentDescription = it.label,
-                                tint = it.color
+                                tint = it.iconColor
                             )
                         }
                     }
@@ -97,21 +85,23 @@ fun AnimeWatchTopBar(
                         onSelectedIndexChange = onContentIndexChange
                     )
                     if (watchState.episodeDetailComplement is Resource.Success) {
-                        IconButton(onClick = {
-                            debounceJob.value?.cancel()
-                            debounceJob.value = scope.launch {
-                                delay(300)
+                        DebouncedIconButton(
+                            onClick = {
                                 onFavoriteToggle(
                                     watchState.episodeDetailComplement.data.copy(
                                         isFavorite = !watchState.isFavorite
                                     )
                                 )
+                            },
+                            modifier = Modifier.semantics {
+                                contentDescription =
+                                    if (watchState.isFavorite) "Remove from favorites" else "Add to favorites"
                             }
-                        }) {
+                        ) {
                             Icon(
                                 imageVector = if (watchState.isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                                contentDescription = if (watchState.isFavorite) "Remove from favorites" else "Add to favorites",
-                                tint = favoriteEpisode
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.tertiary
                             )
                         }
                     }

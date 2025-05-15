@@ -1,7 +1,5 @@
 package com.example.animeapp.ui.animeHome.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,72 +21,28 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.AnimeDetail
-import com.example.animeapp.ui.common_ui.AsyncImageWithPlaceholder
 import com.example.animeapp.ui.common_ui.DataTextWithIcon
-import com.example.animeapp.ui.common_ui.ImageRoundedCorner
 import com.example.animeapp.ui.common_ui.SkeletonBox
+import com.example.animeapp.ui.common_ui.ImageCardWithContent
 
 @Composable
-fun TopAnimeItem(animeDetail: AnimeDetail, onItemClick: (Int) -> Unit) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(200.dp)
-            .clickable {
-                onItemClick(animeDetail.mal_id)
-            }
-    ) {
-        AsyncImageWithPlaceholder(
-            model = animeDetail.images.webp.large_image_url,
-            contentDescription = animeDetail.title,
-            modifier = Modifier
-                .fillMaxHeight()
-                .fillMaxWidth(0.75f)
-                .align(Alignment.CenterEnd),
-            roundedCorners = ImageRoundedCorner.NONE,
-            isClickable = false
-        )
-
-        Box(
-            modifier = Modifier
-                .fillMaxHeight()
-                .fillMaxWidth(0.75f)
-                .align(Alignment.CenterEnd)
-                .background(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.surface,
-                            Color.Transparent
-                        ),
-                        startX = 0f,
-                        endX = Float.POSITIVE_INFINITY
-                    )
-                )
-        )
-
-        Column(
-            modifier = Modifier
-                .fillMaxHeight()
-                .fillMaxWidth(0.6f)
-                .padding(16.dp)
-                .align(Alignment.TopStart),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.Start
-        ) {
+fun TopAnimeItem(animeDetail: AnimeDetail, onItemClick: () -> Unit) {
+    ImageCardWithContent(
+        imageUrl = animeDetail.images.webp.large_image_url,
+        contentDescription = animeDetail.title,
+        onItemClick = onItemClick,
+        leftContent = {
             Text(
                 text = animeDetail.title,
                 style = MaterialTheme.typography.titleMedium,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
-
             Row(
                 modifier = Modifier.padding(top = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -96,18 +50,17 @@ fun TopAnimeItem(animeDetail: AnimeDetail, onItemClick: (Int) -> Unit) {
             ) {
                 DataTextWithIcon(
                     value = animeDetail.score.toString(),
-                    icon = Icons.Filled.Score,
+                    icon = Icons.Filled.Score
                 )
                 DataTextWithIcon(
                     value = animeDetail.type ?: "Unknown",
-                    icon = Icons.Default.PlayCircle,
+                    icon = Icons.Default.PlayCircle
                 )
                 DataTextWithIcon(
                     value = animeDetail.duration.substringBefore("per").trim(),
-                    icon = Icons.Default.AccessTime,
+                    icon = Icons.Default.AccessTime
                 )
             }
-
             animeDetail.synopsis?.let { synopsis ->
                 Text(
                     modifier = Modifier.padding(top = 8.dp),
@@ -118,7 +71,7 @@ fun TopAnimeItem(animeDetail: AnimeDetail, onItemClick: (Int) -> Unit) {
                 )
             }
         }
-    }
+    )
 }
 
 @Preview

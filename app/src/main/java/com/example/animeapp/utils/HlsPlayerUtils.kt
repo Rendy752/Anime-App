@@ -259,7 +259,8 @@ object HlsPlayerUtils {
                     }
 
                     override fun onPlayerError(error: PlaybackException) {
-                        val message = "Failed to initialize player: ${error.message}"
+                        val message =
+                            "Playback failed: ${error.message ?: "Unknown error"}. Please refresh or try a different server."
                         Log.e("HlsPlayerUtil", message, error)
                         onError(message)
                         player.removeListener(this)

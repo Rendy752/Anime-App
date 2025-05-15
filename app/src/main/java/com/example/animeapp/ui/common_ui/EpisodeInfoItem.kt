@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animeDetail.episodeDetail
+package com.example.animeapp.ui.common_ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
@@ -14,7 +14,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.animeapp.ui.common_ui.SkeletonBox
 
 @Composable
 fun EpisodeInfoItem(
@@ -43,7 +42,7 @@ fun EpisodeInfoItem(
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
-                modifier = Modifier.padding(8.dp)
+                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
             ) {
                 icon?.invoke()
                 Spacer(modifier = Modifier.width(4.dp))
@@ -60,10 +59,11 @@ fun EpisodeInfoItem(
 fun EpisodeInfoItemSkeleton(
     isFirst: Boolean,
     isLast: Boolean,
-    hasRight: Boolean
+    hasRight: Boolean,
+    color: Color
 ) {
     val width = 60.dp
-    val height = 32.dp
+    val height = 28.dp
 
     val leftShape = if (isFirst) RoundedCornerShape(percent = 50) else RoundedCornerShape(0.dp)
     val rightShape =
@@ -80,7 +80,7 @@ fun EpisodeInfoItemSkeleton(
                         bottomEnd = rightShape.bottomEnd
                     )
                 )
-                .background(MaterialTheme.colorScheme.primary),
+                .background(color),
             width = width,
             height = height,
         )

@@ -8,14 +8,13 @@ import com.example.animeapp.models.AnimeDetail
 import com.example.animeapp.models.AnimeDetailComplement
 import com.example.animeapp.models.AnimeDetailResponse
 import com.example.animeapp.models.EpisodeDetailComplement
+import com.example.animeapp.models.EpisodeHistoryQueryState
 import com.example.animeapp.models.EpisodeServersResponse
 import com.example.animeapp.models.EpisodesResponse
-import com.example.animeapp.utils.TimeUtils
 import com.example.animeapp.utils.Resource
 import com.example.animeapp.utils.ResponseHandler
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import com.example.animeapp.utils.ResponseHandler.safeApiCall
+import com.example.animeapp.utils.TimeUtils
 import java.time.Instant
 
 class AnimeEpisodeDetailRepository(
@@ -25,148 +24,125 @@ class AnimeEpisodeDetailRepository(
     private val jikanAPI: AnimeAPI,
     private val runwayAPI: AnimeAPI
 ) {
-    suspend fun getAnimeDetail(id: Int): Resource<AnimeDetailResponse> =
-        withContext(Dispatchers.IO) {
-            getCachedAnimeDetailResponse(id) ?: getRemoteAnimeDetail(id)
+    suspend fun getAnimeDetail(id: Int): Resource<AnimeDetailResponse> {
+        val cached = getCachedAnimeDetailById(id)
+        if (cached != null && !isDataNeedUpdate(cached)) {
+            return Resource.Success(AnimeDetailResponse(cached))
         }
 
-    suspend fun getCachedAnimeDetailById(id: Int): AnimeDetail? =
-        withContext(Dispatchers.IO) {
-            animeDetailDao.getAnimeDetailById(id)
-        }
-
-    private suspend fun getCachedAnimeDetailResponse(id: Int): Resource<AnimeDetailResponse>? {
-        val cachedAnimeDetail = getCachedAnimeDetailById(id)
-
-        return cachedAnimeDetail?.let { cache ->
-            if (isDataNeedUpdate(cache)) {
-                val remoteData =
-                    ResponseHandler.handleCommonResponse(jikanAPI.getAnimeDetail(cache.mal_id))
-
-                if (remoteData is Resource.Success && remoteData.data.data != cache) {
-                    remoteData.data.data.let {
-                        animeDetailDao.updateAnimeDetail(it)
-                        Resource.Success(remoteData.data)
-                    }
-                } else {
-                    Resource.Success(AnimeDetailResponse(cache))
-                }
-            } else {
-                Resource.Success(AnimeDetailResponse(cache))
-            }
-        }
-    }
-
-    private suspend fun isDataNeedUpdate(data: AnimeDetail, isRefresh: Boolean = false): Boolean {
-        return data.airing && (isRefresh || !TimeUtils.isEpisodeAreUpToDate(
-            data.broadcast.time,
-            data.broadcast.timezone,
-            data.broadcast.day,
-            getCachedAnimeDetailComplementByMalId(data.mal_id)?.lastEpisodeUpdatedAt
-        ))
-    }
-
-    private suspend fun getRemoteAnimeDetail(id: Int): Resource<AnimeDetailResponse> {
         val response = safeApiCall { jikanAPI.getAnimeDetail(id) }
         val resource = ResponseHandler.handleCommonResponse(response)
-        if (resource is Resource.Success) animeDetailDao.insertAnimeDetail(resource.data.data)
+        if (resource is Resource.Success) {
+            animeDetailDao.insertAnimeDetail(resource.data.data)
+        }
         return resource
     }
 
+    suspend fun getCachedAnimeDetailById(id: Int): AnimeDetail? =
+        animeDetailDao.getAnimeDetailById(id)
+
+    private suspend fun isDataNeedUpdate(data: AnimeDetail): Boolean {
+        val complement = getCachedAnimeDetailComplementByMalId(data.mal_id)
+        return data.airing && TimeUtils.isEpisodeAreUpToDate(
+            data.broadcast.time,
+            data.broadcast.timezone,
+            data.broadcast.day,
+            complement?.lastEpisodeUpdatedAt
+        )
+    }
+
     suspend fun getCachedAnimeDetailComplementByMalId(malId: Int): AnimeDetailComplement? =
-        withContext(Dispatchers.IO) {
-            animeDetailComplementDao.getAnimeDetailComplementByMalId(malId)
-        }
+        animeDetailComplementDao.getAnimeDetailComplementByMalId(malId)
 
     suspend fun insertCachedAnimeDetailComplement(animeDetailComplement: AnimeDetailComplement) =
-        withContext(Dispatchers.IO) {
-            animeDetailComplementDao.insertAnimeDetailComplement(animeDetailComplement)
-        }
+        animeDetailComplementDao.insertAnimeDetailComplement(animeDetailComplement)
 
     suspend fun updateCachedAnimeDetailComplement(updatedAnimeDetailComplement: AnimeDetailComplement) =
-        withContext(Dispatchers.IO) {
-            animeDetailComplementDao.updateAnimeDetailComplement(
-                updatedAnimeDetailComplement.copy(
-                    updatedAt = Instant.now().epochSecond
-                )
-            )
-        }
+        animeDetailComplementDao.updateAnimeDetailComplement(
+            updatedAnimeDetailComplement.copy(updatedAt = Instant.now().epochSecond)
+        )
 
-    suspend fun updateCachedAnimeDetailComplementWithEpisodes(
-        animeDetail: AnimeDetail,
-        cachedAnimeDetailComplement: AnimeDetailComplement,
-        isRefresh: Boolean = false
-    ): AnimeDetailComplement? = withContext(Dispatchers.IO) {
-        if (isDataNeedUpdate(animeDetail, isRefresh)) {
-            val episodesResponse = ResponseHandler.handleCommonResponse(
-                runwayAPI.getEpisodes(cachedAnimeDetailComplement.id)
-            )
-            if (episodesResponse is Resource.Success) {
-                val episodes = episodesResponse.data.episodes
-
-                if (episodes != cachedAnimeDetailComplement.episodes) {
-                    val updatedAnimeDetail = cachedAnimeDetailComplement.copy(episodes = episodes)
-                    animeDetailComplementDao.updateAnimeDetailComplement(
-                        updatedAnimeDetail.copy(
-                            lastEpisodeUpdatedAt = Instant.now().epochSecond,
-                            updatedAt = Instant.now().epochSecond
-                        )
-                    )
-                    return@withContext updatedAnimeDetail
-                } else {
-                    return@withContext cachedAnimeDetailComplement
-                }
-            } else {
-                return@withContext cachedAnimeDetailComplement
-            }
-        } else {
-            return@withContext cachedAnimeDetailComplement
-        }
+    suspend fun deleteAnimeDetailComplement(malId: Int): Boolean {
+        val anime = getCachedAnimeDetailComplementByMalId(malId) ?: return false
+        animeDetailComplementDao.deleteAnimeDetailComplement(anime)
+        episodeDetailComplementDao.deleteEpisodeDetailComplementByMalId(malId)
+        return true
     }
 
-    suspend fun getCachedLatestWatchedEpisodeDetailComplement(): EpisodeDetailComplement? {
-        return withContext(Dispatchers.IO) {
-            episodeDetailComplementDao.getLatestWatchedEpisodeDetailComplement()
-        }
-    }
+    suspend fun getCachedLatestWatchedEpisodeDetailComplement(): EpisodeDetailComplement? =
+        episodeDetailComplementDao.getLatestWatchedEpisodeDetailComplement()
 
     suspend fun getCachedDefaultEpisodeDetailComplementByMalId(malId: Int): EpisodeDetailComplement =
-        withContext(Dispatchers.IO) {
-            episodeDetailComplementDao.getDefaultEpisodeDetailComplementByMalId(malId)
-        }
+        episodeDetailComplementDao.getDefaultEpisodeDetailComplementByMalId(malId)
 
     suspend fun getCachedEpisodeDetailComplement(id: String): EpisodeDetailComplement? =
-        withContext(Dispatchers.IO) {
-            episodeDetailComplementDao.getEpisodeDetailComplementById(id)
-        }
+        episodeDetailComplementDao.getEpisodeDetailComplementById(id)
 
     suspend fun insertCachedEpisodeDetailComplement(episodeDetailComplement: EpisodeDetailComplement) =
-        withContext(Dispatchers.IO) {
-            episodeDetailComplementDao.insertEpisodeDetailComplement(episodeDetailComplement)
-        }
-
-    suspend fun getAnimeAniwatchSearch(keyword: String) =
-        safeApiCall { runwayAPI.getAnimeAniwatchSearch(keyword) }
-
-    suspend fun getEpisodes(id: String): Resource<EpisodesResponse> {
-        val response = safeApiCall { runwayAPI.getEpisodes(id) }
-        return ResponseHandler.handleCommonResponse(response)
-    }
-
-    suspend fun getEpisodeServers(episodeId: String): Resource<EpisodeServersResponse> {
-        val response = safeApiCall { runwayAPI.getEpisodeServers(episodeId) }
-        return ResponseHandler.handleCommonResponse(response)
-    }
-
-    suspend fun getEpisodeSources(episodeId: String, server: String, category: String) =
-        safeApiCall { runwayAPI.getEpisodeSources(episodeId, server, category) }
+        episodeDetailComplementDao.insertEpisodeDetailComplement(episodeDetailComplement)
 
     suspend fun updateEpisodeDetailComplement(episodeDetailComplement: EpisodeDetailComplement) =
-        withContext(Dispatchers.IO) {
-            episodeDetailComplementDao.updateEpisodeDetailComplement(
-                episodeDetailComplement.copy(
-                    updatedAt = Instant.now().epochSecond
+        episodeDetailComplementDao.updateEpisodeDetailComplement(
+            episodeDetailComplement.copy(updatedAt = Instant.now().epochSecond)
+        )
+
+    suspend fun deleteEpisodeDetailComplement(id: String): Boolean {
+        val episode = getCachedEpisodeDetailComplement(id) ?: return false
+        episodeDetailComplementDao.deleteEpisodeDetailComplement(episode)
+        return true
+    }
+
+    suspend fun getAnimeAniwatchSearch(keyword: String) =
+        ResponseHandler.handleCommonResponse(safeApiCall { runwayAPI.getAnimeAniwatchSearch(keyword) })
+
+    suspend fun getEpisodeServers(episodeId: String): Resource<EpisodeServersResponse> =
+        ResponseHandler.handleCommonResponse(safeApiCall { runwayAPI.getEpisodeServers(episodeId) })
+
+    suspend fun getEpisodeSources(episodeId: String, server: String, category: String) =
+        ResponseHandler.handleCommonResponse(safeApiCall {
+            runwayAPI.getEpisodeSources(
+                episodeId, server, category
+            )
+        })
+
+    suspend fun getEpisodes(id: String): Resource<EpisodesResponse> =
+        ResponseHandler.handleCommonResponse(safeApiCall { runwayAPI.getEpisodes(id) })
+
+    suspend fun getPaginatedEpisodeHistory(queryState: EpisodeHistoryQueryState): Resource<List<EpisodeDetailComplement>> {
+        return try {
+            Resource.Success(
+                episodeDetailComplementDao.getPaginatedEpisodeHistory(
+                    isFavorite = queryState.isFavorite,
+                    sortBy = queryState.sortBy.name,
+                    limit = queryState.limit,
+                    offset = (queryState.page - 1) * queryState.limit
                 )
             )
+        } catch (e: Exception) {
+            Resource.Error("Failed to fetch episode history: ${e.message}")
         }
+    }
+
+    suspend fun getAllEpisodeHistory(queryState: EpisodeHistoryQueryState): Resource<List<EpisodeDetailComplement>> {
+        return try {
+            Resource.Success(
+                episodeDetailComplementDao.getAllEpisodeHistory(
+                    isFavorite = queryState.isFavorite,
+                    sortBy = queryState.sortBy.name
+                )
+            )
+        } catch (e: Exception) {
+            Resource.Error("Failed to fetch all episode history: ${e.message}")
+        }
+    }
+
+    suspend fun getEpisodeHistoryCount(isFavorite: Boolean?): Resource<Int> {
+        return try {
+            Resource.Success(
+                episodeDetailComplementDao.getEpisodeHistoryCount(isFavorite)
+            )
+        } catch (e: Exception) {
+            Resource.Error("Failed to fetch episode history count: ${e.message}")
+        }
+    }
 }

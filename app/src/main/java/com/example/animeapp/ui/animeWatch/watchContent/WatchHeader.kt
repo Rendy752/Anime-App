@@ -1,5 +1,6 @@
 package com.example.animeapp.ui.animeWatch.watchContent
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -24,6 +25,7 @@ fun WatchHeader(
     episode: Episode,
     episodeDetailComplement: EpisodeDetailComplement,
     episodeSourcesQuery: EpisodeSourcesQuery?,
+    serverScrollState: ScrollState,
     onServerSelected: (EpisodeSourcesQuery) -> Unit,
 ) {
     Column(
@@ -45,8 +47,18 @@ fun WatchHeader(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 CurrentlyWatchingHeader()
-                EpisodeInfo(title, episode, servers.episodeNo, episodeSourcesQuery)
-                ServerSelection(episodeSourcesQuery, servers, onServerSelected)
+                EpisodeInfo(
+                    title = title,
+                    episode = episode,
+                    episodeNo = servers.episodeNo,
+                    episodeSourcesQuery = episodeSourcesQuery
+                )
+                ServerSelection(
+                    scrollState = serverScrollState,
+                    episodeSourcesQuery = episodeSourcesQuery,
+                    servers = servers,
+                    onServerSelected = onServerSelected
+                )
             }
         }
     }

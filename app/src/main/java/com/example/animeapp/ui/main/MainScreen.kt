@@ -13,6 +13,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
@@ -36,6 +37,8 @@ import com.example.animeapp.ui.animeWatch.AnimeWatchScreen
 import com.example.animeapp.ui.animeWatch.AnimeWatchViewModel
 import com.example.animeapp.ui.animeWatch.WatchAction
 import com.example.animeapp.ui.common_ui.MessageDisplay
+import com.example.animeapp.ui.episodeHistory.EpisodeHistoryScreen
+import com.example.animeapp.ui.episodeHistory.EpisodeHistoryViewModel
 import com.example.animeapp.ui.main.navigation.BottomNavigationBar
 import com.example.animeapp.ui.main.navigation.getBottomBarEnterTransition
 import com.example.animeapp.ui.main.navigation.getBottomBarExitTransition
@@ -80,19 +83,34 @@ fun MainScreen(
                                 if (animeId != null) {
                                     navController.navigateTo(NavRoute.AnimeDetail.fromId(animeId))
                                 } else {
-                                    Toast.makeText(activity, "Invalid anime ID", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(activity, "Invalid anime ID", Toast.LENGTH_SHORT)
+                                        .show()
                                 }
                             }
+
                             segments.size >= 3 && segments[0] == "watch" -> {
                                 val malId = segments[1].toIntOrNull()
                                 val episodeId = segments[2]
                                 if (malId != null && episodeId.isNotEmpty()) {
-                                    navController.popBackStack(navController.graph.startDestinationId, inclusive = false)
-                                    navController.navigateTo(NavRoute.AnimeWatch.fromParams(malId, episodeId))
+                                    navController.popBackStack(
+                                        navController.graph.startDestinationId,
+                                        inclusive = false
+                                    )
+                                    navController.navigateTo(
+                                        NavRoute.AnimeWatch.fromParams(
+                                            malId,
+                                            episodeId
+                                        )
+                                    )
                                 } else {
-                                    Toast.makeText(activity, "Invalid watch parameters", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(
+                                        activity,
+                                        "Invalid watch parameters",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 }
                             }
+
                             else -> {
                                 Toast.makeText(activity, "Invalid URL", Toast.LENGTH_SHORT).show()
                             }
@@ -176,6 +194,17 @@ fun MainScreen(
                     onAction = viewModel::onAction
                 )
             }
+            composable(NavRoute.History.route) {
+                val viewModel: EpisodeHistoryViewModel = hiltViewModel()
+                val historyState by viewModel.historyState.collectAsStateWithLifecycle()
+                EpisodeHistoryScreen(
+                    currentRoute = currentRoute,
+                    navController = navController,
+                    mainState = mainState,
+                    historyState = historyState,
+                    onAction = viewModel::onAction
+                )
+            }
             composable(NavRoute.Settings.route) {
                 val viewModel: SettingsViewModel = hiltViewModel()
                 val settingsState by viewModel.state.collectAsStateWithLifecycle()
@@ -207,7 +236,8 @@ fun MainScreen(
                 route = NavRoute.AnimeWatch.ROUTE_PATTERN,
                 arguments = NavRoute.AnimeWatch(0, "").arguments
             ) { backStackEntry ->
-                val viewModel: AnimeWatchViewModel = hiltViewModel(LocalActivity.current as ViewModelStoreOwner)
+                val viewModel: AnimeWatchViewModel =
+                    hiltViewModel(LocalActivity.current as ViewModelStoreOwner)
                 val watchState by viewModel.watchState.collectAsStateWithLifecycle()
                 val playerUiState by viewModel.playerUiState.collectAsStateWithLifecycle()
                 val hlsPlayerState by HlsPlayerUtils.state.collectAsStateWithLifecycle()
@@ -219,9 +249,13 @@ fun MainScreen(
                         Log.d("MainScreen", "PiP mode changed: isInPipMode=$isInPipMode")
                         Unit
                     }
-                    activity?.addOnPictureInPictureModeChangedListener(onPictureInPictureModeChangedCallback)
+                    activity?.addOnPictureInPictureModeChangedListener(
+                        onPictureInPictureModeChangedCallback
+                    )
                     onDispose {
-                        activity?.removeOnPictureInPictureModeChangedListener(onPictureInPictureModeChangedCallback)
+                        activity?.removeOnPictureInPictureModeChangedListener(
+                            onPictureInPictureModeChangedCallback
+                        )
                     }
                 }
 
@@ -234,7 +268,10 @@ fun MainScreen(
                         }
                     }
                     if (playerUiState.isPipMode && activity != null) {
-                        Log.d("MainScreen", "Updating PiP params: isPlaying=${hlsPlayerState.isPlaying}")
+                        Log.d(
+                            "MainScreen",
+                            "Updating PiP params: isPlaying=${hlsPlayerState.isPlaying}"
+                        )
                         val actions = buildPipActions(activity, hlsPlayerState.isPlaying)
                         activity.setPictureInPictureParams(
                             PictureInPictureParams.Builder()
@@ -246,7 +283,9 @@ fun MainScreen(
 
                 DisposableEffect(Unit) {
                     onDispose {
-                        activity?.setPictureInPictureParams(PictureInPictureParams.Builder().build())
+                        activity?.setPictureInPictureParams(
+                            PictureInPictureParams.Builder().build()
+                        )
                         activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                     }
                 }
@@ -262,7 +301,10 @@ fun MainScreen(
                     onAction = viewModel::onAction,
                     onEnterPipMode = {
                         if (isConnected && activity != null) {
-                            Log.d("MainScreen", "Entering PiP: isPlaying=${hlsPlayerState.isPlaying}")
+                            Log.d(
+                                "MainScreen",
+                                "Entering PiP: isPlaying=${hlsPlayerState.isPlaying}"
+                            )
                             val actions = buildPipActions(activity, hlsPlayerState.isPlaying)
                             activity.enterPictureInPictureMode(
                                 PictureInPictureParams.Builder()
@@ -289,6 +331,7 @@ fun MainScreen(
             BottomNavigationBar(navController = navController)
         }
         AnimatedVisibility(
+            modifier = Modifier.fillMaxWidth(),
             visible = !isConnected,
             enter = slideInVertically(
                 initialOffsetY = { it },

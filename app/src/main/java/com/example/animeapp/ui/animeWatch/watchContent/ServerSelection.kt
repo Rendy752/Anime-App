@@ -1,5 +1,6 @@
 package com.example.animeapp.ui.animeWatch.watchContent
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
@@ -16,13 +17,14 @@ import com.example.animeapp.models.EpisodeSourcesQuery
 
 @Composable
 fun ServerSelection(
+    scrollState: ScrollState,
     episodeSourcesQuery: EpisodeSourcesQuery?,
     servers: EpisodeServersResponse,
     onServerSelected: (EpisodeSourcesQuery) -> Unit
 ) {
     Row(
         modifier = Modifier
-            .horizontalScroll(rememberScrollState())
+            .horizontalScroll(scrollState)
             .fillMaxWidth()
             .padding(8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -40,8 +42,8 @@ fun ServerSelection(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         ServerSegmentedButton(
-                            type,
-                            servers,
+                            type = type,
+                            servers = servers,
                             onServerSelected = onServerSelected,
                             episodeSourcesQuery = query
                         )

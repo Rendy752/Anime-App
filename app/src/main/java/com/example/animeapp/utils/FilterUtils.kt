@@ -95,11 +95,22 @@ object FilterUtils {
         episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
         lastEpisodeWatchedId: String? = null
     ): List<Episode> {
-        val filteredEpisodes = episodes.filter { episode ->
-            val matchesTitle = query.title.isBlank() ||
-                    episode.name.contains(query.title, ignoreCase = true) ||
-                    episode.episodeNo.toString().contains(query.title, ignoreCase = true)
+        val episodeExtractors = listOf<(Episode) -> String>(
+            { it.name.takeIf { name -> name.isNotEmpty() } ?: "" },
+            { it.episodeNo.toString() }
+        )
 
+        val titleFilteredEpisodes = if (query.title.isBlank()) {
+            episodes
+        } else {
+            AnimeTitleFinder.searchTitle(
+                searchQuery = query.title,
+                items = episodes,
+                extractors = episodeExtractors
+            )
+        }
+
+        val filteredEpisodes = titleFilteredEpisodes.filter { episode ->
             val matchesFavorite = query.isFavorite?.let { isFavorite ->
                 val complement = episodeDetailComplements[episode.episodeId]
                 complement is Resource.Success && complement.data.isFavorite == isFavorite
@@ -116,7 +127,7 @@ object FilterUtils {
                 }
             } != false
 
-            matchesTitle && matchesFavorite && matchesWatched
+            matchesFavorite && matchesWatched
         }
 
         return if (lastEpisodeWatchedId != null) {

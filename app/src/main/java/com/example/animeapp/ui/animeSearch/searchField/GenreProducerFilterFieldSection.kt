@@ -1,4 +1,4 @@
-package com.example.animeapp.ui.animeSearch.genreProducerFilterField
+package com.example.animeapp.ui.animeSearch.searchField
 
 import androidx.compose.foundation.border
 import androidx.compose.foundation.background
@@ -72,7 +72,7 @@ fun GenreProducerFilterFieldSection(
                     Text(
                         text = "Genres",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimary
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 }
             }
@@ -80,7 +80,7 @@ fun GenreProducerFilterFieldSection(
             Icon(
                 imageVector = if (isGenresBottomSheetShow) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
                 contentDescription = "Chevron Down",
-                tint = MaterialTheme.colorScheme.onPrimary
+                tint = MaterialTheme.colorScheme.onPrimaryContainer
             )
         }
 
@@ -118,7 +118,7 @@ fun GenreProducerFilterFieldSection(
                     Text(
                         text = "Producers",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onPrimary
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 }
             }
@@ -126,7 +126,7 @@ fun GenreProducerFilterFieldSection(
             Icon(
                 imageVector = if (isProducersBottomSheetShow) Icons.Filled.KeyboardArrowUp else Icons.Filled.KeyboardArrowDown,
                 contentDescription = "Chevron Down",
-                tint = MaterialTheme.colorScheme.onPrimary
+                tint = MaterialTheme.colorScheme.onPrimaryContainer
             )
         }
     }

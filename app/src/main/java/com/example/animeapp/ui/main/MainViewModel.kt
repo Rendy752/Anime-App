@@ -151,7 +151,7 @@ class MainViewModel @Inject constructor(
     }
 
     private fun startNetworkMonitoring() {
-        networkStateMonitor.startMonitoring(getApplication())
+        networkStateMonitor.startMonitoring()
         networkStateMonitor.isConnected.observeForever { isNetworkAvailable ->
             viewModelScope.launch {
                 onAction(MainAction.SetIsConnected(isNetworkAvailable))

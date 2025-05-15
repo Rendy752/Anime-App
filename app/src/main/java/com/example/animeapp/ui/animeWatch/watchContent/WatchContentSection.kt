@@ -1,5 +1,6 @@
 package com.example.animeapp.ui.animeWatch.watchContent
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
@@ -19,6 +20,7 @@ fun WatchContentSection(
     episodeDetailComplement: Resource<EpisodeDetailComplement>,
     episodes: List<Episode>,
     episodeSourcesQuery: EpisodeSourcesQuery?,
+    serverScrollState: ScrollState,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -33,6 +35,7 @@ fun WatchContentSection(
                         episode = currentEpisode,
                         episodeDetailComplement = episodeDetail,
                         episodeSourcesQuery = episodeSourcesQuery,
+                        serverScrollState = serverScrollState,
                         onServerSelected = { handleSelectedEpisodeServer(it) }
                     )
                 }

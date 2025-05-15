@@ -27,6 +27,8 @@ import com.example.animeapp.ui.animeDetail.DetailState
 import com.example.animeapp.ui.animeDetail.EpisodeFilterState
 import com.example.animeapp.ui.common_ui.EpisodeDetailItem
 import com.example.animeapp.ui.common_ui.EpisodeDetailItemSkeleton
+import com.example.animeapp.ui.common_ui.EpisodeInfoRow
+import com.example.animeapp.ui.common_ui.EpisodeInfoRowSkeleton
 import com.example.animeapp.ui.common_ui.MessageDisplay
 import com.example.animeapp.ui.common_ui.RetryButton
 import com.example.animeapp.ui.common_ui.SearchView
@@ -188,10 +190,6 @@ fun EpisodesDetailSection(
                 MessageDisplay(
                     message = detailState.animeDetailComplement.message ?: "Error loading episodes"
                 )
-            }
-
-            else -> {
-                MessageDisplay(message = "Episode data not available")
             }
         }
     }

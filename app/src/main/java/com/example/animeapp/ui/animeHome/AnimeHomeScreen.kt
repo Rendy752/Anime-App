@@ -193,7 +193,7 @@ fun AnimeHomeScreen(
                 )
 
                 homeState.continueWatchingEpisode?.let { continueWatchingEpisode ->
-                    if (homeState.isShowPopup) Popup(
+                    if (homeState.isShowPopup && currentRoute == NavRoute.Home.route && !mainState.isLandscape) Popup(
                         alignment = Alignment.BottomEnd,
                         offset = IntOffset(0, (-200).dp.value.toInt()),
                     ) {

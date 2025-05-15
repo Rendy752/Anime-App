@@ -14,10 +14,10 @@ interface AnimeDetailComplementDao {
     suspend fun insertAnimeDetailComplement(animeDetailComplement: AnimeDetailComplement)
 
     @Query("SELECT * FROM anime_detail_complement WHERE id = :id")
-    fun getAnimeDetailComplementById(id: String): AnimeDetailComplement?
+    suspend fun getAnimeDetailComplementById(id: String): AnimeDetailComplement?
 
     @Query("SELECT * FROM anime_detail_complement WHERE malId = :malId")
-    fun getAnimeDetailComplementByMalId(malId: Int): AnimeDetailComplement?
+    suspend fun getAnimeDetailComplementByMalId(malId: Int): AnimeDetailComplement?
 
     @Delete
     suspend fun deleteAnimeDetailComplement(animeDetailComplement: AnimeDetailComplement)

@@ -20,7 +20,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.animeapp.models.CompletePagination
 import com.example.animeapp.ui.animeSearch.components.PaginationButtons
-import com.example.animeapp.utils.Limit
 
 data class LimitAndPaginationQueryState(
     val page: Int = 1,
@@ -36,6 +35,7 @@ fun LimitAndPaginationSection(
     onQueryChanged: (LimitAndPaginationQueryState) -> Unit,
     useHorizontalPager: Boolean = true
 ) {
+    val limitOptions = arrayOf(5, 10, 15, 20, 25)
     var selectedLimit by remember { mutableIntStateOf(query.limit ?: 10) }
 
     if (useHorizontalPager) {
@@ -66,7 +66,7 @@ fun LimitAndPaginationSection(
                     } else if (page == 1) {
                         DropdownInputField(
                             label = "Limit",
-                            options = Limit.limitOptions.map { it.toString() },
+                            options = limitOptions.map { it.toString() },
                             selectedValue = selectedLimit.toString(),
                             onValueChange = {
                                 selectedLimit = it.toInt()
@@ -92,7 +92,7 @@ fun LimitAndPaginationSection(
             ) {
                 DropdownInputField(
                     label = "Limit",
-                    options = Limit.limitOptions.map { it.toString() },
+                    options = limitOptions.map { it.toString() },
                     selectedValue = selectedLimit.toString(),
                     onValueChange = {
                         selectedLimit = it.toInt()
