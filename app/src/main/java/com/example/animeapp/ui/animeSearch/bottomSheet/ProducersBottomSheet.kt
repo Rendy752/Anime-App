@@ -160,9 +160,7 @@ fun ProducersBottomSheet(
 
                     is Resource.Error -> {
                         RetryButton(
-                            modifier = Modifier
-                                .padding(16.dp)
-                                .fillMaxWidth(),
+                            modifier = Modifier.padding(16.dp),
                             message = producers.message ?: "Error loading producers",
                             onClick = { fetchProducers() }
                         )

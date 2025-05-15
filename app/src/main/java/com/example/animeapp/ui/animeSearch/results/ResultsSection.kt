@@ -42,11 +42,7 @@ fun ResultsSection(
                 state = resultsSectionScrollState
             ) {
                 itemsIndexed((0 until 3).toList()) { index, _ ->
-                    AnimeSearchItemSkeleton(
-                        modifier = Modifier.padding(
-                            top = if (index == 0) 8.dp else 0.dp, start = 8.dp, end = 8.dp
-                        )
-                    )
+                    AnimeSearchItemSkeleton(modifier = Modifier.padding(horizontal = 8.dp))
                 }
             }
 
@@ -62,11 +58,7 @@ fun ResultsSection(
                     ) {
                         itemsIndexed(animeSearchResults.data.data) { index, animeDetail ->
                             AnimeSearchItem(
-                                modifier = Modifier.padding(
-                                    top = if (index == 0) 8.dp else 0.dp,
-                                    start = 8.dp,
-                                    end = 8.dp
-                                ),
+                                modifier = Modifier.padding(horizontal = 8.dp),
                                 animeDetail = animeDetail,
                                 query = query,
                                 selectedGenres = selectedGenres,

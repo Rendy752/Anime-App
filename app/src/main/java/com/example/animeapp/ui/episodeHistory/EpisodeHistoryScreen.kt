@@ -1,22 +1,23 @@
 package com.example.animeapp.ui.episodeHistory
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.example.animeapp.ui.common_ui.LimitAndPaginationQueryState
+import com.example.animeapp.ui.common_ui.LimitAndPaginationSection
 import com.example.animeapp.ui.episodeHistory.components.FilterContent
 import com.example.animeapp.ui.episodeHistory.components.HistoryContent
 import com.example.animeapp.ui.main.MainState
+import com.example.animeapp.ui.main.navigation.NavRoute
+import com.example.animeapp.utils.Resource
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
-import androidx.compose.ui.Alignment
-import com.example.animeapp.ui.main.navigation.NavRoute
-import com.example.animeapp.utils.Resource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -58,17 +59,105 @@ fun EpisodeHistoryScreen(
                 )
             }
         ) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                FilterContent(
-                    queryState = historyState.queryState,
-                    onAction = onAction
-                )
-                HistoryContent(
-                    navController = navController,
-                    listState = historyListState,
-                    state = historyState,
-                    onAction = onAction
-                )
+            if (mainState.isLandscape) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .weight(0.4f)
+                            .fillMaxHeight()
+                            .padding(end = 8.dp)
+                    ) {
+                        FilterContent(
+                            modifier = Modifier.weight(1f),
+                            queryState = historyState.queryState,
+                            onAction = onAction
+                        )
+                        LimitAndPaginationSection(
+                            isVisible = historyState.episodeHistoryResults is Resource.Success,
+                            pagination = historyState.pagination,
+                            query = LimitAndPaginationQueryState(
+                                page = historyState.queryState.page,
+                                limit = historyState.queryState.limit
+                            ),
+                            onQueryChanged = { updatedQuery ->
+                                if (updatedQuery.page != historyState.queryState.page) {
+                                    onAction(EpisodeHistoryAction.ChangePage(updatedQuery.page))
+                                } else if (updatedQuery.limit != historyState.queryState.limit) {
+                                    onAction(
+                                        EpisodeHistoryAction.ApplyFilters(
+                                            historyState.queryState.copy(
+                                                page = 1,
+                                                limit = updatedQuery.limit
+                                                    ?: historyState.queryState.limit
+                                            )
+                                        )
+                                    )
+                                }
+                            },
+                            useHorizontalPager = false
+                        )
+                    }
+
+                    VerticalDivider(modifier = Modifier.fillMaxHeight())
+
+                    HistoryContent(
+                        modifier = Modifier
+                            .weight(0.6f)
+                            .fillMaxHeight()
+                            .padding(start = 8.dp),
+                        navController = navController,
+                        listState = historyListState,
+                        state = historyState,
+                        onAction = onAction
+                    )
+                }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 16.dp)
+                ) {
+                    FilterContent(
+                        queryState = historyState.queryState,
+                        onAction = onAction
+                    )
+                    HistoryContent(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
+                        navController = navController,
+                        listState = historyListState,
+                        state = historyState,
+                        onAction = onAction
+                    )
+                    LimitAndPaginationSection(
+                        isVisible = historyState.episodeHistoryResults is Resource.Success,
+                        pagination = historyState.pagination,
+                        query = LimitAndPaginationQueryState(
+                            page = historyState.queryState.page,
+                            limit = historyState.queryState.limit
+                        ),
+                        onQueryChanged = { updatedQuery ->
+                            if (updatedQuery.page != historyState.queryState.page) {
+                                onAction(EpisodeHistoryAction.ChangePage(updatedQuery.page))
+                            } else if (updatedQuery.limit != historyState.queryState.limit) {
+                                onAction(
+                                    EpisodeHistoryAction.ApplyFilters(
+                                        historyState.queryState.copy(
+                                            page = 1,
+                                            limit = updatedQuery.limit
+                                                ?: historyState.queryState.limit
+                                        )
+                                    )
+                                )
+                            }
+                        }
+                    )
+                }
             }
         }
     }

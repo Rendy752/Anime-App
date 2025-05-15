@@ -13,6 +13,7 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
@@ -330,6 +331,7 @@ fun MainScreen(
             BottomNavigationBar(navController = navController)
         }
         AnimatedVisibility(
+            modifier = Modifier.fillMaxWidth(),
             visible = !isConnected,
             enter = slideInVertically(
                 initialOffsetY = { it },

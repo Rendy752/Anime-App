@@ -196,7 +196,7 @@ fun AnimeSearchScreen(
                         resetBottomSheetFilters = { onAction(SearchAction.ResetBottomSheetFilters) },
                         onFilterClick = { isFilterBottomSheetShow = true }
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(4.dp))
                     GenreProducerFilterFieldSection(
                         selectedGenres = filterSelectionState.selectedGenres,
                         setSelectedGenre = { genre ->
@@ -213,8 +213,6 @@ fun AnimeSearchScreen(
                         setGenresBottomSheet = { isGenresBottomSheetShow = it },
                         setProducersBottomSheet = { isProducersBottomSheetShow = it }
                     )
-
-                    HorizontalDivider()
 
                     ResultsSection(
                         modifier = Modifier.weight(1f),

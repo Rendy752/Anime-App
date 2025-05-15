@@ -17,6 +17,7 @@ import com.example.animeapp.utils.Debounce
 
 @Composable
 fun FilterContent(
+    modifier: Modifier = Modifier,
     queryState: EpisodeHistoryQueryState,
     onAction: (EpisodeHistoryAction) -> Unit
 ) {
@@ -39,10 +40,8 @@ fun FilterContent(
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         SearchView(
             query = searchQuery,
