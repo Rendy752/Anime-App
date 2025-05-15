@@ -9,10 +9,10 @@
     <uses-permission android:name="android.permission.READ_SETTINGS" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
 
-    <uses-permission android:name="com.example.animeapp.permission.ACCESS_MEDIA_SERVICE" />
+    <uses-permission android:name="com.luminoverse.animevibe.permission.ACCESS_MEDIA_SERVICE" />
 
     <permission
-        android:name="com.example.animeapp.permission.ACCESS_MEDIA_SERVICE"
+        android:name="com.luminoverse.animevibe.permission.ACCESS_MEDIA_SERVICE"
         android:description="@string/permission_access_media_service_description"
         android:label="@string/permission_access_media_service_label"
         android:protectionLevel="signature" />
@@ -52,7 +52,7 @@
                 <data
                     android:host="anime"
                     android:pathPattern="/detail/.*"
-                    android:scheme="animeapp" />
+                    android:scheme="animevibe" />
             </intent-filter>
 
             <intent-filter>
@@ -64,7 +64,7 @@
                 <data
                     android:host="anime"
                     android:pathPattern="/watch/.*"
-                    android:scheme="animeapp" />
+                    android:scheme="animevibe" />
             </intent-filter>
         </activity>
 
@@ -88,7 +88,7 @@
             android:name=".utils.MediaPlaybackService"
             android:exported="true"
             android:foregroundServiceType="mediaPlayback"
-            android:permission="com.example.animeapp.permission.ACCESS_MEDIA_SERVICE">
+            android:permission="com.luminoverse.animevibe.permission.ACCESS_MEDIA_SERVICE">
             <intent-filter>
                 <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>

@@ -13,11 +13,14 @@ plugins {
 }
 
 android {
-    namespace = "com.example.animeapp"
+    namespace = "com.luminoverse.animevibe"
     compileSdk = 35
 
+    val localProperties = Properties()
+    localProperties.load(project.rootProject.file("local.properties").inputStream())
+
     defaultConfig {
-        applicationId = "com.example.animeapp"
+        applicationId = "com.luminoverse.animevibe"
         minSdk = 27
         targetSdk = 35
         versionCode = 1
@@ -40,6 +43,14 @@ android {
         )
     }
 
+    signingConfigs {
+        create("release") {
+            storeFile = file(localProperties.getProperty("storeFile"))
+            storePassword = localProperties.getProperty("storePassword")
+            keyAlias = localProperties.getProperty("keyAlias")
+            keyPassword = localProperties.getProperty("keyPassword")
+        }
+    }
     buildTypes {
         release {
             isMinifyEnabled = true
@@ -48,7 +59,7 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("release")
         }
     }
 

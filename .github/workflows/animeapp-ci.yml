@@ -1,4 +1,4 @@
-name: AnimeApp Build and Test CI
+name: AnimeVibe Build and Test CI
 
 on:
   push:

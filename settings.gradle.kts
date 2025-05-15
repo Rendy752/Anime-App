@@ -21,6 +21,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "AnimeApp"
+rootProject.name = "AnimeVibe"
 include(":app")
  

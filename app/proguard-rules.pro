@@ -60,9 +60,9 @@
 
 # --- WorkManager ---
 -keep class androidx.work.** { *; }
--keep class com.example.animeapp.utils.AnimeBroadcastNotificationWorker { *; }
--keep class com.example.animeapp.utils.AnimeWorkerFactory { *; }
--keep interface com.example.animeapp.utils.ChildWorkerFactory { *; }
+-keep class com.luminoverse.animevibe.utils.AnimeBroadcastNotificationWorker { *; }
+-keep class com.luminoverse.animevibe.utils.AnimeWorkerFactory { *; }
+-keep interface com.luminoverse.animevibe.utils.ChildWorkerFactory { *; }
 -keepclasseswithmembers class * {
     @dagger.assisted.AssistedInject <init>(...);
 }
@@ -155,6 +155,5 @@
 -dontwarn androidx.**
 
 # Prevent R8 from removing unused classes in release builds
--keep class com.example.animeapp.** { *; }
--keep class com.example.animeapp.utils.Quad { *; }
--dontwarn com.example.animeapp.**
+-keep class com.luminoverse.animevibe.** { *; }
+-dontwarn com.luminoverse.animevibe.**

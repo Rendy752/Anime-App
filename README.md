@@ -1,8 +1,8 @@
-# AnimeApp
+# AnimeVibe
 
 [![Kotlin](https://img.shields.io/badge/kotlin-%237F52FF.svg?style=for-the-badge&logo=kotlin&logoColor=white)](https://kotlinlang.org/)
 
-AnimeApp is a comprehensive, anime-themed Android application using Kotlin and Jetpack Compose designed to provide users with a seamless and immersive experience for discovering, exploring, and enjoying their favorite anime. Leveraging a robust architecture and efficient data management, this app aims to be the go-to resource for anime enthusiasts.
+AnimeVibe is a comprehensive, anime-themed Android application using Kotlin and Jetpack Compose designed to provide users with a seamless and immersive experience for discovering, exploring, and enjoying their favorite anime. Leveraging a robust architecture and efficient data management, this app aims to be the go-to resource for anime enthusiasts.
 
 ## Key Features
 
@@ -201,7 +201,7 @@ AnimeApp is a comprehensive, anime-themed Android application using Kotlin and J
 
 ## CI/CD with GitHub Actions
 
-AnimeApp utilizes GitHub Actions for Continuous Integration and Continuous Delivery (CI/CD). This automated workflow ensures code quality and facilitates smoother development by:
+AnimeVibe utilizes GitHub Actions for Continuous Integration and Continuous Delivery (CI/CD). This automated workflow ensures code quality and facilitates smoother development by:
 
 * **Automated Building and Testing:** On every code push to the `main`, `feature/*`, and `enhancement/*` branches, and on pull requests targeting these branches, GitHub Actions automatically checks out the code, sets up the Java environment, and runs unit tests and lint checks.
 * **Dependency Caching:** Gradle dependencies are cached between builds, significantly speeding up the CI process.
@@ -229,5 +229,5 @@ This CI/CD pipeline helps maintain a stable and functional codebase by automatic
 
 ## Next Update
 
-I'm actively working on enhancing AnimeApp with the following features and improvements:
-* **Multiplatform Conversion:** We're exploring the possibility of expanding AnimeApp to other platforms.
+I'm actively working on enhancing AnimeVibe with the following features and improvements:
+* **Multiplatform Conversion:** We're exploring the possibility of expanding AnimeVibe to other platforms.
