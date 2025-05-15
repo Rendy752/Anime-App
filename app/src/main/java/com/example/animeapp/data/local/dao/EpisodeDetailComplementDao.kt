@@ -48,7 +48,6 @@ interface EpisodeDetailComplementDao {
             SELECT * FROM episode_detail_complement
             WHERE lastWatched IS NOT NULL AND lastTimestamp IS NOT NULL
             AND (:isFavorite IS NULL OR isFavorite = :isFavorite)
-            AND (:searchQuery = '' OR animeTitle LIKE '%' || :searchQuery || '%' OR episodeTitle LIKE '%' || :searchQuery || '%')
             ORDER BY
                 CASE :sortBy
                     WHEN 'NewestFirst' THEN lastWatched
@@ -61,7 +60,6 @@ interface EpisodeDetailComplementDao {
         """
     )
     suspend fun getPaginatedEpisodeHistory(
-        searchQuery: String,
         isFavorite: Boolean?,
         sortBy: String,
         limit: Int,
@@ -73,11 +71,9 @@ interface EpisodeDetailComplementDao {
             SELECT COUNT(*) FROM episode_detail_complement
             WHERE lastWatched IS NOT NULL AND lastTimestamp IS NOT NULL
             AND (:isFavorite IS NULL OR isFavorite = :isFavorite)
-            AND (:searchQuery = '' OR animeTitle LIKE '%' || :searchQuery || '%' OR episodeTitle LIKE '%' || :searchQuery || '%')
         """
     )
     suspend fun getEpisodeHistoryCount(
-        searchQuery: String,
         isFavorite: Boolean?
     ): Int
 }

@@ -47,7 +47,7 @@ class EpisodeHistoryViewModelTest {
         id = "lorem-ipsum-123?ep=123",
         malId = 1,
         aniwatchId = "aniwatch1",
-        animeTitle = "Test Anime",
+        animeTitle = "Naruto: Shippuuden",
         episodeTitle = "Episode 1",
         imageUrl = "test_image_url",
         number = 1,
@@ -82,7 +82,7 @@ class EpisodeHistoryViewModelTest {
             coEvery { repository.getPaginatedEpisodeHistory(capture(queryStateSlot)) } returns Resource.Success(
                 listOf(mockEpisodeDetailComplement)
             )
-            coEvery { repository.getEpisodeHistoryCount(any(), any()) } returns Resource.Success(1)
+            coEvery { repository.getEpisodeHistoryCount(null) } returns Resource.Success(1)
             coEvery { repository.getCachedAnimeDetailComplementByMalId(1) } returns mockAnimeDetailComplement
             coEvery {
                 ComplementUtils.getOrCreateAnimeDetailComplement(repository = repository, malId = 1)
@@ -98,10 +98,11 @@ class EpisodeHistoryViewModelTest {
             assertTrue(results.containsKey(mockAnimeDetailComplement))
             assertEquals(listOf(mockEpisodeDetailComplement), results[mockAnimeDetailComplement])
             assertEquals(1, state.pagination?.items?.total)
+            assertEquals(1, state.pagination?.items?.count)
             assertEquals(1, state.pagination?.last_visible_page)
             assertEquals(false, state.pagination?.has_next_page)
             coVerify(exactly = 2) { repository.getPaginatedEpisodeHistory(any()) }
-            coVerify(exactly = 2) { repository.getEpisodeHistoryCount(any(), any()) }
+            coVerify(exactly = 2) { repository.getEpisodeHistoryCount(null) }
             assertEquals(
                 EpisodeHistoryQueryState(
                     searchQuery = "",
@@ -115,21 +116,49 @@ class EpisodeHistoryViewModelTest {
         }
 
     @Test
-    fun `FetchHistory with error should update episodeHistoryResults with error`() = runTest {
-        val queryStateSlot = slot<EpisodeHistoryQueryState>()
-        val searchQuerySlot = slot<String>()
-        var capturedIsFavorite: Boolean? = null
-        coEvery { repository.getPaginatedEpisodeHistory(capture(queryStateSlot)) } returns Resource.Error(
-            "Database error"
+    fun `FetchHistory with search query should filter episodes using AnimeTitleFinder`() = runTest {
+        val queryState = EpisodeHistoryQueryState(
+            searchQuery = "narutp",
+            isFavorite = null,
+            sortBy = EpisodeHistoryQueryState.SortBy.NewestFirst,
+            page = 1,
+            limit = 10
         )
-        coEvery { repository.getEpisodeHistoryCount(capture(searchQuerySlot), any()) } answers {
-            capturedIsFavorite = arg(1)
-            Resource.Success(1)
-        }
+        val queryStateSlot = slot<EpisodeHistoryQueryState>()
+        coEvery { repository.getPaginatedEpisodeHistory(capture(queryStateSlot)) } returns Resource.Success(
+            listOf(mockEpisodeDetailComplement)
+        )
+        coEvery { repository.getEpisodeHistoryCount(null) } returns Resource.Success(1)
         coEvery { repository.getCachedAnimeDetailComplementByMalId(1) } returns mockAnimeDetailComplement
         coEvery {
             ComplementUtils.getOrCreateAnimeDetailComplement(repository = repository, malId = 1)
         } returns mockAnimeDetailComplement
+
+        viewModel = EpisodeHistoryViewModel(repository)
+        viewModel.onAction(EpisodeHistoryAction.ApplyFilters(queryState))
+        advanceUntilIdle()
+
+        val state = viewModel.historyState.value
+        assertTrue("Results should be Success, but got ${state.episodeHistoryResults}", state.episodeHistoryResults is Resource.Success)
+        val results = (state.episodeHistoryResults as Resource.Success).data
+        assertTrue("Results should contain mockAnimeDetailComplement", results.containsKey(mockAnimeDetailComplement))
+        assertEquals("Results should contain mockEpisodeDetailComplement", listOf(mockEpisodeDetailComplement), results[mockAnimeDetailComplement])
+        assertEquals("Pagination count should be 1", 1, state.pagination?.items?.count)
+        assertEquals("Pagination total should be 1", 1, state.pagination?.items?.total)
+        assertEquals("Last visible page should be 1", 1, state.pagination?.last_visible_page)
+        assertEquals("Has next page should be false", false, state.pagination?.has_next_page)
+        coVerify(exactly = 2) { repository.getPaginatedEpisodeHistory(any()) }
+        coVerify(exactly = 2) { repository.getEpisodeHistoryCount(null) }
+        assertEquals("Query state should match", queryState, queryStateSlot.captured)
+    }
+
+    @Test
+    fun `FetchHistory with error should update episodeHistoryResults with error`() = runTest {
+        val queryStateSlot = slot<EpisodeHistoryQueryState>()
+        coEvery { repository.getPaginatedEpisodeHistory(capture(queryStateSlot)) } returns Resource.Error(
+            "Database error"
+        )
+        coEvery { repository.getEpisodeHistoryCount(null) } returns Resource.Success(1)
 
         viewModel = EpisodeHistoryViewModel(repository)
         viewModel.onAction(EpisodeHistoryAction.FetchHistory)
@@ -140,7 +169,7 @@ class EpisodeHistoryViewModelTest {
         assertEquals("Database error", (state.episodeHistoryResults as Resource.Error).message)
         assertEquals(null, state.pagination)
         coVerify(exactly = 2) { repository.getPaginatedEpisodeHistory(any()) }
-        coVerify(exactly = 2) { repository.getEpisodeHistoryCount(any(), any()) }
+        coVerify(exactly = 2) { repository.getEpisodeHistoryCount(null) }
         assertEquals(
             EpisodeHistoryQueryState(
                 searchQuery = "",
@@ -151,14 +180,12 @@ class EpisodeHistoryViewModelTest {
             ),
             queryStateSlot.captured
         )
-        assertEquals("", searchQuerySlot.captured)
-        assertEquals(null, capturedIsFavorite)
     }
 
     @Test
     fun `ApplyFilters should update queryState and trigger FetchHistory`() = runTest {
         val updatedQueryState = EpisodeHistoryQueryState(
-            searchQuery = "Test",
+            searchQuery = "naruto",
             isFavorite = true,
             sortBy = EpisodeHistoryQueryState.SortBy.EpisodeTitle,
             page = 2,
@@ -168,7 +195,7 @@ class EpisodeHistoryViewModelTest {
         coEvery { repository.getPaginatedEpisodeHistory(capture(queryStateSlot)) } returns Resource.Success(
             listOf(mockEpisodeDetailComplement)
         )
-        coEvery { repository.getEpisodeHistoryCount(any(), any()) } returns Resource.Success(1)
+        coEvery { repository.getEpisodeHistoryCount(true) } returns Resource.Success(1)
         coEvery { repository.getCachedAnimeDetailComplementByMalId(1) } returns mockAnimeDetailComplement
         coEvery {
             ComplementUtils.getOrCreateAnimeDetailComplement(repository = repository, malId = 1)
@@ -182,7 +209,7 @@ class EpisodeHistoryViewModelTest {
         assertEquals(updatedQueryState, state.queryState)
         assertTrue(state.episodeHistoryResults is Resource.Success)
         coVerify(exactly = 2) { repository.getPaginatedEpisodeHistory(any()) }
-        coVerify(exactly = 2) { repository.getEpisodeHistoryCount(any(), any()) }
+        coVerify(exactly = 2) { repository.getEpisodeHistoryCount(true) }
         assertEquals(updatedQueryState, queryStateSlot.captured)
     }
 
@@ -192,7 +219,7 @@ class EpisodeHistoryViewModelTest {
             coEvery { repository.getPaginatedEpisodeHistory(any()) } returns Resource.Success(
                 listOf(mockEpisodeDetailComplement)
             )
-            coEvery { repository.getEpisodeHistoryCount(any(), any()) } returns Resource.Success(1)
+            coEvery { repository.getEpisodeHistoryCount(null) } returns Resource.Success(1)
             coEvery { repository.getCachedAnimeDetailComplementByMalId(1) } returns mockAnimeDetailComplement
             coEvery { repository.getCachedEpisodeDetailComplement("lorem-ipsum-123?ep=123") } returns mockEpisodeDetailComplement
             coEvery { repository.updateEpisodeDetailComplement(any()) } just Runs
@@ -217,7 +244,7 @@ class EpisodeHistoryViewModelTest {
             coVerify(exactly = 1) { repository.getCachedEpisodeDetailComplement("lorem-ipsum-123?ep=123") }
             coVerify(exactly = 1) { repository.updateEpisodeDetailComplement(any()) }
             coVerify(exactly = 1) { repository.getPaginatedEpisodeHistory(any()) }
-            coVerify(exactly = 1) { repository.getEpisodeHistoryCount(any(), any()) }
+            coVerify(exactly = 1) { repository.getEpisodeHistoryCount(null) }
         }
 
     @Test
@@ -226,7 +253,7 @@ class EpisodeHistoryViewModelTest {
             coEvery { repository.getPaginatedEpisodeHistory(any()) } returns Resource.Success(
                 listOf(mockEpisodeDetailComplement)
             )
-            coEvery { repository.getEpisodeHistoryCount(any(), any()) } returns Resource.Success(1)
+            coEvery { repository.getEpisodeHistoryCount(null) } returns Resource.Success(1)
             coEvery { repository.getCachedAnimeDetailComplementByMalId(1) } returns mockAnimeDetailComplement
             coEvery { repository.getCachedEpisodeDetailComplement("lorem-ipsum-123?ep=123") } returns null
             coEvery {
@@ -251,7 +278,7 @@ class EpisodeHistoryViewModelTest {
             coVerify(exactly = 1) { repository.getCachedEpisodeDetailComplement("lorem-ipsum-123?ep=123") }
             coVerify(exactly = 0) { repository.updateEpisodeDetailComplement(any()) }
             coVerify(exactly = 1) { repository.getPaginatedEpisodeHistory(any()) }
-            coVerify(exactly = 1) { repository.getEpisodeHistoryCount(any(), any()) }
+            coVerify(exactly = 1) { repository.getEpisodeHistoryCount(null) }
         }
 
     @Test
@@ -259,7 +286,7 @@ class EpisodeHistoryViewModelTest {
         coEvery { repository.getPaginatedEpisodeHistory(any()) } returns Resource.Success(
             listOf(mockEpisodeDetailComplement)
         )
-        coEvery { repository.getEpisodeHistoryCount(any(), any()) } returns Resource.Success(1)
+        coEvery { repository.getEpisodeHistoryCount(null) } returns Resource.Success(1)
         coEvery { repository.getCachedAnimeDetailComplementByMalId(1) } returns mockAnimeDetailComplement
         coEvery { repository.updateCachedAnimeDetailComplement(any()) } just Runs
         coEvery {
@@ -278,7 +305,7 @@ class EpisodeHistoryViewModelTest {
         coVerify(exactly = 1) { repository.getCachedAnimeDetailComplementByMalId(1) }
         coVerify(exactly = 1) { repository.updateCachedAnimeDetailComplement(any()) }
         coVerify(exactly = 1) { repository.getPaginatedEpisodeHistory(any()) }
-        coVerify(exactly = 1) { repository.getEpisodeHistoryCount(any(), any()) }
+        coVerify(exactly = 1) { repository.getEpisodeHistoryCount(null) }
     }
 
     @Test
@@ -287,7 +314,7 @@ class EpisodeHistoryViewModelTest {
             coEvery { repository.getPaginatedEpisodeHistory(any()) } returns Resource.Success(
                 listOf(mockEpisodeDetailComplement)
             )
-            coEvery { repository.getEpisodeHistoryCount(any(), any()) } returns Resource.Success(1)
+            coEvery { repository.getEpisodeHistoryCount(null) } returns Resource.Success(1)
             coEvery { repository.getCachedAnimeDetailComplementByMalId(1) } returns null
             coEvery {
                 ComplementUtils.getOrCreateAnimeDetailComplement(repository = repository, malId = 1)
@@ -306,7 +333,7 @@ class EpisodeHistoryViewModelTest {
             coVerify(exactly = 1) { repository.getCachedAnimeDetailComplementByMalId(1) }
             coVerify(exactly = 0) { repository.updateCachedAnimeDetailComplement(any()) }
             coVerify(exactly = 1) { repository.getPaginatedEpisodeHistory(any()) }
-            coVerify(exactly = 1) { repository.getEpisodeHistoryCount(any(), any()) }
+            coVerify(exactly = 1) { repository.getEpisodeHistoryCount(null) }
         }
 
     @Test
@@ -314,7 +341,7 @@ class EpisodeHistoryViewModelTest {
         coEvery { repository.getPaginatedEpisodeHistory(any()) } returns Resource.Success(
             listOf(mockEpisodeDetailComplement)
         )
-        coEvery { repository.getEpisodeHistoryCount(any(), any()) } returns Resource.Success(1)
+        coEvery { repository.getEpisodeHistoryCount(null) } returns Resource.Success(1)
         coEvery { repository.getCachedAnimeDetailComplementByMalId(1) } returns mockAnimeDetailComplement
         coEvery { repository.deleteEpisodeDetailComplement("lorem-ipsum-123?ep=123") } returns true
         coEvery {
@@ -331,7 +358,7 @@ class EpisodeHistoryViewModelTest {
         assertFalse(results.any { it.value.any { episode -> episode.id == "lorem-ipsum-123?ep=123" } })
         coVerify(exactly = 1) { repository.deleteEpisodeDetailComplement("lorem-ipsum-123?ep=123") }
         coVerify(exactly = 1) { repository.getPaginatedEpisodeHistory(any()) }
-        coVerify(exactly = 1) { repository.getEpisodeHistoryCount(any(), any()) }
+        coVerify(exactly = 1) { repository.getEpisodeHistoryCount(null) }
     }
 
     @Test
@@ -339,7 +366,7 @@ class EpisodeHistoryViewModelTest {
         coEvery { repository.getPaginatedEpisodeHistory(any()) } returns Resource.Success(
             listOf(mockEpisodeDetailComplement)
         )
-        coEvery { repository.getEpisodeHistoryCount(any(), any()) } returns Resource.Success(1)
+        coEvery { repository.getEpisodeHistoryCount(null) } returns Resource.Success(1)
         coEvery { repository.getCachedAnimeDetailComplementByMalId(1) } returns mockAnimeDetailComplement
         coEvery { repository.deleteEpisodeDetailComplement("lorem-ipsum-123?ep=123") } returns false
         coEvery {
@@ -358,7 +385,7 @@ class EpisodeHistoryViewModelTest {
         )
         coVerify(exactly = 1) { repository.deleteEpisodeDetailComplement("lorem-ipsum-123?ep=123") }
         coVerify(exactly = 1) { repository.getPaginatedEpisodeHistory(any()) }
-        coVerify(exactly = 1) { repository.getEpisodeHistoryCount(any(), any()) }
+        coVerify(exactly = 1) { repository.getEpisodeHistoryCount(null) }
     }
 
     @Test
@@ -366,7 +393,7 @@ class EpisodeHistoryViewModelTest {
         coEvery { repository.getPaginatedEpisodeHistory(any()) } returns Resource.Success(
             listOf(mockEpisodeDetailComplement)
         )
-        coEvery { repository.getEpisodeHistoryCount(any(), any()) } returns Resource.Success(1)
+        coEvery { repository.getEpisodeHistoryCount(null) } returns Resource.Success(1)
         coEvery { repository.getCachedAnimeDetailComplementByMalId(1) } returns mockAnimeDetailComplement
         coEvery { repository.deleteAnimeDetailComplement(1) } returns true
         coEvery {
@@ -383,7 +410,7 @@ class EpisodeHistoryViewModelTest {
         assertFalse(results.any { it.key.malId == 1 })
         coVerify(exactly = 1) { repository.deleteAnimeDetailComplement(1) }
         coVerify(exactly = 1) { repository.getPaginatedEpisodeHistory(any()) }
-        coVerify(exactly = 1) { repository.getEpisodeHistoryCount(any(), any()) }
+        coVerify(exactly = 1) { repository.getEpisodeHistoryCount(null) }
     }
 
     @Test
@@ -391,7 +418,7 @@ class EpisodeHistoryViewModelTest {
         coEvery { repository.getPaginatedEpisodeHistory(any()) } returns Resource.Success(
             listOf(mockEpisodeDetailComplement)
         )
-        coEvery { repository.getEpisodeHistoryCount(any(), any()) } returns Resource.Success(1)
+        coEvery { repository.getEpisodeHistoryCount(null) } returns Resource.Success(1)
         coEvery { repository.getCachedAnimeDetailComplementByMalId(1) } returns mockAnimeDetailComplement
         coEvery { repository.deleteAnimeDetailComplement(1) } returns false
         coEvery {
@@ -410,7 +437,7 @@ class EpisodeHistoryViewModelTest {
         )
         coVerify(exactly = 1) { repository.deleteAnimeDetailComplement(1) }
         coVerify(exactly = 1) { repository.getPaginatedEpisodeHistory(any()) }
-        coVerify(exactly = 1) { repository.getEpisodeHistoryCount(any(), any()) }
+        coVerify(exactly = 1) { repository.getEpisodeHistoryCount(null) }
     }
 
     @Test
@@ -419,11 +446,11 @@ class EpisodeHistoryViewModelTest {
         coEvery { repository.getPaginatedEpisodeHistory(any()) } returns Resource.Success(
             listOf(mockEpisodeDetailComplement, episode2)
         )
-        coEvery { repository.getEpisodeHistoryCount(any(), any()) } returns Resource.Success(2)
+        coEvery { repository.getEpisodeHistoryCount(null) } returns Resource.Success(2)
         coEvery { repository.deleteEpisodeDetailComplement("lorem-ipsum-123?ep=123") } returns true
         coEvery { repository.getCachedAnimeDetailComplementByMalId(1) } returns mockAnimeDetailComplement
         coEvery {
-            ComplementUtils.getOrCreateAnimeDetailComplement(repository = any(), malId = any())
+            ComplementUtils.getOrCreateAnimeDetailComplement(repository = repository, malId = 1)
         } returns mockAnimeDetailComplement
 
         viewModel = EpisodeHistoryViewModel(repository)
@@ -431,9 +458,12 @@ class EpisodeHistoryViewModelTest {
         advanceUntilIdle()
 
         val state = viewModel.historyState.value
+        assertTrue(state.episodeHistoryResults is Resource.Success)
         val results = (state.episodeHistoryResults as Resource.Success).data
         assertTrue(results[mockAnimeDetailComplement]?.any { it.id == "lorem-ipsum-124?ep=124" } == true)
         assertFalse(results[mockAnimeDetailComplement]?.any { it.id == "lorem-ipsum-123?ep=123" } == true)
+        coVerify(exactly = 1) { repository.deleteEpisodeDetailComplement("lorem-ipsum-123?ep=123") }
         coVerify(exactly = 1) { repository.getPaginatedEpisodeHistory(any()) }
+        coVerify(exactly = 1) { repository.getEpisodeHistoryCount(null) }
     }
 }

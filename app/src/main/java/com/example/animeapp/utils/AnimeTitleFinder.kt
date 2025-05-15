@@ -96,7 +96,10 @@ object AnimeTitleFinder {
         val (number1, part1) = numberPair1
         val (number2, part2) = numberPair2
 
-        println("Core titles: '$coreTitle1' <=> '$coreTitle2', Numbers: $number1 <=> $number2, Parts: $part1 <=> $part2")
+        Log.d(
+            "AnimeTitleFinder",
+            "Core titles: '$coreTitle1' <=> '$coreTitle2', Numbers: $number1 <=> $number2, Parts: $part1 <=> $part2"
+        )
 
         val coreSimilarity = calculateCombinedSimilarity(coreTitle1, coreTitle2)
 
@@ -144,4 +147,73 @@ object AnimeTitleFinder {
 
     fun String.normalizeTitle(): String =
         replace(Regex("[^a-zA-Z0-9\\s]"), "").trim().lowercase()
+
+    /**
+     * Filters a list of items based on a search query, using extractors to focus on specific attributes.
+     * Supports case-insensitive matching, fuzzy search for typing mistakes, and core title matching.
+     *
+     * @param searchQuery The user's search input.
+     * @param items The list of items to search through.
+     * @param extractors List of functions to extract string attributes from items.
+     * @param fuzzyThreshold Maximum edit distance for fuzzy matching (default: dynamically calculated).
+     * @return Filtered list of items matching the query.
+     */
+    fun <T> searchTitle(
+        searchQuery: String,
+        items: List<T>,
+        extractors: List<(T) -> String>,
+        fuzzyThreshold: Int = -1
+    ): List<T> {
+        if (searchQuery.isBlank()) {
+            Log.d("AnimeTitleFinder", "Search query is empty, returning full list")
+            return items
+        }
+
+        if (extractors.isEmpty()) {
+            Log.w("AnimeTitleFinder", "No extractors provided, returning empty list")
+            return emptyList()
+        }
+
+        val normalizedQuery = searchQuery.trim().lowercase()
+        val effectiveThreshold = if (fuzzyThreshold >= 0) {
+            fuzzyThreshold
+        } else {
+            when (normalizedQuery.length) {
+                in 0..4 -> 1
+                in 5..7 -> 2
+                else -> 3
+            }
+        }
+
+        return items.filter { item ->
+            extractors.any { extractor ->
+                val attribute = extractor(item).lowercase()
+                if (attribute.isEmpty()) {
+                    Log.w("AnimeTitleFinder", "Empty attribute for item: $item")
+                    return@any false
+                }
+
+                val (coreTitle, _) = extractCoreTitleAndNumber(attribute)
+                val normalizedCoreTitle = coreTitle.normalizeTitle()
+
+                normalizedCoreTitle.contains(normalizedQuery) ||
+                        levenshteinDistance.apply(
+                            normalizedCoreTitle,
+                            normalizedQuery
+                        ) <= effectiveThreshold ||
+                        (normalizedQuery.length <= 7 && levenshteinDistance.apply(
+                            attribute,
+                            normalizedQuery
+                        ) <= effectiveThreshold) ||
+                        normalizedCoreTitle.split(" ").any { word ->
+                            levenshteinDistance.apply(word, normalizedQuery) <= effectiveThreshold
+                        }
+            }
+        }.also {
+            Log.d(
+                "AnimeTitleFinder",
+                "Filtered ${it.size} items for query: $searchQuery, threshold: $effectiveThreshold"
+            )
+        }
+    }
 }

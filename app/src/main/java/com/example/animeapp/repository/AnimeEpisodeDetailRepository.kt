@@ -112,7 +112,6 @@ class AnimeEpisodeDetailRepository(
         return try {
             Resource.Success(
                 episodeDetailComplementDao.getPaginatedEpisodeHistory(
-                    searchQuery = queryState.searchQuery,
                     isFavorite = queryState.isFavorite,
                     sortBy = queryState.sortBy.name,
                     limit = queryState.limit,
@@ -124,13 +123,10 @@ class AnimeEpisodeDetailRepository(
         }
     }
 
-    suspend fun getEpisodeHistoryCount(searchQuery: String, isFavorite: Boolean?): Resource<Int> {
+    suspend fun getEpisodeHistoryCount(isFavorite: Boolean?): Resource<Int> {
         return try {
             Resource.Success(
-                episodeDetailComplementDao.getEpisodeHistoryCount(
-                    searchQuery,
-                    isFavorite
-                )
+                episodeDetailComplementDao.getEpisodeHistoryCount(isFavorite)
             )
         } catch (e: Exception) {
             Resource.Error("Failed to fetch episode history count: ${e.message}")

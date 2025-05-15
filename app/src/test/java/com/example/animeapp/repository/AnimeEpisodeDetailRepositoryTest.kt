@@ -471,7 +471,6 @@ class AnimeEpisodeDetailRepositoryTest {
         val episodeDetailComplement = mockk<EpisodeDetailComplement>()
         coEvery {
             episodeDetailComplementDao.getPaginatedEpisodeHistory(
-                searchQuery = "test",
                 isFavorite = true,
                 sortBy = "NewestFirst",
                 limit = 10,
@@ -486,7 +485,6 @@ class AnimeEpisodeDetailRepositoryTest {
         assertEquals(listOf(episodeDetailComplement), (result as Resource.Success).data)
         coVerify {
             episodeDetailComplementDao.getPaginatedEpisodeHistory(
-                searchQuery = "test",
                 isFavorite = true,
                 sortBy = "NewestFirst",
                 limit = 10,
@@ -506,7 +504,6 @@ class AnimeEpisodeDetailRepositoryTest {
         )
         coEvery {
             episodeDetailComplementDao.getPaginatedEpisodeHistory(
-                searchQuery = "test",
                 isFavorite = true,
                 sortBy = "NewestFirst",
                 limit = 10,
@@ -524,7 +521,6 @@ class AnimeEpisodeDetailRepositoryTest {
         )
         coVerify {
             episodeDetailComplementDao.getPaginatedEpisodeHistory(
-                searchQuery = "test",
                 isFavorite = true,
                 sortBy = "NewestFirst",
                 limit = 10,
@@ -535,35 +531,27 @@ class AnimeEpisodeDetailRepositoryTest {
 
     @Test
     fun `getEpisodeHistoryCount returns success with valid count`() = runTest {
-        val searchQuery = "test"
         val isFavorite = true
         coEvery {
-            episodeDetailComplementDao.getEpisodeHistoryCount(
-                searchQuery,
-                isFavorite
-            )
+            episodeDetailComplementDao.getEpisodeHistoryCount(isFavorite)
         } returns 42
 
-        val result = repository.getEpisodeHistoryCount(searchQuery, isFavorite)
+        val result = repository.getEpisodeHistoryCount(isFavorite)
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertTrue(result is Resource.Success)
         assertEquals(42, (result as Resource.Success).data)
-        coVerify { episodeDetailComplementDao.getEpisodeHistoryCount(searchQuery, isFavorite) }
+        coVerify { episodeDetailComplementDao.getEpisodeHistoryCount(isFavorite) }
     }
 
     @Test
     fun `getEpisodeHistoryCount returns error when dao throws exception`() = runTest {
-        val searchQuery = "test"
         val isFavorite = true
         coEvery {
-            episodeDetailComplementDao.getEpisodeHistoryCount(
-                searchQuery,
-                isFavorite
-            )
+            episodeDetailComplementDao.getEpisodeHistoryCount(isFavorite)
         } throws RuntimeException("Database error")
 
-        val result = repository.getEpisodeHistoryCount(searchQuery, isFavorite)
+        val result = repository.getEpisodeHistoryCount(isFavorite)
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertTrue(result is Resource.Error)
@@ -571,7 +559,7 @@ class AnimeEpisodeDetailRepositoryTest {
             "Failed to fetch episode history count: Database error",
             (result as Resource.Error).message
         )
-        coVerify { episodeDetailComplementDao.getEpisodeHistoryCount(searchQuery, isFavorite) }
+        coVerify { episodeDetailComplementDao.getEpisodeHistoryCount(isFavorite) }
     }
 
     @Test
