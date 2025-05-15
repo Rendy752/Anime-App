@@ -3,12 +3,12 @@ name: AnimeVibe Build and Test CI
 on:
   push:
     branches:
-      - main
+      - master
       - feature/*
       - enhancement/*
   pull_request:
     branches:
-      - main
+      - master
       - feature/*
       - enhancement/*
 
