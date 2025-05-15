@@ -42,6 +42,7 @@ jobs:
             echo "Error: KEYSTORE_BASE64 secret is not set"
             exit 1
           fi
+          mkdir -p app
           echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/release.keystore
           ls -l app/release.keystore
 
