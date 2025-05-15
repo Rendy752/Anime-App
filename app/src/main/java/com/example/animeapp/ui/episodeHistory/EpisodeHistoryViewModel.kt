@@ -32,6 +32,7 @@ sealed class EpisodeHistoryAction {
     data class ApplyFilters(val updatedQueryState: EpisodeHistoryQueryState) :
         EpisodeHistoryAction()
 
+    data class ChangePage(val page: Int) : EpisodeHistoryAction()
     data class ToggleEpisodeFavorite(val episodeId: String, val isFavorite: Boolean) :
         EpisodeHistoryAction()
 
@@ -53,15 +54,16 @@ class EpisodeHistoryViewModel @Inject constructor(
         { it.animeTitle }
     )
 
-    init {
-        onAction(EpisodeHistoryAction.FetchHistory)
-    }
-
     fun onAction(action: EpisodeHistoryAction) {
         when (action) {
             EpisodeHistoryAction.FetchHistory -> fetchHistory()
             is EpisodeHistoryAction.ApplyFilters -> {
                 _historyState.update { it.copy(queryState = action.updatedQueryState) }
+                fetchHistory()
+            }
+
+            is EpisodeHistoryAction.ChangePage -> {
+                _historyState.update { it.copy(queryState = it.queryState.copy(page = action.page)) }
                 fetchHistory()
             }
 
@@ -90,12 +92,33 @@ class EpisodeHistoryViewModel @Inject constructor(
                 )
             }
 
-            val episodesResult = repository.getPaginatedEpisodeHistory(queryState)
+            val allEpisodesResult = repository.getAllEpisodeHistory(queryState)
             val totalCountResult = repository.getEpisodeHistoryCount(queryState.isFavorite)
 
             _historyState.update {
-                if (episodesResult is Resource.Success && totalCountResult is Resource.Success) {
-                    val animeEpisodeMap = episodesResult.data.groupBy { it.malId }
+                if (allEpisodesResult is Resource.Success && totalCountResult is Resource.Success) {
+                    val filteredEpisodes = allEpisodesResult.data
+                        .filter { episode ->
+                            queryState.isFavorite?.let { isFav -> episode.isFavorite == isFav } != false
+                        }
+                        .let { episodes ->
+                            if (queryState.searchQuery.isNotBlank()) {
+                                AnimeTitleFinder.searchTitle(
+                                    searchQuery = queryState.searchQuery,
+                                    items = episodes,
+                                    extractors = episodeExtractors
+                                )
+                            } else {
+                                episodes
+                            }
+                        }
+
+                    val offset = (queryState.page - 1) * queryState.limit
+                    val paginatedEpisodes = filteredEpisodes
+                        .drop(offset)
+                        .take(queryState.limit)
+
+                    val animeEpisodeMap = paginatedEpisodes.groupBy { it.malId }
                         .mapNotNull { (malId, episodes) ->
                             ComplementUtils.getOrCreateAnimeDetailComplement(
                                 repository = repository,
@@ -103,50 +126,29 @@ class EpisodeHistoryViewModel @Inject constructor(
                             )?.let { it to episodes }
                         }.toMap()
 
-                    val filteredMap = if (queryState.searchQuery.isNotBlank()) {
-                        val filteredEpisodes = AnimeTitleFinder.searchTitle(
-                            searchQuery = queryState.searchQuery,
-                            items = episodesResult.data,
-                            extractors = episodeExtractors,
-                            fuzzyThreshold = 2
-                        )
-                        animeEpisodeMap
-                            .filter { (_, episodes) ->
-                                episodes.any { filteredEpisodes.contains(it) }
-                            }
-                            .mapValues { (_, episodes) ->
-                                episodes.filter { filteredEpisodes.contains(it) }
-                            }
-                            .filterValues { it.isNotEmpty() }
-                    } else {
-                        animeEpisodeMap
-                    }
-
-                    val filteredCount = filteredMap.values.sumOf { it.size }
-                    val totalCount = totalCountResult.data
-                    val lastVisiblePage = if (filteredCount > 0) {
-                        ceil(filteredCount.toDouble() / queryState.limit).toInt()
-                    } else {
-                        ceil(totalCount.toDouble() / queryState.limit).toInt()
-                    }
+                    val currentPageCount = animeEpisodeMap.values.sumOf { it.size }
+                    val filteredTotalCount = filteredEpisodes.size
+                    val lastVisiblePage =
+                        ceil(filteredTotalCount.toDouble() / queryState.limit).toInt()
+                            .coerceAtLeast(1)
                     val pagination = CompletePagination(
                         last_visible_page = lastVisiblePage,
-                        has_next_page = queryState.page < lastVisiblePage,
+                        has_next_page = queryState.page < lastVisiblePage && filteredTotalCount > offset + currentPageCount,
                         current_page = queryState.page,
                         items = Items(
-                            count = filteredCount,
-                            total = totalCount,
+                            count = currentPageCount,
+                            total = filteredTotalCount,
                             per_page = queryState.limit
                         )
                     )
 
                     it.copy(
                         isRefreshing = false,
-                        episodeHistoryResults = Resource.Success(filteredMap),
+                        episodeHistoryResults = Resource.Success(animeEpisodeMap),
                         pagination = pagination
                     )
                 } else {
-                    val errorMessage = (episodesResult as? Resource.Error)?.message
+                    val errorMessage = (allEpisodesResult as? Resource.Error)?.message
                         ?: (totalCountResult as? Resource.Error)?.message
                         ?: "Failed to fetch episode history"
                     it.copy(

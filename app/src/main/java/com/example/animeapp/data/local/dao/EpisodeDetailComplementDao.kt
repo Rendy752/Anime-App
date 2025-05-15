@@ -68,6 +68,26 @@ interface EpisodeDetailComplementDao {
 
     @Query(
         """
+            SELECT * FROM episode_detail_complement
+            WHERE lastWatched IS NOT NULL AND lastTimestamp IS NOT NULL
+            AND (:isFavorite IS NULL OR isFavorite = :isFavorite)
+            ORDER BY
+                CASE :sortBy
+                    WHEN 'NewestFirst' THEN lastWatched
+                    WHEN 'AnimeTitle' THEN animeTitle
+                    WHEN 'EpisodeTitle' THEN episodeTitle
+                    WHEN 'EpisodeNumber' THEN number
+                END DESC,
+                episodeTitle ASC
+        """
+    )
+    suspend fun getAllEpisodeHistory(
+        isFavorite: Boolean?,
+        sortBy: String
+    ): List<EpisodeDetailComplement>
+
+    @Query(
+        """
             SELECT COUNT(*) FROM episode_detail_complement
             WHERE lastWatched IS NOT NULL AND lastTimestamp IS NOT NULL
             AND (:isFavorite IS NULL OR isFavorite = :isFavorite)

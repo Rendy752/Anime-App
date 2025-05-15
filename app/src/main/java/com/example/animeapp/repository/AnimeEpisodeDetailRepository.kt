@@ -123,6 +123,19 @@ class AnimeEpisodeDetailRepository(
         }
     }
 
+    suspend fun getAllEpisodeHistory(queryState: EpisodeHistoryQueryState): Resource<List<EpisodeDetailComplement>> {
+        return try {
+            Resource.Success(
+                episodeDetailComplementDao.getAllEpisodeHistory(
+                    isFavorite = queryState.isFavorite,
+                    sortBy = queryState.sortBy.name
+                )
+            )
+        } catch (e: Exception) {
+            Resource.Error("Failed to fetch all episode history: ${e.message}")
+        }
+    }
+
     suspend fun getEpisodeHistoryCount(isFavorite: Boolean?): Resource<Int> {
         return try {
             Resource.Success(

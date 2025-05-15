@@ -342,7 +342,13 @@ class AnimeDetailViewModelTest {
         val animeId = 1735
         val query = FilterUtils.EpisodeQueryState(title = "Title of Episode")
         coEvery { animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(1735) } returns animeDetailComplementPlaceholder
-        coEvery { FilterUtils.filterEpisodes(any(), query, any()) } returns listOf(episodePlaceholder)
+        coEvery {
+            AnimeTitleFinder.searchTitle(
+                searchQuery = query.title,
+                items = any<List<Episode>>(),
+                extractors = any()
+            )
+        } returns listOf(episodePlaceholder)
 
         viewModel.onAction(DetailAction.LoadAnimeDetail(animeId))
         advanceUntilIdle()
@@ -353,7 +359,13 @@ class AnimeDetailViewModelTest {
         assertEquals(query, filterState.episodeQuery)
         assertTrue("Filtered episodes should not be empty", filterState.filteredEpisodes.isNotEmpty())
         coVerify(exactly = 1) { animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(1735) }
-        coVerify(exactly = 1) { FilterUtils.filterEpisodes(any(), query, any()) }
+        coVerify(exactly = 1) {
+            AnimeTitleFinder.searchTitle(
+                searchQuery = query.title,
+                items = any<List<Episode>>(),
+                extractors = any()
+            )
+        }
     }
 
     @Test

@@ -115,14 +115,18 @@ fun HistoryContent(
                 limit = state.queryState.limit
             ),
             onQueryChanged = { updatedQuery ->
-                onAction(
-                    EpisodeHistoryAction.ApplyFilters(
-                        state.queryState.copy(
-                            page = updatedQuery.page,
-                            limit = updatedQuery.limit ?: state.queryState.limit
+                if (updatedQuery.page != state.queryState.page) {
+                    onAction(EpisodeHistoryAction.ChangePage(updatedQuery.page))
+                } else if (updatedQuery.limit != state.queryState.limit) {
+                    onAction(
+                        EpisodeHistoryAction.ApplyFilters(
+                            state.queryState.copy(
+                                page = 1,
+                                limit = updatedQuery.limit ?: state.queryState.limit
+                            )
                         )
                     )
-                )
+                }
             }
         )
     }
