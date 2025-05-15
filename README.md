@@ -52,6 +52,25 @@ AnimeApp is a comprehensive, anime-themed Android application using Kotlin and J
           </td>
         </tr>
       </table>
+* **Episode History:**
+    * Track and manage your anime watch history with a dedicated Episode History screen, storing episode details (e.g., last watched timestamp, progress) in Room Persistence Library for offline access.
+      <table>
+        <tr>
+          <td style="text-align: center">
+            <img src="https://github.com/user-attachments/assets/080e8145-5896-4393-ad3a-4a5b26114db4" width="300" alt="Episode History Skeleton Loading">
+          </td>
+          <td style="text-align: center">
+            <img src="https://github.com/user-attachments/assets/538b85ec-e09a-4630-8d8d-c1175fdeafeb" width="300" alt="Episode History Portrait">
+          </td>
+           <td style="text-align: center">
+            <img src="https://github.com/user-attachments/assets/9e7928ab-68d9-4253-9696-4b336c0153e5" width="700" alt="Episode History Landscape">
+          </td>
+        </tr>
+      </table>
+    * View history grouped by anime, with expandable accordions showing episode details, including thumbnails, progress bars, and watch timestamps.
+    * Interactive actions: favorite/unfavorite anime or episodes, delete individual episodes or entire anime history, and navigate to anime details or episode streaming with a single tap.
+    * Advanced filtering by search query, favorite status, and sorting options (e.g., newest first, episode title) with debounced search for smooth performance.
+    * Pull-to-refresh to update history and automatic refresh on network reconnection after errors.
 * **Advanced Filtering and Search:**
     * Efficient search functionality for quickly finding specific anime titles.
       <table>
@@ -211,6 +230,4 @@ This CI/CD pipeline helps maintain a stable and functional codebase by automatic
 ## Next Update
 
 I'm actively working on enhancing AnimeApp with the following features and improvements:
-
-* **Recent Watched Episode Tracking:** Easily pick up where you left off with a dedicated section for recently watched episodes.
 * **Multiplatform Conversion:** We're exploring the possibility of expanding AnimeApp to other platforms.
