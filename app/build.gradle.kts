@@ -38,10 +38,10 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file(localProperties.getProperty("storeFile") ?: "./release.keystore")
-            storePassword = localProperties.getProperty("storePassword") ?: ""
-            keyAlias = localProperties.getProperty("keyAlias") ?: ""
-            keyPassword = localProperties.getProperty("keyPassword") ?: ""
+            storeFile = file(localProperties.getProperty("storeFile") ?: System.getenv("STORE_FILE") ?: "app/release.keystore")
+            storePassword = localProperties.getProperty("storePassword") ?: System.getenv("STORE_PASSWORD") ?: ""
+            keyAlias = localProperties.getProperty("keyAlias") ?: System.getenv("KEY_ALIAS") ?: ""
+            keyPassword = localProperties.getProperty("keyPassword") ?: System.getenv("KEY_PASSWORD") ?: ""
         }
     }
     buildTypes {
