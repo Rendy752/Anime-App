@@ -28,9 +28,17 @@ jobs:
 
       - name: Create local.properties
         run: |
-            echo "jikan.url=${{ secrets.JIKAN_URL }}" > local.properties
-            echo "animerunway.url=${{ secrets.ANIMERUNWAY_URL }}" >> local.properties
-            echo "youtube.url=${{ secrets.YOUTUBE_URL }}" >> local.properties
+          echo "jikan.url=${{ secrets.JIKAN_URL }}" > local.properties
+          echo "animerunway.url=${{ secrets.ANIMERUNWAY_URL }}" >> local.properties
+          echo "youtube.url=${{ secrets.YOUTUBE_URL }}" >> local.properties
+          echo "storeFile=./release.keystore" >> local.properties
+          echo "storePassword=${{ secrets.STORE_PASSWORD }}" >> local.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> local.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> local.properties
+
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.keystore
 
       - name: Grant Gradle Execute Permissions
         run: chmod +x gradlew
@@ -53,3 +61,12 @@ jobs:
 
       - name: Build Debug APK
         run: ./gradlew assembleDebug
+
+      - name: Build Release AAB
+        run: ./gradlew bundleRelease
+
+      - name: Upload Release AAB
+        uses: actions/upload-artifact@v3
+        with:
+          name: release-aab
+          path: app/build/outputs/bundle/release/app-release.aab

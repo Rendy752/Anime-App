@@ -17,7 +17,10 @@ android {
     compileSdk = 35
 
     val localProperties = Properties()
-    localProperties.load(project.rootProject.file("local.properties").inputStream())
+    val localPropertiesFile = project.rootProject.file("local.properties")
+    if (localPropertiesFile.exists()) {
+        localProperties.load(localPropertiesFile.inputStream())
+    }
 
     defaultConfig {
         applicationId = "com.luminoverse.animevibe"
@@ -28,27 +31,17 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        val localProperties = Properties()
-        localProperties.load(project.rootProject.file("local.properties").inputStream())
-        buildConfigField("String", "JIKAN_URL", "\"${localProperties.getProperty("jikan.url")}\"")
-        buildConfigField(
-            "String",
-            "ANIMERUNWAY_URL",
-            "\"${localProperties.getProperty("animerunway.url")}\""
-        )
-        buildConfigField(
-            "String",
-            "YOUTUBE_URL",
-            "\"${localProperties.getProperty("youtube.url")}\""
-        )
+        buildConfigField("String", "JIKAN_URL", "\"${localProperties.getProperty("jikan.url") ?: ""}\"")
+        buildConfigField("String", "ANIMERUNWAY_URL", "\"${localProperties.getProperty("animerunway.url") ?: ""}\"")
+        buildConfigField("String", "YOUTUBE_URL", "\"${localProperties.getProperty("youtube.url") ?: ""}\"")
     }
 
     signingConfigs {
         create("release") {
-            storeFile = file(localProperties.getProperty("storeFile"))
-            storePassword = localProperties.getProperty("storePassword")
-            keyAlias = localProperties.getProperty("keyAlias")
-            keyPassword = localProperties.getProperty("keyPassword")
+            storeFile = file(localProperties.getProperty("storeFile") ?: "./release.keystore")
+            storePassword = localProperties.getProperty("storePassword") ?: ""
+            keyAlias = localProperties.getProperty("keyAlias") ?: ""
+            keyPassword = localProperties.getProperty("keyPassword") ?: ""
         }
     }
     buildTypes {
@@ -99,13 +92,25 @@ android {
             exceptionFormat = TestExceptionFormat.FULL
         }
     }
+
+    bundle {
+        language {
+            enableSplit = true
+        }
+        density {
+            enableSplit = true
+        }
+        abi {
+            enableSplit = true
+        }
+    }
 }
 
 dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.material)
 
-    //Compose
+    // Compose
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
     implementation(libs.compose.windowsizeclass)
@@ -143,24 +148,24 @@ dependencies {
     // Coil
     implementation(libs.coil.compose)
 
-    //PrettyTime
+    // PrettyTime
     implementation(libs.prettytime)
 
-    //Hilt
+    // Hilt
     implementation(libs.hilt.android)
     implementation(libs.androidx.hilt.navigation.compose)
     kapt(libs.hilt.android.compiler)
 
-    //Kotlinx Serialization
+    // Kotlinx Serialization
     implementation(libs.kotlinx.serialization.json)
 
-    //Splash screen
+    // Splash screen
     implementation(libs.androidx.core.splashscreen)
 
-    //Commons text
+    // Commons text
     implementation(libs.commons.text)
 
-    //Exoplayer
+    // ExoPlayer
     implementation(libs.androidx.legacy.support.v4)
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.ui)
@@ -168,11 +173,11 @@ dependencies {
     implementation(libs.androidx.media3.session)
     implementation(libs.media3.datasource)
 
-    //Chucker
+    // Chucker
     debugImplementation(libs.library)
     releaseImplementation(libs.library.no.op)
 
-    // --- Testing Dependencies ---
+    // Testing Dependencies
     testImplementation(libs.junit)
     testImplementation(libs.androidx.core.testing)
     testImplementation(libs.kotlinx.coroutines.test)
@@ -185,7 +190,7 @@ dependencies {
     testImplementation(libs.mockk)
     androidTestImplementation(libs.mockk)
 
-    // --- Coroutines Testing ---
+    // Coroutines Testing
     androidTestImplementation(libs.kotlinx.coroutines.test)
 }
 

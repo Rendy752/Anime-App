@@ -68,6 +68,8 @@
 }
 
 # --- Room ---
+-keepattributes Signature
+-keepattributes *Annotation*
 -keep class androidx.room.** { *; }
 -dontwarn androidx.room.**
 -keep @androidx.room.Entity class * { *; }
