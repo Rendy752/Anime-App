@@ -5,8 +5,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavController
 import com.luminoverse.animevibe.ui.animeDetail.DetailAction
 import com.luminoverse.animevibe.ui.animeDetail.DetailState
-import com.luminoverse.animevibe.ui.common_ui.AnimeSearchItem
-import com.luminoverse.animevibe.ui.common_ui.AnimeSearchItemSkeleton
+import com.luminoverse.animevibe.ui.common.AnimeSearchItem
+import com.luminoverse.animevibe.ui.common.AnimeSearchItemSkeleton
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.main.navigation.navigateTo
 import com.luminoverse.animevibe.utils.Resource

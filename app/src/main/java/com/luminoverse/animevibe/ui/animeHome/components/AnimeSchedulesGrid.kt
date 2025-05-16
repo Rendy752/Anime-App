@@ -9,8 +9,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.AnimeDetail
-import com.luminoverse.animevibe.ui.common_ui.AnimeScheduleItem
-import com.luminoverse.animevibe.ui.common_ui.AnimeScheduleItemSkeleton
+import com.luminoverse.animevibe.ui.common.AnimeScheduleItem
+import com.luminoverse.animevibe.ui.common.AnimeScheduleItemSkeleton
 
 @Composable
 fun AnimeSchedulesGrid(

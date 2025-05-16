@@ -26,9 +26,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.AnimeDetail
-import com.luminoverse.animevibe.ui.common_ui.DataTextWithIcon
-import com.luminoverse.animevibe.ui.common_ui.SkeletonBox
-import com.luminoverse.animevibe.ui.common_ui.ImageCardWithContent
+import com.luminoverse.animevibe.ui.common.DataTextWithIcon
+import com.luminoverse.animevibe.ui.common.SkeletonBox
+import com.luminoverse.animevibe.ui.common.ImageCardWithContent
 
 @Composable
 fun TopAnimeItem(animeDetail: AnimeDetail, onItemClick: () -> Unit) {

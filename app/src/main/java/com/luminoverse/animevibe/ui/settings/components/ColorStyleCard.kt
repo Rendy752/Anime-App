@@ -28,15 +28,15 @@ import com.luminoverse.animevibe.models.AnimeDetail
 import com.luminoverse.animevibe.models.animeDetailPlaceholder
 import com.luminoverse.animevibe.models.episodeDetailComplementPlaceholder
 import com.luminoverse.animevibe.models.episodePlaceholder
-import com.luminoverse.animevibe.ui.common_ui.EpisodeDetailItem
-import com.luminoverse.animevibe.ui.common_ui.EpisodeDetailItemSkeleton
-import com.luminoverse.animevibe.ui.common_ui.AnimeHeader
-import com.luminoverse.animevibe.ui.common_ui.AnimeHeaderSkeleton
-import com.luminoverse.animevibe.ui.common_ui.AnimeScheduleItem
-import com.luminoverse.animevibe.ui.common_ui.AnimeScheduleItemSkeleton
-import com.luminoverse.animevibe.ui.common_ui.AnimeSearchItem
-import com.luminoverse.animevibe.ui.common_ui.AnimeSearchItemSkeleton
-import com.luminoverse.animevibe.ui.common_ui.ContinueWatchingAnime
+import com.luminoverse.animevibe.ui.common.EpisodeDetailItem
+import com.luminoverse.animevibe.ui.common.EpisodeDetailItemSkeleton
+import com.luminoverse.animevibe.ui.common.AnimeHeader
+import com.luminoverse.animevibe.ui.common.AnimeHeaderSkeleton
+import com.luminoverse.animevibe.ui.common.AnimeScheduleItem
+import com.luminoverse.animevibe.ui.common.AnimeScheduleItemSkeleton
+import com.luminoverse.animevibe.ui.common.AnimeSearchItem
+import com.luminoverse.animevibe.ui.common.AnimeSearchItemSkeleton
+import com.luminoverse.animevibe.ui.common.ContinueWatchingAnime
 import com.luminoverse.animevibe.ui.theme.ColorStyle
 import com.luminoverse.animevibe.ui.theme.ContrastMode
 import com.luminoverse.animevibe.utils.ColorUtils
@@ -104,10 +104,10 @@ fun ColorStyleCard(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         if (animeDetailSample is Resource.Loading) EpisodeDetailItemSkeleton(
-                            modifier = Modifier.heightIn(max = 120.dp)
+                            modifier = Modifier.heightIn(max = 100.dp)
                         )
                         else EpisodeDetailItem(
-                            modifier = Modifier.heightIn(max = 120.dp),
+                            modifier = Modifier.heightIn(max = 100.dp),
                             animeDetail = animeDetailSample.data ?: animeDetailPlaceholder,
                             lastEpisodeWatchedId = episodePlaceholder.episodeId,
                             episode = episodePlaceholder.copy(

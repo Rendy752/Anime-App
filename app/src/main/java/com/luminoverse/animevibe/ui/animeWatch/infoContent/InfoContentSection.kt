@@ -6,12 +6,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.luminoverse.animevibe.models.AnimeDetail
-import com.luminoverse.animevibe.ui.common_ui.AnimeHeader
-import com.luminoverse.animevibe.ui.common_ui.AnimeHeaderSkeleton
-import com.luminoverse.animevibe.ui.common_ui.DetailCommonBody
-import com.luminoverse.animevibe.ui.common_ui.DetailCommonBodySkeleton
-import com.luminoverse.animevibe.ui.common_ui.YoutubePreview
-import com.luminoverse.animevibe.ui.common_ui.YoutubePreviewSkeleton
+import com.luminoverse.animevibe.ui.common.AnimeHeader
+import com.luminoverse.animevibe.ui.common.AnimeHeaderSkeleton
+import com.luminoverse.animevibe.ui.common.DetailCommonBody
+import com.luminoverse.animevibe.ui.common.DetailCommonBodySkeleton
+import com.luminoverse.animevibe.ui.common.YoutubePreview
+import com.luminoverse.animevibe.ui.common.YoutubePreviewSkeleton
 
 @Composable
 fun InfoContentSection(

@@ -33,10 +33,10 @@ import com.luminoverse.animevibe.ui.animeHome.components.AnimeSchedulesGridSkele
 import com.luminoverse.animevibe.ui.animeHome.components.FilterChipBar
 import com.luminoverse.animevibe.ui.animeHome.components.TopAnimeCarousel
 import com.luminoverse.animevibe.ui.animeHome.components.TopAnimeCarouselSkeleton
-import com.luminoverse.animevibe.ui.common_ui.ContinueWatchingAnime
-import com.luminoverse.animevibe.ui.common_ui.LimitAndPaginationQueryState
-import com.luminoverse.animevibe.ui.common_ui.LimitAndPaginationSection
-import com.luminoverse.animevibe.ui.common_ui.MessageDisplay
+import com.luminoverse.animevibe.ui.common.ContinueWatchingAnime
+import com.luminoverse.animevibe.ui.common.LimitAndPaginationQueryState
+import com.luminoverse.animevibe.ui.common.LimitAndPaginationSection
+import com.luminoverse.animevibe.ui.common.MessageDisplay
 import com.luminoverse.animevibe.ui.main.MainState
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.main.navigation.navigateTo

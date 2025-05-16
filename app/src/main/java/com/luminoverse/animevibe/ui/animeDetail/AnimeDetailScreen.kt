@@ -19,7 +19,7 @@ import androidx.navigation.NavHostController
 import com.luminoverse.animevibe.ui.animeDetail.components.AnimeDetailTopBar
 import com.luminoverse.animevibe.ui.animeDetail.components.LoadingContent
 import com.luminoverse.animevibe.ui.animeDetail.components.SuccessContent
-import com.luminoverse.animevibe.ui.common_ui.MessageDisplay
+import com.luminoverse.animevibe.ui.common.MessageDisplay
 import com.luminoverse.animevibe.ui.main.MainState
 import com.luminoverse.animevibe.utils.Resource
 

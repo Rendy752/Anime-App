@@ -26,8 +26,8 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.luminoverse.animevibe.models.AnimeDetailComplement
 import com.luminoverse.animevibe.models.AnimeDetailResponse
-import com.luminoverse.animevibe.ui.common_ui.DebouncedIconButton
-import com.luminoverse.animevibe.ui.common_ui.SkeletonBox
+import com.luminoverse.animevibe.ui.common.DebouncedIconButton
+import com.luminoverse.animevibe.ui.common.SkeletonBox
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.main.navigation.navigateTo
 import com.luminoverse.animevibe.utils.Resource

@@ -11,7 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.AnimeSchedulesSearchQueryState
-import com.luminoverse.animevibe.ui.common_ui.FilterChipView
+import com.luminoverse.animevibe.ui.common.FilterChipView
 import com.luminoverse.animevibe.utils.TimeUtils.getDayOfWeekList
 
 @Composable

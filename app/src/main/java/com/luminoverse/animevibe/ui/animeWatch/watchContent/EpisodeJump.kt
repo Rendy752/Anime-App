@@ -21,7 +21,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.Episode
-import com.luminoverse.animevibe.ui.common_ui.SearchView
+import com.luminoverse.animevibe.ui.common.SearchView
 import com.luminoverse.animevibe.utils.Debounce
 import kotlinx.coroutines.launch
 

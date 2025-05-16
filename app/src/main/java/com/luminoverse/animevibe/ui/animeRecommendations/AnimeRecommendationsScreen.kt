@@ -19,9 +19,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.luminoverse.animevibe.ui.animeRecommendations.recommendations.RecommendationItem
-import com.luminoverse.animevibe.ui.animeRecommendations.recommendations.RecommendationItemSkeleton
-import com.luminoverse.animevibe.ui.common_ui.MessageDisplay
+import com.luminoverse.animevibe.ui.animeRecommendations.components.RecommendationItem
+import com.luminoverse.animevibe.ui.animeRecommendations.components.RecommendationItemSkeleton
+import com.luminoverse.animevibe.ui.common.MessageDisplay
 import com.luminoverse.animevibe.ui.main.MainState
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.main.navigation.navigateTo

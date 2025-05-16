@@ -27,9 +27,9 @@ import com.luminoverse.animevibe.ui.animeDetail.detailBody.DetailBodySection
 import com.luminoverse.animevibe.ui.animeDetail.episodeDetail.EpisodesDetailSection
 import com.luminoverse.animevibe.ui.animeDetail.numericDetail.NumericDetailSection
 import com.luminoverse.animevibe.ui.animeDetail.relation.RelationSection
-import com.luminoverse.animevibe.ui.common_ui.AnimeHeader
-import com.luminoverse.animevibe.ui.common_ui.DetailCommonBody
-import com.luminoverse.animevibe.ui.common_ui.YoutubePreview
+import com.luminoverse.animevibe.ui.common.AnimeHeader
+import com.luminoverse.animevibe.ui.common.DetailCommonBody
+import com.luminoverse.animevibe.ui.common.YoutubePreview
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.main.navigation.navigateTo
 import com.luminoverse.animevibe.utils.AnimeTitleFinder.normalizeTitle

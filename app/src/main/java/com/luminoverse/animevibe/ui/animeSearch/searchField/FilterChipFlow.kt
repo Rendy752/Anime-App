@@ -14,8 +14,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.Producer
-import com.luminoverse.animevibe.ui.common_ui.FilterChipSkeleton
-import com.luminoverse.animevibe.ui.common_ui.FilterChipView
+import com.luminoverse.animevibe.ui.common.FilterChipSkeleton
+import com.luminoverse.animevibe.ui.common.FilterChipView
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable

@@ -17,7 +17,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.AnimeSearchQueryState
-import com.luminoverse.animevibe.ui.common_ui.SearchView
+import com.luminoverse.animevibe.ui.common.SearchView
 import com.luminoverse.animevibe.utils.Debounce
 import com.luminoverse.animevibe.utils.basicContainer
 
@@ -95,7 +95,7 @@ fun SearchFieldSection(
             ) {
                 Icon(
                     imageVector = Icons.Filled.FilterList,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    tint = if (isFilterBottomSheetShow) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer,
                     contentDescription = "Open Filter"
                 )
             }

@@ -36,7 +36,7 @@ import com.luminoverse.animevibe.ui.animeSearch.AnimeSearchViewModel
 import com.luminoverse.animevibe.ui.animeWatch.AnimeWatchScreen
 import com.luminoverse.animevibe.ui.animeWatch.AnimeWatchViewModel
 import com.luminoverse.animevibe.ui.animeWatch.WatchAction
-import com.luminoverse.animevibe.ui.common_ui.MessageDisplay
+import com.luminoverse.animevibe.ui.common.MessageDisplay
 import com.luminoverse.animevibe.ui.episodeHistory.EpisodeHistoryScreen
 import com.luminoverse.animevibe.ui.episodeHistory.EpisodeHistoryViewModel
 import com.luminoverse.animevibe.ui.main.navigation.BottomNavigationBar

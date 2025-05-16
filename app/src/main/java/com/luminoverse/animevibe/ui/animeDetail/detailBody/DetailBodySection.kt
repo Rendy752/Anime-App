@@ -24,10 +24,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.luminoverse.animevibe.models.AnimeDetail
-import com.luminoverse.animevibe.ui.common_ui.ClickableDataTextWithIcon
-import com.luminoverse.animevibe.ui.common_ui.ClickableItem
-import com.luminoverse.animevibe.ui.common_ui.DataTextWithIcon
-import com.luminoverse.animevibe.ui.common_ui.DataTextWithIconSkeleton
+import com.luminoverse.animevibe.ui.common.ClickableDataTextWithIcon
+import com.luminoverse.animevibe.ui.common.ClickableItem
+import com.luminoverse.animevibe.ui.common.DataTextWithIcon
+import com.luminoverse.animevibe.ui.common.DataTextWithIconSkeleton
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.main.navigation.navigateTo
 import com.luminoverse.animevibe.utils.basicContainer

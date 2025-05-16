@@ -25,8 +25,8 @@ import com.luminoverse.animevibe.ui.animeSearch.bottomSheet.ProducersBottomSheet
 import com.luminoverse.animevibe.ui.animeSearch.searchField.GenreProducerFilterFieldSection
 import com.luminoverse.animevibe.ui.animeSearch.results.ResultsSection
 import com.luminoverse.animevibe.ui.animeSearch.searchField.SearchFieldSection
-import com.luminoverse.animevibe.ui.common_ui.LimitAndPaginationQueryState
-import com.luminoverse.animevibe.ui.common_ui.LimitAndPaginationSection
+import com.luminoverse.animevibe.ui.common.LimitAndPaginationQueryState
+import com.luminoverse.animevibe.ui.common.LimitAndPaginationSection
 import com.luminoverse.animevibe.ui.main.MainState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack

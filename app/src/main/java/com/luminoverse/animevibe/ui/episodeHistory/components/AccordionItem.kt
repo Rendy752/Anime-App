@@ -17,12 +17,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.AnimeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
-import com.luminoverse.animevibe.ui.common_ui.DebouncedIconButton
-import com.luminoverse.animevibe.ui.common_ui.EpisodeInfoRow
-import com.luminoverse.animevibe.ui.common_ui.EpisodeInfoRowSkeleton
-import com.luminoverse.animevibe.ui.common_ui.ImageCardWithContent
-import com.luminoverse.animevibe.ui.common_ui.SkeletonBox
-import com.luminoverse.animevibe.ui.common_ui.highlightText
+import com.luminoverse.animevibe.ui.common.DebouncedIconButton
+import com.luminoverse.animevibe.ui.common.EpisodeInfoRow
+import com.luminoverse.animevibe.ui.common.EpisodeInfoRowSkeleton
+import com.luminoverse.animevibe.ui.common.ImageCardWithContent
+import com.luminoverse.animevibe.ui.common.SkeletonBox
+import com.luminoverse.animevibe.ui.common.highlightText
 
 @Composable
 fun AccordionItem(

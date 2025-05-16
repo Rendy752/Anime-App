@@ -1,6 +1,7 @@
 package com.luminoverse.animevibe.ui.episodeHistory.components
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
@@ -19,11 +20,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
-import com.luminoverse.animevibe.ui.common_ui.ConfirmationAlert
-import com.luminoverse.animevibe.ui.common_ui.ScreenshotDisplay
-import com.luminoverse.animevibe.ui.common_ui.highlightText
-import com.luminoverse.animevibe.ui.common_ui.DebouncedIconButton
-import com.luminoverse.animevibe.ui.common_ui.SkeletonBox
+import com.luminoverse.animevibe.ui.common.ConfirmationAlert
+import com.luminoverse.animevibe.ui.common.ScreenshotDisplay
+import com.luminoverse.animevibe.ui.common.highlightText
+import com.luminoverse.animevibe.ui.common.DebouncedIconButton
+import com.luminoverse.animevibe.ui.common.SkeletonBox
 import com.luminoverse.animevibe.utils.TimeUtils
 import com.luminoverse.animevibe.utils.WatchUtils.getEpisodeBackgroundColor
 import com.luminoverse.animevibe.utils.basicContainer
@@ -70,73 +71,79 @@ fun EpisodeHistoryItem(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        ScreenshotDisplay(
-            modifier = Modifier
-                .size(100.dp, 56.dp)
-                .clip(RoundedCornerShape(4.dp)),
-            imageUrl = episode.imageUrl,
-            screenshot = episode.screenshot
-        )
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Text(
-                text = buildAnnotatedString {
-                    append("Ep ${episode.number}: ")
-                    append(highlightText(episode.episodeTitle, searchQuery))
-                },
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold,
-                overflow = TextOverflow.Ellipsis
-            )
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                episode.lastTimestamp?.let { timestamp ->
-                    Text(
-                        modifier = Modifier.padding(end = if (episode.lastWatched != null) 4.dp else 0.dp),
-                        text = "${TimeUtils.formatTimestamp(timestamp)} " +
-                                "${episode.duration?.let { "/ ${TimeUtils.formatTimestamp(it)}" }}",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-                episode.lastWatched?.let { lastWatched ->
-                    Text(
-                        modifier = Modifier.padding(start = if (episode.lastTimestamp != null) 4.dp else 0.dp),
-                        text = "~ ${TimeUtils.formatDateToAgo(lastWatched)}",
-                        style = MaterialTheme.typography.bodySmall
-                    )
-                }
-            }
-            val duration = episode.duration?.toFloat() ?: (24 * 60f)
-            val progress = episode.lastTimestamp?.let { timestamp ->
-                if (timestamp < duration) (timestamp.toFloat() / duration).coerceIn(0f, 1f) else 1f
-            } ?: 0f
-            val percentage = (progress * 100).roundToInt()
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                LinearProgressIndicator(
-                    progress = { progress },
+                ScreenshotDisplay(
                     modifier = Modifier
-                        .weight(1f)
-                        .height(6.dp)
-                        .semantics { contentDescription = "$percentage% watched" },
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.surfaceVariant
+                        .size(100.dp, 56.dp)
+                        .clip(RoundedCornerShape(4.dp)),
+                    imageUrl = episode.imageUrl,
+                    screenshot = episode.screenshot
                 )
                 Text(
-                    text = "$percentage%",
-                    style = MaterialTheme.typography.bodySmall,
-                    modifier = Modifier.padding(start = 8.dp)
+                    modifier = Modifier.weight(1f),
+                    text = buildAnnotatedString {
+                        append("Ep ${episode.number}: ")
+                        append(highlightText(episode.episodeTitle, searchQuery))
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    overflow = TextOverflow.Ellipsis
                 )
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    episode.lastTimestamp?.let { timestamp ->
+                        Text(
+                            modifier = Modifier.padding(end = if (episode.lastWatched != null) 4.dp else 0.dp),
+                            text = "${TimeUtils.formatTimestamp(timestamp)} " +
+                                    "${episode.duration?.let { "/ ${TimeUtils.formatTimestamp(it)}" }}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                    episode.lastWatched?.let { lastWatched ->
+                        Text(
+                            modifier = Modifier.padding(start = if (episode.lastTimestamp != null) 4.dp else 0.dp),
+                            text = "~ ${TimeUtils.formatDateToAgo(lastWatched)}",
+                            style = MaterialTheme.typography.bodySmall
+                        )
+                    }
+                }
+                val duration = episode.duration?.toFloat() ?: (24 * 60f)
+                val progress = episode.lastTimestamp?.let { timestamp ->
+                    if (timestamp < duration) (timestamp.toFloat() / duration).coerceIn(
+                        0f,
+                        1f
+                    ) else 1f
+                } ?: 0f
+                val percentage = (progress * 100).roundToInt()
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(6.dp)
+                            .semantics { contentDescription = "$percentage% watched" },
+                        color = MaterialTheme.colorScheme.primary,
+                        trackColor = MaterialTheme.colorScheme.surfaceVariant
+                    )
+                    Text(
+                        text = "$percentage%",
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(start = 8.dp)
+                    )
+                }
             }
         }
         Column(
@@ -172,10 +179,7 @@ fun EpisodeHistoryItem(
 
 @Preview
 @Composable
-fun EpisodeHistoryItemSkeleton(
-    modifier: Modifier = Modifier,
-    isFirstItem: Boolean = true
-) {
+fun EpisodeHistoryItemSkeleton(modifier: Modifier = Modifier, isFirstItem: Boolean = true) {
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -189,72 +193,78 @@ fun EpisodeHistoryItemSkeleton(
                     bottomEnd = 16.dp
                 ),
                 backgroundBrush = null,
-                onItemClick = {}
-            )
+                onItemClick = {})
             .clip(RoundedCornerShape(8.dp)),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        SkeletonBox(
-            modifier = Modifier
-                .size(100.dp, 56.dp)
-                .clip(RoundedCornerShape(4.dp)),
-            width = 100.dp,
-            height = 56.dp
-        )
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 12.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            SkeletonBox(
-                width = 150.dp,
-                height = 16.dp
-            )
+        Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                SkeletonBox(
-                    width = 80.dp,
-                    height = 12.dp
-                )
-                SkeletonBox(
-                    width = 60.dp,
-                    height = 12.dp
-                )
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 SkeletonBox(
                     modifier = Modifier
-                        .weight(1f)
-                        .height(6.dp),
-                    width = 0.dp,
-                    height = 6.dp
+                        .size(100.dp, 56.dp)
+                        .clip(RoundedCornerShape(4.dp)),
+                    width = 100.dp,
+                    height = 56.dp
                 )
-                SkeletonBox(
-                    modifier = Modifier.padding(start = 8.dp),
-                    width = 30.dp,
-                    height = 12.dp
-                )
+                SkeletonBox(modifier = Modifier.weight(1f), width = 180.dp, height = 16.dp)
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    SkeletonBox(modifier = Modifier.fillMaxWidth(0.2f), height = 16.dp)
+                    SkeletonBox(modifier = Modifier.width(110.dp), height = 16.dp)
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    SkeletonBox(
+                        modifier = Modifier
+                            .weight(1f)
+                            .height(6.dp),
+                        width = 0.dp,
+                        height = 6.dp
+                    )
+                    SkeletonBox(
+                        modifier = Modifier.padding(start = 8.dp),
+                        width = 40.dp,
+                        height = 12.dp
+                    )
+                }
             }
         }
         Column(
-            modifier = Modifier.padding(top = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            repeat(2) {
-                SkeletonBox(
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                    width = 24.dp,
-                    height = 24.dp
+            DebouncedIconButton(
+                onClick = { },
+                modifier = Modifier.semantics {
+                    contentDescription = "Add episode to favorites"
+                }
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.FavoriteBorder,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.tertiary
+                )
+            }
+            IconButton(
+                onClick = { },
+                modifier = Modifier.semantics { contentDescription = "Delete Episode" }
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Delete,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error
                 )
             }
         }

@@ -54,7 +54,7 @@ object TimeUtils {
 
     fun formatDateToAgo(dateString: String): String {
         return try {
-            val prettyTime = PrettyTime(Locale.getDefault())
+            val prettyTime = PrettyTime(Locale.ENGLISH)
             val formatter = DateTimeFormatterBuilder()
                 .appendPattern("yyyy-MM-dd'T'HH:mm:ss")
                 .optionalStart()
@@ -63,7 +63,7 @@ object TimeUtils {
                 .optionalStart()
                 .appendOffsetId()
                 .optionalEnd()
-                .toFormatter(Locale.getDefault())
+                .toFormatter(Locale.ENGLISH)
             val zonedDateTime =
                 ZonedDateTime.parse(dateString, formatter.withZone(ZoneId.systemDefault()))
             val date = Date.from(zonedDateTime.toInstant())

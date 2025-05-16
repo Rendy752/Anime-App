@@ -7,8 +7,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.luminoverse.animevibe.ui.common_ui.LimitAndPaginationQueryState
-import com.luminoverse.animevibe.ui.common_ui.LimitAndPaginationSection
+import com.luminoverse.animevibe.ui.common.LimitAndPaginationQueryState
+import com.luminoverse.animevibe.ui.common.LimitAndPaginationSection
 import com.luminoverse.animevibe.ui.episodeHistory.components.FilterContent
 import com.luminoverse.animevibe.ui.episodeHistory.components.HistoryContent
 import com.luminoverse.animevibe.ui.main.MainState
@@ -127,6 +127,7 @@ fun EpisodeHistoryScreen(
                     )
                     HistoryContent(
                         modifier = Modifier
+                            .padding(top = 4.dp)
                             .weight(1f)
                             .fillMaxWidth(),
                         navController = navController,

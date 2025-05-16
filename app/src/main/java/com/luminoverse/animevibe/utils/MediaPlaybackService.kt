@@ -27,7 +27,6 @@ import coil.ImageLoader
 import coil.memory.MemoryCache
 import coil.request.ImageRequest
 import coil.request.SuccessResult
-import coil.transform.CircleCropTransformation
 import com.luminoverse.animevibe.R
 import androidx.media3.session.R as RMedia3
 import com.luminoverse.animevibe.models.Episode
@@ -149,7 +148,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
             val request = ImageRequest.Builder(this@MediaPlaybackService)
                 .data(url)
                 .size(IMAGE_SIZE, IMAGE_SIZE)
-                .transformations(CircleCropTransformation())
+                .allowHardware(false)
                 .build()
             val result = imageLoader.execute(request)
             (result as? SuccessResult)?.drawable?.let { it as? android.graphics.drawable.BitmapDrawable }?.bitmap

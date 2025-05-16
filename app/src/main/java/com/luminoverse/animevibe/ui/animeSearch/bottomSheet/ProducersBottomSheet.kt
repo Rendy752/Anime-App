@@ -21,10 +21,10 @@ import com.luminoverse.animevibe.ui.animeSearch.components.CancelButton
 import com.luminoverse.animevibe.ui.animeSearch.components.ResetButton
 import com.luminoverse.animevibe.ui.animeSearch.searchField.FilterChipFlow
 import com.luminoverse.animevibe.ui.animeSearch.searchField.FilterChipFlowSkeleton
-import com.luminoverse.animevibe.ui.common_ui.LimitAndPaginationQueryState
-import com.luminoverse.animevibe.ui.common_ui.LimitAndPaginationSection
-import com.luminoverse.animevibe.ui.common_ui.RetryButton
-import com.luminoverse.animevibe.ui.common_ui.SearchView
+import com.luminoverse.animevibe.ui.common.LimitAndPaginationQueryState
+import com.luminoverse.animevibe.ui.common.LimitAndPaginationSection
+import com.luminoverse.animevibe.ui.common.RetryButton
+import com.luminoverse.animevibe.ui.common.SearchView
 import com.luminoverse.animevibe.utils.Debounce
 import com.luminoverse.animevibe.utils.Resource
 

@@ -6,8 +6,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.luminoverse.animevibe.models.CompletePagination
-import com.luminoverse.animevibe.ui.common_ui.PaginationButton
-import com.luminoverse.animevibe.ui.common_ui.PaginationDot
+import com.luminoverse.animevibe.ui.common.PaginationButton
+import com.luminoverse.animevibe.ui.common.PaginationDot
 
 @Composable
 fun PaginationButtons(pagination: CompletePagination, onClickListener: (Int) -> Unit) {

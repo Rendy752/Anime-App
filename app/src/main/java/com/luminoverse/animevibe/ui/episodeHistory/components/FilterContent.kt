@@ -9,9 +9,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.EpisodeHistoryQueryState
-import com.luminoverse.animevibe.ui.common_ui.SearchView
+import com.luminoverse.animevibe.ui.common.SearchView
 import com.luminoverse.animevibe.ui.episodeHistory.EpisodeHistoryAction
 import com.luminoverse.animevibe.utils.Debounce
 
@@ -55,10 +56,11 @@ fun FilterContent(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             FilterChip(
+                modifier = Modifier.weight(1f),
                 selected = isFavoriteFilter == true,
                 onClick = {
                     isFavoriteFilter = if (isFavoriteFilter == true) null else true
@@ -68,7 +70,13 @@ fun FilterContent(
                         )
                     )
                 },
-                label = { Text("Favorites Only") },
+                label = {
+                    Text(
+                        modifier = Modifier.fillMaxWidth(),
+                        text = "Favorites Only",
+                        textAlign = TextAlign.Center
+                    )
+                },
                 leadingIcon = {
                     Icon(
                         if (isFavoriteFilter == true) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
@@ -82,9 +90,8 @@ fun FilterContent(
                 )
             )
 
-            Spacer(modifier = Modifier.width(8.dp))
-
             FilterChip(
+                modifier = Modifier.weight(1f),
                 selected = true,
                 onClick = {
                     val sortOptions = EpisodeHistoryQueryState.SortBy.entries
@@ -97,7 +104,9 @@ fun FilterContent(
                 },
                 label = {
                     Text(
-                        sortBy.name.replace("([A-Z])".toRegex(), " $1").trim()
+                        modifier = Modifier.fillMaxWidth(),
+                        text = sortBy.name.replace("([A-Z])".toRegex(), " $1").trim(),
+                        textAlign = TextAlign.Center
                     )
                 },
                 colors = FilterChipDefaults.filterChipColors(

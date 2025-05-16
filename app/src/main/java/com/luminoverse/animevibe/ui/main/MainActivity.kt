@@ -6,6 +6,7 @@ import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.view.MotionEvent
+import android.view.WindowManager
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
@@ -29,7 +30,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.luminoverse.animevibe.AnimeApplication
-import com.luminoverse.animevibe.ui.common_ui.ConfirmationAlert
+import com.luminoverse.animevibe.ui.common.ConfirmationAlert
 import com.luminoverse.animevibe.ui.theme.AppTheme
 import com.luminoverse.animevibe.utils.HlsPlayerUtils
 import com.luminoverse.animevibe.utils.PipUtil.buildPipActions
@@ -129,7 +130,7 @@ class MainActivity : AppCompatActivity() {
                         mainState = state.copy(isLandscape = isLandscape),
                         mainAction = mainViewModel::onAction
                     )
-                    setStatusBarAppearance(MaterialTheme.colorScheme.surface)
+                    setSystemBarAppearance(MaterialTheme.colorScheme.surface)
                 }
             }
         }
@@ -152,9 +153,17 @@ class MainActivity : AppCompatActivity() {
         return super.dispatchTouchEvent(ev)
     }
 
-    private fun setStatusBarAppearance(color: Color) {
+    private fun setSystemBarAppearance(color: Color) {
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.statusBarColor = android.graphics.Color.TRANSPARENT
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            window.navigationBarColor = android.graphics.Color.TRANSPARENT
+            window.attributes.layoutInDisplayCutoutMode =
+                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
+        }
         val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
         windowInsetsController.isAppearanceLightStatusBars = color.luminance() > 0.5f
+        windowInsetsController.isAppearanceLightNavigationBars = color.luminance() > 0.5f
     }
 
     override fun onPictureInPictureModeChanged(

@@ -24,8 +24,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.ui.animeWatch.WatchState
-import com.luminoverse.animevibe.ui.common_ui.DebouncedIconButton
-import com.luminoverse.animevibe.ui.common_ui.SkeletonBox
+import com.luminoverse.animevibe.ui.common.DebouncedIconButton
+import com.luminoverse.animevibe.ui.common.SkeletonBox
 import com.luminoverse.animevibe.ui.main.MainState
 import com.luminoverse.animevibe.utils.Resource
 

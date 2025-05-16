@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.AnimeSearchQueryState
 import com.luminoverse.animevibe.ui.animeSearch.components.ApplyButton
 import com.luminoverse.animevibe.ui.animeSearch.components.ResetButton
-import com.luminoverse.animevibe.ui.common_ui.*
+import com.luminoverse.animevibe.ui.common.*
 import com.luminoverse.animevibe.utils.FilterUtils
 
 @Composable

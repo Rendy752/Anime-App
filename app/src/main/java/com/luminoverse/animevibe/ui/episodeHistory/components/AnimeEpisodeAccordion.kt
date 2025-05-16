@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.AnimeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.animeDetailComplementPlaceholder
-import com.luminoverse.animevibe.ui.common_ui.ConfirmationAlert
+import com.luminoverse.animevibe.ui.common.ConfirmationAlert
 
 @Preview
 @Composable
