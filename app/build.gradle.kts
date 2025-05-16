@@ -31,17 +31,37 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "JIKAN_URL", "\"${localProperties.getProperty("jikan.url") ?: ""}\"")
-        buildConfigField("String", "ANIMERUNWAY_URL", "\"${localProperties.getProperty("animerunway.url") ?: ""}\"")
-        buildConfigField("String", "YOUTUBE_URL", "\"${localProperties.getProperty("youtube.url") ?: ""}\"")
+        buildConfigField(
+            "String",
+            "JIKAN_URL",
+            "\"${localProperties.getProperty("jikan.url") ?: ""}\""
+        )
+        buildConfigField(
+            "String",
+            "ANIMERUNWAY_URL",
+            "\"${localProperties.getProperty("animerunway.url") ?: ""}\""
+        )
+        buildConfigField(
+            "String",
+            "YOUTUBE_URL",
+            "\"${localProperties.getProperty("youtube.url") ?: ""}\""
+        )
+
+        ndk {
+            debugSymbolLevel = "FULL"
+            abiFilters.addAll(listOf("arm64-v8a", "armeabi-v7a", "x86_64"))
+        }
     }
 
     signingConfigs {
         create("release") {
             storeFile = file("release.keystore")
-            storePassword = localProperties.getProperty("storePassword") ?: System.getenv("STORE_PASSWORD") ?: ""
+            storePassword =
+                localProperties.getProperty("storePassword") ?: System.getenv("STORE_PASSWORD")
+                        ?: ""
             keyAlias = localProperties.getProperty("keyAlias") ?: System.getenv("KEY_ALIAS") ?: ""
-            keyPassword = localProperties.getProperty("keyPassword") ?: System.getenv("KEY_PASSWORD") ?: ""
+            keyPassword =
+                localProperties.getProperty("keyPassword") ?: System.getenv("KEY_PASSWORD") ?: ""
         }
     }
     buildTypes {
