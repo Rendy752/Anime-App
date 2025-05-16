@@ -10,7 +10,6 @@ import android.net.NetworkRequest
 import android.os.Handler
 import android.os.Looper
 import android.provider.Settings
-import android.telephony.TelephonyManager
 import android.util.Log
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -137,11 +136,20 @@ class NetworkStateMonitor(context: Context) {
             val finalUrl = connection.url.toString()
             val locationHeader = connection.getHeaderField("Location") ?: ""
             connection.disconnect()
-            if (responseCode in 200..299 && finalUrl.contains("google.com") && !locationHeader.contains("login")) {
-                Log.d(TAG, "HTTP check to google.com successful: code=$responseCode, finalUrl=$finalUrl")
+            if (responseCode in 200..299 && finalUrl.contains("google.com") && !locationHeader.contains(
+                    "login"
+                )
+            ) {
+                Log.d(
+                    TAG,
+                    "HTTP check to google.com successful: code=$responseCode, finalUrl=$finalUrl"
+                )
                 return true
             } else {
-                Log.w(TAG, "HTTP check to google.com failed: code=$responseCode, finalUrl=$finalUrl, location=$locationHeader")
+                Log.w(
+                    TAG,
+                    "HTTP check to google.com failed: code=$responseCode, finalUrl=$finalUrl, location=$locationHeader"
+                )
             }
         } catch (e: IOException) {
             Log.w(TAG, "HTTP check to google.com failed: ${e.message}")
@@ -159,11 +167,20 @@ class NetworkStateMonitor(context: Context) {
             val finalUrl = connection.url.toString()
             val locationHeader = connection.getHeaderField("Location") ?: ""
             connection.disconnect()
-            if (responseCode in 200..299 && finalUrl.contains("example.com") && !locationHeader.contains("login")) {
-                Log.d(TAG, "HTTP check to example.com successful: code=$responseCode, finalUrl=$finalUrl")
+            if (responseCode in 200..299 && finalUrl.contains("example.com") && !locationHeader.contains(
+                    "login"
+                )
+            ) {
+                Log.d(
+                    TAG,
+                    "HTTP check to example.com successful: code=$responseCode, finalUrl=$finalUrl"
+                )
                 return true
             } else {
-                Log.w(TAG, "HTTP check to example.com failed: code=$responseCode, finalUrl=$finalUrl, location=$locationHeader")
+                Log.w(
+                    TAG,
+                    "HTTP check to example.com failed: code=$responseCode, finalUrl=$finalUrl, location=$locationHeader"
+                )
             }
         } catch (e: IOException) {
             Log.w(TAG, "HTTP check to example.com failed: ${e.message}")
@@ -198,13 +215,6 @@ class NetworkStateMonitor(context: Context) {
             return
         }
 
-        val telephonyManager =
-            appContext.getSystemService(Context.TELEPHONY_SERVICE) as TelephonyManager?
-        val isCellularDataEnabled =
-            telephonyManager?.let {
-                it.dataState == TelephonyManager.DATA_CONNECTED || it.dataState == TelephonyManager.DATA_CONNECTING
-            } == true
-
         when {
             capabilities == null -> {
                 icon = Icons.Filled.WifiOff
@@ -212,24 +222,21 @@ class NetworkStateMonitor(context: Context) {
                 label = "No Network"
                 _isConnected.postValue(false)
             }
+
             !capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) -> {
                 icon = Icons.Filled.WifiOff
                 iconColor = Color.Red
                 label = "No Internet"
                 _isConnected.postValue(false)
             }
-            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) && !isCellularDataEnabled -> {
-                icon = Icons.Filled.SignalCellularOff
-                iconColor = Color.Gray
-                label = "Cellular Off"
-                _isConnected.postValue(false)
-            }
-            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) && isCellularDataEnabled && !isInternetAvailable -> {
+
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) && !isInternetAvailable -> {
                 icon = Icons.Filled.SignalCellularConnectedNoInternet4Bar
                 iconColor = Color.Yellow
                 label = "No Data Quota"
                 _isConnected.postValue(false)
             }
+
             else -> {
                 if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
                     when (speed) {
@@ -238,11 +245,13 @@ class NetworkStateMonitor(context: Context) {
                             iconColor = Color.Red
                             label = "$speed Kbps"
                         }
+
                         in 5001..10000 -> {
                             icon = Icons.Filled.Wifi2Bar
                             iconColor = Color.Yellow
                             label = "$speed Kbps"
                         }
+
                         else -> {
                             icon = Icons.Filled.Wifi
                             iconColor = Color.Green
@@ -256,11 +265,13 @@ class NetworkStateMonitor(context: Context) {
                             iconColor = Color.Red
                             label = "$speed Kbps"
                         }
+
                         in 5001..10000 -> {
                             icon = Icons.Filled.SignalCellularAlt2Bar
                             iconColor = Color.Yellow
                             label = "$speed Kbps"
                         }
+
                         else -> {
                             icon = Icons.Filled.SignalCellularAlt
                             iconColor = Color.Green
