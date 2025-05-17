@@ -303,6 +303,27 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
 
     private fun setupPlayerListener() {
         HlsPlayerUtils.getPlayer()?.addListener(object : Player.Listener {
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                if (playbackState == Player.STATE_ENDED) {
+                    coroutineScope.launch {
+                        try {
+                            withTimeout(5_000) {
+                                val player = HlsPlayerUtils.getPlayer() ?: return@withTimeout
+                                val duration = player.duration.takeIf { it > 0 }
+                                val screenshot = captureScreenshot()
+                                updateStoredWatchState?.invoke(duration, duration, screenshot)
+                                Log.d(
+                                    "MediaPlaybackService",
+                                    "Video ended: saved watch state with position=$duration, duration=$duration, screenshot=${screenshot?.take(20)}..."
+                                )
+                            }
+                        } catch (e: Exception) {
+                            Log.e("MediaPlaybackService", "Failed to save watch state on video end", e)
+                        }
+                    }
+                }
+            }
+
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 if (isPlaying) {
                     onPlayerError?.invoke(null)
@@ -506,6 +527,10 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                         withTimeout(5_000) {
                             val screenshot = captureScreenshot()
                             updateStoredWatchState?.invoke(position, duration, screenshot)
+                            Log.d(
+                                "MediaPlaybackService",
+                                "Saved watch state on destroy: position=$position, duration=$duration, screenshot=${screenshot?.take(20)}..."
+                            )
                         }
                     } catch (e: Exception) {
                         Log.e("MediaPlaybackService", "Failed to save watch state on destroy", e)
@@ -600,13 +625,6 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
 
         override fun onSeekTo(pos: Long) {
             HlsPlayerUtils.dispatch(HlsPlayerAction.SeekTo(pos))
-            val duration = HlsPlayerUtils.getPlayer()?.duration
-            if (pos > 0 && pos < (duration ?: Long.MAX_VALUE)) {
-                coroutineScope.launch {
-                    val screenshot = captureScreenshot()
-                    updateStoredWatchState?.invoke(pos, duration, screenshot)
-                }
-            }
             updateNotification()
         }
 
