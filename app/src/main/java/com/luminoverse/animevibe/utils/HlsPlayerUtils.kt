@@ -5,14 +5,16 @@ import android.graphics.Bitmap
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
-import android.media.AudioManager.OnAudioFocusChangeListener
 import android.os.Handler
 import android.os.Looper
+import android.util.Base64
 import android.util.Log
 import android.view.PixelCopy
 import android.view.SurfaceView
 import android.view.TextureView
 import androidx.annotation.OptIn
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.scale
 import androidx.core.net.toUri
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
@@ -22,21 +24,35 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.ExoPlaybackException
+import com.luminoverse.animevibe.models.Episode
+import com.luminoverse.animevibe.models.EpisodeDetailComplement
+import com.luminoverse.animevibe.models.EpisodeSourcesQuery
 import com.luminoverse.animevibe.models.EpisodeSourcesResponse
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
+import java.io.ByteArrayOutputStream
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
-import androidx.core.graphics.createBitmap
-import androidx.core.graphics.scale
 
 data class HlsPlayerState(
     val isPlaying: Boolean = false,
     val playbackState: Int = Player.STATE_IDLE,
     val error: String? = null,
-    val isReady: Boolean = false
+    val isReady: Boolean = false,
+    val currentPosition: Long = 0,
+    val duration: Long = 0,
+    val playbackSpeed: Float = 1f
 )
 
 sealed class HlsPlayerAction {
@@ -48,25 +64,35 @@ sealed class HlsPlayerAction {
         val onError: (String) -> Unit = {}
     ) : HlsPlayerAction()
 
-    data object Play : HlsPlayerAction()
+    data class Play(val autoPlay: Boolean = false) : HlsPlayerAction()
     data object Pause : HlsPlayerAction()
     data class SeekTo(val positionMs: Long) : HlsPlayerAction()
     data object FastForward : HlsPlayerAction()
     data object Rewind : HlsPlayerAction()
     data class SetPlaybackSpeed(val speed: Float) : HlsPlayerAction()
     data object Release : HlsPlayerAction()
+    data class SetVideoSurface(val surface: Any?) : HlsPlayerAction()
+    data class UpdateWatchState(
+        val complement: EpisodeDetailComplement,
+        val episodes: List<Episode>,
+        val query: EpisodeSourcesQuery,
+        val updateStoredWatchState: (Long?, Long?, String?) -> Unit
+    ) : HlsPlayerAction()
 }
 
 object HlsPlayerUtils {
     private var exoPlayer: ExoPlayer? = null
     private var audioManager: AudioManager? = null
-    private var audioFocusChangeListener: OnAudioFocusChangeListener? = null
     private var audioFocusRequest: AudioFocusRequest? = null
     private var audioFocusRequested: Boolean = false
     private var videoSurface: Any? = null
+    private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private var watchStateUpdateJob: Job? = null
 
     private val _state = MutableStateFlow(HlsPlayerState())
     val state: StateFlow<HlsPlayerState> = _state.asStateFlow()
+
+    private const val WATCH_STATE_UPDATE_INTERVAL_MS = 5_000L
 
     @OptIn(UnstableApi::class)
     fun dispatch(action: HlsPlayerAction) {
@@ -79,30 +105,21 @@ object HlsPlayerUtils {
                 action.onError
             )
 
-            is HlsPlayerAction.Play -> play()
+            is HlsPlayerAction.Play -> play(action.autoPlay)
             is HlsPlayerAction.Pause -> pause()
             is HlsPlayerAction.SeekTo -> seekTo(action.positionMs)
             is HlsPlayerAction.FastForward -> fastForward()
             is HlsPlayerAction.Rewind -> rewind()
             is HlsPlayerAction.SetPlaybackSpeed -> setPlaybackSpeed(action.speed)
             is HlsPlayerAction.Release -> release()
+            is HlsPlayerAction.SetVideoSurface -> setVideoSurface(action.surface)
+            is HlsPlayerAction.UpdateWatchState -> updateWatchState(
+                action.updateStoredWatchState
+            )
         }
     }
 
-    fun setVideoSurface(surface: Any?) {
-        videoSurface = surface
-        when (surface) {
-            is TextureView -> exoPlayer?.setVideoTextureView(surface)
-            is SurfaceView -> exoPlayer?.setVideoSurfaceView(surface)
-            null -> {
-                exoPlayer?.clearVideoSurface()
-                Log.d("HlsPlayerUtil", "Video surface cleared")
-            }
-
-            else -> Log.w("HlsPlayerUtil", "Unsupported video surface type: ${surface.javaClass}")
-        }
-        Log.d("HlsPlayerUtil", "Video surface set: ${surface?.javaClass?.simpleName}")
-    }
+    fun getPlayer(): ExoPlayer? = exoPlayer
 
     fun captureFrame(): Bitmap? {
         return when (val surface = videoSurface) {
@@ -114,7 +131,7 @@ object HlsPlayerUtils {
                         scaledBitmap
                     }
                 } catch (e: Exception) {
-                    Log.e("HlsPlayerUtil", "Failed to capture frame from TextureView", e)
+                    Log.e("HlsPlayerUtils", "Failed to capture frame from TextureView", e)
                     null
                 }
             }
@@ -127,21 +144,35 @@ object HlsPlayerUtils {
                         if (result == PixelCopy.SUCCESS) {
                             latch.countDown()
                         } else {
-                            Log.e("HlsPlayerUtil", "PixelCopy failed: $result")
+                            Log.e("HlsPlayerUtils", "PixelCopy failed: $result")
                         }
                     }, Handler(Looper.getMainLooper()))
                     latch.await(1, TimeUnit.SECONDS)
                     bitmap
                 } catch (e: Exception) {
-                    Log.e("HlsPlayerUtil", "Failed to capture frame from SurfaceView", e)
+                    Log.e("HlsPlayerUtils", "Failed to capture frame from SurfaceView", e)
                     null
                 }
             }
 
             else -> {
-                Log.w("HlsPlayerUtil", "No video surface available for frame capture")
+                Log.w("HlsPlayerUtils", "No video surface available for frame capture")
                 null
             }
+        }
+    }
+
+    suspend fun captureScreenshot(): String? = withContext(Dispatchers.IO) {
+        try {
+            val bitmap = captureFrame() ?: return@withContext null
+            val outputStream = ByteArrayOutputStream()
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 80, outputStream)
+            val byteArray = outputStream.toByteArray()
+            bitmap.recycle()
+            Base64.encodeToString(byteArray, Base64.DEFAULT)
+        } catch (e: Exception) {
+            Log.e("HlsPlayerUtils", "Failed to capture screenshot", e)
+            null
         }
     }
 
@@ -152,7 +183,7 @@ object HlsPlayerUtils {
             exoPlayer = ExoPlayer.Builder(context).build().apply {
                 addListener(object : Player.Listener {
                     override fun onIsPlayingChanged(isPlaying: Boolean) {
-                        Log.d("HlsPlayerUtil", "onIsPlayingChanged: isPlaying=$isPlaying")
+                        Log.d("HlsPlayerUtils", "onIsPlayingChanged: isPlaying=$isPlaying")
                         _state.update { it.copy(isPlaying = isPlaying, error = null) }
                         if (isPlaying) {
                             requestAudioFocus()
@@ -162,9 +193,16 @@ object HlsPlayerUtils {
                     }
 
                     override fun onPlaybackStateChanged(state: Int) {
-                        Log.d("HlsPlayerUtil", "onPlaybackStateChanged: state=$state")
+                        Log.d("HlsPlayerUtils", "onPlaybackStateChanged: state=$state")
                         val isReady = state == Player.STATE_READY || state == Player.STATE_BUFFERING
-                        _state.update { it.copy(playbackState = state, isReady = isReady) }
+                        _state.update {
+                            it.copy(
+                                playbackState = state,
+                                isReady = isReady,
+                                currentPosition = currentPosition,
+                                duration = duration
+                            )
+                        }
                         when (state) {
                             Player.STATE_ENDED -> {
                                 _state.update { it.copy(isPlaying = false) }
@@ -197,13 +235,13 @@ object HlsPlayerUtils {
                             error.message != null -> "Playback error: ${error.message}"
                             else -> "Unknown playback error"
                         }
-                        Log.e("HlsPlayerUtil", "onPlayerError: $message", error)
+                        Log.e("HlsPlayerUtils", "onPlayerError: $message", error)
                         _state.update { it.copy(error = message) }
                         abandonAudioFocus()
                     }
                 })
                 pause()
-                Log.d("HlsPlayerUtil", "ExoPlayer initialized")
+                Log.d("HlsPlayerUtils", "ExoPlayer initialized")
             }
             _state.update { it.copy(playbackState = Player.STATE_IDLE, isReady = false) }
         }
@@ -245,14 +283,14 @@ object HlsPlayerUtils {
                 lastTimestamp?.let { if (it > 0 && it < player.duration) player.seekTo(it) }
                 player.pause()
                 Log.d(
-                    "HlsPlayerUtil",
+                    "HlsPlayerUtils",
                     "Media set: url=${mediaItemUri}, lastTimestamp=$lastTimestamp"
                 )
 
                 val readyListener = object : Player.Listener {
                     override fun onPlaybackStateChanged(state: Int) {
                         if (state == Player.STATE_READY) {
-                            Log.d("HlsPlayerUtil", "Player ready for media")
+                            Log.d("HlsPlayerUtils", "Player ready for media")
                             onReady()
                             player.removeListener(this)
                         }
@@ -261,7 +299,7 @@ object HlsPlayerUtils {
                     override fun onPlayerError(error: PlaybackException) {
                         val message =
                             "Playback failed: ${error.message ?: "Unknown error"}. Please refresh or try a different server."
-                        Log.e("HlsPlayerUtil", message, error)
+                        Log.e("HlsPlayerUtils", message, error)
                         onError(message)
                         player.removeListener(this)
                     }
@@ -269,23 +307,28 @@ object HlsPlayerUtils {
                 player.addListener(readyListener)
             } else {
                 val message = "Invalid HLS source"
-                Log.e("HlsPlayerUtil", message)
+                Log.e("HlsPlayerUtils", message)
                 _state.update { it.copy(error = message) }
                 onError(message)
             }
         }
     }
 
-    fun getPlayer(): ExoPlayer? = exoPlayer
-
-    private fun play() {
-        exoPlayer?.play()
-        Log.d("HlsPlayerUtil", "play called")
+    private fun play(autoPlay: Boolean) {
+        exoPlayer?.let {
+            if (autoPlay && _state.value.isReady && !_state.value.isPlaying) {
+                it.play()
+                Log.d("HlsPlayerUtils", "Auto-play triggered")
+            } else if (!autoPlay) {
+                it.play()
+                Log.d("HlsPlayerUtils", "play called")
+            }
+        }
     }
 
     private fun pause() {
         exoPlayer?.pause()
-        Log.d("HlsPlayerUtil", "pause called")
+        Log.d("HlsPlayerUtils", "pause called")
     }
 
     private fun seekTo(positionMs: Long) {
@@ -294,7 +337,7 @@ object HlsPlayerUtils {
             val clampedPos = positionMs.coerceAtLeast(0)
                 .coerceAtMost(if (duration > 0) duration else Long.MAX_VALUE)
             it.seekTo(clampedPos)
-            Log.d("HlsPlayerUtil", "seekTo: position=$clampedPos, duration=$duration")
+            Log.d("HlsPlayerUtils", "seekTo: position=$clampedPos, duration=$duration")
         }
     }
 
@@ -305,7 +348,7 @@ object HlsPlayerUtils {
             val newPosition =
                 (currentPosition + 10_000).coerceAtMost(if (duration > 0) duration else Long.MAX_VALUE)
             it.seekTo(newPosition)
-            Log.d("HlsPlayerUtil", "fastForward: from=$currentPosition to=$newPosition")
+            Log.d("HlsPlayerUtils", "fastForward: from=$currentPosition to=$newPosition")
         }
     }
 
@@ -314,28 +357,125 @@ object HlsPlayerUtils {
             val currentPosition = it.currentPosition
             val newPosition = (currentPosition - 10_000).coerceAtLeast(0)
             it.seekTo(newPosition)
-            Log.d("HlsPlayerUtil", "rewind: from=$currentPosition to=$newPosition")
+            Log.d("HlsPlayerUtils", "rewind: from=$currentPosition to=$newPosition")
         }
     }
 
     private fun setPlaybackSpeed(speed: Float) {
         exoPlayer?.setPlaybackSpeed(speed)
-        Log.d("HlsPlayerUtil", "setPlaybackSpeed: speed=$speed")
+        _state.update { it.copy(playbackSpeed = speed) }
+        Log.d("HlsPlayerUtils", "setPlaybackSpeed: speed=$speed")
+    }
+
+    private fun setVideoSurface(surface: Any?) {
+        videoSurface = surface
+        when (surface) {
+            is TextureView -> exoPlayer?.setVideoTextureView(surface)
+            is SurfaceView -> exoPlayer?.setVideoSurfaceView(surface)
+            null -> {
+                exoPlayer?.clearVideoSurface()
+                Log.d("HlsPlayerUtils", "Video surface cleared")
+            }
+
+            else -> Log.w("HlsPlayerUtils", "Unsupported video surface type: ${surface.javaClass}")
+        }
+        Log.d("HlsPlayerUtils", "Video surface set: ${surface?.javaClass?.simpleName}")
+    }
+
+    private fun updateWatchState(updateStoredWatchState: (Long?, Long?, String?) -> Unit) {
+        startPeriodicWatchStateUpdates(updateStoredWatchState)
+        exoPlayer?.addListener(object : Player.Listener {
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                if (playbackState == Player.STATE_ENDED) {
+                    coroutineScope.launch {
+                        try {
+                            withTimeout(5_000) {
+                                val player = getPlayer() ?: return@withTimeout
+                                val duration = player.duration.takeIf { it > 0 }
+                                val screenshot = captureScreenshot()
+                                updateStoredWatchState(duration, duration, screenshot)
+                                Log.d(
+                                    "HlsPlayerUtils",
+                                    "Video ended: saved watch state with position=$duration, duration=$duration, screenshot=${
+                                        screenshot?.take(
+                                            20
+                                        )
+                                    }..."
+                                )
+                            }
+                        } catch (e: Exception) {
+                            Log.e("HlsPlayerUtils", "Failed to save watch state on video end", e)
+                        }
+                    }
+                }
+            }
+
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                if (isPlaying) {
+                    startPeriodicWatchStateUpdates(updateStoredWatchState)
+                } else {
+                    stopPeriodicWatchStateUpdates()
+                }
+            }
+        })
+    }
+
+    private fun startPeriodicWatchStateUpdates(
+        updateStoredWatchState: (Long?, Long?, String?) -> Unit
+    ) {
+        watchStateUpdateJob?.cancel()
+        watchStateUpdateJob = coroutineScope.launch {
+            while (true) {
+                val state = _state.value
+                if (state.isPlaying) {
+                    exoPlayer?.let { player ->
+                        val position = player.currentPosition
+                        val duration = player.duration
+                        if (position > 10_000 && position < duration) {
+                            try {
+                                withTimeout(5_000) {
+                                    val screenshot = captureScreenshot()
+                                    updateStoredWatchState(position, duration, screenshot)
+                                    Log.d(
+                                        "HlsPlayerUtils",
+                                        "Periodic watch state update: position=$position, screenshot=${
+                                            screenshot?.take(
+                                                20
+                                            )
+                                        }..."
+                                    )
+                                }
+                            } catch (e: Exception) {
+                                Log.e("HlsPlayerUtils", "Failed to save periodic watch state", e)
+                            }
+                        }
+                    }
+                }
+                delay(WATCH_STATE_UPDATE_INTERVAL_MS)
+            }
+        }
+    }
+
+    private fun stopPeriodicWatchStateUpdates() {
+        watchStateUpdateJob?.cancel()
+        watchStateUpdateJob = null
+        Log.d("HlsPlayerUtils", "Stopped periodic watch state updates")
     }
 
     private fun requestAudioFocus() {
         if (!audioFocusRequested) {
             if (audioFocusRequest == null) {
-                audioFocusChangeListener = OnAudioFocusChangeListener { focusChange ->
-                    Log.d("HlsPlayerUtil", "Audio focus changed: $focusChange")
-                    when (focusChange) {
-                        AudioManager.AUDIOFOCUS_LOSS -> dispatch(HlsPlayerAction.Pause)
-                        AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> dispatch(HlsPlayerAction.Pause)
-                        AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
-                            exoPlayer?.volume = 0.5f
+                val audioFocusChangeListener =
+                    AudioManager.OnAudioFocusChangeListener { focusChange ->
+                        Log.d("HlsPlayerUtils", "Audio focus changed: $focusChange")
+                        when (focusChange) {
+                            AudioManager.AUDIOFOCUS_LOSS -> dispatch(HlsPlayerAction.Pause)
+                            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> dispatch(HlsPlayerAction.Pause)
+                            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
+                                exoPlayer?.volume = 0.5f
+                            }
                         }
                     }
-                }
                 audioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
                     .setAudioAttributes(
                         AudioAttributes.Builder()
@@ -343,7 +483,7 @@ object HlsPlayerUtils {
                             .setUsage(AudioAttributes.USAGE_MEDIA)
                             .build()
                     )
-                    .setOnAudioFocusChangeListener(audioFocusChangeListener!!)
+                    .setOnAudioFocusChangeListener(audioFocusChangeListener)
                     .build()
             }
 
@@ -351,9 +491,9 @@ object HlsPlayerUtils {
                 val result = audioFocusRequest?.let { manager.requestAudioFocus(it) }
                 if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
                     audioFocusRequested = true
-                    Log.d("HlsPlayerUtil", "Audio focus granted")
+                    Log.d("HlsPlayerUtils", "Audio focus granted")
                 } else {
-                    Log.w("HlsPlayerUtil", "Audio focus request failed")
+                    Log.w("HlsPlayerUtils", "Audio focus request failed")
                 }
             }
         }
@@ -364,7 +504,7 @@ object HlsPlayerUtils {
             audioManager?.let { manager ->
                 audioFocusRequest?.let { manager.abandonAudioFocusRequest(it) }
                 audioFocusRequested = false
-                Log.d("HlsPlayerUtil", "Audio focus abandoned")
+                Log.d("HlsPlayerUtils", "Audio focus abandoned")
             }
         }
     }
@@ -373,20 +513,24 @@ object HlsPlayerUtils {
         exoPlayer?.let { player ->
             player.stop()
             player.release()
-            Log.d("HlsPlayerUtil", "ExoPlayer released")
+            Log.d("HlsPlayerUtils", "ExoPlayer released")
         }
         exoPlayer = null
         audioManager = null
         audioFocusRequest = null
-        audioFocusChangeListener = null
         audioFocusRequested = false
         videoSurface = null
+        stopPeriodicWatchStateUpdates()
+        coroutineScope.cancel()
         _state.update {
             it.copy(
                 isPlaying = false,
                 playbackState = Player.STATE_IDLE,
                 error = null,
-                isReady = false
+                isReady = false,
+                currentPosition = 0,
+                duration = 0,
+                playbackSpeed = 1f
             )
         }
     }

@@ -80,7 +80,7 @@ fun VideoPlayerSection(
         if (player != null) {
             playerView.player = player
             val videoSurface = playerView.videoSurfaceView
-            HlsPlayerUtils.setVideoSurface(videoSurface)
+            HlsPlayerUtils.dispatch(HlsPlayerAction.SetVideoSurface(videoSurface))
             Log.d(
                 "VideoPlayerSection",
                 "Player bound to PlayerView, video surface set: ${videoSurface?.javaClass?.simpleName}"
@@ -90,7 +90,7 @@ fun VideoPlayerSection(
                 videoData = complement.sources
             ).apply { start() }
         } else {
-            Log.w("VideoPlayerSection", "Player is null in service")
+            Log.w("VideoPlayerSection", "Player is null")
             onPlayerError("Player not initialized")
             isLoading = false
             return
@@ -115,7 +115,7 @@ fun VideoPlayerSection(
                 onPlayerError(null)
                 Log.d("VideoPlayerSection", "Player ready")
                 playerView.player = HlsPlayerUtils.getPlayer()
-                HlsPlayerUtils.setVideoSurface(playerView.videoSurfaceView)
+                HlsPlayerUtils.dispatch(HlsPlayerAction.SetVideoSurface(playerView.videoSurfaceView))
                 introOutroHandler?.start()
             }
         )
@@ -142,7 +142,7 @@ fun VideoPlayerSection(
                 Log.w("VideoPlayerSection", "Service disconnected")
                 mediaPlaybackService = null
                 playerView.player = null
-                HlsPlayerUtils.setVideoSurface(null)
+                HlsPlayerUtils.dispatch(HlsPlayerAction.SetVideoSurface(null))
                 introOutroHandler?.stop()
                 introOutroHandler = null
                 onPlayerError("Service disconnected")
@@ -232,7 +232,7 @@ fun VideoPlayerSection(
                 introOutroHandler?.stop()
                 introOutroHandler = null
                 playerView.player = null
-                HlsPlayerUtils.setVideoSurface(null)
+                HlsPlayerUtils.dispatch(HlsPlayerAction.SetVideoSurface(null))
             } catch (e: IllegalArgumentException) {
                 Log.w("VideoPlayerSection", "Service already unbound", e)
             }
@@ -330,7 +330,7 @@ fun VideoPlayerSection(
             Log.d("VideoPlayerSection", "Disconnecting MediaBrowser")
             mediaControllerCompat?.unregisterCallback(mediaControllerCallback)
             mediaBrowserCompat?.disconnect()
-            HlsPlayerUtils.setVideoSurface(null)
+            HlsPlayerUtils.dispatch(HlsPlayerAction.SetVideoSurface(null))
         }
     }
 
