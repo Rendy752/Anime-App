@@ -9,7 +9,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.AnimeSearchQueryState
@@ -59,8 +58,6 @@ fun ProducersBottomSheet(
         }
     }
 
-    val context = LocalContext.current
-
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.padding(horizontal = 8.dp),
@@ -68,27 +65,25 @@ fun ProducersBottomSheet(
         ) {
             CancelButton(
                 cancelAction = onDismiss,
-                Modifier.weight(1f)
+                modifier = Modifier.weight(1f)
             )
             Spacer(Modifier.width(4.dp))
             ResetButton(
-                context,
-                { queryState.isProducersDefault() },
-                {
+                isDefault = { queryState.isProducersDefault() },
+                resetAction = {
                     resetProducerSelection()
                     onDismiss()
                 },
-                Modifier.weight(1f)
+                modifier = Modifier.weight(1f)
             )
             Spacer(Modifier.width(4.dp))
             ApplyButton(
-                context,
-                { selectedProducers.isEmpty() },
-                {
+                isEmptySelection = { selectedProducers.isEmpty() },
+                applyAction = {
                     applyProducerFilters()
                     onDismiss()
                 },
-                Modifier.weight(1f)
+                modifier = Modifier.weight(1f)
             )
         }
         Column(

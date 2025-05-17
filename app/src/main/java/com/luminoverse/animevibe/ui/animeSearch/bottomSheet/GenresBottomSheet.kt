@@ -17,7 +17,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextAlign
 import com.luminoverse.animevibe.models.AnimeSearchQueryState
@@ -43,8 +42,6 @@ fun GenresBottomSheet(
     applyGenreFilters: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    val context = LocalContext.current
-
     Column(modifier = Modifier.fillMaxWidth()) {
         Row(
             modifier = Modifier.padding(horizontal = 8.dp),
@@ -52,27 +49,25 @@ fun GenresBottomSheet(
         ) {
             CancelButton(
                 cancelAction = onDismiss,
-                Modifier.weight(1f)
+                modifier = Modifier.weight(1f)
             )
             Spacer(Modifier.width(4.dp))
             ResetButton(
-                context,
-                { queryState.isGenresDefault() },
-                {
+                isDefault = { queryState.isGenresDefault() },
+                resetAction = {
                     resetGenreSelection()
                     onDismiss()
                 },
-                Modifier.weight(1f)
+                modifier = Modifier.weight(1f)
             )
             Spacer(Modifier.width(4.dp))
             ApplyButton(
-                context,
-                { selectedGenres.isEmpty() },
-                {
+                isEmptySelection = { selectedGenres.isEmpty() },
+                applyAction = {
                     applyGenreFilters()
                     onDismiss()
                 },
-                Modifier.weight(1f)
+                modifier = Modifier.weight(1f)
             )
         }
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
