@@ -64,7 +64,7 @@ sealed class HlsPlayerAction {
         val onError: (String) -> Unit = {}
     ) : HlsPlayerAction()
 
-    data class Play(val autoPlay: Boolean = false) : HlsPlayerAction()
+    data object Play : HlsPlayerAction()
     data object Pause : HlsPlayerAction()
     data class SeekTo(val positionMs: Long) : HlsPlayerAction()
     data object FastForward : HlsPlayerAction()
@@ -105,7 +105,7 @@ object HlsPlayerUtils {
                 action.onError
             )
 
-            is HlsPlayerAction.Play -> play(action.autoPlay)
+            is HlsPlayerAction.Play -> play()
             is HlsPlayerAction.Pause -> pause()
             is HlsPlayerAction.SeekTo -> seekTo(action.positionMs)
             is HlsPlayerAction.FastForward -> fastForward()
@@ -314,15 +314,9 @@ object HlsPlayerUtils {
         }
     }
 
-    private fun play(autoPlay: Boolean) {
+    private fun play() {
         exoPlayer?.let {
-            if (autoPlay && _state.value.isReady && !_state.value.isPlaying) {
-                it.play()
-                Log.d("HlsPlayerUtils", "Auto-play triggered")
-            } else if (!autoPlay) {
-                it.play()
-                Log.d("HlsPlayerUtils", "play called")
-            }
+            if (_state.value.isReady && !_state.value.isPlaying) it.play()
         }
     }
 

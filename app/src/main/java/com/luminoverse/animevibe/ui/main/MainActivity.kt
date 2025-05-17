@@ -32,6 +32,7 @@ import androidx.navigation.compose.rememberNavController
 import com.luminoverse.animevibe.AnimeApplication
 import com.luminoverse.animevibe.ui.common.ConfirmationAlert
 import com.luminoverse.animevibe.ui.theme.AppTheme
+import com.luminoverse.animevibe.utils.HlsPlayerAction
 import com.luminoverse.animevibe.utils.HlsPlayerUtils
 import com.luminoverse.animevibe.utils.PipUtil.buildPipActions
 import dagger.hilt.android.AndroidEntryPoint
@@ -172,8 +173,8 @@ class MainActivity : AppCompatActivity() {
     ) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, configuration)
         onPictureInPictureModeChangedListeners.forEach {
-            if (!isInPictureInPictureMode) {
-                (application as AnimeApplication).getMediaPlaybackService()?.pausePlayer()
+            if (!isInPictureInPictureMode && !lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+                HlsPlayerUtils.dispatch(HlsPlayerAction.Pause)
             }
             it(isInPictureInPictureMode)
         }

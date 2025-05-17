@@ -12,10 +12,17 @@ import androidx.work.Configuration
 import com.chuckerteam.chucker.api.Chucker
 import com.luminoverse.animevibe.utils.AnimeBroadcastNotificationWorker
 import com.luminoverse.animevibe.utils.AnimeWorkerFactory
+import com.luminoverse.animevibe.utils.MediaPlaybackAction
 import com.luminoverse.animevibe.utils.MediaPlaybackService
 import com.luminoverse.animevibe.utils.NotificationDebugUtil
 import com.luminoverse.animevibe.utils.ShakeDetector
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltAndroidApp
@@ -33,6 +40,7 @@ class AnimeApplication : Application(), Configuration.Provider {
     private var mediaPlaybackService: MediaPlaybackService? = null
     private var isServiceBound = false
     private var serviceConnection: ServiceConnection? = null
+    private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     override val workManagerConfiguration: Configuration
         get() {
@@ -105,15 +113,21 @@ class AnimeApplication : Application(), Configuration.Provider {
 
     fun cleanupService() {
         mediaPlaybackService?.let { service ->
-            if (!service.isForegroundService()) {
-                Log.d("AnimeApplication", "Stopping MediaPlaybackService from AnimeApplication")
-                service.stopService()
-                unbindMediaService()
-            } else {
-                Log.d(
-                    "AnimeApplication",
-                    "Keeping MediaPlaybackService alive due to foreground state"
-                )
+            coroutineScope.launch {
+                service.dispatch(MediaPlaybackAction.QueryForegroundStatus)
+                service.state.collectLatest { state ->
+                    if (!state.isForeground) {
+                        Log.d("AnimeApplication", "Stopping MediaPlaybackService from AnimeApplication")
+                        service.dispatch(MediaPlaybackAction.StopService)
+                        unbindMediaService()
+                    } else {
+                        Log.d(
+                            "AnimeApplication",
+                            "Keeping MediaPlaybackService alive due to foreground state"
+                        )
+                    }
+                    this@launch.cancel()
+                }
             }
         }
     }
@@ -124,6 +138,7 @@ class AnimeApplication : Application(), Configuration.Provider {
         if (BuildConfig.DEBUG) {
             sensorManager.unregisterListener(shakeDetector)
         }
+        coroutineScope.cancel()
     }
 
     private fun setupSensor() {

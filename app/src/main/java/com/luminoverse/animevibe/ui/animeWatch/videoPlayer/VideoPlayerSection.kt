@@ -32,9 +32,14 @@ import com.luminoverse.animevibe.models.EpisodeSourcesQuery
 import com.luminoverse.animevibe.ui.animeWatch.WatchState
 import com.luminoverse.animevibe.utils.HlsPlayerUtils
 import com.luminoverse.animevibe.utils.IntroOutroHandler
+import com.luminoverse.animevibe.utils.MediaPlaybackAction
 import com.luminoverse.animevibe.utils.MediaPlaybackService
 import com.luminoverse.animevibe.utils.HlsPlayerAction
 import com.luminoverse.animevibe.utils.HlsPlayerState
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 
 @SuppressLint("ImplicitSamInstance")
 @OptIn(UnstableApi::class, ExperimentalComposeUiApi::class)
@@ -66,6 +71,7 @@ fun VideoPlayerSection(
     var isShowNextEpisode by remember { mutableStateOf(false) }
     var nextEpisodeName by remember { mutableStateOf("") }
     var introOutroHandler by remember { mutableStateOf<IntroOutroHandler?>(null) }
+    val coroutineScope = rememberCoroutineScope()
 
     val application = context.applicationContext as AnimeApplication
 
@@ -96,28 +102,30 @@ fun VideoPlayerSection(
             return
         }
 
-        service?.setEpisodeData(
-            complement = complement,
-            episodes = episodes,
-            query = query,
-            handler = { handleSelectedEpisodeServer(it) },
-            updateStoredWatchState = { position, duration, screenshot ->
-                updateStoredWatchState(position, duration, screenshot)
-            },
-            onPlayerError = { error ->
-                Log.e("VideoPlayerSection", "Player error: $error")
-                onPlayerError(error)
-                isLoading = false
-            },
-            onPlayerReady = {
-                isShowNextEpisode = false
-                isLoading = false
-                onPlayerError(null)
-                Log.d("VideoPlayerSection", "Player ready")
-                playerView.player = HlsPlayerUtils.getPlayer()
-                HlsPlayerUtils.dispatch(HlsPlayerAction.SetVideoSurface(playerView.videoSurfaceView))
-                introOutroHandler?.start()
-            }
+        service?.dispatch(
+            MediaPlaybackAction.SetEpisodeData(
+                complement = complement,
+                episodes = episodes,
+                query = query,
+                handleSelectedEpisodeServer = { episodeQuery -> handleSelectedEpisodeServer(episodeQuery) },
+                updateStoredWatchState = { position, duration, screenshot ->
+                    updateStoredWatchState(position, duration, screenshot)
+                },
+                onPlayerError = { error ->
+                    Log.e("VideoPlayerSection", "Player error: $error")
+                    onPlayerError(error)
+                    isLoading = false
+                },
+                onPlayerReady = {
+                    isShowNextEpisode = false
+                    isLoading = false
+                    onPlayerError(null)
+                    Log.d("VideoPlayerSection", "Player ready")
+                    playerView.player = HlsPlayerUtils.getPlayer()
+                    HlsPlayerUtils.dispatch(HlsPlayerAction.SetVideoSurface(playerView.videoSurfaceView))
+                    introOutroHandler?.start()
+                }
+            )
         )
     }
 
@@ -204,31 +212,40 @@ fun VideoPlayerSection(
         onDispose {
             Log.d("VideoPlayerSection", "Disposing VideoPlayerSection")
             try {
-                mediaControllerCompat?.transportControls?.pause()
                 HlsPlayerUtils.dispatch(HlsPlayerAction.Pause)
                 Log.d("VideoPlayerSection", "Paused playback before disposal")
                 HlsPlayerUtils.getPlayer()?.removeListener(playerListener)
 
-                val isNotificationActive = mediaPlaybackService?.isForegroundService() == true
-                Log.d("VideoPlayerSection", "isForegroundService: $isNotificationActive")
-                if (!isNotificationActive) {
-                    Log.d(
-                        "VideoPlayerSection",
-                        "Stopping MediaPlaybackService (no notification active)"
-                    )
-                    mediaPlaybackService?.stopService()
-                    if (!application.isMediaServiceBound()) {
-                        context.unbindService(serviceConnection)
-                        Log.d("VideoPlayerSection", "Unbound service")
-                    } else {
-                        Log.d("VideoPlayerSection", "Service kept bound by AnimeApplication")
+                mediaPlaybackService?.dispatch(MediaPlaybackAction.QueryForegroundStatus)
+                coroutineScope.launch {
+                    mediaPlaybackService?.state?.collectLatest { state ->
+                        val isNotificationActive = state.isForeground
+                        Log.d("VideoPlayerSection", "isForeground: $isNotificationActive")
+                        if (!isNotificationActive) {
+                            Log.d(
+                                "VideoPlayerSection",
+                                "Stopping MediaPlaybackService (no notification active)"
+                            )
+                            mediaPlaybackService?.dispatch(MediaPlaybackAction.StopService)
+                            if (!application.isMediaServiceBound()) {
+                                context.unbindService(serviceConnection)
+                                Log.d("VideoPlayerSection", "Unbound service")
+                            } else {
+                                Log.d(
+                                    "VideoPlayerSection",
+                                    "Service kept bound by AnimeApplication"
+                                )
+                            }
+                        } else {
+                            Log.d(
+                                "VideoPlayerSection",
+                                "Keeping service alive due to foreground notification"
+                            )
+                        }
+                        this@launch.cancel()
                     }
-                } else {
-                    Log.d(
-                        "VideoPlayerSection",
-                        "Keeping service alive due to foreground notification"
-                    )
                 }
+
                 introOutroHandler?.stop()
                 introOutroHandler = null
                 playerView.player = null
@@ -335,7 +352,7 @@ fun VideoPlayerSection(
     }
 
     LaunchedEffect(isScreenOn) {
-        if (!isScreenOn) mediaControllerCompat?.transportControls?.pause()
+        if (!isScreenOn) HlsPlayerUtils.dispatch(HlsPlayerAction.Pause)
     }
 
     watchState.episodeDetailComplement.data?.let {
