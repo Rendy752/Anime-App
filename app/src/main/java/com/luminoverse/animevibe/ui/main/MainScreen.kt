@@ -11,13 +11,17 @@ import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -57,7 +61,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 fun MainScreen(
     navController: NavHostController,
     intentChannel: Channel<Intent>,
-    onResetIdleTimer: () -> Unit,
+    resetIdleTimer: () -> Unit,
     mainState: MainState,
     mainAction: (MainAction) -> Unit
 ) {
@@ -121,12 +125,26 @@ fun MainScreen(
     }
 
     LaunchedEffect(currentRoute) {
-        onResetIdleTimer()
+        resetIdleTimer()
     }
 
     Column(
         modifier = Modifier
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onPress = { resetIdleTimer() },
+                    onDoubleTap = { resetIdleTimer() },
+                    onLongPress = { resetIdleTimer() }
+                )
+                awaitPointerEventScope {
+                    while (true) {
+                        awaitPointerEvent()
+                        resetIdleTimer()
+                    }
+                }
+            }
             .fillMaxSize()
+            .background(MaterialTheme.colorScheme.surface)
             .navigationBarsPadding()
     ) {
         NavHost(

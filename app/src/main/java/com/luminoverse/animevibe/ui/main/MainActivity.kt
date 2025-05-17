@@ -10,15 +10,10 @@ import android.view.WindowManager
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
@@ -106,33 +101,14 @@ class MainActivity : AppCompatActivity() {
                     )
                 }
 
-                Surface(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .pointerInput(Unit) {
-                            detectTapGestures(
-                                onPress = { resetIdleTimer() },
-                                onDoubleTap = { resetIdleTimer() },
-                                onLongPress = { resetIdleTimer() }
-                            )
-                            awaitPointerEventScope {
-                                while (true) {
-                                    awaitPointerEvent()
-                                    resetIdleTimer()
-                                }
-                            }
-                        },
-                    color = MaterialTheme.colorScheme.surface
-                ) {
-                    MainScreen(
-                        navController = navController,
-                        intentChannel = intentChannel,
-                        onResetIdleTimer = resetIdleTimer,
-                        mainState = state.copy(isLandscape = isLandscape),
-                        mainAction = mainViewModel::onAction
-                    )
-                    setSystemBarAppearance(MaterialTheme.colorScheme.surface)
-                }
+                MainScreen(
+                    navController = navController,
+                    intentChannel = intentChannel,
+                    resetIdleTimer = resetIdleTimer,
+                    mainState = state.copy(isLandscape = isLandscape),
+                    mainAction = mainViewModel::onAction
+                )
+                setSystemBarAppearance(MaterialTheme.colorScheme.surface)
             }
         }
 
