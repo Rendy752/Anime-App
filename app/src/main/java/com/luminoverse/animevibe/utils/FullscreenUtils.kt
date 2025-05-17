@@ -7,6 +7,10 @@ import android.view.View
 import android.view.Window
 import android.view.WindowInsets
 import android.view.WindowManager
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 object FullscreenUtils {
     /**
@@ -25,7 +29,6 @@ object FullscreenUtils {
         activity: Activity?,
         onFullscreenChange: (Boolean) -> Unit
     ) {
-
         val newFullscreenState = !isFullscreen
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -47,10 +50,13 @@ object FullscreenUtils {
         }
 
         activity?.let {
-            if (newFullscreenState && !isLandscape) {
-                it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            CoroutineScope(Dispatchers.Main).launch {
+                if (newFullscreenState && !isLandscape) {
+                    it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                }
+                delay(3000)
+                it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
             }
-            it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
         }
 
         @Suppress("DEPRECATION")
