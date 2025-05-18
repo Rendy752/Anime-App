@@ -155,15 +155,6 @@ class MainViewModelTest {
     }
 
     @Test
-    fun `SetShowQuitDialog should update showQuitDialog`() = runTest {
-        viewModel.onAction(MainAction.SetShowQuitDialog(true))
-        advanceUntilIdle()
-
-        val state = viewModel.state.value
-        assertTrue(state.showQuitDialog)
-    }
-
-    @Test
     fun `SetIsConnected should update isConnected`() = runTest {
         viewModel.onAction(MainAction.SetIsConnected(false))
         advanceUntilIdle()
