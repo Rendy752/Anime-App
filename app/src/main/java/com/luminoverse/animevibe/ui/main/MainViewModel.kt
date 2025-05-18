@@ -28,7 +28,6 @@ data class MainState(
     val contrastMode: ContrastMode = ContrastMode.Normal,
     val colorStyle: ColorStyle = ColorStyle.Default,
     val notificationEnabled: Boolean = false,
-    val showQuitDialog: Boolean = false,
     val isConnected: Boolean = true,
     val networkStatus: NetworkStatus = networkStatusPlaceholder,
     val isShowIdleDialog: Boolean = false,
@@ -40,7 +39,6 @@ sealed class MainAction {
     data class SetContrastMode(val contrastMode: ContrastMode) : MainAction()
     data class SetColorStyle(val colorStyle: ColorStyle) : MainAction()
     data class SetNotificationEnabled(val enabled: Boolean) : MainAction()
-    data class SetShowQuitDialog(val show: Boolean) : MainAction()
     data class SetIsConnected(val connected: Boolean) : MainAction()
     data class SetNetworkStatus(val status: NetworkStatus) : MainAction()
     data class SetIsShowIdleDialog(val show: Boolean) : MainAction()
@@ -82,7 +80,6 @@ class MainViewModel @Inject constructor(
             is MainAction.SetContrastMode -> setContrastMode(action.contrastMode)
             is MainAction.SetColorStyle -> setColorStyle(action.colorStyle)
             is MainAction.SetNotificationEnabled -> setNotificationEnabled(action.enabled)
-            is MainAction.SetShowQuitDialog -> setShowQuitDialog(action.show)
             is MainAction.SetIsConnected -> setIsConnected(action.connected)
             is MainAction.SetNetworkStatus -> setNetworkStatus(action.status)
             is MainAction.SetIsShowIdleDialog -> setIsShowIdleDialog(action.show)
@@ -132,10 +129,6 @@ class MainViewModel @Inject constructor(
         println("Updated notificationEnabled state to: ${_state.value.notificationEnabled}")
         val persisted = settingsPrefs.getBoolean("notifications_enabled", true)
         println("Persisted notifications_enabled in SharedPreferences: $persisted")
-    }
-
-    private fun setShowQuitDialog(show: Boolean) {
-        _state.update { it.copy(showQuitDialog = show) }
     }
 
     private fun setIsConnected(connected: Boolean) {

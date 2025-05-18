@@ -7,6 +7,7 @@ import android.os.Build
 import android.os.Bundle
 import android.view.MotionEvent
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.appcompat.app.AppCompatActivity
@@ -44,6 +45,8 @@ class MainActivity : AppCompatActivity() {
     private val idleTimeoutMillis = TimeUnit.MINUTES.toMillis(1)
     private val intentChannel = Channel<Intent>(Channel.CONFLATED)
     private lateinit var pipParamsBuilder: PictureInPictureParams.Builder
+    private var lastBackPressTime = 0L
+    private val backPressTimeoutMillis = 2000L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -72,7 +75,17 @@ class MainActivity : AppCompatActivity() {
             }
 
             BackHandler {
-                mainViewModel.onAction(MainAction.SetShowQuitDialog(true))
+                val currentTime = System.currentTimeMillis()
+                if (currentTime - lastBackPressTime < backPressTimeoutMillis) {
+                    finish()
+                } else {
+                    lastBackPressTime = currentTime
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Press back again to exit AnimeVibe",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
 
             AppTheme(
@@ -80,15 +93,6 @@ class MainActivity : AppCompatActivity() {
                 contrastMode = state.contrastMode,
                 colorStyle = state.colorStyle
             ) {
-                if (state.showQuitDialog) {
-                    ConfirmationAlert(
-                        title = "Quit AnimeVibe?",
-                        message = "Are you sure you want to quit the app?",
-                        onConfirm = { finish() },
-                        onCancel = { mainViewModel.onAction(MainAction.SetShowQuitDialog(false)) }
-                    )
-                }
-
                 if (state.isShowIdleDialog) {
                     ConfirmationAlert(
                         title = "Are you still there?",
