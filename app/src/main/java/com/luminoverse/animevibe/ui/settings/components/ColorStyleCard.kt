@@ -91,11 +91,11 @@ fun ColorStyleCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (animeDetailSample is Resource.Loading) AnimeScheduleItemSkeleton(
-                        modifier = Modifier.widthIn(max = 100.dp)
+                        modifier = Modifier.widthIn(max = 130.dp)
                     )
                     else AnimeScheduleItem(
                         animeDetail = animeDetailSample.data ?: animeDetailPlaceholder,
-                        modifier = Modifier.widthIn(max = 100.dp)
+                        modifier = Modifier.widthIn(max = 130.dp)
                     )
 
                     Column(

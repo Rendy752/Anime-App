@@ -126,26 +126,42 @@ fun AnimeSearchItem(
                             }
                         }
                     }
-                    DataTextWithIcon(
-                        label = "Score",
-                        value = animeDetail?.score.toString(),
-                        icon = Icons.Filled.Score
-                    )
-                    DataTextWithIcon(
-                        label = "Rank",
-                        value = animeDetail?.rank?.formatNumber(),
-                        icon = Icons.Filled.Star
-                    )
-                    DataTextWithIcon(
-                        label = "Popularity",
-                        value = animeDetail?.popularity?.formatNumber(),
-                        icon = Icons.AutoMirrored.Filled.TrendingUp
-                    )
-                    DataTextWithIcon(
-                        label = "Members",
-                        value = animeDetail?.members?.formatNumber(),
-                        icon = Icons.Filled.Groups
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        DataTextWithIcon(
+                            modifier = Modifier.weight(1f),
+                            label = "Score",
+                            value = animeDetail?.score.toString(),
+                            icon = Icons.Filled.Score
+                        )
+                        DataTextWithIcon(
+                            modifier = Modifier.weight(1f),
+                            label = "Popularity",
+                            value = animeDetail?.popularity?.formatNumber(),
+                            icon = Icons.AutoMirrored.Filled.TrendingUp
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        DataTextWithIcon(
+                            modifier = Modifier.weight(1f),
+                            label = "Rank",
+                            value = animeDetail?.rank?.formatNumber(),
+                            icon = Icons.Filled.Star
+                        )
+                        DataTextWithIcon(
+                            modifier = Modifier.weight(1f),
+                            label = "Members",
+                            value = animeDetail?.members?.formatNumber(),
+                            icon = Icons.Filled.Groups
+                        )
+                    }
                 }
             }
         }
@@ -181,14 +197,22 @@ fun AnimeSearchItemSkeleton(modifier: Modifier = Modifier) {
                         Spacer(modifier = Modifier.width(4.dp))
                     }
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-                SkeletonBox(width = 90.dp, height = 16.dp)
-                Spacer(modifier = Modifier.height(4.dp))
-                SkeletonBox(width = 85.dp, height = 16.dp)
-                Spacer(modifier = Modifier.height(4.dp))
-                SkeletonBox(width = 100.dp, height = 16.dp)
-                Spacer(modifier = Modifier.height(4.dp))
-                SkeletonBox(width = 110.dp, height = 16.dp)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    DataTextWithIconSkeleton(modifier = Modifier.weight(1f))
+                    DataTextWithIconSkeleton(modifier = Modifier.weight(1f))
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    DataTextWithIconSkeleton(modifier = Modifier.weight(1f))
+                    DataTextWithIconSkeleton(modifier = Modifier.weight(1f))
+                }
             }
         }
     }

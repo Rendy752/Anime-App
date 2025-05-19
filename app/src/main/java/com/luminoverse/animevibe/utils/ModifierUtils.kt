@@ -22,7 +22,8 @@ fun Modifier.basicContainer(
     backgroundBrush: Brush? = null,
     roundedCornerShape: RoundedCornerShape = RoundedCornerShape(16.dp),
     outerPadding: PaddingValues = PaddingValues(8.dp),
-    innerPadding: PaddingValues = PaddingValues(16.dp)
+    innerPadding: PaddingValues = PaddingValues(16.dp),
+    alpha: Float = 1.0f
 ): Modifier {
     var modifier = this
         .padding(outerPadding)
@@ -34,15 +35,16 @@ fun Modifier.basicContainer(
         )
         .then(
             if (backgroundBrush != null) {
-                Modifier.background(brush = backgroundBrush)
+                Modifier.background(brush = backgroundBrush, alpha = alpha)
             } else if (isError) {
                 Modifier.background(
                     brush = Brush.verticalGradient(
                         colors = listOf(
                             MaterialTheme.colorScheme.error,
                             MaterialTheme.colorScheme.errorContainer
-                        )
-                    )
+                        ),
+                    ),
+                    alpha = alpha
                 )
             } else if (isTertiary) {
                 Modifier.background(
@@ -50,8 +52,9 @@ fun Modifier.basicContainer(
                         colors = listOf(
                             MaterialTheme.colorScheme.tertiary,
                             MaterialTheme.colorScheme.tertiaryContainer
-                        )
-                    )
+                        ),
+                    ),
+                    alpha = alpha
                 )
             } else if (isPrimary) {
                 Modifier.background(
@@ -59,8 +62,9 @@ fun Modifier.basicContainer(
                         colors = listOf(
                             MaterialTheme.colorScheme.primary,
                             MaterialTheme.colorScheme.primaryContainer
-                        )
-                    )
+                        ),
+                    ),
+                    alpha = alpha
                 )
             } else {
                 Modifier.background(
@@ -68,8 +72,9 @@ fun Modifier.basicContainer(
                         colors = listOf(
                             MaterialTheme.colorScheme.surfaceContainerHigh,
                             MaterialTheme.colorScheme.surfaceContainerLowest
-                        )
-                    )
+                        ),
+                    ),
+                    alpha = alpha
                 )
             }
         )

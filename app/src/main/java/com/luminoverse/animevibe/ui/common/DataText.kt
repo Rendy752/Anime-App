@@ -25,10 +25,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun DataTextWithIcon(label: String? = null, value: String?, icon: ImageVector) {
+fun DataTextWithIcon(modifier: Modifier = Modifier, label: String? = null, value: String?, icon: ImageVector) {
     if (!value.isNullOrBlank() && value.lowercase() != "null") {
         Row(
-            modifier = Modifier.padding(vertical = 2.dp),
+            modifier = modifier.padding(vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
@@ -37,7 +37,7 @@ fun DataTextWithIcon(label: String? = null, value: String?, icon: ImageVector) {
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier
                     .size(20.dp)
-                    .padding(end = 8.dp)
+                    .padding(end = 4.dp)
             )
 
             val fullText = AnnotatedString.Builder().apply {
@@ -57,11 +57,9 @@ fun DataTextWithIcon(label: String? = null, value: String?, icon: ImageVector) {
 
 @Preview
 @Composable
-fun DataTextWithIconSkeleton() {
+fun DataTextWithIconSkeleton(modifier: Modifier = Modifier) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 2.dp),
+        modifier = modifier.padding(vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         SkeletonBox(
@@ -69,14 +67,9 @@ fun DataTextWithIconSkeleton() {
             width = 20.dp,
             height = 20.dp
         )
-        Spacer(modifier = Modifier.padding(end = 8.dp))
+        Spacer(modifier = Modifier.padding(end = 4.dp))
         SkeletonBox(
             modifier = Modifier.weight(0.3f),
-            height = 16.dp
-        )
-        Spacer(modifier = Modifier.weight(0.05f))
-        SkeletonBox(
-            modifier = Modifier.weight(0.65f),
             height = 16.dp
         )
     }
@@ -114,7 +107,7 @@ private fun LabelRow(label: String, icon: ImageVector) {
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
                 .size(20.dp)
-                .padding(end = 8.dp)
+                .padding(end = 4.dp)
         )
         Text(
             text = "$label: ",
