@@ -37,38 +37,38 @@ fun TopAnimeItem(animeDetail: AnimeDetail, onItemClick: () -> Unit) {
         contentDescription = animeDetail.title,
         onItemClick = onItemClick,
         leftContent = {
-            Text(
-                text = animeDetail.title,
-                style = MaterialTheme.typography.titleMedium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-            Row(
-                modifier = Modifier.padding(top = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                DataTextWithIcon(
-                    value = animeDetail.score.toString(),
-                    icon = Icons.Filled.Score
-                )
-                DataTextWithIcon(
-                    value = animeDetail.type ?: "Unknown",
-                    icon = Icons.Default.PlayCircle
-                )
-                DataTextWithIcon(
-                    value = animeDetail.duration.substringBefore("per").trim(),
-                    icon = Icons.Default.AccessTime
-                )
-            }
-            animeDetail.synopsis?.let { synopsis ->
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 Text(
-                    modifier = Modifier.padding(top = 8.dp),
-                    text = synopsis,
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 3,
+                    text = animeDetail.title,
+                    style = MaterialTheme.typography.titleMedium,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    DataTextWithIcon(
+                        value = animeDetail.score.toString(),
+                        icon = Icons.Filled.Score
+                    )
+                    DataTextWithIcon(
+                        value = animeDetail.type ?: "Unknown",
+                        icon = Icons.Default.PlayCircle
+                    )
+                    DataTextWithIcon(
+                        value = animeDetail.duration.substringBefore("per").trim(),
+                        icon = Icons.Default.AccessTime
+                    )
+                }
+                animeDetail.synopsis?.let { synopsis ->
+                    Text(
+                        text = synopsis,
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 3,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
         }
     )
@@ -107,7 +107,7 @@ fun TopAnimeItemSkeleton() {
                 .align(Alignment.TopStart),
             horizontalAlignment = Alignment.Start
         ) {
-            Column {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 SkeletonBox(width = 200.dp * 0.8f, height = 20.dp)
                 SkeletonBox(width = 200.dp * 0.9f, height = 20.dp)
             }
@@ -124,7 +124,7 @@ fun TopAnimeItemSkeleton() {
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Column {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 SkeletonBox(width = 200.dp * 0.9f, height = 16.dp)
                 SkeletonBox(width = 200.dp * 0.8f, height = 16.dp)
                 SkeletonBox(width = 200.dp * 1f, height = 16.dp)

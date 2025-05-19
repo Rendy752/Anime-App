@@ -1,5 +1,10 @@
 package com.luminoverse.animevibe.ui.animeHome.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.EaseInOut
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -8,9 +13,13 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.BlurEffect
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -23,6 +32,7 @@ import java.util.Date
 
 @Composable
 fun TopAnimeCarousel(
+    modifier: Modifier = Modifier,
     topAnimeList: List<AnimeDetail>,
     currentCarouselPage: Int,
     autoScrollEnabled: Boolean,
@@ -30,13 +40,26 @@ fun TopAnimeCarousel(
     onPageChanged: (Int) -> Unit,
     onAutoScrollEnabledChanged: (Boolean) -> Unit,
     onCarouselInteraction: () -> Unit,
-    navController: NavHostController
+    navController: NavHostController,
+    scrollProgress: Float
 ) {
     if (topAnimeList.isNotEmpty()) {
         val topAnimeCount = topAnimeList.size
         val pagerState = rememberPagerState(
             pageCount = { Int.MAX_VALUE },
             initialPage = currentCarouselPage
+        )
+
+        val colorOverlay by animateColorAsState(
+            targetValue = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f * scrollProgress),
+            animationSpec = tween(durationMillis = 300, easing = EaseInOut),
+            label = "carousel_blue_tint"
+        )
+
+        val blurRadius by animateFloatAsState(
+            targetValue = 10f * scrollProgress,
+            animationSpec = tween(durationMillis = 300, easing = EaseInOut),
+            label = "carousel_blur"
         )
 
         LaunchedEffect(autoScrollEnabled) {
@@ -62,9 +85,16 @@ fun TopAnimeCarousel(
             }
         }
 
-        Row(
-            modifier = Modifier
+        Box(
+            modifier = modifier
                 .fillMaxWidth()
+                .graphicsLayer {
+                    renderEffect = BlurEffect(
+                        radiusX = blurRadius,
+                        radiusY = blurRadius,
+                    )
+                }
+                .background(colorOverlay)
                 .pointerInput(Unit) {
                     detectDragGestures(
                         onDragStart = {
@@ -74,7 +104,7 @@ fun TopAnimeCarousel(
                         onDrag = { _, _ -> onCarouselInteraction() },
                         onDragEnd = { onCarouselInteraction() }
                     )
-                },
+                }
         ) {
             HorizontalPager(
                 state = pagerState,
@@ -84,7 +114,7 @@ fun TopAnimeCarousel(
                 val index = page % topAnimeCount
                 val animeDetail = topAnimeList[index]
                 Box(modifier = Modifier.fillMaxWidth()) {
-                    TopAnimeItem(animeDetail = animeDetail, onItemClick = { ->
+                    TopAnimeItem(animeDetail = animeDetail, onItemClick = {
                         navController.navigateTo(NavRoute.AnimeDetail.fromId(animeDetail.mal_id))
                     })
                 }
