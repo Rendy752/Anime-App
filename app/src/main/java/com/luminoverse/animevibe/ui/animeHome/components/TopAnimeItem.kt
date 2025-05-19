@@ -37,7 +37,10 @@ fun TopAnimeItem(animeDetail: AnimeDetail, onItemClick: () -> Unit) {
         contentDescription = animeDetail.title,
         onItemClick = onItemClick,
         leftContent = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(
+                modifier = Modifier.padding(bottom = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 Text(
                     text = animeDetail.title,
                     style = MaterialTheme.typography.titleMedium,
@@ -65,7 +68,7 @@ fun TopAnimeItem(animeDetail: AnimeDetail, onItemClick: () -> Unit) {
                     Text(
                         text = synopsis,
                         style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 3,
+                        maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
@@ -103,8 +106,9 @@ fun TopAnimeItemSkeleton() {
             modifier = Modifier
                 .fillMaxHeight()
                 .fillMaxWidth(0.6f)
-                .padding(16.dp)
+                .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 32.dp)
                 .align(Alignment.TopStart),
+            verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.Start
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -125,7 +129,6 @@ fun TopAnimeItemSkeleton() {
             Spacer(modifier = Modifier.height(16.dp))
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SkeletonBox(width = 200.dp * 0.9f, height = 16.dp)
                 SkeletonBox(width = 200.dp * 0.8f, height = 16.dp)
                 SkeletonBox(width = 200.dp * 1f, height = 16.dp)
             }
@@ -140,7 +143,7 @@ fun TopAnimeItemError() {
         modifier = Modifier
             .fillMaxWidth()
             .height(200.dp)
-            .padding(16.dp),
+            .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 32.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(

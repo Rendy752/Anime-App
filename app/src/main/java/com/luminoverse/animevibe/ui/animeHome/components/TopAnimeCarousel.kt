@@ -6,10 +6,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -22,7 +19,6 @@ import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.luminoverse.animevibe.models.AnimeDetail
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
@@ -91,7 +87,7 @@ fun TopAnimeCarousel(
                 .graphicsLayer {
                     renderEffect = BlurEffect(
                         radiusX = blurRadius,
-                        radiusY = blurRadius,
+                        radiusY = blurRadius
                     )
                 }
                 .background(colorOverlay)
@@ -125,19 +121,19 @@ fun TopAnimeCarousel(
 
 @Preview
 @Composable
-fun TopAnimeCarouselSkeleton(isError: Boolean = false) {
-    val topAnimeCount = if (isError) 1 else 10
-    Column {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            repeat(topAnimeCount) {
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    if (isError) TopAnimeItemError()
-                    else TopAnimeItemSkeleton()
-                }
-            }
+fun TopAnimeCarouselSkeleton(
+    modifier: Modifier = Modifier,
+    isError: Boolean = false
+) {
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
+    ) {
+        if (isError) {
+            TopAnimeItemError()
+        } else {
+            TopAnimeItemSkeleton()
         }
     }
 }
