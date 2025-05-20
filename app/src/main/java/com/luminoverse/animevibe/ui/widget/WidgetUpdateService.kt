@@ -34,6 +34,10 @@ class WidgetUpdateService : Service() {
     lateinit var repository: AnimeEpisodeDetailRepository
     private val coroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
+    companion object {
+        const val ACTION_REFRESH = "com.luminoverse.animevibe.REFRESH_WIDGET"
+    }
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
@@ -42,14 +46,31 @@ class WidgetUpdateService : Service() {
             stopSelf()
             return START_NOT_STICKY
         }
+
         val appWidgetIds = intent?.getIntArrayExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS)
         if (appWidgetIds != null) {
             coroutineScope.launch {
                 Log.d("WidgetUpdateService", "Updating widgets: ${appWidgetIds.joinToString()}")
                 updateWidgets(appWidgetIds)
             }
+        } else if (intent?.action == ACTION_REFRESH) {
+            val widgetIds = AppWidgetManager.getInstance(this).getAppWidgetIds(
+                android.content.ComponentName(this, LatestWatchedWidgetProvider::class.java)
+            )
+            if (widgetIds.isNotEmpty()) {
+                coroutineScope.launch {
+                    Log.d(
+                        "WidgetUpdateService",
+                        "Refresh action triggered for widgets: ${widgetIds.joinToString()}"
+                    )
+                    updateWidgets(widgetIds)
+                }
+            } else {
+                Log.w("WidgetUpdateService", "No widget IDs found for refresh")
+                stopSelf()
+            }
         } else {
-            Log.w("WidgetUpdateService", "No appWidgetIds provided")
+            Log.w("WidgetUpdateService", "No appWidgetIds or valid action provided")
             stopSelf()
         }
         return START_NOT_STICKY
@@ -87,8 +108,8 @@ class WidgetUpdateService : Service() {
                         1f
                     ) else 1f
                 } ?: 0f
-                    val percentage = (progress * 100).roundToInt()
-                    views.setProgressBar(R.id.widget_progress_bar, 100, percentage, false)
+                val percentage = (progress * 100).roundToInt()
+                views.setProgressBar(R.id.widget_progress_bar, 100, percentage, false)
                 views.setTextViewText(R.id.widget_progress_text, "$percentage%")
 
                 val bitmap = loadEpisodeImage(episode)
@@ -120,11 +141,23 @@ class WidgetUpdateService : Service() {
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
                 views.setOnClickPendingIntent(R.id.widget_root_layout, pendingIntent)
+
+                val refreshIntent = Intent(this, WidgetUpdateService::class.java).apply {
+                    action = ACTION_REFRESH
+                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds)
+                }
+                val refreshPendingIntent = PendingIntent.getService(
+                    this,
+                    1,
+                    refreshIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                views.setOnClickPendingIntent(R.id.widget_refresh_button, refreshPendingIntent)
             } else {
                 views.setTextViewText(R.id.widget_episode_title, "No recently watched episodes")
                 views.setTextViewText(R.id.widget_timestamp, "")
                 views.setTextViewText(R.id.widget_last_watched, "")
-                    views.setProgressBar(R.id.widget_progress_bar, 100, 0, false)
+                views.setProgressBar(R.id.widget_progress_bar, 100, 0, false)
                 views.setTextViewText(R.id.widget_progress_text, "0%")
                 views.setImageViewResource(
                     R.id.widget_episode_image,
@@ -135,13 +168,25 @@ class WidgetUpdateService : Service() {
                     "setBackgroundResource",
                     R.drawable.widget_background_default
                 )
+
+                val refreshIntent = Intent(this, WidgetUpdateService::class.java).apply {
+                    action = ACTION_REFRESH
+                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds)
+                }
+                val refreshPendingIntent = PendingIntent.getService(
+                    this,
+                    1,
+                    refreshIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                )
+                views.setOnClickPendingIntent(R.id.widget_refresh_button, refreshPendingIntent)
             }
         } catch (e: Exception) {
             Log.e("WidgetUpdateService", "Error updating widget", e)
             views.setTextViewText(R.id.widget_episode_title, "Error loading episode")
             views.setTextViewText(R.id.widget_timestamp, "")
             views.setTextViewText(R.id.widget_last_watched, "")
-                views.setProgressBar(R.id.widget_progress_bar, 100, 0, false)
+            views.setProgressBar(R.id.widget_progress_bar, 100, 0, false)
             views.setTextViewText(R.id.widget_progress_text, "0%")
             views.setImageViewResource(R.id.widget_episode_image, R.drawable.ic_video_black_24dp)
             views.setInt(
@@ -149,6 +194,18 @@ class WidgetUpdateService : Service() {
                 "setBackgroundResource",
                 R.drawable.widget_background_default
             )
+
+            val refreshIntent = Intent(this, WidgetUpdateService::class.java).apply {
+                action = ACTION_REFRESH
+                putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds)
+            }
+            val refreshPendingIntent = PendingIntent.getService(
+                this,
+                1,
+                refreshIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            views.setOnClickPendingIntent(R.id.widget_refresh_button, refreshPendingIntent)
         }
 
         appWidgetIds.forEach { appWidgetId ->
@@ -172,7 +229,7 @@ class WidgetUpdateService : Service() {
                     .build()
                 val request = ImageRequest.Builder(this)
                     .data(url)
-                        .size(80, 45)
+                    .size(80, 45)
                     .build()
                 val result = imageLoader.execute(request)
                 return result.drawable?.toBitmap()

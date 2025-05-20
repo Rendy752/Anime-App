@@ -61,14 +61,21 @@
                 android:paddingBottom="4dp"
                 android:gravity="center_vertical">
 
-                    <TextView
-                        android:id="@+id/widget_timestamp"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:text="00:00 / 24:00"
-                        android:textSize="12sp"
-                        android:textColor="@android:color/white"
-                        android:layout_weight="0" />
+                <TextView
+                    android:id="@+id/widget_timestamp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="00:00 / 24:00"
+                    android:textSize="12sp"
+                    android:textColor="@android:color/white"
+                    android:layout_weight="0" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="horizontal"
+                    android:gravity="end">
 
                     <TextView
                         android:id="@+id/widget_last_watched"
@@ -76,9 +83,18 @@
                         android:layout_height="wrap_content"
                         android:text="~ 1 day ago"
                         android:textSize="12sp"
-                        android:textColor="@android:color/white"
-                        android:layout_weight="1"
-                        android:gravity="end" />
+                        android:textColor="@android:color/white" />
+
+                    <ImageView
+                        android:id="@+id/widget_refresh_button"
+                        android:layout_width="16dp"
+                        android:layout_height="16dp"
+                        android:layout_marginStart="4dp"
+                        android:src="@android:drawable/ic_menu_rotate"
+                        android:contentDescription="Refresh Widget"
+                        android:scaleType="centerInside" />
+
+                </LinearLayout>
 
             </LinearLayout>
 

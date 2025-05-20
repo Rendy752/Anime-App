@@ -122,13 +122,15 @@
 
         <receiver
             android:name=".ui.widget.LatestWatchedWidgetProvider"
+            android:label="@string/widget_name"
+            android:description="@string/widget_description"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/widget_info" />
+                android:resource="@xml/widget_latest_watched_info" />
         </receiver>
 
         <service

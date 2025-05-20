@@ -25,13 +25,11 @@ class LatestWatchedWidgetConfigActivity : Activity() {
             return
         }
 
-        // Start WidgetUpdateService to update the widget
         val intent = Intent(this, WidgetUpdateService::class.java).apply {
             putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, intArrayOf(appWidgetId))
         }
         startService(intent)
 
-        // Return the widget ID
         val resultValue = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
         setResult(RESULT_OK, resultValue)
         Log.d("WidgetConfigActivity", "Widget configured, appWidgetId: $appWidgetId")
