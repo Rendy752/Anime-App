@@ -6,8 +6,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -102,8 +104,8 @@ fun EpisodesDetailSection(
                         modifier = modifier
                             .clip(RoundedCornerShape(16.dp))
                             .background(MaterialTheme.colorScheme.primaryContainer),
-                        height = 56.dp,
-                        width = 56.dp
+                        height = 64.dp,
+                        width = 64.dp
                     )
                 }
                 Column(
@@ -145,7 +147,10 @@ fun EpisodesDetailSection(
                                 )
                             }
                             if (animeDetail.airing) RetryButton(
-                                modifier = if (data.episodes.size >= 4) Modifier else Modifier.fillMaxWidth(),
+                                modifier = if (data.episodes.size >= 4) Modifier.size(64.dp)
+                                else Modifier
+                                    .fillMaxWidth()
+                                    .height(64.dp),
                                 onClick = { onAction(DetailAction.LoadEpisodes(true)) }
                             )
                         }
