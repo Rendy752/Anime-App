@@ -157,8 +157,23 @@ AnimeVibe is a comprehensive, anime-themed Android application using Kotlin and 
             </td>
          </tr>
       </table>
+* **Latest Watched Widget:**
+    * A home screen widget displaying the most recently watched anime episode with episode title, thumbnail, watch progress, timestamp, and last watched time.
+    * Interactive features: Tap the widget to resume watching the episode via deep linking, or use the refresh button to update the widget with the latest data.
+    * Visual indicators: Progress bar shows episode watch progress, and distinct gradient backgrounds differentiate filler episodes.
+    * Powered by Room Persistence Library for offline data access and Coil for efficient image loading.
+      <table>
+        <tr>
+          <td style="text-align: center">
+            <img src="https://github.com/user-attachments/assets/3e76418e-019b-4dd6-91c8-0ec65fd4aca2" width="300" alt="Add Latest Watched Widget">
+          </td>
+          <td style="text-align: center">
+            <img src="https://github.com/user-attachments/assets/92192ff3-814b-4bed-966f-b632c4d804b1" width="300" alt="Latest Watched Widget">
+          </td>
+        </tr>
+      </table>
 * **Airing Notifications**:
-    * Automated notifications for favorite anime airing soon, powered by a WorkManager-based scheduler checking every 15 minutes.
+    * Automated notifications for all anime airing today, powered by a WorkManager-based scheduler running daily.
     * Notifications include anime title, airing time, and a deep link to the anime’s detail page, with options to view details or dismiss.
     * Configurable via the settings screen, with permission handling for Android 13+.
       <table>
