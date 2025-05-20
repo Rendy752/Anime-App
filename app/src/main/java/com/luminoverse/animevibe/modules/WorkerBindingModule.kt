@@ -11,8 +11,7 @@ import dagger.multibindings.StringKey
 
 @Module
 @InstallIn(SingletonComponent::class)
-interface WorkerModule {
-
+interface WorkerBindingModule {
     @Binds
     @IntoMap
     @StringKey("com.luminoverse.animevibe.utils.AnimeBroadcastNotificationWorker")

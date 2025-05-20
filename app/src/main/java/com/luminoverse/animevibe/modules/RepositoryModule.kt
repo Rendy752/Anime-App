@@ -8,7 +8,6 @@ import com.luminoverse.animevibe.data.remote.api.AnimeAPI
 import com.luminoverse.animevibe.di.AnimeRunwayApi
 import com.luminoverse.animevibe.di.JikanApi
 import com.luminoverse.animevibe.repository.AnimeEpisodeDetailRepository
-import com.luminoverse.animevibe.repository.AnimeHomeRepository
 import com.luminoverse.animevibe.repository.AnimeRecommendationsRepository
 import com.luminoverse.animevibe.repository.AnimeSearchRepository
 import dagger.Module
@@ -19,11 +18,6 @@ import dagger.hilt.android.components.ViewModelComponent
 @Module
 @InstallIn(ViewModelComponent::class)
 object RepositoryModule {
-    @Provides
-    fun provideAnimeHomeRepository(@JikanApi animeAPI: AnimeAPI): AnimeHomeRepository {
-        return AnimeHomeRepository(animeAPI)
-    }
-
     @Provides
     fun provideAnimeRecommendationsRepository(@JikanApi animeAPI: AnimeAPI): AnimeRecommendationsRepository {
         return AnimeRecommendationsRepository(animeAPI)

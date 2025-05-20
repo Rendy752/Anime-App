@@ -103,6 +103,8 @@
 
         <receiver android:name=".utils.NotificationReceiver" android:exported="false">
             <intent-filter>
+                <action android:name="ACTION_OPEN_DETAIL" />
+                <action android:name="ACTION_OPEN_EPISODE" />
                 <action android:name="ACTION_CLOSE_NOTIFICATION" />
             </intent-filter>
         </receiver>

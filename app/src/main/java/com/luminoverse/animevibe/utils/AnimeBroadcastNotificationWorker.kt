@@ -1,35 +1,24 @@
 package com.luminoverse.animevibe.utils
 
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
-import androidx.core.app.NotificationCompat
-import androidx.core.graphics.drawable.toBitmap
-import androidx.core.net.toUri
 import androidx.work.*
-import coil.imageLoader
-import coil.request.ImageRequest
+import com.luminoverse.animevibe.models.AnimeDetail
+import com.luminoverse.animevibe.models.AnimeSchedulesSearchQueryState
+import com.luminoverse.animevibe.repository.AnimeHomeRepository
 import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.time.ZonedDateTime
-import java.time.ZoneId
+import java.time.*
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
-import androidx.core.content.edit
-import com.luminoverse.animevibe.data.local.dao.AnimeDetailComplementDao
-import com.luminoverse.animevibe.data.local.dao.AnimeDetailDao
-import com.luminoverse.animevibe.R
-import dagger.assisted.AssistedFactory
 
 class AnimeBroadcastNotificationWorker @AssistedInject constructor(
     @Assisted private val context: Context,
     @Assisted private val params: WorkerParameters,
-    private val animeDetailComplementDao: AnimeDetailComplementDao,
-    private val animeDetailDao: AnimeDetailDao
+    private val animeHomeRepository: AnimeHomeRepository,
+    private val notificationHandler: NotificationHandler
 ) : CoroutineWorker(context, params) {
 
     @AssistedFactory
@@ -41,95 +30,58 @@ class AnimeBroadcastNotificationWorker @AssistedInject constructor(
     }
 
     companion object {
-        const val CHANNEL_ID = "anime_notifications"
-        const val WORK_NAME = "anime_notification_work"
-        private const val PREFS_NOTIFICATIONS_SENT = "notifications_sent"
-        private const val NOTIFICATION_WINDOW_HOURS = 24L
+        const val WORK_NAME = "anime_broadcast_notification_work"
         private const val NOTIFICATION_WINDOW_MINUTES = 5L
+        private const val MAX_RETRIES = 3
 
         fun schedule(context: Context) {
+            val now = ZonedDateTime.now(ZoneId.of("Asia/Jakarta"))
+            val nextMidnight = now
+                .withHour(0)
+                .withMinute(0)
+                .withSecond(0)
+                .withNano(0)
+                .plusDays(if (now.hour >= 0) 1 else 0)
+            val delay = ChronoUnit.MILLIS.between(now, nextMidnight)
+
             val workRequest = PeriodicWorkRequestBuilder<AnimeBroadcastNotificationWorker>(
-                repeatInterval = 15, TimeUnit.MINUTES
+                repeatInterval = 1,
+                repeatIntervalTimeUnit = TimeUnit.DAYS
             )
+                .setInitialDelay(delay, TimeUnit.MILLISECONDS)
                 .setConstraints(
-                    Constraints.Builder().setRequiredNetworkType(NetworkType.NOT_REQUIRED).build()
+                    Constraints.Builder()
+                        .setRequiredNetworkType(NetworkType.CONNECTED)
+                        .build()
+                )
+                .setBackoffCriteria(
+                    BackoffPolicy.LINEAR,
+                    10,
+                    TimeUnit.MINUTES
                 )
                 .build()
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-                WORK_NAME, ExistingPeriodicWorkPolicy.KEEP, workRequest
+                WORK_NAME,
+                ExistingPeriodicWorkPolicy.KEEP,
+                workRequest
             )
-            println("AnimeBroadcastNotificationWorker: Scheduled")
+            println("AnimeBroadcastNotificationWorker: Scheduled for $nextMidnight, delay=$delay ms")
         }
 
-        fun createNotificationChannel(context: Context) {
-            val channel = NotificationChannel(
-                CHANNEL_ID, "Broadcast Notifications", NotificationManager.IMPORTANCE_HIGH
-            ).apply { description = "Anime airing notifications" }
-            context.getSystemService(NotificationManager::class.java)
-                .createNotificationChannel(channel)
-            println("AnimeBroadcastNotificationWorker: Channel created: $CHANNEL_ID")
-        }
-
-        suspend fun sendNotification(
-            context: Context,
-            malId: Int,
-            title: String,
-            imageUrl: String?
-        ) {
-            val openIntent = Intent(Intent.ACTION_VIEW, "animevibe://anime/detail/$malId".toUri())
-            val openPendingIntent = PendingIntent.getActivity(
-                context,
-                malId,
-                openIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-
-            val closeIntent = Intent(context, NotificationReceiver::class.java).apply {
-                action = "ACTION_CLOSE_NOTIFICATION"
-                putExtra("notification_id", malId)
-            }
-            val closePendingIntent = PendingIntent.getBroadcast(
-                context,
-                malId + 1,
-                closeIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-
-            val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-                .setSmallIcon(R.drawable.ic_notifications_active_black_24dp)
-                .setContentTitle("Anime About to Air")
-                .setContentText("$title is about to air!")
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setContentIntent(openPendingIntent)
-                .setAutoCancel(true)
-                .addAction(R.drawable.ic_open_in_new_black_24dp, "Detail", openPendingIntent)
-                .addAction(R.drawable.ic_close_black_24dp, "Close", closePendingIntent)
-
-            if (imageUrl != null) {
-                try {
-                    val request = ImageRequest.Builder(context)
-                        .data(imageUrl)
-                        .allowHardware(false)
-                        .build()
-                    val result = context.imageLoader.execute(request)
-                    val bitmap = result.drawable?.toBitmap()
-                    if (bitmap != null) {
-                        builder.setLargeIcon(bitmap)
-                            .setStyle(NotificationCompat.BigPictureStyle().bigPicture(bitmap))
-                    }
-                } catch (e: Exception) {
-                    println("AnimeBroadcastNotificationWorker: Error loading image: $imageUrl, error=${e.message}")
-                }
-            }
-
-            context.getSystemService(NotificationManager::class.java).notify(malId, builder.build())
-            println("AnimeBroadcastNotificationWorker: Notification sent for $title (malId: $malId)")
+        fun cancel(context: Context) {
+            WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
+            println("AnimeBroadcastNotificationWorker: Canceled")
         }
     }
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        println("AnimeBroadcastNotificationWorker: Started at ${ZonedDateTime.now()}")
+        println("AnimeBroadcastNotificationWorker: Started at ${ZonedDateTime.now()}, attempt ${params.runAttemptCount}")
+        if (params.runAttemptCount > MAX_RETRIES) {
+            println("AnimeBroadcastNotificationWorker: Max retries ($MAX_RETRIES) reached")
+            return@withContext Result.failure()
+        }
+
         try {
             val prefs = context.getSharedPreferences("settings_prefs", Context.MODE_PRIVATE)
             if (!prefs.getBoolean("notifications_enabled", true)) {
@@ -137,109 +89,60 @@ class AnimeBroadcastNotificationWorker @AssistedInject constructor(
                 return@withContext Result.success()
             }
 
-            createNotificationChannel(context)
+            val schedules = mutableListOf<AnimeDetail>()
+            var page = 1
+            val queryState = AnimeSchedulesSearchQueryState(page = page)
 
-            val favorites = animeDetailComplementDao.getAllFavorites()
-            println("AnimeBroadcastNotificationWorker: Favorites count: ${favorites.size}")
-            if (favorites.isEmpty()) {
-                println("AnimeBroadcastNotificationWorker: No favorites found")
-                return@withContext Result.success()
+            while (true) {
+                println("AnimeBroadcastNotificationWorker: Fetching schedules page $page")
+                val scheduleResult =
+                    animeHomeRepository.getAnimeSchedules(queryState.copy(page = page))
+                if (scheduleResult !is Resource.Success) {
+                    println("AnimeBroadcastNotificationWorker: Failed to fetch schedules (page $page): ${scheduleResult.message}")
+                    return@withContext Result.retry()
+                }
+
+                schedules.addAll(scheduleResult.data.data)
+                if (!scheduleResult.data.pagination.has_next_page) {
+                    println("AnimeBroadcastNotificationWorker: No more pages, total schedules: ${schedules.size}")
+                    break
+                }
+                page++
             }
 
-            val currentTime = ZonedDateTime.now(ZoneId.systemDefault())
-            var hasIncompleteData = false
-            favorites.forEach { complement ->
-                if (!complement.isFavorite) {
-                    println("AnimeBroadcastNotificationWorker: Skipping non-favorite: malId=${complement.malId}")
-                    return@forEach
-                }
-                val animeDetail = animeDetailDao.getAnimeDetailById(complement.malId)
-                if (animeDetail == null) {
-                    println("AnimeBroadcastNotificationWorker: AnimeDetail not found: malId=${complement.malId}")
-                    return@forEach
-                }
-                if (!animeDetail.airing) {
-                    println("AnimeBroadcastNotificationWorker: Anime not airing: malId=${complement.malId}")
-                    return@forEach
-                }
-                if (animeDetail.broadcast.time == null || animeDetail.broadcast.day == null || animeDetail.broadcast.timezone == null) {
-                    println("AnimeBroadcastNotificationWorker: Incomplete broadcast data: malId=${complement.malId}")
-                    hasIncompleteData = true
-                    return@forEach
-                }
-
-                try {
-                    val broadcastTime = TimeUtils.getBroadcastDateTimeThisWeek(
-                        broadcastTime = animeDetail.broadcast.time,
-                        broadcastTimezone = animeDetail.broadcast.timezone,
-                        broadcastDay = animeDetail.broadcast.day
-                    ).withZoneSameInstant(ZoneId.systemDefault())
-                    val timeUntilBroadcast = ChronoUnit.MINUTES.between(currentTime, broadcastTime)
-                    println("AnimeBroadcastNotificationWorker: Checking ${animeDetail.title}: $timeUntilBroadcast min")
-                    if (timeUntilBroadcast in 0..NOTIFICATION_WINDOW_MINUTES) {
-                        val sentNotifications =
-                            prefs.getStringSet(PREFS_NOTIFICATIONS_SENT, emptySet())?.toMutableSet()
-                                ?: mutableSetOf()
-                        val notificationKey = "${complement.malId}_${broadcastTime.toLocalDate()}"
-                        if (!sentNotifications.contains(notificationKey)) {
-                            sendNotification(
-                                context,
-                                complement.malId,
-                                animeDetail.title,
-                                animeDetail.images.webp.large_image_url
-                            )
-                            sentNotifications.add(notificationKey)
-                            prefs.edit { putStringSet(PREFS_NOTIFICATIONS_SENT, sentNotifications) }
-                            println("AnimeBroadcastNotificationWorker: Notification sent: malId=${complement.malId}")
-                        } else {
-                            println("AnimeBroadcastNotificationWorker: Skipped duplicate: malId=${complement.malId}")
-                        }
+            val currentTime = ZonedDateTime.now(ZoneId.of("Asia/Jakarta"))
+            schedules
+                .filter { it.airing }
+                .forEach { anime ->
+                    val broadcastTime = try {
+                        TimeUtils.getBroadcastDateTimeThisWeek(
+                            broadcastTime = anime.broadcast.time ?: return@forEach,
+                            broadcastTimezone = anime.broadcast.timezone ?: return@forEach,
+                            broadcastDay = anime.broadcast.day ?: return@forEach
+                        ).withZoneSameInstant(ZoneId.of("Asia/Jakarta"))
+                    } catch (e: Exception) {
+                        println("AnimeBroadcastNotificationWorker: Invalid broadcast data for malId=${anime.mal_id}: ${e.message}")
+                        return@forEach
                     }
-                } catch (e: Exception) {
-                    println("AnimeBroadcastNotificationWorker: Error for malId=${complement.malId}: ${e.message}")
-                    hasIncompleteData = true
+
+                    val timeUntilBroadcast = ChronoUnit.MINUTES.between(currentTime, broadcastTime)
+                    if (timeUntilBroadcast in 0..NOTIFICATION_WINDOW_MINUTES) {
+                        notificationHandler.sendNotification(
+                            context = context,
+                            type = NotificationType.Broadcast(
+                                malId = anime.mal_id,
+                                title = anime.title,
+                                imageUrl = anime.images.webp.large_image_url
+                            )
+                        )
+                        println("AnimeBroadcastNotificationWorker: Notification sent for ${anime.title} (malId: ${anime.mal_id}) at ${currentTime}, airing in $timeUntilBroadcast minutes")
+                    }
                 }
-            }
-
-            cleanUpSentNotifications(prefs, currentTime)
-
-            if (hasIncompleteData) {
-                println("AnimeBroadcastNotificationWorker: Incomplete data detected")
-            }
 
             Result.success()
         } catch (e: Exception) {
-            println("AnimeBroadcastNotificationWorker: Worker error: ${e.message}")
+            println("AnimeBroadcastNotificationWorker: Worker error: ${e.message}, stacktrace=${e.stackTraceToString()}")
             Result.retry()
         }
-    }
-
-    private fun cleanUpSentNotifications(
-        prefs: android.content.SharedPreferences,
-        currentTime: ZonedDateTime
-    ) {
-        val sentNotifications =
-            prefs.getStringSet(PREFS_NOTIFICATIONS_SENT, emptySet())?.toMutableSet()
-                ?: mutableSetOf()
-        val iterator = sentNotifications.iterator()
-        while (iterator.hasNext()) {
-            val key = iterator.next()
-            try {
-                val dateStr = key.substringAfterLast("_")
-                val notificationDate = ZonedDateTime.parse(dateStr + "T00:00:00Z").toLocalDate()
-                if (ChronoUnit.HOURS.between(
-                        notificationDate.atStartOfDay(ZoneId.systemDefault()),
-                        currentTime
-                    ) > NOTIFICATION_WINDOW_HOURS
-                ) {
-                    iterator.remove()
-                    println("AnimeBroadcastNotificationWorker: Removed old notification: $key")
-                }
-            } catch (e: Exception) {
-                println("AnimeBroadcastNotificationWorker: Error cleaning notification: $key, ${e.message}")
-                iterator.remove()
-            }
-        }
-        prefs.edit { putStringSet(PREFS_NOTIFICATIONS_SENT, sentNotifications) }
     }
 }

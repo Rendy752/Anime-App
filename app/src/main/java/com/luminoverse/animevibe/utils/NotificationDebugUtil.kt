@@ -6,15 +6,18 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 
 class NotificationDebugUtil @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val notificationHandler: NotificationHandler
 ) {
     suspend fun sendDebugNotification() {
-        AnimeBroadcastNotificationWorker.createNotificationChannel(context)
-        AnimeBroadcastNotificationWorker.sendNotification(
+        notificationHandler.sendNotification(
             context = context,
-            malId = animeDetailPlaceholder.mal_id,
-            title = animeDetailPlaceholder.title,
-            imageUrl = animeDetailPlaceholder.images.webp.large_image_url
+            type = NotificationType.Broadcast(
+                malId = animeDetailPlaceholder.mal_id,
+                title = animeDetailPlaceholder.title,
+                imageUrl = animeDetailPlaceholder.images.webp.large_image_url
+            )
         )
+        println("NotificationDebugUtil: Debug notification sent for ${animeDetailPlaceholder.title} (malId: ${animeDetailPlaceholder.mal_id})")
     }
 }
