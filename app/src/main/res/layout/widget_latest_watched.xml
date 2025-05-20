@@ -1,61 +1,112 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root_layout"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:baselineAligned="false"
     android:orientation="horizontal"
     android:padding="8dp"
-    android:background="@drawable/widget_background"
+    android:background="@drawable/widget_background_default"
     android:layout_margin="8dp">
-
-    <ImageView
-        android:id="@+id/widget_episode_image"
-        android:layout_width="100dp"
-        android:layout_height="56dp"
-        android:scaleType="centerCrop"
-        android:contentDescription="Episode Thumbnail" />
 
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
         android:orientation="vertical"
-        android:paddingHorizontal="8dp">
+        android:padding="4dp">
 
-        <TextView
-            android:id="@+id/widget_episode_title"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Episode Title"
-            android:textSize="16sp"
-            android:textStyle="bold"
-            android:maxLines="2"
-            android:ellipsize="end"
-            android:textColor="@android:color/black" />
+            android:orientation="horizontal"
+            android:paddingBottom="4dp">
 
-        <TextView
-            android:id="@+id/widget_last_watched"
+            <ImageView
+                android:id="@+id/widget_episode_image"
+                android:layout_width="80dp"
+                android:layout_height="45dp"
+                android:scaleType="centerCrop"
+                android:clipToOutline="true"
+                android:background="@drawable/rounded_corner_4dp"
+                android:contentDescription="Episode Thumbnail" />
+
+            <TextView
+                android:id="@+id/widget_episode_title"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="8dp"
+                android:layout_gravity="center_vertical"
+                android:text="Ep 1: Episode Title"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:maxLines="2"
+                android:ellipsize="end"
+                android:textColor="@android:color/white" />
+
+        </LinearLayout>
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="Last Watched: N/A"
-            android:textSize="12sp"
-            android:textColor="@android:color/black" />
+            android:orientation="vertical"
+            android:paddingTop="4dp">
 
-        <ProgressBar
-            android:id="@+id/widget_progress_bar"
-            style="@android:style/Widget.ProgressBar.Horizontal"
-            android:layout_width="match_parent"
-            android:layout_height="6dp"
-            android:layout_marginTop="4dp"
-            android:max="100" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingBottom="4dp"
+                android:gravity="center_vertical">
 
-        <TextView
-            android:id="@+id/widget_progress_text"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="end"
-            android:text="0%"
-            android:textSize="12sp"
-            android:textColor="@android:color/black" />
+                    <TextView
+                        android:id="@+id/widget_timestamp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="00:00 / 24:00"
+                        android:textSize="12sp"
+                        android:textColor="@android:color/white"
+                        android:layout_weight="0" />
+
+                    <TextView
+                        android:id="@+id/widget_last_watched"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="~ 1 day ago"
+                        android:textSize="12sp"
+                        android:textColor="@android:color/white"
+                        android:layout_weight="1"
+                        android:gravity="end" />
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <ProgressBar
+                    android:id="@+id/widget_progress_bar"
+                    style="@android:style/Widget.ProgressBar.Horizontal"
+                    android:layout_width="0dp"
+                    android:layout_height="6dp"
+                    android:layout_weight="1"
+                    android:max="100"
+                    android:progressDrawable="@drawable/progress_bar_custom" />
+
+                <TextView
+                    android:id="@+id/widget_progress_text"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="0%"
+                    android:textSize="12sp"
+                    android:textColor="@android:color/white" />
+
+            </LinearLayout>
+        </LinearLayout>
     </LinearLayout>
 </LinearLayout>

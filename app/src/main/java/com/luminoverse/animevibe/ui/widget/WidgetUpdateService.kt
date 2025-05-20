@@ -37,7 +37,6 @@ class WidgetUpdateService : Service() {
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        Log.d("WidgetUpdateService", "onStartCommand: Service started")
         if (!::repository.isInitialized) {
             Log.e("WidgetUpdateService", "Repository not injected")
             stopSelf()
@@ -69,25 +68,47 @@ class WidgetUpdateService : Service() {
                     R.id.widget_episode_title,
                     "Ep ${episode.number}: ${episode.episodeTitle}"
                 )
-                views.setTextViewText(
-                    R.id.widget_last_watched,
-                    episode.lastWatched?.let { "Last Watched: ${TimeUtils.formatDateToAgo(it)}" } ?: "Last Watched: N/A"
-                )
+
+                val timestampText = episode.lastTimestamp?.let { timestamp ->
+                    val durationText =
+                        episode.duration?.let { " / ${TimeUtils.formatTimestamp(it)}" } ?: ""
+                    "${TimeUtils.formatTimestamp(timestamp)}$durationText"
+                } ?: ""
+                views.setTextViewText(R.id.widget_timestamp, timestampText)
+
+                val lastWatchedText =
+                    episode.lastWatched?.let { "~ ${TimeUtils.formatDateToAgo(it)}" } ?: ""
+                views.setTextViewText(R.id.widget_last_watched, lastWatchedText)
 
                 val duration = episode.duration?.toFloat() ?: (24 * 60f)
                 val progress = episode.lastTimestamp?.let { timestamp ->
-                    if (timestamp < duration) (timestamp.toFloat() / duration).coerceIn(0f, 1f) else 1f
+                    if (timestamp < duration) (timestamp.toFloat() / duration).coerceIn(
+                        0f,
+                        1f
+                    ) else 1f
                 } ?: 0f
-                val percentage = (progress * 100).roundToInt()
-                views.setProgressBar(R.id.widget_progress_bar, 100, percentage, false)
+                    val percentage = (progress * 100).roundToInt()
+                    views.setProgressBar(R.id.widget_progress_bar, 100, percentage, false)
                 views.setTextViewText(R.id.widget_progress_text, "$percentage%")
 
                 val bitmap = loadEpisodeImage(episode)
                 if (bitmap != null) {
                     views.setImageViewBitmap(R.id.widget_episode_image, bitmap)
                 } else {
-                    views.setImageViewResource(R.id.widget_episode_image, R.drawable.ic_video_black_24dp)
+                    views.setImageViewResource(
+                        R.id.widget_episode_image,
+                        R.drawable.ic_video_black_24dp
+                    )
                 }
+
+                val backgroundRes = if (episode.isFiller) {
+                    Log.d("WidgetUpdateService", "Using filler gradient background")
+                    R.drawable.widget_background_filler
+                } else {
+                    Log.d("WidgetUpdateService", "Using default gradient background")
+                    R.drawable.widget_background_default
+                }
+                views.setInt(R.id.widget_root_layout, "setBackgroundResource", backgroundRes)
 
                 val clickIntent = Intent(Intent.ACTION_VIEW).apply {
                     data = "animevibe://anime/watch/${episode.malId}/${episode.id}".toUri()
@@ -98,26 +119,39 @@ class WidgetUpdateService : Service() {
                     clickIntent,
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
-                views.setOnClickPendingIntent(R.id.widget_episode_image, pendingIntent)
-                views.setOnClickPendingIntent(R.id.widget_episode_title, pendingIntent)
+                views.setOnClickPendingIntent(R.id.widget_root_layout, pendingIntent)
             } else {
                 views.setTextViewText(R.id.widget_episode_title, "No recently watched episodes")
+                views.setTextViewText(R.id.widget_timestamp, "")
                 views.setTextViewText(R.id.widget_last_watched, "")
-                views.setProgressBar(R.id.widget_progress_bar, 100, 0, false)
+                    views.setProgressBar(R.id.widget_progress_bar, 100, 0, false)
                 views.setTextViewText(R.id.widget_progress_text, "0%")
-                views.setImageViewResource(R.id.widget_episode_image, R.drawable.ic_video_black_24dp)
+                views.setImageViewResource(
+                    R.id.widget_episode_image,
+                    R.drawable.ic_video_black_24dp
+                )
+                views.setInt(
+                    R.id.widget_root_layout,
+                    "setBackgroundResource",
+                    R.drawable.widget_background_default
+                )
             }
         } catch (e: Exception) {
             Log.e("WidgetUpdateService", "Error updating widget", e)
             views.setTextViewText(R.id.widget_episode_title, "Error loading episode")
+            views.setTextViewText(R.id.widget_timestamp, "")
             views.setTextViewText(R.id.widget_last_watched, "")
-            views.setProgressBar(R.id.widget_progress_bar, 100, 0, false)
+                views.setProgressBar(R.id.widget_progress_bar, 100, 0, false)
             views.setTextViewText(R.id.widget_progress_text, "0%")
             views.setImageViewResource(R.id.widget_episode_image, R.drawable.ic_video_black_24dp)
+            views.setInt(
+                R.id.widget_root_layout,
+                "setBackgroundResource",
+                R.drawable.widget_background_default
+            )
         }
 
         appWidgetIds.forEach { appWidgetId ->
-            Log.d("WidgetUpdateService", "Updating widget ID: $appWidgetId")
             appWidgetManager.updateAppWidget(appWidgetId, views)
         }
     }
@@ -138,7 +172,7 @@ class WidgetUpdateService : Service() {
                     .build()
                 val request = ImageRequest.Builder(this)
                     .data(url)
-                    .size(100, 56)
+                        .size(80, 45)
                     .build()
                 val result = imageLoader.execute(request)
                 return result.drawable?.toBitmap()
@@ -151,7 +185,6 @@ class WidgetUpdateService : Service() {
     }
 
     override fun onDestroy() {
-        Log.d("WidgetUpdateService", "Service destroyed")
         coroutineScope.cancel()
         super.onDestroy()
     }
