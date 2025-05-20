@@ -47,16 +47,11 @@
 }
 -keepattributes JavascriptInterface
 
-# --- Hilt ---
--keep class dagger.hilt.** { *; }
--keep class androidx.hilt.** { *; }
--dontwarn dagger.hilt.**
--dontwarn androidx.hilt.**
-
 # Keep Hilt-generated classes
--keepclasseswithmembers class * {
-    @dagger.hilt.** *;
-}
+-keep class com.luminoverse.animevibe.**_GeneratedInjector { *; }
+-keep class dagger.hilt.** { *; }
+-keep class **_HiltComponents { *; }
+-dontwarn com.google.dagger.hilt.**
 
 # --- WorkManager ---
 -keep class androidx.work.** { *; }
