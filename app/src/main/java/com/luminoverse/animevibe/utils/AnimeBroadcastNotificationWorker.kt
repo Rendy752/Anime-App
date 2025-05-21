@@ -1,6 +1,8 @@
 package com.luminoverse.animevibe.utils
 
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import androidx.work.*
 import com.luminoverse.animevibe.models.AnimeDetail
 import com.luminoverse.animevibe.models.AnimeSchedulesSearchQueryState
@@ -36,7 +38,11 @@ class AnimeBroadcastNotificationWorker @AssistedInject constructor(
 
         fun schedule(context: Context) {
             val now = ZonedDateTime.now(ZoneId.of("Asia/Jakarta"))
-            val nextMidnight = now.toLocalDate().plusDays(1).atStartOfDay(ZoneId.of("Asia/Jakarta"))
+            val nextMidnight = if (now.toLocalTime().isBefore(LocalTime.MIDNIGHT)) {
+                now.toLocalDate().atStartOfDay(ZoneId.of("Asia/Jakarta"))
+            } else {
+                now.toLocalDate().plusDays(1).atStartOfDay(ZoneId.of("Asia/Jakarta"))
+            }
             val initialDelayMinutes = ChronoUnit.MINUTES.between(now, nextMidnight)
 
             val workRequest = PeriodicWorkRequestBuilder<AnimeBroadcastNotificationWorker>(
@@ -46,7 +52,6 @@ class AnimeBroadcastNotificationWorker @AssistedInject constructor(
                 .setConstraints(
                     Constraints.Builder()
                         .setRequiredNetworkType(NetworkType.CONNECTED)
-                        .setRequiresBatteryNotLow(true)
                         .build()
                 )
                 .setInitialDelay(initialDelayMinutes, TimeUnit.MINUTES)
@@ -59,15 +64,39 @@ class AnimeBroadcastNotificationWorker @AssistedInject constructor(
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 WORK_NAME,
-                ExistingPeriodicWorkPolicy.KEEP,
+                ExistingPeriodicWorkPolicy.REPLACE,
                 workRequest
             )
             println("AnimeBroadcastNotificationWorker: Scheduled to run daily at midnight (Asia/Jakarta). Next run: $nextMidnight (in $initialDelayMinutes minutes)")
         }
 
-        fun cancel(context: Context) {
-            WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
-            println("AnimeBroadcastNotificationWorker: Canceled")
+        fun scheduleNow(context: Context) {
+            val workRequest = OneTimeWorkRequestBuilder<AnimeBroadcastNotificationWorker>()
+                .setConstraints(
+                    Constraints.Builder()
+                        .setRequiredNetworkType(NetworkType.CONNECTED)
+                        .build()
+                )
+                .setBackoffCriteria(
+                    BackoffPolicy.EXPONENTIAL,
+                    10,
+                    TimeUnit.MINUTES
+                )
+                .build()
+
+            WorkManager.getInstance(context).enqueueUniqueWork(
+                "$WORK_NAME-now",
+                ExistingWorkPolicy.REPLACE,
+                workRequest
+            )
+            println("AnimeBroadcastNotificationWorker: Scheduled to run now with unique name $WORK_NAME-now")
+        }
+
+        private fun isNetworkAvailable(context: Context): Boolean {
+            val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            val network = connectivityManager.activeNetwork ?: return false
+            val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+            return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
         }
     }
 
@@ -80,14 +109,8 @@ class AnimeBroadcastNotificationWorker @AssistedInject constructor(
             return@withContext Result.failure()
         }
 
-        val networkAvailable =
-            WorkManager.getInstance(context).getWorkInfosForUniqueWorkLiveData(WORK_NAME)
-                .value?.firstOrNull()?.state == WorkInfo.State.ENQUEUED || WorkManager.getInstance(
-                context
-            )
-                .getWorkInfosForUniqueWorkLiveData(WORK_NAME)
-                .value?.firstOrNull()?.state == WorkInfo.State.RUNNING
-        println("AnimeBroadcastNotificationWorker: Network constraint met: $networkAvailable")
+        val networkAvailable = isNetworkAvailable(context)
+        println("AnimeBroadcastNotificationWorker: Network available: $networkAvailable")
 
         if (!networkAvailable) {
             println("AnimeBroadcastNotificationWorker: Network not available, retrying")
@@ -109,8 +132,7 @@ class AnimeBroadcastNotificationWorker @AssistedInject constructor(
 
             while (true) {
                 println("AnimeBroadcastNotificationWorker: Fetching schedules page $page")
-                val scheduleResult =
-                    animeHomeRepository.getAnimeSchedules(queryState.copy(page = page))
+                val scheduleResult = animeHomeRepository.getAnimeSchedules(queryState.copy(page = page))
                 when (scheduleResult) {
                     is Resource.Success -> {
                         schedules.addAll(scheduleResult.data.data)
@@ -120,12 +142,10 @@ class AnimeBroadcastNotificationWorker @AssistedInject constructor(
                         }
                         page++
                     }
-
                     is Resource.Error -> {
                         println("AnimeBroadcastNotificationWorker: Failed to fetch schedules (page $page): ${scheduleResult.message}")
                         return@withContext Result.retry()
                     }
-
                     else -> {
                         println("AnimeBroadcastNotificationWorker: Unexpected response type for page $page")
                         return@withContext Result.retry()

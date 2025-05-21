@@ -59,6 +59,7 @@ class AnimeApplication : Application(), Configuration.Provider {
         )
         if (BuildConfig.DEBUG) {
             setupSensor()
+//            AnimeBroadcastNotificationWorker.scheduleNow(this)
 //            CoroutineScope(Dispatchers.IO).launch {
 //                notificationDebugUtil.sendDebugNotification()
 //            }
@@ -117,7 +118,10 @@ class AnimeApplication : Application(), Configuration.Provider {
                 service.dispatch(MediaPlaybackAction.QueryForegroundStatus)
                 service.state.collectLatest { state ->
                     if (!state.isForeground) {
-                        Log.d("AnimeApplication", "Stopping MediaPlaybackService from AnimeApplication")
+                        Log.d(
+                            "AnimeApplication",
+                            "Stopping MediaPlaybackService from AnimeApplication"
+                        )
                         service.dispatch(MediaPlaybackAction.StopService)
                         unbindMediaService()
                     } else {
