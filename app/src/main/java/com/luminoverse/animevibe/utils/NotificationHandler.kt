@@ -122,23 +122,39 @@ class NotificationHandler @javax.inject.Inject constructor() {
                 .setAutoCancel(true)
 
             actions.forEach { action ->
-                val intent = Intent(context, NotificationReceiver::class.java).apply {
-                    this.action = action.action
-                    putExtra(action.extraKey, action.extraValue)
-                }
                 val pendingIntent = when (action.action) {
-                    "ACTION_CLOSE_NOTIFICATION" -> PendingIntent.getBroadcast(
-                        context,
-                        malId + 1,
-                        intent,
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                    )
-                    else -> PendingIntent.getActivity(
-                        context,
-                        malId,
-                        intent,
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                    )
+                    "ACTION_OPEN_DETAIL" -> {
+                        PendingIntent.getActivity(
+                            context,
+                            malId,
+                            openIntent,
+                            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                        )
+                    }
+                    "ACTION_CLOSE_NOTIFICATION" -> {
+                        val intent = Intent(context, NotificationReceiver::class.java).apply {
+                            this.action = action.action
+                            putExtra(action.extraKey, action.extraValue)
+                        }
+                        PendingIntent.getBroadcast(
+                            context,
+                            malId + 1,
+                            intent,
+                            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                        )
+                    }
+                    else -> {
+                        val intent = Intent(context, NotificationReceiver::class.java).apply {
+                            this.action = action.action
+                            putExtra(action.extraKey, action.extraValue)
+                        }
+                        PendingIntent.getActivity(
+                            context,
+                            malId,
+                            intent,
+                            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                        )
+                    }
                 }
                 builder.addAction(action.icon, action.title, pendingIntent)
             }
