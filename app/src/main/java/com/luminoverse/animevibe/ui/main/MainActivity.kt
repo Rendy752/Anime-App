@@ -10,6 +10,7 @@ import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
@@ -48,6 +49,14 @@ class MainActivity : AppCompatActivity() {
     private var lastBackPressTime = 0L
     private val backPressTimeoutMillis = 2000L
 
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            println("MainActivity: POST_NOTIFICATIONS permission granted")
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
         super.onCreate(savedInstanceState)
@@ -60,6 +69,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         intent?.let { intentChannel.trySend(it) }
+
+        requestNotificationPermission()
 
         setContent {
             navController = rememberNavController()
@@ -123,6 +134,25 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val permission = android.Manifest.permission.POST_NOTIFICATIONS
+            when {
+                checkSelfPermission(permission) == android.content.pm.PackageManager.PERMISSION_GRANTED -> {
+                    println("MainActivity: POST_NOTIFICATIONS permission already granted")
+                }
+                shouldShowRequestPermissionRationale(permission) -> {
+                    println("MainActivity: Showing rationale for POST_NOTIFICATIONS permission")
+                    requestPermissionLauncher.launch(permission)
+                }
+                else -> {
+                    println("MainActivity: Requesting POST_NOTIFICATIONS permission")
+                    requestPermissionLauncher.launch(permission)
+                }
+            }
+        }
+    }
+
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         intent.let { intentChannel.trySend(it) }
@@ -170,11 +200,13 @@ class MainActivity : AppCompatActivity() {
 
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
-        val currentRoute = navController.currentDestination?.route
-        val isPlaying = HlsPlayerUtils.state.value.isPlaying
-        if (currentRoute?.startsWith("animeWatch/") == true && isPlaying) {
-            pipParamsBuilder.setActions(buildPipActions(this, true))
-            enterPictureInPictureMode(pipParamsBuilder.build())
+        if (::navController.isInitialized) {
+            val currentRoute = navController.currentDestination?.route
+            val isPlaying = HlsPlayerUtils.state.value.isPlaying
+            if (currentRoute?.startsWith("animeWatch/") == true && isPlaying) {
+                pipParamsBuilder.setActions(buildPipActions(this, true))
+                enterPictureInPictureMode(pipParamsBuilder.build())
+            }
         }
     }
 
