@@ -141,7 +141,10 @@ fun AccordionItemSkeleton(modifier: Modifier = Modifier) {
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 horizontalAlignment = Alignment.Start
             ) {
-                Column {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalAlignment = Alignment.Start
+                ) {
                     SkeletonBox(width = 160.dp * 0.8f, height = 20.dp)
                     SkeletonBox(width = 160.dp * 1f, height = 20.dp)
                     SkeletonBox(width = 160.dp * 0.9f, height = 20.dp)
