@@ -22,10 +22,10 @@ AnimeVibe is a comprehensive, anime-themed Android application using Kotlin and 
     <table>
         <tr>
           <td style="text-align: center">
-            <img src="https://github.com/user-attachments/assets/069b9388-9151-4526-b259-60777385aee5" width="300" alt="Home Portrait">
+            <img src="https://github.com/user-attachments/assets/8629e4aa-db25-41e3-850b-39bb9750fab4" width="300" alt="Home Portrait">
           </td>
           <td style="text-align: center">
-            <img src="https://github.com/user-attachments/assets/57d282ba-7334-40c9-9f37-c7bb21522ed3" width="300" alt="Home Landscape">
+            <img src="https://github.com/user-attachments/assets/9d4a1fe3-8086-47e9-9c94-27ea8b74cf2b" width="600" alt="Home Landscape">
           </td>
         </tr>
       </table>
@@ -33,7 +33,7 @@ AnimeVibe is a comprehensive, anime-themed Android application using Kotlin and 
     <table>
         <tr>
           <td style="text-align: center">
-            <img src="https://github.com/user-attachments/assets/86f57ef0-c2ab-479c-a9ac-eed0a4bd0669" width="300" alt="Home Skeleton Loading">
+            <img src="https://github.com/user-attachments/assets/69d7550b-f61b-4427-9be1-cd655458509e" width="300" alt="Home Skeleton Loading">
           </td>
         </tr>
      </table>
