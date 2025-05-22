@@ -147,11 +147,7 @@ fun AnimeHomeScreen(
                             carouselLastInteractionTime = carouselState.carouselLastInteractionTime,
                             onPageChanged = { onAction(HomeAction.SetCurrentCarouselPage(it)) },
                             onAutoScrollEnabledChanged = {
-                                onAction(
-                                    HomeAction.SetAutoScrollEnabled(
-                                        it
-                                    )
-                                )
+                                onAction(HomeAction.SetAutoScrollEnabled(it))
                             },
                             onCarouselInteraction = { onAction(HomeAction.UpdateCarouselLastInteractionTime) },
                             navController = navController,
@@ -184,7 +180,10 @@ fun AnimeHomeScreen(
                     )
                     when (homeState.animeSchedules) {
                         is Resource.Loading -> {
-                            AnimeSchedulesGridSkeleton(mainState.isLandscape)
+                            AnimeSchedulesGridSkeleton(
+                                gridState = gridState,
+                                isLandscape = mainState.isLandscape
+                            )
                         }
 
                         is Resource.Success -> {

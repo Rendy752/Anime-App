@@ -40,14 +40,18 @@ fun AnimeSchedulesGrid(
 
 @Preview
 @Composable
-fun AnimeSchedulesGridSkeleton(isLandscape: Boolean = false) {
+fun AnimeSchedulesGridSkeleton(
+    gridState: LazyGridState = LazyGridState(),
+    isLandscape: Boolean = false
+) {
     val itemCount = if (isLandscape) 12 else 9
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(if (isLandscape) 6 else 3),
         contentPadding = PaddingValues(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        state = gridState
     ) {
         items(itemCount) {
             AnimeScheduleItemSkeleton()
