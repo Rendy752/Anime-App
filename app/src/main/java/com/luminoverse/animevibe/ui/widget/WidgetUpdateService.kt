@@ -24,6 +24,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
+import java.net.URLEncoder
 import javax.inject.Inject
 import kotlin.math.roundToInt
 
@@ -132,7 +133,9 @@ class WidgetUpdateService : Service() {
                 views.setInt(R.id.widget_root_layout, "setBackgroundResource", backgroundRes)
 
                 val clickIntent = Intent(Intent.ACTION_VIEW).apply {
-                    data = "animevibe://anime/watch/${episode.malId}/${episode.id}".toUri()
+                    val encodedMalId = URLEncoder.encode(episode.malId.toString(), "UTF-8")
+                    val encodedEpisodeId = URLEncoder.encode(episode.id, "UTF-8")
+                    data = "animevibe://anime/watch/${encodedMalId}/${encodedEpisodeId}".toUri()
                 }
                 val pendingIntent = PendingIntent.getActivity(
                     this,
