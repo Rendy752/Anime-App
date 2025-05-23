@@ -15,6 +15,7 @@ import kotlinx.coroutines.withContext
 import java.time.*
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
+import androidx.core.content.edit
 
 class AnimeBroadcastNotificationWorker @AssistedInject constructor(
     @Assisted private val context: Context,
@@ -35,19 +36,22 @@ class AnimeBroadcastNotificationWorker @AssistedInject constructor(
         const val WORK_NAME = "anime_broadcast_notification_work"
         private const val NOTIFICATION_WINDOW_MINUTES = 5L
         private const val MAX_RETRIES = 3
+        private const val SCHEDULE_FLEX_MINUTES = 15L
+        private const val PREFS_NAME = "worker_prefs"
+        private const val KEY_LAST_RUN_DATE = "last_run_date"
 
         fun schedule(context: Context) {
             val now = ZonedDateTime.now(ZoneId.of("Asia/Jakarta"))
-            val nextMidnight = if (now.toLocalTime().isBefore(LocalTime.MIDNIGHT)) {
-                now.toLocalDate().atStartOfDay(ZoneId.of("Asia/Jakarta"))
-            } else {
-                now.toLocalDate().plusDays(1).atStartOfDay(ZoneId.of("Asia/Jakarta"))
-            }
+            val today = now.toLocalDate()
+            val nextMidnight = today.plusDays(1).atStartOfDay(ZoneId.of("Asia/Jakarta"))
             val initialDelayMinutes = ChronoUnit.MINUTES.between(now, nextMidnight)
+            println("AnimeBroadcastNotificationWorker: Scheduling periodic work for $nextMidnight, initial delay: $initialDelayMinutes minutes")
 
-            val workRequest = PeriodicWorkRequestBuilder<AnimeBroadcastNotificationWorker>(
+            val periodicWorkRequest = PeriodicWorkRequestBuilder<AnimeBroadcastNotificationWorker>(
                 repeatInterval = 1,
-                repeatIntervalTimeUnit = TimeUnit.DAYS
+                repeatIntervalTimeUnit = TimeUnit.DAYS,
+                flexTimeInterval = SCHEDULE_FLEX_MINUTES,
+                flexTimeIntervalUnit = TimeUnit.MINUTES
             )
                 .setConstraints(
                     Constraints.Builder()
@@ -64,14 +68,44 @@ class AnimeBroadcastNotificationWorker @AssistedInject constructor(
 
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 WORK_NAME,
-                ExistingPeriodicWorkPolicy.REPLACE,
-                workRequest
+                ExistingPeriodicWorkPolicy.KEEP,
+                periodicWorkRequest
             )
-            println("AnimeBroadcastNotificationWorker: Scheduled to run daily at midnight (Asia/Jakarta). Next run: $nextMidnight (in $initialDelayMinutes minutes)")
+            println("AnimeBroadcastNotificationWorker: Scheduled daily at midnight (Asia/Jakarta). Next run: $nextMidnight")
+
+            val workerPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val lastRunDateStr = workerPrefs.getString(KEY_LAST_RUN_DATE, null)
+            val lastRunDate = lastRunDateStr?.let { LocalDate.parse(it) }
+            println("AnimeBroadcastNotificationWorker: Last run date: $lastRunDate, today: $today")
+
+            if (lastRunDate == null || !lastRunDate.isEqual(today)) {
+                println("AnimeBroadcastNotificationWorker: Worker hasn't run today, scheduling immediate run")
+                val oneTimeWorkRequest = OneTimeWorkRequestBuilder<AnimeBroadcastNotificationWorker>()
+                    .setConstraints(
+                        Constraints.Builder()
+                            .setRequiredNetworkType(NetworkType.CONNECTED)
+                            .build()
+                    )
+                    .setBackoffCriteria(
+                        BackoffPolicy.EXPONENTIAL,
+                        10,
+                        TimeUnit.MINUTES
+                    )
+                    .build()
+
+                WorkManager.getInstance(context).enqueueUniqueWork(
+                    "$WORK_NAME-now",
+                    ExistingWorkPolicy.KEEP,
+                    oneTimeWorkRequest
+                )
+                println("AnimeBroadcastNotificationWorker: Scheduled immediate run with unique name $WORK_NAME-now")
+            } else {
+                println("AnimeBroadcastNotificationWorker: Worker already ran today, skipping immediate run")
+            }
         }
 
         fun scheduleNow(context: Context) {
-            val workRequest = OneTimeWorkRequestBuilder<AnimeBroadcastNotificationWorker>()
+            val oneTimeWorkRequest = OneTimeWorkRequestBuilder<AnimeBroadcastNotificationWorker>()
                 .setConstraints(
                     Constraints.Builder()
                         .setRequiredNetworkType(NetworkType.CONNECTED)
@@ -87,9 +121,9 @@ class AnimeBroadcastNotificationWorker @AssistedInject constructor(
             WorkManager.getInstance(context).enqueueUniqueWork(
                 "$WORK_NAME-now",
                 ExistingWorkPolicy.REPLACE,
-                workRequest
+                oneTimeWorkRequest
             )
-            println("AnimeBroadcastNotificationWorker: Scheduled to run now with unique name $WORK_NAME-now")
+            println("AnimeBroadcastNotificationWorker: Scheduled to run immediately with unique name $WORK_NAME-now")
         }
 
         private fun isNetworkAvailable(context: Context): Boolean {
@@ -102,7 +136,8 @@ class AnimeBroadcastNotificationWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         val attempt = params.runAttemptCount + 1
-        println("AnimeBroadcastNotificationWorker: Started at ${ZonedDateTime.now(ZoneId.of("Asia/Jakarta"))}, attempt $attempt of $MAX_RETRIES")
+        val currentTime = ZonedDateTime.now(ZoneId.of("Asia/Jakarta"))
+        println("AnimeBroadcastNotificationWorker: Started at $currentTime, attempt $attempt of $MAX_RETRIES")
 
         if (attempt > MAX_RETRIES) {
             println("AnimeBroadcastNotificationWorker: Max retries ($MAX_RETRIES) reached, failing")
@@ -118,8 +153,8 @@ class AnimeBroadcastNotificationWorker @AssistedInject constructor(
         }
 
         try {
-            val prefs = context.getSharedPreferences("settings_prefs", Context.MODE_PRIVATE)
-            val notificationsEnabled = prefs.getBoolean("notifications_enabled", true)
+            val settingsPrefs = context.getSharedPreferences("settings_prefs", Context.MODE_PRIVATE)
+            val notificationsEnabled = settingsPrefs.getBoolean("notifications_enabled", true)
             println("AnimeBroadcastNotificationWorker: Notifications enabled: $notificationsEnabled")
             if (!notificationsEnabled) {
                 println("AnimeBroadcastNotificationWorker: Notifications disabled, skipping")
@@ -157,9 +192,6 @@ class AnimeBroadcastNotificationWorker @AssistedInject constructor(
             schedules.forEach { anime ->
                 println("  - malId: ${anime.mal_id}, Title: ${anime.title}, Broadcast: time=${anime.broadcast.time}, timezone=${anime.broadcast.timezone}, day=${anime.broadcast.day}, airing=${anime.airing}")
             }
-
-            val currentTime = ZonedDateTime.now(ZoneId.of("Asia/Jakarta"))
-            println("AnimeBroadcastNotificationWorker: Current time: $currentTime")
 
             schedules
                 .filter { it.airing }
@@ -204,6 +236,11 @@ class AnimeBroadcastNotificationWorker @AssistedInject constructor(
                     }
                 }
 
+            val workerPrefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            workerPrefs.edit {putString(KEY_LAST_RUN_DATE, currentTime.toLocalDate().toString()) }
+            println("AnimeBroadcastNotificationWorker: Recorded last run date: ${currentTime.toLocalDate()}")
+
+            println("AnimeBroadcastNotificationWorker: Completed successfully at $currentTime")
             Result.success()
         } catch (e: Exception) {
             println("AnimeBroadcastNotificationWorker: Worker error: ${e.message}, stacktrace=${e.stackTraceToString()}")
