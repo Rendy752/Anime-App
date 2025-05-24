@@ -37,7 +37,13 @@ class NotificationHandler @Inject constructor() {
         }
         val notificationManager = context.getSystemService(NotificationManager::class.java)
         notificationManager.createNotificationChannel(channel)
-        log("Channel created: $CHANNEL_ID, importance=${notificationManager.getNotificationChannel(CHANNEL_ID)?.importance}, lockscreenVisibility=${channel.lockscreenVisibility}")
+        log(
+            "Channel created: $CHANNEL_ID, importance=${
+                notificationManager.getNotificationChannel(
+                    CHANNEL_ID
+                )?.importance
+            }, lockscreenVisibility=${channel.lockscreenVisibility}"
+        )
     }
 
     suspend fun sendNotification(
@@ -66,7 +72,7 @@ class NotificationHandler @Inject constructor() {
             .setContentText(notification.contentText)
             .setStyle(NotificationCompat.BigTextStyle().bigText(notification.contentText))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setContentIntent(createOpenIntent(context, notification.accessId))
+            .setContentIntent(createOpenIntent(context, notification.type, notification.accessId))
             .setAutoCancel(true)
             .setShowWhen(true)
             .setOnlyAlertOnce(true)
@@ -91,8 +97,22 @@ class NotificationHandler @Inject constructor() {
         }
     }
 
-    private fun createOpenIntent(context: Context, accessId: String): PendingIntent {
-        val intent = Intent(Intent.ACTION_VIEW, "animevibe://anime/detail/$accessId".toUri())
+    private fun createOpenIntent(context: Context, type: String, accessId: String): PendingIntent {
+        val uri = when (type) {
+            "UnfinishedAnime" -> {
+                val parts = accessId.split("||")
+                if (parts.size == 2) {
+                    val malId = parts[0]
+                    val episodeId = parts[1]
+                    "animevibe://anime/watch/$malId/$episodeId".toUri()
+                } else {
+                    log("Invalid accessId format for UnfinishedAnime: $accessId, falling back to detail")
+                    "animevibe://anime/detail/$accessId".toUri()
+                }
+            }
+            else -> "animevibe://anime/detail/$accessId".toUri()
+        }
+        val intent = Intent(Intent.ACTION_VIEW, uri)
         return PendingIntent.getActivity(
             context, accessId.hashCode(), intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
@@ -104,7 +124,7 @@ class NotificationHandler @Inject constructor() {
         title = "Detail",
         action = "ACTION_OPEN_DETAIL",
         extraKey = "access_id",
-        extraValue = accessId.hashCode()
+        extraValue = accessId
     )
 
     private fun actionWatch(accessId: String) = NotificationAction(
@@ -112,7 +132,7 @@ class NotificationHandler @Inject constructor() {
         title = "Watch Now",
         action = "ACTION_OPEN_EPISODE",
         extraKey = "access_id",
-        extraValue = accessId.hashCode()
+        extraValue = accessId
     )
 
     private fun actionClose(accessId: String) = NotificationAction(
@@ -120,7 +140,7 @@ class NotificationHandler @Inject constructor() {
         title = "Close",
         action = "ACTION_CLOSE_NOTIFICATION",
         extraKey = "notification_id",
-        extraValue = accessId.hashCode()
+        extraValue = accessId
     )
 
     private fun NotificationCompat.Builder.applyActions(
@@ -133,17 +153,48 @@ class NotificationHandler @Inject constructor() {
                 putExtra(action.extraKey, action.extraValue)
             }
             val pendingIntent = when (action.action) {
-                "ACTION_OPEN_DETAIL" -> createOpenIntent(context, action.extraValue.toString())
+                "ACTION_OPEN_DETAIL" -> {
+                    val detailIntent = Intent(
+                        Intent.ACTION_VIEW,
+                        "animevibe://anime/detail/${action.extraValue}".toUri()
+                    )
+                    PendingIntent.getActivity(
+                        context, action.extraValue.hashCode(), detailIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    )
+                }
+                "ACTION_OPEN_EPISODE" -> {
+                    val parts = action.extraValue.split("||")
+                    if (parts.size == 2) {
+                        val malId = parts[0]
+                        val episodeId = parts[1]
+                        val watchIntent = Intent(
+                            Intent.ACTION_VIEW,
+                            "animevibe://anime/watch/$malId/$episodeId".toUri()
+                        )
+                        PendingIntent.getActivity(
+                            context, action.extraValue.hashCode(), watchIntent,
+                            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                        )
+                    } else {
+                        log("Invalid accessId format for watch: ${action.extraValue}")
+                        null
+                    }
+                }
                 "ACTION_CLOSE_NOTIFICATION" -> PendingIntent.getBroadcast(
-                    context, action.extraValue + 1, intent,
+                    context, action.extraValue.hashCode(), intent,
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
                 else -> PendingIntent.getActivity(
-                    context, action.extraValue, intent,
+                    context, action.extraValue.hashCode(), intent,
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
             }
-            addAction(action.icon, action.title, pendingIntent)
+            if (pendingIntent != null) {
+                addAction(action.icon, action.title, pendingIntent)
+            } else {
+                log("Skipping action ${action.action} due to null pendingIntent")
+            }
         }
     }
 
@@ -177,5 +228,5 @@ data class NotificationAction(
     val title: String,
     val action: String,
     val extraKey: String,
-    val extraValue: Int
+    val extraValue: String
 )

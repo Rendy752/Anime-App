@@ -16,6 +16,7 @@ import com.luminoverse.animevibe.utils.ResponseHandler
 import com.luminoverse.animevibe.utils.ResponseHandler.safeApiCall
 import com.luminoverse.animevibe.utils.TimeUtils
 import java.time.Instant
+import kotlin.random.Random
 
 class AnimeEpisodeDetailRepository(
     private val animeDetailDao: AnimeDetailDao,
@@ -146,8 +147,8 @@ class AnimeEpisodeDetailRepository(
         }
     }
 
-    suspend fun getCachedUnfinishedEpisodes(): List<EpisodeDetailComplement> {
-        return episodeDetailComplementDao.getAllEpisodeHistory(
+    suspend fun getRandomCachedUnfinishedEpisode(): EpisodeDetailComplement? {
+        val unfinishedEpisodes = episodeDetailComplementDao.getAllEpisodeHistory(
             isFavorite = null,
             sortBy = EpisodeHistoryQueryState.SortBy.UpdatedAt.name
         ).filter { episode ->
@@ -156,8 +157,13 @@ class AnimeEpisodeDetailRepository(
                     episode.lastTimestamp != null &&
                     episode.duration != null &&
                     episode.lastTimestamp < episode.duration &&
-                    animeDetail?.eps != null &&
-                    episode.number < animeDetail.eps
+                    animeDetail?.episodes != null &&
+                    episode.number < animeDetail.episodes.size
+        }
+        return if (unfinishedEpisodes.isNotEmpty()) {
+            unfinishedEpisodes.random(Random(System.currentTimeMillis()))
+        } else {
+            null
         }
     }
 }

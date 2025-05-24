@@ -68,7 +68,7 @@ class AnimeApplication : Application(), Configuration.Provider {
 //            CoroutineScope(Dispatchers.IO).launch {
 //                notificationDebugUtil.sendDebugNotification()
 //            }
-            // Schedule immediate workers only for testing
+//            // Schedule immediate workers only for testing
 //            UnfinishedWatchNotificationWorker.scheduleNow(this)
 //            BroadcastNotificationWorker.scheduleNow(this)
         }

@@ -15,30 +15,45 @@ class NotificationReceiver : BroadcastReceiver() {
                     context.getSystemService(NotificationManager::class.java)
                         .cancel(notificationId)
                     println("NotificationReceiver: Closed notification $notificationId")
+                } else {
+                    println("NotificationReceiver: Invalid notification_id for close action")
                 }
             }
             "ACTION_OPEN_DETAIL" -> {
-                val malId = intent.getIntExtra("mal_id", -1)
-                if (malId != -1) {
-                    val openIntent = Intent(Intent.ACTION_VIEW, "animevibe://anime/detail/$malId".toUri())
+                val accessId = intent.getStringExtra("access_id")
+                if (!accessId.isNullOrEmpty()) {
+                    val openIntent = Intent(Intent.ACTION_VIEW, "animevibe://anime/detail/$accessId".toUri())
                     openIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                    context.startActivity(openIntent)
-                    println("NotificationReceiver: Opened detail for malId=$malId")
+                    try {
+                        context.startActivity(openIntent)
+                        println("NotificationReceiver: Opened detail for accessId=$accessId")
+                    } catch (e: Exception) {
+                        println("NotificationReceiver: Failed to open detail for accessId=$accessId, error=${e.message}")
+                    }
+                } else {
+                    println("NotificationReceiver: Invalid access_id for detail action")
                 }
             }
-
             "ACTION_OPEN_EPISODE" -> {
-                val malIdEpisodeId = intent.getStringExtra("mal_id")
-                if (malIdEpisodeId != null) {
-                    val parts = malIdEpisodeId.split("||")
+                val accessId = intent.getStringExtra("access_id")
+                if (!accessId.isNullOrEmpty()) {
+                    val parts = accessId.split("||")
                     if (parts.size == 2) {
-                        val encodedMalId = parts[0]
-                        val encodedEpisodeId = parts[1]
-                        val openIntent = Intent(Intent.ACTION_VIEW, "animevibe://anime/watch/${encodedMalId}/${encodedEpisodeId}".toUri())
+                        val malId = parts[0]
+                        val episodeId = parts[1]
+                        val openIntent = Intent(Intent.ACTION_VIEW, "animevibe://anime/watch/$malId/$episodeId".toUri())
                         openIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
-                        context.startActivity(openIntent)
-                        println("NotificationReceiver: Opened episode for malId=$encodedMalId, episodeId=$encodedEpisodeId")
+                        try {
+                            context.startActivity(openIntent)
+                            println("NotificationReceiver: Opened episode for malId=$malId, episodeId=$episodeId")
+                        } catch (e: Exception) {
+                            println("NotificationReceiver: Failed to open episode for malId=$malId, episodeId=$episodeId, error=${e.message}")
+                        }
+                    } else {
+                        println("NotificationReceiver: Invalid accessId format for episode action: $accessId")
                     }
+                } else {
+                    println("NotificationReceiver: Invalid access_id for episode action")
                 }
             }
         }

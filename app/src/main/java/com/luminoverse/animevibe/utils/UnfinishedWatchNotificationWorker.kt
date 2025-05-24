@@ -26,7 +26,10 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
 
     @AssistedFactory
     interface Factory : ChildWorkerFactory {
-        override fun create(appContext: Context, params: WorkerParameters): UnfinishedWatchNotificationWorker
+        override fun create(
+            appContext: Context,
+            params: WorkerParameters
+        ): UnfinishedWatchNotificationWorker
     }
 
     companion object {
@@ -42,14 +45,15 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
             .build()
 
         fun schedule(context: Context) {
-            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val notificationManager =
+                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             if (!notificationManager.areNotificationsEnabled()) {
                 log("Notifications disabled, skipping scheduling")
                 return
             }
 
             val workRequest = PeriodicWorkRequestBuilder<UnfinishedWatchNotificationWorker>(
-                repeatInterval = 6,
+                repeatInterval = 12,
                 repeatIntervalTimeUnit = TimeUnit.HOURS
             )
                 .setConstraints(buildConstraints())
@@ -62,11 +66,12 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
                 ExistingPeriodicWorkPolicy.KEEP,
                 workRequest
             )
-            log("Scheduled unfinished notification worker (every 6 hours)")
+            log("Scheduled unfinished notification worker (every 12 hours)")
         }
 
         fun scheduleNow(context: Context) {
-            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val notificationManager =
+                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             if (!notificationManager.areNotificationsEnabled()) {
                 log("Notifications disabled, skipping immediate scheduling")
                 return
@@ -102,7 +107,8 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
         }
 
         try {
-            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val notificationManager =
+                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             if (!notificationManager.areNotificationsEnabled()) {
                 log("Notifications disabled, skipping")
                 return@withContext Result.success()
@@ -114,7 +120,7 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
             notificationRepository.cleanOldNotifications()
             log("Cleaned old notifications")
 
-            val success = processLatestWatchedEpisode()
+            val success = processRandomUnfinishedEpisode()
 
             log("Completed successfully at $currentTime, notification sent: $success")
             Result.success()
@@ -127,15 +133,16 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
         }
     }
 
-    private suspend fun processLatestWatchedEpisode(): Boolean {
-        val episode = animeEpisodeDetailRepository.getCachedLatestWatchedEpisodeDetailComplement()
+    private suspend fun processRandomUnfinishedEpisode(): Boolean {
+        val episode = animeEpisodeDetailRepository.getRandomCachedUnfinishedEpisode()
         if (episode == null) {
-            log("No latest watched episode in cache")
+            log("No unfinished episode in cache")
             return false
         }
-        log("Found episode: ${episode.animeTitle}, malId=${episode.malId}")
+        log("Found random unfinished episode: ${episode.animeTitle}, malId=${episode.malId}, episode=${episode.number}")
 
-        val animeDetail = animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(episode.malId)
+        val animeDetail =
+            animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(episode.malId)
         if (animeDetail == null) {
             log("No anime detail for malId=${episode.malId}")
             return false
@@ -160,7 +167,7 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
         val notification = Notification(
             accessId = accessId,
             imageUrl = episode.imageUrl,
-            contentText = "Continue watching ${episode.animeTitle}: Episode ${episode.number}",
+            contentText = "Hey, you left off watching ${episode.animeTitle} Episode ${episode.number}! Dive back in to see what happens next!",
             type = "UnfinishedAnime"
         )
         try {
@@ -175,7 +182,8 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
                 ?.let {
                     notificationRepository.markNotificationAsSent(it.id)
                     log("Marked notification as sent (id=${it.id})")
-                } ?: log("No pending notification found for ${episode.animeTitle} (accessId=$accessId)")
+                }
+                ?: log("No pending notification found for ${episode.animeTitle} (accessId=$accessId)")
             return true
         } catch (e: Exception) {
             log("Failed to save notification for ${episode.animeTitle} (accessId=$accessId): ${e.message}, stacktrace=${e.stackTraceToString()}")
