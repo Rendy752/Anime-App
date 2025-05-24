@@ -145,4 +145,19 @@ class AnimeEpisodeDetailRepository(
             Resource.Error("Failed to fetch episode history count: ${e.message}")
         }
     }
+
+    suspend fun getCachedUnfinishedEpisodes(): List<EpisodeDetailComplement> {
+        return episodeDetailComplementDao.getAllEpisodeHistory(
+            isFavorite = null,
+            sortBy = EpisodeHistoryQueryState.SortBy.UpdatedAt.name
+        ).filter { episode ->
+            val animeDetail = getCachedAnimeDetailComplementByMalId(episode.malId)
+            episode.lastWatched != null &&
+                    episode.lastTimestamp != null &&
+                    episode.duration != null &&
+                    episode.lastTimestamp < episode.duration &&
+                    animeDetail?.eps != null &&
+                    episode.number < animeDetail.eps
+        }
+    }
 }

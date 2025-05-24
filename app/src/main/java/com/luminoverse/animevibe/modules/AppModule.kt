@@ -3,11 +3,13 @@ package com.luminoverse.animevibe.modules
 import com.luminoverse.animevibe.data.local.dao.AnimeDetailComplementDao
 import com.luminoverse.animevibe.data.local.dao.AnimeDetailDao
 import com.luminoverse.animevibe.data.local.dao.EpisodeDetailComplementDao
+import com.luminoverse.animevibe.data.local.dao.NotificationDao
 import com.luminoverse.animevibe.data.remote.api.AnimeAPI
 import com.luminoverse.animevibe.di.AnimeRunwayApi
 import com.luminoverse.animevibe.di.JikanApi
 import com.luminoverse.animevibe.repository.AnimeEpisodeDetailRepository
 import com.luminoverse.animevibe.repository.AnimeHomeRepository
+import com.luminoverse.animevibe.repository.NotificationRepository
 import com.luminoverse.animevibe.utils.NotificationHandler
 import dagger.Module
 import dagger.Provides
@@ -46,5 +48,11 @@ object AppModule {
             jikanAPI,
             runwayAPI
         )
+    }
+
+    @Provides
+    @Singleton
+    fun provideNotificationRepository(notificationDao: NotificationDao): NotificationRepository {
+        return NotificationRepository(notificationDao)
     }
 }

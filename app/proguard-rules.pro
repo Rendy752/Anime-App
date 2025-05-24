@@ -55,7 +55,8 @@
 
 # --- WorkManager ---
 -keep class androidx.work.** { *; }
--keep class com.luminoverse.animevibe.utils.AnimeBroadcastNotificationWorker { *; }
+-keep class com.luminoverse.animevibe.utils.BroadcastNotificationWorker { *; }
+-keep class com.luminoverse.animevibe.utils.UnfinishedWatchNotificationWorker { *; }
 -keep class com.luminoverse.animevibe.utils.AnimeWorkerFactory { *; }
 -keep interface com.luminoverse.animevibe.utils.ChildWorkerFactory { *; }
 -keepclasseswithmembers class * {

@@ -10,12 +10,14 @@ import android.os.IBinder
 import android.util.Log
 import androidx.work.Configuration
 import com.chuckerteam.chucker.api.Chucker
-import com.luminoverse.animevibe.utils.AnimeBroadcastNotificationWorker
 import com.luminoverse.animevibe.utils.AnimeWorkerFactory
+import com.luminoverse.animevibe.utils.BroadcastNotificationWorker
 import com.luminoverse.animevibe.utils.MediaPlaybackAction
 import com.luminoverse.animevibe.utils.MediaPlaybackService
 import com.luminoverse.animevibe.utils.NotificationDebugUtil
+import com.luminoverse.animevibe.utils.NotificationHandler
 import com.luminoverse.animevibe.utils.ShakeDetector
+import com.luminoverse.animevibe.utils.UnfinishedWatchNotificationWorker
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -33,6 +35,9 @@ class AnimeApplication : Application(), Configuration.Provider {
 
     @Inject
     lateinit var notificationDebugUtil: NotificationDebugUtil
+
+    @Inject
+    lateinit var notificationHandler: NotificationHandler
 
     private lateinit var sensorManager: SensorManager
     private lateinit var shakeDetector: ShakeDetector
@@ -53,19 +58,22 @@ class AnimeApplication : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
-        Log.d(
-            "AnimeApplication",
-            "onCreate: Initializing application, workerFactory initialized: ${::workerFactory.isInitialized}"
-        )
+        notificationHandler.createNotificationChannel(this)
+
+        UnfinishedWatchNotificationWorker.schedule(this)
+        BroadcastNotificationWorker.schedule(this)
+
         if (BuildConfig.DEBUG) {
             setupSensor()
-//            AnimeBroadcastNotificationWorker.scheduleNow(this)
 //            CoroutineScope(Dispatchers.IO).launch {
 //                notificationDebugUtil.sendDebugNotification()
 //            }
+            // Schedule immediate workers only for testing
+//            UnfinishedWatchNotificationWorker.scheduleNow(this)
+//            BroadcastNotificationWorker.scheduleNow(this)
         }
+
         bindMediaService()
-        AnimeBroadcastNotificationWorker.schedule(this)
     }
 
     fun bindMediaService() {
@@ -118,17 +126,11 @@ class AnimeApplication : Application(), Configuration.Provider {
                 service.dispatch(MediaPlaybackAction.QueryForegroundStatus)
                 service.state.collectLatest { state ->
                     if (!state.isForeground) {
-                        Log.d(
-                            "AnimeApplication",
-                            "Stopping MediaPlaybackService from AnimeApplication"
-                        )
+                        Log.d("AnimeApplication", "Stopping MediaPlaybackService")
                         service.dispatch(MediaPlaybackAction.StopService)
                         unbindMediaService()
                     } else {
-                        Log.d(
-                            "AnimeApplication",
-                            "Keeping MediaPlaybackService alive due to foreground state"
-                        )
+                        Log.d("AnimeApplication", "Keeping MediaPlaybackService alive")
                     }
                     this@launch.cancel()
                 }

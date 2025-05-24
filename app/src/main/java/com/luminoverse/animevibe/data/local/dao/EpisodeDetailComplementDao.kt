@@ -77,6 +77,7 @@ interface EpisodeDetailComplementDao {
                     WHEN 'AnimeTitle' THEN animeTitle
                     WHEN 'EpisodeTitle' THEN episodeTitle
                     WHEN 'EpisodeNumber' THEN number
+                    WHEN 'UpdatedAt' THEN updatedAt
                 END DESC,
                 episodeTitle ASC
         """

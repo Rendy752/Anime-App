@@ -17,13 +17,28 @@ class NotificationReceiver : BroadcastReceiver() {
                     println("NotificationReceiver: Closed notification $notificationId")
                 }
             }
-            "ACTION_OPEN_DETAIL", "ACTION_OPEN_EPISODE" -> {
+            "ACTION_OPEN_DETAIL" -> {
                 val malId = intent.getIntExtra("mal_id", -1)
                 if (malId != -1) {
                     val openIntent = Intent(Intent.ACTION_VIEW, "animevibe://anime/detail/$malId".toUri())
                     openIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
                     context.startActivity(openIntent)
                     println("NotificationReceiver: Opened detail for malId=$malId")
+                }
+            }
+
+            "ACTION_OPEN_EPISODE" -> {
+                val malIdEpisodeId = intent.getStringExtra("mal_id")
+                if (malIdEpisodeId != null) {
+                    val parts = malIdEpisodeId.split("||")
+                    if (parts.size == 2) {
+                        val encodedMalId = parts[0]
+                        val encodedEpisodeId = parts[1]
+                        val openIntent = Intent(Intent.ACTION_VIEW, "animevibe://anime/watch/${encodedMalId}/${encodedEpisodeId}".toUri())
+                        openIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        context.startActivity(openIntent)
+                        println("NotificationReceiver: Opened episode for malId=$encodedMalId, episodeId=$encodedEpisodeId")
+                    }
                 }
             }
         }

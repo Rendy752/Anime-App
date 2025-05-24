@@ -1,0 +1,33 @@
+package com.luminoverse.animevibe.modules
+
+import com.luminoverse.animevibe.utils.BroadcastNotificationWorker
+import com.luminoverse.animevibe.utils.UnfinishedWatchNotificationWorker
+import com.luminoverse.animevibe.utils.ChildWorkerFactory
+import dagger.Binds
+import dagger.Module
+import dagger.hilt.InstallIn
+import dagger.hilt.components.SingletonComponent
+import dagger.multibindings.IntoMap
+import dagger.multibindings.StringKey
+import javax.inject.Singleton
+
+@Module
+@InstallIn(SingletonComponent::class)
+abstract class WorkerModule {
+
+    @Binds
+    @IntoMap
+    @StringKey("com.luminoverse.animevibe.utils.UnfinishedWatchNotificationWorker")
+    @Singleton
+    abstract fun bindUnfinishedWatchNotificationWorkerFactory(
+        factory: UnfinishedWatchNotificationWorker.Factory
+    ): ChildWorkerFactory
+
+    @Binds
+    @IntoMap
+    @StringKey("com.luminoverse.animevibe.utils.BroadcastNotificationWorker")
+    @Singleton
+    abstract fun bindBroadcastNotificationWorkerFactory(
+        factory: BroadcastNotificationWorker.Factory
+    ): ChildWorkerFactory
+}
