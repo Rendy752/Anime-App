@@ -1,10 +1,11 @@
-package com.luminoverse.animevibe.utils
+package com.luminoverse.animevibe.utils.media
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
 import android.os.Binder
 import android.os.Bundle
 import android.os.Handler
@@ -189,7 +190,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                 .allowHardware(false)
                 .build()
             val result = imageLoader.execute(request)
-            (result as? SuccessResult)?.drawable?.let { it as? android.graphics.drawable.BitmapDrawable }?.bitmap
+            (result as? SuccessResult)?.drawable?.let { it as? BitmapDrawable }?.bitmap
         } catch (e: Exception) {
             Log.e("MediaPlaybackService", "Failed to load image: $url", e)
             null

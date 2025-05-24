@@ -22,16 +22,16 @@ import androidx.fragment.app.FragmentActivity
 import androidx.navigation.NavHostController
 import com.luminoverse.animevibe.ui.main.MainState
 import com.luminoverse.animevibe.utils.FullscreenUtils
-import com.luminoverse.animevibe.utils.Resource
-import com.luminoverse.animevibe.utils.ScreenOffReceiver
-import com.luminoverse.animevibe.utils.ScreenOnReceiver
+import com.luminoverse.animevibe.utils.resource.Resource
+import com.luminoverse.animevibe.utils.receivers.ScreenOffReceiver
+import com.luminoverse.animevibe.utils.receivers.ScreenOnReceiver
 import com.luminoverse.animevibe.ui.animeWatch.components.AnimeWatchTopBar
 import com.luminoverse.animevibe.ui.animeWatch.components.AnimeWatchContent
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import com.luminoverse.animevibe.ui.main.MainActivity
-import com.luminoverse.animevibe.utils.HlsPlayerState
+import com.luminoverse.animevibe.utils.media.HlsPlayerState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

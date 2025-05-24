@@ -6,8 +6,8 @@ import com.luminoverse.animevibe.repository.AnimeEpisodeDetailRepository
 import com.luminoverse.animevibe.ui.animeWatch.AnimeWatchViewModel
 import com.luminoverse.animevibe.ui.animeWatch.WatchAction
 import com.luminoverse.animevibe.utils.ComplementUtils
-import com.luminoverse.animevibe.utils.Resource
-import com.luminoverse.animevibe.utils.StreamingUtils
+import com.luminoverse.animevibe.utils.resource.Resource
+import com.luminoverse.animevibe.utils.media.StreamingUtils
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi

@@ -24,8 +24,8 @@ import com.luminoverse.animevibe.ui.animeWatch.videoPlayer.VideoPlayerSection
 import com.luminoverse.animevibe.ui.animeWatch.watchContent.WatchContentSection
 import com.luminoverse.animevibe.ui.common.SkeletonBox
 import com.luminoverse.animevibe.ui.main.MainState
-import com.luminoverse.animevibe.utils.HlsPlayerState
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.media.HlsPlayerState
+import com.luminoverse.animevibe.utils.resource.Resource
 
 @Composable
 fun AnimeWatchContent(

@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
-import com.luminoverse.animevibe.utils.WatchUtils.getEpisodeBackgroundColor
+import com.luminoverse.animevibe.utils.watch.WatchUtils.getEpisodeBackgroundColor
 import com.luminoverse.animevibe.utils.basicContainer
 
 @Composable

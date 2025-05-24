@@ -9,7 +9,7 @@ import com.luminoverse.animevibe.ui.common.AnimeSearchItem
 import com.luminoverse.animevibe.ui.common.AnimeSearchItemSkeleton
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.main.navigation.navigateTo
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.resource.Resource
 
 @Composable
 fun RelationEntryItem(

@@ -36,7 +36,7 @@ import com.luminoverse.animevibe.models.animeDetailPlaceholder
 import com.luminoverse.animevibe.models.episodeDetailComplementPlaceholder
 import com.luminoverse.animevibe.models.episodePlaceholder
 import com.luminoverse.animevibe.ui.animeDetail.DetailAction
-import com.luminoverse.animevibe.utils.WatchUtils.getEpisodeBackgroundColor
+import com.luminoverse.animevibe.utils.watch.WatchUtils.getEpisodeBackgroundColor
 import com.luminoverse.animevibe.utils.basicContainer
 
 @Composable

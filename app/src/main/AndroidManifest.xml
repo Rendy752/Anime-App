@@ -68,7 +68,7 @@
         </activity>
 
         <receiver
-            android:name=".utils.ScreenOffReceiver"
+            android:name=".utils.receivers.ScreenOffReceiver"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.SCREEN_OFF" />
@@ -76,7 +76,7 @@
         </receiver>
 
         <receiver
-            android:name=".utils.ScreenOnReceiver"
+            android:name=".utils.receivers.ScreenOnReceiver"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.SCREEN_ON" />
@@ -84,7 +84,7 @@
         </receiver>
 
         <service
-            android:name=".utils.MediaPlaybackService"
+            android:name=".utils.media.MediaPlaybackService"
             android:exported="true"
             android:foregroundServiceType="mediaPlayback"
             android:permission="com.luminoverse.animevibe.permission.ACCESS_MEDIA_SERVICE">
@@ -101,7 +101,7 @@
             </intent-filter>
         </receiver>
 
-        <receiver android:name=".utils.NotificationReceiver" android:exported="false">
+        <receiver android:name=".utils.receivers.NotificationReceiver" android:exported="false">
             <intent-filter>
                 <action android:name="ACTION_OPEN_DETAIL" />
                 <action android:name="ACTION_OPEN_EPISODE" />

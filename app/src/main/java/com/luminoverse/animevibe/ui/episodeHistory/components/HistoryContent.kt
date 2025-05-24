@@ -13,7 +13,7 @@ import com.luminoverse.animevibe.ui.episodeHistory.EpisodeHistoryAction
 import com.luminoverse.animevibe.ui.episodeHistory.EpisodeHistoryState
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.main.navigation.navigateTo
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.resource.Resource
 
 @Composable
 fun HistoryContent(

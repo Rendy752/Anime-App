@@ -5,11 +5,11 @@ import com.luminoverse.animevibe.models.*
 import com.luminoverse.animevibe.repository.AnimeEpisodeDetailRepository
 import com.luminoverse.animevibe.ui.animeDetail.AnimeDetailViewModel
 import com.luminoverse.animevibe.ui.animeDetail.DetailAction
-import com.luminoverse.animevibe.utils.AnimeTitleFinder
+import com.luminoverse.animevibe.utils.watch.AnimeTitleFinder
 import com.luminoverse.animevibe.utils.ComplementUtils
 import com.luminoverse.animevibe.utils.FilterUtils
-import com.luminoverse.animevibe.utils.Resource
-import com.luminoverse.animevibe.utils.StreamingUtils
+import com.luminoverse.animevibe.utils.resource.Resource
+import com.luminoverse.animevibe.utils.media.StreamingUtils
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi

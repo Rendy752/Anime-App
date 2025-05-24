@@ -1,4 +1,4 @@
-package com.luminoverse.animevibe.utils
+package com.luminoverse.animevibe.utils.handlers
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -12,6 +12,7 @@ import coil.imageLoader
 import coil.request.ImageRequest
 import com.luminoverse.animevibe.R
 import com.luminoverse.animevibe.models.Notification
+import com.luminoverse.animevibe.utils.receivers.NotificationReceiver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import javax.inject.Inject

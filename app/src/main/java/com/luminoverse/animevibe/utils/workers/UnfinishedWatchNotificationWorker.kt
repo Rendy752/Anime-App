@@ -1,4 +1,4 @@
-package com.luminoverse.animevibe.utils
+package com.luminoverse.animevibe.utils.workers
 
 import android.app.NotificationManager
 import android.content.Context
@@ -7,6 +7,8 @@ import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.Notification
 import com.luminoverse.animevibe.repository.AnimeEpisodeDetailRepository
 import com.luminoverse.animevibe.repository.NotificationRepository
+import com.luminoverse.animevibe.utils.factories.ChildWorkerFactory
+import com.luminoverse.animevibe.utils.handlers.NotificationHandler
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject

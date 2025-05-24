@@ -1,4 +1,4 @@
-package com.luminoverse.animevibe.utils
+package com.luminoverse.animevibe.utils.watch
 
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons

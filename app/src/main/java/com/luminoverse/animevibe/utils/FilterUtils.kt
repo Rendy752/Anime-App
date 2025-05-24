@@ -3,6 +3,8 @@ package com.luminoverse.animevibe.utils
 import com.luminoverse.animevibe.models.AnimeSearchQueryState
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
+import com.luminoverse.animevibe.utils.resource.Resource
+import com.luminoverse.animevibe.utils.watch.AnimeTitleFinder
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 

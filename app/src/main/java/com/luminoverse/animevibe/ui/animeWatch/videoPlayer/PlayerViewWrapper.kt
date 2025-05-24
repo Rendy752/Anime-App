@@ -29,8 +29,8 @@ import androidx.media3.ui.CaptionStyleCompat
 import androidx.media3.ui.PlayerView
 import com.luminoverse.animevibe.models.Track
 import com.luminoverse.animevibe.utils.FullscreenUtils
-import com.luminoverse.animevibe.utils.HlsPlayerUtils
-import com.luminoverse.animevibe.utils.HlsPlayerAction
+import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
+import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import androidx.media3.ui.R as RMedia3
 
 @SuppressLint("ClickableViewAccessibility")

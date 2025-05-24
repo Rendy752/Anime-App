@@ -1,4 +1,4 @@
-package com.luminoverse.animevibe.utils
+package com.luminoverse.animevibe.utils.debug
 
 import android.content.Context
 import com.luminoverse.animevibe.models.Notification
@@ -6,6 +6,7 @@ import com.luminoverse.animevibe.models.animeDetailPlaceholder
 import com.luminoverse.animevibe.models.episodeDetailComplementPlaceholder
 import com.luminoverse.animevibe.repository.AnimeEpisodeDetailRepository
 import com.luminoverse.animevibe.repository.NotificationRepository
+import com.luminoverse.animevibe.utils.handlers.NotificationHandler
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 

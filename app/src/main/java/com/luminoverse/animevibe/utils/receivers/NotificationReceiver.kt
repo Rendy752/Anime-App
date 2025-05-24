@@ -1,4 +1,4 @@
-package com.luminoverse.animevibe.utils
+package com.luminoverse.animevibe.utils.receivers
 
 import android.app.NotificationManager
 import android.content.BroadcastReceiver

@@ -10,7 +10,7 @@ import com.luminoverse.animevibe.di.JikanApi
 import com.luminoverse.animevibe.repository.AnimeEpisodeDetailRepository
 import com.luminoverse.animevibe.repository.AnimeHomeRepository
 import com.luminoverse.animevibe.repository.NotificationRepository
-import com.luminoverse.animevibe.utils.NotificationHandler
+import com.luminoverse.animevibe.utils.handlers.NotificationHandler
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn

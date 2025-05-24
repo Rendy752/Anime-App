@@ -55,10 +55,10 @@
 
 # --- WorkManager ---
 -keep class androidx.work.** { *; }
--keep class com.luminoverse.animevibe.utils.BroadcastNotificationWorker { *; }
--keep class com.luminoverse.animevibe.utils.UnfinishedWatchNotificationWorker { *; }
--keep class com.luminoverse.animevibe.utils.AnimeWorkerFactory { *; }
--keep interface com.luminoverse.animevibe.utils.ChildWorkerFactory { *; }
+-keep class com.luminoverse.animevibe.utils.workers.BroadcastNotificationWorker { *; }
+-keep class com.luminoverse.animevibe.utils.workers.UnfinishedWatchNotificationWorker { *; }
+-keep class com.luminoverse.animevibe.utils.factories.AnimeWorkerFactory { *; }
+-keep interface com.luminoverse.animevibe.utils.factories.ChildWorkerFactory { *; }
 -keepclasseswithmembers class * {
     @dagger.assisted.AssistedInject <init>(...);
 }

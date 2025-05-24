@@ -1,4 +1,4 @@
-package com.luminoverse.animevibe.utils
+package com.luminoverse.animevibe.utils.watch
 
 import android.util.Log
 import org.apache.commons.text.similarity.LevenshteinDistance

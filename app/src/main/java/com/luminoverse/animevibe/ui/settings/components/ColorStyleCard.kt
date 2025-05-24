@@ -40,7 +40,7 @@ import com.luminoverse.animevibe.ui.common.ContinueWatchingAnime
 import com.luminoverse.animevibe.ui.theme.ColorStyle
 import com.luminoverse.animevibe.ui.theme.ContrastMode
 import com.luminoverse.animevibe.utils.ColorUtils
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.resource.Resource
 import java.text.SimpleDateFormat
 import java.util.Date
 

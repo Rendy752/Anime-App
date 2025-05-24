@@ -37,7 +37,7 @@ import com.luminoverse.animevibe.ui.common.SearchView
 import com.luminoverse.animevibe.ui.common.SearchViewSkeleton
 import com.luminoverse.animevibe.ui.common.SkeletonBox
 import com.luminoverse.animevibe.utils.FilterUtils
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.resource.Resource
 import com.luminoverse.animevibe.utils.basicContainer
 
 @Composable

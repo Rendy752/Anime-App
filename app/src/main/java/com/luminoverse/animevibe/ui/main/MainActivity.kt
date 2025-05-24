@@ -29,9 +29,9 @@ import androidx.navigation.compose.rememberNavController
 import com.luminoverse.animevibe.AnimeApplication
 import com.luminoverse.animevibe.ui.common.ConfirmationAlert
 import com.luminoverse.animevibe.ui.theme.AppTheme
-import com.luminoverse.animevibe.utils.HlsPlayerAction
-import com.luminoverse.animevibe.utils.HlsPlayerUtils
-import com.luminoverse.animevibe.utils.PipUtil.buildPipActions
+import com.luminoverse.animevibe.utils.media.HlsPlayerAction
+import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
+import com.luminoverse.animevibe.utils.media.PipUtil.buildPipActions
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay

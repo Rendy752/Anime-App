@@ -11,9 +11,9 @@ import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeHistoryQueryState
 import com.luminoverse.animevibe.models.EpisodeServersResponse
 import com.luminoverse.animevibe.models.EpisodesResponse
-import com.luminoverse.animevibe.utils.Resource
-import com.luminoverse.animevibe.utils.ResponseHandler
-import com.luminoverse.animevibe.utils.ResponseHandler.safeApiCall
+import com.luminoverse.animevibe.utils.resource.Resource
+import com.luminoverse.animevibe.utils.resource.ResponseHandler
+import com.luminoverse.animevibe.utils.resource.ResponseHandler.safeApiCall
 import com.luminoverse.animevibe.utils.TimeUtils
 import java.time.Instant
 import kotlin.random.Random

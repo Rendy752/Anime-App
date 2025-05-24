@@ -28,7 +28,7 @@ import com.luminoverse.animevibe.ui.animeSearch.components.ResetButton
 import com.luminoverse.animevibe.ui.animeSearch.searchField.FilterChipFlow
 import com.luminoverse.animevibe.ui.animeSearch.searchField.FilterChipFlowSkeleton
 import com.luminoverse.animevibe.ui.common.RetryButton
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.resource.Resource
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable

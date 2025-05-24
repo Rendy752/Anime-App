@@ -7,7 +7,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.luminoverse.animevibe.ui.theme.dubColor
 import com.luminoverse.animevibe.ui.theme.epsColor
 import com.luminoverse.animevibe.ui.theme.subColor
-import com.luminoverse.animevibe.utils.WatchUtils.getServerCategoryIcon
+import com.luminoverse.animevibe.utils.watch.WatchUtils.getServerCategoryIcon
 
 @Composable
 fun EpisodeInfoRow(

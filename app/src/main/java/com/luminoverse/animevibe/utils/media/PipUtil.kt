@@ -1,4 +1,4 @@
-package com.luminoverse.animevibe.utils
+package com.luminoverse.animevibe.utils.media
 
 import android.app.RemoteAction
 import android.content.Context

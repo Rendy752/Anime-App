@@ -30,7 +30,7 @@ import com.luminoverse.animevibe.ui.common.LimitAndPaginationSection
 import com.luminoverse.animevibe.ui.main.MainState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.resource.Resource
 
 @SuppressLint("ConfigurationScreenWidthHeight")
 @OptIn(ExperimentalMaterial3Api::class)

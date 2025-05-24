@@ -1,9 +1,11 @@
-package com.luminoverse.animevibe.utils
+package com.luminoverse.animevibe.utils.factories
 
 import android.content.Context
 import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
+import com.luminoverse.animevibe.utils.workers.BroadcastNotificationWorker
+import com.luminoverse.animevibe.utils.workers.UnfinishedWatchNotificationWorker
 import javax.inject.Inject
 import javax.inject.Provider
 

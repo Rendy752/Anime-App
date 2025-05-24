@@ -1,4 +1,4 @@
-package com.luminoverse.animevibe.utils
+package com.luminoverse.animevibe.utils.handlers
 
 import android.util.Log
 import androidx.compose.runtime.MutableState

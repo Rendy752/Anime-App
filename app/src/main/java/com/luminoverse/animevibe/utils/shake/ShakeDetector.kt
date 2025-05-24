@@ -1,4 +1,4 @@
-package com.luminoverse.animevibe.utils
+package com.luminoverse.animevibe.utils.shake
 
 import android.hardware.Sensor
 import android.hardware.SensorEvent

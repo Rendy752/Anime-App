@@ -31,7 +31,7 @@ import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.episodeDetailComplementPlaceholder
 import com.luminoverse.animevibe.utils.basicContainer
-import com.luminoverse.animevibe.utils.WatchUtils.getEpisodeBackgroundColor
+import com.luminoverse.animevibe.utils.watch.WatchUtils.getEpisodeBackgroundColor
 
 @Preview
 @Composable

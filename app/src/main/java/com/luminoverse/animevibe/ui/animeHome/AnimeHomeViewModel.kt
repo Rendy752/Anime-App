@@ -8,7 +8,7 @@ import com.luminoverse.animevibe.models.AnimeSchedulesSearchQueryState
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.repository.AnimeEpisodeDetailRepository
 import com.luminoverse.animevibe.repository.AnimeHomeRepository
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.resource.Resource
 import com.luminoverse.animevibe.utils.TimeUtils.calculateRemainingTime
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers

@@ -1,8 +1,9 @@
-package com.luminoverse.animevibe.utils
+package com.luminoverse.animevibe.utils.media
 
 import com.luminoverse.animevibe.models.EpisodeServersResponse
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
 import com.luminoverse.animevibe.models.EpisodeSourcesResponse
+import com.luminoverse.animevibe.utils.resource.Resource
 
 object StreamingUtils {
     private fun getDefaultEpisodeQueries(

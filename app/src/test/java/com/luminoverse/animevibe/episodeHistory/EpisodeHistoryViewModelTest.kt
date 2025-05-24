@@ -5,9 +5,9 @@ import com.luminoverse.animevibe.models.*
 import com.luminoverse.animevibe.repository.AnimeEpisodeDetailRepository
 import com.luminoverse.animevibe.ui.episodeHistory.EpisodeHistoryAction
 import com.luminoverse.animevibe.ui.episodeHistory.EpisodeHistoryViewModel
-import com.luminoverse.animevibe.utils.AnimeTitleFinder
+import com.luminoverse.animevibe.utils.watch.AnimeTitleFinder
 import com.luminoverse.animevibe.utils.ComplementUtils
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.resource.Resource
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi

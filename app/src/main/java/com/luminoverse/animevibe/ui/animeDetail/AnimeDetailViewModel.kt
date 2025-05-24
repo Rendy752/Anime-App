@@ -4,12 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.luminoverse.animevibe.models.*
 import com.luminoverse.animevibe.repository.AnimeEpisodeDetailRepository
-import com.luminoverse.animevibe.utils.AnimeTitleFinder
-import com.luminoverse.animevibe.utils.AnimeTitleFinder.normalizeTitle
+import com.luminoverse.animevibe.utils.watch.AnimeTitleFinder
+import com.luminoverse.animevibe.utils.watch.AnimeTitleFinder.normalizeTitle
 import com.luminoverse.animevibe.utils.ComplementUtils
 import com.luminoverse.animevibe.utils.FilterUtils
-import com.luminoverse.animevibe.utils.Resource
-import com.luminoverse.animevibe.utils.StreamingUtils
+import com.luminoverse.animevibe.utils.resource.Resource
+import com.luminoverse.animevibe.utils.media.StreamingUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

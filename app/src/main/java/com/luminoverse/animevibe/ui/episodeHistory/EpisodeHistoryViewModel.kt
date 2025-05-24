@@ -8,9 +8,9 @@ import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeHistoryQueryState
 import com.luminoverse.animevibe.models.Items
 import com.luminoverse.animevibe.repository.AnimeEpisodeDetailRepository
-import com.luminoverse.animevibe.utils.AnimeTitleFinder
+import com.luminoverse.animevibe.utils.watch.AnimeTitleFinder
 import com.luminoverse.animevibe.utils.ComplementUtils
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.resource.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

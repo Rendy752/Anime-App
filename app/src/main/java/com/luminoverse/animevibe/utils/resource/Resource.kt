@@ -1,4 +1,4 @@
-package com.luminoverse.animevibe.utils
+package com.luminoverse.animevibe.utils.resource
 
 sealed class Resource<T>(
     open val data: T? = null,

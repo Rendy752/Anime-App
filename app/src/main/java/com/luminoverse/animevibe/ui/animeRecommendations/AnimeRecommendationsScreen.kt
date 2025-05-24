@@ -25,7 +25,7 @@ import com.luminoverse.animevibe.ui.common.MessageDisplay
 import com.luminoverse.animevibe.ui.main.MainState
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.main.navigation.navigateTo
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.resource.Resource
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)

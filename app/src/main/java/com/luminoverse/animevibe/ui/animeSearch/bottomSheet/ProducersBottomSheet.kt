@@ -25,7 +25,7 @@ import com.luminoverse.animevibe.ui.common.LimitAndPaginationSection
 import com.luminoverse.animevibe.ui.common.RetryButton
 import com.luminoverse.animevibe.ui.common.SearchView
 import com.luminoverse.animevibe.utils.Debounce
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.resource.Resource
 
 @OptIn(
     ExperimentalLayoutApi::class,

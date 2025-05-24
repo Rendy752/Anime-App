@@ -34,7 +34,7 @@ import com.luminoverse.animevibe.ui.main.MainState
 import com.luminoverse.animevibe.ui.settings.components.ColorStyleCard
 import com.luminoverse.animevibe.ui.settings.components.ContrastModeChips
 import com.luminoverse.animevibe.ui.theme.ColorStyle
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.resource.Resource
 import androidx.navigation.NavBackStackEntry
 
 @OptIn(ExperimentalMaterial3Api::class)

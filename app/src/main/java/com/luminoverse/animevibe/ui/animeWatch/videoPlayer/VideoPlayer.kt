@@ -27,8 +27,8 @@ import androidx.media3.ui.PlayerView
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
-import com.luminoverse.animevibe.utils.HlsPlayerState
-import com.luminoverse.animevibe.utils.IntroOutroHandler
+import com.luminoverse.animevibe.utils.media.HlsPlayerState
+import com.luminoverse.animevibe.utils.handlers.IntroOutroHandler
 
 @OptIn(UnstableApi::class)
 @Composable

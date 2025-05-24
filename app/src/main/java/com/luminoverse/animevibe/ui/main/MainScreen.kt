@@ -50,8 +50,8 @@ import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.main.navigation.navigateTo
 import com.luminoverse.animevibe.ui.settings.SettingsScreen
 import com.luminoverse.animevibe.ui.settings.SettingsViewModel
-import com.luminoverse.animevibe.utils.HlsPlayerUtils
-import com.luminoverse.animevibe.utils.PipUtil.buildPipActions
+import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
+import com.luminoverse.animevibe.utils.media.PipUtil.buildPipActions
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.receiveAsFlow
