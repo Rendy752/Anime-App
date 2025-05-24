@@ -173,7 +173,7 @@ AnimeVibe is a comprehensive, anime-themed Android application using Kotlin and 
         </tr>
       </table>
 * **Airing Notifications**:
-    * Timely notifications for anime airing soon, powered by a WorkManager-based scheduler that checks every 15 minutes for upcoming broadcasts.
+    * Timely notifications for anime airing soon, powered by a WorkManager-based scheduler that checks every 1 hours for upcoming broadcasts.
     * Notifies users when an anime is about to air (within a 5-minute window), including a deep link to the anime’s detail page.
     * Features duplicate notification prevention, configurable via the settings screen, and permission handling for Android 13+.
       <table>
