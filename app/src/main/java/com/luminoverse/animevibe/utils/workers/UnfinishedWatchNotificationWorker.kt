@@ -126,12 +126,14 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
 
             log("Completed successfully at $currentTime, notification sent: $success")
             Result.success()
-        } catch (_: UnknownHostException) {
-            log("Network error, retrying")
-            Result.retry()
         } catch (e: Exception) {
-            log("Error: ${e.message}, stacktrace=${e.stackTraceToString()}")
-            Result.failure()
+            when {
+                e is UnknownHostException -> log("Network error: ${e.message}, retrying")
+                e.javaClass.name == "android.net.ConnectivityManager\$TooManyRequestsException" ->
+                    log("Too many network callback requests: ${e.message}, retrying")
+                else -> log("Error: ${e.javaClass.name}, message=${e.message}, stacktrace=${e.stackTraceToString()}")
+            }
+            Result.retry()
         }
     }
 

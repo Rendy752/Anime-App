@@ -2,21 +2,24 @@ package com.luminoverse.animevibe.utils.workers
 
 import android.app.NotificationManager
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import androidx.work.*
 import com.luminoverse.animevibe.models.AnimeDetail
 import com.luminoverse.animevibe.models.AnimeSchedulesSearchQueryState
 import com.luminoverse.animevibe.models.Notification
 import com.luminoverse.animevibe.repository.AnimeHomeRepository
 import com.luminoverse.animevibe.repository.NotificationRepository
+import com.luminoverse.animevibe.utils.TimeUtils
 import com.luminoverse.animevibe.utils.factories.ChildWorkerFactory
 import com.luminoverse.animevibe.utils.handlers.NotificationHandler
 import com.luminoverse.animevibe.utils.resource.Resource
-import com.luminoverse.animevibe.utils.TimeUtils
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.net.UnknownHostException
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
@@ -32,7 +35,10 @@ class BroadcastNotificationWorker @AssistedInject constructor(
 
     @AssistedFactory
     interface Factory : ChildWorkerFactory {
-        override fun create(appContext: Context, params: WorkerParameters): BroadcastNotificationWorker
+        override fun create(
+            appContext: Context,
+            params: WorkerParameters
+        ): BroadcastNotificationWorker
     }
 
     companion object {
@@ -45,19 +51,18 @@ class BroadcastNotificationWorker @AssistedInject constructor(
         }
 
         fun schedule(context: Context) {
-            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val notificationManager =
+                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             if (!notificationManager.areNotificationsEnabled()) {
                 log("Notifications disabled, skipping scheduling")
                 return
             }
 
-            val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .build()
+            val constraints = Constraints.Builder().build()
 
             val workRequest = PeriodicWorkRequestBuilder<BroadcastNotificationWorker>(
-                repeatInterval = 15,
-                repeatIntervalTimeUnit = TimeUnit.MINUTES
+                repeatInterval = 1,
+                repeatIntervalTimeUnit = TimeUnit.HOURS
             )
                 .setConstraints(constraints)
                 .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 10, TimeUnit.MINUTES)
@@ -68,19 +73,18 @@ class BroadcastNotificationWorker @AssistedInject constructor(
                 ExistingPeriodicWorkPolicy.KEEP,
                 workRequest
             )
-            log("Scheduled broadcast notification worker (every 15 minutes)")
+            log("Scheduled broadcast notification worker (every 1 hour)")
         }
 
         fun scheduleNow(context: Context) {
-            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val notificationManager =
+                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             if (!notificationManager.areNotificationsEnabled()) {
                 log("Notifications disabled, skipping immediate scheduling")
                 return
             }
 
-            val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .build()
+            val constraints = Constraints.Builder().build()
 
             val workRequest = OneTimeWorkRequestBuilder<BroadcastNotificationWorker>()
                 .setConstraints(constraints)
@@ -114,6 +118,17 @@ class BroadcastNotificationWorker @AssistedInject constructor(
                 return@withContext Result.success()
             }
 
+            val connectivityManager =
+                context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            val network = connectivityManager.activeNetwork
+            val networkCapabilities = connectivityManager.getNetworkCapabilities(network)
+            val isConnected =
+                networkCapabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+            if (!isConnected) {
+                log("No internet connection, retrying")
+                return@withContext Result.retry()
+            }
+
             notificationRepository.cleanOldNotifications()
             log("Cleaned old notifications")
 
@@ -124,7 +139,13 @@ class BroadcastNotificationWorker @AssistedInject constructor(
             log("Completed successfully at $currentTime")
             Result.success()
         } catch (e: Exception) {
-            log("Worker error: ${e.message}, stacktrace=${e.stackTraceToString()}")
+            when {
+                e is UnknownHostException -> log("Network error: ${e.message}, retrying")
+                e.javaClass.name == "android.net.ConnectivityManager\$TooManyRequestsException" ->
+                    log("Too many network callback requests: ${e.message}, retrying")
+
+                else -> log("Error: ${e.javaClass.name}, message=${e.message}, stacktrace=${e.stackTraceToString()}")
+            }
             Result.retry()
         }
     }
@@ -135,7 +156,8 @@ class BroadcastNotificationWorker @AssistedInject constructor(
         try {
             while (true) {
                 log("Fetching schedules page $page")
-                val result = animeHomeRepository.getAnimeSchedules(AnimeSchedulesSearchQueryState(page = page))
+                val result =
+                    animeHomeRepository.getAnimeSchedules(AnimeSchedulesSearchQueryState(page = page))
                 when (result) {
                     is Resource.Success -> {
                         schedules.addAll(result.data.data.filter { it.airing && it.broadcast.time != null && it.broadcast.timezone != null && it.broadcast.day != null })
@@ -145,10 +167,12 @@ class BroadcastNotificationWorker @AssistedInject constructor(
                         }
                         page++
                     }
+
                     is Resource.Error -> {
                         log("Failed to fetch schedules (page $page): ${result.message}")
                         throw Exception("Schedule fetch failed: ${result.message}")
                     }
+
                     else -> {
                         log("Unexpected response type for page $page")
                         throw Exception("Unexpected schedule response")
@@ -162,7 +186,10 @@ class BroadcastNotificationWorker @AssistedInject constructor(
         return schedules
     }
 
-    private suspend fun processBroadcastNotifications(currentTime: ZonedDateTime, schedules: List<AnimeDetail>) {
+    private suspend fun processBroadcastNotifications(
+        currentTime: ZonedDateTime,
+        schedules: List<AnimeDetail>
+    ) {
         log("Starting processBroadcastNotifications with ${schedules.size} schedules")
         schedules.forEach { anime ->
             val broadcastTime = calculateBroadcastTime(anime) ?: return@forEach
