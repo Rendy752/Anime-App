@@ -288,6 +288,12 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                     )
                 )
             }
+            val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+            if (!notificationManager.areNotificationsEnabled()) {
+                Log.d("MediaPlaybackService", "Notifications disabled, cannot start foreground service")
+                stopSelf()
+                return@launch
+            }
             try {
                 startForeground(NOTIFICATION_ID, builder.build())
                 isForeground.set(true)

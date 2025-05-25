@@ -42,7 +42,10 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
             println("UnfinishedWatchNotificationWorker: $message")
         }
 
-        private fun buildConstraints() = Constraints.Builder().build()
+        private fun buildConstraints() = Constraints.Builder()
+            .setRequiresCharging(false)
+            .setRequiresDeviceIdle(false)
+            .build()
 
         fun schedule(context: Context) {
             val notificationManager =
@@ -123,6 +126,10 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
         } catch (e: Exception) {
             when {
                 e is UnknownHostException -> log("Network error: ${e.message}, retrying")
+                e.message?.contains("TooManyRequestsException") == true -> {
+                    log("Too many network requests: ${e.message}, retrying")
+                    Result.retry()
+                }
                 else -> log("Error: ${e.javaClass.name}, message=${e.message}, stacktrace=${e.stackTraceToString()}")
             }
             Result.retry()
@@ -137,8 +144,7 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
         }
         log("Found random unfinished episode: ${episode.animeTitle}, malId=${episode.malId}, episode=${episode.number}, remaining episodes=$remainingEpisodes")
 
-        val animeDetail =
-            animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(episode.malId)
+        val animeDetail = animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(episode.malId)
         if (animeDetail == null) {
             log("No anime detail for malId=${episode.malId}")
             return false
@@ -153,10 +159,7 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
         return sendNotificationForEpisode(episode, remainingEpisodes)
     }
 
-    private suspend fun sendNotificationForEpisode(
-        episode: EpisodeDetailComplement,
-        remainingEpisodes: Int
-    ): Boolean {
+    private suspend fun sendNotificationForEpisode(episode: EpisodeDetailComplement, remainingEpisodes: Int): Boolean {
         val accessId = "${episode.malId}||${episode.id}"
         if (notificationRepository.checkDuplicateNotification(accessId, "UnfinishedWatch")) {
             log("Duplicate notification for ${episode.animeTitle} (accessId=$accessId)")
@@ -166,7 +169,7 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
         val notification = Notification(
             accessId = accessId,
             imageUrl = episode.imageUrl,
-            contentText = "Hey, left off watching ${episode.animeTitle} Episode ${episode.number}? You have $remainingEpisodes episode${if (remainingEpisodes > 1) "s" else ""} left to enjoy. Dive back in to see what happens next!",
+            contentText = "Hey, left off watching ${episode.animeTitle} Episode ${episode.number}? You have $remainingEpisodes episode(s) left to enjoy. Dive back in to see what happens next!",
             type = "UnfinishedWatch"
         )
         try {
