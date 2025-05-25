@@ -42,9 +42,7 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
             println("UnfinishedWatchNotificationWorker: $message")
         }
 
-        private fun buildConstraints() = Constraints.Builder()
-            .setRequiredNetworkType(NetworkType.CONNECTED)
-            .build()
+        private fun buildConstraints() = Constraints.Builder().build()
 
         fun schedule(context: Context) {
             val notificationManager =
@@ -79,12 +77,8 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
                 return
             }
 
-            val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .build()
-
             val workRequest = OneTimeWorkRequestBuilder<UnfinishedWatchNotificationWorker>()
-                .setConstraints(constraints)
+                .setConstraints(buildConstraints())
                 .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
                 .addTag("unfinished_notification")
                 .build()
@@ -129,8 +123,6 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
         } catch (e: Exception) {
             when {
                 e is UnknownHostException -> log("Network error: ${e.message}, retrying")
-                e.javaClass.name == "android.net.ConnectivityManager\$TooManyRequestsException" ->
-                    log("Too many network callback requests: ${e.message}, retrying")
                 else -> log("Error: ${e.javaClass.name}, message=${e.message}, stacktrace=${e.stackTraceToString()}")
             }
             Result.retry()

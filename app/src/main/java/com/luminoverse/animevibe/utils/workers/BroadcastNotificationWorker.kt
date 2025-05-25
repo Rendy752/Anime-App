@@ -141,9 +141,6 @@ class BroadcastNotificationWorker @AssistedInject constructor(
         } catch (e: Exception) {
             when {
                 e is UnknownHostException -> log("Network error: ${e.message}, retrying")
-                e.javaClass.name == "android.net.ConnectivityManager\$TooManyRequestsException" ->
-                    log("Too many network callback requests: ${e.message}, retrying")
-
                 else -> log("Error: ${e.javaClass.name}, message=${e.message}, stacktrace=${e.stackTraceToString()}")
             }
             Result.retry()
