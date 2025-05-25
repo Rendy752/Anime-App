@@ -137,7 +137,8 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
         }
         log("Found random unfinished episode: ${episode.animeTitle}, malId=${episode.malId}, episode=${episode.number}, remaining episodes=$remainingEpisodes")
 
-        val animeDetail = animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(episode.malId)
+        val animeDetail =
+            animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(episode.malId)
         if (animeDetail == null) {
             log("No anime detail for malId=${episode.malId}")
             return false
@@ -152,9 +153,12 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
         return sendNotificationForEpisode(episode, remainingEpisodes)
     }
 
-    private suspend fun sendNotificationForEpisode(episode: EpisodeDetailComplement, remainingEpisodes: Int): Boolean {
+    private suspend fun sendNotificationForEpisode(
+        episode: EpisodeDetailComplement,
+        remainingEpisodes: Int
+    ): Boolean {
         val accessId = "${episode.malId}||${episode.id}"
-        if (notificationRepository.checkDuplicateNotification(accessId, "UnfinishedAnime")) {
+        if (notificationRepository.checkDuplicateNotification(accessId, "UnfinishedWatch")) {
             log("Duplicate notification for ${episode.animeTitle} (accessId=$accessId)")
             return false
         }
@@ -162,8 +166,8 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
         val notification = Notification(
             accessId = accessId,
             imageUrl = episode.imageUrl,
-            contentText = "Hey, left off watching ${episode.animeTitle} Episode ${episode.number}? You have $remainingEpisodes episode(s) left to enjoy. Dive back in to see what happens next!",
-            type = "UnfinishedAnime"
+            contentText = "Hey, left off watching ${episode.animeTitle} Episode ${episode.number}? You have $remainingEpisodes episode${if (remainingEpisodes > 1) "s" else ""} left to enjoy. Dive back in to see what happens next!",
+            type = "UnfinishedWatch"
         )
         try {
             val savedId = notificationRepository.saveNotification(notification)
@@ -173,7 +177,7 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
             log("Sent notification for ${episode.animeTitle} (accessId=$accessId, id=${accessId.hashCode()})")
 
             notificationRepository.getPendingNotifications()
-                .find { it.accessId == accessId && it.type == "UnfinishedAnime" && it.id == savedId }
+                .find { it.accessId == accessId && it.type == "UnfinishedWatch" && it.id == savedId }
                 ?.let {
                     notificationRepository.markNotificationAsSent(it.id)
                     log("Marked notification as sent (id=${it.id})")

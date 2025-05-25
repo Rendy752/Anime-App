@@ -59,7 +59,7 @@ class NotificationHandler @Inject constructor() {
                 actionDetail(notification.accessId),
                 actionClose(notification.accessId)
             )
-            "UnfinishedAnime" -> listOf(
+            "UnfinishedWatch" -> listOf(
                 actionWatch(notification.accessId),
                 actionClose(notification.accessId)
             )
@@ -80,13 +80,13 @@ class NotificationHandler @Inject constructor() {
             .setOnlyAlertOnce(true)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setOngoing(notification.type == "UnfinishedAnime")
+            .setOngoing(notification.type == "UnfinishedWatch")
             .applyImage(context, notification.imageUrl)
             .applyActions(context, actions)
 
         when (notification.type) {
             "Broadcast" -> builder.setContentTitle("Anime Airing Soon")
-            "UnfinishedAnime" -> builder.setContentTitle("Unfinished Anime")
+            "UnfinishedWatch" -> builder.setContentTitle("Unfinished Anime")
             else -> log("Skipping image handling for invalid type: ${notification.type}")
         }
 
@@ -101,14 +101,14 @@ class NotificationHandler @Inject constructor() {
 
     private fun createOpenIntent(context: Context, type: String, accessId: String): PendingIntent {
         val uri = when (type) {
-            "UnfinishedAnime" -> {
+            "UnfinishedWatch" -> {
                 val parts = accessId.split("||")
                 if (parts.size == 2) {
                     val encodedMalId = URLEncoder.encode(parts[0], "UTF-8")
                     val encodedEpisodeId = URLEncoder.encode(parts[1], "UTF-8")
                     "animevibe://anime/watch/$encodedMalId/$encodedEpisodeId".toUri()
                 } else {
-                    log("Invalid accessId format for UnfinishedAnime: $accessId, falling back to detail")
+                    log("Invalid accessId format for UnfinishedWatch: $accessId, falling back to detail")
                     "animevibe://anime/detail/$accessId".toUri()
                 }
             }

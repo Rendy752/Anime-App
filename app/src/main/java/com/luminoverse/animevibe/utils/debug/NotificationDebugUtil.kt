@@ -46,8 +46,8 @@ class NotificationDebugUtil @Inject constructor(
         val unfinishedNotification = Notification(
             accessId = "${episode.malId}||${episode.id}",
             imageUrl = episode.imageUrl,
-            contentText = "Hey, left off watching ${episode.animeTitle} Episode ${episode.number}? You have 499 episode(s) left to enjoy. Dive back in to see what happens next!",
-            type = "UnfinishedAnime"
+            contentText = "Hey, left off watching ${episode.animeTitle} Episode ${episode.number}? You have 499 episodes left to enjoy. Dive back in to see what happens next!",
+            type = "UnfinishedWatch"
         )
         try {
             val unfinishedId = notificationRepository.saveNotification(unfinishedNotification)
