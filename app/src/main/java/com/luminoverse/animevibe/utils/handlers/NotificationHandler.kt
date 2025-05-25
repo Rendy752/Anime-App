@@ -15,6 +15,7 @@ import com.luminoverse.animevibe.models.Notification
 import com.luminoverse.animevibe.utils.receivers.NotificationReceiver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.net.URLEncoder
 import javax.inject.Inject
 
 class NotificationHandler @Inject constructor() {
@@ -103,9 +104,9 @@ class NotificationHandler @Inject constructor() {
             "UnfinishedAnime" -> {
                 val parts = accessId.split("||")
                 if (parts.size == 2) {
-                    val malId = parts[0]
-                    val episodeId = parts[1]
-                    "animevibe://anime/watch/$malId/$episodeId".toUri()
+                    val encodedMalId = URLEncoder.encode(parts[0], "UTF-8")
+                    val encodedEpisodeId = URLEncoder.encode(parts[1], "UTF-8")
+                    "animevibe://anime/watch/$encodedMalId/$encodedEpisodeId".toUri()
                 } else {
                     log("Invalid accessId format for UnfinishedAnime: $accessId, falling back to detail")
                     "animevibe://anime/detail/$accessId".toUri()
@@ -167,11 +168,11 @@ class NotificationHandler @Inject constructor() {
                 "ACTION_OPEN_EPISODE" -> {
                     val parts = action.extraValue.split("||")
                     if (parts.size == 2) {
-                        val malId = parts[0]
-                        val episodeId = parts[1]
+                        val encodedMalId = URLEncoder.encode(parts[0], "UTF-8")
+                        val encodedEpisodeId = URLEncoder.encode(parts[1], "UTF-8")
                         val watchIntent = Intent(
                             Intent.ACTION_VIEW,
-                            "animevibe://anime/watch/$malId/$episodeId".toUri()
+                            "animevibe://anime/watch/$encodedMalId/$encodedEpisodeId".toUri()
                         )
                         PendingIntent.getActivity(
                             context, action.extraValue.hashCode(), watchIntent,

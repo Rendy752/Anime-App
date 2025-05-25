@@ -16,7 +16,6 @@ import com.luminoverse.animevibe.utils.resource.ResponseHandler
 import com.luminoverse.animevibe.utils.resource.ResponseHandler.safeApiCall
 import com.luminoverse.animevibe.utils.TimeUtils
 import java.time.Instant
-import kotlin.random.Random
 
 class AnimeEpisodeDetailRepository(
     private val animeDetailDao: AnimeDetailDao,
@@ -147,23 +146,30 @@ class AnimeEpisodeDetailRepository(
         }
     }
 
-    suspend fun getRandomCachedUnfinishedEpisode(): EpisodeDetailComplement? {
-        val unfinishedEpisodes = episodeDetailComplementDao.getAllEpisodeHistory(
-            isFavorite = null,
-            sortBy = EpisodeHistoryQueryState.SortBy.UpdatedAt.name
-        ).filter { episode ->
-            val animeDetail = getCachedAnimeDetailComplementByMalId(episode.malId)
-            episode.lastWatched != null &&
-                    episode.lastTimestamp != null &&
-                    episode.duration != null &&
-                    episode.lastTimestamp < episode.duration &&
-                    animeDetail?.episodes != null &&
-                    episode.number < animeDetail.episodes.size
+    suspend fun getRandomCachedUnfinishedEpisode(): Pair<EpisodeDetailComplement?, Int> {
+        val animeDetailsWithWatchedEpisodes = animeDetailComplementDao.getAllAnimeDetailsWithWatchedEpisodes()
+
+        val unfinishedEpisodes = animeDetailsWithWatchedEpisodes.mapNotNull { animeDetail ->
+            val episodeId = animeDetail.lastEpisodeWatchedId ?: return@mapNotNull null
+            val episode = episodeDetailComplementDao.getEpisodeDetailComplementById(episodeId) ?: return@mapNotNull null
+
+            if (episode.lastWatched != null &&
+                episode.lastTimestamp != null &&
+                episode.duration != null &&
+                episode.lastTimestamp < episode.duration &&
+                animeDetail.episodes != null &&
+                episode.number < animeDetail.episodes.size
+            ) {
+                Pair(episode, animeDetail.episodes.size - episode.number)
+            } else {
+                null
+            }
         }
+
         return if (unfinishedEpisodes.isNotEmpty()) {
-            unfinishedEpisodes.random(Random(System.currentTimeMillis()))
+            unfinishedEpisodes.random()
         } else {
-            null
+            Pair(null, 0)
         }
     }
 }

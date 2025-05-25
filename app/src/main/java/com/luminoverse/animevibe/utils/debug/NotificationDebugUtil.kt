@@ -34,7 +34,7 @@ class NotificationDebugUtil @Inject constructor(
         }
 
         val episode = episodeDetailComplementPlaceholder.copy(
-            id = "debug-ep-1",
+            id = "naruto-shippuden-355?ep=7882",
             malId = animeDetailPlaceholder.mal_id,
             animeTitle = animeDetailPlaceholder.title,
             episodeTitle = "Episode 1",
@@ -46,13 +46,17 @@ class NotificationDebugUtil @Inject constructor(
         val unfinishedNotification = Notification(
             accessId = "${episode.malId}||${episode.id}",
             imageUrl = episode.imageUrl,
-            contentText = "Continue watching ${episode.animeTitle}: Episode ${episode.number}",
+            contentText = "Hey, left off watching ${episode.animeTitle} Episode ${episode.number}? You have 499 episode(s) left to enjoy. Dive back in to see what happens next!",
             type = "UnfinishedAnime"
         )
         try {
             val unfinishedId = notificationRepository.saveNotification(unfinishedNotification)
             log("Saved debug unfinished notification: id=$unfinishedId, accessId=${unfinishedNotification.accessId}")
-            notificationHandler.sendNotification(context, unfinishedNotification, unfinishedNotification.accessId.hashCode())
+            notificationHandler.sendNotification(
+                context,
+                unfinishedNotification,
+                unfinishedNotification.accessId.hashCode()
+            )
             notificationRepository.markNotificationAsSent(unfinishedId)
             log("Debug unfinished notification sent for ${episode.animeTitle} (accessId: ${episode.malId}||${episode.id}, id=$unfinishedId)")
         } catch (e: Exception) {

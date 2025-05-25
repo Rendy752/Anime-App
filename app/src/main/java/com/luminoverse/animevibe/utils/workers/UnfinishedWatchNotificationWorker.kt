@@ -138,15 +138,14 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
     }
 
     private suspend fun processRandomUnfinishedEpisode(): Boolean {
-        val episode = animeEpisodeDetailRepository.getRandomCachedUnfinishedEpisode()
+        val (episode, remainingEpisodes) = animeEpisodeDetailRepository.getRandomCachedUnfinishedEpisode()
         if (episode == null) {
             log("No unfinished episode in cache")
             return false
         }
-        log("Found random unfinished episode: ${episode.animeTitle}, malId=${episode.malId}, episode=${episode.number}")
+        log("Found random unfinished episode: ${episode.animeTitle}, malId=${episode.malId}, episode=${episode.number}, remaining episodes=$remainingEpisodes")
 
-        val animeDetail =
-            animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(episode.malId)
+        val animeDetail = animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(episode.malId)
         if (animeDetail == null) {
             log("No anime detail for malId=${episode.malId}")
             return false
@@ -158,10 +157,10 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
             return false
         }
 
-        return sendNotificationForEpisode(episode)
+        return sendNotificationForEpisode(episode, remainingEpisodes)
     }
 
-    private suspend fun sendNotificationForEpisode(episode: EpisodeDetailComplement): Boolean {
+    private suspend fun sendNotificationForEpisode(episode: EpisodeDetailComplement, remainingEpisodes: Int): Boolean {
         val accessId = "${episode.malId}||${episode.id}"
         if (notificationRepository.checkDuplicateNotification(accessId, "UnfinishedAnime")) {
             log("Duplicate notification for ${episode.animeTitle} (accessId=$accessId)")
@@ -171,7 +170,7 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
         val notification = Notification(
             accessId = accessId,
             imageUrl = episode.imageUrl,
-            contentText = "Hey, you left off watching ${episode.animeTitle} Episode ${episode.number}! Dive back in to see what happens next!",
+            contentText = "Hey, left off watching ${episode.animeTitle} Episode ${episode.number}? You have $remainingEpisodes episode(s) left to enjoy. Dive back in to see what happens next!",
             type = "UnfinishedAnime"
         )
         try {

@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import androidx.core.net.toUri
+import java.net.URLEncoder
 
 class NotificationReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context, intent: Intent) {
@@ -39,15 +40,15 @@ class NotificationReceiver : BroadcastReceiver() {
                 if (!accessId.isNullOrEmpty()) {
                     val parts = accessId.split("||")
                     if (parts.size == 2) {
-                        val malId = parts[0]
-                        val episodeId = parts[1]
-                        val openIntent = Intent(Intent.ACTION_VIEW, "animevibe://anime/watch/$malId/$episodeId".toUri())
+                        val encodedMalId = URLEncoder.encode(parts[0], "UTF-8")
+                        val encodedEpisodeId = URLEncoder.encode(parts[1], "UTF-8")
+                        val openIntent = Intent(Intent.ACTION_VIEW, "animevibe://anime/watch/$encodedMalId/$encodedEpisodeId".toUri())
                         openIntent.flags = Intent.FLAG_ACTIVITY_NEW_TASK
                         try {
                             context.startActivity(openIntent)
-                            println("NotificationReceiver: Opened episode for malId=$malId, episodeId=$episodeId")
+                            println("NotificationReceiver: Opened episode for malId=$encodedMalId, episodeId=$encodedEpisodeId")
                         } catch (e: Exception) {
-                            println("NotificationReceiver: Failed to open episode for malId=$malId, episodeId=$episodeId, error=${e.message}")
+                            println("NotificationReceiver: Failed to open episode for malId=$encodedMalId, episodeId=$encodedEpisodeId, error=${e.message}")
                         }
                     } else {
                         println("NotificationReceiver: Invalid accessId format for episode action: $accessId")
