@@ -1,12 +1,20 @@
 package com.luminoverse.animevibe.utils.media
 
+import android.util.Log
 import com.luminoverse.animevibe.models.EpisodeServersResponse
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
 import com.luminoverse.animevibe.models.EpisodeSourcesResponse
 import com.luminoverse.animevibe.utils.resource.Resource
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import java.net.HttpURLConnection
+import java.net.URL
 
 object StreamingUtils {
-    private fun getDefaultEpisodeQueries(
+    val failedServers = mutableMapOf<String, Long>()
+    private const val FAILURE_CACHE_DURATION_MS = 30 * 60 * 1000L
+
+    fun getDefaultEpisodeQueries(
         response: Resource<EpisodeServersResponse>,
         episodeId: String
     ): List<EpisodeSourcesQuery> {
@@ -42,10 +50,14 @@ object StreamingUtils {
         }
 
         val queriesToTry = mutableListOf<EpisodeSourcesQuery>()
-        if (episodeSourcesQuery != null) {
+        if (episodeSourcesQuery != null && !isServerRecentlyFailed(
+                episodeSourcesQuery.server,
+                episodeSourcesQuery.category
+            )
+        ) {
             queriesToTry.add(episodeSourcesQuery)
         }
-        queriesToTry.addAll(allQueries)
+        queriesToTry.addAll(allQueries.filter { !isServerRecentlyFailed(it.server, it.category) })
 
         val usedServers = mutableSetOf<String>()
 
@@ -57,16 +69,28 @@ object StreamingUtils {
             usedServers.add(serverKey)
 
             try {
-                val result = getEpisodeSources(
-                    query.id,
-                    query.server,
-                    query.category
-                )
-                if (result is Resource.Success) {
-                    return Pair(result, query)
+                val sourcesResult = getEpisodeSources(query.id, query.server, query.category)
+                if (sourcesResult is Resource.Success && sourcesResult.data.sources.isNotEmpty()) {
+                    val sourceUrl = sourcesResult.data.sources[0].url
+                    if (isServerAvailable(sourceUrl)) {
+                        return Pair(sourcesResult, query)
+                    } else {
+                        markServerFailed(query.server, query.category)
+                        Log.w(
+                            "StreamingUtils",
+                            "Server ${query.server} (${query.category}) URL unavailable: $sourceUrl"
+                        )
+                    }
+                } else {
+                    markServerFailed(query.server, query.category)
                 }
             } catch (e: Exception) {
-                println("Failed to fetch sources for server ${query.server} (${query.category}): ${e.message}")
+                markServerFailed(query.server, query.category)
+                Log.e(
+                    "StreamingUtils",
+                    "Failed to fetch sources for server ${query.server} (${query.category})",
+                    e
+                )
             }
         }
 
@@ -74,5 +98,36 @@ object StreamingUtils {
             Resource.Error("All available servers failed to provide episode sources"),
             null
         )
+    }
+
+    suspend fun isServerAvailable(url: String): Boolean = withContext(Dispatchers.IO) {
+        try {
+            val connection = URL(url).openConnection() as HttpURLConnection
+            connection.requestMethod = "HEAD"
+            connection.connectTimeout = 5000
+            connection.readTimeout = 5000
+            val responseCode = connection.responseCode
+            connection.disconnect()
+            responseCode in 200..299
+        } catch (e: Exception) {
+            Log.e("StreamingUtils", "Server availability check failed for $url", e)
+            false
+        }
+    }
+
+    fun markServerFailed(server: String, category: String) {
+        val key = "$server-$category"
+        failedServers[key] = System.currentTimeMillis()
+    }
+
+    fun isServerRecentlyFailed(server: String, category: String): Boolean {
+        val key = "$server-$category"
+        val failureTime = failedServers[key] ?: return false
+        val isExpired = System.currentTimeMillis() - failureTime > FAILURE_CACHE_DURATION_MS
+        if (isExpired) {
+            failedServers.remove(key)
+            return false
+        }
+        return true
     }
 }

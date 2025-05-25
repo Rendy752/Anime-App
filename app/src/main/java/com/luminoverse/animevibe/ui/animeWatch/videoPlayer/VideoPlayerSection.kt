@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -40,6 +41,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.media3.common.PlaybackException
 
 @SuppressLint("ImplicitSamInstance")
 @OptIn(UnstableApi::class, ExperimentalComposeUiApi::class)
@@ -62,6 +64,9 @@ fun VideoPlayerSection(
     videoSize: Modifier
 ) {
     val context = LocalContext.current
+    var retryCount by remember { mutableIntStateOf(0) }
+    val maxRetries = 3
+
     val playerView = remember { PlayerView(context).apply { useController = true } }
     var mediaBrowserCompat by remember { mutableStateOf<MediaBrowserCompat?>(null) }
     var mediaControllerCompat by remember { mutableStateOf<MediaControllerCompat?>(null) }
@@ -188,10 +193,31 @@ fun VideoPlayerSection(
         }
     }
 
+    LaunchedEffect(episodeSourcesQuery, retryCount) {
+        if (retryCount < maxRetries) {
+            Log.d("VideoPlayerSection", "Attempting playback, retry #$retryCount for episode: ${episodeSourcesQuery.id}")
+            initializePlayer()
+        } else {
+            onPlayerError("Failed to load video after $maxRetries attempts")
+            isLoading = false
+        }
+    }
+
     DisposableEffect(Unit) {
         initializePlayer()
 
         val playerListener = object : Player.Listener {
+            override fun onPlayerError(error: PlaybackException) {
+                if (retryCount < maxRetries) {
+                    retryCount++
+                    Log.d("VideoPlayerSection", "Playback error, retrying ($retryCount/$maxRetries)")
+                    handleSelectedEpisodeServer(episodeSourcesQuery)
+                } else {
+                    onPlayerError("Playback failed: ${error.message}")
+                    isLoading = false
+                }
+            }
+
             override fun onPlaybackStateChanged(playbackState: Int) {
                 if (playbackState == Player.STATE_ENDED) {
                     Log.d("VideoPlayerSection", "Episode ended, showing next episode overlay")
