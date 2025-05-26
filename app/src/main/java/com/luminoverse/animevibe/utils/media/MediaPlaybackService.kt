@@ -70,6 +70,7 @@ sealed class MediaPlaybackAction {
         val episodes: List<Episode>,
         val query: EpisodeSourcesQuery,
         val handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
+        val isAutoPlayVideo: Boolean,
         val updateStoredWatchState: (Long?, Long?, String?) -> Unit,
         val onPlayerError: (String?) -> Unit,
         val onPlayerReady: () -> Unit
@@ -117,6 +118,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                 action.episodes,
                 action.query,
                 action.handleSelectedEpisodeServer,
+                action.isAutoPlayVideo,
                 action.updateStoredWatchState,
                 action.onPlayerError,
                 action.onPlayerReady
@@ -387,6 +389,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         episodes: List<Episode>,
         query: EpisodeSourcesQuery,
         handler: (EpisodeSourcesQuery) -> Unit,
+        isAutoPlayVideo: Boolean,
         updateStoredWatchState: (Long?, Long?, String?) -> Unit,
         onPlayerError: (String?) -> Unit,
         onPlayerReady: () -> Unit
@@ -412,6 +415,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                 HlsPlayerAction.SetMedia(
                     videoData = complement.sources,
                     lastTimestamp = complement.lastTimestamp,
+                    isAutoPlayVideo = isAutoPlayVideo,
                     onReady = { onPlayerReady() },
                     onError = { onPlayerError(it) }
                 )

@@ -50,6 +50,7 @@ fun VideoPlayerSection(
     updateStoredWatchState: (Long?, Long?, String?) -> Unit,
     watchState: WatchState,
     isScreenOn: Boolean,
+    isAutoPlayVideo: Boolean,
     episodes: List<Episode>,
     episodeSourcesQuery: EpisodeSourcesQuery,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
@@ -113,6 +114,7 @@ fun VideoPlayerSection(
                 episodes = episodes,
                 query = query,
                 handleSelectedEpisodeServer = { episodeQuery -> handleSelectedEpisodeServer(episodeQuery) },
+                isAutoPlayVideo = isAutoPlayVideo,
                 updateStoredWatchState = { position, duration, screenshot ->
                     updateStoredWatchState(position, duration, screenshot)
                 },
@@ -292,6 +294,7 @@ fun VideoPlayerSection(
                 HlsPlayerAction.SetMedia(
                     videoData = it.sources,
                     lastTimestamp = null,
+                    isAutoPlayVideo = isAutoPlayVideo,
                     onReady = {},
                     onError = {}
                 )
@@ -395,6 +398,7 @@ fun VideoPlayerSection(
             onEnterPipMode = onEnterPipMode,
             isFullscreen = isFullscreen,
             onFullscreenChange = onFullscreenChange,
+            isAutoPlayVideo = isAutoPlayVideo,
             isShowResumeOverlay = isShowResumeOverlay,
             setShowResumeOverlay = { isShowResumeOverlay = it },
             isShowNextEpisode = isShowNextEpisode,

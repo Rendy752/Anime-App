@@ -97,7 +97,15 @@ fun SettingsScreen(
             }
             item {
                 ToggleWithLabel(
-                    isActive = mainState.notificationEnabled,
+                    isActive = mainState.isAutoPlayVideo,
+                    label = "Auto Play Video",
+                    description = "Enable auto play video",
+                    onToggle = { mainAction(MainAction.SetAutoPlayVideo(it)) }
+                )
+            }
+            item {
+                ToggleWithLabel(
+                    isActive = mainState.isNotificationEnabled,
                     label = "Notifications",
                     description = "Enable notifications",
                     onToggle = { enable ->

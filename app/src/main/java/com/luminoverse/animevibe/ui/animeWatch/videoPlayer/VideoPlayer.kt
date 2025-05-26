@@ -45,6 +45,7 @@ fun VideoPlayer(
     onEnterPipMode: () -> Unit,
     isFullscreen: Boolean,
     onFullscreenChange: (Boolean) -> Unit,
+    isAutoPlayVideo: Boolean,
     isShowResumeOverlay: Boolean,
     setShowResumeOverlay: (Boolean) -> Unit,
     isShowNextEpisode: Boolean,
@@ -89,7 +90,7 @@ fun VideoPlayer(
         }
     }
 
-    val shouldShowResumeOverlay = isShowResumeOverlay &&
+    val shouldShowResumeOverlay = !isAutoPlayVideo && isShowResumeOverlay &&
             episodeDetailComplement.lastTimestamp != null &&
             hlsPlayerState.isReady &&
             !hlsPlayerState.isPlaying &&
@@ -106,13 +107,6 @@ fun VideoPlayer(
         onDispose {
             mediaController?.unregisterCallback(mediaControllerCallback)
             Log.d("VideoPlayer", "PlayerView disposed")
-        }
-    }
-
-    LaunchedEffect(hlsPlayerState.isReady, isShowResumeOverlay, isShowNextEpisode, errorMessage) {
-        if (hlsPlayerState.isReady && !hlsPlayerState.isPlaying && !isShowResumeOverlay && !isShowNextEpisode && errorMessage == null) {
-            Log.d("VideoPlayer", "Auto-playing video")
-            onPlay()
         }
     }
 

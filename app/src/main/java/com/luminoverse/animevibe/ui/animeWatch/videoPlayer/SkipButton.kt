@@ -21,7 +21,7 @@ fun SkipButton(
         onClick = { onSkip(skipTime) },
         modifier = modifier.padding(end = 80.dp, bottom = 80.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = Color.White,
+            containerColor = Color.White.copy(0.5f),
             contentColor = Color.Black
         )
     ) {

@@ -170,6 +170,7 @@ fun AnimeWatchScreen(
                     navController = navController,
                     watchState = watchState,
                     isScreenOn = isScreenOn,
+                    isAutoPlayVideo = mainState.isAutoPlayVideo,
                     playerUiState = playerUiState,
                     hlsPlayerState = hlsPlayerState,
                     mainState = mainState,

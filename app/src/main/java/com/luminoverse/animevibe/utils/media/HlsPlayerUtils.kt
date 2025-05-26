@@ -60,6 +60,7 @@ sealed class HlsPlayerAction {
     data class SetMedia(
         val videoData: EpisodeSourcesResponse,
         val lastTimestamp: Long? = null,
+        val isAutoPlayVideo: Boolean = true,
         val onReady: () -> Unit = {},
         val onError: (String) -> Unit = {}
     ) : HlsPlayerAction()
@@ -101,6 +102,7 @@ object HlsPlayerUtils {
             is HlsPlayerAction.SetMedia -> setMedia(
                 action.videoData,
                 action.lastTimestamp,
+                action.isAutoPlayVideo,
                 action.onReady,
                 action.onError
             )
@@ -251,13 +253,14 @@ object HlsPlayerUtils {
     private fun setMedia(
         videoData: EpisodeSourcesResponse,
         lastTimestamp: Long? = null,
+        isAutoPlayVideo: Boolean = false,
         onReady: () -> Unit = {},
         onError: (String) -> Unit = {}
     ) {
         exoPlayer?.let { player ->
             player.stop()
             player.clearMediaItems()
-            player.pause()
+            pause()
 
             if (videoData.sources.isNotEmpty() && videoData.sources[0].type == "hls") {
                 val mediaItemUri = videoData.sources[0].url.toUri()
@@ -280,18 +283,37 @@ object HlsPlayerUtils {
 
                 player.setMediaItem(mediaItemBuilder.build())
                 player.prepare()
-                lastTimestamp?.let { if (it > 0 && it < player.duration) player.seekTo(it) }
-                player.pause()
+
+                if (!isAutoPlayVideo) {
+                    pause()
+                }
+
                 Log.d(
                     "HlsPlayerUtils",
-                    "Media set: url=${mediaItemUri}, lastTimestamp=$lastTimestamp"
+                    "Media set: url=${mediaItemUri}, lastTimestamp=$lastTimestamp, isAutoPlayVideo=$isAutoPlayVideo"
                 )
 
                 val readyListener = object : Player.Listener {
                     override fun onPlaybackStateChanged(state: Int) {
                         if (state == Player.STATE_READY) {
-                            Log.d("HlsPlayerUtils", "Player ready for media")
+                            Log.d(
+                                "HlsPlayerUtils",
+                                "Player ready for media, duration=${player.duration}"
+                            )
                             onReady()
+                            if (isAutoPlayVideo) {
+                                lastTimestamp?.let { timestamp ->
+                                    if (timestamp > 0 && timestamp < player.duration) {
+                                        player.seekTo(timestamp)
+                                        Log.d(
+                                            "HlsPlayerUtils",
+                                            "AutoPlay: seekTo timestamp=$timestamp"
+                                        )
+                                    }
+                                }
+                                player.play()
+                                Log.d("HlsPlayerUtils", "AutoPlay: play called")
+                            }
                             player.removeListener(this)
                         }
                     }
