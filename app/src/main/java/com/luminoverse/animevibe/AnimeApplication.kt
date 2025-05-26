@@ -65,12 +65,12 @@ class AnimeApplication : Application(), Configuration.Provider {
 
         if (BuildConfig.DEBUG) {
             setupSensor()
-//            CoroutineScope(Dispatchers.IO).launch {
-//                notificationDebugUtil.sendDebugNotification()
-//            }
-//            // Schedule immediate workers only for testing
-//            UnfinishedWatchNotificationWorker.scheduleNow(this)
-//            BroadcastNotificationWorker.scheduleNow(this)
+            // Uncomment for debug notifications
+            // CoroutineScope(Dispatchers.IO).launch {
+            //     notificationDebugUtil.sendDebugNotification()
+            // }
+            // UnfinishedWatchNotificationWorker.scheduleNow(this)
+            // BroadcastNotificationWorker.scheduleNow(this)
         }
 
         bindMediaService()

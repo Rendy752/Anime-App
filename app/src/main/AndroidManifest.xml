@@ -67,6 +67,14 @@
             </intent-filter>
         </activity>
 
+        <receiver android:name=".utils.receivers.NotificationReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="ACTION_OPEN_DETAIL" />
+                <action android:name="ACTION_OPEN_EPISODE" />
+                <action android:name="ACTION_CLOSE_NOTIFICATION" />
+            </intent-filter>
+        </receiver>
+
         <receiver
             android:name=".utils.receivers.ScreenOffReceiver"
             android:exported="true">
@@ -98,14 +106,6 @@
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MEDIA_BUTTON" />
-            </intent-filter>
-        </receiver>
-
-        <receiver android:name=".utils.receivers.NotificationReceiver" android:exported="false">
-            <intent-filter>
-                <action android:name="ACTION_OPEN_DETAIL" />
-                <action android:name="ACTION_OPEN_EPISODE" />
-                <action android:name="ACTION_CLOSE_NOTIFICATION" />
             </intent-filter>
         </receiver>
 

@@ -37,6 +37,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
+import android.content.pm.PackageManager
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -138,7 +139,7 @@ class MainActivity : AppCompatActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             val permission = android.Manifest.permission.POST_NOTIFICATIONS
             when {
-                checkSelfPermission(permission) == android.content.pm.PackageManager.PERMISSION_GRANTED -> {
+                checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED -> {
                     println("MainActivity: POST_NOTIFICATIONS permission already granted")
                 }
                 shouldShowRequestPermissionRationale(permission) -> {
@@ -234,7 +235,7 @@ class MainActivity : AppCompatActivity() {
                     val currentTime = System.currentTimeMillis()
                     val isIdle = currentTime - lastInteractionTime > idleTimeoutMillis
                     val currentRoute = navController.currentDestination?.route
-                    if (isIdle && currentRoute?.startsWith("animeWatch/") == false) {
+                    if (isIdle && currentRoute?.startsWith("animeWatch/") == null) {
                         action(true)
                     }
                 }
