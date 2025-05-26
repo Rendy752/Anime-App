@@ -30,6 +30,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertFalse
 
 @ExperimentalCoroutinesApi
 class MainViewModelTest {
@@ -60,13 +61,34 @@ class MainViewModelTest {
         settingsPrefs = mockk(relaxed = true)
         networkStateMonitor = mockk(relaxed = true)
 
-        every { application.getSharedPreferences("theme_prefs", Context.MODE_PRIVATE) } returns themePrefs
-        every { application.getSharedPreferences("settings_prefs", Context.MODE_PRIVATE) } returns settingsPrefs
+        every {
+            application.getSharedPreferences(
+                "theme_prefs",
+                Context.MODE_PRIVATE
+            )
+        } returns themePrefs
+        every {
+            application.getSharedPreferences(
+                "settings_prefs",
+                Context.MODE_PRIVATE
+            )
+        } returns settingsPrefs
 
         every { themePrefs.getBoolean("is_dark_mode", false) } returns false
-        every { themePrefs.getString("contrast_mode", ContrastMode.Normal.name) } returns ContrastMode.Normal.name
-        every { themePrefs.getString("color_style", ColorStyle.Default.name) } returns ColorStyle.Default.name
+        every {
+            themePrefs.getString(
+                "contrast_mode",
+                ContrastMode.Normal.name
+            )
+        } returns ContrastMode.Normal.name
+        every {
+            themePrefs.getString(
+                "color_style",
+                ColorStyle.Default.name
+            )
+        } returns ColorStyle.Default.name
         every { settingsPrefs.getBoolean("notifications_enabled", false) } returns false
+        every { settingsPrefs.getBoolean("auto_play_video", true) } returns true
 
         val isConnectedObserver = slot<Observer<Boolean>>()
         val networkStatusObserver = slot<Observer<NetworkStatus>>()
@@ -93,6 +115,7 @@ class MainViewModelTest {
         assertEquals(false, state.isDarkMode)
         assertEquals(ContrastMode.Normal, state.contrastMode)
         assertEquals(ColorStyle.Default, state.colorStyle)
+        assertEquals(true, state.isAutoPlayVideo)
         assertEquals(true, state.isConnected)
         assertEquals(mockNetworkStatus, state.networkStatus)
         verify { networkStateMonitor.startMonitoring() }
@@ -141,18 +164,34 @@ class MainViewModelTest {
     }
 
     @Test
-    fun `SetNotificationEnabled should update notificationEnabled and persist to SharedPreferences`() = runTest {
-        val editor = mockk<SharedPreferences.Editor>(relaxed = true)
-        every { settingsPrefs.edit() } returns editor
+    fun `SetNotificationEnabled should update isNotificationEnabled and persist to SharedPreferences`() =
+        runTest {
+            val editor = mockk<SharedPreferences.Editor>(relaxed = true)
+            every { settingsPrefs.edit() } returns editor
 
-        viewModel.onAction(MainAction.SetNotificationEnabled(true))
-        advanceUntilIdle()
+            viewModel.onAction(MainAction.SetNotificationEnabled(true))
+            advanceUntilIdle()
 
-        val state = viewModel.state.value
-        assertTrue(state.notificationEnabled)
-        verify { editor.putBoolean("notifications_enabled", true) }
-        verify { editor.apply() }
-    }
+            val state = viewModel.state.value
+            assertTrue(state.isNotificationEnabled)
+            verify { editor.putBoolean("notifications_enabled", true) }
+            verify { editor.apply() }
+        }
+
+    @Test
+    fun `SetAutoPlayVideo should update isAutoPlayVideo and persist to SharedPreferences`() =
+        runTest {
+            val editor = mockk<SharedPreferences.Editor>(relaxed = true)
+            every { settingsPrefs.edit() } returns editor
+
+            viewModel.onAction(MainAction.SetAutoPlayVideo(false))
+            advanceUntilIdle()
+
+            val state = viewModel.state.value
+            assertEquals(false, state.isAutoPlayVideo)
+            verify { editor.putBoolean("auto_play_video", false) }
+            verify { editor.apply() }
+        }
 
     @Test
     fun `SetIsConnected should update isConnected`() = runTest {
@@ -160,7 +199,7 @@ class MainViewModelTest {
         advanceUntilIdle()
 
         val state = viewModel.state.value
-        assertEquals(false, state.isConnected)
+        assertFalse(state.isConnected)
     }
 
     @Test

@@ -65,7 +65,7 @@ class MainViewModel @Inject constructor(
             colorStyle = themePrefs.getString("color_style", ColorStyle.Default.name)
                 ?.let { ColorStyle.valueOf(it) } ?: ColorStyle.Default,
             isNotificationEnabled = settingsPrefs.getBoolean("notifications_enabled", false),
-            isAutoPlayVideo = settingsPrefs.getBoolean("auto_play_video", false),
+            isAutoPlayVideo = settingsPrefs.getBoolean("auto_play_video", true),
         )
     )
 
