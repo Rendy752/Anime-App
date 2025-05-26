@@ -24,6 +24,7 @@ import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
+import androidx.core.content.edit
 
 class BroadcastNotificationWorker @AssistedInject constructor(
     @Assisted private val context: Context,
@@ -51,14 +52,15 @@ class BroadcastNotificationWorker @AssistedInject constructor(
         }
 
         fun schedule(context: Context) {
-            val notificationManager =
-                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             if (!notificationManager.areNotificationsEnabled()) {
                 log("Notifications disabled, skipping scheduling")
                 return
             }
 
-            val constraints = Constraints.Builder().build()
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
 
             val workRequest = PeriodicWorkRequestBuilder<BroadcastNotificationWorker>(
                 repeatInterval = 1,
@@ -77,14 +79,25 @@ class BroadcastNotificationWorker @AssistedInject constructor(
         }
 
         fun scheduleNow(context: Context) {
-            val notificationManager =
-                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            val prefs = context.getSharedPreferences("settings_prefs", Context.MODE_PRIVATE)
+            val lastScheduled = prefs.getLong("last_broadcast_schedule_time", 0)
+            val currentTime = System.currentTimeMillis()
+            val minIntervalMs = 15 * 60 * 1000
+
+            if (currentTime - lastScheduled < minIntervalMs) {
+                log("Skipping immediate scheduling, too soon since last schedule")
+                return
+            }
+
+            val notificationManager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             if (!notificationManager.areNotificationsEnabled()) {
                 log("Notifications disabled, skipping immediate scheduling")
                 return
             }
 
-            val constraints = Constraints.Builder().build()
+            val constraints = Constraints.Builder()
+                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .build()
 
             val workRequest = OneTimeWorkRequestBuilder<BroadcastNotificationWorker>()
                 .setConstraints(constraints)
@@ -94,9 +107,10 @@ class BroadcastNotificationWorker @AssistedInject constructor(
 
             WorkManager.getInstance(context).enqueueUniqueWork(
                 WORK_NAME,
-                ExistingWorkPolicy.KEEP,
+                ExistingWorkPolicy.REPLACE,
                 workRequest
             )
+            prefs.edit { putLong("last_broadcast_schedule_time", currentTime) }
             log("Scheduled immediate broadcast notification")
         }
     }
@@ -118,12 +132,10 @@ class BroadcastNotificationWorker @AssistedInject constructor(
                 return@withContext Result.success()
             }
 
-            val connectivityManager =
-                context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
             val network = connectivityManager.activeNetwork
             val networkCapabilities = connectivityManager.getNetworkCapabilities(network)
-            val isConnected =
-                networkCapabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+            val isConnected = networkCapabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
             if (!isConnected) {
                 log("No internet connection, retrying")
                 return@withContext Result.retry()
@@ -140,10 +152,19 @@ class BroadcastNotificationWorker @AssistedInject constructor(
             Result.success()
         } catch (e: Exception) {
             when {
-                e is UnknownHostException -> log("Network error: ${e.message}, retrying")
-                else -> log("Error: ${e.javaClass.name}, message=${e.message}, stacktrace=${e.stackTraceToString()}")
+                e is UnknownHostException -> {
+                    log("Network error: ${e.message}, retrying")
+                    Result.retry()
+                }
+                e.message?.contains("TooManyRequestsException") == true -> {
+                    log("Too many network requests: ${e.message}, retrying with delay")
+                    Result.retry()
+                }
+                else -> {
+                    log("Error: ${e.javaClass.name}, message=${e.message}, stacktrace=${e.stackTraceToString()}")
+                    Result.failure()
+                }
             }
-            Result.retry()
         }
     }
 
@@ -194,14 +215,64 @@ class BroadcastNotificationWorker @AssistedInject constructor(
             log("Anime: ${anime.title} (malId=${anime.mal_id}), broadcastTime=$broadcastTime, timeUntilBroadcast=$timeUntilBroadcast minutes")
 
             if (timeUntilBroadcast in 0..NOTIFICATION_WINDOW_MINUTES) {
-                sendBroadcastNotification(anime)
-            } else if (timeUntilBroadcast < 0) {
-                log("Broadcast for ${anime.title} (malId=${anime.mal_id}) already passed, skipping")
+                sendBroadcastNotification(anime) // Send immediately if within window
+            } else if (timeUntilBroadcast > NOTIFICATION_WINDOW_MINUTES) {
+                // Store notification and schedule for later
+                val accessId = anime.mal_id.toString()
+                if (!notificationRepository.checkDuplicateNotification(accessId, "Broadcast")) {
+                    val notification = Notification(
+                        accessId = accessId,
+                        imageUrl = anime.images.webp.large_image_url ?: "",
+                        contentText = "${anime.title} is about to air!",
+                        type = "Broadcast"
+                    )
+                    val savedId = notificationRepository.saveNotification(notification)
+                    log("Saved notification for later: ${anime.title} (accessId=$accessId, notificationId=$savedId)")
+
+                    // Schedule notification delivery
+                    scheduleNotificationDelivery(context, notification, accessId, broadcastTime)
+                }
             } else {
-                log("Broadcast for ${anime.title} (malId=${anime.mal_id}) is too far in future, skipping")
+                log("Broadcast for ${anime.title} (malId=${anime.mal_id}) already passed, skipping")
             }
         }
         log("Finished processBroadcastNotifications")
+    }
+
+    private fun scheduleNotificationDelivery(
+        context: Context,
+        notification: Notification,
+        accessId: String,
+        deliveryTime: ZonedDateTime
+    ) {
+        val currentTime = ZonedDateTime.now(ZoneId.of("Asia/Jakarta"))
+        val delay = ChronoUnit.MILLIS.between(currentTime, deliveryTime)
+
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
+            .build()
+
+        val workRequest = OneTimeWorkRequestBuilder<NotificationDeliveryWorker>()
+            .setConstraints(constraints)
+            .setInitialDelay(delay, TimeUnit.MILLISECONDS)
+            .addTag("notification_delivery_$accessId")
+            .setInputData(
+                workDataOf(
+                    "notification_id" to notification.id,
+                    "access_id" to notification.accessId,
+                    "content_text" to notification.contentText,
+                    "image_url" to notification.imageUrl,
+                    "type" to notification.type
+                )
+            )
+            .build()
+
+        WorkManager.getInstance(context).enqueueUniqueWork(
+            "notification_delivery_$accessId",
+            ExistingWorkPolicy.KEEP,
+            workRequest
+        )
+        log("Scheduled notification delivery for ${notification.contentText} at $deliveryTime")
     }
 
     private fun calculateBroadcastTime(anime: AnimeDetail): ZonedDateTime? {
