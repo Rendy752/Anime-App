@@ -29,6 +29,7 @@ data class MainState(
     val colorStyle: ColorStyle = ColorStyle.Default,
     val isNotificationEnabled: Boolean = false,
     val isAutoPlayVideo: Boolean = true,
+    val isRtl: Boolean = false,
     val isConnected: Boolean = true,
     val networkStatus: NetworkStatus = networkStatusPlaceholder,
     val isShowIdleDialog: Boolean = false,
@@ -41,6 +42,7 @@ sealed class MainAction {
     data class SetColorStyle(val colorStyle: ColorStyle) : MainAction()
     data class SetNotificationEnabled(val enabled: Boolean) : MainAction()
     data class SetAutoPlayVideo(val isAutoPlayVideo: Boolean) : MainAction()
+    data class SetRtl(val isRtl: Boolean) : MainAction()
     data class SetIsConnected(val connected: Boolean) : MainAction()
     data class SetNetworkStatus(val status: NetworkStatus) : MainAction()
     data class SetIsShowIdleDialog(val show: Boolean) : MainAction()
@@ -66,6 +68,7 @@ class MainViewModel @Inject constructor(
                 ?.let { ColorStyle.valueOf(it) } ?: ColorStyle.Default,
             isNotificationEnabled = settingsPrefs.getBoolean("notifications_enabled", false),
             isAutoPlayVideo = settingsPrefs.getBoolean("auto_play_video", true),
+            isRtl = settingsPrefs.getBoolean("rtl", false)
         )
     )
 
@@ -83,6 +86,7 @@ class MainViewModel @Inject constructor(
             is MainAction.SetColorStyle -> setColorStyle(action.colorStyle)
             is MainAction.SetNotificationEnabled -> setNotificationEnabled(action.enabled)
             is MainAction.SetAutoPlayVideo -> setAutoPlayVideo(action.isAutoPlayVideo)
+            is MainAction.SetRtl -> setRtl(action.isRtl)
             is MainAction.SetIsConnected -> setIsConnected(action.connected)
             is MainAction.SetNetworkStatus -> setNetworkStatus(action.status)
             is MainAction.SetIsShowIdleDialog -> setIsShowIdleDialog(action.show)
@@ -133,6 +137,11 @@ class MainViewModel @Inject constructor(
     private fun setAutoPlayVideo(isAutoPlayVideo: Boolean) {
         _state.update { it.copy(isAutoPlayVideo = isAutoPlayVideo) }
         settingsPrefs.edit { putBoolean("auto_play_video", isAutoPlayVideo) }
+    }
+
+    private fun setRtl(isRtl: Boolean) {
+        _state.update { it.copy(isRtl = isRtl) }
+        settingsPrefs.edit { putBoolean("rtl", isRtl) }
     }
 
     private fun setIsConnected(connected: Boolean) {

@@ -41,7 +41,10 @@ fun AccordionItem(
         contentDescription = representativeEpisode?.animeTitle ?: "Anime Image",
         onItemClick = onItemClick,
         leftContent = {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
                 Text(
                     modifier = Modifier.clickable(onClick = onAnimeTitleClick),
                     text = highlightText(

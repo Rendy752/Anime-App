@@ -17,15 +17,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.ParagraphStyle
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun DataTextWithIcon(modifier: Modifier = Modifier, label: String? = null, value: String?, icon: ImageVector) {
+fun DataTextWithIcon(
+    modifier: Modifier = Modifier,
+    label: String? = null,
+    value: String?,
+    icon: ImageVector
+) {
     if (!value.isNullOrBlank() && value.lowercase() != "null") {
         Row(
             modifier = modifier.padding(vertical = 2.dp),
@@ -44,7 +51,13 @@ fun DataTextWithIcon(modifier: Modifier = Modifier, label: String? = null, value
                 if (!label.isNullOrBlank()) {
                     append("$label: ")
                 }
-                withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) { append(value) }
+                withStyle(
+                    style = ParagraphStyle(textDirection = TextDirection.Ltr)
+                ) {
+                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                        append(value)
+                    }
+                }
             }.toAnnotatedString()
 
             Text(

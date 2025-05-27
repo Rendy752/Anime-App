@@ -89,6 +89,7 @@ class MainViewModelTest {
         } returns ColorStyle.Default.name
         every { settingsPrefs.getBoolean("notifications_enabled", false) } returns false
         every { settingsPrefs.getBoolean("auto_play_video", true) } returns true
+        every { settingsPrefs.getBoolean("rtl", false) } returns false
 
         val isConnectedObserver = slot<Observer<Boolean>>()
         val networkStatusObserver = slot<Observer<NetworkStatus>>()
@@ -112,11 +113,11 @@ class MainViewModelTest {
     @Test
     fun `init should load preferences and start network monitoring`() = runTest {
         val state = viewModel.state.value
-        assertEquals(false, state.isDarkMode)
+        assertFalse(state.isDarkMode)
         assertEquals(ContrastMode.Normal, state.contrastMode)
         assertEquals(ColorStyle.Default, state.colorStyle)
-        assertEquals(true, state.isAutoPlayVideo)
-        assertEquals(true, state.isConnected)
+        assertTrue(state.isAutoPlayVideo)
+        assertTrue(state.isConnected)
         assertEquals(mockNetworkStatus, state.networkStatus)
         verify { networkStateMonitor.startMonitoring() }
     }
@@ -188,10 +189,24 @@ class MainViewModelTest {
             advanceUntilIdle()
 
             val state = viewModel.state.value
-            assertEquals(false, state.isAutoPlayVideo)
+            assertFalse(state.isAutoPlayVideo)
             verify { editor.putBoolean("auto_play_video", false) }
             verify { editor.apply() }
         }
+
+    @Test
+    fun `SetRtl should update isRtl and persist to SharedPreferences`() = runTest {
+        val editor = mockk<SharedPreferences.Editor>(relaxed = true)
+        every { settingsPrefs.edit() } returns editor
+
+        viewModel.onAction(MainAction.SetRtl(true))
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertTrue(state.isRtl)
+        verify { editor.putBoolean("rtl", true) }
+        verify { editor.apply() }
+    }
 
     @Test
     fun `SetIsConnected should update isConnected`() = runTest {
@@ -255,7 +270,7 @@ class MainViewModelTest {
         advanceUntilIdle()
 
         val state = viewModel.state.value
-        assertEquals(false, state.isConnected)
+        assertFalse(state.isConnected)
         assertEquals(
             NetworkStatus(
                 icon = Icons.Filled.WifiOff,

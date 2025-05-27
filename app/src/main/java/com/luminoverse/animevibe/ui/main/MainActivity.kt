@@ -103,7 +103,8 @@ class MainActivity : AppCompatActivity() {
             AppTheme(
                 isDarkMode = state.isDarkMode,
                 contrastMode = state.contrastMode,
-                colorStyle = state.colorStyle
+                colorStyle = state.colorStyle,
+                isRtl = state.isRtl
             ) {
                 if (state.isShowIdleDialog) {
                     ConfirmationAlert(

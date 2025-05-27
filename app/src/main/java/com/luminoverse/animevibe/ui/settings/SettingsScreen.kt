@@ -105,6 +105,14 @@ fun SettingsScreen(
             }
             item {
                 ToggleWithLabel(
+                    isActive = mainState.isRtl,
+                    label = "Right-to-Left Layout",
+                    description = "Enable right-to-left layout for text and UI",
+                    onToggle = { mainAction(MainAction.SetRtl(it)) }
+                )
+            }
+            item {
+                ToggleWithLabel(
                     isActive = mainState.isNotificationEnabled,
                     label = "Notifications",
                     description = "Enable notifications",
