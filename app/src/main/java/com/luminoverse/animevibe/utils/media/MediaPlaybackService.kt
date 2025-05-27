@@ -75,6 +75,7 @@ sealed class MediaPlaybackAction {
         val onPlayerError: (String?) -> Unit,
         val onPlayerReady: () -> Unit
     ) : MediaPlaybackAction()
+
     data object StopService : MediaPlaybackAction()
     data object QueryForegroundStatus : MediaPlaybackAction()
 }
@@ -123,6 +124,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                 action.onPlayerError,
                 action.onPlayerReady
             )
+
             is MediaPlaybackAction.StopService -> stopService()
             is MediaPlaybackAction.QueryForegroundStatus -> queryForegroundStatus()
         }
@@ -175,7 +177,9 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
             description = "Channel for video playback controls"
             setShowBadge(false)
         }
-        (getSystemService(NOTIFICATION_SERVICE) as NotificationManager).createNotificationChannel(channel)
+        (getSystemService(NOTIFICATION_SERVICE) as NotificationManager).createNotificationChannel(
+            channel
+        )
     }
 
     private suspend fun loadImageBitmap(url: String?): Bitmap? = withContext(Dispatchers.IO) {
@@ -213,7 +217,8 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
             val position = player.currentPosition.takeIf { it >= 0 }?.toInt() ?: 0
 
             val currentEpisodeNo = _state.value.episodeComplement?.servers?.episodeNo ?: -1
-            val hasPreviousEpisode = currentEpisodeNo > 1 && _state.value.episodes.any { it.episodeNo == currentEpisodeNo - 1 }
+            val hasPreviousEpisode =
+                currentEpisodeNo > 1 && _state.value.episodes.any { it.episodeNo == currentEpisodeNo - 1 }
             val hasNextEpisode = _state.value.episodes.any { it.episodeNo == currentEpisodeNo + 1 }
 
             val imageBitmap = loadImageBitmap(_state.value.episodeComplement?.imageUrl)
@@ -228,8 +233,14 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                         .setShowActionsInCompactView(*actionIndices.toIntArray())
                 )
                 setSmallIcon(R.drawable.ic_video_black_24dp)
-                setContentTitle(mediaMetadata?.getString(MediaMetadataCompat.METADATA_KEY_TITLE) ?: "Anime Episode")
-                setContentText(mediaMetadata?.getString(MediaMetadataCompat.METADATA_KEY_ALBUM) ?: "Anime Series")
+                setContentTitle(
+                    mediaMetadata?.getString(MediaMetadataCompat.METADATA_KEY_TITLE)
+                        ?: "Anime Episode"
+                )
+                setContentText(
+                    mediaMetadata?.getString(MediaMetadataCompat.METADATA_KEY_ALBUM)
+                        ?: "Anime Series"
+                )
                 setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
                 setOnlyAlertOnce(true)
                 setProgress(duration, position, duration <= 0)
@@ -292,7 +303,10 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
             }
             val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
             if (!notificationManager.areNotificationsEnabled()) {
-                Log.d("MediaPlaybackService", "Notifications disabled, cannot start foreground service")
+                Log.d(
+                    "MediaPlaybackService",
+                    "Notifications disabled, cannot start foreground service"
+                )
                 stopSelf()
                 return@launch
             }
@@ -300,7 +314,10 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                 startForeground(NOTIFICATION_ID, builder.build())
                 isForeground.set(true)
                 _state.update { it.copy(isForeground = true) }
-                Log.d("MediaPlaybackService", "Foreground service started, isForeground=${isForeground.get()}")
+                Log.d(
+                    "MediaPlaybackService",
+                    "Foreground service started, isForeground=${isForeground.get()}"
+                )
             } catch (e: Exception) {
                 Log.e("MediaPlaybackService", "Failed to start foreground service", e)
             }
@@ -311,7 +328,10 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         _state.value.episodeComplement?.let { complement ->
             mediaSession?.setMetadata(
                 MediaMetadataCompat.Builder()
-                    .putString(MediaMetadataCompat.METADATA_KEY_TITLE, "Eps. ${complement.number}, ${complement.episodeTitle}")
+                    .putString(
+                        MediaMetadataCompat.METADATA_KEY_TITLE,
+                        "Eps. ${complement.number}, ${complement.episodeTitle}"
+                    )
                     .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, complement.animeTitle)
                     .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, duration)
                     .build()
@@ -323,7 +343,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         notificationUpdateJob?.cancel()
         notificationUpdateJob = coroutineScope.launch {
             while (true) {
-                if (_state.value.isPlayerReady) {
+                if (_state.value.isPlayerReady && _state.value.isForeground && _state.value.playbackState == PlaybackStateCompat.STATE_PLAYING) {
                     updateNotification()
                     Log.d("MediaPlaybackService", "Periodic notification update triggered")
                 }
@@ -356,7 +376,14 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         }
         builder.setState(state, position, 1.0f)
         mediaSession?.setPlaybackState(builder.build())
-        _state.update { it.copy(playbackState = state, errorMessage = errorMessage, currentPosition = position, duration = HlsPlayerUtils.getPlayer()?.duration ?: 0) }
+        _state.update {
+            it.copy(
+                playbackState = state,
+                errorMessage = errorMessage,
+                currentPosition = position,
+                duration = HlsPlayerUtils.getPlayer()?.duration ?: 0
+            )
+        }
         updateNotification()
     }
 
@@ -371,14 +398,21 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                     Player.STATE_ENDED -> PlaybackStateCompat.STATE_STOPPED
                     else -> PlaybackStateCompat.STATE_NONE
                 }
-                _state.update { it.copy(isPlayerReady = state.isReady, currentPosition = state.currentPosition, duration = state.duration) }
+                _state.update {
+                    it.copy(
+                        isPlayerReady = state.isReady,
+                        currentPosition = state.currentPosition,
+                        duration = state.duration
+                    )
+                }
                 if (state.error != null) {
                     updatePlaybackState(PlaybackStateCompat.STATE_ERROR, state.error)
                 } else {
                     updatePlaybackState(playbackState)
                 }
                 if (state.isReady) {
-                    updateMediaMetadata(HlsPlayerUtils.getPlayer()?.duration?.takeIf { it > 0 } ?: 0)
+                    updateMediaMetadata(HlsPlayerUtils.getPlayer()?.duration?.takeIf { it > 0 }
+                        ?: 0)
                 }
             }
         }
@@ -405,7 +439,10 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
 
         coroutineScope.launch {
             if (query.id != complement.id) {
-                Log.w("MediaPlaybackService", "Mismatch in episodeSourcesQuery.id (${query.id}) and episodeDetailComplement.id (${complement.id})")
+                Log.w(
+                    "MediaPlaybackService",
+                    "Mismatch in episodeSourcesQuery.id (${query.id}) and episodeDetailComplement.id (${complement.id})"
+                )
                 onPlayerError("Episode data mismatch")
                 _state.update { it.copy(errorMessage = "Episode data mismatch") }
                 return@launch
@@ -440,14 +477,20 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         isForeground.set(false)
         _state.update { it.copy(isForeground = false) }
         stopPeriodicNotificationUpdates()
-        Log.d("MediaPlaybackService", "Foreground stopped in stopService, isForeground=${isForeground.get()}")
+        Log.d(
+            "MediaPlaybackService",
+            "Foreground stopped in stopService, isForeground=${isForeground.get()}"
+        )
         stopSelf()
     }
 
     private fun queryForegroundStatus() {
         val isForegroundValue = isForeground.get() && HlsPlayerUtils.state.value.isReady
         _state.update { it.copy(isForeground = isForegroundValue) }
-        Log.d("MediaPlaybackService", "queryForegroundStatus called, isForeground=$isForegroundValue")
+        Log.d(
+            "MediaPlaybackService",
+            "queryForegroundStatus called, isForeground=$isForegroundValue"
+        )
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
@@ -468,15 +511,27 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         stopForeground(STOP_FOREGROUND_REMOVE)
         isForeground.set(false)
         handleSelectedEpisodeServer = null
-        _state.update { it.copy(isForeground = false, playbackState = PlaybackStateCompat.STATE_STOPPED) }
+        _state.update {
+            it.copy(
+                isForeground = false,
+                playbackState = PlaybackStateCompat.STATE_STOPPED
+            )
+        }
         Log.d("MediaPlaybackService", "Resources released, isForeground=${isForeground.get()}")
     }
 
-    override fun onGetRoot(clientPackageName: String, clientUid: Int, rootHints: Bundle?): BrowserRoot {
+    override fun onGetRoot(
+        clientPackageName: String,
+        clientUid: Int,
+        rootHints: Bundle?
+    ): BrowserRoot {
         return BrowserRoot("media_root_id", null)
     }
 
-    override fun onLoadChildren(parentId: String, result: Result<List<MediaBrowserCompat.MediaItem?>?>) {
+    override fun onLoadChildren(
+        parentId: String,
+        result: Result<List<MediaBrowserCompat.MediaItem?>?>
+    ) {
         result.sendResult(mutableListOf())
     }
 
@@ -504,9 +559,17 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                 val newQuery = _state.value.episodeQuery?.copy(id = nextEpisode.episodeId)
                 val newComplement = _state.value.episodeComplement?.copy(id = nextEpisode.episodeId)
                 if (newQuery != null && newComplement != null) {
-                    _state.update { it.copy(episodeQuery = newQuery, episodeComplement = newComplement) }
+                    _state.update {
+                        it.copy(
+                            episodeQuery = newQuery,
+                            episodeComplement = newComplement
+                        )
+                    }
                     handleSelectedEpisodeServer?.invoke(newQuery)
-                    Log.d("MediaPlaybackService", "onSkipToNext: Handler invoked for episode ${nextEpisode.episodeId}")
+                    Log.d(
+                        "MediaPlaybackService",
+                        "onSkipToNext: Handler invoked for episode ${nextEpisode.episodeId}"
+                    )
                     updateNotification()
                 }
             }
@@ -514,14 +577,24 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
 
         override fun onSkipToPrevious() {
             val currentEpisodeNo = _state.value.episodeComplement?.servers?.episodeNo ?: return
-            val previousEpisode = _state.value.episodes.find { it.episodeNo == currentEpisodeNo - 1 }
+            val previousEpisode =
+                _state.value.episodes.find { it.episodeNo == currentEpisodeNo - 1 }
             if (previousEpisode != null) {
                 val newQuery = _state.value.episodeQuery?.copy(id = previousEpisode.episodeId)
-                val newComplement = _state.value.episodeComplement?.copy(id = previousEpisode.episodeId)
+                val newComplement =
+                    _state.value.episodeComplement?.copy(id = previousEpisode.episodeId)
                 if (newQuery != null && newComplement != null) {
-                    _state.update { it.copy(episodeQuery = newQuery, episodeComplement = newComplement) }
+                    _state.update {
+                        it.copy(
+                            episodeQuery = newQuery,
+                            episodeComplement = newComplement
+                        )
+                    }
                     handleSelectedEpisodeServer?.invoke(newQuery)
-                    Log.d("MediaPlaybackService", "onSkipToPrevious: Handler invoked for episode ${previousEpisode.episodeId}")
+                    Log.d(
+                        "MediaPlaybackService",
+                        "onSkipToPrevious: Handler invoked for episode ${previousEpisode.episodeId}"
+                    )
                     updateNotification()
                 }
             }
