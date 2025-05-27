@@ -45,6 +45,7 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
         private fun buildConstraints() = Constraints.Builder()
             .setRequiresCharging(false)
             .setRequiresDeviceIdle(false)
+            .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
             .build()
 
         fun schedule(context: Context) {
@@ -102,51 +103,71 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
 
         if (attempt > MAX_RETRIES) {
             log("Max retries reached")
-            return@withContext Result.failure()
+            return@withContext Result.failure(workDataOf("error" to "Max retries exceeded"))
         }
 
         try {
             val notificationManager =
                 context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             if (!notificationManager.areNotificationsEnabled()) {
-                log("Notifications disabled, skipping")
-                return@withContext Result.success()
+                log("Notifications disabled, retrying")
+                return@withContext Result.retry()
             }
 
             val channel = notificationManager.getNotificationChannel("anime_notifications")
+            if (channel?.importance == NotificationManager.IMPORTANCE_NONE) {
+                log("Notification channel disabled, retrying")
+                return@withContext Result.retry()
+            }
             log("Channel status: importance=${channel?.importance}, enabled=${channel?.importance != NotificationManager.IMPORTANCE_NONE}")
 
             notificationRepository.cleanOldNotifications()
             log("Cleaned old notifications")
 
             val success = processRandomUnfinishedEpisode()
-
             log("Completed successfully at $currentTime, notification sent: $success")
             Result.success()
         } catch (e: Exception) {
+            log("Error: ${e.javaClass.name}, message=${e.message}, stacktrace=${e.stackTraceToString()}")
             when {
-                e is UnknownHostException -> log("Network error: ${e.message}, retrying")
-                e.message?.contains("TooManyRequestsException") == true -> {
-                    log("Too many network requests: ${e.message}, retrying")
+                e is UnknownHostException -> {
+                    log("Network error, retrying")
                     Result.retry()
                 }
 
-                else -> log("Error: ${e.javaClass.name}, message=${e.message}, stacktrace=${e.stackTraceToString()}")
+                e.message?.contains("TooManyRequestsException") == true -> {
+                    log("Too many requests, retrying")
+                    Result.retry()
+                }
+
+                else -> {
+                    Result.failure(workDataOf("error" to e.message))
+                }
             }
-            Result.retry()
         }
     }
 
     private suspend fun processRandomUnfinishedEpisode(): Boolean {
-        val (episode, remainingEpisodes) = animeEpisodeDetailRepository.getRandomCachedUnfinishedEpisode()
+        val (episode, remainingEpisodes) = try {
+            animeEpisodeDetailRepository.getRandomCachedUnfinishedEpisode()
+        } catch (e: Exception) {
+            log("Failed to get random episode: ${e.message}")
+            return false
+        }
+
         if (episode == null) {
             log("No unfinished episode in cache")
             return false
         }
         log("Found random unfinished episode: ${episode.animeTitle}, malId=${episode.malId}, episode=${episode.number}, remaining episodes=$remainingEpisodes")
 
-        val animeDetail =
+        val animeDetail = try {
             animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(episode.malId)
+        } catch (e: Exception) {
+            log("Failed to get anime detail for malId=${episode.malId}: ${e.message}")
+            return false
+        }
+
         if (animeDetail == null) {
             log("No anime detail for malId=${episode.malId}")
             return false
@@ -173,7 +194,7 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
 
         val notification = Notification(
             accessId = accessId,
-            imageUrl = episode.imageUrl,
+            imageUrl = episode.imageUrl ?: "",
             contentText = "Hey, left off watching ${episode.animeTitle} Episode ${episode.number}? You have $remainingEpisodes episode${if (remainingEpisodes > 1) "s" else ""} left to enjoy. Dive back in to see what happens next!",
             type = "UnfinishedWatch"
         )
@@ -193,7 +214,7 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
                 ?: log("No pending notification found for ${episode.animeTitle} (accessId=$accessId)")
             return true
         } catch (e: Exception) {
-            log("Failed to save notification for ${episode.animeTitle} (accessId=$accessId): ${e.message}, stacktrace=${e.stackTraceToString()}")
+            log("Failed to send notification for ${episode.animeTitle} (accessId=$accessId): ${e.message}, stacktrace=${e.stackTraceToString()}")
             return false
         }
     }
