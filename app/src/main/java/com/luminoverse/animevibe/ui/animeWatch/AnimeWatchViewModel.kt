@@ -191,7 +191,7 @@ class AnimeWatchViewModel @Inject constructor(
                     } else {
                         val episodeServersResource =
                             Resource.Success(cachedEpisodeDetailComplement.servers)
-                        val (episodeSourcesResource) = StreamingUtils.getEpisodeSources(
+                        val (episodeSourcesResource, availableEpisodeSourcesQuery) = StreamingUtils.getEpisodeSources(
                             episodeServersResource,
                             { id, server, category ->
                                 animeEpisodeDetailRepository.getEpisodeSources(
@@ -209,7 +209,7 @@ class AnimeWatchViewModel @Inject constructor(
                                     episodeDetailComplement = Resource.Error(
                                         episodeSourcesResource.message
                                             ?: "Failed to fetch episode sources"
-                                    )
+                                    ),
                                 )
                             }
                             return@launch
@@ -221,12 +221,14 @@ class AnimeWatchViewModel @Inject constructor(
                                     cachedEpisodeDetailComplement.copy(
                                         servers = servers,
                                         sources = sources,
-                                        sourcesQuery = episodeSourcesQuery
+                                        sourcesQuery = availableEpisodeSourcesQuery
+                                            ?: episodeSourcesQuery
                                     )
                                 updateEpisodeDetailComplement(updatedEpisodeDetailComplement)
                                 _watchState.update {
                                     it.copy(
-                                        episodeSourcesQuery = episodeSourcesQuery,
+                                        episodeSourcesQuery = availableEpisodeSourcesQuery
+                                            ?: episodeSourcesQuery,
                                         episodeDetailComplement = Resource.Success(
                                             updatedEpisodeDetailComplement
                                         ),
@@ -256,7 +258,8 @@ class AnimeWatchViewModel @Inject constructor(
 
             var currentQuery = episodeSourcesQuery
             var attempt = 0
-            val defaultQueries = getDefaultEpisodeQueries(episodeServersResource, episodeSourcesQuery.id)
+            val defaultQueries =
+                getDefaultEpisodeQueries(episodeServersResource, episodeSourcesQuery.id)
             val maxAttempts = defaultQueries.size
 
             while (attempt < maxAttempts) {
@@ -277,7 +280,7 @@ class AnimeWatchViewModel @Inject constructor(
                                 cachedEpisodeDetailComplement = cachedEpisodeDetailComplement.copy(
                                     servers = servers,
                                     sources = sources,
-                                    sourcesQuery = currentQuery
+                                    sourcesQuery = newQuery ?: currentQuery
                                 )
                                 updateEpisodeDetailComplement(cachedEpisodeDetailComplement)
                                 _watchState.update {
@@ -301,7 +304,7 @@ class AnimeWatchViewModel @Inject constructor(
                                                 episode = episode,
                                                 servers = servers,
                                                 sources = sources,
-                                                sourcesQuery = currentQuery
+                                                sourcesQuery = newQuery ?: currentQuery
                                             ).let { remoteEpisodeDetailComplement ->
                                                 _watchState.update {
                                                     it.copy(
@@ -319,7 +322,9 @@ class AnimeWatchViewModel @Inject constructor(
                                     }
                                 }
                             }
-                            _watchState.update { it.copy(episodeSourcesQuery = currentQuery) }
+                            _watchState.update {
+                                it.copy(episodeSourcesQuery = newQuery ?: currentQuery)
+                            }
                             return@launch
                         }
                     }
