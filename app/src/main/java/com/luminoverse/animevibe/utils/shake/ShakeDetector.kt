@@ -17,7 +17,7 @@ class ShakeDetector(private val onShakeListener: () -> Unit) : SensorEventListen
 
     override fun onSensorChanged(event: SensorEvent) {
         val curTime = System.currentTimeMillis()
-        if (curTime - lastUpdate > 100) {
+        if (curTime - lastUpdate > 50) {
             val diffTime = curTime - lastUpdate
             lastUpdate = curTime
             val x = event.values[0]
@@ -32,7 +32,6 @@ class ShakeDetector(private val onShakeListener: () -> Unit) : SensorEventListen
                     val currentDirection = if (deltaX > 0) 1 else -1
 
                     if (shaking) {
-
                         if (currentDirection != lastDirection && lastDirection != 0) {
                             shakeCount++
                             lastDirection = currentDirection
@@ -70,8 +69,8 @@ class ShakeDetector(private val onShakeListener: () -> Unit) : SensorEventListen
     override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
 
     companion object {
-        private const val SHAKE_THRESHOLD = 500
-        private const val DIRECTION_THRESHOLD = 2
-        private const val REQUIRED_SHAKES = 6
+        private const val SHAKE_THRESHOLD = 300
+        private const val DIRECTION_THRESHOLD = 1.0f
+        private const val REQUIRED_SHAKES = 4
     }
 }
