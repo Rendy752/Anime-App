@@ -52,7 +52,9 @@ data class HlsPlayerState(
     val isReady: Boolean = false,
     val currentPosition: Long = 0,
     val duration: Long = 0,
-    val playbackSpeed: Float = 1f
+    val playbackSpeed: Float = 1f,
+    val showIntroButton: Boolean = false,
+    val showOutroButton: Boolean = false
 )
 
 sealed class HlsPlayerAction {
@@ -79,6 +81,9 @@ sealed class HlsPlayerAction {
         val query: EpisodeSourcesQuery,
         val updateStoredWatchState: (Long?, Long?, String?) -> Unit
     ) : HlsPlayerAction()
+
+    data class SkipIntro(val endTime: Long) : HlsPlayerAction()
+    data class SkipOutro(val endTime: Long) : HlsPlayerAction()
 }
 
 object HlsPlayerUtils {
@@ -89,11 +94,16 @@ object HlsPlayerUtils {
     private var videoSurface: Any? = null
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var watchStateUpdateJob: Job? = null
+    private var introOutroJob: Job? = null
+    private var introSkipped = false
+    private var outroSkipped = true
+    private var currentVideoData: EpisodeSourcesResponse? = null
 
     private val _state = MutableStateFlow(HlsPlayerState())
     val state: StateFlow<HlsPlayerState> = _state.asStateFlow()
 
     private const val WATCH_STATE_UPDATE_INTERVAL_MS = 5_000L
+    private const val INTRO_OUTRO_CHECK_INTERVAL_MS = 1_000L
 
     @OptIn(UnstableApi::class)
     fun dispatch(action: HlsPlayerAction) {
@@ -118,6 +128,9 @@ object HlsPlayerUtils {
             is HlsPlayerAction.UpdateWatchState -> updateWatchState(
                 action.updateStoredWatchState
             )
+
+            is HlsPlayerAction.SkipIntro -> skipIntro(action.endTime)
+            is HlsPlayerAction.SkipOutro -> skipOutro(action.endTime)
         }
     }
 
@@ -189,8 +202,10 @@ object HlsPlayerUtils {
                         _state.update { it.copy(isPlaying = isPlaying, error = null) }
                         if (isPlaying) {
                             requestAudioFocus()
+                            startIntroOutroCheck()
                         } else {
                             abandonAudioFocus()
+                            stopIntroOutroCheck()
                         }
                     }
 
@@ -209,6 +224,7 @@ object HlsPlayerUtils {
                             Player.STATE_ENDED -> {
                                 _state.update { it.copy(isPlaying = false) }
                                 abandonAudioFocus()
+                                stopIntroOutroCheck()
                             }
 
                             Player.STATE_READY -> {
@@ -224,7 +240,18 @@ object HlsPlayerUtils {
                             Player.STATE_IDLE -> {
                                 _state.update { it.copy(error = null) }
                                 abandonAudioFocus()
+                                stopIntroOutroCheck()
                             }
+                        }
+                    }
+
+                    override fun onPositionDiscontinuity(
+                        oldPosition: Player.PositionInfo,
+                        newPosition: Player.PositionInfo,
+                        reason: Int
+                    ) {
+                        if (reason == Player.DISCONTINUITY_REASON_SEEK) {
+                            introOutroCheck()
                         }
                     }
 
@@ -240,6 +267,7 @@ object HlsPlayerUtils {
                         Log.e("HlsPlayerUtils", "onPlayerError: $message", error)
                         _state.update { it.copy(error = message) }
                         abandonAudioFocus()
+                        stopIntroOutroCheck()
                     }
                 })
                 pause()
@@ -257,6 +285,12 @@ object HlsPlayerUtils {
         onReady: () -> Unit = {},
         onError: (String) -> Unit = {}
     ) {
+        currentVideoData = videoData
+        introSkipped = false
+        outroSkipped = true
+        _state.update { it.copy(showIntroButton = false, showOutroButton = false) }
+        stopIntroOutroCheck()
+
         exoPlayer?.let { player ->
             player.stop()
             player.clearMediaItems()
@@ -290,7 +324,7 @@ object HlsPlayerUtils {
 
                 Log.d(
                     "HlsPlayerUtils",
-                    "Media set: url=${mediaItemUri}, lastTimestamp=$lastTimestamp, isAutoPlayVideo=$isAutoPlayVideo"
+                    "Media set: url=$mediaItemUri, lastTimestamp=$lastTimestamp, isAutoPlayVideo=$isAutoPlayVideo"
                 )
 
                 val readyListener = object : Player.Listener {
@@ -304,7 +338,7 @@ object HlsPlayerUtils {
                             if (isAutoPlayVideo) {
                                 lastTimestamp?.let { timestamp ->
                                     if (timestamp > 0 && timestamp < player.duration) {
-                                        player.seekTo(timestamp)
+                                        seekTo(timestamp)
                                         Log.d(
                                             "HlsPlayerUtils",
                                             "AutoPlay: seekTo timestamp=$timestamp"
@@ -353,6 +387,7 @@ object HlsPlayerUtils {
             val clampedPos = positionMs.coerceAtLeast(0)
                 .coerceAtMost(if (duration > 0) duration else Long.MAX_VALUE)
             it.seekTo(clampedPos)
+            introOutroCheck()
             Log.d("HlsPlayerUtils", "seekTo: position=$clampedPos, duration=$duration")
         }
     }
@@ -363,7 +398,7 @@ object HlsPlayerUtils {
             val duration = it.duration
             val newPosition =
                 (currentPosition + 10_000).coerceAtMost(if (duration > 0) duration else Long.MAX_VALUE)
-            it.seekTo(newPosition)
+            seekTo(newPosition)
             Log.d("HlsPlayerUtils", "fastForward: from=$currentPosition to=$newPosition")
         }
     }
@@ -372,7 +407,7 @@ object HlsPlayerUtils {
         exoPlayer?.let {
             val currentPosition = it.currentPosition
             val newPosition = (currentPosition - 10_000).coerceAtLeast(0)
-            it.seekTo(newPosition)
+            seekTo(newPosition)
             Log.d("HlsPlayerUtils", "rewind: from=$currentPosition to=$newPosition")
         }
     }
@@ -413,9 +448,7 @@ object HlsPlayerUtils {
                                 Log.d(
                                     "HlsPlayerUtils",
                                     "Video ended: saved watch state with position=$duration, duration=$duration, screenshot=${
-                                        screenshot?.take(
-                                            20
-                                        )
+                                        screenshot?.take(20)
                                     }..."
                                 )
                             }
@@ -457,9 +490,7 @@ object HlsPlayerUtils {
                                     Log.d(
                                         "HlsPlayerUtils",
                                         "Periodic watch state update: position=$position, screenshot=${
-                                            screenshot?.take(
-                                                20
-                                            )
+                                            screenshot?.take(20)
                                         }..."
                                     )
                                 }
@@ -478,6 +509,69 @@ object HlsPlayerUtils {
         watchStateUpdateJob?.cancel()
         watchStateUpdateJob = null
         Log.d("HlsPlayerUtils", "Stopped periodic watch state updates")
+    }
+
+    private fun startIntroOutroCheck() {
+        if (introOutroJob?.isActive != true && currentVideoData != null) {
+            Log.d("HlsPlayerUtils", "Starting intro/outro periodic check")
+            introOutroJob = coroutineScope.launch(Dispatchers.Main) {
+                while (true) {
+                    introOutroCheck()
+                    delay(INTRO_OUTRO_CHECK_INTERVAL_MS)
+                }
+            }
+        }
+    }
+
+    private fun introOutroCheck() {
+        currentVideoData?.let { videoData ->
+            exoPlayer?.let { player ->
+                val currentPositionSec = player.currentPosition / 1000
+                Log.d(
+                    "HlsPlayerUtils",
+                    "Intro/Outro check: position=$currentPositionSec"
+                )
+
+                val intro = videoData.intro
+                val outro = videoData.outro
+
+                _state.update {
+                    it.copy(
+                        showIntroButton = intro != null && currentPositionSec in intro.start..intro.end && !introSkipped,
+                        showOutroButton = outro != null && currentPositionSec in outro.start..outro.end && !outroSkipped
+                    )
+                }
+
+                if (intro != null && (currentPositionSec < intro.start || currentPositionSec > intro.end)) {
+                    introSkipped = false
+                }
+                if (outro != null && (currentPositionSec < outro.start || currentPositionSec > outro.end)) {
+                    outroSkipped = false
+                }
+            }
+        }
+    }
+
+    private fun stopIntroOutroCheck() {
+        if (introOutroJob?.isActive == true) {
+            Log.d("HlsPlayerUtils", "Stopping intro/outro periodic check")
+            introOutroJob?.cancel()
+            introOutroJob = null
+        }
+    }
+
+    private fun skipIntro(endTime: Long) {
+        seekTo(endTime * 1000L)
+        introSkipped = true
+        _state.update { it.copy(showIntroButton = false) }
+        Log.d("HlsPlayerUtils", "Skipped intro to $endTime seconds")
+    }
+
+    private fun skipOutro(endTime: Long) {
+        seekTo(endTime * 1000L)
+        outroSkipped = true
+        _state.update { it.copy(showOutroButton = false) }
+        Log.d("HlsPlayerUtils", "Skipped outro to $endTime seconds")
     }
 
     private fun requestAudioFocus() {
@@ -538,7 +632,11 @@ object HlsPlayerUtils {
         audioFocusRequest = null
         audioFocusRequested = false
         videoSurface = null
+        currentVideoData = null
+        introSkipped = false
+        outroSkipped = true
         stopPeriodicWatchStateUpdates()
+        stopIntroOutroCheck()
         coroutineScope.cancel()
         _state.update {
             it.copy(
@@ -548,7 +646,9 @@ object HlsPlayerUtils {
                 isReady = false,
                 currentPosition = 0,
                 duration = 0,
-                playbackSpeed = 1f
+                playbackSpeed = 1f,
+                showIntroButton = false,
+                showOutroButton = false
             )
         }
     }

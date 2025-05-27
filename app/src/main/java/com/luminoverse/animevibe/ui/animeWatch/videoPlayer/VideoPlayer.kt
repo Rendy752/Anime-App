@@ -28,14 +28,12 @@ import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
 import com.luminoverse.animevibe.utils.media.HlsPlayerState
-import com.luminoverse.animevibe.utils.handlers.IntroOutroHandler
 
 @OptIn(UnstableApi::class)
 @Composable
 fun VideoPlayer(
     playerView: PlayerView,
     hlsPlayerState: HlsPlayerState,
-    introOutroHandler: IntroOutroHandler?,
     mediaController: MediaControllerCompat?,
     episodeDetailComplement: EpisodeDetailComplement,
     episodes: List<Episode>,
@@ -57,10 +55,10 @@ fun VideoPlayer(
     videoSize: Modifier,
     onPlay: () -> Unit,
     onFastForward: () -> Unit,
-    onRewind: () -> Unit
+    onRewind: () -> Unit,
+    onSkipIntro: () -> Unit,
+    onSkipOutro: () -> Unit
 ) {
-    val showIntro = introOutroHandler?.showIntroButton?.value == true
-    val showOutro = introOutroHandler?.showOutroButton?.value == true
     var isHolding by remember { mutableStateOf(false) }
     var isFromHolding by remember { mutableStateOf(false) }
     var speedUpText by remember { mutableStateOf("1x speed") }
@@ -222,14 +220,12 @@ fun VideoPlayer(
             )
         }
 
-        if (!isPipMode && !isLocked && !shouldShowResumeOverlay && !isShowNextEpisode && (showIntro || showOutro) && errorMessage == null) {
+        if (!isPipMode && !isLocked && !shouldShowResumeOverlay && !isShowNextEpisode && (hlsPlayerState.showIntroButton || hlsPlayerState.showOutroButton) && errorMessage == null) {
             SkipIntroOutroButtons(
-                showIntro = showIntro,
-                showOutro = showOutro,
-                introEnd = episodeDetailComplement.sources.intro?.end ?: 0,
-                outroEnd = episodeDetailComplement.sources.outro?.end ?: 0,
-                onSkipIntro = { introOutroHandler.skipIntro(it) },
-                onSkipOutro = { introOutroHandler.skipOutro(it) },
+                showIntro = hlsPlayerState.showIntroButton,
+                showOutro = hlsPlayerState.showOutroButton,
+                onSkipIntro = onSkipIntro,
+                onSkipOutro = onSkipOutro,
                 modifier = Modifier.align(Alignment.BottomEnd)
             )
         }

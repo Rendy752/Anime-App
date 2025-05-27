@@ -32,11 +32,10 @@ import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
 import com.luminoverse.animevibe.ui.animeWatch.WatchState
 import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
-import com.luminoverse.animevibe.utils.handlers.IntroOutroHandler
 import com.luminoverse.animevibe.utils.media.MediaPlaybackAction
 import com.luminoverse.animevibe.utils.media.MediaPlaybackService
-import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.HlsPlayerState
+import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -76,7 +75,6 @@ fun VideoPlayerSection(
     var isShowResumeOverlay by remember { mutableStateOf(watchState.episodeDetailComplement.data?.lastTimestamp != null) }
     var isShowNextEpisode by remember { mutableStateOf(false) }
     var nextEpisodeName by remember { mutableStateOf("") }
-    var introOutroHandler by remember { mutableStateOf<IntroOutroHandler?>(null) }
     val coroutineScope = rememberCoroutineScope()
 
     val application = context.applicationContext as AnimeApplication
@@ -97,10 +95,6 @@ fun VideoPlayerSection(
                 "VideoPlayerSection",
                 "Player bound to PlayerView, video surface set: ${videoSurface?.javaClass?.simpleName}"
             )
-            introOutroHandler = IntroOutroHandler(
-                player = player,
-                videoData = complement.sources
-            ).apply { start() }
         } else {
             Log.w("VideoPlayerSection", "Player is null")
             onPlayerError("Player not initialized")
@@ -113,7 +107,11 @@ fun VideoPlayerSection(
                 complement = complement,
                 episodes = episodes,
                 query = query,
-                handleSelectedEpisodeServer = { episodeQuery -> handleSelectedEpisodeServer(episodeQuery) },
+                handleSelectedEpisodeServer = { episodeQuery ->
+                    handleSelectedEpisodeServer(
+                        episodeQuery
+                    )
+                },
                 isAutoPlayVideo = isAutoPlayVideo,
                 updateStoredWatchState = { position, duration, screenshot ->
                     updateStoredWatchState(position, duration, screenshot)
@@ -130,7 +128,6 @@ fun VideoPlayerSection(
                     Log.d("VideoPlayerSection", "Player ready")
                     playerView.player = HlsPlayerUtils.getPlayer()
                     HlsPlayerUtils.dispatch(HlsPlayerAction.SetVideoSurface(playerView.videoSurfaceView))
-                    introOutroHandler?.start()
                 }
             )
         )
@@ -158,8 +155,6 @@ fun VideoPlayerSection(
                 mediaPlaybackService = null
                 playerView.player = null
                 HlsPlayerUtils.dispatch(HlsPlayerAction.SetVideoSurface(null))
-                introOutroHandler?.stop()
-                introOutroHandler = null
                 onPlayerError("Service disconnected")
                 isLoading = false
             }
@@ -197,7 +192,10 @@ fun VideoPlayerSection(
 
     LaunchedEffect(episodeSourcesQuery, retryCount) {
         if (retryCount < maxRetries) {
-            Log.d("VideoPlayerSection", "Attempting playback, retry #$retryCount for episode: ${episodeSourcesQuery.id}")
+            Log.d(
+                "VideoPlayerSection",
+                "Attempting playback, retry #$retryCount for episode: ${episodeSourcesQuery.id}"
+            )
             initializePlayer()
         } else {
             onPlayerError("Failed to load video after $maxRetries attempts")
@@ -212,7 +210,10 @@ fun VideoPlayerSection(
             override fun onPlayerError(error: PlaybackException) {
                 if (retryCount < maxRetries) {
                     retryCount++
-                    Log.d("VideoPlayerSection", "Playback error, retrying ($retryCount/$maxRetries)")
+                    Log.d(
+                        "VideoPlayerSection",
+                        "Playback error, retrying ($retryCount/$maxRetries)"
+                    )
                     handleSelectedEpisodeServer(episodeSourcesQuery)
                 } else {
                     onPlayerError("Playback failed: ${error.message}")
@@ -274,8 +275,6 @@ fun VideoPlayerSection(
                     }
                 }
 
-                introOutroHandler?.stop()
-                introOutroHandler = null
                 playerView.player = null
                 HlsPlayerUtils.dispatch(HlsPlayerAction.SetVideoSurface(null))
             } catch (e: IllegalArgumentException) {
@@ -286,9 +285,6 @@ fun VideoPlayerSection(
 
     LaunchedEffect(episodeSourcesQuery) {
         Log.d("VideoPlayerSection", "episodeSourcesQuery changed: ${episodeSourcesQuery.id}")
-        introOutroHandler?.stop()
-        introOutroHandler = null
-
         watchState.episodeDetailComplement.data?.let {
             HlsPlayerUtils.dispatch(
                 HlsPlayerAction.SetMedia(
@@ -388,7 +384,6 @@ fun VideoPlayerSection(
         VideoPlayer(
             playerView = playerView,
             hlsPlayerState = hlsPlayerState,
-            introOutroHandler = introOutroHandler,
             mediaController = mediaControllerCompat,
             episodeDetailComplement = it,
             episodes = episodes,
@@ -410,7 +405,17 @@ fun VideoPlayerSection(
             videoSize = videoSize,
             onPlay = { mediaControllerCompat?.transportControls?.play() },
             onFastForward = { HlsPlayerUtils.dispatch(HlsPlayerAction.FastForward) },
-            onRewind = { HlsPlayerUtils.dispatch(HlsPlayerAction.Rewind) }
+            onRewind = { HlsPlayerUtils.dispatch(HlsPlayerAction.Rewind) },
+            onSkipIntro = {
+                it.sources.intro?.end?.let { endTime ->
+                    HlsPlayerUtils.dispatch(HlsPlayerAction.SkipIntro(endTime))
+                }
+            },
+            onSkipOutro = {
+                it.sources.outro?.end?.let { endTime ->
+                    HlsPlayerUtils.dispatch(HlsPlayerAction.SkipOutro(endTime))
+                }
+            }
         )
     }
 }

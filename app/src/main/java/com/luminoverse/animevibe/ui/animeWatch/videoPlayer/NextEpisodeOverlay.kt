@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.SkipNext
@@ -27,10 +28,11 @@ fun NextEpisodeOverlay(
     onSkipNext: () -> Unit,
     modifier: Modifier
 ) {
-    Box(
-        modifier = modifier.basicContainer(isPrimary = true, innerPadding = PaddingValues(8.dp))
-    ) {
+    Box(modifier = modifier.basicContainer(isPrimary = true, innerPadding = PaddingValues(8.dp))) {
         Column(
+            modifier = Modifier
+                .widthIn(min = 192.dp)
+                .align(Alignment.Center),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {

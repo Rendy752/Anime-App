@@ -13,12 +13,11 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun SkipButton(
     label: String,
-    skipTime: Long,
-    onSkip: (Long) -> Unit,
+    onSkip: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Button(
-        onClick = { onSkip(skipTime) },
+        onClick = onSkip,
         modifier = modifier.padding(end = 80.dp, bottom = 80.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = Color.White.copy(0.5f),

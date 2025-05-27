@@ -7,22 +7,18 @@ import androidx.compose.ui.Modifier
 fun SkipIntroOutroButtons(
     showIntro: Boolean,
     showOutro: Boolean,
-    introEnd: Long,
-    outroEnd: Long,
-    onSkipIntro: (Long) -> Unit,
-    onSkipOutro: (Long) -> Unit,
+    onSkipIntro: () -> Unit,
+    onSkipOutro: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (showIntro) SkipButton(
         label = "Skip Intro",
-        skipTime = introEnd,
         onSkip = onSkipIntro,
         modifier = modifier
     )
 
     if (showOutro) SkipButton(
         label = "Skip Outro",
-        skipTime = outroEnd,
         onSkip = onSkipOutro,
         modifier = modifier
     )
