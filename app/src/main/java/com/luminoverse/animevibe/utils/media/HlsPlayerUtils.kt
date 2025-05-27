@@ -428,8 +428,10 @@ object HlsPlayerUtils {
 
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 if (isPlaying) {
+                    _state.update { it.copy(isPlaying = true) }
                     startPeriodicWatchStateUpdates(updateStoredWatchState)
                 } else {
+                    _state.update { it.copy(isPlaying = false) }
                     stopPeriodicWatchStateUpdates()
                 }
             }
