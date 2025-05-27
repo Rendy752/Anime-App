@@ -63,7 +63,7 @@ fun EpisodeHistoryScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 16.dp)
+                        .padding(horizontal = 8.dp)
                 ) {
                     Column(
                         modifier = Modifier
@@ -119,7 +119,7 @@ fun EpisodeHistoryScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 16.dp)
+                        .padding(horizontal = 8.dp)
                 ) {
                     FilterContent(
                         queryState = historyState.queryState,
