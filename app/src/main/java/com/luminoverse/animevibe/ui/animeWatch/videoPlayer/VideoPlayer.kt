@@ -253,22 +253,24 @@ fun VideoPlayer(
             )
         }
 
-        if (errorMessage != null) {
-            RetryButton(
-                onRetry = { handleSelectedEpisodeServer(episodeSourcesQuery, true) },
-                modifier = Modifier.align(Alignment.Center)
-            )
-        }
+        RetryButton(
+            modifier = Modifier.align(Alignment.Center),
+            isVisible = errorMessage != null,
+            onRetry = { handleSelectedEpisodeServer(episodeSourcesQuery, true) }
+        )
 
-        if (!isPipMode && !isLocked && !shouldShowResumeOverlay && !isShowNextEpisode && (hlsPlayerState.showIntroButton || hlsPlayerState.showOutroButton) && errorMessage == null) {
-            SkipIntroOutroButtons(
-                showIntro = hlsPlayerState.showIntroButton,
-                showOutro = hlsPlayerState.showOutroButton,
-                onSkipIntro = onSkipIntro,
-                onSkipOutro = onSkipOutro,
-                modifier = Modifier.align(Alignment.BottomEnd)
-            )
-        }
+        SkipButton(
+            label = "Skip Intro",
+            isVisible = !isPipMode && !isLocked && !shouldShowResumeOverlay && !isShowNextEpisode && (hlsPlayerState.showIntroButton || hlsPlayerState.showOutroButton) && errorMessage == null && hlsPlayerState.showIntroButton,
+            onSkip = onSkipIntro,
+            modifier = Modifier.align(Alignment.BottomEnd)
+        )
+        SkipButton(
+            label = "Skip Outro",
+            isVisible = !isPipMode && !isLocked && !shouldShowResumeOverlay && !isShowNextEpisode && (hlsPlayerState.showIntroButton || hlsPlayerState.showOutroButton) && errorMessage == null && hlsPlayerState.showOutroButton,
+            onSkip = onSkipOutro,
+            modifier = Modifier.align(Alignment.BottomEnd)
+        )
 
         if (isShowPip && !isPipMode && !isLocked && !shouldShowResumeOverlay && !isShowNextEpisode && errorMessage == null) {
             PipButton(

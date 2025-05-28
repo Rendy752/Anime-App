@@ -1,5 +1,6 @@
 package com.luminoverse.animevibe.ui.animeWatch.videoPlayer
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -13,17 +14,22 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun SkipButton(
     label: String,
+    isVisible: Boolean,
     onSkip: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Button(
-        onClick = onSkip,
-        modifier = modifier.padding(end = 80.dp, bottom = 80.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = Color.White.copy(0.5f),
-            contentColor = Color.Black
-        )
+    AnimatedVisibility(
+        visible = isVisible,
+        modifier = modifier.padding(end = 80.dp, bottom = 80.dp)
     ) {
-        Text(label, fontWeight = FontWeight.Bold)
+        Button(
+            onClick = onSkip,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = Color.White.copy(0.5f),
+                contentColor = Color.Black
+            )
+        ) {
+            Text(label, fontWeight = FontWeight.Bold)
+        }
     }
 }
