@@ -52,7 +52,7 @@ fun VideoPlayerSection(
     isAutoPlayVideo: Boolean,
     episodes: List<Episode>,
     episodeSourcesQuery: EpisodeSourcesQuery,
-    handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
+    handleSelectedEpisodeServer: (EpisodeSourcesQuery, Boolean) -> Unit,
     hlsPlayerState: HlsPlayerState,
     isPipMode: Boolean,
     onEnterPipMode: () -> Unit,
@@ -108,9 +108,7 @@ fun VideoPlayerSection(
                 episodes = episodes,
                 query = query,
                 handleSelectedEpisodeServer = { episodeQuery ->
-                    handleSelectedEpisodeServer(
-                        episodeQuery
-                    )
+                    handleSelectedEpisodeServer(episodeQuery, false)
                 },
                 isAutoPlayVideo = isAutoPlayVideo,
                 updateStoredWatchState = { position, duration, screenshot ->
@@ -214,7 +212,7 @@ fun VideoPlayerSection(
                         "VideoPlayerSection",
                         "Playback error, retrying ($retryCount/$maxRetries)"
                     )
-                    handleSelectedEpisodeServer(episodeSourcesQuery)
+                    handleSelectedEpisodeServer(episodeSourcesQuery, true)
                 } else {
                     onPlayerError("Playback failed: ${error.message}")
                     isLoading = false

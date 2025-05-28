@@ -58,7 +58,12 @@ fun AnimeWatchContent(
                         isAutoPlayVideo = isAutoPlayVideo,
                         episodes = episodeList,
                         episodeSourcesQuery = query,
-                        handleSelectedEpisodeServer = { handleSelectedEpisodeServer(it, true) },
+                        handleSelectedEpisodeServer = { episodeSourcesQuery, isRefresh ->
+                            handleSelectedEpisodeServer(
+                                episodeSourcesQuery,
+                                isRefresh
+                            )
+                        },
                         hlsPlayerState = hlsPlayerState,
                         isPipMode = playerUiState.isPipMode,
                         onEnterPipMode = onEnterPipMode,
@@ -101,7 +106,10 @@ fun AnimeWatchContent(
                                     }
                                 )
                             } else {
-                                InfoContentSection(animeDetail = watchState.animeDetail, navController = navController)
+                                InfoContentSection(
+                                    animeDetail = watchState.animeDetail,
+                                    navController = navController
+                                )
                             }
                         }
                     }
@@ -129,7 +137,10 @@ fun AnimeWatchContent(
                             handleSelectedEpisodeServer = { handleSelectedEpisodeServer(it, false) }
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        InfoContentSection(animeDetail = watchState.animeDetail, navController = navController)
+                        InfoContentSection(
+                            animeDetail = watchState.animeDetail,
+                            navController = navController
+                        )
                     }
                 }
             }

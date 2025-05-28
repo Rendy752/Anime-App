@@ -38,7 +38,7 @@ fun VideoPlayer(
     episodeDetailComplement: EpisodeDetailComplement,
     episodes: List<Episode>,
     episodeSourcesQuery: EpisodeSourcesQuery,
-    handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
+    handleSelectedEpisodeServer: (EpisodeSourcesQuery, Boolean) -> Unit,
     isPipMode: Boolean,
     onEnterPipMode: () -> Unit,
     isFullscreen: Boolean,
@@ -205,7 +205,8 @@ fun VideoPlayer(
                     handleSelectedEpisodeServer(
                         episodeSourcesQuery.copy(
                             id = episodes.find { it.name == nextEpisodeName }?.episodeId ?: ""
-                        )
+                        ),
+                        false
                     )
                     setShowNextEpisode(false)
                 },
@@ -215,7 +216,7 @@ fun VideoPlayer(
 
         if (errorMessage != null) {
             RetryButton(
-                onRetry = { handleSelectedEpisodeServer(episodeSourcesQuery) },
+                onRetry = { handleSelectedEpisodeServer(episodeSourcesQuery, true) },
                 modifier = Modifier.align(Alignment.Center)
             )
         }
