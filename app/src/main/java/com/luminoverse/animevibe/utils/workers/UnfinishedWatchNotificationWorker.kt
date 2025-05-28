@@ -2,6 +2,7 @@ package com.luminoverse.animevibe.utils.workers
 
 import android.app.NotificationManager
 import android.content.Context
+import androidx.core.content.getSystemService
 import androidx.work.*
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.Notification
@@ -14,8 +15,7 @@ import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.net.UnknownHostException
-import java.time.ZonedDateTime
+import java.time.*
 import java.util.concurrent.TimeUnit
 
 class UnfinishedWatchNotificationWorker @AssistedInject constructor(
@@ -28,10 +28,7 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
 
     @AssistedFactory
     interface Factory : ChildWorkerFactory {
-        override fun create(
-            appContext: Context,
-            params: WorkerParameters
-        ): UnfinishedWatchNotificationWorker
+        override fun create(appContext: Context, params: WorkerParameters): UnfinishedWatchNotificationWorker
     }
 
     companion object {
@@ -42,63 +39,46 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
             println("UnfinishedWatchNotificationWorker: $message")
         }
 
-        private fun buildConstraints() = Constraints.Builder()
-            .setRequiresCharging(false)
-            .setRequiresDeviceIdle(false)
-            .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
-            .build()
-
         fun schedule(context: Context) {
-            val notificationManager =
-                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            if (!notificationManager.areNotificationsEnabled()) {
+            val notificationManager = context.getSystemService<NotificationManager>()
+            if (!notificationManager?.areNotificationsEnabled()!!) {
                 log("Notifications disabled, skipping scheduling")
                 return
             }
 
-            val workRequest = PeriodicWorkRequestBuilder<UnfinishedWatchNotificationWorker>(
-                repeatInterval = 12,
-                repeatIntervalTimeUnit = TimeUnit.HOURS
+            // Schedule for 8 AM and 8 PM
+            val currentTime = ZonedDateTime.now(ZoneId.of("Asia/Jakarta"))
+            val times = listOf(
+                currentTime.with(LocalTime.of(8, 0)),
+                currentTime.with(LocalTime.of(20, 0))
             )
-                .setConstraints(buildConstraints())
-                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 10, TimeUnit.MINUTES)
-                .addTag("unfinished_notification")
-                .build()
+            times.forEachIndexed { index, targetTime ->
+                val adjustedTime = if (currentTime.isAfter(targetTime)) targetTime.plusDays(1) else targetTime
+                val delay = Duration.between(currentTime, adjustedTime).toMillis()
 
-            WorkManager.getInstance(context).enqueueUniquePeriodicWork(
-                WORK_NAME,
-                ExistingPeriodicWorkPolicy.KEEP,
-                workRequest
-            )
-            log("Scheduled unfinished notification worker (every 12 hours)")
-        }
+                val workRequest = PeriodicWorkRequestBuilder<UnfinishedWatchNotificationWorker>(
+                    repeatInterval = 1,
+                    repeatIntervalTimeUnit = TimeUnit.DAYS
+                )
+                    .setInitialDelay(delay, TimeUnit.MILLISECONDS)
+                    .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.NOT_REQUIRED).build())
+                    .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 10, TimeUnit.MINUTES)
+                    .addTag("unfinished_notification_$index")
+                    .build()
 
-        fun scheduleNow(context: Context) {
-            val notificationManager =
-                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            if (!notificationManager.areNotificationsEnabled()) {
-                log("Notifications disabled, skipping immediate scheduling")
-                return
+                WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+                    "${WORK_NAME}_$index",
+                    ExistingPeriodicWorkPolicy.KEEP,
+                    workRequest
+                )
+                log("Scheduled unfinished notification worker at $adjustedTime (delay: ${delay}ms)")
             }
-
-            val workRequest = OneTimeWorkRequestBuilder<UnfinishedWatchNotificationWorker>()
-                .setConstraints(buildConstraints())
-                .setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST)
-                .addTag("unfinished_notification")
-                .build()
-
-            WorkManager.getInstance(context).enqueueUniqueWork(
-                WORK_NAME,
-                ExistingWorkPolicy.APPEND_OR_REPLACE,
-                workRequest
-            )
-            log("Scheduled immediate unfinished notification")
         }
     }
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         val attempt = params.runAttemptCount + 1
-        val currentTime = ZonedDateTime.now()
+        val currentTime = ZonedDateTime.now(ZoneId.of("Asia/Jakarta"))
         log("Started at $currentTime, attempt $attempt of $MAX_RETRIES")
 
         if (attempt > MAX_RETRIES) {
@@ -107,43 +87,21 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
         }
 
         try {
-            val notificationManager =
-                context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            if (!notificationManager.areNotificationsEnabled()) {
+            val notificationManager = context.getSystemService<NotificationManager>()
+            if (!notificationManager?.areNotificationsEnabled()!!) {
                 log("Notifications disabled, retrying")
                 return@withContext Result.retry()
             }
-
-            val channel = notificationManager.getNotificationChannel("anime_notifications")
-            if (channel?.importance == NotificationManager.IMPORTANCE_NONE) {
-                log("Notification channel disabled, retrying")
-                return@withContext Result.retry()
-            }
-            log("Channel status: importance=${channel?.importance}, enabled=${channel?.importance != NotificationManager.IMPORTANCE_NONE}")
 
             notificationRepository.cleanOldNotifications()
             log("Cleaned old notifications")
 
             val success = processRandomUnfinishedEpisode()
-            log("Completed successfully at $currentTime, notification sent: $success")
+            log("Completed at $currentTime, notification sent: $success")
             Result.success()
         } catch (e: Exception) {
             log("Error: ${e.javaClass.name}, message=${e.message}, stacktrace=${e.stackTraceToString()}")
-            when {
-                e is UnknownHostException -> {
-                    log("Network error, retrying")
-                    Result.retry()
-                }
-
-                e.message?.contains("TooManyRequestsException") == true -> {
-                    log("Too many requests, retrying")
-                    Result.retry()
-                }
-
-                else -> {
-                    Result.failure(workDataOf("error" to e.message))
-                }
-            }
+            Result.failure(workDataOf("error" to e.message))
         }
     }
 
@@ -156,10 +114,10 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
         }
 
         if (episode == null) {
-            log("No unfinished episode in cache")
+            log("No unfinished episodes found")
             return false
         }
-        log("Found random unfinished episode: ${episode.animeTitle}, malId=${episode.malId}, episode=${episode.number}, remaining episodes=$remainingEpisodes")
+        log("Found unfinished episode: ${episode.animeTitle}, malId=${episode.malId}, episode=${episode.number}, remaining=$remainingEpisodes")
 
         val animeDetail = try {
             animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(episode.malId)
@@ -168,24 +126,15 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
             return false
         }
 
-        if (animeDetail == null) {
-            log("No anime detail for malId=${episode.malId}")
-            return false
-        }
-        log("Found anime detail: episodes=${animeDetail.eps}")
-
-        if (animeDetail.eps != null && episode.number >= animeDetail.eps) {
-            log("Episode ${episode.number} of ${episode.animeTitle} is not unfinished")
+        if (animeDetail == null || animeDetail.eps == null || episode.number >= animeDetail.eps) {
+            log("Invalid anime detail or episode not unfinished for malId=${episode.malId}")
             return false
         }
 
         return sendNotificationForEpisode(episode, remainingEpisodes)
     }
 
-    private suspend fun sendNotificationForEpisode(
-        episode: EpisodeDetailComplement,
-        remainingEpisodes: Int
-    ): Boolean {
+    private suspend fun sendNotificationForEpisode(episode: EpisodeDetailComplement, remainingEpisodes: Int): Boolean {
         val accessId = "${episode.malId}||${episode.id}"
         if (notificationRepository.checkDuplicateNotification(accessId, "UnfinishedWatch")) {
             log("Duplicate notification for ${episode.animeTitle} (accessId=$accessId)")
@@ -195,26 +144,18 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
         val notification = Notification(
             accessId = accessId,
             imageUrl = episode.imageUrl ?: "",
-            contentText = "Hey, left off watching ${episode.animeTitle} Episode ${episode.number}? You have $remainingEpisodes episode${if (remainingEpisodes > 1) "s" else ""} left to enjoy. Dive back in to see what happens next!",
+            contentText = "Continue watching ${episode.animeTitle} Episode ${episode.number}? $remainingEpisodes episode${if (remainingEpisodes > 1) "s" else ""} left!",
             type = "UnfinishedWatch"
         )
         try {
             val savedId = notificationRepository.saveNotification(notification)
-            log("Saved notification for ${episode.animeTitle} (accessId=$accessId, notificationId=$savedId)")
-
+            log("Saved notification: ${episode.animeTitle} (accessId=$accessId, notificationId=$savedId)")
             notificationHandler.sendNotification(context, notification, accessId.hashCode())
-            log("Sent notification for ${episode.animeTitle} (accessId=$accessId, id=${accessId.hashCode()})")
-
-            notificationRepository.getPendingNotifications()
-                .find { it.accessId == accessId && it.type == "UnfinishedWatch" && it.id == savedId }
-                ?.let {
-                    notificationRepository.markNotificationAsSent(it.id)
-                    log("Marked notification as sent (id=${it.id})")
-                }
-                ?: log("No pending notification found for ${episode.animeTitle} (accessId=$accessId)")
+            notificationRepository.markNotificationAsSent(savedId)
+            log("Sent notification for ${episode.animeTitle} (accessId=$accessId)")
             return true
         } catch (e: Exception) {
-            log("Failed to send notification for ${episode.animeTitle} (accessId=$accessId): ${e.message}, stacktrace=${e.stackTraceToString()}")
+            log("Failed to send notification for ${episode.animeTitle}: ${e.message}, stacktrace=${e.stackTraceToString()}")
             return false
         }
     }

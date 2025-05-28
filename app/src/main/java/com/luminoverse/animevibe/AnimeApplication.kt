@@ -49,7 +49,7 @@ class AnimeApplication : Application(), Configuration.Provider {
 
     override val workManagerConfiguration: Configuration
         get() {
-            Log.d("AnimeApplication", "Providing WorkManager configuration with workerFactory")
+            Log.d("AnimeApplication", "Providing WorkManager configuration")
             require(::workerFactory.isInitialized) { "workerFactory not initialized" }
             return Configuration.Builder()
                 .setWorkerFactory(workerFactory)
@@ -60,8 +60,8 @@ class AnimeApplication : Application(), Configuration.Provider {
         super.onCreate()
         notificationHandler.createNotificationChannel(this)
 
-        UnfinishedWatchNotificationWorker.schedule(this)
         BroadcastNotificationWorker.schedule(this)
+        UnfinishedWatchNotificationWorker.schedule(this)
 
         if (BuildConfig.DEBUG) {
             setupSensor()
