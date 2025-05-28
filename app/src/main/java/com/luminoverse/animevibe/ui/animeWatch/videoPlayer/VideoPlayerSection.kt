@@ -287,10 +287,15 @@ fun VideoPlayerSection(
             HlsPlayerUtils.dispatch(
                 HlsPlayerAction.SetMedia(
                     videoData = it.sources,
-                    lastTimestamp = null,
+                    lastTimestamp = it.lastTimestamp,
                     isAutoPlayVideo = isAutoPlayVideo,
-                    onReady = {},
-                    onError = {}
+                    onReady = {
+                        isLoading = false
+                    },
+                    onError = { error ->
+                        onPlayerError(error)
+                        isLoading = false
+                    }
                 )
             )
             setupPlayer(
@@ -310,7 +315,7 @@ fun VideoPlayerSection(
         object : MediaControllerCompat.Callback() {
             override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
                 state?.let {
-                    val isPlaying = state.state == PlaybackStateCompat.STATE_PLAYING
+                    val isPlaying = hlsPlayerState.isPlaying
                     if (isPlaying) {
                         isShowResumeOverlay = false
                     }

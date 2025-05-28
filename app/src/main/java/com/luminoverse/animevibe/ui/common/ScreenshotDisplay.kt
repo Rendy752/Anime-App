@@ -27,7 +27,8 @@ import com.luminoverse.animevibe.models.animeDetailPlaceholder
 fun ScreenshotDisplay(
     modifier: Modifier = Modifier,
     imageUrl: String? = animeDetailPlaceholder.images.webp.large_image_url,
-    screenshot: String? = ""
+    screenshot: String? = "",
+    clickable: Boolean = true
 ) {
     var showDialog by remember { mutableStateOf(false) }
     val screenshotBitmap = screenshot?.let { base64String ->
@@ -47,7 +48,7 @@ fun ScreenshotDisplay(
                 modifier = modifier
                     .aspectRatio(16f / 9f)
                     .clip(RoundedCornerShape(8.dp))
-                    .clickable { showDialog = true }
+                    .clickable(enabled = clickable) { showDialog = true }
             )
         }
 
@@ -58,7 +59,7 @@ fun ScreenshotDisplay(
                 modifier = modifier
                     .aspectRatio(16f / 9f)
                     .clip(RoundedCornerShape(8.dp)),
-                isClickable = true
+                isClickable = clickable
             )
         }
 

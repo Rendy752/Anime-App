@@ -102,7 +102,7 @@ object HlsPlayerUtils {
     private val _state = MutableStateFlow(HlsPlayerState())
     val state: StateFlow<HlsPlayerState> = _state.asStateFlow()
 
-    private const val WATCH_STATE_UPDATE_INTERVAL_MS = 5_000L
+    private const val WATCH_STATE_UPDATE_INTERVAL_MS = 1_000L
     private const val INTRO_OUTRO_CHECK_INTERVAL_MS = 1_000L
 
     @OptIn(UnstableApi::class)
