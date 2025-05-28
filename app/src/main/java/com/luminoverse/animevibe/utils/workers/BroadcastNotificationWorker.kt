@@ -215,9 +215,8 @@ class BroadcastNotificationWorker @AssistedInject constructor(
             log("Anime: ${anime.title} (malId=${anime.mal_id}), broadcastTime=$broadcastTime, timeUntilBroadcast=$timeUntilBroadcast minutes")
 
             if (timeUntilBroadcast in 0..NOTIFICATION_WINDOW_MINUTES) {
-                sendBroadcastNotification(anime) // Send immediately if within window
+                sendBroadcastNotification(anime)
             } else if (timeUntilBroadcast > NOTIFICATION_WINDOW_MINUTES) {
-                // Store notification and schedule for later
                 val accessId = anime.mal_id.toString()
                 if (!notificationRepository.checkDuplicateNotification(accessId, "Broadcast")) {
                     val notification = Notification(
@@ -229,7 +228,6 @@ class BroadcastNotificationWorker @AssistedInject constructor(
                     val savedId = notificationRepository.saveNotification(notification)
                     log("Saved notification for later: ${anime.title} (accessId=$accessId, notificationId=$savedId)")
 
-                    // Schedule notification delivery
                     scheduleNotificationDelivery(context, notification, accessId, broadcastTime)
                 }
             } else {

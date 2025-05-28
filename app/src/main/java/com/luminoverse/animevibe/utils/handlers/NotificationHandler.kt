@@ -59,10 +59,12 @@ class NotificationHandler @Inject constructor() {
                 actionDetail(notification.accessId),
                 actionClose(notification.accessId)
             )
+
             "UnfinishedWatch" -> listOf(
                 actionWatch(notification.accessId),
                 actionClose(notification.accessId)
             )
+
             else -> {
                 log("Invalid notification type: ${notification.type} for accessId: ${notification.accessId}")
                 emptyList()
@@ -81,7 +83,7 @@ class NotificationHandler @Inject constructor() {
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setOngoing(notification.type == "UnfinishedWatch")
-            .applyImage(context, notification.imageUrl)
+            .applyImage(context, notification.type, notification.imageUrl)
             .applyActions(context, actions)
 
         when (notification.type) {
@@ -112,6 +114,7 @@ class NotificationHandler @Inject constructor() {
                     "animevibe://anime/detail/$accessId".toUri()
                 }
             }
+
             else -> "animevibe://anime/detail/$accessId".toUri()
         }
         val intent = Intent(Intent.ACTION_VIEW, uri)
@@ -165,6 +168,7 @@ class NotificationHandler @Inject constructor() {
                         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                     )
                 }
+
                 "ACTION_OPEN_EPISODE" -> {
                     val parts = action.extraValue.split("||")
                     if (parts.size == 2) {
@@ -183,10 +187,12 @@ class NotificationHandler @Inject constructor() {
                         null
                     }
                 }
+
                 "ACTION_CLOSE_NOTIFICATION" -> PendingIntent.getBroadcast(
                     context, action.extraValue.hashCode(), intent,
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
+
                 else -> PendingIntent.getActivity(
                     context, action.extraValue.hashCode(), intent,
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
@@ -202,6 +208,7 @@ class NotificationHandler @Inject constructor() {
 
     private suspend fun NotificationCompat.Builder.applyImage(
         context: Context,
+        type: String,
         imageUrl: String?
     ): NotificationCompat.Builder = apply {
         imageUrl?.let {
@@ -212,8 +219,14 @@ class NotificationHandler @Inject constructor() {
                     .build()
                 val result = context.imageLoader.execute(request)
                 val bitmap = result.drawable?.toBitmap()
-                bitmap?.let { bmp -> setLargeIcon(bmp) }
-                    ?: log("Failed to load bitmap for $imageUrl")
+                bitmap?.let { bmp ->
+                    setLargeIcon(bmp)
+                    if (type == "Broadcast") setStyle(
+                        NotificationCompat.BigPictureStyle()
+                            .bigPicture(bmp)
+                            .bigLargeIcon(null as android.graphics.Bitmap?)
+                    )
+                }
             } catch (e: Exception) {
                 log("Error loading image: $imageUrl, error=${e.message}")
             }
