@@ -238,7 +238,7 @@ fun AnimeRecommendationsScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             MessageDisplay(
-                                recommendationsState.animeRecommendations.message
+                                message = recommendationsState.animeRecommendations.message
                                     ?: "Error Loading Data"
                             )
                         }

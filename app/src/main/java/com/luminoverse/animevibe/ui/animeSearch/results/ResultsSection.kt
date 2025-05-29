@@ -49,7 +49,7 @@ fun ResultsSection(
             is Resource.Success -> {
                 if (animeSearchResults.data.data.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        MessageDisplay("No Results Found")
+                        MessageDisplay(message = "No Results Found")
                     }
                 } else {
                     LazyColumn(
@@ -78,7 +78,7 @@ fun ResultsSection(
 
             is Resource.Error -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    MessageDisplay("Error Loading Data")
+                    MessageDisplay(message = "Error Loading Data")
                 }
             }
         }

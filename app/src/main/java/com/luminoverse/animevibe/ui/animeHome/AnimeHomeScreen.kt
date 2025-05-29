@@ -211,11 +211,11 @@ fun AnimeHomeScreen(
                             if (mainState.isConnected) Box(
                                 modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center
-                            ) { MessageDisplay("Error Loading Data") }
+                            ) { MessageDisplay(message = "Error Loading Data") }
                             else Box(
                                 modifier = Modifier.fillMaxSize(),
                                 contentAlignment = Alignment.Center
-                            ) { MessageDisplay("No internet connection") }
+                            ) { MessageDisplay(message = "No internet connection") }
                         }
                     }
                     LimitAndPaginationSection(

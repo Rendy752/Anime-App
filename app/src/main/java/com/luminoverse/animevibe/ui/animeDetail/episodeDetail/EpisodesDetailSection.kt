@@ -168,7 +168,10 @@ fun EpisodesDetailSection(
                         ) {
                             if (filteredEpisodes.isEmpty() && episodeFilterState.episodeQuery.title.isNotEmpty()) {
                                 item {
-                                    MessageDisplay(message = "No episodes found")
+                                    MessageDisplay(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        message = "No episodes found"
+                                    )
                                 }
                             } else {
                                 items(filteredEpisodes) { episode ->
@@ -186,7 +189,10 @@ fun EpisodesDetailSection(
                             }
                         }
                     } else {
-                        MessageDisplay(message = "No episodes found")
+                        MessageDisplay(
+                            modifier = Modifier.fillMaxWidth(),
+                            message = "No episodes found"
+                        )
                     }
                 }
             }
