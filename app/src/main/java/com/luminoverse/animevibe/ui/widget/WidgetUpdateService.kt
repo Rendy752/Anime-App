@@ -9,6 +9,7 @@ import android.graphics.BitmapFactory
 import android.os.IBinder
 import android.util.Base64
 import android.util.Log
+import android.view.View
 import android.widget.RemoteViews
 import androidx.core.graphics.drawable.toBitmap
 import androidx.core.net.toUri
@@ -82,6 +83,16 @@ class WidgetUpdateService : Service() {
         val appWidgetManager = AppWidgetManager.getInstance(this)
         val views = RemoteViews(packageName, R.layout.widget_latest_watched)
 
+        val refreshIntent = Intent(this, WidgetUpdateService::class.java).apply {
+            action = ACTION_REFRESH
+            putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds)
+        }
+        val refreshPendingIntent = PendingIntent.getService(
+            this,
+            1,
+            refreshIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
         try {
             val episode = repository.getCachedLatestWatchedEpisodeDetailComplement()
             Log.d("WidgetUpdateService", "Episode fetched: $episode")
@@ -97,6 +108,7 @@ class WidgetUpdateService : Service() {
                     "${TimeUtils.formatTimestamp(timestamp)}$durationText"
                 } ?: ""
                 views.setTextViewText(R.id.widget_timestamp, timestampText)
+                views.setViewVisibility(R.id.widget_timestamp_layout, View.VISIBLE)
 
                 val lastWatchedText =
                     episode.lastWatched?.let { "~ ${TimeUtils.formatDateToAgo(it)}" } ?: ""
@@ -144,71 +156,13 @@ class WidgetUpdateService : Service() {
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                 )
                 views.setOnClickPendingIntent(R.id.widget_root_layout, pendingIntent)
-
-                val refreshIntent = Intent(this, WidgetUpdateService::class.java).apply {
-                    action = ACTION_REFRESH
-                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds)
-                }
-                val refreshPendingIntent = PendingIntent.getService(
-                    this,
-                    1,
-                    refreshIntent,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                )
                 views.setOnClickPendingIntent(R.id.widget_refresh_button, refreshPendingIntent)
             } else {
-                views.setTextViewText(R.id.widget_episode_title, "No recently watched episodes")
-                views.setTextViewText(R.id.widget_timestamp, "")
-                views.setTextViewText(R.id.widget_last_watched, "")
-                views.setProgressBar(R.id.widget_progress_bar, 100, 0, false)
-                views.setTextViewText(R.id.widget_progress_text, "0%")
-                views.setImageViewResource(
-                    R.id.widget_episode_image,
-                    R.drawable.ic_video_black_24dp
-                )
-                views.setInt(
-                    R.id.widget_root_layout,
-                    "setBackgroundResource",
-                    R.drawable.widget_background_default
-                )
-
-                val refreshIntent = Intent(this, WidgetUpdateService::class.java).apply {
-                    action = ACTION_REFRESH
-                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds)
-                }
-                val refreshPendingIntent = PendingIntent.getService(
-                    this,
-                    1,
-                    refreshIntent,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                )
-                views.setOnClickPendingIntent(R.id.widget_refresh_button, refreshPendingIntent)
+                setErrorWidgetLayout(views, "No recently watched episodes", refreshPendingIntent)
             }
         } catch (e: Exception) {
             Log.e("WidgetUpdateService", "Error updating widget", e)
-            views.setTextViewText(R.id.widget_episode_title, "Error loading episode")
-            views.setTextViewText(R.id.widget_timestamp, "")
-            views.setTextViewText(R.id.widget_last_watched, "")
-            views.setProgressBar(R.id.widget_progress_bar, 100, 0, false)
-            views.setTextViewText(R.id.widget_progress_text, "0%")
-            views.setImageViewResource(R.id.widget_episode_image, R.drawable.ic_video_black_24dp)
-            views.setInt(
-                R.id.widget_root_layout,
-                "setBackgroundResource",
-                R.drawable.widget_background_default
-            )
-
-            val refreshIntent = Intent(this, WidgetUpdateService::class.java).apply {
-                action = ACTION_REFRESH
-                putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds)
-            }
-            val refreshPendingIntent = PendingIntent.getService(
-                this,
-                1,
-                refreshIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            views.setOnClickPendingIntent(R.id.widget_refresh_button, refreshPendingIntent)
+            setErrorWidgetLayout(views, "Error updating widget", refreshPendingIntent)
         }
 
         appWidgetIds.forEach { appWidgetId ->
@@ -242,6 +196,26 @@ class WidgetUpdateService : Service() {
         }
 
         return null
+    }
+
+    private fun setErrorWidgetLayout(views: RemoteViews, episodeTitle: String, refreshPendingIntent: PendingIntent) {
+        views.setTextViewText(R.id.widget_episode_title, episodeTitle)
+        views.setViewVisibility(R.id.widget_timestamp_layout, View.GONE)
+        views.setTextViewText(R.id.widget_timestamp, "")
+        views.setTextViewText(R.id.widget_last_watched, "")
+        views.setProgressBar(R.id.widget_progress_bar, 100, 0, false)
+        views.setTextViewText(R.id.widget_progress_text, "0%")
+        views.setImageViewResource(
+            R.id.widget_episode_image,
+            R.drawable.ic_video_black_24dp
+        )
+        views.setInt(
+            R.id.widget_root_layout,
+            "setBackgroundResource",
+            R.drawable.widget_background_default
+        )
+
+        views.setOnClickPendingIntent(R.id.widget_root_layout, refreshPendingIntent)
     }
 
     override fun onDestroy() {
