@@ -41,6 +41,10 @@ class AnimeEpisodeDetailRepository(
     suspend fun getCachedAnimeDetailById(id: Int): AnimeDetail? =
         animeDetailDao.getAnimeDetailById(id)
 
+    suspend fun deleteAnimeDetailById(id: Int) {
+        animeDetailDao.deleteAnimeDetailById(id)
+    }
+
     private suspend fun isDataNeedUpdate(data: AnimeDetail): Boolean {
         val complement = getCachedAnimeDetailComplementByMalId(data.mal_id)
         return data.airing && TimeUtils.isEpisodeAreUpToDate(
@@ -108,21 +112,6 @@ class AnimeEpisodeDetailRepository(
     suspend fun getEpisodes(id: String): Resource<EpisodesResponse> =
         ResponseHandler.handleCommonResponse(safeApiCall { runwayAPI.getEpisodes(id) })
 
-    suspend fun getPaginatedEpisodeHistory(queryState: EpisodeHistoryQueryState): Resource<List<EpisodeDetailComplement>> {
-        return try {
-            Resource.Success(
-                episodeDetailComplementDao.getPaginatedEpisodeHistory(
-                    isFavorite = queryState.isFavorite,
-                    sortBy = queryState.sortBy.name,
-                    limit = queryState.limit,
-                    offset = (queryState.page - 1) * queryState.limit
-                )
-            )
-        } catch (e: Exception) {
-            Resource.Error("Failed to fetch episode history: ${e.message}")
-        }
-    }
-
     suspend fun getAllEpisodeHistory(queryState: EpisodeHistoryQueryState): Resource<List<EpisodeDetailComplement>> {
         return try {
             Resource.Success(
@@ -133,16 +122,6 @@ class AnimeEpisodeDetailRepository(
             )
         } catch (e: Exception) {
             Resource.Error("Failed to fetch all episode history: ${e.message}")
-        }
-    }
-
-    suspend fun getEpisodeHistoryCount(isFavorite: Boolean?): Resource<Int> {
-        return try {
-            Resource.Success(
-                episodeDetailComplementDao.getEpisodeHistoryCount(isFavorite)
-            )
-        } catch (e: Exception) {
-            Resource.Error("Failed to fetch episode history count: ${e.message}")
         }
     }
 

@@ -77,7 +77,6 @@ interface EpisodeDetailComplementDao {
                     WHEN 'AnimeTitle' THEN animeTitle
                     WHEN 'EpisodeTitle' THEN episodeTitle
                     WHEN 'EpisodeNumber' THEN number
-                    WHEN 'UpdatedAt' THEN updatedAt
                 END DESC,
                 episodeTitle ASC
         """
@@ -86,15 +85,4 @@ interface EpisodeDetailComplementDao {
         isFavorite: Boolean?,
         sortBy: String
     ): List<EpisodeDetailComplement>
-
-    @Query(
-        """
-            SELECT COUNT(*) FROM episode_detail_complement
-            WHERE lastWatched IS NOT NULL AND lastTimestamp IS NOT NULL
-            AND (:isFavorite IS NULL OR isFavorite = :isFavorite)
-        """
-    )
-    suspend fun getEpisodeHistoryCount(
-        isFavorite: Boolean?
-    ): Int
 }

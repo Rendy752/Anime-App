@@ -23,7 +23,7 @@ fun HistoryContent(
     state: EpisodeHistoryState,
     onAction: (EpisodeHistoryAction) -> Unit
 ) {
-    when (val results = state.episodeHistoryResults) {
+    when (val results = state.filteredEpisodeHistoryResults) {
         is Resource.Loading -> {
             LazyColumn(
                 modifier = modifier,
@@ -38,7 +38,7 @@ fun HistoryContent(
                 Box(
                     modifier = modifier,
                     contentAlignment = Alignment.Center
-                ) { MessageDisplay("No animes or episodes found") }
+                ) { MessageDisplay(message = "No animes or episodes found") }
             } else {
                 LazyColumn(
                     state = listState,
@@ -97,7 +97,7 @@ fun HistoryContent(
             Box(
                 modifier = modifier,
                 contentAlignment = Alignment.Center
-            ) { MessageDisplay(results.message ?: "Error loading history") }
+            ) { MessageDisplay(message = results.message ?: "Error loading history") }
         }
     }
 }
