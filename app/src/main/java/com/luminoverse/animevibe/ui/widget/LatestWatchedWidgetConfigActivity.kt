@@ -5,6 +5,10 @@ import android.appwidget.AppWidgetManager
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
+import com.luminoverse.animevibe.utils.workers.WidgetUpdateWorker
 
 class LatestWatchedWidgetConfigActivity : Activity() {
 
@@ -25,10 +29,10 @@ class LatestWatchedWidgetConfigActivity : Activity() {
             return
         }
 
-        val intent = Intent(this, WidgetUpdateService::class.java).apply {
-            putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, intArrayOf(appWidgetId))
-        }
-        startService(intent)
+        val workRequest = OneTimeWorkRequestBuilder<WidgetUpdateWorker>()
+            .setInputData(workDataOf(WidgetUpdateWorker.KEY_APP_WIDGET_IDS to intArrayOf(appWidgetId)))
+            .build()
+        WorkManager.getInstance(this).enqueue(workRequest)
 
         val resultValue = Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId)
         setResult(RESULT_OK, resultValue)

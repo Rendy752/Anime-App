@@ -3,8 +3,11 @@ package com.luminoverse.animevibe.ui.widget
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.Context
-import android.content.Intent
 import android.util.Log
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
+import com.luminoverse.animevibe.utils.workers.WidgetUpdateWorker
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -15,11 +18,14 @@ class LatestWatchedWidgetProvider : AppWidgetProvider() {
         appWidgetManager: AppWidgetManager,
         appWidgetIds: IntArray
     ) {
-        Log.d("LatestWatchedWidgetProvider", "onUpdate: Updating widgets ${appWidgetIds.joinToString()}")
-        val intent = Intent(context, WidgetUpdateService::class.java).apply {
-            putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds)
-        }
-        context.startService(intent)
+        Log.d(
+            "LatestWatchedWidgetProvider",
+            "onUpdate: Updating widgets ${appWidgetIds.joinToString()}"
+        )
+        val workRequest = OneTimeWorkRequestBuilder<WidgetUpdateWorker>()
+            .setInputData(workDataOf(WidgetUpdateWorker.KEY_APP_WIDGET_IDS to appWidgetIds))
+            .build()
+        WorkManager.getInstance(context).enqueue(workRequest)
     }
 
     override fun onEnabled(context: Context?) {
@@ -28,7 +34,5 @@ class LatestWatchedWidgetProvider : AppWidgetProvider() {
 
     override fun onDisabled(context: Context?) {
         Log.d("LatestWatchedWidgetProvider", "onDisabled: Last widget removed")
-        val intent = Intent(context, WidgetUpdateService::class.java)
-        context?.stopService(intent)
     }
 }

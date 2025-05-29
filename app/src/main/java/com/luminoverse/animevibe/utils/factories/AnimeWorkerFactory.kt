@@ -4,9 +4,6 @@ import android.content.Context
 import androidx.work.ListenableWorker
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
-import com.luminoverse.animevibe.utils.workers.BroadcastNotificationWorker
-import com.luminoverse.animevibe.utils.workers.NotificationDeliveryWorker
-import com.luminoverse.animevibe.utils.workers.UnfinishedWatchNotificationWorker
 import javax.inject.Inject
 import javax.inject.Provider
 
@@ -15,9 +12,7 @@ interface ChildWorkerFactory {
 }
 
 class AnimeWorkerFactory @Inject constructor(
-    private val notificationWorkerFactory: Provider<UnfinishedWatchNotificationWorker.Factory>,
-    private val broadcastNotificationWorkerFactory: Provider<BroadcastNotificationWorker.Factory>,
-    private val notificationDeliveryWorkerFactory: Provider<NotificationDeliveryWorker.Factory>
+    private val workerFactories: Map<String, @JvmSuppressWildcards Provider<ChildWorkerFactory>>
 ) : WorkerFactory() {
 
     override fun createWorker(
@@ -25,20 +20,13 @@ class AnimeWorkerFactory @Inject constructor(
         workerClassName: String,
         workerParameters: WorkerParameters
     ): ListenableWorker? {
-        return when (workerClassName) {
-            UnfinishedWatchNotificationWorker::class.java.name -> {
-                notificationWorkerFactory.get().create(appContext, workerParameters)
-            }
-
-            BroadcastNotificationWorker::class.java.name -> {
-                broadcastNotificationWorkerFactory.get().create(appContext, workerParameters)
-            }
-
-            NotificationDeliveryWorker::class.java.name -> {
-                notificationDeliveryWorkerFactory.get().create(appContext, workerParameters)
-            }
-
-            else -> null
+        val factoryProvider = workerFactories[workerClassName]
+        return try {
+            factoryProvider?.get()?.create(appContext, workerParameters)
+                ?: throw IllegalArgumentException("Unknown worker class: $workerClassName")
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
         }
     }
 }

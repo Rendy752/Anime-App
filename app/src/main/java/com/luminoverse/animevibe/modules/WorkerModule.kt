@@ -2,8 +2,9 @@ package com.luminoverse.animevibe.modules
 
 import com.luminoverse.animevibe.utils.workers.BroadcastNotificationWorker
 import com.luminoverse.animevibe.utils.workers.UnfinishedWatchNotificationWorker
-import com.luminoverse.animevibe.utils.factories.ChildWorkerFactory
 import com.luminoverse.animevibe.utils.workers.NotificationDeliveryWorker
+import com.luminoverse.animevibe.utils.workers.WidgetUpdateWorker
+import com.luminoverse.animevibe.utils.factories.ChildWorkerFactory
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -38,5 +39,13 @@ abstract class WorkerModule {
     @Singleton
     abstract fun bindNotificationDeliveryWorkerFactory(
         factory: NotificationDeliveryWorker.Factory
+    ): ChildWorkerFactory
+
+    @Binds
+    @IntoMap
+    @StringKey("com.luminoverse.animevibe.utils.workers.WidgetUpdateWorker")
+    @Singleton
+    abstract fun bindWidgetUpdateWorkerFactory(
+        factory: WidgetUpdateWorker.Factory
     ): ChildWorkerFactory
 }

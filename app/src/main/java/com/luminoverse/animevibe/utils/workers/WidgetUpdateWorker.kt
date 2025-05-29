@@ -1,101 +1,90 @@
-package com.luminoverse.animevibe.ui.widget
+package com.luminoverse.animevibe.utils.workers
 
 import android.app.PendingIntent
-import android.app.Service
 import android.appwidget.AppWidgetManager
+import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.os.IBinder
 import android.util.Base64
 import android.util.Log
 import android.view.View
 import android.widget.RemoteViews
 import androidx.core.graphics.drawable.toBitmap
 import androidx.core.net.toUri
+import androidx.work.CoroutineWorker
+import androidx.work.WorkerParameters
 import coil.ImageLoader
 import coil.request.ImageRequest
 import com.luminoverse.animevibe.R
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.repository.AnimeEpisodeDetailRepository
 import com.luminoverse.animevibe.utils.TimeUtils
-import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.CoroutineScope
+import com.luminoverse.animevibe.utils.factories.ChildWorkerFactory
+import com.luminoverse.animevibe.utils.receivers.WidgetRefreshReceiver
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedFactory
+import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.net.URLEncoder
-import javax.inject.Inject
 import kotlin.math.roundToInt
 
-@AndroidEntryPoint
-class WidgetUpdateService : Service() {
+class WidgetUpdateWorker @AssistedInject constructor(
+    @Assisted private val context: Context,
+    @Assisted private val params: WorkerParameters,
+    private val repository: AnimeEpisodeDetailRepository
+) : CoroutineWorker(context, params) {
 
-    @Inject
-    lateinit var repository: AnimeEpisodeDetailRepository
-    private val coroutineScope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-
-    companion object {
-        const val ACTION_REFRESH = "com.luminoverse.animevibe.REFRESH_WIDGET"
+    @AssistedFactory
+    interface Factory : ChildWorkerFactory {
+        override fun create(appContext: Context, params: WorkerParameters): WidgetUpdateWorker
     }
 
-    override fun onBind(intent: Intent?): IBinder? = null
+    companion object {
+        const val KEY_APP_WIDGET_IDS = "app_widget_ids"
+        const val ACTION_REFRESH = "com.luminoverse.animevibe.REFRESH_WIDGET"
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (!::repository.isInitialized) {
-            Log.e("WidgetUpdateService", "Repository not injected")
-            stopSelf()
-            return START_NOT_STICKY
+        private fun log(message: String) {
+            Log.d("WidgetUpdateWorker", message)
         }
+    }
 
-        val appWidgetIds = intent?.getIntArrayExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS)
-        if (appWidgetIds != null) {
-            coroutineScope.launch {
-                Log.d("WidgetUpdateService", "Updating widgets: ${appWidgetIds.joinToString()}")
-                updateWidgets(appWidgetIds)
+    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
+        try {
+            val appWidgetIds = inputData.getIntArray(KEY_APP_WIDGET_IDS)
+            if (appWidgetIds == null || appWidgetIds.isEmpty()) {
+                log("No appWidgetIds provided")
+                return@withContext Result.failure()
             }
-        } else if (intent?.action == ACTION_REFRESH) {
-            val widgetIds = AppWidgetManager.getInstance(this).getAppWidgetIds(
-                android.content.ComponentName(this, LatestWatchedWidgetProvider::class.java)
-            )
-            if (widgetIds.isNotEmpty()) {
-                coroutineScope.launch {
-                    Log.d(
-                        "WidgetUpdateService",
-                        "Refresh action triggered for widgets: ${widgetIds.joinToString()}"
-                    )
-                    updateWidgets(widgetIds)
-                }
-            } else {
-                Log.w("WidgetUpdateService", "No widget IDs found for refresh")
-                stopSelf()
-            }
-        } else {
-            Log.w("WidgetUpdateService", "No appWidgetIds or valid action provided")
-            stopSelf()
+
+            log("Updating widgets: ${appWidgetIds.joinToString()}")
+            updateWidgets(appWidgetIds)
+            Result.success()
+        } catch (e: Exception) {
+            log("Error updating widgets: ${e.message}")
+            Result.failure()
         }
-        return START_NOT_STICKY
     }
 
     private suspend fun updateWidgets(appWidgetIds: IntArray) {
-        Log.d("WidgetUpdateService", "Fetching latest episode")
-        val appWidgetManager = AppWidgetManager.getInstance(this)
-        val views = RemoteViews(packageName, R.layout.widget_latest_watched)
+        val appWidgetManager = AppWidgetManager.getInstance(applicationContext)
+        val views = RemoteViews(applicationContext.packageName, R.layout.widget_latest_watched)
 
-        val refreshIntent = Intent(this, WidgetUpdateService::class.java).apply {
+        val refreshIntent = Intent(applicationContext, WidgetRefreshReceiver::class.java).apply {
             action = ACTION_REFRESH
-            putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, appWidgetIds)
+            putExtra(KEY_APP_WIDGET_IDS, appWidgetIds)
         }
-        val refreshPendingIntent = PendingIntent.getService(
-            this,
+        val refreshPendingIntent = PendingIntent.getBroadcast(
+            applicationContext,
             1,
             refreshIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+
         try {
             val episode = repository.getCachedLatestWatchedEpisodeDetailComplement()
-            Log.d("WidgetUpdateService", "Episode fetched: $episode")
+            log("Episode fetched: $episode")
             if (episode != null) {
                 views.setTextViewText(
                     R.id.widget_episode_title,
@@ -116,10 +105,7 @@ class WidgetUpdateService : Service() {
 
                 val duration = episode.duration?.toFloat() ?: (24 * 60f)
                 val progress = episode.lastTimestamp?.let { timestamp ->
-                    if (timestamp < duration) (timestamp.toFloat() / duration).coerceIn(
-                        0f,
-                        1f
-                    ) else 1f
+                    if (timestamp < duration) (timestamp.toFloat() / duration).coerceIn(0f, 1f) else 1f
                 } ?: 0f
                 val percentage = (progress * 100).roundToInt()
                 views.setProgressBar(R.id.widget_progress_bar, 100, percentage, false)
@@ -129,17 +115,14 @@ class WidgetUpdateService : Service() {
                 if (bitmap != null) {
                     views.setImageViewBitmap(R.id.widget_episode_image, bitmap)
                 } else {
-                    views.setImageViewResource(
-                        R.id.widget_episode_image,
-                        R.drawable.ic_video_black_24dp
-                    )
+                    views.setImageViewResource(R.id.widget_episode_image, R.drawable.ic_video_black_24dp)
                 }
 
                 val backgroundRes = if (episode.isFiller) {
-                    Log.d("WidgetUpdateService", "Using filler gradient background")
+                    log("Using filler gradient background")
                     R.drawable.widget_background_filler
                 } else {
-                    Log.d("WidgetUpdateService", "Using default gradient background")
+                    log("Using default gradient background")
                     R.drawable.widget_background_default
                 }
                 views.setInt(R.id.widget_root_layout, "setBackgroundResource", backgroundRes)
@@ -150,7 +133,7 @@ class WidgetUpdateService : Service() {
                     data = "animevibe://anime/watch/${encodedMalId}/${encodedEpisodeId}".toUri()
                 }
                 val pendingIntent = PendingIntent.getActivity(
-                    this,
+                    applicationContext,
                     0,
                     clickIntent,
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
@@ -161,7 +144,7 @@ class WidgetUpdateService : Service() {
                 setErrorWidgetLayout(views, "No recently watched episodes", refreshPendingIntent)
             }
         } catch (e: Exception) {
-            Log.e("WidgetUpdateService", "Error updating widget", e)
+            log("Error updating widget: ${e.message}")
             setErrorWidgetLayout(views, "Error updating widget", refreshPendingIntent)
         }
 
@@ -176,50 +159,40 @@ class WidgetUpdateService : Service() {
                 val decodedBytes = Base64.decode(base64String, Base64.DEFAULT)
                 return BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
             } catch (e: Exception) {
-                Log.e("WidgetUpdateService", "Failed to decode Base64 screenshot", e)
+                log("Failed to decode Base64 screenshot: ${e.message}")
             }
         }
 
         episode.imageUrl?.let { url ->
             try {
-                val imageLoader = ImageLoader.Builder(this)
-                    .build()
-                val request = ImageRequest.Builder(this)
+                val imageLoader = ImageLoader.Builder(applicationContext).build()
+                val request = ImageRequest.Builder(applicationContext)
                     .data(url)
                     .size(80, 45)
                     .build()
                 val result = imageLoader.execute(request)
                 return result.drawable?.toBitmap()
             } catch (e: Exception) {
-                Log.e("WidgetUpdateService", "Failed to load image with Coil", e)
+                log("Failed to load image with Coil: ${e.message}")
             }
         }
 
         return null
     }
 
-    private fun setErrorWidgetLayout(views: RemoteViews, episodeTitle: String, refreshPendingIntent: PendingIntent) {
+    private fun setErrorWidgetLayout(
+        views: RemoteViews,
+        episodeTitle: String,
+        refreshPendingIntent: PendingIntent
+    ) {
         views.setTextViewText(R.id.widget_episode_title, episodeTitle)
         views.setViewVisibility(R.id.widget_timestamp_layout, View.GONE)
         views.setTextViewText(R.id.widget_timestamp, "")
         views.setTextViewText(R.id.widget_last_watched, "")
         views.setProgressBar(R.id.widget_progress_bar, 100, 0, false)
         views.setTextViewText(R.id.widget_progress_text, "0%")
-        views.setImageViewResource(
-            R.id.widget_episode_image,
-            R.drawable.ic_video_black_24dp
-        )
-        views.setInt(
-            R.id.widget_root_layout,
-            "setBackgroundResource",
-            R.drawable.widget_background_default
-        )
-
+        views.setImageViewResource(R.id.widget_episode_image, R.drawable.ic_video_black_24dp)
+        views.setInt(R.id.widget_root_layout, "setBackgroundResource", R.drawable.widget_background_default)
         views.setOnClickPendingIntent(R.id.widget_root_layout, refreshPendingIntent)
-    }
-
-    override fun onDestroy() {
-        coroutineScope.cancel()
-        super.onDestroy()
     }
 }
