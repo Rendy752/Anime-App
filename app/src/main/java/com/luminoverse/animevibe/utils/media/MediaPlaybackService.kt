@@ -484,6 +484,9 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         stopSelf()
     }
 
+    fun getNotificationId(): Int = NOTIFICATION_ID
+    fun isForeground(): Boolean = isForeground.get() && HlsPlayerUtils.state.value.isReady
+
     private fun queryForegroundStatus() {
         val isForegroundValue = isForeground.get() && HlsPlayerUtils.state.value.isReady
         _state.update { it.copy(isForeground = isForegroundValue) }

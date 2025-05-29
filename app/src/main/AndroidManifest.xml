@@ -67,11 +67,21 @@
             </intent-filter>
         </activity>
 
-        <receiver android:name=".utils.receivers.NotificationReceiver" android:exported="false">
+        <receiver
+            android:name=".utils.receivers.NotificationReceiver"
+            android:exported="false">
             <intent-filter>
                 <action android:name="ACTION_OPEN_DETAIL" />
                 <action android:name="ACTION_OPEN_EPISODE" />
                 <action android:name="ACTION_CLOSE_NOTIFICATION" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name=".utils.receivers.ServiceRestartReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.luminoverse.animevibe.RESTART_MEDIA_SERVICE" />
             </intent-filter>
         </receiver>
 
@@ -122,9 +132,9 @@
 
         <receiver
             android:name=".ui.widget.LatestWatchedWidgetProvider"
-            android:label="@string/widget_name"
             android:description="@string/widget_description"
-            android:exported="true">
+            android:exported="true"
+            android:label="@string/widget_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -132,10 +142,6 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_latest_watched_info" />
         </receiver>
-
-        <service
-            android:name=".ui.widget.WidgetUpdateService"
-            android:exported="false" />
 
         <activity
             android:name=".ui.widget.LatestWatchedWidgetConfigActivity"

@@ -1,6 +1,7 @@
 package com.luminoverse.animevibe
 
 import android.app.Application
+import android.app.NotificationManager
 import android.content.ComponentName
 import android.content.Intent
 import android.content.ServiceConnection
@@ -9,7 +10,6 @@ import android.hardware.SensorManager
 import android.os.IBinder
 import android.util.Log
 import androidx.work.Configuration
-import androidx.work.WorkManager
 import com.chuckerteam.chucker.api.Chucker
 import com.luminoverse.animevibe.utils.factories.AnimeWorkerFactory
 import com.luminoverse.animevibe.utils.workers.BroadcastNotificationWorker
@@ -24,7 +24,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -49,16 +48,14 @@ class AnimeApplication : Application(), Configuration.Provider {
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     override val workManagerConfiguration: Configuration
-        get() {
-            Log.d("AnimeApplication", "Providing WorkManager configuration")
-            require(::workerFactory.isInitialized) { "workerFactory not initialized" }
-            return Configuration.Builder()
-                .setWorkerFactory(workerFactory)
-                .build()
-        }
+        get() = Configuration.Builder()
+            .setWorkerFactory(workerFactory)
+            .also { Log.d(TAG, "Providing WorkManager configuration") }
+            .build()
 
     override fun onCreate() {
         super.onCreate()
+        Log.d(TAG, "onCreate called")
         notificationHandler.createNotificationChannel(this)
 
         BroadcastNotificationWorker.schedule(this)
@@ -68,52 +65,54 @@ class AnimeApplication : Application(), Configuration.Provider {
             setupSensor()
         }
 
-        bindMediaService()
+        manageMediaService(true)
     }
 
-    // Debug method to cancel all work (use with caution)
-    fun cancelAllWork() {
-        Log.d("AnimeApplication", "Cancelling all WorkManager work")
-        WorkManager.getInstance(this).cancelAllWork()
-    }
-
-    fun bindMediaService() {
-        if (!isServiceBound) {
-            serviceConnection = object : ServiceConnection {
-                override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-                    Log.d("AnimeApplication", "MediaPlaybackService connected")
-                    mediaPlaybackService =
-                        (service as MediaPlaybackService.MediaPlaybackBinder).getService()
-                    isServiceBound = true
-                }
-
-                override fun onServiceDisconnected(name: ComponentName?) {
-                    Log.w("AnimeApplication", "MediaPlaybackService disconnected")
-                    mediaPlaybackService = null
-                    isServiceBound = false
-                }
-            }
-            val intent = Intent(this, MediaPlaybackService::class.java)
-            try {
-                bindService(intent, serviceConnection!!, BIND_AUTO_CREATE)
-                Log.d("AnimeApplication", "Bound to MediaPlaybackService")
-            } catch (e: Exception) {
-                Log.e("AnimeApplication", "Failed to bind MediaPlaybackService", e)
-            }
+    override fun onTerminate() {
+        super.onTerminate()
+        manageMediaService(false)
+        if (BuildConfig.DEBUG) {
+            sensorManager.unregisterListener(shakeDetector)
         }
+        coroutineScope.cancel()
     }
 
-    fun unbindMediaService() {
-        if (isServiceBound) {
-            try {
-                serviceConnection?.let { unbindService(it) }
-                Log.d("AnimeApplication", "Unbound MediaPlaybackService")
-            } catch (e: IllegalArgumentException) {
-                Log.w("AnimeApplication", "Service already unbound", e)
+    fun cleanupService() {
+        mediaPlaybackService?.let { service ->
+            Log.d(TAG, "Cleaning up MediaPlaybackService")
+            service.dispatch(MediaPlaybackAction.StopService)
+            manageMediaService(false)
+        } ?: Log.d(TAG, "No MediaPlaybackService to clean up")
+    }
+
+    fun stopMediaServiceForWorker(): Boolean {
+        mediaPlaybackService?.let { service ->
+            coroutineScope.launch {
+                val isForeground = try {
+                    service.isForeground()
+                } catch (_: Exception) {
+                    val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+                    notificationManager.activeNotifications.any { it.id == service.getNotificationId() }
+                }
+                if (!isForeground) {
+                    Log.d(TAG, "Stopping MediaPlaybackService for worker")
+                    cleanupService()
+                } else {
+                    Log.d(TAG, "MediaPlaybackService is in foreground, not stopping")
+                }
             }
-            mediaPlaybackService = null
-            isServiceBound = false
-            serviceConnection = null
+            return true
+        }
+        Log.d(TAG, "MediaPlaybackService not running, no need to stop")
+        return false
+    }
+
+    fun restartMediaService() {
+        if (!isServiceBound) {
+            Log.d(TAG, "Restarting MediaPlaybackService")
+            manageMediaService(true)
+        } else {
+            Log.d(TAG, "MediaPlaybackService already running")
         }
     }
 
@@ -121,31 +120,39 @@ class AnimeApplication : Application(), Configuration.Provider {
 
     fun isMediaServiceBound(): Boolean = isServiceBound
 
-    fun cleanupService() {
-        mediaPlaybackService?.let { service ->
-            coroutineScope.launch {
-                service.dispatch(MediaPlaybackAction.QueryForegroundStatus)
-                service.state.collectLatest { state ->
-                    if (!state.isForeground) {
-                        Log.d("AnimeApplication", "Stopping MediaPlaybackService")
-                        service.dispatch(MediaPlaybackAction.StopService)
-                        unbindMediaService()
-                    } else {
-                        Log.d("AnimeApplication", "Keeping MediaPlaybackService alive")
-                    }
-                    this@launch.cancel()
+    private fun manageMediaService(bind: Boolean) {
+        if (bind && !isServiceBound) {
+            serviceConnection = object : ServiceConnection {
+                override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+                    Log.d(TAG, "MediaPlaybackService connected")
+                    mediaPlaybackService = (service as MediaPlaybackService.MediaPlaybackBinder).getService()
+                    isServiceBound = true
+                }
+
+                override fun onServiceDisconnected(name: ComponentName?) {
+                    Log.w(TAG, "MediaPlaybackService disconnected")
+                    mediaPlaybackService = null
+                    isServiceBound = false
                 }
             }
+            val intent = Intent(this, MediaPlaybackService::class.java)
+            try {
+                bindService(intent, serviceConnection!!, BIND_AUTO_CREATE)
+                Log.d(TAG, "Bound to MediaPlaybackService")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to bind MediaPlaybackService", e)
+            }
+        } else if (!bind && isServiceBound) {
+            try {
+                serviceConnection?.let { unbindService(it) }
+                Log.d(TAG, "Unbound MediaPlaybackService")
+            } catch (e: IllegalArgumentException) {
+                Log.w(TAG, "Service already unbound", e)
+            }
+            mediaPlaybackService = null
+            isServiceBound = false
+            serviceConnection = null
         }
-    }
-
-    override fun onTerminate() {
-        super.onTerminate()
-        cleanupService()
-        if (BuildConfig.DEBUG) {
-            sensorManager.unregisterListener(shakeDetector)
-        }
-        coroutineScope.cancel()
     }
 
     private fun setupSensor() {
@@ -156,5 +163,9 @@ class AnimeApplication : Application(), Configuration.Provider {
             sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
             SensorManager.SENSOR_DELAY_NORMAL
         )
+    }
+
+    companion object {
+        private const val TAG = "AnimeApplication"
     }
 }

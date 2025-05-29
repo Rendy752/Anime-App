@@ -1,11 +1,16 @@
 package com.luminoverse.animevibe.utils.workers
 
 import android.app.NotificationManager
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.content.SharedPreferences
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import androidx.core.content.edit
 import androidx.core.content.getSystemService
 import androidx.work.*
+import com.luminoverse.animevibe.AnimeApplication
 import com.luminoverse.animevibe.models.AnimeDetail
 import com.luminoverse.animevibe.models.AnimeSchedulesSearchQueryState
 import com.luminoverse.animevibe.models.Notification
@@ -14,6 +19,7 @@ import com.luminoverse.animevibe.repository.NotificationRepository
 import com.luminoverse.animevibe.utils.TimeUtils
 import com.luminoverse.animevibe.utils.factories.ChildWorkerFactory
 import com.luminoverse.animevibe.utils.handlers.NotificationHandler
+import com.luminoverse.animevibe.utils.receivers.ServiceRestartReceiver
 import com.luminoverse.animevibe.utils.resource.Resource
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
@@ -22,7 +28,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.*
 import java.util.concurrent.TimeUnit
-import java.net.UnknownHostException
 
 class BroadcastNotificationWorker @AssistedInject constructor(
     @Assisted private val context: Context,
@@ -34,16 +39,16 @@ class BroadcastNotificationWorker @AssistedInject constructor(
 
     @AssistedFactory
     interface Factory : ChildWorkerFactory {
-        override fun create(
-            appContext: Context,
-            params: WorkerParameters
-        ): BroadcastNotificationWorker
+        override fun create(appContext: Context, params: WorkerParameters): BroadcastNotificationWorker
     }
 
     companion object {
         private const val WORK_NAME = "anime_broadcast_notification_work"
         private const val NOTIFICATION_WINDOW_MINUTES = 5L
         private const val MAX_RETRIES = 3
+        private const val PREFS_NAME = "BroadcastNotificationPrefs"
+        private const val KEY_LAST_FETCH = "last_successful_fetch"
+        const val ACTION_RESTART_SERVICE = "com.luminoverse.animevibe.RESTART_MEDIA_SERVICE"
 
         private fun log(message: String) {
             println("BroadcastNotificationWorker: $message")
@@ -63,14 +68,12 @@ class BroadcastNotificationWorker @AssistedInject constructor(
                 return
             }
 
-            // Schedule to run at midnight
             val currentTime = ZonedDateTime.now(ZoneId.of("Asia/Jakarta"))
-            val midnight =
-                currentTime.toLocalDate().plusDays(1).atStartOfDay(ZoneId.of("Asia/Jakarta"))
+            val midnight = currentTime.toLocalDate().plusDays(1).atStartOfDay(ZoneId.of("Asia/Jakarta"))
             val initialDelay = Duration.between(currentTime, midnight).toMillis()
 
             val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
+                .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
                 .build()
 
             val workRequest = PeriodicWorkRequestBuilder<BroadcastNotificationWorker>(
@@ -79,15 +82,27 @@ class BroadcastNotificationWorker @AssistedInject constructor(
             )
                 .setConstraints(constraints)
                 .setInitialDelay(initialDelay, TimeUnit.MILLISECONDS)
-                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.MINUTES)
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 1, TimeUnit.HOURS)
                 .build()
 
             workManager.enqueueUniquePeriodicWork(
                 WORK_NAME,
-                ExistingPeriodicWorkPolicy.REPLACE,
+                ExistingPeriodicWorkPolicy.KEEP,
                 workRequest
             )
             log("Scheduled broadcast notification worker to start at $midnight (initial delay: ${initialDelay}ms)")
+        }
+
+        private fun getSharedPreferences(context: Context): SharedPreferences {
+            return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        }
+
+        fun setLastFetchTime(context: Context, time: Long) {
+            getSharedPreferences(context).edit { putLong(KEY_LAST_FETCH, time) }
+        }
+
+        fun getLastFetchTime(context: Context): Long {
+            return getSharedPreferences(context).getLong(KEY_LAST_FETCH, 0)
         }
     }
 
@@ -108,37 +123,48 @@ class BroadcastNotificationWorker @AssistedInject constructor(
                 return@withContext Result.retry()
             }
 
-            val connectivityManager = context.getSystemService<ConnectivityManager>()
-            val network = connectivityManager?.activeNetwork
-            val networkCapabilities = connectivityManager?.getNetworkCapabilities(network)
-            val isConnected =
-                networkCapabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
-            if (!isConnected) {
-                log("No internet connection, retrying")
-                return@withContext Result.retry()
+            val currentLocalTime = currentTime.toLocalTime()
+            val isMidnightWindow = currentLocalTime.isAfter(LocalTime.of(23, 45)) ||
+                    currentLocalTime.isBefore(LocalTime.of(0, 15))
+            if (!isMidnightWindow) {
+                log("Outside midnight window (current time: $currentLocalTime), skipping processing")
+                return@withContext Result.success()
             }
+
+            val lastFetchTime = getLastFetchTime(context)
+            val lastFetchDate = if (lastFetchTime > 0) {
+                ZonedDateTime.ofInstant(Instant.ofEpochMilli(lastFetchTime), ZoneId.of("Asia/Jakarta"))
+            } else null
+            if (lastFetchDate != null && lastFetchDate.toLocalDate() == currentTime.toLocalDate()) {
+                log("Schedules already fetched today at $lastFetchDate, skipping fetch")
+                return@withContext Result.success()
+            }
+
+            val app = context.applicationContext as? AnimeApplication
+            val wasServiceRunning = app?.stopMediaServiceForWorker() == true
+            log("Stopped MediaPlaybackService: $wasServiceRunning")
 
             notificationRepository.cleanOldNotifications()
             log("Cleaned old notifications")
 
             val schedules = fetchSchedules()
             log("Fetched ${schedules.size} anime schedules")
+            setLastFetchTime(context, currentTime.toInstant().toEpochMilli())
             processBroadcastNotifications(currentTime, schedules)
+
+            if (wasServiceRunning) {
+                log("Requesting to restart MediaPlaybackService")
+                val intent = Intent(ACTION_RESTART_SERVICE).apply {
+                    component = ComponentName(context, ServiceRestartReceiver::class.java)
+                }
+                context.sendBroadcast(intent)
+            }
 
             log("Completed successfully at $currentTime")
             Result.success()
         } catch (e: Exception) {
-            when {
-                e is UnknownHostException -> {
-                    log("Network error: ${e.message}, retrying")
-                    Result.retry()
-                }
-
-                else -> {
-                    log("Error: ${e.javaClass.name}, message=${e.message}, stacktrace=${e.stackTraceToString()}")
-                    Result.failure()
-                }
-            }
+            log("Error: ${e.javaClass.name}, message=${e.message}, stacktrace=${e.stackTraceToString()}")
+            return@withContext if (attempt < MAX_RETRIES) Result.retry() else Result.failure()
         }
     }
 
@@ -146,10 +172,20 @@ class BroadcastNotificationWorker @AssistedInject constructor(
         val schedules = mutableListOf<AnimeDetail>()
         var page = 1
         try {
+            val connectivityManager = context.getSystemService<ConnectivityManager>()
+            val network = connectivityManager?.activeNetwork
+            val networkCapabilities = connectivityManager?.getNetworkCapabilities(network)
+            val isConnected = networkCapabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+
+            if (!isConnected) {
+                log("No internet connection, will try to use cached schedules")
+                // Implement cache retrieval logic here if available
+                return schedules
+            }
+
             while (true) {
                 log("Fetching schedules page $page")
-                val result =
-                    animeHomeRepository.getAnimeSchedules(AnimeSchedulesSearchQueryState(page = page))
+                val result = animeHomeRepository.getAnimeSchedules(AnimeSchedulesSearchQueryState(page = page))
                 when (result) {
                     is Resource.Success -> {
                         schedules.addAll(result.data.data.filter {
@@ -161,12 +197,10 @@ class BroadcastNotificationWorker @AssistedInject constructor(
                         }
                         page++
                     }
-
                     is Resource.Error -> {
                         log("Failed to fetch schedules (page $page): ${result.message}")
                         throw Exception("Schedule fetch failed: ${result.message}")
                     }
-
                     else -> {
                         log("Unexpected response type for page $page")
                         throw Exception("Unexpected schedule response")
@@ -180,10 +214,7 @@ class BroadcastNotificationWorker @AssistedInject constructor(
         return schedules
     }
 
-    private suspend fun processBroadcastNotifications(
-        currentTime: ZonedDateTime,
-        schedules: List<AnimeDetail>
-    ) {
+    private suspend fun processBroadcastNotifications(currentTime: ZonedDateTime, schedules: List<AnimeDetail>) {
         log("Processing ${schedules.size} schedules")
         schedules.forEach { anime ->
             val broadcastTime = calculateBroadcastTime(anime) ?: return@forEach
@@ -248,10 +279,7 @@ class BroadcastNotificationWorker @AssistedInject constructor(
         }
     }
 
-    private suspend fun scheduleFutureNotification(
-        anime: AnimeDetail,
-        broadcastTime: ZonedDateTime
-    ) {
+    private suspend fun scheduleFutureNotification(anime: AnimeDetail, broadcastTime: ZonedDateTime) {
         val accessId = anime.mal_id.toString()
         if (notificationRepository.checkDuplicateNotification(accessId, "Broadcast")) {
             log("Duplicate scheduled notification for ${anime.title} (accessId=$accessId), skipping")
@@ -272,9 +300,7 @@ class BroadcastNotificationWorker @AssistedInject constructor(
 
         val workRequest = OneTimeWorkRequestBuilder<NotificationDeliveryWorker>()
             .setInitialDelay(delay, TimeUnit.MILLISECONDS)
-            .setConstraints(
-                Constraints.Builder().setRequiredNetworkType(NetworkType.NOT_REQUIRED).build()
-            )
+            .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.NOT_REQUIRED).build())
             .setInputData(
                 workDataOf(
                     "notification_id" to savedId,
