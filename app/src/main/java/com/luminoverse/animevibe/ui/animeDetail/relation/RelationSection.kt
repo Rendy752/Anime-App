@@ -38,7 +38,7 @@ fun RelationSection(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            text = "${relations.size} Relation${if (relations.size > 1) "s" else ""}",
+            text = "\u202A${relations.size} Relation${if (relations.size > 1) "s" else ""}\u202C",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
         )
