@@ -173,20 +173,25 @@ AnimeVibe is a comprehensive, anime-themed Android application using Kotlin and 
         </tr>
       </table>
 * **Airing Notifications**:
-    * Timely notifications for anime airing soon, powered by a WorkManager-based scheduler that checks every 1 hours for upcoming broadcasts.
-    * Notifies users when an anime is about to air (within a 5-minute window), including a deep link to the anime’s detail page.
-    * Features duplicate notification prevention, configurable via the settings screen, and permission handling for Android 13+.
+    * Timely reminders for upcoming anime broadcasts, powered by a WorkManager-based scheduler that runs daily at midnight (Asia/Jakarta time).
+    * Checks for airing anime within a 30-minute window (11:45 PM–12:15 AM) and sends notifications for episodes airing within 5 minutes, including a deep link to the anime’s detail page.
+    * Schedules future notifications for later broadcasts, ensuring timely alerts without redundant API calls.
+    * Features duplicate notification prevention, automatic cleanup of old notifications, and temporary pausing of media playback services to optimize performance.
+    * Robust error handling with up to three retries using exponential backoff, and skips processing if notifications are disabled or no internet is available (uses cached data when offline).
+    * Configurable via the settings screen, with permission handling for Android 13+.
       <table>
          <tr>
             <td style="text-align: center">
-            <img src="https://github.com/user-attachments/assets/31f6ffb6-07c9-4dab-900b-768cbbbf20a6" width="300" alt="Media Playback 1">
+            <img src="https://github.com/user-attachments/assets/31f6ffb6-07c9-4dab-900b-768cbbbf20a6" width="300" alt="Airing Notification">
           </td>
         </tr>
       </table>
 * **Unfinished Watch Notifications**:
-    * Gentle reminders to continue watching unfinished episodes, scheduled twice daily (every 12 hours) using WorkManager.
-    * Randomly selects an unfinished episode to keep notifications varied, ensuring the episode has unwatched content and more episodes are available in the series.
-    * Features duplicate notification prevention and requires network connectivity to fetch the latest episode data.
+    * Gentle reminders to resume unfinished anime episodes, scheduled twice daily at 8:00 AM and 8:00 PM (Asia/Jakarta time) using WorkManager.
+    * Operates within 30-minute windows (7:45–8:15 AM and 7:45–8:15 PM), randomly selecting an unfinished episode with remaining episodes in the series.
+    * Notifications include episode title, progress details, and a deep link to resume watching, with the number of remaining episodes for context.
+    * Features duplicate notification prevention, automatic cleanup of old notifications, and validation to ensure only relevant episodes are notified.
+    * Robust error handling with up to three retries using exponential backoff, and skips processing if notifications are disabled.
 * **Offline Data Management:**
     * Implementation of **Room Persistence Library** for local data storage, significantly reducing API requests and improving app performance.
     * Caching of frequently accessed anime data, enabling offline browsing and faster loading times.
