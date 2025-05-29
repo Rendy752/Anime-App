@@ -122,7 +122,7 @@ fun ColorStyleCard(
                                 if (it.length > 3) it.take(3) else it
                             },
                             navBackStackEntry = navBackStackEntry,
-                            titleMaxLines = 3
+                            titleMaxLines = 2
                         )
 
                         ContinueWatchingAnime(
