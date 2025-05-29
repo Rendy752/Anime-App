@@ -9,6 +9,7 @@ import android.hardware.SensorManager
 import android.os.IBinder
 import android.util.Log
 import androidx.work.Configuration
+import androidx.work.WorkManager
 import com.chuckerteam.chucker.api.Chucker
 import com.luminoverse.animevibe.utils.factories.AnimeWorkerFactory
 import com.luminoverse.animevibe.utils.workers.BroadcastNotificationWorker
@@ -65,15 +66,15 @@ class AnimeApplication : Application(), Configuration.Provider {
 
         if (BuildConfig.DEBUG) {
             setupSensor()
-            // Uncomment for debug notifications
-            // CoroutineScope(Dispatchers.IO).launch {
-            //     notificationDebugUtil.sendDebugNotification()
-            // }
-            // UnfinishedWatchNotificationWorker.scheduleNow(this)
-            // BroadcastNotificationWorker.scheduleNow(this)
         }
 
         bindMediaService()
+    }
+
+    // Debug method to cancel all work (use with caution)
+    fun cancelAllWork() {
+        Log.d("AnimeApplication", "Cancelling all WorkManager work")
+        WorkManager.getInstance(this).cancelAllWork()
     }
 
     fun bindMediaService() {

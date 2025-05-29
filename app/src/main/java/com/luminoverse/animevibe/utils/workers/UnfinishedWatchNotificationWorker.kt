@@ -28,7 +28,10 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
 
     @AssistedFactory
     interface Factory : ChildWorkerFactory {
-        override fun create(appContext: Context, params: WorkerParameters): UnfinishedWatchNotificationWorker
+        override fun create(
+            appContext: Context,
+            params: WorkerParameters
+        ): UnfinishedWatchNotificationWorker
     }
 
     companion object {
@@ -46,14 +49,22 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
                 return
             }
 
-            // Schedule for 8 AM and 8 PM
+            val workManager = WorkManager.getInstance(context)
             val currentTime = ZonedDateTime.now(ZoneId.of("Asia/Jakarta"))
             val times = listOf(
                 currentTime.with(LocalTime.of(8, 0)),
                 currentTime.with(LocalTime.of(20, 0))
             )
+
             times.forEachIndexed { index, targetTime ->
-                val adjustedTime = if (currentTime.isAfter(targetTime)) targetTime.plusDays(1) else targetTime
+                val workInfo = workManager.getWorkInfosForUniqueWork("${WORK_NAME}_$index").get()
+                if (workInfo.any { it.state == WorkInfo.State.ENQUEUED || it.state == WorkInfo.State.RUNNING }) {
+                    log("Work ${WORK_NAME}_$index already scheduled, skipping")
+                    return@forEachIndexed
+                }
+
+                val adjustedTime =
+                    if (currentTime.isAfter(targetTime)) targetTime.plusDays(1) else targetTime
                 val delay = Duration.between(currentTime, adjustedTime).toMillis()
 
                 val workRequest = PeriodicWorkRequestBuilder<UnfinishedWatchNotificationWorker>(
@@ -61,17 +72,20 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
                     repeatIntervalTimeUnit = TimeUnit.DAYS
                 )
                     .setInitialDelay(delay, TimeUnit.MILLISECONDS)
-                    .setConstraints(Constraints.Builder().setRequiredNetworkType(NetworkType.NOT_REQUIRED).build())
-                    .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 10, TimeUnit.MINUTES)
+                    .setConstraints(
+                        Constraints.Builder().setRequiredNetworkType(NetworkType.NOT_REQUIRED)
+                            .build()
+                    )
+                    .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.MINUTES)
                     .addTag("unfinished_notification_$index")
                     .build()
 
-                WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+                workManager.enqueueUniquePeriodicWork(
                     "${WORK_NAME}_$index",
-                    ExistingPeriodicWorkPolicy.KEEP,
+                    ExistingPeriodicWorkPolicy.REPLACE,
                     workRequest
                 )
-                log("Scheduled unfinished notification worker at $adjustedTime (delay: ${delay}ms)")
+                log("Scheduled unfinished notification worker at $adjustedTime (delay: ${delay}ms, index=$index)")
             }
         }
     }
@@ -91,6 +105,16 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
             if (!notificationManager?.areNotificationsEnabled()!!) {
                 log("Notifications disabled, retrying")
                 return@withContext Result.retry()
+            }
+
+            val currentLocalTime = currentTime.toLocalTime()
+            val isMorningWindow = currentLocalTime.isAfter(LocalTime.of(7, 45)) &&
+                    currentLocalTime.isBefore(LocalTime.of(8, 15))
+            val isEveningWindow = currentLocalTime.isAfter(LocalTime.of(19, 45)) &&
+                    currentLocalTime.isBefore(LocalTime.of(20, 15))
+            if (!isMorningWindow && !isEveningWindow) {
+                log("Outside 8 AM/8 PM window (current time: $currentLocalTime), skipping processing")
+                return@withContext Result.success()
             }
 
             notificationRepository.cleanOldNotifications()
@@ -134,7 +158,10 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
         return sendNotificationForEpisode(episode, remainingEpisodes)
     }
 
-    private suspend fun sendNotificationForEpisode(episode: EpisodeDetailComplement, remainingEpisodes: Int): Boolean {
+    private suspend fun sendNotificationForEpisode(
+        episode: EpisodeDetailComplement,
+        remainingEpisodes: Int
+    ): Boolean {
         val accessId = "${episode.malId}||${episode.id}"
         if (notificationRepository.checkDuplicateNotification(accessId, "UnfinishedWatch")) {
             log("Duplicate notification for ${episode.animeTitle} (accessId=$accessId)")
@@ -144,7 +171,7 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
         val notification = Notification(
             accessId = accessId,
             imageUrl = episode.imageUrl ?: "",
-            contentText = "Continue watching ${episode.animeTitle} Episode ${episode.number}? $remainingEpisodes episode${if (remainingEpisodes > 1) "s" else ""} left!",
+            contentText = "Hey, left off watching ${episode.animeTitle} Episode ${episode.number}? You have $remainingEpisodes episode${if (remainingEpisodes > 1) "s" else ""} left to enjoy. Dive back in to see what happens next!",
             type = "UnfinishedWatch"
         )
         try {

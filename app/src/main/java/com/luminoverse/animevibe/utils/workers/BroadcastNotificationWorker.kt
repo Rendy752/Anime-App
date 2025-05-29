@@ -56,6 +56,13 @@ class BroadcastNotificationWorker @AssistedInject constructor(
                 return
             }
 
+            val workManager = WorkManager.getInstance(context)
+            val workInfo = workManager.getWorkInfosForUniqueWork(WORK_NAME).get()
+            if (workInfo.any { it.state == WorkInfo.State.ENQUEUED || it.state == WorkInfo.State.RUNNING }) {
+                log("Work $WORK_NAME already scheduled, skipping")
+                return
+            }
+
             // Schedule to run at midnight
             val currentTime = ZonedDateTime.now(ZoneId.of("Asia/Jakarta"))
             val midnight =
@@ -72,15 +79,15 @@ class BroadcastNotificationWorker @AssistedInject constructor(
             )
                 .setConstraints(constraints)
                 .setInitialDelay(initialDelay, TimeUnit.MILLISECONDS)
-                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 10, TimeUnit.MINUTES)
+                .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.MINUTES)
                 .build()
 
-            WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            workManager.enqueueUniquePeriodicWork(
                 WORK_NAME,
-                ExistingPeriodicWorkPolicy.KEEP,
+                ExistingPeriodicWorkPolicy.REPLACE,
                 workRequest
             )
-            log("Scheduled broadcast notification worker to start at midnight (initial delay: ${initialDelay}ms)")
+            log("Scheduled broadcast notification worker to start at $midnight (initial delay: ${initialDelay}ms)")
         }
     }
 
