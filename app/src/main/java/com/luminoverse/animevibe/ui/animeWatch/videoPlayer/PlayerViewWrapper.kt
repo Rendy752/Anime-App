@@ -5,6 +5,7 @@ import android.os.Handler
 import android.os.Looper
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
+import android.util.Log
 import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.View
@@ -22,15 +23,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.fragment.app.FragmentActivity
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.CaptionStyleCompat
 import androidx.media3.ui.PlayerView
 import com.luminoverse.animevibe.models.Track
-import com.luminoverse.animevibe.utils.FullscreenUtils
-import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
+import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
 import androidx.media3.ui.R as RMedia3
 
 @SuppressLint("ClickableViewAccessibility")
@@ -40,20 +39,21 @@ fun PlayerViewWrapper(
     playerView: PlayerView,
     mediaController: MediaControllerCompat?,
     tracks: List<Track>,
-    isPipMode: Boolean,
-    onFullscreenChange: (Boolean) -> Unit,
     isFullscreen: Boolean,
     isLandscape: Boolean,
     isLocked: Boolean,
+    onPlayPause: () -> Unit,
     onPipVisibilityChange: (Boolean) -> Unit,
     onSpeedChange: (Float, Boolean) -> Unit,
     onHoldingChange: (Boolean, Boolean) -> Unit,
     onSeek: (Int, Long) -> Unit,
     onFastForward: () -> Unit,
     onRewind: () -> Unit,
+    onControlsToggle: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
     var isSeeking by remember { mutableStateOf(false) }
+    val handler = remember { Handler(Looper.getMainLooper()) }
 
     LaunchedEffect(isSeeking, isLocked) {
         if (!isSeeking || isLocked) playerView.hideController()
@@ -87,8 +87,8 @@ fun PlayerViewWrapper(
                 )
             }
             view.setShowSubtitleButton(tracks.any { it.kind == "captions" })
-            view.useController = !isPipMode && !isLocked
-            view.controllerShowTimeoutMs = if (isPipMode || isLocked) 0 else 5000
+            view.useController = false // Disable default controller
+            view.controllerShowTimeoutMs = 0 // Prevent default controller auto-show
             view.setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
             view.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
 
@@ -110,91 +110,114 @@ fun PlayerViewWrapper(
                 }
             }
 
-            view.setFullscreenButtonClickListener {
-                if (!isLocked) {
-                    (context as? FragmentActivity)?.let { activity ->
-                        activity.window?.let { window ->
-                            FullscreenUtils.handleFullscreenToggle(
-                                window = window,
-                                isFullscreen = isFullscreen,
-                                isLandscape = isLandscape,
-                                activity = activity,
-                                onFullscreenChange = onFullscreenChange
-                            )
-                        }
-                    }
-                }
-            }
-
             var isHolding = false
             var isFromHolding = false
 
-            val gestureDetector =
-                GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
-                    override fun onDoubleTap(e: MotionEvent): Boolean {
-                        if (!isSeeking && !isLocked && mediaController != null) {
-                            val screenWidth = view.width
-                            val tapX = e.x
+            val gestureDetector = GestureDetector(context, object : GestureDetector.SimpleOnGestureListener() {
+                override fun onDoubleTap(e: MotionEvent): Boolean {
+                    if (!isSeeking && !isLocked && mediaController != null) {
+                        Log.d("PlayerViewWrapper", "Double tap detected at x=${e.x}")
+                        handler.removeCallbacksAndMessages(null)
+                        if (isFromHolding) {
+                            Log.d("PlayerViewWrapper", "Resetting speed from holding")
+                            HlsPlayerUtils.dispatch(HlsPlayerAction.SetPlaybackSpeed(1f))
+                            onSpeedChange(1f, false)
+                            isHolding = false
+                            isFromHolding = false
+                            onHoldingChange(false, false)
+                        }
 
-                            if (tapX > screenWidth / 2) {
-                                onFastForward()
-                                onSeek(1, 10L)
-                            } else {
+                        val screenWidth = view.width
+                        val tapX = e.x
+
+                        when {
+                            tapX < screenWidth * 0.4 -> { // Left 40% - Rewind
+                                Log.d("PlayerViewWrapper", "Rewind triggered")
                                 onRewind()
                                 onSeek(-1, 10L)
+                                isSeeking = true
+                                onControlsToggle(true)
                             }
-                            isSeeking = true
-                            view.showController()
-                            Handler(Looper.getMainLooper()).postDelayed({
-                                isSeeking = false
-                            }, 1000)
-                            return true
+                            tapX > screenWidth * 0.6 -> { // Right 40% - Fast Forward
+                                Log.d("PlayerViewWrapper", "Fast forward triggered")
+                                onFastForward()
+                                onSeek(1, 10L)
+                                isSeeking = true
+                                onControlsToggle(true)
+                            }
+                            else -> { // Middle 20% - Play/Pause
+                                Log.d("PlayerViewWrapper", "Play/Pause triggered")
+                                onPlayPause()
+                                isSeeking = true
+                                onControlsToggle(true)
+                            }
                         }
-                        return false
+                        handler.postDelayed({
+                            isSeeking = false
+                            Log.d("PlayerViewWrapper", "Double tap seek reset: isSeeking=false")
+                        }, 500) // Reduced to 500ms for faster recovery
+                        return true
                     }
+                    Log.d("PlayerViewWrapper", "Double tap blocked: isSeeking=$isSeeking, isLocked=$isLocked, mediaController=$mediaController")
+                    return false
+                }
 
-                    override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
-                        if (!isSeeking && !isLocked) {
-                            view.performClick()
-                            return true
-                        }
-                        return false
+                override fun onSingleTapConfirmed(e: MotionEvent): Boolean {
+                    if (!isLocked) {
+                        Log.d("PlayerViewWrapper", "Single tap confirmed, isSeeking=$isSeeking")
+                        onControlsToggle(!HlsPlayerUtils.state.value.isControlsVisible)
+                        return true
                     }
-                })
+                    return false
+                }
+            })
 
             view.setOnTouchListener { _, event ->
-                if (playerView.player == null || isLocked) return@setOnTouchListener false
+                if (playerView.player == null || isLocked) {
+                    Log.d("PlayerViewWrapper", "Touch ignored: player=${playerView.player}, isLocked=$isLocked")
+                    return@setOnTouchListener false
+                }
                 gestureDetector.onTouchEvent(event)
                 when (event.action) {
                     MotionEvent.ACTION_DOWN -> {
-                        isHolding = true
-                        Handler(Looper.getMainLooper()).postDelayed({
-                            if (isHolding && mediaController?.playbackState?.playbackSpeed != 2f && !isSeeking && mediaController?.playbackState?.state == PlaybackStateCompat.STATE_PLAYING) {
-                                HlsPlayerUtils.dispatch(HlsPlayerAction.SetPlaybackSpeed(2f))
-                                view.useController = false
-                                onSpeedChange(2f, true)
-                                isFromHolding = true
-                            }
-                        }, 1000)
+                        if (!isSeeking) {
+                            Log.d("PlayerViewWrapper", "ACTION_DOWN: isHolding=true")
+                            isHolding = true
+                            handler.removeCallbacksAndMessages(null)
+                            handler.postDelayed({
+                                if (isHolding && mediaController?.playbackState?.playbackSpeed != 2f && !isSeeking && mediaController?.playbackState?.state == PlaybackStateCompat.STATE_PLAYING) {
+                                    Log.d("PlayerViewWrapper", "Long press: Setting speed to 2f")
+                                    HlsPlayerUtils.dispatch(HlsPlayerAction.SetPlaybackSpeed(2f))
+                                    onSpeedChange(2f, true)
+                                    isFromHolding = true
+                                    onControlsToggle(true)
+                                } else {
+                                    Log.d("PlayerViewWrapper", "Long press not triggered: isHolding=$isHolding, speed=${mediaController?.playbackState?.playbackSpeed}, isSeeking=$isSeeking, state=${mediaController?.playbackState?.state}")
+                                }
+                            }, 1000)
+                        }
                     }
-
                     MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                        Handler(Looper.getMainLooper()).removeCallbacksAndMessages(null)
+                        Log.d("PlayerViewWrapper", "ACTION_UP/CANCEL: Resetting states")
+                        handler.removeCallbacksAndMessages(null)
                         if (isFromHolding && mediaController != null) {
+                            Log.d("PlayerViewWrapper", "Resetting speed to 1f")
                             HlsPlayerUtils.dispatch(HlsPlayerAction.SetPlaybackSpeed(1f))
-                            view.useController = true
                             onSpeedChange(1f, false)
                         }
-                        isHolding = false
-                        isFromHolding = false
+                        if (isHolding || isFromHolding) {
+                            isHolding = false
+                            isFromHolding = false
+                            onHoldingChange(false, false)
+                        }
                     }
                 }
-                onHoldingChange(isHolding, isFromHolding)
                 true
             }
 
             view.setControllerVisibilityListener(PlayerView.ControllerVisibilityListener { visibility ->
                 if (!isLocked) {
+                    Log.d("PlayerViewWrapper", "Controller visibility changed: $visibility")
                     onPipVisibilityChange(visibility == View.VISIBLE)
                     view.subtitleView?.let { subtitleView ->
                         val bottomBar = view.findViewById<ViewGroup>(RMedia3.id.exo_bottom_bar)

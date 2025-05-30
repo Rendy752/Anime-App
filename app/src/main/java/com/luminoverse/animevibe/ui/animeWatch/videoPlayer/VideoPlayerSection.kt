@@ -67,7 +67,7 @@ fun VideoPlayerSection(
     var retryCount by remember { mutableIntStateOf(0) }
     val maxRetries = 3
 
-    val playerView = remember { PlayerView(context).apply { useController = true } }
+    val playerView = remember { PlayerView(context).apply { useController = false } }
     var mediaBrowserCompat by remember { mutableStateOf<MediaBrowserCompat?>(null) }
     var mediaControllerCompat by remember { mutableStateOf<MediaControllerCompat?>(null) }
     var mediaPlaybackService by remember { mutableStateOf<MediaPlaybackService?>(null) }
