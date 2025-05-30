@@ -59,6 +59,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         installSplashScreen()
         super.onCreate(savedInstanceState)
 
@@ -143,10 +144,12 @@ class MainActivity : AppCompatActivity() {
                 checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED -> {
                     println("MainActivity: POST_NOTIFICATIONS permission already granted")
                 }
+
                 shouldShowRequestPermissionRationale(permission) -> {
                     println("MainActivity: Showing rationale for POST_NOTIFICATIONS permission")
                     requestPermissionLauncher.launch(permission)
                 }
+
                 else -> {
                     println("MainActivity: Requesting POST_NOTIFICATIONS permission")
                     requestPermissionLauncher.launch(permission)
@@ -167,7 +170,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setSystemBarAppearance(color: Color) {
-        WindowCompat.setDecorFitsSystemWindows(window, false)
         window.statusBarColor = android.graphics.Color.TRANSPARENT
         window.navigationBarColor = android.graphics.Color.TRANSPARENT
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {

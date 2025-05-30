@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -32,6 +31,11 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import com.luminoverse.animevibe.ui.main.MainActivity
 import com.luminoverse.animevibe.utils.media.HlsPlayerState
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,7 +53,7 @@ fun AnimeWatchScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val scrollState = rememberLazyListState()
-    val state = rememberPullToRefreshState()
+    val pullToRefreshState = rememberPullToRefreshState()
 
     var isScreenOn by remember { mutableStateOf(true) }
     val context = LocalContext.current
@@ -122,18 +126,33 @@ fun AnimeWatchScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
+        contentWindowInsets = WindowInsets(0.dp),
         topBar = {
-            if (!playerUiState.isPipMode && !playerUiState.isFullscreen) AnimeWatchTopBar(
-                watchState = watchState,
-                mainState = mainState,
-                onContentIndexChange = { onAction(WatchAction.SetSelectedContentIndex(it)) },
-                onHandleBackPress = onBackPress,
-                onFavoriteToggle = { updatedComplement ->
-                    onAction(WatchAction.SetFavorite(updatedComplement.isFavorite))
-                }
-            )
+            if (!playerUiState.isPipMode && !playerUiState.isFullscreen) {
+                AnimeWatchTopBar(
+                    watchState = watchState,
+                    mainState = mainState,
+                    onContentIndexChange = { onAction(WatchAction.SetSelectedContentIndex(it)) },
+                    onHandleBackPress = onBackPress,
+                    onFavoriteToggle = { updatedComplement ->
+                        onAction(WatchAction.SetFavorite(updatedComplement.isFavorite))
+                    }
+                )
+            }
         }
     ) { paddingValues ->
+        val contentModifier = if (playerUiState.isFullscreen) {
+            Modifier
+                .fillMaxSize()
+                .consumeWindowInsets(WindowInsets.navigationBars)
+                .consumeWindowInsets(WindowInsets.statusBars)
+        } else {
+            Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        }
+
+
         PullToRefreshBox(
             isRefreshing = watchState.isRefreshing,
             onRefresh = {
@@ -144,27 +163,25 @@ fun AnimeWatchScreen(
                     )
                 )
             },
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues),
-            state = state,
+            modifier = contentModifier,
+            state = pullToRefreshState,
             indicator = {
                 PullToRefreshDefaults.Indicator(
                     isRefreshing = watchState.isRefreshing,
                     containerColor = MaterialTheme.colorScheme.primary,
                     color = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.align(Alignment.TopCenter),
-                    state = state
+                    state = pullToRefreshState
                 )
             }
         ) {
-            val videoSize = if (mainState.isLandscape) Modifier.fillMaxSize()
-            else if (!playerUiState.isPipMode && !playerUiState.isFullscreen) Modifier.height(250.dp)
+            val videoSize = if (mainState.isLandscape || playerUiState.isFullscreen) Modifier.fillMaxSize()
+            else if (!playerUiState.isPipMode) Modifier.height(250.dp)
             else Modifier.fillMaxSize()
 
             Column(modifier = Modifier.fillMaxSize()) {
                 val videoPlayerModifier = Modifier
-                    .then(if (mainState.isLandscape) Modifier.weight(0.5f) else Modifier.fillMaxWidth())
+                    .then(if (mainState.isLandscape && !playerUiState.isFullscreen) Modifier.weight(0.5f) else Modifier.fillMaxWidth())
                     .then(videoSize)
                 AnimeWatchContent(
                     navController = navController,

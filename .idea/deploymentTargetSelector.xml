@@ -3,17 +3,17 @@
   <component name="deploymentTargetSelector">
     <selectionStates>
       <SelectionState runConfigName="AnimeVibe.app">
-        <option name="selectionMode" value="DROPDOWN" />
+        <option name="selectionMode" value="DIALOG" />
         <DialogSelection>
           <targets>
             <Target type="DEFAULT_BOOT">
               <handle>
-                <DeviceId pluginId="PhysicalDevice" identifier="serial=10DE5E0E9D0009H" />
+                <DeviceId pluginId="PhysicalDevice" identifier="serial=524b638e" />
               </handle>
             </Target>
             <Target type="DEFAULT_BOOT">
               <handle>
-                <DeviceId pluginId="PhysicalDevice" identifier="serial=3644be14" />
+                <DeviceId pluginId="PhysicalDevice" identifier="serial=10DE5E0E9D0009H" />
               </handle>
             </Target>
           </targets>
