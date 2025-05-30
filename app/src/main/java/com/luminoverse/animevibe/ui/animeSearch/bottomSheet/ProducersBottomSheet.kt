@@ -103,9 +103,7 @@ fun ProducersBottomSheet(
         }
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
             if (selectedProducers.isNotEmpty()) {
                 FilterChipFlow(
                     itemList = selectedProducers,
@@ -130,8 +128,7 @@ fun ProducersBottomSheet(
             }
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             Box(
-                modifier = Modifier
-                    .fillMaxSize(),
+                modifier = Modifier.fillMaxWidth(),
                 contentAlignment = Alignment.Center
             ) {
                 when (producers) {

@@ -11,7 +11,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -31,6 +30,7 @@ import androidx.media3.ui.PlayerView
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
+import com.luminoverse.animevibe.ui.common.BottomSheetConfig
 import com.luminoverse.animevibe.ui.common.CustomModalBottomSheet
 import com.luminoverse.animevibe.ui.common.ScreenshotDisplay
 import com.luminoverse.animevibe.utils.FullscreenUtils
@@ -82,29 +82,26 @@ fun VideoPlayer(
     var seekAmount by remember { mutableLongStateOf(0L) }
     var isSeeking by remember { mutableStateOf(false) }
     var isLocked by remember { mutableStateOf(false) }
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var showSubtitleSheet by remember { mutableStateOf(false) }
-    var showSettingsSheet by remember { mutableStateOf(false) }
+    var showPlaybackSpeedSheet by remember { mutableStateOf(false) }
 
     LaunchedEffect(hlsPlayerState.isPlaying) {
         if (hlsPlayerState.isPlaying) isFirstLoad = false
     }
 
-    // Sync local state with HlsPlayerUtils
     LaunchedEffect(hlsPlayerState.isControlsVisible) {
         isControlsVisible = hlsPlayerState.isControlsVisible
     }
 
-    // Auto-hide controls after 3 seconds
     LaunchedEffect(
         isControlsVisible,
         isSeeking,
         isLocked,
         isHolding,
         showSubtitleSheet,
-        showSettingsSheet
+        showPlaybackSpeedSheet
     ) {
-        if (isControlsVisible && !isSeeking && !isLocked && !isHolding && !showSubtitleSheet && !showSettingsSheet) {
+        if (isControlsVisible && !isSeeking && !isLocked && !isHolding && !showSubtitleSheet && !showPlaybackSpeedSheet) {
             Log.d("VideoPlayer", "Auto-hide triggered: Hiding controls after 3s")
             delay(3000)
             isControlsVisible = false
@@ -112,7 +109,7 @@ fun VideoPlayer(
         } else {
             Log.d(
                 "VideoPlayer",
-                "Auto-hide blocked: isControlsVisible=$isControlsVisible, isSeeking=$isSeeking, isLocked=$isLocked, isHolding=$isHolding, showSubtitleSheet=$showSubtitleSheet, showSettingsSheet=$showSettingsSheet"
+                "Auto-hide blocked: isControlsVisible=$isControlsVisible, isSeeking=$isSeeking, isLocked=$isLocked, isHolding=$isHolding, showSubtitleSheet=$showSubtitleSheet, showPlaybackSpeedSheet=$showPlaybackSpeedSheet"
             )
         }
     }
@@ -141,9 +138,6 @@ fun VideoPlayer(
             !hlsPlayerState.isPlaying &&
             errorMessage == null
 
-    val showPlaceholder =
-        isFirstLoad && !hlsPlayerState.isPlaying && (hlsPlayerState.playbackState == Player.STATE_IDLE || hlsPlayerState.playbackState == Player.STATE_BUFFERING)
-
     DisposableEffect(
         mediaController,
         isPipMode,
@@ -171,12 +165,17 @@ fun VideoPlayer(
     }
 
     Box(modifier = modifier.then(videoSize)) {
-        if (showPlaceholder) {
+        if (isFirstLoad) {
             ScreenshotDisplay(
                 imageUrl = episodeDetailComplement.imageUrl,
                 screenshot = episodeDetailComplement.screenshot,
                 modifier = Modifier.fillMaxSize(),
-                clickable = false
+                onClick = {
+                    isControlsVisible = !isControlsVisible
+                    HlsPlayerUtils.dispatch(
+                        HlsPlayerAction.ToggleControlsVisibility(isControlsVisible)
+                    )
+                }
             )
         } else {
             PlayerViewWrapper(
@@ -293,7 +292,7 @@ fun VideoPlayer(
                     HlsPlayerUtils.dispatch(HlsPlayerAction.ToggleControlsVisibility(true))
                 },
                 onSubtitleClick = { showSubtitleSheet = true },
-                onSettingsClick = { showSettingsSheet = true },
+                onPlaybackSpeedClick = { showPlaybackSpeedSheet = true },
                 onFullscreenToggle = {
                     if (!isLocked) {
                         (context as? FragmentActivity)?.let { activity ->
@@ -325,39 +324,41 @@ fun VideoPlayer(
             errorMessage = errorMessage
         )
 
-        if (showSubtitleSheet) {
-            CustomModalBottomSheet(
-                modifier = Modifier.align(Alignment.BottomCenter),
-                sheetState = sheetState,
-                isLandscape = isLandscape,
-                sheetGestureEnabled = true,
-                onDismiss = { showSubtitleSheet = false }
-            ) {
-                SubtitleSettingsContent(
-                    tracks = episodeDetailComplement.sources.tracks,
-                    onSubtitleSelected = { track ->
-                        HlsPlayerUtils.dispatch(HlsPlayerAction.SetSubtitle(track))
-                        showSubtitleSheet = false
-                    }
-                )
-            }
+        CustomModalBottomSheet(
+            modifier = Modifier.align(Alignment.BottomCenter),
+            isVisible = showSubtitleSheet && !isPipMode && !isLocked,
+            isLandscape = isLandscape,
+            config = BottomSheetConfig(
+                landscapeWidthFraction = 0.4f,
+                landscapeHeightFraction = 0.7f
+            ),
+            onDismiss = { showSubtitleSheet = false }
+        ) {
+            SubtitleSettingsContent(
+                tracks = episodeDetailComplement.sources.tracks,
+                onSubtitleSelected = { track ->
+                    HlsPlayerUtils.dispatch(HlsPlayerAction.SetSubtitle(track))
+                    showSubtitleSheet = false
+                }
+            )
         }
 
-        if (showSettingsSheet) {
-            CustomModalBottomSheet(
-                modifier = Modifier.align(Alignment.BottomCenter),
-                sheetState = sheetState,
-                isLandscape = isLandscape,
-                sheetGestureEnabled = true,
-                onDismiss = { showSettingsSheet = false }
-            ) {
-                SettingsContent(
-                    onSpeedChange = { speed ->
-                        HlsPlayerUtils.dispatch(HlsPlayerAction.SetPlaybackSpeed(speed))
-                        showSettingsSheet = false
-                    }
-                )
-            }
+        CustomModalBottomSheet(
+            modifier = Modifier.align(Alignment.BottomCenter),
+            isVisible = showPlaybackSpeedSheet && !isPipMode && !isLocked,
+            isLandscape = isLandscape,
+            config = BottomSheetConfig(
+                landscapeWidthFraction = 0.4f,
+                landscapeHeightFraction = 0.7f
+            ),
+            onDismiss = { showPlaybackSpeedSheet = false }
+        ) {
+            PlaybackSpeedContent(
+                onSpeedChange = { speed ->
+                    HlsPlayerUtils.dispatch(HlsPlayerAction.SetPlaybackSpeed(speed))
+                    showPlaybackSpeedSheet = false
+                }
+            )
         }
 
         SeekIndicator(
@@ -371,7 +372,10 @@ fun VideoPlayer(
             ResumePlaybackOverlay(
                 isPipMode = isPipMode,
                 lastTimestamp = episodeDetailComplement.lastTimestamp,
-                onClose = { setShowResumeOverlay(false) },
+                onClose = {
+                    isFirstLoad = false
+                    setShowResumeOverlay(false)
+                },
                 onRestart = {
                     mediaController?.transportControls?.seekTo(0)
                     HlsPlayerUtils.dispatch(HlsPlayerAction.Play)
@@ -425,13 +429,6 @@ fun VideoPlayer(
             onSkip = onSkipOutro,
             modifier = Modifier.align(Alignment.BottomEnd)
         )
-
-        if (isShowPip && !isPipMode && !isLocked && !shouldShowResumeOverlay && !isShowNextEpisode && errorMessage == null) {
-            PipButton(
-                onEnterPipMode = onEnterPipMode,
-                modifier = Modifier.align(Alignment.TopCenter)
-            )
-        }
 
         if (isShowSpeedUp && !isPipMode && !isLocked && !shouldShowResumeOverlay && !isShowNextEpisode && errorMessage == null) {
             SpeedUpIndicator(

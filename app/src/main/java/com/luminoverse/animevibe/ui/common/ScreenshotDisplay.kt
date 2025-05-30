@@ -28,7 +28,7 @@ fun ScreenshotDisplay(
     modifier: Modifier = Modifier,
     imageUrl: String? = animeDetailPlaceholder.images.webp.large_image_url,
     screenshot: String? = "",
-    clickable: Boolean = true
+    onClick: (() -> Unit)? = null,
 ) {
     var showDialog by remember { mutableStateOf(false) }
     val screenshotBitmap = screenshot?.let { base64String ->
@@ -48,7 +48,13 @@ fun ScreenshotDisplay(
                 modifier = modifier
                     .aspectRatio(16f / 9f)
                     .clip(RoundedCornerShape(8.dp))
-                    .clickable(enabled = clickable) { showDialog = true }
+                    .clickable {
+                        if (onClick != null) {
+                            onClick()
+                        } else {
+                            showDialog = true
+                        }
+                    }
             )
         }
 
@@ -59,7 +65,7 @@ fun ScreenshotDisplay(
                 modifier = modifier
                     .aspectRatio(16f / 9f)
                     .clip(RoundedCornerShape(8.dp)),
-                isClickable = clickable
+                isClickable = onClick != null,
             )
         }
 

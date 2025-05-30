@@ -27,8 +27,8 @@ import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PictureInPictureAlt
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Replay
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.Subtitles
@@ -65,7 +65,7 @@ fun PlayerControls(
     onPipClick: () -> Unit,
     onLockToggle: () -> Unit,
     onSubtitleClick: () -> Unit,
-    onSettingsClick: () -> Unit,
+    onPlaybackSpeedClick: () -> Unit,
     onFullscreenToggle: () -> Unit,
     onClick: () -> Unit
 ) {
@@ -134,9 +134,9 @@ fun PlayerControls(
                             tint = Color.White
                         )
                     }
-                    IconButton(onClick = onSettingsClick) {
+                    IconButton(onClick = onPlaybackSpeedClick) {
                         Icon(
-                            imageVector = Icons.Default.Settings,
+                            imageVector = Icons.Default.Speed,
                             contentDescription = "Settings",
                             tint = Color.White
                         )
