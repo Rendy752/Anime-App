@@ -179,7 +179,6 @@ class BroadcastNotificationWorker @AssistedInject constructor(
 
             if (!isConnected) {
                 log("No internet connection, will try to use cached schedules")
-                // Implement cache retrieval logic here if available
                 return schedules
             }
 
