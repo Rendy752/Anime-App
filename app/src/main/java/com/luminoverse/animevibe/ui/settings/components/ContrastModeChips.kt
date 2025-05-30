@@ -11,8 +11,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.luminoverse.animevibe.ui.theme.ContrastMode
@@ -39,21 +37,19 @@ fun ContrastModeChips(
                 fontSize = 12.sp
             )
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            ContrastMode.entries.forEach { mode ->
-                FilterChip(
-                    selected = selectedContrastMode == mode,
-                    onClick = { onContrastModeChanged(mode) },
-                    label = { Text(mode.name) },
-                    colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-                        selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
-                    ),
-                    modifier = Modifier.semantics {
-                        contentDescription = "Contrast mode ${mode.name}"
-                    }
-                )
-            }
-        }
+        FilterChip(
+            selected = true,
+            onClick = {
+                val contrastModeOptions = ContrastMode.entries
+                val currentIndex = contrastModeOptions.indexOf(selectedContrastMode)
+                val nextIndex = (currentIndex + 1) % contrastModeOptions.size
+                onContrastModeChanged(contrastModeOptions[nextIndex])
+            },
+            label = { Text(selectedContrastMode.name) },
+            colors = FilterChipDefaults.filterChipColors(
+                selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer
+            )
+        )
     }
 }
