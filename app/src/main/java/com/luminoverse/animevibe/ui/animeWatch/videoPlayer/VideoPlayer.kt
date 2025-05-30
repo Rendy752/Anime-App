@@ -8,13 +8,8 @@ import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -28,10 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.fragment.app.FragmentActivity
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -72,7 +64,6 @@ fun VideoPlayer(
     errorMessage: String?,
     modifier: Modifier = Modifier,
     videoSize: Modifier,
-    onPlay: () -> Unit,
     onFastForward: () -> Unit,
     onRewind: () -> Unit,
     onSkipIntro: () -> Unit,
@@ -187,16 +178,6 @@ fun VideoPlayer(
                 modifier = Modifier.fillMaxSize(),
                 clickable = false
             )
-            CircularProgressIndicator(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(color = Color.White.copy(0.5f))
-                    .padding(8.dp)
-                    .align(Alignment.Center)
-                    .size(48.dp),
-                color = Color.Black,
-                strokeWidth = 4.dp
-            )
         } else {
             PlayerViewWrapper(
                 playerView = playerView,
@@ -209,7 +190,7 @@ fun VideoPlayer(
                     if (hlsPlayerState.isPlaying) {
                         HlsPlayerUtils.dispatch(HlsPlayerAction.Pause)
                     } else {
-                        onPlay()
+                        HlsPlayerUtils.dispatch(HlsPlayerAction.Play)
                     }
                     isControlsVisible = true
                     HlsPlayerUtils.dispatch(HlsPlayerAction.ToggleControlsVisibility(true))
@@ -222,7 +203,10 @@ fun VideoPlayer(
                 onHoldingChange = { holding, fromHolding ->
                     isHolding = holding
                     isFromHolding = fromHolding
-                    Log.d("VideoPlayer", "onHoldingChange: isHolding=$holding, isFromHolding=$fromHolding")
+                    Log.d(
+                        "VideoPlayer",
+                        "onHoldingChange: isHolding=$holding, isFromHolding=$fromHolding"
+                    )
                 },
                 onSeek = { direction, amount ->
                     isShowSeekIndicator = true
@@ -245,7 +229,6 @@ fun VideoPlayer(
             )
         }
 
-        // Custom controls with fade animation
         AnimatedVisibility(
             visible = isControlsVisible && !isPipMode && !isLocked && errorMessage == null,
             enter = fadeIn(),
@@ -257,11 +240,14 @@ fun VideoPlayer(
                 episodes = episodes,
                 isLandscape = isLandscape,
                 isFullscreen = isFullscreen,
-                onPlayPause = {
-                    if (hlsPlayerState.isPlaying) {
-                        HlsPlayerUtils.dispatch(HlsPlayerAction.Pause)
-                    } else {
-                        onPlay()
+                onPlayPauseRestart = {
+                    when (hlsPlayerState.playbackState) {
+                        Player.STATE_ENDED -> mediaController?.transportControls?.seekTo(0)
+                        else -> if (hlsPlayerState.isPlaying) {
+                            HlsPlayerUtils.dispatch(HlsPlayerAction.Pause)
+                        } else {
+                            HlsPlayerUtils.dispatch(HlsPlayerAction.Play)
+                        }
                     }
                     isControlsVisible = true
                     HlsPlayerUtils.dispatch(HlsPlayerAction.ToggleControlsVisibility(true))
@@ -333,7 +319,12 @@ fun VideoPlayer(
             )
         }
 
-        // Subtitle Bottom Sheet
+        LoadingIndicator(
+            modifier = Modifier.align(Alignment.Center),
+            hlsPlayerState = hlsPlayerState,
+            errorMessage = errorMessage
+        )
+
         if (showSubtitleSheet) {
             CustomModalBottomSheet(
                 modifier = Modifier.align(Alignment.BottomCenter),
@@ -352,7 +343,6 @@ fun VideoPlayer(
             }
         }
 
-        // Settings Bottom Sheet
         if (showSettingsSheet) {
             CustomModalBottomSheet(
                 modifier = Modifier.align(Alignment.BottomCenter),
@@ -384,12 +374,12 @@ fun VideoPlayer(
                 onClose = { setShowResumeOverlay(false) },
                 onRestart = {
                     mediaController?.transportControls?.seekTo(0)
-                    onPlay()
+                    HlsPlayerUtils.dispatch(HlsPlayerAction.Play)
                     setShowResumeOverlay(false)
                 },
                 onResume = {
                     mediaController?.transportControls?.seekTo(it)
-                    onPlay()
+                    HlsPlayerUtils.dispatch(HlsPlayerAction.Play)
                     setShowResumeOverlay(false)
                 },
                 modifier = Modifier.align(Alignment.Center)
@@ -401,7 +391,7 @@ fun VideoPlayer(
                 nextEpisodeName = nextEpisodeName,
                 onRestart = {
                     mediaController?.transportControls?.seekTo(0)
-                    onPlay()
+                    HlsPlayerUtils.dispatch(HlsPlayerAction.Play)
                     setShowNextEpisode(false)
                 },
                 onSkipNext = {

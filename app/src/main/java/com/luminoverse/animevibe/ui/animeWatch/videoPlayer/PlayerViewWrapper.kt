@@ -87,28 +87,7 @@ fun PlayerViewWrapper(
                 )
             }
             view.setShowSubtitleButton(tracks.any { it.kind == "captions" })
-            view.useController = false // Disable default controller
-            view.controllerShowTimeoutMs = 0 // Prevent default controller auto-show
-            view.setShowBuffering(PlayerView.SHOW_BUFFERING_ALWAYS)
             view.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
-
-            view.fitsSystemWindows = !isFullscreen
-            if (isFullscreen) {
-                view.setPadding(0, 0, 0, 0)
-                view.layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT
-                )
-            }
-
-            view.setOnApplyWindowInsetsListener { v, insets ->
-                if (isFullscreen) {
-                    v.setPadding(0, 0, 0, 0)
-                    insets
-                } else {
-                    v.onApplyWindowInsets(insets)
-                }
-            }
 
             var isHolding = false
             var isFromHolding = false

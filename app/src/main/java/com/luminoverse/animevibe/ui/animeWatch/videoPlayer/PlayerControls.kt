@@ -1,6 +1,7 @@
 package com.luminoverse.animevibe.ui.animeWatch.videoPlayer
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -24,8 +25,9 @@ import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PictureInPicture
+import androidx.compose.material.icons.filled.PictureInPictureAlt
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
@@ -43,6 +45,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.media3.common.Player
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.utils.TimeUtils.formatTimestamp
@@ -55,7 +58,7 @@ fun PlayerControls(
     episodes: List<Episode>,
     isLandscape: Boolean,
     isFullscreen: Boolean,
-    onPlayPause: () -> Unit,
+    onPlayPauseRestart: () -> Unit,
     onPreviousEpisode: () -> Unit,
     onNextEpisode: () -> Unit,
     onSeekTo: (Long) -> Unit,
@@ -112,7 +115,7 @@ fun PlayerControls(
                 Row {
                     IconButton(onClick = onPipClick) {
                         Icon(
-                            imageVector = Icons.Default.PictureInPicture,
+                            imageVector = Icons.Default.PictureInPictureAlt,
                             contentDescription = "Picture in Picture",
                             tint = Color.White
                         )
@@ -161,33 +164,56 @@ fun PlayerControls(
                         tint = if (hasPreviousEpisode) Color.White else Color.Gray
                     )
                 }
-                IconButton(
+
+                AnimatedVisibility(
+                    visible = (hlsPlayerState.playbackState != Player.STATE_BUFFERING && hlsPlayerState.playbackState != Player.STATE_IDLE),
                     modifier = Modifier.background(
                         color = Color.Black.copy(alpha = 0.4f),
                         shape = CircleShape
                     ),
-                    onClick = onPlayPause
+                    enter = fadeIn(tween(300)),
+                    exit = fadeOut(tween(300))
                 ) {
-                    AnimatedContent(
-                        targetState = hlsPlayerState.isPlaying,
-                        transitionSpec = {
-                            (fadeIn(tween(300)) + scaleIn(tween(300), initialScale = 0.8f))
-                                .togetherWith(
-                                    fadeOut(tween(300)) + scaleOut(
-                                        tween(300),
-                                        targetScale = 0.8f
+                    IconButton(onClick = onPlayPauseRestart) {
+                        AnimatedContent(
+                            targetState = when (hlsPlayerState.playbackState) {
+                                Player.STATE_ENDED -> "ended"
+                                else -> if (hlsPlayerState.isPlaying) "playing" else "paused"
+                            },
+                            transitionSpec = {
+                                (fadeIn(tween(300)) + scaleIn(tween(300), initialScale = 0.8f))
+                                    .togetherWith(
+                                        fadeOut(tween(300)) + scaleOut(
+                                            tween(300),
+                                            targetScale = 0.8f
+                                        )
                                     )
+                            },
+                            label = "PlayerStateAnimation"
+                        ) { state ->
+                            when (state) {
+                                "ended" -> Icon(
+                                    imageVector = Icons.Default.Replay,
+                                    contentDescription = "Replay",
+                                    tint = Color.White
                                 )
-                        },
-                        label = "PlayPauseIconAnimation"
-                    ) { isPlaying ->
-                        Icon(
-                            imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                            contentDescription = if (isPlaying) "Pause" else "Play",
-                            tint = Color.White
-                        )
+
+                                "playing" -> Icon(
+                                    imageVector = Icons.Default.Pause,
+                                    contentDescription = "Pause",
+                                    tint = Color.White
+                                )
+
+                                "paused" -> Icon(
+                                    imageVector = Icons.Default.PlayArrow,
+                                    contentDescription = "Play",
+                                    tint = Color.White
+                                )
+                            }
+                        }
                     }
                 }
+
                 IconButton(
                     modifier = Modifier.background(
                         color = Color.Black.copy(alpha = 0.4f),
@@ -238,7 +264,6 @@ fun PlayerControls(
                         .fillMaxWidth()
                         .clickable {
                             // Handle progress bar click to seek
-                            // This will require calculating the click position relative to the progress bar
                         }
                 )
             }

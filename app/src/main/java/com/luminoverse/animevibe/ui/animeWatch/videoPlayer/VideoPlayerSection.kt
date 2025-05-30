@@ -406,7 +406,6 @@ fun VideoPlayerSection(
             errorMessage = watchState.errorMessage,
             modifier = modifier,
             videoSize = videoSize,
-            onPlay = { mediaControllerCompat?.transportControls?.play() },
             onFastForward = { HlsPlayerUtils.dispatch(HlsPlayerAction.FastForward) },
             onRewind = { HlsPlayerUtils.dispatch(HlsPlayerAction.Rewind) },
             onSkipIntro = {
