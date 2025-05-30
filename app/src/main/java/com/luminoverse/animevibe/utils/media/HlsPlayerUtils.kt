@@ -102,15 +102,18 @@ object HlsPlayerUtils {
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var watchStateUpdateJob: Job? = null
     private var introOutroJob: Job? = null
+    private var positionUpdateJob: Job? = null
     private var introSkipped = false
     private var outroSkipped = true
     private var currentVideoData: EpisodeSourcesResponse? = null
+    private var updateStoredWatchState: ((Long?, Long?, String?) -> Unit)? = null
 
     private val _state = MutableStateFlow(HlsPlayerState())
     val state: StateFlow<HlsPlayerState> = _state.asStateFlow()
 
     private const val WATCH_STATE_UPDATE_INTERVAL_MS = 1_000L
     private const val INTRO_OUTRO_CHECK_INTERVAL_MS = 1_000L
+    private const val POSITION_UPDATE_INTERVAL_MS = 500L
 
     @OptIn(UnstableApi::class)
     fun dispatch(action: HlsPlayerAction) {
@@ -208,26 +211,28 @@ object HlsPlayerUtils {
             exoPlayer = ExoPlayer.Builder(context).build().apply {
                 addListener(object : Player.Listener {
                     override fun onIsPlayingChanged(isPlaying: Boolean) {
-                        Log.d("CGIPlayerUtils", "onIsPlayingChanged: isPlaying=$isPlaying")
+                        Log.d("HlsPlayerUtils", "onIsPlayingChanged: isPlaying=$isPlaying")
                         _state.update { it.copy(isPlaying = isPlaying, error = null) }
                         if (isPlaying) {
                             requestAudioFocus()
                             startIntroOutroCheck()
+                            startPositionUpdates()
                         } else {
                             abandonAudioFocus()
                             stopIntroOutroCheck()
+                            stopPositionUpdates()
                         }
                     }
 
                     override fun onPlaybackStateChanged(state: Int) {
-                        Log.d("CGIPlayerUtils", "onPlaybackStateChanged: state=$state")
+                        Log.d("HlsPlayerUtils", "onPlaybackStateChanged: state=$state")
                         val isReady = state == Player.STATE_READY || state == Player.STATE_BUFFERING
                         _state.update {
                             it.copy(
                                 playbackState = state,
                                 isReady = isReady,
                                 currentPosition = currentPosition,
-                                duration = duration
+                                duration = duration.takeIf { it > 0 } ?: 0
                             )
                         }
                         when (state) {
@@ -235,6 +240,7 @@ object HlsPlayerUtils {
                                 _state.update { it.copy(isPlaying = false) }
                                 abandonAudioFocus()
                                 stopIntroOutroCheck()
+                                stopPositionUpdates()
                             }
 
                             Player.STATE_READY -> {
@@ -251,6 +257,7 @@ object HlsPlayerUtils {
                                 _state.update { it.copy(error = null) }
                                 abandonAudioFocus()
                                 stopIntroOutroCheck()
+                                stopPositionUpdates()
                             }
                         }
                     }
@@ -277,14 +284,15 @@ object HlsPlayerUtils {
                             error.message != null -> "Playback error: ${error.message}"
                             else -> "Unknown playback error"
                         }
-                        Log.e("CGIPlayerUtils", "onPlayerError: $message", error)
+                        Log.e("HlsPlayerUtils", "onPlayerError: $message", error)
                         _state.update { it.copy(error = message) }
                         abandonAudioFocus()
                         stopIntroOutroCheck()
+                        stopPositionUpdates()
                     }
                 })
                 pause()
-                Log.d("CGIPlayerUtils", "ExoPlayer initialized")
+                Log.d("HlsPlayerUtils", "ExoPlayer initialized")
             }
             _state.update { it.copy(playbackState = Player.STATE_IDLE, isReady = false) }
         }
@@ -298,94 +306,111 @@ object HlsPlayerUtils {
         onReady: () -> Unit = {},
         onError: (String) -> Unit = {}
     ) {
-        currentVideoData = videoData
-        introSkipped = false
-        outroSkipped = true
-        _state.update {
-            it.copy(
-                showIntroButton = false,
-                showOutroButton = false,
-                selectedSubtitle = null
-            )
-        }
-        stopIntroOutroCheck()
-
-        exoPlayer?.let { player ->
-            player.stop()
-            player.clearMediaItems()
-            pause()
-
-            if (videoData.sources.isNotEmpty() && videoData.sources[0].type == "hls") {
-                val mediaItemUri = videoData.sources[0].url.toUri()
-                val mediaItemBuilder = MediaItem.Builder().setUri(mediaItemUri)
-
-                if (videoData.tracks.any { it.kind == "captions" }) {
-                    val subtitleConfigurations = mutableListOf<MediaItem.SubtitleConfiguration>()
-                    videoData.tracks.filter { it.kind == "captions" }.forEach { track ->
-                        val subtitleConfiguration =
-                            MediaItem.SubtitleConfiguration.Builder(track.file.toUri())
-                                .setMimeType(MimeTypes.TEXT_VTT)
-                                .setLanguage(track.label?.substringBefore("-")?.trim())
-                                .setSelectionFlags(if (track.default == true) C.SELECTION_FLAG_DEFAULT else 0)
-                                .setLabel(track.label?.substringBefore("-")?.trim())
-                                .build()
-                        subtitleConfigurations.add(subtitleConfiguration)
-                    }
-                    mediaItemBuilder.setSubtitleConfigurations(subtitleConfigurations)
-                }
-
-                player.setMediaItem(mediaItemBuilder.build())
-                player.prepare()
-
-                if (!isAutoPlayVideo) {
-                    pause()
-                }
-
-                Log.d(
-                    "CGIPlayerUtils",
-                    "Media set: url=$mediaItemUri, lastTimestamp=$lastTimestamp, isAutoPlayVideo=$isAutoPlayVideo"
+        try {
+            currentVideoData = videoData
+            introSkipped = false
+            outroSkipped = true
+            _state.update {
+                it.copy(
+                    showIntroButton = false,
+                    showOutroButton = false,
+                    selectedSubtitle = null,
+                    duration = 0
                 )
+            }
+            stopIntroOutroCheck()
+            stopPositionUpdates()
 
-                val readyListener = object : Player.Listener {
-                    override fun onPlaybackStateChanged(state: Int) {
-                        if (state == Player.STATE_READY) {
-                            Log.d(
-                                "CGIPlayerUtils",
-                                "Player ready for media, duration=${player.duration}"
-                            )
-                            onReady()
-                            if (isAutoPlayVideo) {
-                                lastTimestamp?.let { timestamp ->
-                                    if (timestamp > 0 && timestamp < player.duration) {
-                                        seekTo(timestamp)
-                                        Log.d(
-                                            "CGIPlayerUtils",
-                                            "AutoPlay: seekTo timestamp=$timestamp"
-                                        )
-                                    }
+            exoPlayer?.let { player ->
+                player.stop()
+                player.clearMediaItems()
+                pause()
+
+                if (videoData.sources.isNotEmpty() && videoData.sources[0].type == "hls") {
+                    val mediaItemUri = videoData.sources[0].url.toUri()
+                    val mediaItemBuilder = MediaItem.Builder().setUri(mediaItemUri)
+
+                    if (videoData.tracks.any { it.kind == "captions" } == true) {
+                        val subtitleConfigurations =
+                            mutableListOf<MediaItem.SubtitleConfiguration>()
+                        videoData.tracks.filter { it.kind == "captions" }.forEach { track ->
+                            val subtitleConfiguration =
+                                MediaItem.SubtitleConfiguration.Builder(track.file.toUri())
+                                    .setMimeType(MimeTypes.TEXT_VTT)
+                                    .setLanguage(track.label?.substringBefore("-")?.trim() ?: "")
+                                    .setSelectionFlags(
+                                        if (track.default == true) C.SELECTION_FLAG_DEFAULT else 0
+                                    )
+                                    .setLabel(track.label?.substringBefore("-")?.trim() ?: "")
+                                    .build()
+                            subtitleConfigurations.add(subtitleConfiguration)
+                        }
+                        mediaItemBuilder.setSubtitleConfigurations(subtitleConfigurations)
+                    }
+
+                    player.setMediaItem(mediaItemBuilder.build())
+                    player.prepare()
+
+                    if (!isAutoPlayVideo) {
+                        pause()
+                    }
+
+                    Log.d(
+                        "HlsPlayerUtils",
+                        "Media set: url=$mediaItemUri, lastTimestamp=$lastTimestamp, isAutoPlayVideo=$isAutoPlayVideo"
+                    )
+
+                    val readyListener = object : Player.Listener {
+                        override fun onPlaybackStateChanged(state: Int) {
+                            if (state == Player.STATE_READY) {
+                                Log.d(
+                                    "HlsPlayerUtils",
+                                    "Player ready for media, duration=${player.duration}"
+                                )
+                                _state.update {
+                                    it.copy(
+                                        duration = player.duration.takeIf { it > 0 } ?: 0
+                                    )
                                 }
-                                player.play()
-                                Log.d("CGIPlayerUtils", "AutoPlay: play called")
+                                onReady()
+                                if (isAutoPlayVideo) {
+                                    lastTimestamp?.let { timestamp ->
+                                        if (timestamp > 0 && timestamp < player.duration) {
+                                            seekTo(timestamp)
+                                            Log.d(
+                                                "HlsPlayerUtils",
+                                                "AutoPlay: seekTo timestamp=$timestamp"
+                                            )
+                                        }
+                                    }
+                                    player.play()
+                                    Log.d("HlsPlayerUtils", "AutoPlay: play called")
+                                }
+                                player.removeListener(this)
                             }
+                        }
+
+                        override fun onPlayerError(error: PlaybackException) {
+                            val message =
+                                "Playback failed: ${error.message ?: "Unknown error"}. Please refresh or try a different server."
+                            Log.e("HlsPlayerUtils", message, error)
+                            onError(message)
                             player.removeListener(this)
                         }
                     }
-
-                    override fun onPlayerError(error: PlaybackException) {
-                        val message =
-                            "Playback failed: ${error.message ?: "Unknown error"}. Please refresh or try a different server."
-                        Log.e("CGIPlayerUtils", message, error)
-                        onError(message)
-                        player.removeListener(this)
-                    }
+                    player.addListener(readyListener)
+                } else {
+                    val message = "Invalid HLS source"
+                    Log.e("HlsPlayerUtils", message)
+                    _state.update { it.copy(error = message) }
+                    onError(message)
                 }
-                player.addListener(readyListener)
-            } else {
-                val message = "Invalid HLS source"
-                Log.e("CGIPlayerUtils", message)
-                _state.update { it.copy(error = message) }
-                onError(message)
             }
+        } catch (e: Exception) {
+            Log.e("HlsPlayerUtils", "Failed to set media", e)
+            val message = "Failed to set media: ${e.message ?: "Unknown error"}"
+            _state.update { it.copy(error = message) }
+            onError(message)
         }
     }
 
@@ -397,7 +422,7 @@ object HlsPlayerUtils {
 
     private fun pause() {
         exoPlayer?.pause()
-        Log.d("CGIPlayerUtils", "pause called")
+        Log.d("HlsPlayerUtils", "pause called")
     }
 
     private fun seekTo(positionMs: Long) {
@@ -407,7 +432,8 @@ object HlsPlayerUtils {
                 .coerceAtMost(if (duration > 0) duration else Long.MAX_VALUE)
             it.seekTo(clampedPos)
             introOutroCheck()
-            Log.d("CGIPlayerUtils", "seekTo: position=$clampedPos, duration=$duration")
+            _state.update { it.copy(currentPosition = clampedPos) }
+            Log.d("HlsPlayer", "seekTo: position=$clampedPos, duration=$duration")
         }
     }
 
@@ -418,41 +444,53 @@ object HlsPlayerUtils {
             val newPosition =
                 (currentPosition + 10_000).coerceAtMost(if (duration > 0) duration else Long.MAX_VALUE)
             seekTo(newPosition)
-            Log.d("CGIPlayerUtils", "fastForward: from=$currentPosition to=$newPosition")
+            Log.d("HlsPlayer", "fastForward: from=$currentPosition to=$newPosition")
         }
     }
 
     private fun rewind() {
         exoPlayer?.let {
-            val currentPosition = it.currentPosition
-            val newPosition = (currentPosition - 10_000).coerceAtLeast(0)
-            seekTo(newPosition)
-            Log.d("CGIPlayerUtils", "rewind: from=$currentPosition to=$newPosition")
+            try {
+                val currentPosition = it.currentPosition
+                val newPosition = (currentPosition - 10_000).coerceAtLeast(0)
+                seekTo(newPosition)
+                Log.d("HlsPlayer", "rewind: from=$currentPosition to=$newPosition")
+            } catch (e: Exception) {
+                Log.e("HlsPlayer", "Rewind failed", e)
+            }
         }
     }
 
     private fun setPlaybackSpeed(speed: Float) {
         exoPlayer?.setPlaybackSpeed(speed)
         _state.update { it.copy(playbackSpeed = speed) }
-        Log.d("CGIPlayerUtils", "setPlaybackSpeed: speed=$speed")
+        Log.d("HlsPlayerUtils", "setPlaybackSpeed: speed=$speed")
     }
 
     private fun setVideoSurface(surface: Any?) {
         videoSurface = surface
-        when (surface) {
-            is TextureView -> exoPlayer?.setVideoTextureView(surface)
-            is SurfaceView -> exoPlayer?.setVideoSurfaceView(surface)
-            null -> {
-                exoPlayer?.clearVideoSurface()
-                Log.d("CGIPlayerUtils", "Video surface cleared")
-            }
+        try {
+            when (surface) {
+                is TextureView -> exoPlayer?.setVideoTextureView(surface)
+                is SurfaceView -> exoPlayer?.setVideoSurfaceView(surface)
+                null -> {
+                    exoPlayer?.clearVideoSurface()
+                    Log.d("HlsPlayerUtils", "Video surface cleared")
+                }
 
-            else -> Log.w("CGIPlayerUtils", "Unsupported video surface type: ${surface.javaClass}")
+                else -> Log.w(
+                    "HlsPlayerUtils",
+                    "Unsupported video surface type: ${surface.javaClass}"
+                )
+            }
+            Log.d("HlsPlayerUtils", "Video surface set: ${surface?.javaClass?.simpleName}")
+        } catch (e: Exception) {
+            Log.e("HlsPlayerUtils", "Failed to set video surface", e)
         }
-        Log.d("CGIPlayerUtils", "Video surface set: ${surface?.javaClass?.simpleName}")
     }
 
     private fun updateWatchState(updateStoredWatchState: (Long?, Long?, String?) -> Unit) {
+        this.updateStoredWatchState = updateStoredWatchState
         startPeriodicWatchStateUpdates(updateStoredWatchState)
         exoPlayer?.addListener(object : Player.Listener {
             override fun onPlaybackStateChanged(playbackState: Int) {
@@ -465,14 +503,14 @@ object HlsPlayerUtils {
                                 val screenshot = captureScreenshot()
                                 updateStoredWatchState(duration, duration, screenshot)
                                 Log.d(
-                                    "CGIPlayerUtils",
+                                    "HlsPlayerUtils",
                                     "Video ended: saved watch state with position=$duration, duration=$duration, screenshot=${
                                         screenshot?.take(20)
                                     }..."
                                 )
                             }
                         } catch (e: Exception) {
-                            Log.e("CGIPlayerUtils", "Failed to save watch state on video end", e)
+                            Log.e("HlsPlayerUtils", "Failed to save watch state on video end", e)
                         }
                     }
                 }
@@ -482,215 +520,309 @@ object HlsPlayerUtils {
                 if (isPlaying) {
                     _state.update { it.copy(isPlaying = true) }
                     startPeriodicWatchStateUpdates(updateStoredWatchState)
+                    startPositionUpdates()
                 } else {
                     _state.update { it.copy(isPlaying = false) }
                     stopPeriodicWatchStateUpdates()
+                    stopPositionUpdates()
                 }
             }
         })
     }
 
-    private fun startPeriodicWatchStateUpdates(
-        updateStoredWatchState: (Long?, Long?, String?) -> Unit
-    ) {
-        watchStateUpdateJob?.cancel()
-        watchStateUpdateJob = coroutineScope.launch {
-            while (true) {
-                val state = _state.value
-                if (state.isPlaying) {
-                    exoPlayer?.let { player ->
-                        val position = player.currentPosition
-                        val duration = player.duration
-                        if (position > 10_000 && position < duration) {
+    private fun startPeriodicWatchStateUpdates(updateStoredWatchState: ((Long?, Long?, String?) -> Unit)?) {
+        try {
+            watchStateUpdateJob?.cancel()
+            watchStateUpdateJob = coroutineScope.launch {
+                while (true) {
+                    val state = state.value
+                    if (state.isPlaying) {
+                        exoPlayer?.let { player ->
                             try {
-                                withTimeout(5_000) {
+                                withTimeout(5_000L) {
+                                    val position = player.currentPosition
+                                    val duration = player.duration.takeIf { it > 0 } ?: 0
                                     val screenshot = captureScreenshot()
-                                    updateStoredWatchState(position, duration, screenshot)
+                                    updateStoredWatchState?.invoke(position, duration, screenshot)
                                     Log.d(
-                                        "CGIPlayerUtils",
-                                        "Periodic watch state update: position=$position, screenshot=${
+                                        "HlsPlayerUtils",
+                                        "Periodic watch state update: position=$position, duration=$duration, screenshot=${
                                             screenshot?.take(20)
                                         }..."
                                     )
                                 }
                             } catch (e: Exception) {
-                                Log.e("CGIPlayerUtils", "Failed to save periodic watch state", e)
+                                Log.e("HlsPlayerUtils", "Failed to save periodic watch state", e)
                             }
                         }
                     }
+                    delay(WATCH_STATE_UPDATE_INTERVAL_MS)
                 }
-                delay(WATCH_STATE_UPDATE_INTERVAL_MS)
             }
+            Log.d("HlsPlayerUtils", "Started periodic watch state updates")
+        } catch (e: Exception) {
+            Log.e("HlsPlayerUtils", "Failed to start periodic watch state updates", e)
         }
     }
 
     private fun stopPeriodicWatchStateUpdates() {
-        watchStateUpdateJob?.cancel()
-        watchStateUpdateJob = null
-        Log.d("CGIPlayerUtils", "Stopped periodic watch state updates")
+        try {
+            watchStateUpdateJob?.cancel()
+            watchStateUpdateJob = null
+            Log.d("HlsPlayerUtils", "Stopped periodic watch state updates")
+        } catch (e: Exception) {
+            Log.e("HlsPlayerUtils", "Failed to stop periodic watch state updates", e)
+        }
+    }
+
+    private fun startPositionUpdates() {
+        try {
+            positionUpdateJob?.cancel()
+            positionUpdateJob = coroutineScope.launch {
+                while (true) {
+                    exoPlayer?.let { player ->
+                        try {
+                            val position = player.currentPosition
+                            val duration = player.duration.takeIf { it > 0 } ?: 0
+                            _state.update {
+                                it.copy(
+                                    currentPosition = position,
+                                    duration = duration
+                                )
+                            }
+                            Log.d(
+                                "HlsPlayerUtils",
+                                "Position update: position=$position, duration=$duration"
+                            )
+                        } catch (e: Exception) {
+                            Log.w("HlsPlayerUtils", "Failed to update position", e)
+                        }
+                    }
+                    delay(POSITION_UPDATE_INTERVAL_MS)
+                }
+            }
+            Log.d("HlsPlayerUtils", "Started position updates")
+        } catch (e: Exception) {
+            Log.e("HlsPlayerUtils", "Failed to start position updates", e)
+        }
+    }
+
+    private fun stopPositionUpdates() {
+        try {
+            positionUpdateJob?.cancel()
+            positionUpdateJob = null
+            Log.d("HlsPlayerUtils", "Stopped position updates")
+        } catch (e: Exception) {
+            Log.e("HlsPlayerUtils", "Failed to stop position updates", e)
+        }
     }
 
     private fun startIntroOutroCheck() {
-        if (introOutroJob?.isActive != true && currentVideoData != null) {
-            Log.d("CGIPlayerUtils", "Starting intro/outro periodic check")
-            introOutroJob = coroutineScope.launch(Dispatchers.Main) {
-                while (true) {
-                    introOutroCheck()
-                    delay(INTRO_OUTRO_CHECK_INTERVAL_MS)
+        try {
+            if (introOutroJob?.isActive != true && currentVideoData != null) {
+                Log.d("HlsPlayerUtils", "Starting intro/outro periodic check")
+                introOutroJob = coroutineScope.launch(Dispatchers.Main) {
+                    while (true) {
+                        introOutroCheck()
+                        delay(INTRO_OUTRO_CHECK_INTERVAL_MS)
+                    }
                 }
             }
+        } catch (e: Exception) {
+            Log.e("HlsPlayerUtils", "Failed to start intro/outro check", e)
         }
     }
 
     private fun introOutroCheck() {
-        currentVideoData?.let { videoData ->
-            exoPlayer?.let { player ->
-                val currentPositionSec = player.currentPosition / 1000
-                Log.d(
-                    "CGIPlayerUtils",
-                    "Intro/Outro check: position=$currentPositionSec"
-                )
-
-                val intro = videoData.intro
-                val outro = videoData.outro
-
-                _state.update {
-                    it.copy(
-                        showIntroButton = intro != null && currentPositionSec in intro.start..intro.end && !introSkipped,
-                        showOutroButton = outro != null && currentPositionSec in outro.start..outro.end && !outroSkipped
+        try {
+            currentVideoData?.let { videoData ->
+                exoPlayer?.let { player ->
+                    val currentPositionSec = player.currentPosition / 1000
+                    Log.d(
+                        "HlsPlayerUtils",
+                        "Intro/Outro check: position=$currentPositionSec"
                     )
-                }
 
-                if (intro != null && (currentPositionSec < intro.start || currentPositionSec > intro.end)) {
-                    introSkipped = false
-                }
-                if (outro != null && (currentPositionSec < outro.start || currentPositionSec > outro.end)) {
-                    outroSkipped = false
+                    val intro = videoData.intro
+                    val outro = videoData.outro
+
+                    _state.update {
+                        it.copy(
+                            showIntroButton = intro != null && currentPositionSec in intro.start..intro.end && !introSkipped,
+                            showOutroButton = outro != null && currentPositionSec in outro.start..outro.end && !outroSkipped
+                        )
+                    }
+
+                    if (intro != null && (currentPositionSec < intro.start || currentPositionSec > intro.end)) {
+                        introSkipped = false
+                    }
+                    if (outro != null && (currentPositionSec < outro.start || currentPositionSec > outro.end)) {
+                        outroSkipped = false
+                    }
                 }
             }
+        } catch (e: Exception) {
+            Log.e("HlsPlayerUtils", "Intro/Outro check failed", e)
         }
     }
 
     private fun stopIntroOutroCheck() {
-        if (introOutroJob?.isActive == true) {
-            Log.d("CGIPlayerUtils", "Stopping intro/outro periodic check")
-            introOutroJob?.cancel()
-            introOutroJob = null
+        try {
+            if (introOutroJob?.isActive == true) {
+                Log.d("HlsPlayerUtils", "Stopping intro/outro periodic check")
+                introOutroJob?.cancel()
+                introOutroJob = null
+            }
+        } catch (e: Exception) {
+            Log.e("HlsPlayerUtils", "Failed to stop intro/outro check", e)
         }
     }
 
     private fun skipIntro(endTime: Long) {
-        seekTo(endTime * 1000L)
-        introSkipped = true
-        _state.update { it.copy(showIntroButton = false) }
-        Log.d("CGIPlayerUtils", "Skipped intro to $endTime seconds")
+        try {
+            seekTo(endTime * 1000L)
+            introSkipped = true
+            _state.update { it.copy(showIntroButton = false) }
+            Log.d("HlsPlayerUtils", "Skipped intro to $endTime seconds")
+        } catch (e: Exception) {
+            Log.e("HlsPlayerUtils", "Failed to skip intro", e)
+        }
     }
 
     private fun skipOutro(endTime: Long) {
-        seekTo(endTime * 1000L)
-        outroSkipped = true
-        _state.update { it.copy(showOutroButton = false) }
-        Log.d("CGIPlayerUtils", "Skipped outro to $endTime seconds")
+        try {
+            seekTo(endTime * 1000L)
+            outroSkipped = true
+            _state.update { it.copy(showOutroButton = false) }
+            Log.d("HlsPlayerUtils", "Skipped outro to $endTime seconds")
+        } catch (e: Exception) {
+            Log.e("HlsPlayerUtils", "Failed to skip outro", e)
+        }
     }
 
     private fun setSubtitle(track: Track) {
-        exoPlayer?.let { player ->
-            // Implement subtitle selection logic here
-            // This will depend on how ExoPlayer handles subtitle track selection
-            _state.update { it.copy(selectedSubtitle = track) }
-            Log.d("CGIPlayerUtils", "Selected subtitle: ${track.label}")
+        try {
+            exoPlayer?.let {
+                // Implement subtitle track selection logic here
+                _state.update { it.copy(selectedSubtitle = track) }
+                Log.d("HlsPlayerUtils", "Selected subtitle: ${track.label}")
+            }
+        } catch (e: Exception) {
+            Log.e("HlsPlayerUtils", "Failed to set subtitle", e)
         }
     }
 
     private fun toggleControlsVisibility(isVisible: Boolean) {
-        _state.update { it.copy(isControlsVisible = isVisible) }
-        Log.d("CGIPlayerUtils", "Controls visibility set to $isVisible")
+        try {
+            _state.update { it.copy(isControlsVisible = isVisible) }
+            Log.d("HlsPlayerUtils", "Controls visibility set to $isVisible")
+        } catch (e: Exception) {
+            Log.e("HlsPlayerUtils", "Failed to toggle controls visibility", e)
+        }
     }
 
     private fun toggleLock(isLocked: Boolean) {
-        _state.update { it.copy(isLocked = isLocked) }
-        Log.d("CGIPlayerUtils", "Lock state set to $isLocked")
+        try {
+            _state.update { it.copy(isLocked = isLocked) }
+            Log.d("HlsPlayerUtils", "Lock state set to $isLocked")
+        } catch (e: Exception) {
+            Log.e("HlsPlayerUtils", "Failed to toggle lock", e)
+        }
     }
 
     private fun requestAudioFocus() {
-        if (!audioFocusRequested) {
-            if (audioFocusRequest == null) {
-                val audioFocusChangeListener =
-                    AudioManager.OnAudioFocusChangeListener { focusChange ->
-                        Log.d("CGIPlayerUtils", "Audio focus changed: $focusChange")
-                        when (focusChange) {
-                            AudioManager.AUDIOFOCUS_LOSS -> dispatch(HlsPlayerAction.Pause)
-                            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> dispatch(HlsPlayerAction.Pause)
-                            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
-                                exoPlayer?.volume = 0.5f
+        try {
+            if (!audioFocusRequested) {
+                if (audioFocusRequest == null) {
+                    val audioFocusChangeListener =
+                        AudioManager.OnAudioFocusChangeListener { focusChange ->
+                            Log.d("HlsPlayerUtils", "Audio focus changed: $focusChange")
+                            when (focusChange) {
+                                AudioManager.AUDIOFOCUS_LOSS -> dispatch(HlsPlayerAction.Pause)
+                                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> dispatch(HlsPlayerAction.Pause)
+                                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
+                                    exoPlayer?.volume = 0.5f
+                                }
                             }
                         }
-                    }
-                audioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-                    .setAudioAttributes(
-                        AudioAttributes.Builder()
-                            .setContentType(AudioAttributes.CONTENT_TYPE_MOVIE)
-                            .setUsage(AudioAttributes.USAGE_MEDIA)
-                            .build()
-                    )
-                    .setOnAudioFocusChangeListener(audioFocusChangeListener)
-                    .build()
-            }
+                    audioFocusRequest = AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                        .setAudioAttributes(
+                            AudioAttributes.Builder()
+                                .setContentType(AudioAttributes.CONTENT_TYPE_MOVIE)
+                                .setUsage(AudioAttributes.USAGE_MEDIA)
+                                .build()
+                        )
+                        .setOnAudioFocusChangeListener(audioFocusChangeListener)
+                        .build()
+                }
 
-            audioManager?.let { manager ->
-                val result = audioFocusRequest?.let { manager.requestAudioFocus(it) }
-                if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
-                    audioFocusRequested = true
-                    Log.d("CGIPlayerUtils", "Audio focus granted")
-                } else {
-                    Log.w("CGIPlayerUtils", "Audio focus request failed")
+                audioManager?.let { manager ->
+                    val result = audioFocusRequest?.let { manager.requestAudioFocus(it) }
+                    if (result == AudioManager.AUDIOFOCUS_REQUEST_GRANTED) {
+                        audioFocusRequested = true
+                        Log.d("HlsPlayerUtils", "Audio focus granted")
+                    } else {
+                        Log.w("HlsPlayerUtils", "Audio focus request failed")
+                    }
                 }
             }
+        } catch (e: Exception) {
+            Log.e("HlsPlayerUtils", "Failed to request audio focus", e)
         }
     }
 
     private fun abandonAudioFocus() {
-        if (audioFocusRequested) {
-            audioManager?.let { manager ->
-                audioFocusRequest?.let { manager.abandonAudioFocusRequest(it) }
-                audioFocusRequested = false
-                Log.d("CGIPlayerUtils", "Audio focus abandoned")
+        try {
+            if (audioFocusRequested) {
+                audioManager?.let { manager ->
+                    audioFocusRequest?.let { manager.abandonAudioFocusRequest(it) }
+                    audioFocusRequested = false
+                    Log.d("HlsPlayerUtils", "Audio focus abandoned")
+                }
             }
+        } catch (e: Exception) {
+            Log.e("HlsPlayerUtils", "Failed to abandon audio focus", e)
         }
     }
 
     private fun release() {
-        exoPlayer?.let { player ->
-            player.stop()
-            player.release()
-            Log.d("CGIPlayerUtils", "ExoPlayer released")
-        }
-        exoPlayer = null
-        audioManager = null
-        audioFocusRequest = null
-        audioFocusRequested = false
-        videoSurface = null
-        currentVideoData = null
-        introSkipped = false
-        outroSkipped = true
-        stopPeriodicWatchStateUpdates()
-        stopIntroOutroCheck()
-        coroutineScope.cancel()
-        _state.update {
-            it.copy(
-                isPlaying = false,
-                playbackState = Player.STATE_IDLE,
-                error = null,
-                isReady = false,
-                currentPosition = 0,
-                duration = 0,
-                playbackSpeed = 1f,
-                showIntroButton = false,
-                showOutroButton = false,
-                selectedSubtitle = null,
-                isControlsVisible = true,
-                isLocked = false
-            )
+        try {
+            exoPlayer?.let { player ->
+                player.stop()
+                player.release()
+                Log.d("HlsPlayerUtils", "ExoPlayer released")
+            }
+            exoPlayer = null
+            audioManager = null
+            audioFocusRequest = null
+            audioFocusRequested = false
+            videoSurface = null
+            currentVideoData = null
+            updateStoredWatchState = null
+            introSkipped = false
+            outroSkipped = true
+            stopPeriodicWatchStateUpdates()
+            stopIntroOutroCheck()
+            stopPositionUpdates()
+            coroutineScope.cancel()
+            _state.update {
+                it.copy(
+                    isPlaying = false,
+                    playbackState = Player.STATE_IDLE,
+                    error = null,
+                    isReady = false,
+                    currentPosition = 0,
+                    duration = 0,
+                    playbackSpeed = 1f,
+                    showIntroButton = false,
+                    showOutroButton = false,
+                    selectedSubtitle = null,
+                    isControlsVisible = true,
+                    isLocked = false
+                )
+            }
+        } catch (e: Exception) {
+            Log.e("HlsPlayerUtils", "Failed to release player", e)
         }
     }
 }

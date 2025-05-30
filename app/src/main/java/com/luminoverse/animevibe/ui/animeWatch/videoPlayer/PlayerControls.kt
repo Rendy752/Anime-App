@@ -27,10 +27,10 @@ import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PictureInPictureAlt
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -120,10 +120,10 @@ fun PlayerControls(
                             tint = Color.White
                         )
                     }
-                    IconButton(onClick = onLockToggle) {
+                    IconButton(onClick = onPlaybackSpeedClick) {
                         Icon(
-                            imageVector = if (hlsPlayerState.isLocked) Icons.Default.Lock else Icons.Default.LockOpen,
-                            contentDescription = if (hlsPlayerState.isLocked) "Unlock" else "Lock",
+                            imageVector = Icons.Default.Speed,
+                            contentDescription = "Settings",
                             tint = Color.White
                         )
                     }
@@ -134,10 +134,10 @@ fun PlayerControls(
                             tint = Color.White
                         )
                     }
-                    IconButton(onClick = onPlaybackSpeedClick) {
+                    IconButton(onClick = onLockToggle) {
                         Icon(
-                            imageVector = Icons.Default.Speed,
-                            contentDescription = "Settings",
+                            imageVector = if (hlsPlayerState.isLocked) Icons.Default.Lock else Icons.Default.LockOpen,
+                            contentDescription = if (hlsPlayerState.isLocked) "Unlock" else "Lock",
                             tint = Color.White
                         )
                     }
@@ -239,7 +239,7 @@ fun PlayerControls(
                 ) {
                     Text(
                         text = "${formatTimestamp(hlsPlayerState.currentPosition)} / ${
-                            formatTimestamp(hlsPlayerState.duration)
+                            if (hlsPlayerState.duration > 0) formatTimestamp(hlsPlayerState.duration) else "--:--"
                         }",
                         color = Color.White,
                         fontSize = 14.sp
@@ -264,6 +264,10 @@ fun PlayerControls(
                         .fillMaxWidth()
                         .clickable {
                             // Handle progress bar click to seek
+                            if (hlsPlayerState.duration > 0) {
+                                // Calculate seek position based on click position (to be implemented)
+                                // For now, keep clickable without action
+                            }
                         }
                 )
             }
