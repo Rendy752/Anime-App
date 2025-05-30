@@ -72,7 +72,9 @@ fun ContinueWatchingAnime(
                     .width(75.dp)
                     .height(100.dp)
                     .aspectRatio(3f / 4f),
-                isClickable = episodeDetailComplement.imageUrl != null
+                onClick = if (episodeDetailComplement.imageUrl != null) null else {
+                    {}
+                }
             )
             Column(
                 modifier = Modifier

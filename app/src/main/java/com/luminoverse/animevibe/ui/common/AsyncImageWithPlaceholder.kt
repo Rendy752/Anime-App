@@ -38,7 +38,7 @@ fun AsyncImageWithPlaceholder(
     contentDescription: String?,
     isAiring: Boolean? = null,
     roundedCorners: ImageRoundedCorner = ImageRoundedCorner.ALL,
-    isClickable: Boolean = true
+    onClick: (() -> Unit)? = null,
 ) {
     var isImageLoading by remember { mutableStateOf(true) }
     var showDialog by remember { mutableStateOf(false) }
@@ -69,10 +69,10 @@ fun AsyncImageWithPlaceholder(
         modifier = modifier
             .size(100.dp, 150.dp)
             .then(
-                if (isClickable && model != null) {
-                    Modifier.clickable { showDialog = true }
+                if (onClick != null) {
+                    Modifier.clickable { onClick() }
                 } else {
-                    Modifier
+                    Modifier.clickable { showDialog = true }
                 }
             ),
         contentAlignment = Alignment.Center

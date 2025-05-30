@@ -115,7 +115,7 @@ fun AnimeHomeScreen(
         if (homeState.top10Anime is Resource.Error) onAction(HomeAction.GetTop10Anime)
     }
 
-    Scaffold { paddingValues ->
+    Scaffold(contentWindowInsets = WindowInsets(0.dp)) { paddingValues ->
         PullToRefreshBox(
             isRefreshing = homeState.isRefreshing,
             onRefresh = { onAction(HomeAction.GetAnimeSchedules) },
@@ -236,7 +236,7 @@ fun AnimeHomeScreen(
                 }
 
                 homeState.continueWatchingEpisode?.let { continueWatchingEpisode ->
-                    if (homeState.isShowPopup && currentRoute == NavRoute.Home.route && !mainState.isLandscape) Popup(
+                    if (homeState.isShowPopup && currentRoute == NavRoute.Home.route) Popup(
                         alignment = Alignment.BottomEnd,
                         offset = IntOffset(0, (-200).dp.value.toInt())
                     ) {

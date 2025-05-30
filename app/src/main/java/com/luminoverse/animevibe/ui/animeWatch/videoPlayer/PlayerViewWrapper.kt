@@ -110,21 +110,21 @@ fun PlayerViewWrapper(
                         val tapX = e.x
 
                         when {
-                            tapX < screenWidth * 0.4 -> { // Left 40% - Rewind
+                            tapX < screenWidth * 0.4 -> {
                                 Log.d("PlayerViewWrapper", "Rewind triggered")
                                 onRewind()
                                 onSeek(-1, 10L)
                                 isSeeking = true
                                 onControlsToggle(true)
                             }
-                            tapX > screenWidth * 0.6 -> { // Right 40% - Fast Forward
+                            tapX > screenWidth * 0.6 -> {
                                 Log.d("PlayerViewWrapper", "Fast forward triggered")
                                 onFastForward()
                                 onSeek(1, 10L)
                                 isSeeking = true
                                 onControlsToggle(true)
                             }
-                            else -> { // Middle 20% - Play/Pause
+                            else -> {
                                 Log.d("PlayerViewWrapper", "Play/Pause triggered")
                                 onPlayPause()
                                 isSeeking = true
@@ -134,7 +134,7 @@ fun PlayerViewWrapper(
                         handler.postDelayed({
                             isSeeking = false
                             Log.d("PlayerViewWrapper", "Double tap seek reset: isSeeking=false")
-                        }, 500) // Reduced to 500ms for faster recovery
+                        }, 500)
                         return true
                     }
                     Log.d("PlayerViewWrapper", "Double tap blocked: isSeeking=$isSeeking, isLocked=$isLocked, mediaController=$mediaController")

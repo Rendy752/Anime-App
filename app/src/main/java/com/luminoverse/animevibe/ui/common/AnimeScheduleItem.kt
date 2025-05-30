@@ -42,7 +42,7 @@ fun AnimeScheduleItem(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(2f / 3f),
-                isClickable = false
+                onClick = onItemClick?.let { { it(animeDetail) } }
             )
             animeDetail.type?.let {
                 Text(

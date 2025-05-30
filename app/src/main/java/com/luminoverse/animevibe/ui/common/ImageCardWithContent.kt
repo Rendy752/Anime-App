@@ -41,7 +41,7 @@ fun ImageCardWithContent(
                 .fillMaxWidth(0.75f)
                 .align(Alignment.CenterEnd),
             roundedCorners = ImageRoundedCorner.NONE,
-            isClickable = false
+            onClick = onItemClick
         )
 
         Box(

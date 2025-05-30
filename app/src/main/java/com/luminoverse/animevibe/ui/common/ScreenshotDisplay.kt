@@ -65,7 +65,7 @@ fun ScreenshotDisplay(
                 modifier = modifier
                     .aspectRatio(16f / 9f)
                     .clip(RoundedCornerShape(8.dp)),
-                isClickable = onClick != null,
+                onClick = onClick,
             )
         }
 
