@@ -9,7 +9,7 @@ import com.luminoverse.animevibe.models.AnimeDetail
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.resource.Resource
 
 @Composable
 fun WatchContentSection(
@@ -19,6 +19,7 @@ fun WatchContentSection(
     onLoadEpisodeDetailComplement: (String) -> Unit,
     episodeDetailComplement: Resource<EpisodeDetailComplement>,
     episodes: List<Episode>,
+    newEpisodeCount: Int,
     episodeSourcesQuery: EpisodeSourcesQuery?,
     serverScrollState: ScrollState,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
@@ -48,6 +49,7 @@ fun WatchContentSection(
             onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,
             episodeDetailComplement = episodeDetailComplement,
             episodes = episodes,
+            newEpisodeCount = newEpisodeCount,
             episodeSourcesQuery = episodeSourcesQuery,
             handleSelectedEpisodeServer = handleSelectedEpisodeServer
         )

@@ -13,7 +13,7 @@ import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.resource.Resource
 import com.luminoverse.animevibe.utils.basicContainer
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -23,6 +23,7 @@ fun WatchEpisode(
     onLoadEpisodeDetailComplement: (String) -> Unit,
     episodeDetailComplement: Resource<EpisodeDetailComplement>,
     episodes: List<Episode>,
+    newEpisodeCount: Int,
     episodeSourcesQuery: EpisodeSourcesQuery?,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
 ) {
@@ -53,6 +54,7 @@ fun WatchEpisode(
 
         EpisodeSelectionGrid(
             episodes = episodes,
+            newEpisodeCount = newEpisodeCount,
             episodeDetailComplements = episodeDetailComplements,
             onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,
             episodeDetailComplement = if (episodeDetailComplement is Resource.Success) episodeDetailComplement.data else null,

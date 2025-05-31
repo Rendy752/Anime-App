@@ -27,7 +27,7 @@ import com.luminoverse.animevibe.ui.animeWatch.WatchState
 import com.luminoverse.animevibe.ui.common.DebouncedIconButton
 import com.luminoverse.animevibe.ui.common.SkeletonBox
 import com.luminoverse.animevibe.ui.main.MainState
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.resource.Resource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

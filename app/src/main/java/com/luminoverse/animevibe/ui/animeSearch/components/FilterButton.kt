@@ -1,7 +1,5 @@
 package com.luminoverse.animevibe.ui.animeSearch.components
 
-import android.content.Context
-import android.widget.Toast
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
@@ -32,21 +30,13 @@ fun CancelButton(
 
 @Composable
 fun ResetButton(
-    context: Context,
     isDefault: () -> Boolean,
     resetAction: () -> Unit,
     modifier: Modifier? = Modifier
 ) {
     Button(
         modifier = modifier ?: Modifier,
-        onClick = {
-            if (isDefault()) Toast.makeText(
-                context,
-                "Filters are already default",
-                Toast.LENGTH_SHORT
-            ).show()
-            else resetAction()
-        },
+        onClick = resetAction,
         enabled = !isDefault(),
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.tertiaryContainer,
@@ -62,25 +52,13 @@ fun ResetButton(
 
 @Composable
 fun ApplyButton(
-    context: Context,
     isEmptySelection: () -> Boolean,
     applyAction: () -> Unit,
     modifier: Modifier? = Modifier
 ) {
     Button(
         modifier = modifier ?: Modifier,
-        onClick = {
-            if (isEmptySelection()) {
-                Toast.makeText(
-                    context,
-                    "No filters applied, you can reset",
-                    Toast.LENGTH_SHORT
-                )
-                    .show()
-            } else {
-                applyAction()
-            }
-        },
+        onClick = applyAction,
         enabled = !isEmptySelection(),
         colors = ButtonDefaults.buttonColors(
             containerColor = MaterialTheme.colorScheme.primary,

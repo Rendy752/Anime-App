@@ -32,8 +32,8 @@ import com.luminoverse.animevibe.ui.common.DetailCommonBody
 import com.luminoverse.animevibe.ui.common.YoutubePreview
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.main.navigation.navigateTo
-import com.luminoverse.animevibe.utils.AnimeTitleFinder.normalizeTitle
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.watch.AnimeTitleFinder.normalizeTitle
+import com.luminoverse.animevibe.utils.resource.Resource
 
 @Composable
 fun SuccessContent(

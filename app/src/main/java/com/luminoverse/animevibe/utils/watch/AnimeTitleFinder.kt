@@ -1,4 +1,4 @@
-package com.luminoverse.animevibe.utils
+package com.luminoverse.animevibe.utils.watch
 
 import android.util.Log
 import org.apache.commons.text.similarity.LevenshteinDistance
@@ -180,7 +180,6 @@ object AnimeTitleFinder {
             else -> 3
         }
 
-        // Primary fuzzy matching
         val fuzzyMatches = items.filter { item ->
             extractors.any { extractor ->
                 val attribute = extractor(item).lowercase()
@@ -201,7 +200,6 @@ object AnimeTitleFinder {
             }
         }
 
-        // Fallback: simple contains check if no fuzzy matches
         return if (fuzzyMatches.isEmpty()) {
             Log.d("AnimeTitleFinder", "No fuzzy matches for '$searchQuery', applying fallback contains check")
             items.filter { item ->

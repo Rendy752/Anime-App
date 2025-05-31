@@ -51,7 +51,7 @@ fun SeekIndicator(
         Box(
             modifier = Modifier
                 .background(
-                    color = Color.Black.copy(alpha = 0.6f),
+                    color = Color.Black.copy(alpha = 0.4f),
                     shape = CircleShape
                 )
                 .padding(16.dp)

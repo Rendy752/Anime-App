@@ -13,7 +13,7 @@ import com.luminoverse.animevibe.ui.episodeHistory.components.FilterContent
 import com.luminoverse.animevibe.ui.episodeHistory.components.HistoryContent
 import com.luminoverse.animevibe.ui.main.MainState
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.resource.Resource
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
@@ -63,7 +63,7 @@ fun EpisodeHistoryScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 16.dp)
+                        .padding(horizontal = 8.dp)
                 ) {
                     Column(
                         modifier = Modifier
@@ -119,7 +119,7 @@ fun EpisodeHistoryScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 16.dp)
+                        .padding(horizontal = 8.dp)
                 ) {
                     FilterContent(
                         queryState = historyState.queryState,

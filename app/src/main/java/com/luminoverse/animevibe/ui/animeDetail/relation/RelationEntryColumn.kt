@@ -27,7 +27,7 @@ fun RelationEntryColumn(
 ) {
     Column {
         Text(
-            text = "${relation.entry.size} ${relation.relation}",
+            text = "\u202A${relation.entry.size} ${relation.relation}\u202C",
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.SemiBold
         )

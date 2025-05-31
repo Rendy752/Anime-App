@@ -69,7 +69,7 @@ fun FilterChipView(
 
 @Composable
 @Preview
-fun FilterChipSkeleton() {
+fun FilterChipViewSkeleton() {
     val randomWidth = remember { Random.nextInt(60, 121).dp }
 
     Row(verticalAlignment = Alignment.CenterVertically) {

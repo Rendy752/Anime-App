@@ -1,5 +1,6 @@
 package com.luminoverse.animevibe.ui.animeWatch.videoPlayer
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
@@ -13,20 +14,22 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun RetryButton(
-    onRetry: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isVisible: Boolean,
+    onRetry: () -> Unit
 ) {
-    IconButton(
-        onClick = onRetry,
-        modifier = modifier.padding(24.dp),
-        colors = IconButtonDefaults.iconButtonColors(
-            containerColor = Color.White,
-        )
-    ) {
-        Icon(
-            Icons.Filled.Refresh,
-            tint = Color.Black,
-            contentDescription = "Retry"
-        )
+    AnimatedVisibility(visible = isVisible, modifier = modifier.padding(24.dp)) {
+        IconButton(
+            onClick = onRetry,
+            colors = IconButtonDefaults.iconButtonColors(
+                containerColor = Color.White,
+            )
+        ) {
+            Icon(
+                Icons.Filled.Refresh,
+                tint = Color.Black,
+                contentDescription = "Retry"
+            )
+        }
     }
 }

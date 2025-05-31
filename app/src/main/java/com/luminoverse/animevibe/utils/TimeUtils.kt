@@ -67,7 +67,7 @@ object TimeUtils {
             val zonedDateTime =
                 ZonedDateTime.parse(dateString, formatter.withZone(ZoneId.systemDefault()))
             val date = Date.from(zonedDateTime.toInstant())
-            prettyTime.format(date)
+            "\u202A${prettyTime.format(date)}\u202C"
         } catch (e: Exception) {
             println("Error parsing date: ${e.message}")
             ""

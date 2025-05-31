@@ -3,9 +3,9 @@ package com.luminoverse.animevibe.repository
 import com.luminoverse.animevibe.data.remote.api.AnimeAPI
 import com.luminoverse.animevibe.models.AnimeSchedulesSearchQueryState
 import com.luminoverse.animevibe.models.ListAnimeDetailResponse
-import com.luminoverse.animevibe.utils.Resource
-import com.luminoverse.animevibe.utils.ResponseHandler
-import com.luminoverse.animevibe.utils.ResponseHandler.safeApiCall
+import com.luminoverse.animevibe.utils.resource.Resource
+import com.luminoverse.animevibe.utils.resource.ResponseHandler
+import com.luminoverse.animevibe.utils.resource.ResponseHandler.safeApiCall
 import com.luminoverse.animevibe.utils.TimeUtils
 
 class AnimeHomeRepository(

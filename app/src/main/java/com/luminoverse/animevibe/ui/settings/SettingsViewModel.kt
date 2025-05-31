@@ -5,7 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.luminoverse.animevibe.models.AnimeDetail
 import com.luminoverse.animevibe.models.animeDetailPlaceholder
 import com.luminoverse.animevibe.repository.AnimeSearchRepository
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.resource.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

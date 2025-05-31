@@ -18,7 +18,7 @@ import com.luminoverse.animevibe.ui.common.AnimeSearchItemSkeleton
 import com.luminoverse.animevibe.ui.common.MessageDisplay
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.main.navigation.navigateTo
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.resource.Resource
 
 @Composable
 fun ResultsSection(
@@ -49,7 +49,7 @@ fun ResultsSection(
             is Resource.Success -> {
                 if (animeSearchResults.data.data.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        MessageDisplay("No Results Found")
+                        MessageDisplay(message = "No Results Found")
                     }
                 } else {
                     LazyColumn(
@@ -78,7 +78,7 @@ fun ResultsSection(
 
             is Resource.Error -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    MessageDisplay("Error Loading Data")
+                    MessageDisplay(message = "Error Loading Data")
                 }
             }
         }

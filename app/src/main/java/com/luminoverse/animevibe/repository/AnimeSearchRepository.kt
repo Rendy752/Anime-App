@@ -10,9 +10,9 @@ import com.luminoverse.animevibe.models.ProducerResponse
 import com.luminoverse.animevibe.models.ProducersResponse
 import com.luminoverse.animevibe.models.ProducersSearchQueryState
 import com.luminoverse.animevibe.models.defaultCompletePagination
-import com.luminoverse.animevibe.utils.Resource
-import com.luminoverse.animevibe.utils.ResponseHandler
-import com.luminoverse.animevibe.utils.ResponseHandler.safeApiCall
+import com.luminoverse.animevibe.utils.resource.Resource
+import com.luminoverse.animevibe.utils.resource.ResponseHandler
+import com.luminoverse.animevibe.utils.resource.ResponseHandler.safeApiCall
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

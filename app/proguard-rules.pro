@@ -47,22 +47,18 @@
 }
 -keepattributes JavascriptInterface
 
-# --- Hilt ---
--keep class dagger.hilt.** { *; }
--keep class androidx.hilt.** { *; }
--dontwarn dagger.hilt.**
--dontwarn androidx.hilt.**
-
 # Keep Hilt-generated classes
--keepclasseswithmembers class * {
-    @dagger.hilt.** *;
-}
+-keep class com.luminoverse.animevibe.**_GeneratedInjector { *; }
+-keep class dagger.hilt.** { *; }
+-keep class **_HiltComponents { *; }
+-dontwarn com.google.dagger.hilt.**
 
 # --- WorkManager ---
 -keep class androidx.work.** { *; }
--keep class com.luminoverse.animevibe.utils.AnimeBroadcastNotificationWorker { *; }
--keep class com.luminoverse.animevibe.utils.AnimeWorkerFactory { *; }
--keep interface com.luminoverse.animevibe.utils.ChildWorkerFactory { *; }
+-keep class com.luminoverse.animevibe.utils.workers.BroadcastNotificationWorker { *; }
+-keep class com.luminoverse.animevibe.utils.workers.UnfinishedWatchNotificationWorker { *; }
+-keep class com.luminoverse.animevibe.utils.factories.AnimeWorkerFactory { *; }
+-keep interface com.luminoverse.animevibe.utils.factories.ChildWorkerFactory { *; }
 -keepclasseswithmembers class * {
     @dagger.assisted.AssistedInject <init>(...);
 }

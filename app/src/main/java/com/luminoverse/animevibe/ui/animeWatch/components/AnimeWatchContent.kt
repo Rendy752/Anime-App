@@ -24,14 +24,15 @@ import com.luminoverse.animevibe.ui.animeWatch.videoPlayer.VideoPlayerSection
 import com.luminoverse.animevibe.ui.animeWatch.watchContent.WatchContentSection
 import com.luminoverse.animevibe.ui.common.SkeletonBox
 import com.luminoverse.animevibe.ui.main.MainState
-import com.luminoverse.animevibe.utils.HlsPlayerState
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.media.HlsPlayerState
+import com.luminoverse.animevibe.utils.resource.Resource
 
 @Composable
 fun AnimeWatchContent(
     navController: NavController,
     watchState: WatchState,
     isScreenOn: Boolean,
+    isAutoPlayVideo: Boolean,
     playerUiState: PlayerUiState,
     hlsPlayerState: HlsPlayerState,
     mainState: MainState,
@@ -54,9 +55,15 @@ fun AnimeWatchContent(
                         updateStoredWatchState = updateStoredWatchState,
                         watchState = watchState,
                         isScreenOn = isScreenOn,
+                        isAutoPlayVideo = isAutoPlayVideo,
                         episodes = episodeList,
                         episodeSourcesQuery = query,
-                        handleSelectedEpisodeServer = { handleSelectedEpisodeServer(it, true) },
+                        handleSelectedEpisodeServer = { episodeSourcesQuery, isRefresh ->
+                            handleSelectedEpisodeServer(
+                                episodeSourcesQuery,
+                                isRefresh
+                            )
+                        },
                         hlsPlayerState = hlsPlayerState,
                         isPipMode = playerUiState.isPipMode,
                         onEnterPipMode = onEnterPipMode,
@@ -92,6 +99,7 @@ fun AnimeWatchContent(
                                     onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,
                                     episodeDetailComplement = watchState.episodeDetailComplement,
                                     episodes = episodeList,
+                                    newEpisodeCount = watchState.newEpisodeCount,
                                     episodeSourcesQuery = query,
                                     serverScrollState = serverScrollState,
                                     handleSelectedEpisodeServer = {
@@ -99,7 +107,10 @@ fun AnimeWatchContent(
                                     }
                                 )
                             } else {
-                                InfoContentSection(animeDetail = watchState.animeDetail, navController = navController)
+                                InfoContentSection(
+                                    animeDetail = watchState.animeDetail,
+                                    navController = navController
+                                )
                             }
                         }
                     }
@@ -122,12 +133,16 @@ fun AnimeWatchContent(
                             onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,
                             episodeDetailComplement = watchState.episodeDetailComplement,
                             episodes = episodeList,
+                            newEpisodeCount = watchState.newEpisodeCount,
                             episodeSourcesQuery = query,
                             serverScrollState = serverScrollState,
                             handleSelectedEpisodeServer = { handleSelectedEpisodeServer(it, false) }
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        InfoContentSection(animeDetail = watchState.animeDetail, navController = navController)
+                        InfoContentSection(
+                            animeDetail = watchState.animeDetail,
+                            navController = navController
+                        )
                     }
                 }
             }

@@ -1,6 +1,5 @@
 package com.luminoverse.animevibe.ui.animeSearch.bottomSheet
 
-import android.content.Context
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -9,7 +8,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.AnimeSearchQueryState
@@ -25,7 +23,6 @@ fun FilterBottomSheet(
     resetBottomSheetFilters: () -> Unit,
     onDismiss: () -> Unit
 ) {
-    val context = LocalContext.current
     val scrollState = rememberScrollState()
 
     val filterState = remember { mutableStateOf(FilterUtils.FilterState(queryState)) }
@@ -36,7 +33,6 @@ fun FilterBottomSheet(
             applyFilters,
             resetBottomSheetFilters,
             filterState,
-            context,
             onDismiss
         )
         HorizontalDivider()
@@ -50,18 +46,17 @@ private fun FilterHeader(
     applyFilters: (AnimeSearchQueryState) -> Unit,
     resetBottomSheetFilters: () -> Unit,
     filterState: MutableState<FilterUtils.FilterState>,
-    context: Context,
     onDismiss: () -> Unit
 ) {
     Row(
-        Modifier
+        modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            "Filter",
+            text = "Filter",
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             style = MaterialTheme.typography.titleLarge,
@@ -69,9 +64,8 @@ private fun FilterHeader(
         )
         Row {
             ResetButton(
-                context,
-                { queryState.isDefault() },
-                {
+                isDefault = { queryState.isDefault() },
+                resetAction = {
                     resetBottomSheetFilters()
                     filterState.value =
                         FilterUtils.FilterState(filterState.value.queryState.resetBottomSheetFilters())
@@ -98,9 +92,8 @@ private fun FilterHeader(
                 )
                 val defaultQueryState = queryState.resetBottomSheetFilters()
                 ApplyButton(
-                    context,
-                    { updatedQueryState == defaultQueryState },
-                    {
+                    isEmptySelection = { updatedQueryState == defaultQueryState },
+                    applyAction = {
                         applyFilters(updatedQueryState)
                         onDismiss()
                     }
@@ -116,7 +109,7 @@ private fun FilterContent(
     filterState: MutableState<FilterUtils.FilterState>,
 ) {
     Column(
-        Modifier
+        modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp)
             .verticalScroll(scrollState)

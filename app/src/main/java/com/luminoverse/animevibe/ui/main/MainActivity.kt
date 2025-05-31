@@ -7,18 +7,15 @@ import android.os.Build
 import android.os.Bundle
 import android.view.MotionEvent
 import android.view.WindowManager
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
@@ -32,13 +29,15 @@ import androidx.navigation.compose.rememberNavController
 import com.luminoverse.animevibe.AnimeApplication
 import com.luminoverse.animevibe.ui.common.ConfirmationAlert
 import com.luminoverse.animevibe.ui.theme.AppTheme
-import com.luminoverse.animevibe.utils.HlsPlayerUtils
-import com.luminoverse.animevibe.utils.PipUtil.buildPipActions
+import com.luminoverse.animevibe.utils.media.HlsPlayerAction
+import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
+import com.luminoverse.animevibe.utils.media.PipUtil.buildPipActions
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
+import android.content.pm.PackageManager
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -48,8 +47,19 @@ class MainActivity : AppCompatActivity() {
     private val idleTimeoutMillis = TimeUnit.MINUTES.toMillis(1)
     private val intentChannel = Channel<Intent>(Channel.CONFLATED)
     private lateinit var pipParamsBuilder: PictureInPictureParams.Builder
+    private var lastBackPressTime = 0L
+    private val backPressTimeoutMillis = 2000L
+
+    private val requestPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            println("MainActivity: POST_NOTIFICATIONS permission granted")
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        WindowCompat.setDecorFitsSystemWindows(window, false)
         installSplashScreen()
         super.onCreate(savedInstanceState)
 
@@ -61,6 +71,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         intent?.let { intentChannel.trySend(it) }
+
+        requestNotificationPermission()
 
         setContent {
             navController = rememberNavController()
@@ -76,23 +88,25 @@ class MainActivity : AppCompatActivity() {
             }
 
             BackHandler {
-                mainViewModel.onAction(MainAction.SetShowQuitDialog(true))
+                val currentTime = System.currentTimeMillis()
+                if (currentTime - lastBackPressTime < backPressTimeoutMillis) {
+                    finish()
+                } else {
+                    lastBackPressTime = currentTime
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Press back again to exit AnimeVibe",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
             }
 
             AppTheme(
                 isDarkMode = state.isDarkMode,
                 contrastMode = state.contrastMode,
-                colorStyle = state.colorStyle
+                colorStyle = state.colorStyle,
+                isRtl = state.isRtl
             ) {
-                if (state.showQuitDialog) {
-                    ConfirmationAlert(
-                        title = "Quit AnimeVibe?",
-                        message = "Are you sure you want to quit the app?",
-                        onConfirm = { finish() },
-                        onCancel = { mainViewModel.onAction(MainAction.SetShowQuitDialog(false)) }
-                    )
-                }
-
                 if (state.isShowIdleDialog) {
                     ConfirmationAlert(
                         title = "Are you still there?",
@@ -105,39 +119,41 @@ class MainActivity : AppCompatActivity() {
                     )
                 }
 
-                Surface(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .pointerInput(Unit) {
-                            detectTapGestures(
-                                onPress = { resetIdleTimer() },
-                                onDoubleTap = { resetIdleTimer() },
-                                onLongPress = { resetIdleTimer() }
-                            )
-                            awaitPointerEventScope {
-                                while (true) {
-                                    awaitPointerEvent()
-                                    resetIdleTimer()
-                                }
-                            }
-                        },
-                    color = MaterialTheme.colorScheme.surface
-                ) {
-                    MainScreen(
-                        navController = navController,
-                        intentChannel = intentChannel,
-                        onResetIdleTimer = resetIdleTimer,
-                        mainState = state.copy(isLandscape = isLandscape),
-                        mainAction = mainViewModel::onAction
-                    )
-                    setSystemBarAppearance(MaterialTheme.colorScheme.surface)
-                }
+                MainScreen(
+                    navController = navController,
+                    intentChannel = intentChannel,
+                    resetIdleTimer = resetIdleTimer,
+                    mainState = state.copy(isLandscape = isLandscape),
+                    mainAction = mainViewModel::onAction
+                )
+                setSystemBarAppearance(MaterialTheme.colorScheme.surface)
             }
         }
 
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 intent?.let { intentChannel.send(it) }
+            }
+        }
+    }
+
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val permission = android.Manifest.permission.POST_NOTIFICATIONS
+            when {
+                checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED -> {
+                    println("MainActivity: POST_NOTIFICATIONS permission already granted")
+                }
+
+                shouldShowRequestPermissionRationale(permission) -> {
+                    println("MainActivity: Showing rationale for POST_NOTIFICATIONS permission")
+                    requestPermissionLauncher.launch(permission)
+                }
+
+                else -> {
+                    println("MainActivity: Requesting POST_NOTIFICATIONS permission")
+                    requestPermissionLauncher.launch(permission)
+                }
             }
         }
     }
@@ -154,10 +170,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun setSystemBarAppearance(color: Color) {
-        WindowCompat.setDecorFitsSystemWindows(window, false)
         window.statusBarColor = android.graphics.Color.TRANSPARENT
+        window.navigationBarColor = android.graphics.Color.TRANSPARENT
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            window.navigationBarColor = android.graphics.Color.TRANSPARENT
             window.attributes.layoutInDisplayCutoutMode =
                 WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
         }
@@ -172,8 +187,8 @@ class MainActivity : AppCompatActivity() {
     ) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, configuration)
         onPictureInPictureModeChangedListeners.forEach {
-            if (!isInPictureInPictureMode) {
-                (application as AnimeApplication).getMediaPlaybackService()?.pausePlayer()
+            if (!isInPictureInPictureMode && !lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
+                HlsPlayerUtils.dispatch(HlsPlayerAction.Pause)
             }
             it(isInPictureInPictureMode)
         }
@@ -189,11 +204,13 @@ class MainActivity : AppCompatActivity() {
 
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
-        val currentRoute = navController.currentDestination?.route
-        val isPlaying = HlsPlayerUtils.state.value.isPlaying
-        if (currentRoute?.startsWith("animeWatch/") == true && isPlaying) {
-            pipParamsBuilder.setActions(buildPipActions(this, true))
-            enterPictureInPictureMode(pipParamsBuilder.build())
+        if (::navController.isInitialized) {
+            val currentRoute = navController.currentDestination?.route
+            val isPlaying = HlsPlayerUtils.state.value.isPlaying
+            if (currentRoute?.startsWith("animeWatch/") == true && isPlaying) {
+                pipParamsBuilder.setActions(buildPipActions(this, true))
+                enterPictureInPictureMode(pipParamsBuilder.build())
+            }
         }
     }
 
@@ -221,7 +238,7 @@ class MainActivity : AppCompatActivity() {
                     val currentTime = System.currentTimeMillis()
                     val isIdle = currentTime - lastInteractionTime > idleTimeoutMillis
                     val currentRoute = navController.currentDestination?.route
-                    if (isIdle && currentRoute?.startsWith("animeWatch/") == false) {
+                    if (isIdle && currentRoute?.startsWith("animeWatch/") == null) {
                         action(true)
                     }
                 }

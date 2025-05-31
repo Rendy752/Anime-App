@@ -17,18 +17,25 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.ParagraphStyle
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextDirection
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun DataTextWithIcon(label: String? = null, value: String?, icon: ImageVector) {
+fun DataTextWithIcon(
+    modifier: Modifier = Modifier,
+    label: String? = null,
+    value: String?,
+    icon: ImageVector
+) {
     if (!value.isNullOrBlank() && value.lowercase() != "null") {
         Row(
-            modifier = Modifier.padding(vertical = 2.dp),
+            modifier = modifier.padding(vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
@@ -37,14 +44,20 @@ fun DataTextWithIcon(label: String? = null, value: String?, icon: ImageVector) {
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier
                     .size(20.dp)
-                    .padding(end = 8.dp)
+                    .padding(end = 4.dp)
             )
 
             val fullText = AnnotatedString.Builder().apply {
                 if (!label.isNullOrBlank()) {
                     append("$label: ")
                 }
-                withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) { append(value) }
+                withStyle(
+                    style = ParagraphStyle(textDirection = TextDirection.Ltr)
+                ) {
+                    withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                        append(value)
+                    }
+                }
             }.toAnnotatedString()
 
             Text(
@@ -57,11 +70,9 @@ fun DataTextWithIcon(label: String? = null, value: String?, icon: ImageVector) {
 
 @Preview
 @Composable
-fun DataTextWithIconSkeleton() {
+fun DataTextWithIconSkeleton(modifier: Modifier = Modifier) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 2.dp),
+        modifier = modifier.padding(vertical = 2.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         SkeletonBox(
@@ -69,14 +80,9 @@ fun DataTextWithIconSkeleton() {
             width = 20.dp,
             height = 20.dp
         )
-        Spacer(modifier = Modifier.padding(end = 8.dp))
+        Spacer(modifier = Modifier.padding(end = 4.dp))
         SkeletonBox(
             modifier = Modifier.weight(0.3f),
-            height = 16.dp
-        )
-        Spacer(modifier = Modifier.weight(0.05f))
-        SkeletonBox(
-            modifier = Modifier.weight(0.65f),
             height = 16.dp
         )
     }
@@ -114,7 +120,7 @@ private fun LabelRow(label: String, icon: ImageVector) {
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
                 .size(20.dp)
-                .padding(end = 8.dp)
+                .padding(end = 4.dp)
         )
         Text(
             text = "$label: ",

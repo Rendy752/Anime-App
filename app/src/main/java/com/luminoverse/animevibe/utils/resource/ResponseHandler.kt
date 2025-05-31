@@ -1,4 +1,4 @@
-package com.luminoverse.animevibe.utils
+package com.luminoverse.animevibe.utils.resource
 
 import okhttp3.ResponseBody.Companion.toResponseBody
 import retrofit2.HttpException

@@ -1,7 +1,6 @@
 package com.luminoverse.animevibe.data.local.dao
 
 import androidx.room.Dao
-import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
@@ -19,6 +18,6 @@ interface AnimeDetailDao {
     @Update
     suspend fun updateAnimeDetail(animeDetail: AnimeDetail)
 
-    @Delete
-    suspend fun deleteAnimeDetail(animeDetail: AnimeDetail)
+    @Query("DELETE FROM anime_detail WHERE mal_id = :id")
+    suspend fun deleteAnimeDetailById(id: Int)
 }

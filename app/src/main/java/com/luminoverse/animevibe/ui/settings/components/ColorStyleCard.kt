@@ -40,7 +40,7 @@ import com.luminoverse.animevibe.ui.common.ContinueWatchingAnime
 import com.luminoverse.animevibe.ui.theme.ColorStyle
 import com.luminoverse.animevibe.ui.theme.ContrastMode
 import com.luminoverse.animevibe.utils.ColorUtils
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.resource.Resource
 import java.text.SimpleDateFormat
 import java.util.Date
 
@@ -91,11 +91,11 @@ fun ColorStyleCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (animeDetailSample is Resource.Loading) AnimeScheduleItemSkeleton(
-                        modifier = Modifier.widthIn(max = 100.dp)
+                        modifier = Modifier.widthIn(max = 130.dp)
                     )
                     else AnimeScheduleItem(
                         animeDetail = animeDetailSample.data ?: animeDetailPlaceholder,
-                        modifier = Modifier.widthIn(max = 100.dp)
+                        modifier = Modifier.widthIn(max = 130.dp)
                     )
 
                     Column(
@@ -122,7 +122,7 @@ fun ColorStyleCard(
                                 if (it.length > 3) it.take(3) else it
                             },
                             navBackStackEntry = navBackStackEntry,
-                            titleMaxLines = 3
+                            titleMaxLines = 2
                         )
 
                         ContinueWatchingAnime(
