@@ -38,8 +38,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 import android.content.pm.PackageManager
-import androidx.annotation.OptIn
-import androidx.media3.common.util.UnstableApi
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -183,7 +181,6 @@ class MainActivity : AppCompatActivity() {
         windowInsetsController.isAppearanceLightNavigationBars = color.luminance() > 0.5f
     }
 
-    @OptIn(UnstableApi::class)
     override fun onPictureInPictureModeChanged(
         isInPictureInPictureMode: Boolean,
         configuration: Configuration
@@ -205,7 +202,6 @@ class MainActivity : AppCompatActivity() {
         onPictureInPictureModeChangedListeners.remove(listener)
     }
 
-    @OptIn(UnstableApi::class)
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
         if (::navController.isInitialized) {

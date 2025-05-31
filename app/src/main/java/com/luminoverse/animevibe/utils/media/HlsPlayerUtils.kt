@@ -94,7 +94,6 @@ sealed class HlsPlayerAction {
     data class ToggleLock(val isLocked: Boolean) : HlsPlayerAction()
 }
 
-@UnstableApi
 object HlsPlayerUtils {
     private var exoPlayer: ExoPlayer? = null
     private var audioManager: AudioManager? = null
