@@ -31,7 +31,7 @@ fun PlaybackSpeedContent(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Text(
-            text = "Playback Speed",
+            text = "Select Playback Speed",
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier
                 .fillMaxWidth()
