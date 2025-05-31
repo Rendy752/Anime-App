@@ -35,7 +35,6 @@ import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -95,7 +94,6 @@ fun PlayerControls(
                 .padding(16.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            // Top controls
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -164,7 +162,6 @@ fun PlayerControls(
                 }
             }
 
-            // Middle controls
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(64.dp, Alignment.CenterHorizontally),
@@ -271,7 +268,6 @@ fun PlayerControls(
                 }
             }
 
-            // Bottom controls
             Column {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -297,23 +293,14 @@ fun PlayerControls(
                         )
                     }
                 }
-                LinearProgressIndicator(
-                    progress = {
-                        if (hlsPlayerState.duration > 0) {
-                            hlsPlayerState.currentPosition.toFloat() / hlsPlayerState.duration
-                        } else {
-                            0f
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            // Handle progress bar click to seek
-                            if (hlsPlayerState.duration > 0) {
-                                // Calculate seek position based on click position (to be implemented)
-                                // For now, keep clickable without action
-                            }
-                        }
+                CustomSeekBar(
+                    currentPosition = hlsPlayerState.currentPosition,
+                    duration = hlsPlayerState.duration,
+                    introStart = episodeDetailComplement.sources.intro?.start?.times(1000L) ?: 0L,
+                    introEnd = episodeDetailComplement.sources.intro?.end?.times(1000L) ?: 0L,
+                    outroStart = episodeDetailComplement.sources.outro?.start?.times(1000L) ?: 0L,
+                    outroEnd = episodeDetailComplement.sources.outro?.end?.times(1000L) ?: 0L,
+                    onSeekTo = onSeekTo
                 )
             }
         }
