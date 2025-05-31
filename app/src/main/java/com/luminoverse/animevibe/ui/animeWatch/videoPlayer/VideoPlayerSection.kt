@@ -48,6 +48,7 @@ import androidx.media3.common.PlaybackException
 fun VideoPlayerSection(
     updateStoredWatchState: (Long?, Long?, String?) -> Unit,
     watchState: WatchState,
+    onHandleBackPress: () -> Unit,
     isScreenOn: Boolean,
     isAutoPlayVideo: Boolean,
     episodes: List<Episode>,
@@ -388,6 +389,7 @@ fun VideoPlayerSection(
             playerView = playerView,
             hlsPlayerState = hlsPlayerState,
             mediaController = mediaControllerCompat,
+            onHandleBackPress = onHandleBackPress,
             episodeDetailComplement = it,
             episodes = episodes,
             episodeSourcesQuery = episodeSourcesQuery,

@@ -29,7 +29,6 @@ data class WatchState(
     val isRefreshing: Boolean = false,
     val isFavorite: Boolean = false,
     val errorMessage: String? = null,
-    val selectedContentIndex: Int = 0,
     val newEpisodeCount: Int = 0
 )
 
@@ -69,7 +68,6 @@ sealed class WatchAction {
     data class SetShowNextEpisode(val isShow: Boolean, val nextEpisodeName: String = "") :
         WatchAction()
 
-    data class SetSelectedContentIndex(val index: Int) : WatchAction()
     data class SetErrorMessage(val message: String?) : WatchAction()
     data class SetFavorite(val isFavorite: Boolean, val updateComplement: Boolean = true) :
         WatchAction()
@@ -109,10 +107,6 @@ class AnimeWatchViewModel @Inject constructor(
 
             is WatchAction.SetShowNextEpisode -> _playerUiState.update {
                 it.copy(isShowNextEpisode = action.isShow, nextEpisodeName = action.nextEpisodeName)
-            }
-
-            is WatchAction.SetSelectedContentIndex -> _watchState.update {
-                it.copy(selectedContentIndex = action.index)
             }
 
             is WatchAction.SetErrorMessage -> _watchState.update { it.copy(errorMessage = action.message) }

@@ -1,5 +1,6 @@
 package com.luminoverse.animevibe.ui.animeWatch.videoPlayer
 
+import android.content.pm.ActivityInfo
 import android.os.Handler
 import android.os.Looper
 import android.support.v4.media.session.MediaControllerCompat
@@ -46,6 +47,7 @@ fun VideoPlayer(
     playerView: PlayerView,
     hlsPlayerState: HlsPlayerState,
     mediaController: MediaControllerCompat?,
+    onHandleBackPress: () -> Unit,
     episodeDetailComplement: EpisodeDetailComplement,
     episodes: List<Episode>,
     episodeSourcesQuery: EpisodeSourcesQuery,
@@ -235,9 +237,9 @@ fun VideoPlayer(
         ) {
             PlayerControls(
                 hlsPlayerState = hlsPlayerState,
+                onHandleBackPress = onHandleBackPress,
                 episodeDetailComplement = episodeDetailComplement,
                 episodes = episodes,
-                isLandscape = isLandscape,
                 isFullscreen = isFullscreen,
                 onPlayPauseRestart = {
                     when (hlsPlayerState.playbackState) {
@@ -285,7 +287,19 @@ fun VideoPlayer(
                     isControlsVisible = true
                     HlsPlayerUtils.dispatch(HlsPlayerAction.ToggleControlsVisibility(true))
                 },
-                onLockToggle = {
+                onLockClick = {
+                    (context as? FragmentActivity)?.let { activity ->
+                        activity.window?.let { window ->
+                            FullscreenUtils.handleFullscreenToggle(
+                                window = window,
+                                isFullscreen = false,
+                                isLandscape = false,
+                                activity = activity,
+                                onFullscreenChange = onFullscreenChange,
+                                isLockLandscapeOrientation = true
+                            )
+                        }
+                    }
                     isLocked = !isLocked
                     HlsPlayerUtils.dispatch(HlsPlayerAction.ToggleLock(isLocked))
                     isControlsVisible = true
@@ -310,7 +324,7 @@ fun VideoPlayer(
                         HlsPlayerUtils.dispatch(HlsPlayerAction.ToggleControlsVisibility(true))
                     }
                 },
-                onClick = {
+                onLayoutClick = {
                     isControlsVisible = false
                     HlsPlayerUtils.dispatch(HlsPlayerAction.ToggleControlsVisibility(false))
                     Log.d("VideoPlayer", "Box clicked: Hiding controls")
@@ -321,6 +335,7 @@ fun VideoPlayer(
         LoadingIndicator(
             modifier = Modifier.align(Alignment.Center),
             hlsPlayerState = hlsPlayerState,
+            isControlsVisible = isControlsVisible,
             errorMessage = errorMessage
         )
 
@@ -441,6 +456,9 @@ fun VideoPlayer(
             LockButton(
                 isLocked = isLocked,
                 onClick = {
+                    (context as? FragmentActivity)?.let { activity ->
+                        activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
+                    }
                     isLocked = !isLocked
                     HlsPlayerUtils.dispatch(HlsPlayerAction.ToggleLock(isLocked))
                 },

@@ -1,7 +1,6 @@
 package com.luminoverse.animevibe.ui.animeWatch.videoPlayer
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -18,8 +17,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.Lock
@@ -41,33 +42,39 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.common.Player
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
+import com.luminoverse.animevibe.ui.common.CircularLoadingIndicator
 import com.luminoverse.animevibe.utils.TimeUtils.formatTimestamp
 import com.luminoverse.animevibe.utils.media.HlsPlayerState
 
 @Composable
 fun PlayerControls(
     hlsPlayerState: HlsPlayerState,
+    onHandleBackPress: () -> Unit,
     episodeDetailComplement: EpisodeDetailComplement,
     episodes: List<Episode>,
-    isLandscape: Boolean,
     isFullscreen: Boolean,
     onPlayPauseRestart: () -> Unit,
     onPreviousEpisode: () -> Unit,
     onNextEpisode: () -> Unit,
     onSeekTo: (Long) -> Unit,
     onPipClick: () -> Unit,
-    onLockToggle: () -> Unit,
+    onLockClick: () -> Unit,
     onSubtitleClick: () -> Unit,
     onPlaybackSpeedClick: () -> Unit,
     onFullscreenToggle: () -> Unit,
-    onClick: () -> Unit
+    onLayoutClick: () -> Unit
 ) {
     val currentEpisode = episodeDetailComplement.servers.episodeNo
     val hasPreviousEpisode = episodes.any { it.episodeNo == currentEpisode - 1 }
@@ -80,7 +87,7 @@ fun PlayerControls(
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
-            ) { onClick() }
+            ) { onLayoutClick() }
     ) {
         Column(
             modifier = Modifier
@@ -91,26 +98,39 @@ fun PlayerControls(
             // Top controls
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = episodeDetailComplement.episodeTitle,
-                        style = MaterialTheme.typography.titleLarge,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        fontSize = 20.sp,
-                        color = Color.White
-                    )
-                    Text(
-                        text = episodeDetailComplement.animeTitle,
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        fontSize = 14.sp,
-                        color = Color.White.copy(alpha = 0.7f)
-                    )
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onHandleBackPress) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBackIosNew,
+                            contentDescription = "Return back",
+                            tint = Color.White
+                        )
+                    }
+                    if (isFullscreen) Column {
+                        Text(
+                            text = episodeDetailComplement.episodeTitle,
+                            style = MaterialTheme.typography.titleLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            fontSize = 20.sp,
+                            color = Color.White
+                        )
+                        Text(
+                            text = episodeDetailComplement.animeTitle,
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            fontSize = 14.sp,
+                            color = Color.White.copy(alpha = 0.7f)
+                        )
+                    }
                 }
                 Row {
                     IconButton(onClick = onPipClick) {
@@ -134,7 +154,7 @@ fun PlayerControls(
                             tint = Color.White
                         )
                     }
-                    IconButton(onClick = onLockToggle) {
+                    IconButton(onClick = onLockClick) {
                         Icon(
                             imageVector = if (hlsPlayerState.isLocked) Icons.Default.Lock else Icons.Default.LockOpen,
                             contentDescription = if (hlsPlayerState.isLocked) "Unlock" else "Lock",
@@ -147,85 +167,106 @@ fun PlayerControls(
             // Middle controls
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceEvenly,
+                horizontalArrangement = Arrangement.spacedBy(64.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(
-                    modifier = Modifier.background(
-                        color = Color.Black.copy(alpha = 0.4f),
-                        shape = CircleShape
-                    ),
-                    onClick = onPreviousEpisode,
-                    enabled = hasPreviousEpisode
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .clickable(enabled = hasPreviousEpisode, onClick = onPreviousEpisode)
+                        .background(
+                            color = Color.Black.copy(alpha = 0.4f),
+                            shape = CircleShape
+                        )
                 ) {
                     Icon(
                         imageVector = Icons.Default.SkipPrevious,
                         contentDescription = "Previous Episode",
-                        tint = if (hasPreviousEpisode) Color.White else Color.Gray
+                        tint = if (hasPreviousEpisode) Color.White else Color.Gray,
+                        modifier = Modifier
+                            .size(24.dp)
+                            .align(Alignment.Center)
                     )
                 }
 
-                AnimatedVisibility(
-                    visible = (hlsPlayerState.playbackState != Player.STATE_BUFFERING && hlsPlayerState.playbackState != Player.STATE_IDLE),
-                    modifier = Modifier.background(
-                        color = Color.Black.copy(alpha = 0.4f),
-                        shape = CircleShape
-                    ),
-                    enter = fadeIn(tween(300)),
-                    exit = fadeOut(tween(300))
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .clickable(
+                            enabled = hlsPlayerState.playbackState != Player.STATE_BUFFERING && hlsPlayerState.playbackState != Player.STATE_IDLE,
+                            onClick = onPlayPauseRestart
+                        )
+                        .background(
+                            color = Color.Black.copy(alpha = 0.4f),
+                            shape = CircleShape
+                        )
                 ) {
-                    IconButton(onClick = onPlayPauseRestart) {
-                        AnimatedContent(
-                            targetState = when (hlsPlayerState.playbackState) {
-                                Player.STATE_ENDED -> "ended"
-                                else -> if (hlsPlayerState.isPlaying) "playing" else "paused"
-                            },
-                            transitionSpec = {
-                                (fadeIn(tween(300)) + scaleIn(tween(300), initialScale = 0.8f))
-                                    .togetherWith(
-                                        fadeOut(tween(300)) + scaleOut(
-                                            tween(300),
-                                            targetScale = 0.8f
-                                        )
+                    AnimatedContent(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .align(Alignment.Center),
+                        targetState = when (hlsPlayerState.playbackState) {
+                            Player.STATE_BUFFERING -> "buffering"
+                            Player.STATE_IDLE -> "idle"
+                            Player.STATE_ENDED -> "ended"
+                            else -> if (hlsPlayerState.isPlaying) "playing" else "paused"
+                        },
+                        transitionSpec = {
+                            (fadeIn(tween(300)) + scaleIn(tween(300), initialScale = 0.8f))
+                                .togetherWith(
+                                    fadeOut(tween(300)) + scaleOut(
+                                        tween(300),
+                                        targetScale = 0.8f
                                     )
-                            },
-                            label = "PlayerStateAnimation"
-                        ) { state ->
-                            when (state) {
-                                "ended" -> Icon(
-                                    imageVector = Icons.Default.Replay,
-                                    contentDescription = "Replay",
-                                    tint = Color.White
                                 )
+                        },
+                        label = "PlayerStateAnimation"
+                    ) { state ->
+                        when (state) {
+                            "ended" -> Icon(
+                                imageVector = Icons.Default.Replay,
+                                contentDescription = "Replay",
+                                tint = Color.White
+                            )
 
-                                "playing" -> Icon(
-                                    imageVector = Icons.Default.Pause,
-                                    contentDescription = "Pause",
-                                    tint = Color.White
-                                )
+                            "playing" -> Icon(
+                                imageVector = Icons.Default.Pause,
+                                contentDescription = "Pause",
+                                tint = Color.White
+                            )
 
-                                "paused" -> Icon(
-                                    imageVector = Icons.Default.PlayArrow,
-                                    contentDescription = "Play",
-                                    tint = Color.White
-                                )
+                            "paused" -> Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = "Play",
+                                tint = Color.White
+                            )
+
+                            else -> {
+                                CircularLoadingIndicator()
                             }
                         }
                     }
                 }
 
-                IconButton(
-                    modifier = Modifier.background(
-                        color = Color.Black.copy(alpha = 0.4f),
-                        shape = CircleShape
-                    ),
-                    onClick = onNextEpisode,
-                    enabled = hasNextEpisode
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .clickable(enabled = hasNextEpisode, onClick = onNextEpisode)
+                        .background(
+                            color = Color.Black.copy(alpha = 0.4f),
+                            shape = CircleShape
+                        )
                 ) {
                     Icon(
                         imageVector = Icons.Default.SkipNext,
                         contentDescription = "Next Episode",
-                        tint = if (hasNextEpisode) Color.White else Color.Gray
+                        tint = if (hasNextEpisode) Color.White else Color.Gray,
+                        modifier = Modifier
+                            .size(24.dp)
+                            .align(Alignment.Center)
                     )
                 }
             }
@@ -238,9 +279,13 @@ fun PlayerControls(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "${formatTimestamp(hlsPlayerState.currentPosition)} / ${
-                            if (hlsPlayerState.duration > 0) formatTimestamp(hlsPlayerState.duration) else "--:--"
-                        }",
+                        text = buildAnnotatedString {
+                            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                                append(formatTimestamp(hlsPlayerState.currentPosition))
+                            }
+                            append(" / ")
+                            append(if (hlsPlayerState.duration > 0) formatTimestamp(hlsPlayerState.duration) else "--:--")
+                        },
                         color = Color.White,
                         fontSize = 14.sp
                     )

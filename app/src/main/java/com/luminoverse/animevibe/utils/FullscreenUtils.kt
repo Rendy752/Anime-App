@@ -17,7 +17,8 @@ object FullscreenUtils {
         isFullscreen: Boolean,
         isLandscape: Boolean,
         activity: Activity?,
-        onFullscreenChange: (Boolean) -> Unit
+        onFullscreenChange: (Boolean) -> Unit,
+        isLockLandscapeOrientation: Boolean = false
     ) {
         val newFullscreenState = !isFullscreen
 
@@ -38,8 +39,10 @@ object FullscreenUtils {
                 if (newFullscreenState && !isLandscape) {
                     it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
                 }
-                 delay(3000)
-                 it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
+                if (!isLockLandscapeOrientation) {
+                    delay(3000)
+                    it.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
+                }
             }
         }
 

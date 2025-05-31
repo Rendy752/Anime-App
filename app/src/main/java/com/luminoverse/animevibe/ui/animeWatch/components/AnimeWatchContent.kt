@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
 import com.luminoverse.animevibe.ui.animeWatch.WatchState
 import com.luminoverse.animevibe.ui.animeWatch.PlayerUiState
@@ -36,6 +37,8 @@ fun AnimeWatchContent(
     playerUiState: PlayerUiState,
     hlsPlayerState: HlsPlayerState,
     mainState: MainState,
+    onHandleBackPress: () -> Unit,
+    onFavoriteToggle: (EpisodeDetailComplement) -> Unit,
     updateStoredWatchState: (Long?, Long?, String?) -> Unit,
     onLoadEpisodeDetailComplement: (String) -> Unit,
     scrollState: LazyListState,
@@ -50,10 +53,11 @@ fun AnimeWatchContent(
         watchState.episodeSourcesQuery.let { query ->
             val serverScrollState = rememberScrollState()
             Row(modifier = Modifier.fillMaxWidth()) {
-                if (watchState.episodeDetailComplement is Resource.Success && mainState.isConnected) {
+                if (watchState.episodeDetailComplement is Resource.Success) {
                     VideoPlayerSection(
                         updateStoredWatchState = updateStoredWatchState,
                         watchState = watchState,
+                        onHandleBackPress = onHandleBackPress,
                         isScreenOn = isScreenOn,
                         isAutoPlayVideo = isAutoPlayVideo,
                         episodes = episodeList,
@@ -91,31 +95,32 @@ fun AnimeWatchContent(
                         state = scrollState
                     ) {
                         item {
-                            if (watchState.selectedContentIndex == 0) {
-                                WatchContentSection(
-                                    animeDetail = watchState.animeDetail,
-                                    isFavorite = watchState.isFavorite,
-                                    episodeDetailComplements = watchState.episodeDetailComplements,
-                                    onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,
-                                    episodeDetailComplement = watchState.episodeDetailComplement,
-                                    episodes = episodeList,
-                                    newEpisodeCount = watchState.newEpisodeCount,
-                                    episodeSourcesQuery = query,
-                                    serverScrollState = serverScrollState,
-                                    handleSelectedEpisodeServer = {
-                                        handleSelectedEpisodeServer(it, false)
-                                    }
-                                )
-                            } else {
-                                InfoContentSection(
-                                    animeDetail = watchState.animeDetail,
-                                    navController = navController
-                                )
-                            }
+                            WatchContentSection(
+                                animeDetail = watchState.animeDetail,
+                                networkStatus = mainState.networkStatus,
+                                onFavoriteToggle = onFavoriteToggle,
+                                isFavorite = watchState.isFavorite,
+                                episodeDetailComplements = watchState.episodeDetailComplements,
+                                onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,
+                                episodeDetailComplement = watchState.episodeDetailComplement,
+                                episodes = episodeList,
+                                newEpisodeCount = watchState.newEpisodeCount,
+                                episodeSourcesQuery = query,
+                                serverScrollState = serverScrollState,
+                                handleSelectedEpisodeServer = {
+                                    handleSelectedEpisodeServer(it, false)
+                                }
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            InfoContentSection(
+                                animeDetail = watchState.animeDetail,
+                                navController = navController
+                            )
                         }
                     }
                 }
             }
+
             if (!mainState.isLandscape && !playerUiState.isPipMode && !playerUiState.isFullscreen) {
                 LazyColumn(
                     modifier = Modifier
@@ -128,6 +133,8 @@ fun AnimeWatchContent(
                     item {
                         WatchContentSection(
                             animeDetail = watchState.animeDetail,
+                            networkStatus = mainState.networkStatus,
+                            onFavoriteToggle = onFavoriteToggle,
                             isFavorite = watchState.isFavorite,
                             episodeDetailComplements = watchState.episodeDetailComplements,
                             onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,

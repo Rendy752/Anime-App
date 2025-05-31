@@ -24,7 +24,6 @@ import com.luminoverse.animevibe.utils.FullscreenUtils
 import com.luminoverse.animevibe.utils.resource.Resource
 import com.luminoverse.animevibe.utils.receivers.ScreenOffReceiver
 import com.luminoverse.animevibe.utils.receivers.ScreenOnReceiver
-import com.luminoverse.animevibe.ui.animeWatch.components.AnimeWatchTopBar
 import com.luminoverse.animevibe.ui.animeWatch.components.AnimeWatchContent
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
@@ -126,20 +125,6 @@ fun AnimeWatchScreen(
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        contentWindowInsets = WindowInsets(0.dp),
-        topBar = {
-            if (!playerUiState.isPipMode && !playerUiState.isFullscreen) {
-                AnimeWatchTopBar(
-                    watchState = watchState,
-                    mainState = mainState,
-                    onContentIndexChange = { onAction(WatchAction.SetSelectedContentIndex(it)) },
-                    onHandleBackPress = onBackPress,
-                    onFavoriteToggle = { updatedComplement ->
-                        onAction(WatchAction.SetFavorite(updatedComplement.isFavorite))
-                    }
-                )
-            }
-        }
     ) { paddingValues ->
         val contentModifier = if (playerUiState.isFullscreen) {
             Modifier
@@ -191,6 +176,10 @@ fun AnimeWatchScreen(
                     playerUiState = playerUiState,
                     hlsPlayerState = hlsPlayerState,
                     mainState = mainState,
+                    onHandleBackPress = onBackPress,
+                    onFavoriteToggle = { updatedComplement ->
+                        onAction(WatchAction.SetFavorite(updatedComplement.isFavorite))
+                    },
                     updateStoredWatchState = { position, duration, screenshot ->
                         val updatedComplement =
                             (watchState.episodeDetailComplement as? Resource.Success)?.data?.copy(
