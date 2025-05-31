@@ -99,6 +99,7 @@ fun AnimeWatchContent(
                                     onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,
                                     episodeDetailComplement = watchState.episodeDetailComplement,
                                     episodes = episodeList,
+                                    newEpisodeCount = watchState.newEpisodeCount,
                                     episodeSourcesQuery = query,
                                     serverScrollState = serverScrollState,
                                     handleSelectedEpisodeServer = {
@@ -132,6 +133,7 @@ fun AnimeWatchContent(
                             onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,
                             episodeDetailComplement = watchState.episodeDetailComplement,
                             episodes = episodeList,
+                            newEpisodeCount = watchState.newEpisodeCount,
                             episodeSourcesQuery = query,
                             serverScrollState = serverScrollState,
                             handleSelectedEpisodeServer = { handleSelectedEpisodeServer(it, false) }

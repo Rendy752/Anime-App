@@ -45,12 +45,12 @@ class AnimeEpisodeDetailRepository(
         animeDetailDao.deleteAnimeDetailById(id)
     }
 
-    private suspend fun isDataNeedUpdate(data: AnimeDetail): Boolean {
-        val complement = getCachedAnimeDetailComplementByMalId(data.mal_id)
-        return data.airing && TimeUtils.isEpisodeAreUpToDate(
-            data.broadcast.time,
-            data.broadcast.timezone,
-            data.broadcast.day,
+    private suspend fun isDataNeedUpdate(animeDetail: AnimeDetail): Boolean {
+        val complement = getCachedAnimeDetailComplementByMalId(animeDetail.mal_id)
+        return animeDetail.airing && TimeUtils.isEpisodeAreUpToDate(
+            animeDetail.broadcast.time,
+            animeDetail.broadcast.timezone,
+            animeDetail.broadcast.day,
             complement?.lastEpisodeUpdatedAt
         )
     }
@@ -126,11 +126,13 @@ class AnimeEpisodeDetailRepository(
     }
 
     suspend fun getRandomCachedUnfinishedEpisode(): Pair<EpisodeDetailComplement?, Int> {
-        val animeDetailsWithWatchedEpisodes = animeDetailComplementDao.getAllAnimeDetailsWithWatchedEpisodes()
+        val animeDetailsWithWatchedEpisodes =
+            animeDetailComplementDao.getAllAnimeDetailsWithWatchedEpisodes()
 
         val unfinishedEpisodes = animeDetailsWithWatchedEpisodes.mapNotNull { animeDetail ->
             val episodeId = animeDetail.lastEpisodeWatchedId ?: return@mapNotNull null
-            val episode = episodeDetailComplementDao.getEpisodeDetailComplementById(episodeId) ?: return@mapNotNull null
+            val episode = episodeDetailComplementDao.getEpisodeDetailComplementById(episodeId)
+                ?: return@mapNotNull null
 
             if (episode.lastWatched != null &&
                 episode.lastTimestamp != null &&

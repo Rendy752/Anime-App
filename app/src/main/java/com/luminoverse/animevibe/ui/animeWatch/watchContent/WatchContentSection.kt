@@ -19,6 +19,7 @@ fun WatchContentSection(
     onLoadEpisodeDetailComplement: (String) -> Unit,
     episodeDetailComplement: Resource<EpisodeDetailComplement>,
     episodes: List<Episode>,
+    newEpisodeCount: Int,
     episodeSourcesQuery: EpisodeSourcesQuery?,
     serverScrollState: ScrollState,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
@@ -48,6 +49,7 @@ fun WatchContentSection(
             onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,
             episodeDetailComplement = episodeDetailComplement,
             episodes = episodes,
+            newEpisodeCount = newEpisodeCount,
             episodeSourcesQuery = episodeSourcesQuery,
             handleSelectedEpisodeServer = handleSelectedEpisodeServer
         )

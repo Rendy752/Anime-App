@@ -7,7 +7,7 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableStateOf
@@ -24,6 +24,7 @@ import com.luminoverse.animevibe.utils.resource.Resource
 @Composable
 fun EpisodeSelectionGrid(
     episodes: List<Episode>,
+    newEpisodeCount: Int,
     episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
     onLoadEpisodeDetailComplement: (String) -> Unit,
     episodeDetailComplement: EpisodeDetailComplement?,
@@ -70,7 +71,7 @@ fun EpisodeSelectionGrid(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(episodes) { episode ->
+        itemsIndexed(episodes) { index, episode ->
             LaunchedEffect(episode.episodeId) {
                 if (episodeDetailComplements[episode.episodeId] == null) {
                     onLoadEpisodeDetailComplement(episode.episodeId)
@@ -80,6 +81,7 @@ fun EpisodeSelectionGrid(
             WatchEpisodeItem(
                 currentEpisode = episodeDetailComplement,
                 episode = episode,
+                isNewEpisode = index >= (episodes.size - newEpisodeCount),
                 episodeDetailComplement = if (complementResource is Resource.Success) complementResource.data else null,
                 onEpisodeClick = { episodeId ->
                     setSelectedEpisodeId(episodeId)

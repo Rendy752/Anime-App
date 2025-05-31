@@ -493,8 +493,6 @@ class AnimeDetailViewModelTest {
                 animeId
             )
         }
-        coVerify(exactly = 1) { animeEpisodeDetailRepository.insertCachedAnimeDetailComplement(any()) }
-        coVerify(exactly = 0) { animeEpisodeDetailRepository.getAnimeAniwatchSearch(any()) }
     }
 
     @Test

@@ -135,7 +135,6 @@ class AnimeDetailViewModel @Inject constructor(
                     malId = animeDetail.mal_id
                 )
                 if (complement != null) {
-                    animeEpisodeDetailRepository.insertCachedAnimeDetailComplement(complement)
                     _detailState.update {
                         it.copy(animeDetailComplement = Resource.Success(complement))
                     }
