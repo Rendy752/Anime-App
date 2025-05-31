@@ -1,5 +1,6 @@
 package com.luminoverse.animevibe.ui.common
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,7 +11,9 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -45,6 +48,7 @@ fun EpisodeDetailItem(
     animeDetail: AnimeDetail = animeDetailPlaceholder,
     lastEpisodeWatchedId: String? = null,
     episode: Episode = episodePlaceholder,
+    isNewEpisode: Boolean = true,
     episodeDetailComplement: EpisodeDetailComplement? = episodeDetailComplementPlaceholder,
     query: String = "",
     onAction: (DetailAction) -> Unit = {},
@@ -148,6 +152,18 @@ fun EpisodeDetailItem(
                     }
                 }
             }
+        }
+
+        if (isNewEpisode) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 4.dp, end = 4.dp)
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary),
+                contentAlignment = Alignment.Center
+            ) {}
         }
 
         progress?.let {

@@ -22,6 +22,7 @@ data class DetailState(
     val animeDetail: Resource<AnimeDetailResponse> = Resource.Loading(),
     val animeDetailComplement: Resource<AnimeDetailComplement?> = Resource.Loading(),
     val defaultEpisodeId: String? = null,
+    val newEpisodeIdList: List<String> = emptyList(),
     val relationAnimeDetails: Map<Int, Resource<AnimeDetail>> = emptyMap(),
     val episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>> = emptyMap()
 )
@@ -124,6 +125,7 @@ class AnimeDetailViewModel @Inject constructor(
         if (isLoadingEpisodes) return@launch
         isLoadingEpisodes = true
         try {
+            val isCurrentAnimeDetailComplement = _detailState.value.animeDetailComplement
             _detailState.update { it.copy(animeDetailComplement = Resource.Loading()) }
             val animeDetail = _detailState.value.animeDetail.data?.data ?: run {
                 _detailState.update { it.copy(animeDetailComplement = Resource.Error("Anime data not available")) }
@@ -157,6 +159,44 @@ class AnimeDetailViewModel @Inject constructor(
                     return@launch
                 }
             }
+
+            if (isCurrentAnimeDetailComplement is Resource.Success) {
+                _detailState.value.animeDetail.data?.data?.let { animeDetail ->
+                    if (animeDetail.type == "Music") {
+                        return@launch
+                    }
+                    isCurrentAnimeDetailComplement.data?.let { animeDetailComplement ->
+                        val currentEpisodes = animeDetailComplement.episodes ?: emptyList()
+                        val currentEpisodeIds = currentEpisodes.map { it.episodeId }.toSet()
+
+                        val cachedComplement =
+                            animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(
+                                animeDetail.mal_id
+                            )
+                        cachedComplement?.let {
+                            val updatedComplement =
+                                ComplementUtils.updateAnimeDetailComplementWithEpisodes(
+                                    repository = animeEpisodeDetailRepository,
+                                    animeDetail = animeDetail,
+                                    animeDetailComplement = it,
+                                    isRefresh = true
+                                )
+                            val newEpisodes = updatedComplement?.episodes ?: emptyList()
+                            val newEpisodeIds = newEpisodes
+                                .filter { it.episodeId !in currentEpisodeIds }
+                                .map { it.episodeId }
+                            _detailState.update {
+                                it.copy(
+                                    animeDetailComplement = Resource.Success(updatedComplement),
+                                    newEpisodeIdList = newEpisodeIds
+                                )
+                            }
+                        }
+                    }
+                }
+                return@launch
+            }
+
             val searchTitle = (animeDetail.title_english ?: animeDetail.title).normalizeTitle()
             val animeAniwatchSearchResponse =
                 animeEpisodeDetailRepository.getAnimeAniwatchSearch(searchTitle)

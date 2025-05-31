@@ -83,6 +83,7 @@ fun NumericDetailItemSkeleton() {
         verticalArrangement = Arrangement.Center
     ) {
         SkeletonBox(width = 24.dp, height = 24.dp)
+        Spacer(modifier = Modifier.height(4.dp))
         SkeletonBox(
             modifier = Modifier.fillMaxWidth(0.8f),
             height = 20.dp

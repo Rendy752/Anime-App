@@ -241,7 +241,7 @@ class AnimeWatchViewModel @Inject constructor(
 
             _watchState.value.animeDetail?.let { animeDetail ->
                 _watchState.value.animeDetailComplement?.let { animeDetailComplement ->
-                    if (animeDetail.airing) {
+                    if (animeDetail.airing && isRefresh) {
                         viewModelScope.launch { updateEpisodes() }
                     }
                     val episodeServersResource =
@@ -386,10 +386,6 @@ class AnimeWatchViewModel @Inject constructor(
                 if (animeDetail.type == "Music") return@launch
                 _watchState.value.animeDetailComplement?.let { animeDetailComplement ->
                     val currentEpisodeCount = animeDetailComplement.episodes?.size ?: 0
-                    val episodesResponse =
-                        animeEpisodeDetailRepository.getEpisodes(animeDetailComplement.id)
-                    if (episodesResponse !is Resource.Success) return@launch
-
                     val cachedComplement =
                         animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(
                             animeDetail.mal_id
@@ -399,12 +395,14 @@ class AnimeWatchViewModel @Inject constructor(
                             ComplementUtils.updateAnimeDetailComplementWithEpisodes(
                                 repository = animeEpisodeDetailRepository,
                                 animeDetail = animeDetail,
-                                animeDetailComplement = it.copy(episodes = episodesResponse.data.episodes)
+                                animeDetailComplement = it,
+                                isRefresh = true
                             )
+                        val newEpisodeCount = updatedComplement?.episodes?.size ?: 0
                         _watchState.update {
                             it.copy(
                                 animeDetailComplement = updatedComplement,
-                                newEpisodeCount = episodesResponse.data.episodes.size - currentEpisodeCount
+                                newEpisodeCount = newEpisodeCount - currentEpisodeCount
                             )
                         }
                     }

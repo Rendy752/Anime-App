@@ -179,6 +179,7 @@ fun EpisodesDetailSection(
                                         animeDetail = animeDetail,
                                         lastEpisodeWatchedId = data.lastEpisodeWatchedId,
                                         episode = episode,
+                                        isNewEpisode = episode.episodeId in detailState.newEpisodeIdList,
                                         episodeDetailComplement = detailState.episodeDetailComplements[episode.episodeId]?.data,
                                         query = episodeFilterState.episodeQuery.title,
                                         onAction = onAction,
