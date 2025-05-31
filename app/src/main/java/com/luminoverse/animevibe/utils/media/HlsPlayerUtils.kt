@@ -16,14 +16,15 @@ import androidx.annotation.OptIn
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.scale
 import androidx.core.net.toUri
-import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.TrackSelectionParameters
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.ExoPlaybackException
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
@@ -88,11 +89,12 @@ sealed class HlsPlayerAction {
 
     data class SkipIntro(val endTime: Long) : HlsPlayerAction()
     data class SkipOutro(val endTime: Long) : HlsPlayerAction()
-    data class SetSubtitle(val track: Track) : HlsPlayerAction()
+    data class SetSubtitle(val track: Track?) : HlsPlayerAction()
     data class ToggleControlsVisibility(val isVisible: Boolean) : HlsPlayerAction()
     data class ToggleLock(val isLocked: Boolean) : HlsPlayerAction()
 }
 
+@UnstableApi
 object HlsPlayerUtils {
     private var exoPlayer: ExoPlayer? = null
     private var audioManager: AudioManager? = null
@@ -208,92 +210,99 @@ object HlsPlayerUtils {
     private fun initializePlayer(context: Context) {
         if (exoPlayer == null) {
             audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
-            exoPlayer = ExoPlayer.Builder(context).build().apply {
-                addListener(object : Player.Listener {
-                    override fun onIsPlayingChanged(isPlaying: Boolean) {
-                        Log.d("HlsPlayerUtils", "onIsPlayingChanged: isPlaying=$isPlaying")
-                        _state.update { it.copy(isPlaying = isPlaying, error = null) }
-                        if (isPlaying) {
-                            requestAudioFocus()
-                            startIntroOutroCheck()
-                            startPositionUpdates()
-                        } else {
+            // Create a new DefaultTrackSelector for this player instance
+            val trackSelector = DefaultTrackSelector(context)
+            exoPlayer = ExoPlayer.Builder(context)
+                .setTrackSelector(trackSelector)
+                .build()
+                .apply {
+                    addListener(object : Player.Listener {
+                        override fun onIsPlayingChanged(isPlaying: Boolean) {
+                            Log.d("HlsPlayerUtils", "onIsPlayingChanged: isPlaying=$isPlaying")
+                            _state.update { it.copy(isPlaying = isPlaying, error = null) }
+                            if (isPlaying) {
+                                requestAudioFocus()
+                                startIntroOutroCheck()
+                                startPositionUpdates()
+                            } else {
+                                abandonAudioFocus()
+                                stopIntroOutroCheck()
+                                stopPositionUpdates()
+                            }
+                        }
+
+                        override fun onPlaybackStateChanged(state: Int) {
+                            Log.d("HlsPlayerUtils", "onPlaybackStateChanged: state=$state")
+                            val isReady =
+                                state == Player.STATE_READY || state == Player.STATE_BUFFERING
+                            setSubtitle(currentVideoData?.tracks?.firstOrNull { track -> track.kind == "captions" && track.default == true })
+                            _state.update {
+                                it.copy(
+                                    playbackState = state,
+                                    isReady = isReady,
+                                    currentPosition = currentPosition,
+                                    duration = duration.takeIf { it > 0 } ?: 0
+                                )
+                            }
+                            when (state) {
+                                Player.STATE_ENDED -> {
+                                    _state.update { it.copy(isPlaying = false) }
+                                    abandonAudioFocus()
+                                    stopIntroOutroCheck()
+                                    stopPositionUpdates()
+                                }
+
+                                Player.STATE_READY -> {
+                                    if (!_state.value.isPlaying) {
+                                        _state.update { it.copy(error = null) }
+                                    }
+                                }
+
+                                Player.STATE_BUFFERING -> {
+                                    _state.update { it.copy(error = null) }
+                                }
+
+                                Player.STATE_IDLE -> {
+                                    _state.update { it.copy(error = null) }
+                                    abandonAudioFocus()
+                                    stopIntroOutroCheck()
+                                    stopPositionUpdates()
+                                }
+                            }
+                        }
+
+                        override fun onPositionDiscontinuity(
+                            oldPosition: Player.PositionInfo,
+                            newPosition: Player.PositionInfo,
+                            reason: Int
+                        ) {
+                            if (reason == Player.DISCONTINUITY_REASON_SEEK) {
+                                introOutroCheck()
+                            }
+                            _state.update {
+                                it.copy(currentPosition = newPosition.positionMs)
+                            }
+                        }
+
+                        override fun onPlayerError(error: PlaybackException) {
+                            val message = when {
+                                error is ExoPlaybackException && error.type == ExoPlaybackException.TYPE_SOURCE -> {
+                                    "Playback error, try a different server."
+                                }
+
+                                error.message != null -> "Playback error: ${error.message}"
+                                else -> "Unknown playback error"
+                            }
+                            Log.e("HlsPlayerUtils", "onPlayerError: $message", error)
+                            _state.update { it.copy(error = message) }
                             abandonAudioFocus()
                             stopIntroOutroCheck()
                             stopPositionUpdates()
                         }
-                    }
-
-                    override fun onPlaybackStateChanged(state: Int) {
-                        Log.d("HlsPlayerUtils", "onPlaybackStateChanged: state=$state")
-                        val isReady = state == Player.STATE_READY || state == Player.STATE_BUFFERING
-                        _state.update {
-                            it.copy(
-                                playbackState = state,
-                                isReady = isReady,
-                                currentPosition = currentPosition,
-                                duration = duration.takeIf { it > 0 } ?: 0
-                            )
-                        }
-                        when (state) {
-                            Player.STATE_ENDED -> {
-                                _state.update { it.copy(isPlaying = false) }
-                                abandonAudioFocus()
-                                stopIntroOutroCheck()
-                                stopPositionUpdates()
-                            }
-
-                            Player.STATE_READY -> {
-                                if (!_state.value.isPlaying) {
-                                    _state.update { it.copy(error = null) }
-                                }
-                            }
-
-                            Player.STATE_BUFFERING -> {
-                                _state.update { it.copy(error = null) }
-                            }
-
-                            Player.STATE_IDLE -> {
-                                _state.update { it.copy(error = null) }
-                                abandonAudioFocus()
-                                stopIntroOutroCheck()
-                                stopPositionUpdates()
-                            }
-                        }
-                    }
-
-                    override fun onPositionDiscontinuity(
-                        oldPosition: Player.PositionInfo,
-                        newPosition: Player.PositionInfo,
-                        reason: Int
-                    ) {
-                        if (reason == Player.DISCONTINUITY_REASON_SEEK) {
-                            introOutroCheck()
-                        }
-                        _state.update {
-                            it.copy(currentPosition = newPosition.positionMs)
-                        }
-                    }
-
-                    override fun onPlayerError(error: PlaybackException) {
-                        val message = when {
-                            error is ExoPlaybackException && error.type == ExoPlaybackException.TYPE_SOURCE -> {
-                                "Playback error, try a different server."
-                            }
-
-                            error.message != null -> "Playback error: ${error.message}"
-                            else -> "Unknown playback error"
-                        }
-                        Log.e("HlsPlayerUtils", "onPlayerError: $message", error)
-                        _state.update { it.copy(error = message) }
-                        abandonAudioFocus()
-                        stopIntroOutroCheck()
-                        stopPositionUpdates()
-                    }
-                })
-                pause()
-                Log.d("HlsPlayerUtils", "ExoPlayer initialized")
-            }
+                    })
+                    pause()
+                    Log.d("HlsPlayerUtils", "ExoPlayer initialized")
+                }
             _state.update { it.copy(playbackState = Player.STATE_IDLE, isReady = false) }
         }
     }
@@ -330,7 +339,7 @@ object HlsPlayerUtils {
                     val mediaItemUri = videoData.sources[0].url.toUri()
                     val mediaItemBuilder = MediaItem.Builder().setUri(mediaItemUri)
 
-                    if (videoData.tracks.any { it.kind == "captions" } == true) {
+                    if (videoData.tracks.any { it.kind == "captions" }) {
                         val subtitleConfigurations =
                             mutableListOf<MediaItem.SubtitleConfiguration>()
                         videoData.tracks.filter { it.kind == "captions" }.forEach { track ->
@@ -338,9 +347,6 @@ object HlsPlayerUtils {
                                 MediaItem.SubtitleConfiguration.Builder(track.file.toUri())
                                     .setMimeType(MimeTypes.TEXT_VTT)
                                     .setLanguage(track.label?.substringBefore("-")?.trim() ?: "")
-                                    .setSelectionFlags(
-                                        if (track.default == true) C.SELECTION_FLAG_DEFAULT else 0
-                                    )
                                     .setLabel(track.label?.substringBefore("-")?.trim() ?: "")
                                     .build()
                             subtitleConfigurations.add(subtitleConfiguration)
@@ -350,6 +356,8 @@ object HlsPlayerUtils {
 
                     player.setMediaItem(mediaItemBuilder.build())
                     player.prepare()
+
+                    player.trackSelectionParameters = TrackSelectionParameters.Builder().build()
 
                     if (!isAutoPlayVideo) {
                         pause()
@@ -700,12 +708,22 @@ object HlsPlayerUtils {
         }
     }
 
-    private fun setSubtitle(track: Track) {
+    @OptIn(UnstableApi::class)
+    private fun setSubtitle(track: Track?) {
         try {
-            exoPlayer?.let {
-                // Implement subtitle track selection logic here
-                _state.update { it.copy(selectedSubtitle = track) }
-                Log.d("HlsPlayerUtils", "Selected subtitle: ${track.label}")
+            exoPlayer?.let { player ->
+                val builder = player.trackSelectionParameters.buildUpon()
+                if (track == null || track.label == "None") {
+                    player.trackSelectionParameters = builder.setPreferredTextLanguages().build()
+                    _state.update { it.copy(selectedSubtitle = null) }
+                    Log.d("HlsPlayerUtils", "Subtitles disabled")
+                } else {
+                    val language = track.label?.substringBefore("-")?.trim() ?: ""
+                    player.trackSelectionParameters = builder.setPreferredTextLanguages(language)
+                        .build()
+                    _state.update { it.copy(selectedSubtitle = track) }
+                    Log.d("HlsPlayerUtils", "Selected subtitle: ${track.label}")
+                }
             }
         } catch (e: Exception) {
             Log.e("HlsPlayerUtils", "Failed to set subtitle", e)

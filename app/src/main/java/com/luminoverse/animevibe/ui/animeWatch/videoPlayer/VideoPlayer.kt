@@ -349,8 +349,9 @@ fun VideoPlayer(
             ),
             onDismiss = { showSubtitleSheet = false }
         ) {
-            SubtitleSettingsContent(
+            SubtitleContent(
                 tracks = episodeDetailComplement.sources.tracks,
+                selectedSubtitle = hlsPlayerState.selectedSubtitle,
                 onSubtitleSelected = { track ->
                     HlsPlayerUtils.dispatch(HlsPlayerAction.SetSubtitle(track))
                     showSubtitleSheet = false
@@ -369,6 +370,7 @@ fun VideoPlayer(
             onDismiss = { showPlaybackSpeedSheet = false }
         ) {
             PlaybackSpeedContent(
+                selectedPlaybackSpeed = hlsPlayerState.playbackSpeed,
                 onSpeedChange = { speed ->
                     HlsPlayerUtils.dispatch(HlsPlayerAction.SetPlaybackSpeed(speed))
                     showPlaybackSpeedSheet = false

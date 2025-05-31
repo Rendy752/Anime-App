@@ -14,8 +14,8 @@ data class Track(
 ): Parcelable
 
 val trackPlaceholder = Track(
-    file = "https://cdn.myanimelist.net/images/",
-    label = "English",
-    kind = "sub",
-    default = true
+    file = "",
+    label = "None",
+    kind = "captions",
+    default = false
 )
