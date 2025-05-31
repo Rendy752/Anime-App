@@ -26,6 +26,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.LaunchedEffect
 
 @Composable
 fun CustomSeekBar(
@@ -42,9 +43,20 @@ fun CustomSeekBar(
 ) {
     var isDragging by remember { mutableStateOf(false) }
     var dragPosition by remember { mutableFloatStateOf(currentPosition.toFloat()) }
+    var initialDragX by remember { mutableFloatStateOf(0f) }
+    var initialThumbPositionOnDragStart by remember { mutableFloatStateOf(0f) }
+
     var trackWidthPx by remember { mutableFloatStateOf(0f) }
     val progress = if (duration > 0) currentPosition.toFloat() / duration else 0f
     val density = LocalDensity.current
+
+    val dragSensitivityFactor = 0.7f
+
+    LaunchedEffect(currentPosition, isDragging) {
+        if (!isDragging) {
+            dragPosition = currentPosition.toFloat()
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -57,11 +69,8 @@ fun CustomSeekBar(
                 detectDragGestures(
                     onDragStart = { offset ->
                         isDragging = true
-                        if (duration > 0 && trackWidthPx > 0) {
-                            val newProgress = (offset.x / trackWidthPx).coerceIn(0f, 1f)
-                            dragPosition = newProgress * duration
-                            onSeekTo(dragPosition.toLong().coerceIn(0, duration))
-                        }
+                        initialDragX = offset.x
+                        initialThumbPositionOnDragStart = dragPosition
                     },
                     onDragEnd = {
                         isDragging = false
@@ -71,9 +80,16 @@ fun CustomSeekBar(
                     },
                     onDrag = { change, _ ->
                         if (duration > 0 && trackWidthPx > 0) {
-                            val newProgress = (change.position.x / trackWidthPx).coerceIn(0f, 1f)
-                            dragPosition = newProgress * duration
-                            onSeekTo(dragPosition.toLong().coerceIn(0, duration))
+                            val dragDeltaX = change.position.x - initialDragX
+                            val timeDelta =
+                                (dragDeltaX / trackWidthPx) * duration * dragSensitivityFactor
+
+                            val newPosition =
+                                (initialThumbPositionOnDragStart + timeDelta).coerceIn(
+                                    0f, duration.toFloat()
+                                )
+                            dragPosition = newPosition
+                            onSeekTo(newPosition.toLong().coerceIn(0, duration))
                         }
                     }
                 )
