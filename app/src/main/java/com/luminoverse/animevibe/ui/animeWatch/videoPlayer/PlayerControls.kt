@@ -64,6 +64,8 @@ fun PlayerControls(
     episodeDetailComplement: EpisodeDetailComplement,
     episodes: List<Episode>,
     isFullscreen: Boolean,
+    handlePlay: () -> Unit,
+    handlePause: () -> Unit,
     onPlayPauseRestart: () -> Unit,
     onPreviousEpisode: () -> Unit,
     onNextEpisode: () -> Unit,
@@ -305,6 +307,8 @@ fun PlayerControls(
                 introEnd = episodeDetailComplement.sources.intro?.end?.times(1000L) ?: 0L,
                 outroStart = episodeDetailComplement.sources.outro?.start?.times(1000L) ?: 0L,
                 outroEnd = episodeDetailComplement.sources.outro?.end?.times(1000L) ?: 0L,
+                handlePlay = handlePlay,
+                handlePause = handlePause,
                 onSeekTo = onSeekTo
             )
         }

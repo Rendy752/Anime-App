@@ -90,6 +90,7 @@ fun VideoPlayerSection(
         val player = HlsPlayerUtils.getPlayer()
         if (player != null) {
             playerView.player = player
+            HlsPlayerUtils.dispatch(HlsPlayerAction.UpdateWatchState(updateStoredWatchState = updateStoredWatchState))
             val videoSurface = playerView.videoSurfaceView
             HlsPlayerUtils.dispatch(HlsPlayerAction.SetVideoSurface(videoSurface))
             Log.d(
@@ -112,9 +113,6 @@ fun VideoPlayerSection(
                     handleSelectedEpisodeServer(episodeQuery, false)
                 },
                 isAutoPlayVideo = isAutoPlayVideo,
-                updateStoredWatchState = { position, duration, screenshot ->
-                    updateStoredWatchState(position, duration, screenshot)
-                },
                 onPlayerError = { error ->
                     Log.e("VideoPlayerSection", "Player error: $error")
                     onPlayerError(error)
@@ -289,6 +287,7 @@ fun VideoPlayerSection(
                 HlsPlayerAction.SetMedia(
                     videoData = it.sources,
                     lastTimestamp = it.lastTimestamp,
+                    duration = it.duration,
                     isAutoPlayVideo = isAutoPlayVideo,
                     onReady = {
                         isLoading = false

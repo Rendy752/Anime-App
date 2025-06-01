@@ -154,9 +154,8 @@ fun VideoPlayer(
         }
     }
 
-    LaunchedEffect(shouldShowResumeOverlay, isShowNextEpisode, errorMessage) {
-        if (shouldShowResumeOverlay || isShowNextEpisode || errorMessage != null) {
-            playerView.hideController()
+    LaunchedEffect(shouldShowResumeOverlay, isShowNextEpisode) {
+        if (shouldShowResumeOverlay || isShowNextEpisode) {
             isControlsVisible = false
             HlsPlayerUtils.dispatch(HlsPlayerAction.ToggleControlsVisibility(false))
             Log.d(
@@ -173,6 +172,7 @@ fun VideoPlayer(
                 screenshot = episodeDetailComplement.screenshot,
                 modifier = Modifier.fillMaxSize(),
                 onClick = {
+                    if (shouldShowResumeOverlay) return@ScreenshotDisplay
                     isControlsVisible = !isControlsVisible
                     HlsPlayerUtils.dispatch(
                         HlsPlayerAction.ToggleControlsVisibility(isControlsVisible)
@@ -241,9 +241,19 @@ fun VideoPlayer(
                 episodeDetailComplement = episodeDetailComplement,
                 episodes = episodes,
                 isFullscreen = isFullscreen,
+                handlePlay = {
+                    HlsPlayerUtils.dispatch(HlsPlayerAction.Play)
+                    isControlsVisible = true
+                    HlsPlayerUtils.dispatch(HlsPlayerAction.ToggleControlsVisibility(true))
+                },
+                handlePause = {
+                    HlsPlayerUtils.dispatch(HlsPlayerAction.Pause)
+                    isControlsVisible = true
+                    HlsPlayerUtils.dispatch(HlsPlayerAction.ToggleControlsVisibility(true))
+                },
                 onPlayPauseRestart = {
                     when (hlsPlayerState.playbackState) {
-                        Player.STATE_ENDED -> mediaController?.transportControls?.seekTo(0)
+                        Player.STATE_ENDED -> HlsPlayerUtils.dispatch(HlsPlayerAction.SeekTo(0))
                         else -> if (hlsPlayerState.isPlaying) {
                             HlsPlayerUtils.dispatch(HlsPlayerAction.Pause)
                         } else {
@@ -385,33 +395,41 @@ fun VideoPlayer(
             modifier = Modifier.align(Alignment.Center)
         )
 
-        if (shouldShowResumeOverlay) {
-            ResumePlaybackOverlay(
-                isPipMode = isPipMode,
-                lastTimestamp = episodeDetailComplement.lastTimestamp,
-                onClose = {
-                    isFirstLoad = false
-                    setShowResumeOverlay(false)
-                },
-                onRestart = {
-                    mediaController?.transportControls?.seekTo(0)
-                    HlsPlayerUtils.dispatch(HlsPlayerAction.Play)
-                    setShowResumeOverlay(false)
-                },
-                onResume = {
-                    mediaController?.transportControls?.seekTo(it)
-                    HlsPlayerUtils.dispatch(HlsPlayerAction.Play)
-                    setShowResumeOverlay(false)
-                },
-                modifier = Modifier.align(Alignment.Center)
-            )
+        episodeDetailComplement.lastTimestamp?.let {
+            AnimatedVisibility(
+                modifier = Modifier.align(Alignment.Center),
+                visible = shouldShowResumeOverlay,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                ResumePlaybackOverlay(
+                    isPipMode = isPipMode,
+                    lastTimestamp = it,
+                    onClose = { setShowResumeOverlay(false) },
+                    onRestart = {
+                        HlsPlayerUtils.dispatch(HlsPlayerAction.SeekTo(0))
+                        HlsPlayerUtils.dispatch(HlsPlayerAction.Play)
+                        setShowResumeOverlay(false)
+                    },
+                    onResume = {
+                        HlsPlayerUtils.dispatch(HlsPlayerAction.SeekTo(it))
+                        HlsPlayerUtils.dispatch(HlsPlayerAction.Play)
+                        setShowResumeOverlay(false)
+                    },
+                )
+            }
         }
 
-        if (isShowNextEpisode) {
+        AnimatedVisibility(
+            modifier = Modifier.align(Alignment.Center),
+            visible = isShowNextEpisode,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
             NextEpisodeOverlay(
                 nextEpisodeName = nextEpisodeName,
                 onRestart = {
-                    mediaController?.transportControls?.seekTo(0)
+                    HlsPlayerUtils.dispatch(HlsPlayerAction.SeekTo(0))
                     HlsPlayerUtils.dispatch(HlsPlayerAction.Play)
                     setShowNextEpisode(false)
                 },
@@ -423,8 +441,7 @@ fun VideoPlayer(
                         false
                     )
                     setShowNextEpisode(false)
-                },
-                modifier = Modifier.align(Alignment.Center)
+                }
             )
         }
 

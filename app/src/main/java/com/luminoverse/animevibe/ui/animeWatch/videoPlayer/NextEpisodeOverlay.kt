@@ -25,10 +25,9 @@ import com.luminoverse.animevibe.utils.basicContainer
 fun NextEpisodeOverlay(
     nextEpisodeName: String,
     onRestart: () -> Unit,
-    onSkipNext: () -> Unit,
-    modifier: Modifier
+    onSkipNext: () -> Unit
 ) {
-    Box(modifier = modifier.basicContainer(isPrimary = true, innerPadding = PaddingValues(8.dp))) {
+    Box(modifier = Modifier.basicContainer(isPrimary = true, innerPadding = PaddingValues(8.dp))) {
         Column(
             modifier = Modifier
                 .widthIn(min = 192.dp)

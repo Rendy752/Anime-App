@@ -31,11 +31,10 @@ fun ResumePlaybackOverlay(
     lastTimestamp: Long,
     onClose: () -> Unit,
     onRestart: () -> Unit,
-    onResume: (Long) -> Unit,
-    modifier: Modifier
+    onResume: (Long) -> Unit
 ) {
     Box(
-        modifier = modifier.basicContainer(isPrimary = true, innerPadding = PaddingValues(8.dp))
+        modifier = Modifier.basicContainer(isPrimary = true, innerPadding = PaddingValues(8.dp))
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,

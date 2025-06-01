@@ -55,10 +55,6 @@ fun PlayerViewWrapper(
     var isSeeking by remember { mutableStateOf(false) }
     val handler = remember { Handler(Looper.getMainLooper()) }
 
-    LaunchedEffect(isSeeking, isLocked) {
-        if (!isSeeking || isLocked) playerView.hideController()
-    }
-
     LaunchedEffect(isLandscape, isFullscreen) {
         playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
         playerView.postDelayed({

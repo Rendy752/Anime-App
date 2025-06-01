@@ -36,6 +36,8 @@ fun CustomSeekBar(
     introEnd: Long,
     outroStart: Long,
     outroEnd: Long,
+    handlePlay: () -> Unit,
+    handlePause: () -> Unit,
     onSeekTo: (Long) -> Unit,
     touchTargetHeight: Dp = 24.dp,
     thumbSize: Dp = 10.dp,
@@ -76,6 +78,7 @@ fun CustomSeekBar(
                         isDragging = false
                         if (duration > 0 && trackWidthPx > 0) {
                             onSeekTo(dragPosition.toLong().coerceIn(0, duration))
+                            handlePlay()
                         }
                     },
                     onDrag = { change, _ ->
@@ -89,7 +92,7 @@ fun CustomSeekBar(
                                     0f, duration.toFloat()
                                 )
                             dragPosition = newPosition
-                            onSeekTo(newPosition.toLong().coerceIn(0, duration))
+                            handlePause()
                         }
                     }
                 )
