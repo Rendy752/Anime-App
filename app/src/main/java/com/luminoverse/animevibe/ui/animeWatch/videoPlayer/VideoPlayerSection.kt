@@ -112,19 +112,10 @@ fun VideoPlayerSection(
                 handleSelectedEpisodeServer = { episodeQuery ->
                     handleSelectedEpisodeServer(episodeQuery, false)
                 },
-                isAutoPlayVideo = isAutoPlayVideo,
                 onPlayerError = { error ->
                     Log.e("VideoPlayerSection", "Player error: $error")
                     onPlayerError(error)
                     isLoading = false
-                },
-                onPlayerReady = {
-                    isShowNextEpisode = false
-                    isLoading = false
-                    onPlayerError(null)
-                    Log.d("VideoPlayerSection", "Player ready")
-                    playerView.player = HlsPlayerUtils.getPlayer()
-                    HlsPlayerUtils.dispatch(HlsPlayerAction.SetVideoSurface(playerView.videoSurfaceView))
                 }
             )
         )
@@ -287,7 +278,6 @@ fun VideoPlayerSection(
                 HlsPlayerAction.SetMedia(
                     videoData = it.sources,
                     lastTimestamp = it.lastTimestamp,
-                    duration = it.duration,
                     isAutoPlayVideo = isAutoPlayVideo,
                     onReady = {
                         isLoading = false

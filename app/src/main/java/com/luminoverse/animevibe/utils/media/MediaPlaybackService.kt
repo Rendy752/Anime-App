@@ -70,9 +70,7 @@ sealed class MediaPlaybackAction {
         val episodes: List<Episode>,
         val query: EpisodeSourcesQuery,
         val handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
-        val isAutoPlayVideo: Boolean,
-        val onPlayerError: (String?) -> Unit,
-        val onPlayerReady: () -> Unit
+        val onPlayerError: (String?) -> Unit
     ) : MediaPlaybackAction()
 
     data object StopService : MediaPlaybackAction()
@@ -118,9 +116,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                 action.episodes,
                 action.query,
                 action.handleSelectedEpisodeServer,
-                action.isAutoPlayVideo,
                 action.onPlayerError,
-                action.onPlayerReady
             )
 
             is MediaPlaybackAction.StopService -> stopService()
@@ -421,9 +417,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         episodes: List<Episode>,
         query: EpisodeSourcesQuery,
         handler: (EpisodeSourcesQuery) -> Unit,
-        isAutoPlayVideo: Boolean,
         onPlayerError: (String?) -> Unit,
-        onPlayerReady: () -> Unit
     ) {
         handleSelectedEpisodeServer = handler
         _state.update {
@@ -444,16 +438,6 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                 _state.update { it.copy(errorMessage = "Episode data mismatch") }
                 return@launch
             }
-
-            HlsPlayerUtils.dispatch(
-                HlsPlayerAction.SetMedia(
-                    videoData = complement.sources,
-                    lastTimestamp = complement.lastTimestamp,
-                    isAutoPlayVideo = isAutoPlayVideo,
-                    onReady = { onPlayerReady() },
-                    onError = { onPlayerError(it) }
-                )
-            )
             updateMediaMetadata(HlsPlayerUtils.getPlayer()?.duration?.takeIf { it > 0 } ?: 0)
             updateNotification()
         }

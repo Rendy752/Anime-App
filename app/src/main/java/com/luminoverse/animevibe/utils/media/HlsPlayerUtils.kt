@@ -64,7 +64,6 @@ sealed class HlsPlayerAction {
     data class SetMedia(
         val videoData: EpisodeSourcesResponse,
         val lastTimestamp: Long? = null,
-        val duration: Long? = null,
         val isAutoPlayVideo: Boolean = true,
         val onReady: () -> Unit = {},
         val onError: (String) -> Unit = {}
@@ -120,7 +119,6 @@ object HlsPlayerUtils {
             is HlsPlayerAction.SetMedia -> setMedia(
                 action.videoData,
                 action.lastTimestamp,
-                action.duration,
                 action.isAutoPlayVideo,
                 action.onReady,
                 action.onError
@@ -310,7 +308,6 @@ object HlsPlayerUtils {
     private fun setMedia(
         videoData: EpisodeSourcesResponse,
         lastTimestamp: Long? = null,
-        duration: Long? = null,
         isAutoPlayVideo: Boolean = false,
         onReady: () -> Unit = {},
         onError: (String) -> Unit = {}
@@ -324,8 +321,8 @@ object HlsPlayerUtils {
                     showIntroButton = false,
                     showOutroButton = false,
                     selectedSubtitle = null,
-                    duration = duration ?: 0,
-                    currentPosition = if (isAutoPlayVideo) lastTimestamp ?: 0 else 0
+                    duration = 0,
+                    currentPosition = 0
                 )
             }
             stopIntroOutroCheck()
