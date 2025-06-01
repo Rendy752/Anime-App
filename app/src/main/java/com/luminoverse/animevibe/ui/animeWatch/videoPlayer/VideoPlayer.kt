@@ -41,6 +41,10 @@ import com.luminoverse.animevibe.utils.media.HlsPlayerState
 import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.awaitCancellation
+import kotlin.math.abs
+
+private const val FAST_FORWARD_REWIND_DEBOUNCE_MILLIS = 1000L
+private const val DEFAULT_SEEK_INCREMENT = 10000L
 
 @androidx.annotation.OptIn(UnstableApi::class)
 @OptIn(FlowPreview::class)
@@ -74,21 +78,57 @@ fun VideoPlayer(
     onSkipOutro: () -> Unit
 ) {
     val context = LocalContext.current
+
+    // Player state related
     var isFirstLoad by remember { mutableStateOf(true) }
+    val isLocked = hlsPlayerState.isLocked
+
+    // Gesture handling related (double tap for seek, long press for speed)
     var isHolding by remember { mutableStateOf(false) }
     var isFromHolding by remember { mutableStateOf(false) }
-    var speedUpText by remember { mutableStateOf("1x speed") }
-    var isShowSpeedUp by remember { mutableStateOf(false) }
     var isShowSeekIndicator by remember { mutableIntStateOf(0) }
-    var seekDirection by remember { mutableIntStateOf(0) }
     var seekAmount by remember { mutableLongStateOf(0L) }
     var isSeeking by remember { mutableStateOf(false) }
-    var isDraggingSeekBar by remember { mutableStateOf(false) }
-    var dragSeekPosition by remember { mutableLongStateOf(0L) }
+    var fastForwardRewindCounter by remember { mutableIntStateOf(0) }
+    var speedUpText by remember { mutableStateOf("") }
+    var isShowSpeedUp by remember { mutableStateOf(false) }
+    var seekDisplayHandler by remember { mutableStateOf<Handler?>(null) }
+    var seekDisplayRunnable by remember { mutableStateOf<Runnable?>(null) }
+
+    // UI Sheet visibility
     var showSubtitleSheet by remember { mutableStateOf(false) }
     var showPlaybackSpeedSheet by remember { mutableStateOf(false) }
 
-    val isLocked = hlsPlayerState.isLocked
+    // Seekbar dragging state
+    var isDraggingSeekBar by remember { mutableStateOf(false) }
+    var dragSeekPosition by remember { mutableLongStateOf(0L) }
+
+    LaunchedEffect(Unit) {
+        seekDisplayHandler = Handler(Looper.getMainLooper())
+        seekDisplayRunnable = Runnable {
+            Log.d("VideoPlayer", "Debounce period ended. Performing accumulated seeks.")
+            val totalSeekSeconds = fastForwardRewindCounter
+            val fixedSeekPerCall = (DEFAULT_SEEK_INCREMENT / 1000L).toInt()
+
+            if (totalSeekSeconds != 0) {
+                val numCalls = abs(totalSeekSeconds) / fixedSeekPerCall
+                repeat(numCalls) {
+                    if (totalSeekSeconds > 0) {
+                        onFastForward()
+                    } else {
+                        onRewind()
+                    }
+                }
+            }
+
+            isShowSeekIndicator = 0
+            seekAmount = 0L
+            isSeeking = false
+            fastForwardRewindCounter = 0
+            HlsPlayerUtils.dispatch(HlsPlayerAction.Play)
+            Log.d("VideoPlayer", "Seek actions completed and states reset.")
+        }
+    }
 
     LaunchedEffect(hlsPlayerState.isPlaying) {
         if (hlsPlayerState.isPlaying) isFirstLoad = false
@@ -127,66 +167,56 @@ fun VideoPlayer(
         mediaController?.registerCallback(mediaControllerCallback)
         onDispose {
             mediaController?.unregisterCallback(mediaControllerCallback)
+            seekDisplayHandler?.removeCallbacksAndMessages(null)
             Log.d("VideoPlayer", "PlayerView disposed, MediaControllerCallback unregistered")
         }
     }
 
     fun handleSingleTap() {
-        if (!isLocked) {
+        if (!isLocked && !isShowSpeedUp) {
             HlsPlayerUtils.dispatch(HlsPlayerAction.RequestToggleControlsVisibility(!hlsPlayerState.isControlsVisible))
-            Log.d(
-                "VideoPlayer",
-                "Single tap: Requested toggle visibility to ${!hlsPlayerState.isControlsVisible}"
-            )
+            Log.d("VideoPlayer", "Single tap: Toggled controls visibility")
         }
     }
 
     fun handleDoubleTap(x: Float, screenWidth: Float) {
-        if (!isSeeking && !isLocked && hlsPlayerState.isReady) {
+        if (!isLocked && hlsPlayerState.isReady) {
             Log.d("VideoPlayer", "Double tap at x=$x")
-            if (isFromHolding) {
-                HlsPlayerUtils.dispatch(HlsPlayerAction.SetPlaybackSpeed(1f))
-                isHolding = false
-                isFromHolding = false
+            val newSeekDirection = when {
+                x < screenWidth * 0.4 -> -1
+                x > screenWidth * 0.6 -> 1
+                else -> 0
             }
 
-            when {
-                x < screenWidth * 0.4 -> {
-                    Log.d("VideoPlayer", "Rewind triggered")
-                    onRewind()
-                    isShowSeekIndicator = 1
-                    seekDirection = -1
-                    seekAmount = 10L
-                    isSeeking = true
-                    Handler(Looper.getMainLooper()).postDelayed({
-                        isShowSeekIndicator = 0
-                        isSeeking = false
-                        Log.d("VideoPlayer", "Seek reset: isSeeking=false")
-                    }, 1000)
+            if (newSeekDirection != 0) {
+                seekDisplayHandler?.removeCallbacks(seekDisplayRunnable!!)
+                HlsPlayerUtils.dispatch(HlsPlayerAction.Pause)
+                val seekIncrementSeconds = (DEFAULT_SEEK_INCREMENT / 1000L)
+
+                if (isShowSeekIndicator != newSeekDirection && isShowSeekIndicator != 0) {
+                    seekAmount = seekIncrementSeconds
+                    fastForwardRewindCounter = newSeekDirection * seekIncrementSeconds.toInt()
+                } else {
+                    seekAmount += seekIncrementSeconds
+                    fastForwardRewindCounter += newSeekDirection * seekIncrementSeconds.toInt()
                 }
 
-                x > screenWidth * 0.6 -> {
-                    Log.d("VideoPlayer", "Fast forward triggered")
-                    onFastForward()
-                    isShowSeekIndicator = 1
-                    seekDirection = 1
-                    seekAmount = 10L
-                    Handler(Looper.getMainLooper()).postDelayed({
-                        isShowSeekIndicator = 0
-                        isSeeking = false
-                        Log.d("VideoPlayer", "Seek reset: isSeeking=false")
-                    }, 1000)
-                    isSeeking = true
-                }
+                isShowSeekIndicator = newSeekDirection
+                isSeeking = true
 
-                else -> {
-                    Log.d("VideoPlayer", "Play/Pause triggered")
-                    if (hlsPlayerState.isPlaying) {
-                        HlsPlayerUtils.dispatch(HlsPlayerAction.Pause)
-                    } else {
-                        HlsPlayerUtils.dispatch(HlsPlayerAction.Play)
-                    }
+                seekDisplayHandler?.postDelayed(
+                    seekDisplayRunnable!!,
+                    FAST_FORWARD_REWIND_DEBOUNCE_MILLIS
+                )
+            } else {
+                HlsPlayerUtils.dispatch(HlsPlayerAction.Play)
+                seekDisplayHandler?.removeCallbacks(seekDisplayRunnable!!)
+                if (fastForwardRewindCounter == 0) {
+                    isShowSeekIndicator = 0
+                    seekAmount = 0L
+                    isSeeking = false
                 }
+                fastForwardRewindCounter = 0
             }
         }
     }
@@ -195,6 +225,8 @@ fun VideoPlayer(
         if (!isSeeking && hlsPlayerState.isPlaying) {
             if (hlsPlayerState.playbackSpeed != 2f) {
                 Log.d("VideoPlayer", "Long press: Setting speed to 2f")
+                isShowSpeedUp = true
+                speedUpText = "2x speed"
                 HlsPlayerUtils.dispatch(HlsPlayerAction.SetPlaybackSpeed(2f))
                 isFromHolding = true
             }
@@ -203,7 +235,9 @@ fun VideoPlayer(
 
     fun handleLongPressEnd() {
         if (isFromHolding) {
-            Log.d("VideoPlayer", "Resetting speed to 1f because long press ended.")
+            isShowSpeedUp = false
+            speedUpText = ""
+            Log.d("VideoPlayer", "Long press ended: Resetting speed to 1f")
             HlsPlayerUtils.dispatch(HlsPlayerAction.SetPlaybackSpeed(1f))
         }
         isHolding = false
@@ -255,7 +289,7 @@ fun VideoPlayer(
                 playerView = playerView,
                 controlsAreVisible = hlsPlayerState.isControlsVisible,
                 isFullscreen = isFullscreen,
-                isLandscape = isLandscape,
+                isLandscape = isLandscape
             )
         }
 
@@ -270,12 +304,8 @@ fun VideoPlayer(
                 episodeDetailComplement = episodeDetailComplement,
                 episodes = episodes,
                 isFullscreen = isFullscreen,
-                handlePlay = {
-                    HlsPlayerUtils.dispatch(HlsPlayerAction.Play)
-                },
-                handlePause = {
-                    HlsPlayerUtils.dispatch(HlsPlayerAction.Pause)
-                },
+                handlePlay = { HlsPlayerUtils.dispatch(HlsPlayerAction.Play) },
+                handlePause = { HlsPlayerUtils.dispatch(HlsPlayerAction.Pause) },
                 onPlayPauseRestart = {
                     when (hlsPlayerState.playbackState) {
                         Player.STATE_ENDED -> HlsPlayerUtils.dispatch(HlsPlayerAction.SeekTo(0))
@@ -309,15 +339,15 @@ fun VideoPlayer(
                 onSeekTo = { position ->
                     HlsPlayerUtils.dispatch(HlsPlayerAction.SeekTo(position))
                 },
-                isDraggingSeekBar = isDraggingSeekBar,
+                seekAmount = seekAmount * 1000L,
+                isShowSeekIndicator = isShowSeekIndicator,
                 dragSeekPosition = dragSeekPosition,
                 onDraggingSeekBarChange = { isDragging, position ->
                     isDraggingSeekBar = isDragging
                     dragSeekPosition = position
                 },
-                onPipClick = {
-                    onEnterPipMode()
-                },
+                isDraggingSeekBar = isDraggingSeekBar,
+                onPipClick = { onEnterPipMode() },
                 onLockClick = {
                     (context as? FragmentActivity)?.let { activity ->
                         activity.window?.let { window ->
@@ -333,12 +363,8 @@ fun VideoPlayer(
                     }
                     HlsPlayerUtils.dispatch(HlsPlayerAction.ToggleLock(!isLocked))
                 },
-                onSubtitleClick = {
-                    showSubtitleSheet = true
-                },
-                onPlaybackSpeedClick = {
-                    showPlaybackSpeedSheet = true
-                },
+                onSubtitleClick = { showSubtitleSheet = true },
+                onPlaybackSpeedClick = { showPlaybackSpeedSheet = true },
                 onFullscreenToggle = {
                     if (!isLocked) {
                         (context as? FragmentActivity)?.let { activity ->
@@ -370,9 +396,7 @@ fun VideoPlayer(
                 landscapeWidthFraction = 0.4f,
                 landscapeHeightFraction = 0.7f
             ),
-            onDismiss = {
-                showSubtitleSheet = false
-            }
+            onDismiss = { showSubtitleSheet = false }
         ) {
             SubtitleContent(
                 tracks = episodeDetailComplement.sources.tracks,
@@ -392,9 +416,7 @@ fun VideoPlayer(
                 landscapeWidthFraction = 0.4f,
                 landscapeHeightFraction = 0.7f
             ),
-            onDismiss = {
-                showPlaybackSpeedSheet = false
-            }
+            onDismiss = { showPlaybackSpeedSheet = false }
         ) {
             PlaybackSpeedContent(
                 selectedPlaybackSpeed = hlsPlayerState.playbackSpeed,
@@ -406,9 +428,9 @@ fun VideoPlayer(
         }
 
         SeekIndicator(
-            seekDirection = seekDirection,
+            seekDirection = isShowSeekIndicator,
             seekAmount = seekAmount,
-            isVisible = isShowSeekIndicator != 0 && errorMessage == null,
+            errorMessage = errorMessage,
             modifier = Modifier.align(Alignment.Center)
         )
 
@@ -468,25 +490,19 @@ fun VideoPlayer(
         RetryButton(
             modifier = Modifier.align(Alignment.Center),
             isVisible = errorMessage != null,
-            onRetry = {
-                handleSelectedEpisodeServer(episodeSourcesQuery, true)
-            }
+            onRetry = { handleSelectedEpisodeServer(episodeSourcesQuery, true) }
         )
 
         SkipButton(
             label = "Skip Intro",
             isVisible = !isPipMode && !isLocked && hlsPlayerState.playbackState != Player.STATE_ENDED && !calculatedShouldShowResumeOverlay && !isShowNextEpisode && hlsPlayerState.showIntroButton && errorMessage == null,
-            onSkip = {
-                onSkipIntro()
-            },
+            onSkip = { onSkipIntro() },
             modifier = Modifier.align(Alignment.BottomEnd)
         )
         SkipButton(
             label = "Skip Outro",
             isVisible = !isPipMode && !isLocked && hlsPlayerState.playbackState != Player.STATE_ENDED && !calculatedShouldShowResumeOverlay && !isShowNextEpisode && hlsPlayerState.showOutroButton && errorMessage == null,
-            onSkip = {
-                onSkipOutro()
-            },
+            onSkip = { onSkipOutro() },
             modifier = Modifier.align(Alignment.BottomEnd)
         )
 

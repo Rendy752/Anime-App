@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Fullscreen
@@ -40,9 +41,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -54,8 +56,6 @@ import androidx.media3.common.Player
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.ui.common.CircularLoadingIndicator
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.Alignment
 import com.luminoverse.animevibe.utils.TimeUtils.formatTimestamp
 import com.luminoverse.animevibe.utils.media.HlsPlayerState
 
@@ -72,14 +72,16 @@ fun PlayerControls(
     onPreviousEpisode: () -> Unit,
     onNextEpisode: () -> Unit,
     onSeekTo: (Long) -> Unit,
-    isDraggingSeekBar: Boolean,
+    seekAmount: Long,
+    isShowSeekIndicator: Int,
     dragSeekPosition: Long,
+    isDraggingSeekBar: Boolean,
     onDraggingSeekBarChange: (Boolean, Long) -> Unit,
     onPipClick: () -> Unit,
     onLockClick: () -> Unit,
     onSubtitleClick: () -> Unit,
     onPlaybackSpeedClick: () -> Unit,
-    onFullscreenToggle: () -> Unit,
+    onFullscreenToggle: () -> Unit
 ) {
     val currentEpisode = episodeDetailComplement.servers.episodeNo
     val hasPreviousEpisode = episodes.any { it.episodeNo == currentEpisode - 1 }
@@ -91,7 +93,7 @@ fun PlayerControls(
             .background(Color.Black.copy(alpha = 0.6f))
     ) {
         AnimatedVisibility(
-            visible = !isDraggingSeekBar,
+            visible = isShowSeekIndicator == 0 && !isDraggingSeekBar,
             enter = fadeIn(animationSpec = tween(durationMillis = 300)),
             exit = fadeOut(animationSpec = tween(durationMillis = 300)),
             modifier = Modifier
@@ -120,7 +122,7 @@ fun PlayerControls(
                     if (isFullscreen) Column {
                         Text(
                             text = episodeDetailComplement.episodeTitle,
-                            style = MaterialTheme.typography.titleLarge,
+                            style = MaterialTheme.typography.titleMedium,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             fontSize = 20.sp,
@@ -132,7 +134,7 @@ fun PlayerControls(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             fontSize = 14.sp,
-                            color = Color.White.copy(alpha = 0.7f)
+                            color = Color.White.copy(alpha = 0.8f)
                         )
                     }
                 }
@@ -147,7 +149,7 @@ fun PlayerControls(
                     IconButton(onClick = onPlaybackSpeedClick) {
                         Icon(
                             imageVector = Icons.Default.Speed,
-                            contentDescription = "Settings",
+                            contentDescription = "Speed",
                             tint = Color.White
                         )
                     }
@@ -170,7 +172,7 @@ fun PlayerControls(
         }
 
         AnimatedVisibility(
-            visible = !isDraggingSeekBar,
+            visible = isShowSeekIndicator == 0 && !isDraggingSeekBar,
             enter = fadeIn(animationSpec = tween(durationMillis = 300)),
             exit = fadeOut(animationSpec = tween(durationMillis = 300)),
             modifier = Modifier
@@ -244,22 +246,17 @@ fun PlayerControls(
                                 contentDescription = "Replay",
                                 tint = Color.White
                             )
-
                             "playing" -> Icon(
                                 imageVector = Icons.Default.Pause,
                                 contentDescription = "Pause",
                                 tint = Color.White
                             )
-
                             "paused" -> Icon(
                                 imageVector = Icons.Default.PlayArrow,
                                 contentDescription = "Play",
                                 tint = Color.White
                             )
-
-                            else -> {
-                                CircularLoadingIndicator()
-                            }
+                            else -> CircularLoadingIndicator()
                         }
                     }
                 }
@@ -287,7 +284,7 @@ fun PlayerControls(
         }
 
         AnimatedVisibility(
-            visible = isDraggingSeekBar,
+            visible = isShowSeekIndicator != 0 || isDraggingSeekBar,
             enter = slideInHorizontally(
                 animationSpec = tween(durationMillis = 300),
                 initialOffsetX = { fullWidth -> -fullWidth }
@@ -301,9 +298,7 @@ fun PlayerControls(
             Box(
                 modifier = Modifier
                     .clip(RoundedCornerShape(8.dp))
-                    .background(
-                        color = Color.Black.copy(alpha = 0.6f),
-                    )
+                    .background(Color.Black.copy(alpha = 0.6f))
                     .padding(vertical = 8.dp, horizontal = 16.dp),
                 contentAlignment = Alignment.Center
             ) {
@@ -323,7 +318,7 @@ fun PlayerControls(
                 .align(Alignment.BottomCenter)
         ) {
             AnimatedVisibility(
-                visible = !isDraggingSeekBar,
+                visible = isShowSeekIndicator == 0 && !isDraggingSeekBar,
                 enter = fadeIn(animationSpec = tween(durationMillis = 300)),
                 exit = fadeOut(animationSpec = tween(durationMillis = 300))
             ) {
@@ -362,7 +357,9 @@ fun PlayerControls(
                 handlePlay = handlePlay,
                 handlePause = handlePause,
                 onSeekTo = onSeekTo,
-                onDraggingChange = onDraggingSeekBarChange
+                onDraggingSeekBarChange = onDraggingSeekBarChange,
+                seekAmount = seekAmount,
+                isShowSeekIndicator = isShowSeekIndicator
             )
         }
     }
