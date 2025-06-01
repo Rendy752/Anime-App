@@ -83,6 +83,8 @@ fun VideoPlayer(
     var seekDirection by remember { mutableIntStateOf(0) }
     var seekAmount by remember { mutableLongStateOf(0L) }
     var isSeeking by remember { mutableStateOf(false) }
+    var isDraggingSeekBar by remember { mutableStateOf(false) }
+    var dragSeekPosition by remember { mutableLongStateOf(0L) }
     var isLocked by remember { mutableStateOf(false) }
     var showSubtitleSheet by remember { mutableStateOf(false) }
     var showPlaybackSpeedSheet by remember { mutableStateOf(false) }
@@ -291,6 +293,12 @@ fun VideoPlayer(
                     HlsPlayerUtils.dispatch(HlsPlayerAction.SeekTo(position))
                     isControlsVisible = true
                     HlsPlayerUtils.dispatch(HlsPlayerAction.ToggleControlsVisibility(true))
+                },
+                isDraggingSeekBar = isDraggingSeekBar,
+                dragSeekPosition = dragSeekPosition,
+                onDraggingSeekBarChange = { isDragging, position ->
+                    isDraggingSeekBar = isDragging
+                    dragSeekPosition = position
                 },
                 onPipClick = {
                     onEnterPipMode()

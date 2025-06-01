@@ -39,6 +39,7 @@ fun CustomSeekBar(
     handlePlay: () -> Unit,
     handlePause: () -> Unit,
     onSeekTo: (Long) -> Unit,
+    onDraggingChange: (Boolean, Long) -> Unit,
     touchTargetHeight: Dp = 24.dp,
     thumbSize: Dp = 10.dp,
     trackHeight: Dp = 4.dp
@@ -60,6 +61,10 @@ fun CustomSeekBar(
         }
     }
 
+    LaunchedEffect(isDragging, dragPosition) {
+        onDraggingChange(isDragging, dragPosition.toLong())
+    }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -73,11 +78,13 @@ fun CustomSeekBar(
                         isDragging = true
                         initialDragX = offset.x
                         initialThumbPositionOnDragStart = dragPosition
+                        handlePause()
                     },
                     onDragEnd = {
                         isDragging = false
                         if (duration > 0 && trackWidthPx > 0) {
-                            onSeekTo(dragPosition.toLong().coerceIn(0, duration))
+                            val finalSeekPosition = dragPosition.toLong().coerceIn(0, duration)
+                            onSeekTo(finalSeekPosition)
                             handlePlay()
                         }
                     },
@@ -92,7 +99,6 @@ fun CustomSeekBar(
                                     0f, duration.toFloat()
                                 )
                             dragPosition = newPosition
-                            handlePause()
                         }
                     }
                 )

@@ -1,9 +1,12 @@
 package com.luminoverse.animevibe.ui.animeWatch.videoPlayer
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
@@ -56,6 +59,7 @@ import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.ui.common.CircularLoadingIndicator
 import com.luminoverse.animevibe.utils.TimeUtils.formatTimestamp
 import com.luminoverse.animevibe.utils.media.HlsPlayerState
+import androidx.compose.foundation.shape.RoundedCornerShape
 
 @Composable
 fun PlayerControls(
@@ -70,12 +74,15 @@ fun PlayerControls(
     onPreviousEpisode: () -> Unit,
     onNextEpisode: () -> Unit,
     onSeekTo: (Long) -> Unit,
+    isDraggingSeekBar: Boolean,
+    dragSeekPosition: Long,
+    onDraggingSeekBarChange: (Boolean, Long) -> Unit,
     onPipClick: () -> Unit,
     onLockClick: () -> Unit,
     onSubtitleClick: () -> Unit,
     onPlaybackSpeedClick: () -> Unit,
     onFullscreenToggle: () -> Unit,
-    onLayoutClick: () -> Unit
+    onLayoutClick: () -> Unit,
 ) {
     val currentEpisode = episodeDetailComplement.servers.episodeNo
     val hasPreviousEpisode = episodes.any { it.episodeNo == currentEpisode - 1 }
@@ -90,182 +97,228 @@ fun PlayerControls(
                 indication = null
             ) { onLayoutClick() }
     ) {
-        Row(
+        AnimatedVisibility(
+            visible = !isDraggingSeekBar,
+            enter = fadeIn(animationSpec = tween(durationMillis = 300)),
+            exit = fadeOut(animationSpec = tween(durationMillis = 300)),
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
-                .align(Alignment.TopCenter),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .align(Alignment.TopCenter)
         ) {
             Row(
-                modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.Start,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onHandleBackPress) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBackIosNew,
-                        contentDescription = "Return back",
-                        tint = Color.White
-                    )
+                Row(
+                    modifier = Modifier.weight(1f),
+                    horizontalArrangement = Arrangement.Start,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onHandleBackPress) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBackIosNew,
+                            contentDescription = "Return back",
+                            tint = Color.White
+                        )
+                    }
+                    if (isFullscreen) Column {
+                        Text(
+                            text = episodeDetailComplement.episodeTitle,
+                            style = MaterialTheme.typography.titleLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            fontSize = 20.sp,
+                            color = Color.White
+                        )
+                        Text(
+                            text = episodeDetailComplement.animeTitle,
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            fontSize = 14.sp,
+                            color = Color.White.copy(alpha = 0.7f)
+                        )
+                    }
                 }
-                if (isFullscreen) Column {
-                    Text(
-                        text = episodeDetailComplement.episodeTitle,
-                        style = MaterialTheme.typography.titleLarge,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        fontSize = 20.sp,
-                        color = Color.White
-                    )
-                    Text(
-                        text = episodeDetailComplement.animeTitle,
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        fontSize = 14.sp,
-                        color = Color.White.copy(alpha = 0.7f)
-                    )
+                Row {
+                    IconButton(onClick = onPipClick) {
+                        Icon(
+                            imageVector = Icons.Default.PictureInPictureAlt,
+                            contentDescription = "Picture in Picture",
+                            tint = Color.White
+                        )
+                    }
+                    IconButton(onClick = onPlaybackSpeedClick) {
+                        Icon(
+                            imageVector = Icons.Default.Speed,
+                            contentDescription = "Settings",
+                            tint = Color.White
+                        )
+                    }
+                    IconButton(onClick = onSubtitleClick) {
+                        Icon(
+                            imageVector = Icons.Default.Subtitles,
+                            contentDescription = "Subtitles",
+                            tint = Color.White
+                        )
+                    }
+                    IconButton(onClick = onLockClick) {
+                        Icon(
+                            imageVector = if (hlsPlayerState.isLocked) Icons.Default.Lock else Icons.Default.LockOpen,
+                            contentDescription = if (hlsPlayerState.isLocked) "Unlock" else "Lock",
+                            tint = Color.White
+                        )
+                    }
                 }
             }
-            Row {
-                IconButton(onClick = onPipClick) {
+        }
+
+        AnimatedVisibility(
+            visible = !isDraggingSeekBar,
+            enter = fadeIn(animationSpec = tween(durationMillis = 300)),
+            exit = fadeOut(animationSpec = tween(durationMillis = 300)),
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.Center)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(64.dp, Alignment.CenterHorizontally),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .clickable(enabled = hasPreviousEpisode, onClick = onPreviousEpisode)
+                        .background(
+                            color = Color.Black.copy(alpha = 0.4f),
+                            shape = CircleShape
+                        )
+                ) {
                     Icon(
-                        imageVector = Icons.Default.PictureInPictureAlt,
-                        contentDescription = "Picture in Picture",
-                        tint = Color.White
+                        imageVector = Icons.Default.SkipPrevious,
+                        contentDescription = "Previous Episode",
+                        tint = if (hasPreviousEpisode) Color.White else Color.Gray,
+                        modifier = Modifier
+                            .size(24.dp)
+                            .align(Alignment.Center)
                     )
                 }
-                IconButton(onClick = onPlaybackSpeedClick) {
-                    Icon(
-                        imageVector = Icons.Default.Speed,
-                        contentDescription = "Settings",
-                        tint = Color.White
-                    )
+
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .clip(CircleShape)
+                        .clickable(
+                            enabled = hlsPlayerState.playbackState != Player.STATE_BUFFERING && hlsPlayerState.playbackState != Player.STATE_IDLE,
+                            onClick = onPlayPauseRestart
+                        )
+                        .background(
+                            color = Color.Black.copy(alpha = 0.4f),
+                            shape = CircleShape
+                        )
+                ) {
+                    AnimatedContent(
+                        modifier = Modifier
+                            .size(40.dp)
+                            .align(Alignment.Center),
+                        targetState = when (hlsPlayerState.playbackState) {
+                            Player.STATE_BUFFERING -> "buffering"
+                            Player.STATE_IDLE -> "idle"
+                            Player.STATE_ENDED -> "ended"
+                            else -> if (hlsPlayerState.isPlaying) "playing" else "paused"
+                        },
+                        transitionSpec = {
+                            (fadeIn(tween(300)) + scaleIn(tween(300), initialScale = 0.8f))
+                                .togetherWith(
+                                    fadeOut(tween(300)) + scaleOut(
+                                        tween(300),
+                                        targetScale = 0.8f
+                                    )
+                                )
+                        },
+                        label = "PlayerStateAnimation"
+                    ) { state ->
+                        when (state) {
+                            "ended" -> Icon(
+                                imageVector = Icons.Default.Replay,
+                                contentDescription = "Replay",
+                                tint = Color.White
+                            )
+
+                            "playing" -> Icon(
+                                imageVector = Icons.Default.Pause,
+                                contentDescription = "Pause",
+                                tint = Color.White
+                            )
+
+                            "paused" -> Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = "Play",
+                                tint = Color.White
+                            )
+
+                            else -> {
+                                CircularLoadingIndicator()
+                            }
+                        }
+                    }
                 }
-                IconButton(onClick = onSubtitleClick) {
+
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .clickable(enabled = hasNextEpisode, onClick = onNextEpisode)
+                        .background(
+                            color = Color.Black.copy(alpha = 0.4f),
+                            shape = CircleShape
+                        )
+                ) {
                     Icon(
-                        imageVector = Icons.Default.Subtitles,
-                        contentDescription = "Subtitles",
-                        tint = Color.White
-                    )
-                }
-                IconButton(onClick = onLockClick) {
-                    Icon(
-                        imageVector = if (hlsPlayerState.isLocked) Icons.Default.Lock else Icons.Default.LockOpen,
-                        contentDescription = if (hlsPlayerState.isLocked) "Unlock" else "Lock",
-                        tint = Color.White
+                        imageVector = Icons.Default.SkipNext,
+                        contentDescription = "Next Episode",
+                        tint = if (hasNextEpisode) Color.White else Color.Gray,
+                        modifier = Modifier
+                            .size(24.dp)
+                            .align(Alignment.Center)
                     )
                 }
             }
         }
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp)
-                .align(Alignment.Center),
-            horizontalArrangement = Arrangement.spacedBy(64.dp, Alignment.CenterHorizontally),
-            verticalAlignment = Alignment.CenterVertically
+        AnimatedVisibility(
+            visible = isDraggingSeekBar,
+            enter = slideInHorizontally(
+                animationSpec = tween(durationMillis = 300),
+                initialOffsetX = { fullWidth -> -fullWidth }
+            ) + fadeIn(animationSpec = tween(durationMillis = 300)),
+            exit = slideOutHorizontally(
+                animationSpec = tween(durationMillis = 300),
+                targetOffsetX = { fullWidth -> fullWidth }
+            ) + fadeOut(animationSpec = tween(durationMillis = 300)),
+            modifier = Modifier.align(Alignment.Center)
         ) {
             Box(
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .clickable(enabled = hasPreviousEpisode, onClick = onPreviousEpisode)
+                    .clip(RoundedCornerShape(8.dp))
                     .background(
-                        color = Color.Black.copy(alpha = 0.4f),
-                        shape = CircleShape
+                        color = Color.Black.copy(alpha = 0.6f),
                     )
+                    .padding(vertical = 8.dp, horizontal = 16.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.SkipPrevious,
-                    contentDescription = "Previous Episode",
-                    tint = if (hasPreviousEpisode) Color.White else Color.Gray,
-                    modifier = Modifier
-                        .size(24.dp)
-                        .align(Alignment.Center)
-                )
-            }
-
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .clickable(
-                        enabled = hlsPlayerState.playbackState != Player.STATE_BUFFERING && hlsPlayerState.playbackState != Player.STATE_IDLE,
-                        onClick = onPlayPauseRestart
-                    )
-                    .background(
-                        color = Color.Black.copy(alpha = 0.4f),
-                        shape = CircleShape
-                    )
-            ) {
-                AnimatedContent(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .align(Alignment.Center),
-                    targetState = when (hlsPlayerState.playbackState) {
-                        Player.STATE_BUFFERING -> "buffering"
-                        Player.STATE_IDLE -> "idle"
-                        Player.STATE_ENDED -> "ended"
-                        else -> if (hlsPlayerState.isPlaying) "playing" else "paused"
-                    },
-                    transitionSpec = {
-                        (fadeIn(tween(300)) + scaleIn(tween(300), initialScale = 0.8f))
-                            .togetherWith(
-                                fadeOut(tween(300)) + scaleOut(
-                                    tween(300),
-                                    targetScale = 0.8f
-                                )
-                            )
-                    },
-                    label = "PlayerStateAnimation"
-                ) { state ->
-                    when (state) {
-                        "ended" -> Icon(
-                            imageVector = Icons.Default.Replay,
-                            contentDescription = "Replay",
-                            tint = Color.White
-                        )
-
-                        "playing" -> Icon(
-                            imageVector = Icons.Default.Pause,
-                            contentDescription = "Pause",
-                            tint = Color.White
-                        )
-
-                        "paused" -> Icon(
-                            imageVector = Icons.Default.PlayArrow,
-                            contentDescription = "Play",
-                            tint = Color.White
-                        )
-
-                        else -> {
-                            CircularLoadingIndicator()
-                        }
-                    }
-                }
-            }
-
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .clip(CircleShape)
-                    .clickable(enabled = hasNextEpisode, onClick = onNextEpisode)
-                    .background(
-                        color = Color.Black.copy(alpha = 0.4f),
-                        shape = CircleShape
-                    )
-            ) {
-                Icon(
-                    imageVector = Icons.Default.SkipNext,
-                    contentDescription = "Next Episode",
-                    tint = if (hasNextEpisode) Color.White else Color.Gray,
-                    modifier = Modifier
-                        .size(24.dp)
-                        .align(Alignment.Center)
+                Text(
+                    text = formatTimestamp(dragSeekPosition),
+                    color = Color.White,
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
@@ -276,28 +329,34 @@ fun PlayerControls(
                 .padding(16.dp)
                 .align(Alignment.BottomCenter)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+            AnimatedVisibility(
+                visible = !isDraggingSeekBar,
+                enter = fadeIn(animationSpec = tween(durationMillis = 300)),
+                exit = fadeOut(animationSpec = tween(durationMillis = 300))
             ) {
-                Text(
-                    text = buildAnnotatedString {
-                        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                            append(formatTimestamp(hlsPlayerState.currentPosition))
-                        }
-                        append(" / ")
-                        append(if (hlsPlayerState.duration > 0) formatTimestamp(hlsPlayerState.duration) else "--:--")
-                    },
-                    color = Color.White,
-                    fontSize = 14.sp
-                )
-                IconButton(onClick = onFullscreenToggle) {
-                    Icon(
-                        imageVector = if (isFullscreen) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
-                        contentDescription = if (isFullscreen) "Exit Fullscreen" else "Enter Fullscreen",
-                        tint = Color.White
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = buildAnnotatedString {
+                            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
+                                append(formatTimestamp(hlsPlayerState.currentPosition))
+                            }
+                            append(" / ")
+                            append(if (hlsPlayerState.duration > 0) formatTimestamp(hlsPlayerState.duration) else "--:--")
+                        },
+                        color = Color.White,
+                        fontSize = 14.sp
                     )
+                    IconButton(onClick = onFullscreenToggle) {
+                        Icon(
+                            imageVector = if (isFullscreen) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
+                            contentDescription = if (isFullscreen) "Exit Fullscreen" else "Enter Fullscreen",
+                            tint = Color.White
+                        )
+                    }
                 }
             }
             CustomSeekBar(
@@ -309,7 +368,8 @@ fun PlayerControls(
                 outroEnd = episodeDetailComplement.sources.outro?.end?.times(1000L) ?: 0L,
                 handlePlay = handlePlay,
                 handlePause = handlePause,
-                onSeekTo = onSeekTo
+                onSeekTo = onSeekTo,
+                onDraggingChange = onDraggingSeekBarChange
             )
         }
     }
