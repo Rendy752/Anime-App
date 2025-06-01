@@ -12,7 +12,6 @@ import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -41,11 +40,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -57,9 +54,10 @@ import androidx.media3.common.Player
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.ui.common.CircularLoadingIndicator
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
 import com.luminoverse.animevibe.utils.TimeUtils.formatTimestamp
 import com.luminoverse.animevibe.utils.media.HlsPlayerState
-import androidx.compose.foundation.shape.RoundedCornerShape
 
 @Composable
 fun PlayerControls(
@@ -82,7 +80,6 @@ fun PlayerControls(
     onSubtitleClick: () -> Unit,
     onPlaybackSpeedClick: () -> Unit,
     onFullscreenToggle: () -> Unit,
-    onLayoutClick: () -> Unit,
 ) {
     val currentEpisode = episodeDetailComplement.servers.episodeNo
     val hasPreviousEpisode = episodes.any { it.episodeNo == currentEpisode - 1 }
@@ -92,10 +89,6 @@ fun PlayerControls(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.6f))
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null
-            ) { onLayoutClick() }
     ) {
         AnimatedVisibility(
             visible = !isDraggingSeekBar,

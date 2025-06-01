@@ -25,8 +25,8 @@ fun SkipButton(
         Button(
             onClick = onSkip,
             colors = ButtonDefaults.buttonColors(
-                containerColor = Color.White.copy(0.5f),
-                contentColor = Color.Black
+                containerColor = Color.Black.copy(alpha = 0.4f),
+                contentColor = Color.White
             )
         ) {
             Text(label, fontWeight = FontWeight.Bold)

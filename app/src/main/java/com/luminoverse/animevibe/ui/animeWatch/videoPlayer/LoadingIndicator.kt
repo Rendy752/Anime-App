@@ -10,19 +10,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
-import androidx.media3.common.Player
 import com.luminoverse.animevibe.ui.common.CircularLoadingIndicator
-import com.luminoverse.animevibe.utils.media.HlsPlayerState
 
 @Composable
 fun LoadingIndicator(
     modifier: Modifier = Modifier,
-    hlsPlayerState: HlsPlayerState,
-    isControlsVisible: Boolean,
-    errorMessage: String?
+    isVisible: Boolean
 ) {
     AnimatedVisibility(
-        visible = (hlsPlayerState.playbackState == Player.STATE_BUFFERING || hlsPlayerState.playbackState == Player.STATE_IDLE) && !isControlsVisible && errorMessage == null,
+        visible = isVisible,
         modifier = modifier
             .size(56.dp)
             .clip(CircleShape),

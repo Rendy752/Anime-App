@@ -125,7 +125,6 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
     }
 
     private fun initializeService() {
-        HlsPlayerUtils.dispatch(HlsPlayerAction.InitializeHlsPlayer(this))
         initializeMediaSession()
         createNotificationChannel()
         observePlayerState()

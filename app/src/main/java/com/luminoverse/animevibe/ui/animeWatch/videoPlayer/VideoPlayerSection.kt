@@ -192,6 +192,7 @@ fun VideoPlayerSection(
     }
 
     DisposableEffect(Unit) {
+        HlsPlayerUtils.dispatch(HlsPlayerAction.InitializeHlsPlayer(context))
         initializePlayer()
 
         val playerListener = object : Player.Listener {

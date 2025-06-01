@@ -53,7 +53,7 @@ fun CustomSeekBar(
     val progress = if (duration > 0) currentPosition.toFloat() / duration else 0f
     val density = LocalDensity.current
 
-    val dragSensitivityFactor = 0.7f
+    val dragSensitivityFactor = 1f
 
     LaunchedEffect(currentPosition, isDragging) {
         if (!isDragging) {
@@ -113,18 +113,6 @@ fun CustomSeekBar(
                 .align(Alignment.Center)
         )
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(
-                    if (isDragging) (dragPosition / duration).coerceIn(0f, 1f)
-                    else progress
-                )
-                .height(trackHeight)
-                .clip(RoundedCornerShape(4.dp))
-                .background(MaterialTheme.colorScheme.primary)
-                .align(Alignment.CenterStart)
-        )
-
         if (introStart >= 0 && introEnd > introStart && duration > 0) {
             val introStartProgress = (introStart.toFloat() / duration).coerceIn(0f, 1f)
             val introEndProgress = (introEnd.toFloat() / duration).coerceIn(0f, 1f)
@@ -154,6 +142,18 @@ fun CustomSeekBar(
                     .align(Alignment.CenterStart)
             )
         }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(
+                    if (isDragging) (dragPosition / duration).coerceIn(0f, 1f)
+                    else progress
+                )
+                .height(trackHeight)
+                .clip(RoundedCornerShape(4.dp))
+                .background(MaterialTheme.colorScheme.primary)
+                .align(Alignment.CenterStart)
+        )
 
         Box(
             modifier = Modifier
