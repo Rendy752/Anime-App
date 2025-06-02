@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -20,6 +21,7 @@ import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
 import com.luminoverse.animevibe.utils.Debounce
 import com.luminoverse.animevibe.utils.resource.Resource
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 @Composable
 fun EpisodeSelectionGrid(
@@ -29,26 +31,40 @@ fun EpisodeSelectionGrid(
     onLoadEpisodeDetailComplement: (String) -> Unit,
     episodeDetailComplement: EpisodeDetailComplement?,
     episodeSourcesQuery: EpisodeSourcesQuery?,
+    gridState: LazyGridState,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
-    gridState: LazyGridState
 ) {
-    val currentEpisodeNo = episodeDetailComplement?.servers?.episodeNo
     val (selectedEpisodeId, setSelectedEpisodeId) = remember { mutableStateOf<String?>(null) }
+    val coroutineScope = rememberCoroutineScope()
 
-    LaunchedEffect(episodeDetailComplement) {
-        if (episodeDetailComplement?.servers?.episodeId != null) {
-            setSelectedEpisodeId(episodeDetailComplement.servers.episodeId)
+    val (hasScrolledInitially, setHasScrolledInitially) = remember { mutableStateOf(false) }
+
+    LaunchedEffect(episodeDetailComplement, episodes) {
+        val targetEpisodeId = episodeDetailComplement?.servers?.episodeId
+        val targetEpisodeNo = episodeDetailComplement?.servers?.episodeNo
+
+        if (targetEpisodeId != null) {
+            setSelectedEpisodeId(targetEpisodeId)
         }
-        if (currentEpisodeNo != null) {
-            val index = episodes.indexOfFirst { it.episodeNo == currentEpisodeNo }
-            if (index != -1) {
-                gridState.animateScrollToItem(index)
+
+        if (targetEpisodeNo != null && !hasScrolledInitially) {
+            val targetIndex = episodes.indexOfFirst { it.episodeNo == targetEpisodeNo }
+            if (targetIndex != -1) {
+                val currentFirstVisibleIndex = gridState.firstVisibleItemIndex
+                val scrollThreshold = 50
+
+                if (kotlin.math.abs(targetIndex - currentFirstVisibleIndex) > scrollThreshold) {
+                    gridState.scrollToItem(targetIndex)
+                } else {
+                    gridState.animateScrollToItem(targetIndex)
+                }
+                setHasScrolledInitially(true)
             }
         }
     }
 
-    val coroutineScope = rememberCoroutineScope()
-    val debounce = remember(coroutineScope) {
+
+    val episodeSelectionDebounce = remember(coroutineScope) {
         Debounce(coroutineScope) { episodeId ->
             handleSelectedEpisodeServer(
                 episodeSourcesQuery?.copy(id = episodeId)
@@ -71,12 +87,29 @@ fun EpisodeSelectionGrid(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        itemsIndexed(episodes) { index, episode ->
-            LaunchedEffect(episode.episodeId) {
-                if (episodeDetailComplements[episode.episodeId] == null) {
+        itemsIndexed(episodes, key = { _, episode -> episode.episodeId }) { index, episode ->
+            val (isItemVisible, setIsItemVisible) = remember { mutableStateOf(false) }
+
+            LaunchedEffect(gridState, index) {
+                snapshotFlow {
+                    val first = gridState.firstVisibleItemIndex
+                    val last = gridState.layoutInfo.visibleItemsInfo.lastOrNull()?.index
+                        ?: gridState.firstVisibleItemIndex
+                    val buffer = 10
+                    index in (first - buffer)..(last + buffer)
+                }
+                    .distinctUntilChanged()
+                    .collect { isVisibleNow ->
+                        setIsItemVisible(isVisibleNow)
+                    }
+            }
+
+            if (isItemVisible && episodeDetailComplements[episode.episodeId] == null) {
+                LaunchedEffect(episode.episodeId) {
                     onLoadEpisodeDetailComplement(episode.episodeId)
                 }
             }
+
             val complementResource = episodeDetailComplements[episode.episodeId]
             WatchEpisodeItem(
                 currentEpisode = episodeDetailComplement,
@@ -85,7 +118,7 @@ fun EpisodeSelectionGrid(
                 episodeDetailComplement = if (complementResource is Resource.Success) complementResource.data else null,
                 onEpisodeClick = { episodeId ->
                     setSelectedEpisodeId(episodeId)
-                    debounce.query(episodeId)
+                    episodeSelectionDebounce.query(episodeId)
                 },
                 isSelected = episode.episodeId == selectedEpisodeId
             )
