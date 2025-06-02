@@ -57,14 +57,17 @@ import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.ui.common.CircularLoadingIndicator
 import com.luminoverse.animevibe.utils.TimeUtils.formatTimestamp
-import com.luminoverse.animevibe.utils.media.HlsPlayerState
+import com.luminoverse.animevibe.utils.media.PlaybackStatusState
+import com.luminoverse.animevibe.utils.media.PositionState
 
 @Composable
 fun PlayerControls(
-    hlsPlayerState: HlsPlayerState,
+    playbackStatusState: PlaybackStatusState,
+    positionState: PositionState,
     onHandleBackPress: () -> Unit,
     episodeDetailComplement: EpisodeDetailComplement,
     episodes: List<Episode>,
+    isLocked: Boolean,
     isFullscreen: Boolean,
     isShowSpeedUp: Boolean,
     handlePlay: () -> Unit,
@@ -164,8 +167,8 @@ fun PlayerControls(
                     }
                     IconButton(onClick = onLockClick) {
                         Icon(
-                            imageVector = if (hlsPlayerState.isLocked) Icons.Default.Lock else Icons.Default.LockOpen,
-                            contentDescription = if (hlsPlayerState.isLocked) "Unlock" else "Lock",
+                            imageVector = if (isLocked) Icons.Default.Lock else Icons.Default.LockOpen,
+                            contentDescription = if (isLocked) "Unlock" else "Lock",
                             tint = Color.White
                         )
                     }
@@ -213,7 +216,7 @@ fun PlayerControls(
                         .size(56.dp)
                         .clip(CircleShape)
                         .clickable(
-                            enabled = hlsPlayerState.playbackState != Player.STATE_BUFFERING && hlsPlayerState.playbackState != Player.STATE_IDLE,
+                            enabled = playbackStatusState.playbackState != Player.STATE_BUFFERING && playbackStatusState.playbackState != Player.STATE_IDLE,
                             onClick = onPlayPauseRestart
                         )
                         .background(
@@ -225,11 +228,11 @@ fun PlayerControls(
                         modifier = Modifier
                             .size(40.dp)
                             .align(Alignment.Center),
-                        targetState = when (hlsPlayerState.playbackState) {
+                        targetState = when (playbackStatusState.playbackState) {
                             Player.STATE_BUFFERING -> "buffering"
                             Player.STATE_IDLE -> "idle"
                             Player.STATE_ENDED -> "ended"
-                            else -> if (hlsPlayerState.isPlaying) "playing" else "paused"
+                            else -> if (playbackStatusState.isPlaying) "playing" else "paused"
                         },
                         transitionSpec = {
                             (fadeIn(tween(300)) + scaleIn(tween(300), initialScale = 0.8f))
@@ -335,10 +338,10 @@ fun PlayerControls(
                     Text(
                         text = buildAnnotatedString {
                             withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                append(formatTimestamp(hlsPlayerState.currentPosition))
+                                append(formatTimestamp(positionState.currentPosition))
                             }
                             append(" / ")
-                            append(if (hlsPlayerState.duration > 0) formatTimestamp(hlsPlayerState.duration) else "--:--")
+                            append(if (positionState.duration > 0) formatTimestamp(positionState.duration) else "--:--")
                         },
                         color = Color.White,
                         fontSize = 14.sp
@@ -353,8 +356,8 @@ fun PlayerControls(
                 }
             }
             CustomSeekBar(
-                currentPosition = hlsPlayerState.currentPosition,
-                duration = hlsPlayerState.duration,
+                currentPosition = positionState.currentPosition,
+                duration = positionState.duration,
                 introStart = episodeDetailComplement.sources.intro?.start?.times(1000L) ?: 0L,
                 introEnd = episodeDetailComplement.sources.intro?.end?.times(1000L) ?: 0L,
                 outroStart = episodeDetailComplement.sources.outro?.start?.times(1000L) ?: 0L,

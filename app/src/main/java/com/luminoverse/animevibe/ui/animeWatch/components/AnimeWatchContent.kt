@@ -25,7 +25,7 @@ import com.luminoverse.animevibe.ui.animeWatch.videoPlayer.VideoPlayerSection
 import com.luminoverse.animevibe.ui.animeWatch.watchContent.WatchContentSection
 import com.luminoverse.animevibe.ui.common.SkeletonBox
 import com.luminoverse.animevibe.ui.main.MainState
-import com.luminoverse.animevibe.utils.media.HlsPlayerState
+import com.luminoverse.animevibe.utils.media.PlaybackStatusState
 import com.luminoverse.animevibe.utils.resource.Resource
 
 @Composable
@@ -35,7 +35,7 @@ fun AnimeWatchContent(
     isScreenOn: Boolean,
     isAutoPlayVideo: Boolean,
     playerUiState: PlayerUiState,
-    hlsPlayerState: HlsPlayerState,
+    hlsPlaybackStatusState: PlaybackStatusState,
     mainState: MainState,
     onHandleBackPress: () -> Unit,
     onFavoriteToggle: (EpisodeDetailComplement) -> Unit,
@@ -68,7 +68,7 @@ fun AnimeWatchContent(
                                 isRefresh
                             )
                         },
-                        hlsPlayerState = hlsPlayerState,
+                        hlsPlaybackStatusState = hlsPlaybackStatusState,
                         isPipMode = playerUiState.isPipMode,
                         onEnterPipMode = onEnterPipMode,
                         isFullscreen = playerUiState.isFullscreen,

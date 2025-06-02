@@ -52,8 +52,8 @@ import com.luminoverse.animevibe.ui.main.navigation.navigateTo
 import com.luminoverse.animevibe.ui.main.navigation.navigateToAdjacentRoute
 import com.luminoverse.animevibe.ui.settings.SettingsScreen
 import com.luminoverse.animevibe.ui.settings.SettingsViewModel
-import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
 import com.luminoverse.animevibe.utils.media.PipUtil.buildPipActions
+import com.luminoverse.animevibe.utils.media.PlaybackStatusState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -68,7 +68,8 @@ fun MainScreen(
     intentChannel: Channel<Intent>,
     resetIdleTimer: () -> Unit,
     mainState: MainState,
-    mainAction: (MainAction) -> Unit
+    mainAction: (MainAction) -> Unit,
+    hlsPlaybackStatusState: PlaybackStatusState
 ) {
     val activity = LocalActivity.current
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -278,7 +279,6 @@ fun MainScreen(
                     hiltViewModel(LocalActivity.current as ViewModelStoreOwner)
                 val watchState by viewModel.watchState.collectAsStateWithLifecycle()
                 val playerUiState by viewModel.playerUiState.collectAsStateWithLifecycle()
-                val hlsPlayerState by HlsPlayerUtils.state.collectAsStateWithLifecycle()
                 val activity = LocalActivity.current as? MainActivity
 
                 DisposableEffect(activity) {
@@ -297,9 +297,9 @@ fun MainScreen(
                     }
                 }
 
-                LaunchedEffect(playerUiState.isPipMode, hlsPlayerState.isPlaying) {
+                LaunchedEffect(playerUiState.isPipMode, hlsPlaybackStatusState.isPlaying) {
                     activity?.window?.let { window ->
-                        if (hlsPlayerState.isPlaying && !playerUiState.isPipMode) {
+                        if (hlsPlaybackStatusState.isPlaying && !playerUiState.isPipMode) {
                             window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                         } else {
                             window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -308,9 +308,9 @@ fun MainScreen(
                     if (playerUiState.isPipMode && activity != null) {
                         Log.d(
                             "MainScreen",
-                            "Updating PiP params: isPlaying=${hlsPlayerState.isPlaying}"
+                            "Updating PiP params: isPlaying=${hlsPlaybackStatusState.isPlaying}"
                         )
-                        val actions = buildPipActions(activity, hlsPlayerState.isPlaying)
+                        val actions = buildPipActions(activity, hlsPlaybackStatusState.isPlaying)
                         activity.setPictureInPictureParams(
                             PictureInPictureParams.Builder()
                                 .setActions(actions)
@@ -335,15 +335,15 @@ fun MainScreen(
                     mainState = mainState,
                     watchState = watchState,
                     playerUiState = playerUiState,
-                    hlsPlayerState = hlsPlayerState,
+                    hlsPlaybackStatusState = hlsPlaybackStatusState,
                     onAction = viewModel::onAction,
                     onEnterPipMode = {
                         if (isConnected && activity != null) {
                             Log.d(
                                 "MainScreen",
-                                "Entering PiP: isPlaying=${hlsPlayerState.isPlaying}"
+                                "Entering PiP: isPlaying=${hlsPlaybackStatusState.isPlaying}"
                             )
-                            val actions = buildPipActions(activity, hlsPlayerState.isPlaying)
+                            val actions = buildPipActions(activity, hlsPlaybackStatusState.isPlaying)
                             activity.enterPictureInPictureMode(
                                 PictureInPictureParams.Builder()
                                     .setActions(actions)

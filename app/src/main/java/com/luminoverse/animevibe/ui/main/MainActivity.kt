@@ -78,6 +78,7 @@ class MainActivity : AppCompatActivity() {
             navController = rememberNavController()
             val mainViewModel: MainViewModel = hiltViewModel()
             val state by mainViewModel.state.collectAsStateWithLifecycle()
+            val hlsPlaybackStatusState by HlsPlayerUtils.playbackStatusState.collectAsStateWithLifecycle()
 
             val configuration = LocalConfiguration.current
             val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
@@ -124,7 +125,8 @@ class MainActivity : AppCompatActivity() {
                     intentChannel = intentChannel,
                     resetIdleTimer = resetIdleTimer,
                     mainState = state.copy(isLandscape = isLandscape),
-                    mainAction = mainViewModel::onAction
+                    mainAction = mainViewModel::onAction,
+                    hlsPlaybackStatusState = hlsPlaybackStatusState
                 )
                 setSystemBarAppearance(MaterialTheme.colorScheme.surface)
             }
@@ -206,10 +208,13 @@ class MainActivity : AppCompatActivity() {
         super.onUserLeaveHint()
         if (::navController.isInitialized) {
             val currentRoute = navController.currentDestination?.route
-            val isPlaying = HlsPlayerUtils.state.value.isPlaying
+            val isPlaying = HlsPlayerUtils.playbackStatusState.value.isPlaying
             if (currentRoute?.startsWith("animeWatch/") == true && isPlaying) {
-                pipParamsBuilder.setActions(buildPipActions(this, true))
-                enterPictureInPictureMode(pipParamsBuilder.build())
+                lifecycleScope.launch {
+                    delay(200L)
+                    pipParamsBuilder.setActions(buildPipActions(this@MainActivity, true))
+                    enterPictureInPictureMode(pipParamsBuilder.build())
+                }
             }
         }
     }

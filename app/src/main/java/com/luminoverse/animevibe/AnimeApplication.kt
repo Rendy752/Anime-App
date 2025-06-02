@@ -17,6 +17,8 @@ import com.luminoverse.animevibe.utils.media.MediaPlaybackAction
 import com.luminoverse.animevibe.utils.media.MediaPlaybackService
 import com.luminoverse.animevibe.utils.debug.NotificationDebugUtil
 import com.luminoverse.animevibe.utils.handlers.NotificationHandler
+import com.luminoverse.animevibe.utils.media.HlsPlayerAction
+import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
 import com.luminoverse.animevibe.utils.shake.ShakeDetector
 import com.luminoverse.animevibe.utils.workers.UnfinishedWatchNotificationWorker
 import dagger.hilt.android.HiltAndroidApp
@@ -65,6 +67,7 @@ class AnimeApplication : Application(), Configuration.Provider {
             setupSensor()
         }
 
+        HlsPlayerUtils.dispatch(HlsPlayerAction.InitializeHlsPlayer(this))
         manageMediaService(true)
     }
 
@@ -78,6 +81,7 @@ class AnimeApplication : Application(), Configuration.Provider {
     }
 
     fun cleanupService() {
+        HlsPlayerUtils.dispatch(HlsPlayerAction.Release)
         mediaPlaybackService?.let { service ->
             Log.d(TAG, "Cleaning up MediaPlaybackService")
             service.dispatch(MediaPlaybackAction.StopService)

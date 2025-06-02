@@ -34,13 +34,14 @@ import com.luminoverse.animevibe.ui.animeWatch.WatchState
 import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
 import com.luminoverse.animevibe.utils.media.MediaPlaybackAction
 import com.luminoverse.animevibe.utils.media.MediaPlaybackService
-import com.luminoverse.animevibe.utils.media.HlsPlayerState
+import com.luminoverse.animevibe.utils.media.PlaybackStatusState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.media3.common.PlaybackException
+import kotlinx.coroutines.delay
 
 @SuppressLint("ImplicitSamInstance")
 @OptIn(UnstableApi::class, ExperimentalComposeUiApi::class)
@@ -54,7 +55,7 @@ fun VideoPlayerSection(
     episodes: List<Episode>,
     episodeSourcesQuery: EpisodeSourcesQuery,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery, Boolean) -> Unit,
-    hlsPlayerState: HlsPlayerState,
+    hlsPlaybackStatusState: PlaybackStatusState,
     isPipMode: Boolean,
     onEnterPipMode: () -> Unit,
     isFullscreen: Boolean,
@@ -179,6 +180,7 @@ fun VideoPlayerSection(
     }
 
     LaunchedEffect(episodeSourcesQuery, retryCount) {
+        delay(500L)
         if (retryCount < maxRetries) {
             Log.d(
                 "VideoPlayerSection",
@@ -192,7 +194,6 @@ fun VideoPlayerSection(
     }
 
     DisposableEffect(Unit) {
-        HlsPlayerUtils.dispatch(HlsPlayerAction.InitializeHlsPlayer(context))
         initializePlayer()
 
         val playerListener = object : Player.Listener {
@@ -213,12 +214,15 @@ fun VideoPlayerSection(
             override fun onPlaybackStateChanged(playbackState: Int) {
                 if (playbackState == Player.STATE_ENDED) {
                     Log.d("VideoPlayerSection", "Episode ended, showing next episode overlay")
-                    watchState.episodeDetailComplement.data?.let {
-                        isShowNextEpisode = updateNextEpisodeName(
-                            episodes = episodes,
-                            currentEpisode = it.servers.episodeNo,
-                            setNextEpisodeName = { nextEpisodeName = it }
-                        )
+                    watchState.episodeDetailComplement.data?.let { episodeDetailComplement ->
+                        val nextEpisode =
+                            episodes.find { it.episodeNo == episodeDetailComplement.servers.episodeNo + 1 }
+                        if (nextEpisode != null) {
+                            nextEpisodeName = nextEpisode.name
+                            isShowNextEpisode = true
+                        } else {
+                            isShowNextEpisode = false
+                        }
                         isShowResumeOverlay = false
                         (context as? FragmentActivity)?.window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                     }
@@ -306,7 +310,7 @@ fun VideoPlayerSection(
         object : MediaControllerCompat.Callback() {
             override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
                 state?.let {
-                    val isPlaying = hlsPlayerState.isPlaying
+                    val isPlaying = hlsPlaybackStatusState.isPlaying
                     if (isPlaying) {
                         isShowResumeOverlay = false
                     }
@@ -377,7 +381,7 @@ fun VideoPlayerSection(
     watchState.episodeDetailComplement.data?.let {
         VideoPlayer(
             playerView = playerView,
-            hlsPlayerState = hlsPlayerState,
+            playbackStatusState = hlsPlaybackStatusState,
             mediaController = mediaControllerCompat,
             onHandleBackPress = onHandleBackPress,
             episodeDetailComplement = it,
@@ -397,33 +401,7 @@ fun VideoPlayerSection(
             isLandscape = isLandscape,
             errorMessage = watchState.errorMessage,
             modifier = modifier,
-            videoSize = videoSize,
-            onFastForward = { HlsPlayerUtils.dispatch(HlsPlayerAction.FastForward) },
-            onRewind = { HlsPlayerUtils.dispatch(HlsPlayerAction.Rewind) },
-            onSkipIntro = {
-                it.sources.intro?.end?.let { endTime ->
-                    HlsPlayerUtils.dispatch(HlsPlayerAction.SkipIntro(endTime))
-                }
-            },
-            onSkipOutro = {
-                it.sources.outro?.end?.let { endTime ->
-                    HlsPlayerUtils.dispatch(HlsPlayerAction.SkipOutro(endTime))
-                }
-            }
+            videoSize = videoSize
         )
-    }
-}
-
-private fun updateNextEpisodeName(
-    episodes: List<Episode>,
-    currentEpisode: Int,
-    setNextEpisodeName: (String) -> Unit
-): Boolean {
-    val nextEpisode = episodes.find { it.episodeNo == currentEpisode + 1 }
-    return if (nextEpisode != null) {
-        setNextEpisodeName(nextEpisode.name)
-        true
-    } else {
-        false
     }
 }

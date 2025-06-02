@@ -29,12 +29,12 @@ import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import com.luminoverse.animevibe.ui.main.MainActivity
-import com.luminoverse.animevibe.utils.media.HlsPlayerState
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
+import com.luminoverse.animevibe.utils.media.PlaybackStatusState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,7 +45,7 @@ fun AnimeWatchScreen(
     mainState: MainState,
     watchState: WatchState,
     playerUiState: PlayerUiState,
-    hlsPlayerState: HlsPlayerState,
+    hlsPlaybackStatusState: PlaybackStatusState,
     onAction: (WatchAction) -> Unit,
     onEnterPipMode: () -> Unit
 ) {
@@ -174,7 +174,7 @@ fun AnimeWatchScreen(
                     isScreenOn = isScreenOn,
                     isAutoPlayVideo = mainState.isAutoPlayVideo,
                     playerUiState = playerUiState,
-                    hlsPlayerState = hlsPlayerState,
+                    hlsPlaybackStatusState = hlsPlaybackStatusState,
                     mainState = mainState,
                     onHandleBackPress = onBackPress,
                     onFavoriteToggle = { updatedComplement ->

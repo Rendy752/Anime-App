@@ -41,6 +41,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -198,7 +199,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
 
     private fun updateNotification() {
         coroutineScope.launch {
-            val playerState = HlsPlayerUtils.state.value
+            val playerState = HlsPlayerUtils.playbackStatusState.value
             if (!playerState.isReady) {
                 Log.d("MediaPlaybackService", "Skipping notification update: player not ready")
                 return@launch
@@ -382,30 +383,37 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
 
     private fun observePlayerState() {
         coroutineScope.launch {
-            HlsPlayerUtils.state.collectLatest { state ->
-                val playbackState = when (state.playbackState) {
+            combine(
+                HlsPlayerUtils.positionState,
+                HlsPlayerUtils.playbackStatusState
+            ) { positionState, playbackState ->
+                Pair(positionState, playbackState)
+            }.collectLatest { (positionState, playbackState) ->
+                val playbackStateCompat = when (playbackState.playbackState) {
                     Player.STATE_IDLE -> PlaybackStateCompat.STATE_STOPPED
                     Player.STATE_BUFFERING -> PlaybackStateCompat.STATE_BUFFERING
-                    Player.STATE_READY -> if (state.isPlaying) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_PAUSED
+                    Player.STATE_READY -> if (playbackState.isPlaying) PlaybackStateCompat.STATE_PLAYING else PlaybackStateCompat.STATE_PAUSED
                     Player.STATE_ENDED -> PlaybackStateCompat.STATE_STOPPED
                     else -> PlaybackStateCompat.STATE_NONE
                 }
                 _state.update {
                     it.copy(
-                        isPlayerReady = state.isReady,
-                        currentPosition = state.currentPosition,
-                        duration = state.duration
+                        isPlayerReady = playbackState.isReady,
+                        currentPosition = positionState.currentPosition,
+                        duration = positionState.duration,
+                        playbackState = playbackStateCompat,
+                        errorMessage = playbackState.error
                     )
                 }
-                if (state.error != null) {
-                    updatePlaybackState(PlaybackStateCompat.STATE_ERROR, state.error)
+                if (playbackState.error != null) {
+                    updatePlaybackState(PlaybackStateCompat.STATE_ERROR, playbackState.error)
                 } else {
-                    updatePlaybackState(playbackState)
+                    updatePlaybackState(playbackStateCompat)
                 }
-                if (state.isReady) {
-                    updateMediaMetadata(HlsPlayerUtils.getPlayer()?.duration?.takeIf { it > 0 }
-                        ?: 0)
+                if (playbackState.isReady) {
+                    updateMediaMetadata(positionState.duration)
                 }
+                updateNotification()
             }
         }
     }
@@ -456,10 +464,12 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
     }
 
     fun getNotificationId(): Int = NOTIFICATION_ID
-    fun isForeground(): Boolean = isForeground.get() && HlsPlayerUtils.state.value.isReady
+    fun isForeground(): Boolean =
+        isForeground.get() && HlsPlayerUtils.playbackStatusState.value.isReady
 
     private fun queryForegroundStatus() {
-        val isForegroundValue = isForeground.get() && HlsPlayerUtils.state.value.isReady
+        val isForegroundValue =
+            isForeground.get() && HlsPlayerUtils.playbackStatusState.value.isReady
         _state.update { it.copy(isForeground = isForegroundValue) }
         Log.d(
             "MediaPlaybackService",
@@ -476,7 +486,6 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
     override fun onDestroy() {
         super.onDestroy()
         Log.d("MediaPlaybackService", "Service destroyed")
-        HlsPlayerUtils.dispatch(HlsPlayerAction.Release)
         mediaSession?.release()
         mediaSession = null
         handler.removeCallbacksAndMessages(null)
