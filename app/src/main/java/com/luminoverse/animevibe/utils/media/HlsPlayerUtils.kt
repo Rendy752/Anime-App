@@ -636,9 +636,7 @@ object HlsPlayerUtils {
             val clampedPos = positionMs.coerceAtLeast(0)
                 .coerceAtMost(if (duration > 0) duration else Long.MAX_VALUE)
             it.seekTo(clampedPos)
-            _positionState.update {
-                it.copy(currentPosition = clampedPos)
-            }
+            _positionState.update { it.copy(currentPosition = clampedPos) }
             dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
             Log.d(
                 "HlsPlayer",

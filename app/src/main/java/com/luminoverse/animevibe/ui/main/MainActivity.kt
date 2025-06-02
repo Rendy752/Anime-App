@@ -210,18 +210,10 @@ class MainActivity : AppCompatActivity() {
             val currentRoute = navController.currentDestination?.route
             val isPlaying = HlsPlayerUtils.playbackStatusState.value.isPlaying
             if (currentRoute?.startsWith("animeWatch/") == true && isPlaying) {
-                lifecycleScope.launch {
-                    delay(200L)
-                    pipParamsBuilder.setActions(buildPipActions(this@MainActivity, true))
-                    enterPictureInPictureMode(pipParamsBuilder.build())
-                }
+                pipParamsBuilder.setActions(buildPipActions(this@MainActivity, true))
+                enterPictureInPictureMode(pipParamsBuilder.build())
             }
         }
-    }
-
-    override fun onPause() {
-        super.onPause()
-        (applicationContext as AnimeApplication).cleanupService()
     }
 
     override fun onDestroy() {
