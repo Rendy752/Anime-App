@@ -274,9 +274,7 @@ object HlsPlayerUtils {
                                     _state.update { it.copy(error = null) }
                                     if (!exoPlayer?.isPlaying!!) {
                                         dispatch(
-                                            HlsPlayerAction.RequestToggleControlsVisibility(
-                                                true
-                                            )
+                                            HlsPlayerAction.RequestToggleControlsVisibility(true)
                                         )
                                         Log.d(
                                             "HlsPlayerUtils",
@@ -400,38 +398,129 @@ object HlsPlayerUtils {
                     )
 
                     val readyListener = object : Player.Listener {
+                        override fun onIsPlayingChanged(isPlaying: Boolean) {
+                            _state.update { it.copy(isPlaying = isPlaying, error = null) }
+                            if (isPlaying) {
+                                requestAudioFocus()
+                                startIntroOutroCheck()
+                                startPositionUpdates()
+                                startPeriodicWatchStateUpdates(updateStoredWatchStateCallback)
+                                dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
+                            } else {
+                                abandonAudioFocus()
+                                stopIntroOutroCheck()
+                                stopPositionUpdates()
+                                stopPeriodicWatchStateUpdates()
+                                dispatch(HlsPlayerAction.RequestToggleControlsVisibility(false))
+                            }
+                        }
+
                         override fun onPlaybackStateChanged(state: Int) {
-                            if (state == Player.STATE_READY) {
+                            val isReady =
+                                state == Player.STATE_READY || state == Player.STATE_BUFFERING
+
+                            if (isReady) setSubtitle(currentVideoData?.tracks?.firstOrNull { track -> track.kind == "captions" && track.default == true })
+                            _state.update {
+                                it.copy(
+                                    playbackState = state,
+                                    isReady = isReady,
+                                    duration = exoPlayer?.duration?.takeIf { it > 0 } ?: 0L
+                                )
+                            }
+
+                            when (state) {
+                                Player.STATE_BUFFERING -> {
+                                    _state.update { it.copy(error = null) }
+                                }
+
+                                Player.STATE_READY -> {
+                                    _state.update { it.copy(error = null) }
+                                    Log.d(
+                                        "HlsPlayerUtils",
+                                        "Player ready for media, duration=${player.duration}"
+                                    )
+
+                                    onReady()
+                                    if (isAutoPlayVideo) {
+                                        lastTimestamp?.let { timestamp ->
+                                            if (timestamp > 0 && timestamp < player.duration) {
+                                                seekTo(timestamp)
+                                                Log.d(
+                                                    "HlsPlayerUtils",
+                                                    "AutoPlay: seekTo timestamp=$timestamp"
+                                                )
+                                            }
+                                        }
+                                        player.play()
+                                        Log.d("HlsPlayerUtils", "AutoPlay: play called")
+                                    }
+                                    player.removeListener(this)
+                                }
+
+                                Player.STATE_ENDED -> {
+                                    _state.update {
+                                        it.copy(isPlaying = false)
+                                    }
+                                    dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
+                                    stopControlsAutoHideTimer()
+                                    Log.d(
+                                        "HlsPlayerUtils",
+                                        "Controls forced visible due to ENDED state, timer stopped"
+                                    )
+                                }
+
+                                Player.STATE_IDLE -> {
+                                    _state.update {
+                                        it.copy(error = null)
+                                    }
+                                    dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
+                                    Log.d(
+                                        "HlsPlayerUtils",
+                                        "Controls forced visible due to IDLE state, timer stopped"
+                                    )
+                                }
+                            }
+                        }
+
+                        override fun onPositionDiscontinuity(
+                            oldPosition: Player.PositionInfo,
+                            newPosition: Player.PositionInfo,
+                            reason: Int
+                        ) {
+                            Log.d(
+                                "HlsPlayerUtils",
+                                "onPositionDiscontinuity: reason=$reason, newPosition=${newPosition.positionMs}ms"
+                            )
+                            _state.update {
+                                it.copy(currentPosition = newPosition.positionMs)
+                            }
+                            if (reason == Player.DISCONTINUITY_REASON_SEEK) {
+                                introOutroCheck()
+                                dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
                                 Log.d(
                                     "HlsPlayerUtils",
-                                    "Player ready for media, duration=${player.duration}"
+                                    "Controls shown and timer reset due to SEEK"
                                 )
-                                setSubtitle(currentVideoData?.tracks?.firstOrNull { track -> track.kind == "captions" && track.default == true })
-                                _state.update {
-                                    it.copy(duration = player.duration.takeIf { it > 0 } ?: 0)
-                                }
-                                onReady()
-                                if (isAutoPlayVideo) {
-                                    lastTimestamp?.let { timestamp ->
-                                        if (timestamp > 0 && timestamp < player.duration) {
-                                            seekTo(timestamp)
-                                            Log.d(
-                                                "HlsPlayerUtils",
-                                                "AutoPlay: seekTo timestamp=$timestamp"
-                                            )
-                                        }
-                                    }
-                                    player.play()
-                                    Log.d("HlsPlayerUtils", "AutoPlay: play called")
-                                }
-                                player.removeListener(this)
                             }
                         }
 
                         override fun onPlayerError(error: PlaybackException) {
-                            val message =
-                                "Playback failed: ${error.message ?: "Unknown error"}. Please refresh or try a different server."
-                            Log.e("HlsPlayerUtils", message, error)
+                            val message = when {
+                                error is ExoPlaybackException && error.type == ExoPlaybackException.TYPE_SOURCE -> {
+                                    "Playback error, try a different server."
+                                }
+
+                                error.message != null -> "Playback error: ${error.message}"
+                                else -> "Unknown playback error"
+                            }
+                            Log.e("HlsPlayerUtils", "onPlayerError: $message", error)
+                            _state.update { it.copy(error = message) }
+                            dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
+                            abandonAudioFocus()
+                            stopIntroOutroCheck()
+                            stopPositionUpdates()
+                            stopPeriodicWatchStateUpdates()
+                            stopControlsAutoHideTimer()
                             onError(message)
                             player.removeListener(this)
                         }
@@ -515,9 +604,7 @@ object HlsPlayerUtils {
     private fun setPlaybackSpeed(speed: Float) {
         exoPlayer?.setPlaybackSpeed(speed)
         _state.update {
-            it.copy(
-                playbackSpeed = speed
-            )
+            it.copy(playbackSpeed = speed)
         }
         dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
         Log.d("HlsPlayerUtils", "setPlaybackSpeed: speed=$speed, controls shown and timer reset")

@@ -383,7 +383,6 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
     private fun observePlayerState() {
         coroutineScope.launch {
             HlsPlayerUtils.state.collectLatest { state ->
-                Log.d("MediaPlaybackService", "HlsPlayerUtils state changed: $state")
                 val playbackState = when (state.playbackState) {
                     Player.STATE_IDLE -> PlaybackStateCompat.STATE_STOPPED
                     Player.STATE_BUFFERING -> PlaybackStateCompat.STATE_BUFFERING

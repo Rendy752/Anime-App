@@ -26,7 +26,7 @@ fun SpeedUpIndicator(
         modifier = modifier
             .padding(24.dp)
             .background(
-                color = Color.White,
+                color = Color.Black.copy(alpha = 0.4f),
                 shape = RoundedCornerShape(16.dp)
             )
             .padding(8.dp),
@@ -35,12 +35,12 @@ fun SpeedUpIndicator(
         Icon(
             Icons.Filled.Speed,
             contentDescription = "Speed Up",
-            tint = Color.Black,
+            tint = Color.White,
             modifier = Modifier.padding(end = 4.dp)
         )
         Text(
             text = speedText,
-            color = Color.Black,
+            color = Color.White,
             fontSize = 16.sp
         )
     }

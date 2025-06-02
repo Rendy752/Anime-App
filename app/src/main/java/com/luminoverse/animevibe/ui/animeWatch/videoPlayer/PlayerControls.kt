@@ -66,6 +66,7 @@ fun PlayerControls(
     episodeDetailComplement: EpisodeDetailComplement,
     episodes: List<Episode>,
     isFullscreen: Boolean,
+    isShowSpeedUp: Boolean,
     handlePlay: () -> Unit,
     handlePause: () -> Unit,
     onPlayPauseRestart: () -> Unit,
@@ -86,6 +87,7 @@ fun PlayerControls(
     val currentEpisode = episodeDetailComplement.servers.episodeNo
     val hasPreviousEpisode = episodes.any { it.episodeNo == currentEpisode - 1 }
     val hasNextEpisode = episodes.any { it.episodeNo == currentEpisode + 1 }
+    val shouldShowControls = isShowSeekIndicator == 0 && !isDraggingSeekBar && !isShowSpeedUp
 
     Box(
         modifier = Modifier
@@ -93,7 +95,7 @@ fun PlayerControls(
             .background(Color.Black.copy(alpha = 0.6f))
     ) {
         AnimatedVisibility(
-            visible = isShowSeekIndicator == 0 && !isDraggingSeekBar,
+            visible = shouldShowControls,
             enter = fadeIn(animationSpec = tween(durationMillis = 300)),
             exit = fadeOut(animationSpec = tween(durationMillis = 300)),
             modifier = Modifier
@@ -172,7 +174,7 @@ fun PlayerControls(
         }
 
         AnimatedVisibility(
-            visible = isShowSeekIndicator == 0 && !isDraggingSeekBar,
+            visible = shouldShowControls,
             enter = fadeIn(animationSpec = tween(durationMillis = 300)),
             exit = fadeOut(animationSpec = tween(durationMillis = 300)),
             modifier = Modifier
@@ -246,16 +248,19 @@ fun PlayerControls(
                                 contentDescription = "Replay",
                                 tint = Color.White
                             )
+
                             "playing" -> Icon(
                                 imageVector = Icons.Default.Pause,
                                 contentDescription = "Pause",
                                 tint = Color.White
                             )
+
                             "paused" -> Icon(
                                 imageVector = Icons.Default.PlayArrow,
                                 contentDescription = "Play",
                                 tint = Color.White
                             )
+
                             else -> CircularLoadingIndicator()
                         }
                     }
@@ -318,7 +323,7 @@ fun PlayerControls(
                 .align(Alignment.BottomCenter)
         ) {
             AnimatedVisibility(
-                visible = isShowSeekIndicator == 0 && !isDraggingSeekBar,
+                visible = shouldShowControls,
                 enter = fadeIn(animationSpec = tween(durationMillis = 300)),
                 exit = fadeOut(animationSpec = tween(durationMillis = 300))
             ) {

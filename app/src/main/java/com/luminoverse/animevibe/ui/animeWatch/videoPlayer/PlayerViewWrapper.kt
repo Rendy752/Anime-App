@@ -19,6 +19,7 @@ import androidx.media3.ui.PlayerView
 fun PlayerViewWrapper(
     playerView: PlayerView,
     controlsAreVisible: Boolean,
+    isPipMode: Boolean,
     isFullscreen: Boolean,
     isLandscape: Boolean,
 ) {
@@ -50,7 +51,7 @@ fun PlayerViewWrapper(
 
             view.subtitleView?.setPadding(
                 0, 0, 0,
-                if (controlsAreVisible && (isLandscape || !isFullscreen)) 100 else 0
+                if (!isPipMode && controlsAreVisible && (isLandscape || !isFullscreen)) 100 else 0
             )
         }
     )

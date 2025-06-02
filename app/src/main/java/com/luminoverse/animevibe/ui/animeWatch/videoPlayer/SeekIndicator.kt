@@ -32,12 +32,13 @@ import androidx.compose.ui.unit.sp
 fun SeekIndicator(
     seekDirection: Int,
     seekAmount: Long,
+    isLandscape: Boolean,
     errorMessage: String?,
     modifier: Modifier = Modifier
 ) {
     val horizontalBias = when (seekDirection) {
-        1 -> 0.5f
-        -1 -> -0.5f
+        1 -> if (isLandscape) 0.5f else 0.75f
+        -1 -> -if (isLandscape) 0.5f else 0.75f
         else -> 0f
     }
 
