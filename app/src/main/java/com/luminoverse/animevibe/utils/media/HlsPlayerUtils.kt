@@ -74,7 +74,9 @@ sealed class HlsPlayerAction {
     data class SeekTo(val positionMs: Long) : HlsPlayerAction()
     data object FastForward : HlsPlayerAction()
     data object Rewind : HlsPlayerAction()
-    data class SetPlaybackSpeed(val speed: Float) : HlsPlayerAction()
+    data class SetPlaybackSpeed(val speed: Float, val fromLongPress: Boolean = false) :
+        HlsPlayerAction()
+
     data object Release : HlsPlayerAction()
     data class SetVideoSurface(val surface: Any?) : HlsPlayerAction()
     data class UpdateWatchState(val updateStoredWatchState: (Long?, Long?, String?) -> Unit) :
@@ -83,7 +85,9 @@ sealed class HlsPlayerAction {
     data class SkipIntro(val endTime: Long) : HlsPlayerAction()
     data class SkipOutro(val endTime: Long) : HlsPlayerAction()
     data class SetSubtitle(val track: Track?) : HlsPlayerAction()
-    data class RequestToggleControlsVisibility(val isVisible: Boolean) : HlsPlayerAction()
+    data class RequestToggleControlsVisibility(val isVisible: Boolean, val force: Boolean = false) :
+        HlsPlayerAction()
+
     data class ToggleLock(val isLocked: Boolean) : HlsPlayerAction()
 }
 
@@ -131,7 +135,10 @@ object HlsPlayerUtils {
             is HlsPlayerAction.SeekTo -> seekTo(action.positionMs)
             is HlsPlayerAction.FastForward -> fastForward()
             is HlsPlayerAction.Rewind -> rewind()
-            is HlsPlayerAction.SetPlaybackSpeed -> setPlaybackSpeed(action.speed)
+            is HlsPlayerAction.SetPlaybackSpeed -> setPlaybackSpeed(
+                action.speed, action.fromLongPress
+            )
+
             is HlsPlayerAction.Release -> release()
             is HlsPlayerAction.SetVideoSurface -> setVideoSurface(action.surface)
             is HlsPlayerAction.UpdateWatchState -> updateWatchState(action.updateStoredWatchState)
@@ -139,7 +146,7 @@ object HlsPlayerUtils {
             is HlsPlayerAction.SkipOutro -> skipOutro(action.endTime)
             is HlsPlayerAction.SetSubtitle -> setSubtitle(action.track)
             is HlsPlayerAction.RequestToggleControlsVisibility -> handleRequestedControlsVisibility(
-                action.isVisible
+                action.isVisible, action.force
             )
 
             is HlsPlayerAction.ToggleLock -> toggleLock(action.isLocked)
@@ -217,17 +224,22 @@ object HlsPlayerUtils {
                             Log.d("HlsPlayerUtils", "onIsPlayingChanged: isPlaying=$isPlaying")
                             _state.update { it.copy(isPlaying = isPlaying, error = null) }
                             if (isPlaying) {
+                                dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
                                 requestAudioFocus()
                                 startIntroOutroCheck()
                                 startPositionUpdates()
                                 startPeriodicWatchStateUpdates(updateStoredWatchStateCallback)
-                                dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
                             } else {
+                                dispatch(
+                                    HlsPlayerAction.RequestToggleControlsVisibility(
+                                        true,
+                                        force = true
+                                    )
+                                )
                                 abandonAudioFocus()
                                 stopIntroOutroCheck()
                                 stopPositionUpdates()
                                 stopPeriodicWatchStateUpdates()
-                                dispatch(HlsPlayerAction.RequestToggleControlsVisibility(false))
                                 Log.d(
                                     "HlsPlayerUtils",
                                     "Controls forced visible due to not playing, timer stopped"
@@ -248,11 +260,12 @@ object HlsPlayerUtils {
 
                             when (state) {
                                 Player.STATE_ENDED -> {
-                                    _state.update {
-                                        it.copy(isPlaying = false)
-                                    }
-                                    dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
-                                    stopControlsAutoHideTimer()
+                                    dispatch(
+                                        HlsPlayerAction.RequestToggleControlsVisibility(
+                                            true, force = true
+                                        )
+                                    )
+                                    _state.update { it.copy(isPlaying = false) }
                                     Log.d(
                                         "HlsPlayerUtils",
                                         "Controls forced visible due to ENDED state, timer stopped"
@@ -260,10 +273,14 @@ object HlsPlayerUtils {
                                 }
 
                                 Player.STATE_IDLE -> {
+                                    dispatch(
+                                        HlsPlayerAction.RequestToggleControlsVisibility(
+                                            true, force = true
+                                        )
+                                    )
                                     _state.update {
-                                        it.copy(error = null)
+                                        it.copy(isPlaying = false, error = null)
                                     }
-                                    dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
                                     Log.d(
                                         "HlsPlayerUtils",
                                         "Controls forced visible due to IDLE state, timer stopped"
@@ -271,16 +288,11 @@ object HlsPlayerUtils {
                                 }
 
                                 Player.STATE_READY, Player.STATE_BUFFERING -> {
-                                    _state.update { it.copy(error = null) }
-                                    if (!exoPlayer?.isPlaying!!) {
-                                        dispatch(
-                                            HlsPlayerAction.RequestToggleControlsVisibility(true)
+                                    dispatch(
+                                        HlsPlayerAction.RequestToggleControlsVisibility(
+                                            true, force = true
                                         )
-                                        Log.d(
-                                            "HlsPlayerUtils",
-                                            "Controls forced visible due to READY/BUFFERING state and not playing, timer stopped"
-                                        )
-                                    }
+                                    )
                                 }
                             }
                         }
@@ -317,7 +329,9 @@ object HlsPlayerUtils {
                                 else -> "Unknown playback error"
                             }
                             Log.e("HlsPlayerUtils", "onPlayerError: $message", error)
-                            _state.update { it.copy(error = message) }
+                            _state.update {
+                                it.copy(isPlaying = false, error = message)
+                            }
                             dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
                             abandonAudioFocus()
                             stopIntroOutroCheck()
@@ -331,10 +345,7 @@ object HlsPlayerUtils {
                     Log.d("HlsPlayerUtils", "ExoPlayer initialized")
                 }
             _state.update {
-                it.copy(
-                    playbackState = Player.STATE_IDLE,
-                    isReady = false
-                )
+                it.copy(playbackState = Player.STATE_IDLE, isReady = false, isPlaying = false)
             }
             dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
             Log.d("HlsPlayerUtils", "Controls initialized to visible")
@@ -411,7 +422,12 @@ object HlsPlayerUtils {
                                 stopIntroOutroCheck()
                                 stopPositionUpdates()
                                 stopPeriodicWatchStateUpdates()
-                                dispatch(HlsPlayerAction.RequestToggleControlsVisibility(false))
+                                dispatch(
+                                    HlsPlayerAction.RequestToggleControlsVisibility(
+                                        true,
+                                        force = true
+                                    )
+                                )
                             }
                         }
 
@@ -430,10 +446,18 @@ object HlsPlayerUtils {
 
                             when (state) {
                                 Player.STATE_BUFFERING -> {
-                                    _state.update { it.copy(error = null) }
+                                    dispatch(
+                                        HlsPlayerAction.RequestToggleControlsVisibility(
+                                            true, force = true
+                                        )
+                                    )
+                                    _state.update {
+                                        it.copy(isPlaying = false, error = null)
+                                    }
                                 }
 
                                 Player.STATE_READY -> {
+                                    dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
                                     _state.update { it.copy(error = null) }
                                     Log.d(
                                         "HlsPlayerUtils",
@@ -452,16 +476,19 @@ object HlsPlayerUtils {
                                             }
                                         }
                                         player.play()
+                                        _state.update { it.copy(isPlaying = true) }
                                         Log.d("HlsPlayerUtils", "AutoPlay: play called")
                                     }
                                     player.removeListener(this)
                                 }
 
                                 Player.STATE_ENDED -> {
-                                    _state.update {
-                                        it.copy(isPlaying = false)
-                                    }
-                                    dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
+                                    dispatch(
+                                        HlsPlayerAction.RequestToggleControlsVisibility(
+                                            true, force = true
+                                        )
+                                    )
+                                    _state.update { it.copy(isPlaying = false) }
                                     stopControlsAutoHideTimer()
                                     Log.d(
                                         "HlsPlayerUtils",
@@ -470,10 +497,8 @@ object HlsPlayerUtils {
                                 }
 
                                 Player.STATE_IDLE -> {
-                                    _state.update {
-                                        it.copy(error = null)
-                                    }
                                     dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
+                                    _state.update { it.copy(isPlaying = false, error = null) }
                                     Log.d(
                                         "HlsPlayerUtils",
                                         "Controls forced visible due to IDLE state, timer stopped"
@@ -514,7 +539,7 @@ object HlsPlayerUtils {
                                 else -> "Unknown playback error"
                             }
                             Log.e("HlsPlayerUtils", "onPlayerError: $message", error)
-                            _state.update { it.copy(error = message) }
+                            _state.update { it.copy(isPlaying = false, error = message) }
                             dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
                             abandonAudioFocus()
                             stopIntroOutroCheck()
@@ -543,18 +568,14 @@ object HlsPlayerUtils {
     }
 
     private fun play() {
-        exoPlayer?.let { player ->
-            if (_state.value.isReady && !player.isPlaying) {
-                player.play()
-                dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
-                Log.d("HlsPlayerUtils", "play: started playback, controls shown and timer reset")
-            }
-        }
+        exoPlayer?.play()
+        dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
+        Log.d("HlsPlayerUtils", "play: started playback, controls shown and timer reset")
     }
 
     private fun pause() {
         exoPlayer?.pause()
-        dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
+        dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true, force = true))
         Log.d("HlsPlayerUtils", "pause: playback paused, controls forced visible, timer stopped")
     }
 
@@ -565,9 +586,7 @@ object HlsPlayerUtils {
                 .coerceAtMost(if (duration > 0) duration else Long.MAX_VALUE)
             it.seekTo(clampedPos)
             _state.update {
-                it.copy(
-                    currentPosition = clampedPos
-                )
+                it.copy(currentPosition = clampedPos)
             }
             dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
             Log.d(
@@ -601,13 +620,16 @@ object HlsPlayerUtils {
         }
     }
 
-    private fun setPlaybackSpeed(speed: Float) {
+    private fun setPlaybackSpeed(speed: Float, fromLongPress: Boolean) {
         exoPlayer?.setPlaybackSpeed(speed)
         _state.update {
             it.copy(playbackSpeed = speed)
         }
-        dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
-        Log.d("HlsPlayerUtils", "setPlaybackSpeed: speed=$speed, controls shown and timer reset")
+        dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true, force = fromLongPress))
+        Log.d(
+            "HlsPlayerUtils",
+            "setPlaybackSpeed: speed=$speed, fromLongPress=$fromLongPress, controls shown and timer reset"
+        )
     }
 
     private fun setVideoSurface(surface: Any?) {
@@ -804,10 +826,13 @@ object HlsPlayerUtils {
         }
     }
 
-    private fun handleRequestedControlsVisibility(isVisible: Boolean) {
-        Log.d("HlsPlayerUtils", "handleRequestedControlsVisibility: received $isVisible")
+    private fun handleRequestedControlsVisibility(isVisible: Boolean, force: Boolean) {
+        Log.d(
+            "HlsPlayerUtils",
+            "handleRequestedControlsVisibility: received isVisible=$isVisible, force=$force"
+        )
         _state.update { it.copy(isControlsVisible = isVisible) }
-        if (isVisible) {
+        if (isVisible && !force) {
             startControlsAutoHideTimer()
         } else {
             stopControlsAutoHideTimer()
@@ -821,10 +846,11 @@ object HlsPlayerUtils {
 
     private fun startControlsAutoHideTimer() {
         controlsHideJob?.cancel()
-        if (!_state.value.isPlaying || state.value.playbackState == Player.STATE_ENDED) return
-        controlsHideJob = playerCoroutineScope.launch {
-            delay(CONTROLS_AUTO_HIDE_DELAY_MS)
-            _state.update { it.copy(isControlsVisible = false) }
+        if (_state.value.isPlaying || _state.value.playbackState != Player.STATE_ENDED) {
+            controlsHideJob = playerCoroutineScope.launch {
+                delay(CONTROLS_AUTO_HIDE_DELAY_MS)
+                _state.update { it.copy(isControlsVisible = false) }
+            }
         }
         Log.d("HlsPlayerUtils", "Auto-hide timer started (or reset)")
     }

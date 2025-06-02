@@ -3,6 +3,8 @@ package com.luminoverse.animevibe.ui.animeWatch.videoPlayer
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -22,8 +24,8 @@ fun LoadingIndicator(
         modifier = modifier
             .size(56.dp)
             .clip(CircleShape),
-        enter = fadeIn(tween(300)),
-        exit = fadeOut(tween(300))
+        enter = fadeIn(tween(300)) + scaleIn(tween(300)),
+        exit = fadeOut(tween(300)) + scaleOut(tween(300))
     ) {
         CircularLoadingIndicator(size = 40)
     }
