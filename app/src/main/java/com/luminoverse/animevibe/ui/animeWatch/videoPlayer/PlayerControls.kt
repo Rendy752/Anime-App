@@ -337,13 +337,17 @@ fun PlayerControls(
                 ) {
                     Text(
                         text = buildAnnotatedString {
-                            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                append(formatTimestamp(positionState.currentPosition))
+                            withStyle(
+                                style = SpanStyle(
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            ) { append(formatTimestamp(positionState.currentPosition)) }
+                            withStyle(style = SpanStyle(color = Color.White.copy(alpha = 0.8f))) {
+                                append(" / ")
+                                append(if (positionState.duration > 0) formatTimestamp(positionState.duration) else "--:--")
                             }
-                            append(" / ")
-                            append(if (positionState.duration > 0) formatTimestamp(positionState.duration) else "--:--")
                         },
-                        color = Color.White,
                         fontSize = 14.sp
                     )
                     IconButton(onClick = onFullscreenToggle) {

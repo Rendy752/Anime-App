@@ -171,9 +171,11 @@ class MainActivity : AppCompatActivity() {
         return super.dispatchTouchEvent(ev)
     }
 
+    @Suppress("DEPRECATION")
     private fun setSystemBarAppearance(color: Color) {
         window.statusBarColor = android.graphics.Color.TRANSPARENT
         window.navigationBarColor = android.graphics.Color.TRANSPARENT
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             window.attributes.layoutInDisplayCutoutMode =
                 WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
@@ -231,12 +233,13 @@ class MainActivity : AppCompatActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 while (true) {
-                    delay(500)
+                    delay(1000)
                     val currentTime = System.currentTimeMillis()
                     val isIdle = currentTime - lastInteractionTime > idleTimeoutMillis
                     val currentRoute = navController.currentDestination?.route
-                    if (isIdle && currentRoute?.startsWith("animeWatch/") == null) {
+                    if (isIdle && currentRoute?.startsWith("animeWatch/") != true) {
                         action(true)
+                        break
                     }
                 }
             }

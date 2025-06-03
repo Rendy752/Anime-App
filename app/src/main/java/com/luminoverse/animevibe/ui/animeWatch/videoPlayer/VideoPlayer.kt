@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -91,6 +92,7 @@ fun VideoPlayer(
     var seekAmount by remember { mutableLongStateOf(0L) }
     var isSeeking by remember { mutableStateOf(false) }
     var fastForwardRewindCounter by remember { mutableIntStateOf(0) }
+    var previousPlaybackSpeed by remember { mutableFloatStateOf(controlsState.playbackSpeed) }
     var speedUpText by remember { mutableStateOf("") }
     var isHolding by remember { mutableStateOf(false) }
     var seekDisplayHandler by remember { mutableStateOf<Handler?>(null) }
@@ -169,7 +171,7 @@ fun VideoPlayer(
             longPressJob?.cancel()
             if (isHolding) {
                 isHolding = false
-                HlsPlayerUtils.dispatch(HlsPlayerAction.SetPlaybackSpeed(1f))
+                HlsPlayerUtils.dispatch(HlsPlayerAction.SetPlaybackSpeed(previousPlaybackSpeed))
             }
             Log.d("PlayerView", "PlayerView disposed, MediaControllerCallback unregistered")
         }
@@ -225,26 +227,19 @@ fun VideoPlayer(
     }
 
     fun handleLongPressStart() {
-        if (!isSeeking && playbackStatusState.isPlaying && !isHolding) {
-            isHolding = true
-            speedUpText = "2x speed"
-            HlsPlayerUtils.dispatch(
-                HlsPlayerAction.RequestToggleControlsVisibility(
-                    true,
-                    force = true
-                )
-            )
-            HlsPlayerUtils.dispatch(HlsPlayerAction.SetPlaybackSpeed(2f))
-            Log.d("PlayerView", "Long press started: Speed set to 2x")
-        }
+        if (isSeeking && !playbackStatusState.isPlaying && isHolding && controlsState.playbackSpeed == 2f) return
+        isHolding = true
+        speedUpText = "2x speed"
+        previousPlaybackSpeed = controlsState.playbackSpeed
+        HlsPlayerUtils.dispatch(HlsPlayerAction.SetPlaybackSpeed(2f, fromLongPress = true))
+        Log.d("PlayerView", "Long press started: Speed set to 2x")
     }
 
     fun handleLongPressEnd() {
         if (isHolding) {
             isHolding = false
             speedUpText = ""
-            HlsPlayerUtils.dispatch(HlsPlayerAction.SetPlaybackSpeed(1f))
-            HlsPlayerUtils.dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
+            HlsPlayerUtils.dispatch(HlsPlayerAction.SetPlaybackSpeed(previousPlaybackSpeed))
             Log.d("PlayerView", "Long press ended")
         }
     }
@@ -252,7 +247,7 @@ fun VideoPlayer(
     Box(
         modifier = modifier
             .then(videoSize)
-            .pointerInput(controlsState.isControlsVisible) {
+            .pointerInput(Unit) {
                 awaitEachGesture {
                     val down = awaitFirstDown()
                     Log.d(
@@ -312,9 +307,8 @@ fun VideoPlayer(
             )
         }
 
-        val isPlayerControlsVisible =
-            (controlsState.isControlsVisible || isHolding || isDraggingSeekBar) &&
-                    !calculatedShouldShowResumeOverlay && !isShowNextEpisode && !isPipMode && !isLocked && errorMessage == null
+        val isPlayerControlsVisible = (controlsState.isControlsVisible || isDraggingSeekBar) &&
+                !calculatedShouldShowResumeOverlay && !isShowNextEpisode && !isPipMode && !isLocked && errorMessage == null
         val isShowSpeedUp =
             isHolding && !isPipMode && !isLocked && !calculatedShouldShowResumeOverlay && !isShowNextEpisode && errorMessage == null
         AnimatedVisibility(
@@ -390,8 +384,18 @@ fun VideoPlayer(
                     }
                     HlsPlayerUtils.dispatch(HlsPlayerAction.ToggleLock(!isLocked))
                 },
-                onSubtitleClick = { showSubtitleSheet = true },
-                onPlaybackSpeedClick = { showPlaybackSpeedSheet = true },
+                onSubtitleClick = {
+                    HlsPlayerUtils.dispatch(
+                        HlsPlayerAction.RequestToggleControlsVisibility(true, force = true)
+                    )
+                    showSubtitleSheet = true
+                },
+                onPlaybackSpeedClick = {
+                    HlsPlayerUtils.dispatch(
+                        HlsPlayerAction.RequestToggleControlsVisibility(true, force = true)
+                    )
+                    showPlaybackSpeedSheet = true
+                },
                 onFullscreenToggle = {
                     if (!isLocked) {
                         (context as? FragmentActivity)?.let { activity ->
@@ -423,7 +427,10 @@ fun VideoPlayer(
                 landscapeWidthFraction = 0.4f,
                 landscapeHeightFraction = 0.7f
             ),
-            onDismiss = { showSubtitleSheet = false }
+            onDismiss = {
+                showSubtitleSheet = false
+                HlsPlayerUtils.dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
+            }
         ) {
             SubtitleContent(
                 tracks = episodeDetailComplement.sources.tracks,
@@ -443,7 +450,10 @@ fun VideoPlayer(
                 landscapeWidthFraction = 0.4f,
                 landscapeHeightFraction = 0.7f
             ),
-            onDismiss = { showPlaybackSpeedSheet = false }
+            onDismiss = {
+                showPlaybackSpeedSheet = false
+                HlsPlayerUtils.dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
+            }
         ) {
             PlaybackSpeedContent(
                 selectedPlaybackSpeed = controlsState.playbackSpeed,
@@ -468,7 +478,7 @@ fun VideoPlayer(
                 isVisible = calculatedShouldShowResumeOverlay,
                 isPipMode = isPipMode,
                 lastTimestamp = timestamp,
-                onClose = {
+                onDismiss = {
                     setShowResumeOverlay(false)
                     HlsPlayerUtils.dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
                 },
@@ -490,6 +500,10 @@ fun VideoPlayer(
             modifier = Modifier.align(Alignment.Center),
             isVisible = isShowNextEpisode,
             nextEpisodeName = nextEpisodeName,
+            onDismiss = {
+                setShowNextEpisode(false)
+                HlsPlayerUtils.dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
+            },
             onRestart = {
                 HlsPlayerUtils.dispatch(HlsPlayerAction.SeekTo(0))
                 HlsPlayerUtils.dispatch(HlsPlayerAction.Play)
@@ -513,7 +527,7 @@ fun VideoPlayer(
         )
 
         val isSkipVisible =
-            !isPipMode && !isLocked && !isDraggingSeekBar && playbackStatusState.playbackState != Player.STATE_ENDED && !calculatedShouldShowResumeOverlay && !isShowNextEpisode && errorMessage == null
+            !isPipMode && !isLocked && !isHolding && !isDraggingSeekBar && playbackStatusState.playbackState != Player.STATE_ENDED && !calculatedShouldShowResumeOverlay && !isShowNextEpisode && errorMessage == null
         SkipButton(
             label = "Skip Intro",
             isVisible = controlsState.showIntroButton && isSkipVisible,
