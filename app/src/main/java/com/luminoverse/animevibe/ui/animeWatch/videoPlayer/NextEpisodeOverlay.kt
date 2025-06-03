@@ -8,7 +8,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material.icons.filled.SkipNext
@@ -35,16 +39,19 @@ fun NextEpisodeOverlay(
 ) {
     AnimatedVisibility(
         modifier = modifier
-            .basicContainer(isPrimary = true, innerPadding = PaddingValues(8.dp))
+            .fillMaxSize()
             .clickable(onClick = onDismiss),
         visible = isVisible,
         enter = fadeIn(),
         exit = fadeOut()
     ) {
         Column(
-            modifier = Modifier.widthIn(min = 192.dp),
+            modifier = Modifier.fillMaxSize()
+                .wrapContentSize(Alignment.Center)
+                .basicContainer(isPrimary = true, innerPadding = PaddingValues(8.dp))
+                .widthIn(min = 192.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.Center
         ) {
             Text(
                 text = nextEpisodeName,
@@ -54,6 +61,7 @@ fun NextEpisodeOverlay(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
+            Spacer(modifier = Modifier.height(8.dp))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)

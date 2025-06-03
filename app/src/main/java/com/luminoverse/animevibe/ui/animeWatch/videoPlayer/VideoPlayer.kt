@@ -495,7 +495,6 @@ fun VideoPlayer(
             )
         }
 
-
         NextEpisodeOverlay(
             modifier = Modifier.align(Alignment.Center),
             isVisible = isShowNextEpisode,

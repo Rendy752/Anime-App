@@ -287,8 +287,7 @@ object HlsPlayerUtils {
                                 Player.STATE_ENDED -> {
                                     dispatch(
                                         HlsPlayerAction.RequestToggleControlsVisibility(
-                                            true,
-                                            force = true
+                                            true, force = true
                                         )
                                     )
                                     stopControlsAutoHideTimer()
@@ -305,8 +304,7 @@ object HlsPlayerUtils {
                                 Player.STATE_IDLE -> {
                                     dispatch(
                                         HlsPlayerAction.RequestToggleControlsVisibility(
-                                            true,
-                                            force = true
+                                            true, force = true
                                         )
                                     )
                                     stopControlsAutoHideTimer()
