@@ -89,7 +89,10 @@ fun CustomModalBottomSheet(
         visible = isVisible,
         enter = fadeIn(tween(300)),
         exit = fadeOut(tween(300)),
-        modifier = modifier.fillMaxSize()
+        modifier = modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.4f))
+            .clickable { onDismiss }
     ) {
         Popup(
             onDismissRequest = onDismiss,
@@ -98,7 +101,6 @@ fun CustomModalBottomSheet(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color.Black.copy(alpha = 0.4f))
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null

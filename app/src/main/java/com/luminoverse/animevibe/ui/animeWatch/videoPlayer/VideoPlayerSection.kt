@@ -180,6 +180,10 @@ fun VideoPlayerSection(
         }
     }
 
+    LaunchedEffect(hlsPlaybackStatusState) {
+        if (hlsPlaybackStatusState.error != null) onPlayerError(hlsPlaybackStatusState.error)
+    }
+
     LaunchedEffect(episodeSourcesQuery, retryCount) {
         delay(500L)
         if (retryCount < maxRetries) {

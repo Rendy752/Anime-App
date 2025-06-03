@@ -151,7 +151,7 @@ fun MainScreen(
             }
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
-            .navigationBarsPadding()
+            .then(if (isCurrentBottomScreen) Modifier.navigationBarsPadding() else Modifier)
     ) {
         NavHost(
             navController = navController,

@@ -138,13 +138,6 @@ fun VideoPlayer(
         }
     }
 
-    LaunchedEffect(isLandscape, isFullscreen) {
-        playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
-        playerView.postDelayed({
-            playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
-        }, 1)
-    }
-
     LaunchedEffect(playbackStatusState.isPlaying) {
         if (playbackStatusState.isPlaying) isFirstLoad = false
     }
@@ -326,11 +319,17 @@ fun VideoPlayer(
                             )
                         )
                     }
-                    view.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                    view.resizeMode =
+                        if (isFullscreen && isLandscape) AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                        else AspectRatioFrameLayout.RESIZE_MODE_FIT
 
                     view.subtitleView?.setPadding(
                         0, 0, 0,
-                        if (!isPipMode && controlsState.isControlsVisible && (isLandscape || !isFullscreen)) 100 else 0
+                        if (!isPipMode && controlsState.isControlsVisible && !(!isLandscape && isFullscreen)) {
+                            if (isFullscreen) 250 else 100
+                        } else {
+                            if (!isPipMode && isFullscreen && isLandscape) 150 else 0
+                        }
                     )
                 }
             )
@@ -413,18 +412,8 @@ fun VideoPlayer(
                     }
                     HlsPlayerUtils.dispatch(HlsPlayerAction.ToggleLock(!isLocked))
                 },
-                onSubtitleClick = {
-                    HlsPlayerUtils.dispatch(
-                        HlsPlayerAction.RequestToggleControlsVisibility(true, force = true)
-                    )
-                    showSubtitleSheet = true
-                },
-                onPlaybackSpeedClick = {
-                    HlsPlayerUtils.dispatch(
-                        HlsPlayerAction.RequestToggleControlsVisibility(true, force = true)
-                    )
-                    showPlaybackSpeedSheet = true
-                },
+                onSubtitleClick = { showSubtitleSheet = true },
+                onPlaybackSpeedClick = { showPlaybackSpeedSheet = true },
                 onFullscreenToggle = {
                     if (!isLocked) {
                         (context as? FragmentActivity)?.let { activity ->
@@ -456,10 +445,7 @@ fun VideoPlayer(
                 landscapeWidthFraction = 0.4f,
                 landscapeHeightFraction = 0.7f
             ),
-            onDismiss = {
-                showSubtitleSheet = false
-                HlsPlayerUtils.dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
-            }
+            onDismiss = { showSubtitleSheet = false }
         ) {
             SubtitleContent(
                 tracks = episodeDetailComplement.sources.tracks,
@@ -479,10 +465,7 @@ fun VideoPlayer(
                 landscapeWidthFraction = 0.4f,
                 landscapeHeightFraction = 0.7f
             ),
-            onDismiss = {
-                showPlaybackSpeedSheet = false
-                HlsPlayerUtils.dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
-            }
+            onDismiss = { showPlaybackSpeedSheet = false }
         ) {
             PlaybackSpeedContent(
                 selectedPlaybackSpeed = controlsState.playbackSpeed,

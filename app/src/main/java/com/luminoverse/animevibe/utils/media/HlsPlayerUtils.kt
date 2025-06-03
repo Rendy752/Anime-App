@@ -104,7 +104,7 @@ object HlsPlayerUtils {
     private var audioFocusRequested: Boolean = false
     private var videoSurface: Any? = null
 
-    private val playerCoroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private var playerCoroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     private var watchStateUpdateJob: Job? = null
     private var introOutroJob: Job? = null
@@ -385,11 +385,14 @@ object HlsPlayerUtils {
             introSkipped = false
             outroSkipped = true
             _playbackStatusState.update { PlaybackStatusState() }
+            _controlsState.update { ControlsState() }
             _positionState.update { positionState }
             stopIntroOutroCheck()
             stopPositionUpdates()
             stopPeriodicWatchStateUpdates()
             stopControlsAutoHideTimer()
+            playerCoroutineScope.cancel()
+            playerCoroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
             exoPlayer?.let { player ->
                 player.stop()
@@ -548,11 +551,12 @@ object HlsPlayerUtils {
         _controlsState.update {
             it.copy(playbackSpeed = speed)
         }
-        dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true, force = fromLongPress))
         Log.d(
             "HlsPlayerUtils",
-            "setPlaybackSpeed: speed=$speed, fromLongPress=$fromLongPress, controls shown and timer reset"
+            "setPlaybackSpeed: speed=$speed, fromLongPress=$fromLongPress"
         )
+        if (fromLongPress) dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true, force = true))
+        else dispatch(HlsPlayerAction.RequestToggleControlsVisibility(false))
     }
 
     private fun setVideoSurface(surface: Any?) {
@@ -747,7 +751,7 @@ object HlsPlayerUtils {
                     Log.d("HlsPlayerUtils", "Selected subtitle: ${track.label}")
                 }
             }
-            dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
+            dispatch(HlsPlayerAction.RequestToggleControlsVisibility(false))
             Log.d("HlsPlayerUtils", "Controls shown and timer reset after setSubtitle")
         } catch (e: Exception) {
             Log.e("HlsPlayerUtils", "Failed to set subtitle", e)
@@ -866,6 +870,8 @@ object HlsPlayerUtils {
             stopControlsAutoHideTimer()
             playerCoroutineScope.cancel()
             _playbackStatusState.update { PlaybackStatusState() }
+            _controlsState.update { ControlsState() }
+            _positionState.update { PositionState() }
             Log.d("HlsPlayerUtils", "HlsPlayerUtils completely released and state reset")
         } catch (e: Exception) {
             Log.e("HlsPlayerUtils", "Failed to release HlsPlayerUtils", e)
