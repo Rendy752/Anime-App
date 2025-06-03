@@ -52,7 +52,8 @@ data class BottomSheetConfig(
     val landscapeHeightFraction: Float = 0.9f,
     val portraitWidthFraction: Float = 0.95f,
     val portraitHeightFraction: Float = 0.6f,
-    val dismissalDragThresholdFraction: Float = 0.3f
+    val dismissalDragThresholdFraction: Float = 0.3f,
+    val navigationBarHeightWhenHiddenDp: Float = 48f
 )
 
 @SuppressLint("ConfigurationScreenWidthHeight")
@@ -61,6 +62,7 @@ fun CustomModalBottomSheet(
     modifier: Modifier = Modifier,
     isVisible: Boolean,
     isLandscape: Boolean,
+    isFullscreen: Boolean = false,
     config: BottomSheetConfig = BottomSheetConfig(),
     onDismiss: () -> Unit,
     content: @Composable () -> Unit
@@ -78,6 +80,15 @@ fun CustomModalBottomSheet(
     var sheetHeightPx by remember { mutableFloatStateOf(0f) }
 
     val dismissalThresholdPx = sheetHeightPx * config.dismissalDragThresholdFraction
+
+    val additionalBottomPadding =
+        remember(isLandscape, isFullscreen, config.navigationBarHeightWhenHiddenDp) {
+            if (!isLandscape && isFullscreen) {
+                config.navigationBarHeightWhenHiddenDp.dp
+            } else {
+                0.dp
+            }
+        }
 
     LaunchedEffect(isVisible) {
         if (isVisible) {
@@ -151,7 +162,7 @@ fun CustomModalBottomSheet(
                             .widthIn(max = (configuration.screenWidthDp * bottomSheetWidthFraction).dp)
                             .heightIn(max = (configuration.screenHeightDp * bottomSheetHeightFraction).dp)
                             .fillMaxWidth()
-                            .padding(bottom = if (isLandscape) 4.dp else 24.dp),
+                            .padding(bottom = if (isLandscape) 4.dp else 24.dp + additionalBottomPadding),
                         shape = shape,
                         color = containerColor,
                         tonalElevation = 8.dp

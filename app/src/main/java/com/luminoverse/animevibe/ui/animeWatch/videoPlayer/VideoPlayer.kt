@@ -440,6 +440,7 @@ fun VideoPlayer(
         CustomModalBottomSheet(
             modifier = Modifier.align(Alignment.BottomCenter),
             isVisible = showSubtitleSheet && !isPipMode && !isLocked,
+            isFullscreen = isFullscreen,
             isLandscape = isLandscape,
             config = BottomSheetConfig(
                 landscapeWidthFraction = 0.4f,
@@ -460,6 +461,7 @@ fun VideoPlayer(
         CustomModalBottomSheet(
             modifier = Modifier.align(Alignment.BottomCenter),
             isVisible = showPlaybackSpeedSheet && !isPipMode && !isLocked,
+            isFullscreen = isFullscreen,
             isLandscape = isLandscape,
             config = BottomSheetConfig(
                 landscapeWidthFraction = 0.4f,
