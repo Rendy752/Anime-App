@@ -18,6 +18,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -36,12 +37,12 @@ import com.luminoverse.animevibe.utils.media.MediaPlaybackAction
 import com.luminoverse.animevibe.utils.media.MediaPlaybackService
 import com.luminoverse.animevibe.utils.media.PlaybackStatusState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
+import androidx.media3.common.PlaybackException
+import com.luminoverse.animevibe.utils.media.PositionState
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.media3.common.PlaybackException
-import kotlinx.coroutines.delay
 
 @SuppressLint("ImplicitSamInstance")
 @OptIn(UnstableApi::class, ExperimentalComposeUiApi::class)
@@ -193,119 +194,6 @@ fun VideoPlayerSection(
         }
     }
 
-    DisposableEffect(Unit) {
-        initializePlayer()
-
-        val playerListener = object : Player.Listener {
-            override fun onPlayerError(error: PlaybackException) {
-                if (retryCount < maxRetries) {
-                    retryCount++
-                    Log.d(
-                        "VideoPlayerSection",
-                        "Playback error, retrying ($retryCount/$maxRetries)"
-                    )
-                    handleSelectedEpisodeServer(episodeSourcesQuery, true)
-                } else {
-                    onPlayerError("Playback failed: ${error.message}")
-                    isLoading = false
-                }
-            }
-
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                if (playbackState == Player.STATE_ENDED) {
-                    Log.d("VideoPlayerSection", "Episode ended, showing next episode overlay")
-                    watchState.episodeDetailComplement.data?.let { episodeDetailComplement ->
-                        val nextEpisode =
-                            episodes.find { it.episodeNo == episodeDetailComplement.servers.episodeNo + 1 }
-                        if (nextEpisode != null) {
-                            nextEpisodeName = nextEpisode.name
-                            isShowNextEpisode = true
-                        } else {
-                            isShowNextEpisode = false
-                        }
-                        isShowResumeOverlay = false
-                        (context as? FragmentActivity)?.window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                    }
-                }
-            }
-        }
-        HlsPlayerUtils.getPlayer()?.addListener(playerListener)
-
-        onDispose {
-            Log.d("VideoPlayerSection", "Disposing VideoPlayerSection")
-            try {
-                HlsPlayerUtils.dispatch(HlsPlayerAction.Pause)
-                Log.d("VideoPlayerSection", "Paused playback before disposal")
-                HlsPlayerUtils.getPlayer()?.removeListener(playerListener)
-
-                mediaPlaybackService?.dispatch(MediaPlaybackAction.QueryForegroundStatus)
-                coroutineScope.launch {
-                    mediaPlaybackService?.state?.collectLatest { state ->
-                        val isNotificationActive = state.isForeground
-                        Log.d("VideoPlayerSection", "isForeground: $isNotificationActive")
-                        if (!isNotificationActive) {
-                            Log.d(
-                                "VideoPlayerSection",
-                                "Stopping MediaPlaybackService (no notification active)"
-                            )
-                            mediaPlaybackService?.dispatch(MediaPlaybackAction.StopService)
-                            if (!application.isMediaServiceBound()) {
-                                context.unbindService(serviceConnection)
-                                Log.d("VideoPlayerSection", "Unbound service")
-                            } else {
-                                Log.d(
-                                    "VideoPlayerSection",
-                                    "Service kept bound by AnimeApplication"
-                                )
-                            }
-                        } else {
-                            Log.d(
-                                "VideoPlayerSection",
-                                "Keeping service alive due to foreground notification"
-                            )
-                        }
-                        this@launch.cancel()
-                    }
-                }
-
-                playerView.player = null
-                HlsPlayerUtils.dispatch(HlsPlayerAction.SetVideoSurface(null))
-            } catch (e: IllegalArgumentException) {
-                Log.w("VideoPlayerSection", "Service already unbound", e)
-            }
-        }
-    }
-
-    LaunchedEffect(episodeSourcesQuery) {
-        Log.d("VideoPlayerSection", "episodeSourcesQuery changed: ${episodeSourcesQuery.id}")
-        watchState.episodeDetailComplement.data?.let {
-            HlsPlayerUtils.dispatch(
-                HlsPlayerAction.SetMedia(
-                    videoData = it.sources,
-                    lastTimestamp = it.lastTimestamp,
-                    isAutoPlayVideo = isAutoPlayVideo,
-                    onReady = {
-                        isLoading = false
-                    },
-                    onError = { error ->
-                        onPlayerError(error)
-                        isLoading = false
-                    }
-                )
-            )
-            setupPlayer(
-                mediaPlaybackService,
-                playerView,
-                it,
-                episodes,
-                episodeSourcesQuery
-            )
-            isShowResumeOverlay = it.lastTimestamp != null
-            isShowNextEpisode = false
-            nextEpisodeName = ""
-        }
-    }
-
     val mediaControllerCallback = remember {
         object : MediaControllerCompat.Callback() {
             override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
@@ -351,6 +239,43 @@ fun VideoPlayerSection(
     }
 
     DisposableEffect(Unit) {
+        initializePlayer()
+
+        val playerListener = object : Player.Listener {
+            override fun onPlayerError(error: PlaybackException) {
+                if (retryCount < maxRetries) {
+                    retryCount++
+                    Log.d(
+                        "VideoPlayerSection",
+                        "Playback error, retrying ($retryCount/$maxRetries)"
+                    )
+                    handleSelectedEpisodeServer(episodeSourcesQuery, true)
+                } else {
+                    onPlayerError("Playback failed: ${error.message}")
+                    isLoading = false
+                }
+            }
+
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                if (playbackState == Player.STATE_ENDED) {
+                    Log.d("VideoPlayerSection", "Episode ended, showing next episode overlay")
+                    watchState.episodeDetailComplement.data?.let { episodeDetailComplement ->
+                        val nextEpisode =
+                            episodes.find { it.episodeNo == episodeDetailComplement.servers.episodeNo + 1 }
+                        if (nextEpisode != null) {
+                            nextEpisodeName = nextEpisode.name
+                            isShowNextEpisode = true
+                        } else {
+                            isShowNextEpisode = false
+                        }
+                        isShowResumeOverlay = false
+                        (context as? FragmentActivity)?.window?.clearFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                    }
+                }
+            }
+        }
+        HlsPlayerUtils.getPlayer()?.addListener(playerListener)
+
         Log.d("VideoPlayerSection", "Initializing MediaBrowser")
         mediaBrowserCompat = MediaBrowserCompat(
             context,
@@ -367,10 +292,81 @@ fun VideoPlayerSection(
             }
         }
         onDispose {
-            Log.d("VideoPlayerSection", "Disconnecting MediaBrowser")
-            mediaControllerCompat?.unregisterCallback(mediaControllerCallback)
-            mediaBrowserCompat?.disconnect()
-            HlsPlayerUtils.dispatch(HlsPlayerAction.SetVideoSurface(null))
+            Log.d("VideoPlayerSection", "Disposing VideoPlayerSection")
+            try {
+                HlsPlayerUtils.dispatch(HlsPlayerAction.Pause)
+                Log.d("VideoPlayerSection", "Paused playback before disposal")
+                HlsPlayerUtils.getPlayer()?.removeListener(playerListener)
+
+                coroutineScope.launch {
+                    mediaPlaybackService?.state?.collectLatest { state ->
+                        val isNotificationActive = state.isForeground
+                        Log.d("VideoPlayerSection", "isForeground: $isNotificationActive")
+                        if (!isNotificationActive) {
+                            Log.d(
+                                "VideoPlayerSection",
+                                "Stopping MediaPlaybackService (no notification active)"
+                            )
+                            mediaPlaybackService?.dispatch(MediaPlaybackAction.StopService)
+                            if (!application.isMediaServiceBound()) {
+                                context.unbindService(serviceConnection)
+                                Log.d("VideoPlayerSection", "Unbound service")
+                            } else {
+                                Log.d(
+                                    "VideoPlayerSection",
+                                    "Service kept bound by AnimeApplication"
+                                )
+                            }
+                        } else {
+                            Log.d(
+                                "VideoPlayerSection",
+                                "Keeping service alive due to foreground notification"
+                            )
+                        }
+                        this@launch.cancel()
+                    }
+                }
+
+                Log.d("VideoPlayerSection", "Disconnecting MediaBrowser")
+                mediaControllerCompat?.unregisterCallback(mediaControllerCallback)
+                mediaBrowserCompat?.disconnect()
+
+                playerView.player = null
+                HlsPlayerUtils.dispatch(HlsPlayerAction.SetVideoSurface(null))
+            } catch (e: IllegalArgumentException) {
+                Log.w("VideoPlayerSection", "Service already unbound", e)
+            }
+        }
+    }
+
+    LaunchedEffect(episodeSourcesQuery) {
+        Log.d("VideoPlayerSection", "episodeSourcesQuery changed: ${episodeSourcesQuery.id}")
+        watchState.episodeDetailComplement.data?.let {
+            HlsPlayerUtils.dispatch(
+                HlsPlayerAction.SetMedia(
+                    videoData = it.sources,
+                    isAutoPlayVideo = isAutoPlayVideo,
+                    positionState = PositionState(
+                        currentPosition = it.lastTimestamp ?: 0,
+                        duration = it.duration ?: 0
+                    ),
+                    onReady = { isLoading = false },
+                    onError = { error ->
+                        onPlayerError(error)
+                        isLoading = false
+                    }
+                )
+            )
+            setupPlayer(
+                mediaPlaybackService,
+                playerView,
+                it,
+                episodes,
+                episodeSourcesQuery
+            )
+            isShowResumeOverlay = it.lastTimestamp != null
+            isShowNextEpisode = false
+            nextEpisodeName = ""
         }
     }
 

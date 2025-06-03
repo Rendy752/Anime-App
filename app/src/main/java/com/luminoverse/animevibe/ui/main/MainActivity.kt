@@ -6,16 +6,12 @@ import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.view.MotionEvent
-import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
@@ -59,9 +55,9 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        WindowCompat.setDecorFitsSystemWindows(window, false)
         installSplashScreen()
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
 
         pipParamsBuilder = PictureInPictureParams.Builder().apply {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -110,8 +106,8 @@ class MainActivity : AppCompatActivity() {
             ) {
                 if (state.isShowIdleDialog) {
                     ConfirmationAlert(
-                        title = "Are you still there?",
-                        message = "It seems you haven't interacted with the app for a while. Would you like to quit the app?",
+                        title = "Are you still there ?",
+                        message = "It seems you haven't interacted with the app for a while. Would you like to quit the app ?",
                         onConfirm = { finish() },
                         onCancel = {
                             mainViewModel.onAction(MainAction.SetIsShowIdleDialog(false))
@@ -128,7 +124,6 @@ class MainActivity : AppCompatActivity() {
                     mainAction = mainViewModel::onAction,
                     hlsPlaybackStatusState = hlsPlaybackStatusState
                 )
-                setSystemBarAppearance(MaterialTheme.colorScheme.surface)
             }
         }
 
@@ -169,20 +164,6 @@ class MainActivity : AppCompatActivity() {
     override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
         lastInteractionTime = System.currentTimeMillis()
         return super.dispatchTouchEvent(ev)
-    }
-
-    @Suppress("DEPRECATION")
-    private fun setSystemBarAppearance(color: Color) {
-        window.statusBarColor = android.graphics.Color.TRANSPARENT
-        window.navigationBarColor = android.graphics.Color.TRANSPARENT
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            window.attributes.layoutInDisplayCutoutMode =
-                WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
-        }
-        val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
-        windowInsetsController.isAppearanceLightStatusBars = color.luminance() > 0.5f
-        windowInsetsController.isAppearanceLightNavigationBars = color.luminance() > 0.5f
     }
 
     override fun onPictureInPictureModeChanged(

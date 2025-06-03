@@ -497,6 +497,7 @@ fun VideoPlayer(
             seekDirection = isShowSeekIndicator,
             seekAmount = seekAmount,
             isLandscape = isLandscape,
+            isFullscreen = isFullscreen,
             errorMessage = errorMessage,
             modifier = Modifier.align(Alignment.Center)
         )

@@ -12,7 +12,6 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -141,21 +140,11 @@ fun MainScreen(
     Column(
         modifier = Modifier
             .pointerInput(Unit) {
-                awaitEachGesture {
+                awaitPointerEventScope {
                     while (true) {
                         val event = awaitPointerEvent()
                         if (event.type == PointerEventType.Press || event.type == PointerEventType.Move) {
                             resetIdleTimer()
-                        }
-                    }
-                }
-                detectHorizontalDragGestures { _, dragAmount ->
-                    if (abs(dragAmount) > 100f && !isNavigating) {
-                        isNavigating = true
-                        coroutineScope.launch(Dispatchers.Main) {
-                            val isNextLogical = if (isRtl) dragAmount > 0 else dragAmount < 0
-                            navigateToAdjacentRoute(isNextLogical, currentRoute, navController)
-                            isNavigating = false
                         }
                     }
                 }
@@ -167,7 +156,20 @@ fun MainScreen(
         NavHost(
             navController = navController,
             startDestination = NavRoute.Home.route,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier
+                .weight(1f)
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures { _, dragAmount ->
+                        if (abs(dragAmount) > 100f && !isNavigating) {
+                            isNavigating = true
+                            coroutineScope.launch(Dispatchers.Main) {
+                                val isNextLogical = if (isRtl) dragAmount > 0 else dragAmount < 0
+                                navigateToAdjacentRoute(isNextLogical, currentRoute, navController)
+                                isNavigating = false
+                            }
+                        }
+                    }
+                },
             enterTransition = { getBottomBarEnterTransition(initialState, targetState, isRtl) },
             exitTransition = { getBottomBarExitTransition(initialState, targetState, isRtl) },
             popEnterTransition = { getBottomBarEnterTransition(initialState, targetState, isRtl) },

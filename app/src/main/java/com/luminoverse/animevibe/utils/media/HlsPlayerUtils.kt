@@ -69,10 +69,10 @@ sealed class HlsPlayerAction {
     data class InitializeHlsPlayer(val context: Context) : HlsPlayerAction()
     data class SetMedia(
         val videoData: EpisodeSourcesResponse,
-        val lastTimestamp: Long? = null,
-        val isAutoPlayVideo: Boolean = true,
-        val onReady: () -> Unit = {},
-        val onError: (String) -> Unit = {}
+        val isAutoPlayVideo: Boolean,
+        val positionState: PositionState,
+        val onReady: () -> Unit,
+        val onError: (String) -> Unit
     ) : HlsPlayerAction()
 
     data object Play : HlsPlayerAction()
@@ -136,8 +136,8 @@ object HlsPlayerUtils {
             is HlsPlayerAction.InitializeHlsPlayer -> initializePlayer(action.context)
             is HlsPlayerAction.SetMedia -> setMedia(
                 action.videoData,
-                action.lastTimestamp,
                 action.isAutoPlayVideo,
+                action.positionState,
                 action.onReady,
                 action.onError
             )
@@ -148,8 +148,7 @@ object HlsPlayerUtils {
             is HlsPlayerAction.FastForward -> fastForward()
             is HlsPlayerAction.Rewind -> rewind()
             is HlsPlayerAction.SetPlaybackSpeed -> setPlaybackSpeed(
-                action.speed,
-                action.fromLongPress
+                action.speed, action.fromLongPress
             )
 
             is HlsPlayerAction.Release -> release()
@@ -376,16 +375,17 @@ object HlsPlayerUtils {
     @OptIn(UnstableApi::class)
     private fun setMedia(
         videoData: EpisodeSourcesResponse,
-        lastTimestamp: Long?,
-        isAutoPlayVideo: Boolean = false,
-        onReady: () -> Unit = {},
-        onError: (String) -> Unit = {}
+        isAutoPlayVideo: Boolean,
+        positionState: PositionState,
+        onReady: () -> Unit,
+        onError: (String) -> Unit
     ) {
         try {
             currentVideoData = videoData
             introSkipped = false
             outroSkipped = true
             _playbackStatusState.update { PlaybackStatusState() }
+            _positionState.update { positionState }
             stopIntroOutroCheck()
             stopPositionUpdates()
             stopPeriodicWatchStateUpdates()
@@ -418,27 +418,36 @@ object HlsPlayerUtils {
                     player.setMediaItem(mediaItemBuilder.build())
                     player.prepare()
                     player.trackSelectionParameters = TrackSelectionParameters.Builder().build()
+                    setSubtitle(videoData.tracks.firstOrNull { it.kind == "captions" && it.default == true })
 
                     if (!isAutoPlayVideo) {
                         pause()
                     } else {
-                        lastTimestamp?.let { timestamp ->
-                            if (timestamp > 0 && timestamp < player.duration) {
-                                seekTo(timestamp)
-                                Log.d("HlsPlayerUtils", "AutoPlay: seekTo timestamp=$timestamp")
+                        playerCoroutineScope.launch {
+                            while (player.playbackState != Player.STATE_READY) {
+                                delay(100)
                             }
+                            positionState.currentPosition.let { timestamp ->
+                                if (timestamp > 0 && timestamp < player.duration) {
+                                    seekTo(timestamp)
+                                    Log.d("HlsPlayerUtils", "AutoPlay: seekTo timestamp=$timestamp")
+                                }
+                            }
+                            player.play()
+                            _playbackStatusState.update { it.copy(isPlaying = true) }
+                            _positionState.update {
+                                it.copy(
+                                    currentPosition = player.currentPosition,
+                                    duration = player.duration
+                                )
+                            }
+                            Log.d("HlsPlayerUtils", "AutoPlay: play called after player ready")
                         }
-                        player.play()
-                        _playbackStatusState.update { it.copy(isPlaying = true) }
-                        Log.d("HlsPlayerUtils", "AutoPlay: play called")
                     }
-
-                    setSubtitle(videoData.tracks.firstOrNull { it.kind == "captions" && it.default == true })
-
                     onReady()
                     Log.d(
                         "HlsPlayerUtils",
-                        "Media set: url=$mediaItemUri, lastTimestamp=$lastTimestamp, isAutoPlayVideo=$isAutoPlayVideo"
+                        "Media set: url=$mediaItemUri, lastTimestamp=${positionState.currentPosition}, isAutoPlayVideo=$isAutoPlayVideo"
                     )
                 } else {
                     val message = "Invalid HLS source"
@@ -499,7 +508,9 @@ object HlsPlayerUtils {
                 .coerceAtMost(if (duration > 0) duration else Long.MAX_VALUE)
             it.seekTo(clampedPos)
             _positionState.update { it.copy(currentPosition = clampedPos) }
-            if (clampedPos >= duration) _playbackStatusState.update { it.copy(playbackState = Player.STATE_ENDED) }
+            if (clampedPos >= duration && _playbackStatusState.value.playbackState != Player.STATE_ENDED && _playbackStatusState.value.playbackState != Player.STATE_IDLE) _playbackStatusState.update {
+                it.copy(playbackState = Player.STATE_ENDED)
+            }
             dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
             Log.d(
                 "HlsPlayer",
@@ -622,13 +633,10 @@ object HlsPlayerUtils {
                 if (player != null && (player.isPlaying || player.playbackState == Player.STATE_BUFFERING)) {
                     val duration = player.duration.takeIf { it > 0 } ?: 0
                     val position = player.currentPosition.coerceAtMost(duration)
-                    if (position >= duration) _playbackStatusState.update { it.copy(playbackState = Player.STATE_ENDED) }
-                    _positionState.update {
-                        it.copy(
-                            currentPosition = position,
-                            duration = duration
-                        )
+                    if (position >= duration && _playbackStatusState.value.playbackState != Player.STATE_ENDED && _playbackStatusState.value.playbackState != Player.STATE_IDLE) _playbackStatusState.update {
+                        it.copy(playbackState = Player.STATE_ENDED)
                     }
+                    _positionState.update { it.copy(currentPosition = position) }
                 }
                 delay(POSITION_UPDATE_INTERVAL_MS)
             }

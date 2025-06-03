@@ -37,21 +37,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import kotlinx.coroutines.launch
 import kotlin.math.max
-import kotlin.math.min
+import kotlin.math.roundToInt
 
 data class BottomSheetConfig(
     val landscapeWidthFraction: Float = 0.7f,
     val landscapeHeightFraction: Float = 0.9f,
     val portraitWidthFraction: Float = 0.95f,
-    val portraitHeightFraction: Float = 0.6f
+    val portraitHeightFraction: Float = 0.6f,
+    val dismissalDragThresholdFraction: Float = 0.3f
 )
 
 @SuppressLint("ConfigurationScreenWidthHeight")
@@ -71,15 +72,12 @@ fun CustomModalBottomSheet(
         if (isLandscape) config.landscapeHeightFraction else config.portraitHeightFraction
     val containerColor = MaterialTheme.colorScheme.surfaceContainer
     val shape = RoundedCornerShape(24.dp)
-    val density = LocalDensity.current
     val coroutineScope = rememberCoroutineScope()
 
-    val maxHeightPx =
-        with(density) { (configuration.screenHeightDp * bottomSheetHeightFraction).dp.toPx() }
-    val screenHeightPx = with(density) { configuration.screenHeightDp.dp.toPx() }
-    val maxDownwardOffsetPx = screenHeightPx - maxHeightPx
-    val minSwipeDistancePx = with(density) { 150.dp.toPx() }
     var swipeOffsetY by remember { mutableFloatStateOf(0f) }
+    var sheetHeightPx by remember { mutableFloatStateOf(0f) }
+
+    val dismissalThresholdPx = sheetHeightPx * config.dismissalDragThresholdFraction
 
     LaunchedEffect(isVisible) {
         if (isVisible) {
@@ -121,11 +119,11 @@ fun CustomModalBottomSheet(
                     ),
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .offset { IntOffset(0, swipeOffsetY.toInt()) }
+                        .offset { IntOffset(0, swipeOffsetY.roundToInt()) }
                         .pointerInput(Unit) {
                             detectVerticalDragGestures(
                                 onDragEnd = {
-                                    if (swipeOffsetY > minSwipeDistancePx) {
+                                    if (swipeOffsetY > dismissalThresholdPx) {
                                         onDismiss()
                                     } else {
                                         coroutineScope.launch {
@@ -138,9 +136,12 @@ fun CustomModalBottomSheet(
                                 }
                             ) { change, dragAmount ->
                                 val newOffset = swipeOffsetY + dragAmount
-                                swipeOffsetY = max(0f, min(maxDownwardOffsetPx, newOffset))
+                                swipeOffsetY = max(0f, newOffset)
                                 change.consume()
                             }
+                        }
+                        .onGloballyPositioned { coordinates ->
+                            sheetHeightPx = coordinates.size.height.toFloat()
                         }
                 ) {
                     Surface(
