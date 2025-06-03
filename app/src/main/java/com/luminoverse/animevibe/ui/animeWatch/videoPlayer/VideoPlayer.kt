@@ -27,12 +27,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.viewinterop.AndroidView
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.ui.AspectRatioFrameLayout
+import androidx.media3.ui.CaptionStyleCompat
 import androidx.media3.ui.PlayerView
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
@@ -95,6 +100,8 @@ fun VideoPlayer(
     var previousPlaybackSpeed by remember { mutableFloatStateOf(controlsState.playbackSpeed) }
     var speedUpText by remember { mutableStateOf("") }
     var isHolding by remember { mutableStateOf(false) }
+    var isDraggingSeekBar by remember { mutableStateOf(false) }
+    var dragSeekPosition by remember { mutableLongStateOf(0L) }
     var seekDisplayHandler by remember { mutableStateOf<Handler?>(null) }
     var seekDisplayRunnable by remember { mutableStateOf<Runnable?>(null) }
     var longPressJob by remember { mutableStateOf<Job?>(null) }
@@ -103,9 +110,6 @@ fun VideoPlayer(
 
     var showSubtitleSheet by remember { mutableStateOf(false) }
     var showPlaybackSpeedSheet by remember { mutableStateOf(false) }
-
-    var isDraggingSeekBar by remember { mutableStateOf(false) }
-    var dragSeekPosition by remember { mutableLongStateOf(0L) }
 
     LaunchedEffect(Unit) {
         seekDisplayHandler = Handler(Looper.getMainLooper())
@@ -132,6 +136,13 @@ fun VideoPlayer(
             HlsPlayerUtils.dispatch(HlsPlayerAction.Play)
             Log.d("PlayerView", "Seek actions completed and states reset.")
         }
+    }
+
+    LaunchedEffect(isLandscape, isFullscreen) {
+        playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
+        playerView.postDelayed({
+            playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+        }, 1)
     }
 
     LaunchedEffect(playbackStatusState.isPlaying) {
@@ -298,12 +309,30 @@ fun VideoPlayer(
                 onClick = { handleSingleTap() }
             )
         } else {
-            PlayerViewWrapper(
-                playerView = playerView,
-                controlsAreVisible = controlsState.isControlsVisible,
-                isPipMode = isPipMode,
-                isFullscreen = isFullscreen,
-                isLandscape = isLandscape
+            AndroidView(
+                factory = { playerView },
+                modifier = Modifier.fillMaxSize(),
+                update = { view ->
+                    view.useController = false
+                    view.subtitleView?.apply {
+                        setStyle(
+                            CaptionStyleCompat(
+                                Color.White.toArgb(),
+                                Color.Transparent.toArgb(),
+                                Color.Transparent.toArgb(),
+                                CaptionStyleCompat.EDGE_TYPE_OUTLINE,
+                                Color.Black.toArgb(),
+                                null
+                            )
+                        )
+                    }
+                    view.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+
+                    view.subtitleView?.setPadding(
+                        0, 0, 0,
+                        if (!isPipMode && controlsState.isControlsVisible && (isLandscape || !isFullscreen)) 100 else 0
+                    )
+                }
             )
         }
 

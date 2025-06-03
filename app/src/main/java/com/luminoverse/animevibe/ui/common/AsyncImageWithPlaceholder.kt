@@ -68,6 +68,7 @@ fun AsyncImageWithPlaceholder(
     Box(
         modifier = modifier
             .size(100.dp, 150.dp)
+            .clip(shape)
             .then(
                 if (onClick != null) {
                     Modifier.clickable { onClick() }
@@ -80,9 +81,7 @@ fun AsyncImageWithPlaceholder(
         AsyncImage(
             model = model,
             contentDescription = contentDescription,
-            modifier = Modifier
-                .fillMaxSize()
-                .clip(shape),
+            modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
             alignment = Alignment.TopCenter,
             onSuccess = { isImageLoading = false },

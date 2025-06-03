@@ -499,6 +499,7 @@ object HlsPlayerUtils {
                 .coerceAtMost(if (duration > 0) duration else Long.MAX_VALUE)
             it.seekTo(clampedPos)
             _positionState.update { it.copy(currentPosition = clampedPos) }
+            if (clampedPos >= duration) _playbackStatusState.update { it.copy(playbackState = Player.STATE_ENDED) }
             dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
             Log.d(
                 "HlsPlayer",
@@ -621,6 +622,7 @@ object HlsPlayerUtils {
                 if (player != null && (player.isPlaying || player.playbackState == Player.STATE_BUFFERING)) {
                     val duration = player.duration.takeIf { it > 0 } ?: 0
                     val position = player.currentPosition.coerceAtMost(duration)
+                    if (position >= duration) _playbackStatusState.update { it.copy(playbackState = Player.STATE_ENDED) }
                     _positionState.update {
                         it.copy(
                             currentPosition = position,

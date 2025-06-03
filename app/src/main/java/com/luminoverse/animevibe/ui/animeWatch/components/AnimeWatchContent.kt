@@ -63,10 +63,7 @@ fun AnimeWatchContent(
                         episodes = episodeList,
                         episodeSourcesQuery = query,
                         handleSelectedEpisodeServer = { episodeSourcesQuery, isRefresh ->
-                            handleSelectedEpisodeServer(
-                                episodeSourcesQuery,
-                                isRefresh
-                            )
+                            handleSelectedEpisodeServer(episodeSourcesQuery, isRefresh)
                         },
                         hlsPlaybackStatusState = hlsPlaybackStatusState,
                         isPipMode = playerUiState.isPipMode,
