@@ -89,9 +89,7 @@ fun VideoPlayer(
     val positionState by HlsPlayerUtils.positionState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
-
     var isFirstLoad by remember { mutableStateOf(true) }
-    val isLocked = controlsState.isLocked
 
     var isShowSeekIndicator by remember { mutableIntStateOf(0) }
     var seekAmount by remember { mutableLongStateOf(0L) }
@@ -164,7 +162,7 @@ fun VideoPlayer(
     DisposableEffect(
         mediaController,
         isPipMode,
-        isLocked,
+        controlsState.isLocked,
         calculatedShouldShowResumeOverlay,
         isShowNextEpisode
     ) {
@@ -182,14 +180,14 @@ fun VideoPlayer(
     }
 
     fun handleSingleTap() {
-        if (!isLocked && !isHolding) {
+        if (!controlsState.isLocked && !isHolding) {
             HlsPlayerUtils.dispatch(HlsPlayerAction.RequestToggleControlsVisibility(!controlsState.isControlsVisible))
             Log.d("PlayerView", "Single tap: Toggled controls visibility")
         }
     }
 
     fun handleDoubleTap(x: Float, screenWidth: Float) {
-        if (!isLocked && playbackStatusState.isReady) {
+        if (!controlsState.isLocked && playbackStatusState.isReady) {
             Log.d("PlayerView", "Double tap at x=$x")
             val newSeekDirection = when {
                 x < screenWidth * 0.4 -> -1
@@ -231,10 +229,11 @@ fun VideoPlayer(
     }
 
     fun handleLongPressStart() {
-        if (isSeeking && !playbackStatusState.isPlaying && isHolding && controlsState.playbackSpeed == 2f) return
+        if (controlsState.isLocked) return
         isHolding = true
         speedUpText = "2x speed"
         previousPlaybackSpeed = controlsState.playbackSpeed
+        HlsPlayerUtils.dispatch(HlsPlayerAction.Play)
         HlsPlayerUtils.dispatch(HlsPlayerAction.SetPlaybackSpeed(2f, fromLongPress = true))
         Log.d("PlayerView", "Long press started: Speed set to 2x")
     }
@@ -336,9 +335,9 @@ fun VideoPlayer(
         }
 
         val isPlayerControlsVisible = (controlsState.isControlsVisible || isDraggingSeekBar) &&
-                !calculatedShouldShowResumeOverlay && !isShowNextEpisode && !isPipMode && !isLocked && errorMessage == null
+                !calculatedShouldShowResumeOverlay && !isShowNextEpisode && !isPipMode && !controlsState.isLocked && errorMessage == null
         val isShowSpeedUp =
-            isHolding && !isPipMode && !isLocked && !calculatedShouldShowResumeOverlay && !isShowNextEpisode && errorMessage == null
+            isHolding && !isPipMode && !controlsState.isLocked && !calculatedShouldShowResumeOverlay && !isShowNextEpisode && errorMessage == null
         AnimatedVisibility(
             visible = isPlayerControlsVisible,
             enter = fadeIn(),
@@ -350,7 +349,7 @@ fun VideoPlayer(
                 onHandleBackPress = onHandleBackPress,
                 episodeDetailComplement = episodeDetailComplement,
                 episodes = episodes,
-                isLocked = isLocked,
+                isLocked = controlsState.isLocked,
                 isFullscreen = isFullscreen,
                 isShowSpeedUp = isShowSpeedUp,
                 handlePlay = { HlsPlayerUtils.dispatch(HlsPlayerAction.Play) },
@@ -410,12 +409,13 @@ fun VideoPlayer(
                             )
                         }
                     }
-                    HlsPlayerUtils.dispatch(HlsPlayerAction.ToggleLock(!isLocked))
+                    HlsPlayerUtils.dispatch(HlsPlayerAction.Play)
+                    HlsPlayerUtils.dispatch(HlsPlayerAction.ToggleLock(!controlsState.isLocked))
                 },
                 onSubtitleClick = { showSubtitleSheet = true },
                 onPlaybackSpeedClick = { showPlaybackSpeedSheet = true },
                 onFullscreenToggle = {
-                    if (!isLocked) {
+                    if (!controlsState.isLocked) {
                         (context as? FragmentActivity)?.let { activity ->
                             activity.window?.let { window ->
                                 FullscreenUtils.handleFullscreenToggle(
@@ -439,7 +439,7 @@ fun VideoPlayer(
 
         CustomModalBottomSheet(
             modifier = Modifier.align(Alignment.BottomCenter),
-            isVisible = showSubtitleSheet && !isPipMode && !isLocked,
+            isVisible = showSubtitleSheet && !isPipMode && !controlsState.isLocked,
             isFullscreen = isFullscreen,
             isLandscape = isLandscape,
             config = BottomSheetConfig(
@@ -460,7 +460,7 @@ fun VideoPlayer(
 
         CustomModalBottomSheet(
             modifier = Modifier.align(Alignment.BottomCenter),
-            isVisible = showPlaybackSpeedSheet && !isPipMode && !isLocked,
+            isVisible = showPlaybackSpeedSheet && !isPipMode && !controlsState.isLocked,
             isFullscreen = isFullscreen,
             isLandscape = isLandscape,
             config = BottomSheetConfig(
@@ -541,7 +541,7 @@ fun VideoPlayer(
         )
 
         val isSkipVisible =
-            !isPipMode && !isLocked && !isHolding && !isDraggingSeekBar && playbackStatusState.playbackState != Player.STATE_ENDED && !calculatedShouldShowResumeOverlay && !isShowNextEpisode && errorMessage == null
+            !isPipMode && !controlsState.isLocked && !isHolding && !isDraggingSeekBar && playbackStatusState.playbackState != Player.STATE_ENDED && !calculatedShouldShowResumeOverlay && !isShowNextEpisode && errorMessage == null
         SkipButton(
             label = "Skip Intro",
             isVisible = controlsState.showIntroButton && isSkipVisible,
@@ -570,12 +570,12 @@ fun VideoPlayer(
         )
 
         LockButton(
-            isLocked = isLocked && !isPipMode && errorMessage == null,
+            isLocked = controlsState.isLocked && !isPipMode && errorMessage == null,
             onClick = {
                 (context as? FragmentActivity)?.let { activity ->
                     activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
                 }
-                HlsPlayerUtils.dispatch(HlsPlayerAction.ToggleLock(!isLocked))
+                HlsPlayerUtils.dispatch(HlsPlayerAction.ToggleLock(!controlsState.isLocked))
                 HlsPlayerUtils.dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
             },
             modifier = Modifier.align(Alignment.TopEnd)
