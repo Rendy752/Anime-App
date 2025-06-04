@@ -71,6 +71,7 @@ fun VideoPlayerSection(
     val maxRetries = 3
 
     val playerView = remember { PlayerView(context).apply { useController = false } }
+    val player by remember { mutableStateOf(HlsPlayerUtils.getPlayer()) }
     var mediaBrowserCompat by remember { mutableStateOf<MediaBrowserCompat?>(null) }
     var mediaControllerCompat by remember { mutableStateOf<MediaControllerCompat?>(null) }
     var mediaPlaybackService by remember { mutableStateOf<MediaPlaybackService?>(null) }
@@ -89,7 +90,6 @@ fun VideoPlayerSection(
         episodes: List<Episode>,
         query: EpisodeSourcesQuery
     ) {
-        val player = HlsPlayerUtils.getPlayer()
         if (player != null) {
             playerView.player = player
             HlsPlayerUtils.dispatch(HlsPlayerAction.UpdateWatchState(updateStoredWatchState = updateStoredWatchState))
@@ -278,7 +278,7 @@ fun VideoPlayerSection(
                 }
             }
         }
-        HlsPlayerUtils.getPlayer()?.addListener(playerListener)
+        player?.addListener(playerListener)
 
         Log.d("VideoPlayerSection", "Initializing MediaBrowser")
         mediaBrowserCompat = MediaBrowserCompat(
@@ -300,32 +300,22 @@ fun VideoPlayerSection(
             try {
                 HlsPlayerUtils.dispatch(HlsPlayerAction.Pause)
                 Log.d("VideoPlayerSection", "Paused playback before disposal")
-                HlsPlayerUtils.getPlayer()?.removeListener(playerListener)
-
+                player?.removeListener(playerListener)
                 coroutineScope.launch {
                     mediaPlaybackService?.state?.collectLatest { state ->
                         val isNotificationActive = state.isForeground
                         Log.d("VideoPlayerSection", "isForeground: $isNotificationActive")
                         if (!isNotificationActive) {
-                            Log.d(
-                                "VideoPlayerSection",
-                                "Stopping MediaPlaybackService (no notification active)"
-                            )
+                            Log.d("VideoPlayerSection", "Stopping MediaPlaybackService (no notification active)")
                             mediaPlaybackService?.dispatch(MediaPlaybackAction.StopService)
                             if (!application.isMediaServiceBound()) {
                                 context.unbindService(serviceConnection)
                                 Log.d("VideoPlayerSection", "Unbound service")
                             } else {
-                                Log.d(
-                                    "VideoPlayerSection",
-                                    "Service kept bound by AnimeApplication"
-                                )
+                                Log.d("VideoPlayerSection", "Service kept bound by AnimeApplication")
                             }
                         } else {
-                            Log.d(
-                                "VideoPlayerSection",
-                                "Keeping service alive due to foreground notification"
-                            )
+                            Log.d("VideoPlayerSection", "Keeping service alive due to foreground notification")
                         }
                         this@launch.cancel()
                     }
@@ -378,30 +368,33 @@ fun VideoPlayerSection(
         if (!isScreenOn) HlsPlayerUtils.dispatch(HlsPlayerAction.Pause)
     }
 
-    watchState.episodeDetailComplement.data?.let {
-        VideoPlayer(
-            playerView = playerView,
-            playbackStatusState = hlsPlaybackStatusState,
-            mediaController = mediaControllerCompat,
-            onHandleBackPress = onHandleBackPress,
-            episodeDetailComplement = it,
-            episodes = episodes,
-            episodeSourcesQuery = episodeSourcesQuery,
-            handleSelectedEpisodeServer = handleSelectedEpisodeServer,
-            isPipMode = isPipMode,
-            onEnterPipMode = onEnterPipMode,
-            isFullscreen = isFullscreen,
-            onFullscreenChange = onFullscreenChange,
-            isAutoPlayVideo = isAutoPlayVideo,
-            isShowResumeOverlay = isShowResumeOverlay,
-            setShowResumeOverlay = { isShowResumeOverlay = it },
-            isShowNextEpisode = isShowNextEpisode,
-            setShowNextEpisode = { isShowNextEpisode = it },
-            nextEpisodeName = nextEpisodeName,
-            isLandscape = isLandscape,
-            errorMessage = watchState.errorMessage,
-            modifier = modifier,
-            videoSize = videoSize
-        )
+    watchState.episodeDetailComplement.data?.let { episodeDetailComplement ->
+        player?.let {
+            VideoPlayer(
+                playerView = playerView,
+                player = it,
+                playbackStatusState = hlsPlaybackStatusState,
+                mediaController = mediaControllerCompat,
+                onHandleBackPress = onHandleBackPress,
+                episodeDetailComplement = episodeDetailComplement,
+                episodes = episodes,
+                episodeSourcesQuery = episodeSourcesQuery,
+                handleSelectedEpisodeServer = handleSelectedEpisodeServer,
+                isPipMode = isPipMode,
+                onEnterPipMode = onEnterPipMode,
+                isFullscreen = isFullscreen,
+                onFullscreenChange = onFullscreenChange,
+                isAutoPlayVideo = isAutoPlayVideo,
+                isShowResumeOverlay = isShowResumeOverlay,
+                setShowResumeOverlay = { isShowResumeOverlay = it },
+                isShowNextEpisode = isShowNextEpisode,
+                setShowNextEpisode = { isShowNextEpisode = it },
+                nextEpisodeName = nextEpisodeName,
+                isLandscape = isLandscape,
+                errorMessage = watchState.errorMessage,
+                modifier = modifier,
+                videoSize = videoSize
+            )
+        }
     }
 }

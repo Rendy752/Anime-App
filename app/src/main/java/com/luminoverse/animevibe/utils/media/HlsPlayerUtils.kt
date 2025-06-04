@@ -557,8 +557,7 @@ object HlsPlayerUtils {
         )
         if (fromLongPress) dispatch(
             HlsPlayerAction.RequestToggleControlsVisibility(
-                true,
-                force = true
+                true, force = true
             )
         )
         else dispatch(HlsPlayerAction.RequestToggleControlsVisibility(false))

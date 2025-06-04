@@ -68,6 +68,7 @@ fun PlayerControls(
     episodeDetailComplement: EpisodeDetailComplement,
     episodes: List<Episode>,
     isLocked: Boolean,
+    isHolding: Boolean,
     isFullscreen: Boolean,
     isShowSpeedUp: Boolean,
     handlePlay: () -> Unit,
@@ -95,7 +96,7 @@ fun PlayerControls(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.6f))
+            .background(Color.Black.copy(alpha = if(isHolding) 0f else 0.6f))
     ) {
         AnimatedVisibility(
             visible = shouldShowControls,

@@ -63,6 +63,7 @@ private const val DOUBLE_TAP_THRESHOLD_MILLIS = 300L
 @Composable
 fun VideoPlayer(
     playerView: PlayerView,
+    player: Player,
     playbackStatusState: PlaybackStatusState,
     mediaController: MediaControllerCompat?,
     onHandleBackPress: () -> Unit,
@@ -229,11 +230,10 @@ fun VideoPlayer(
     }
 
     fun handleLongPressStart() {
-        if (controlsState.isLocked) return
+        if (controlsState.isLocked || !player.isPlaying || player.playbackState != Player.STATE_READY) return
         isHolding = true
         speedUpText = "2x speed"
         previousPlaybackSpeed = controlsState.playbackSpeed
-        HlsPlayerUtils.dispatch(HlsPlayerAction.Play)
         HlsPlayerUtils.dispatch(HlsPlayerAction.SetPlaybackSpeed(2f, fromLongPress = true))
         Log.d("PlayerView", "Long press started: Speed set to 2x")
     }
@@ -350,6 +350,7 @@ fun VideoPlayer(
                 episodeDetailComplement = episodeDetailComplement,
                 episodes = episodes,
                 isLocked = controlsState.isLocked,
+                isHolding = isHolding,
                 isFullscreen = isFullscreen,
                 isShowSpeedUp = isShowSpeedUp,
                 handlePlay = { HlsPlayerUtils.dispatch(HlsPlayerAction.Play) },
