@@ -77,7 +77,7 @@ fun AnimeWatchScreen(
                         isFullscreen = true,
                         isLandscape = mainState.isLandscape,
                         activity = activity,
-                        onFullscreenChange = { onAction(WatchAction.SetFullscreen(it)) }
+                        setFullscreenChange = { onAction(WatchAction.SetFullscreen(it)) }
                     )
                 }
             }

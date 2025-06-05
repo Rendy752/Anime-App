@@ -59,10 +59,12 @@ fun AnimeWatchContent(
                 if (watchState.episodeDetailComplement is Resource.Success) {
                     VideoPlayerSection(
                         watchState = watchState,
+                        playerUiState = playerUiState,
                         coreState = playerCoreState,
                         controlsState = controlsState,
                         positionState = positionState,
                         playerAction = dispatchPlayerAction,
+                        isLandscape = mainState.isLandscape,
                         getPlayer = getPlayer,
                         updateStoredWatchState = {
                             onAction(WatchAction.UpdateEpisodeDetailComplement(it))
@@ -80,12 +82,12 @@ fun AnimeWatchContent(
                                 )
                             )
                         },
-                        isPipMode = playerUiState.isPipMode,
                         onEnterPipMode = onEnterPipMode,
-                        isFullscreen = playerUiState.isFullscreen,
-                        onFullscreenChange = { onAction(WatchAction.SetFullscreen(it)) },
-                        isLandscape = mainState.isLandscape,
-                        onPlayerError = { onAction(WatchAction.SetErrorMessage(it)) },
+                        setIsLoading = { onAction(WatchAction.SetIsLoading(it)) },
+                        setFullscreenChange = { onAction(WatchAction.SetFullscreen(it)) },
+                        setShowResume = { onAction(WatchAction.SetShowResume(it)) },
+                        setShowNextEpisode = { onAction(WatchAction.SetShowNextEpisode(it)) },
+                        setPlayerError = { onAction(WatchAction.SetErrorMessage(it)) },
                         modifier = modifier,
                         videoSize = videoSize
                     )

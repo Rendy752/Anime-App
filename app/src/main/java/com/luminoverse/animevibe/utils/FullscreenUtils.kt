@@ -17,7 +17,7 @@ object FullscreenUtils {
         isFullscreen: Boolean,
         isLandscape: Boolean,
         activity: Activity?,
-        onFullscreenChange: (Boolean) -> Unit,
+        setFullscreenChange: (Boolean) -> Unit,
         isLockLandscapeOrientation: Boolean = false
     ) {
         val newFullscreenState = !isFullscreen
@@ -46,6 +46,6 @@ object FullscreenUtils {
             }
         }
 
-        onFullscreenChange(newFullscreenState)
+        setFullscreenChange(newFullscreenState)
     }
 }

@@ -42,6 +42,7 @@ import androidx.media3.ui.PlayerView
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
+import com.luminoverse.animevibe.ui.animeWatch.PlayerUiState
 import com.luminoverse.animevibe.ui.common.BottomSheetConfig
 import com.luminoverse.animevibe.ui.common.CustomModalBottomSheet
 import com.luminoverse.animevibe.ui.common.ScreenshotDisplay
@@ -50,6 +51,7 @@ import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
 import com.luminoverse.animevibe.utils.media.PositionState
+import com.luminoverse.animevibe.utils.resource.Resource
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
@@ -67,25 +69,22 @@ fun VideoPlayer(
     playerView: PlayerView,
     player: ExoPlayer,
     coreState: PlayerCoreState,
-    controlsState:  StateFlow<ControlsState>,
-    positionState:  StateFlow<PositionState>,
+    playerUiState: PlayerUiState,
+    controlsState: StateFlow<ControlsState>,
+    positionState: StateFlow<PositionState>,
     playerAction: (HlsPlayerAction) -> Unit,
     mediaController: MediaControllerCompat?,
     onHandleBackPress: () -> Unit,
     episodeDetailComplement: EpisodeDetailComplement,
+    episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
     episodes: List<Episode>,
     episodeSourcesQuery: EpisodeSourcesQuery,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery, Boolean) -> Unit,
-    isPipMode: Boolean,
     onEnterPipMode: () -> Unit,
-    isFullscreen: Boolean,
-    onFullscreenChange: (Boolean) -> Unit,
     isAutoPlayVideo: Boolean,
-    isShowResumeOverlay: Boolean,
-    setShowResumeOverlay: (Boolean) -> Unit,
-    isShowNextEpisode: Boolean,
+    setFullscreenChange: (Boolean) -> Unit,
+    setShowResume: (Boolean) -> Unit,
     setShowNextEpisode: (Boolean) -> Unit,
-    nextEpisodeName: String,
     isLandscape: Boolean,
     errorMessage: String?,
     modifier: Modifier = Modifier,
@@ -93,6 +92,9 @@ fun VideoPlayer(
 ) {
     val controlsState by controlsState.collectAsStateWithLifecycle()
     val positionState by positionState.collectAsStateWithLifecycle()
+    val currentEpisode = episodeDetailComplement.servers.episodeNo
+    val prevEpisode = episodes.find { it.episodeNo == currentEpisode - 1 }
+    val nextEpisode = episodes.find { it.episodeNo == currentEpisode + 1 }
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -149,17 +151,17 @@ fun VideoPlayer(
         }
     }
 
-    val calculatedShouldShowResumeOverlay = !isAutoPlayVideo && isShowResumeOverlay &&
+    val calculatedShouldShowResumeOverlay = !isAutoPlayVideo && playerUiState.isShowResume &&
             episodeDetailComplement.lastTimestamp != null &&
             coreState.playbackState == Player.STATE_READY && !player.isPlaying &&
             errorMessage == null
 
     DisposableEffect(
         mediaController,
-        isPipMode,
+        playerUiState.isPipMode,
         controlsState.isLocked,
         calculatedShouldShowResumeOverlay,
-        isShowNextEpisode
+        playerUiState.isShowNextEpisode
     ) {
         onDispose {
             seekDisplayHandler?.removeCallbacksAndMessages(null)
@@ -313,16 +315,16 @@ fun VideoPlayer(
                     view.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
                     view.subtitleView?.setPadding(
                         0, 0, 0,
-                        if (!isPipMode && controlsState.isControlsVisible && (isLandscape || !isFullscreen)) 100 else 0
+                        if (!playerUiState.isPipMode && controlsState.isControlsVisible && (isLandscape || !playerUiState.isFullscreen)) 100 else 0
                     )
                 }
             )
         }
 
         val isPlayerControlsVisible = (controlsState.isControlsVisible || isDraggingSeekBar) &&
-                !calculatedShouldShowResumeOverlay && !isShowNextEpisode && !isPipMode && !controlsState.isLocked && errorMessage == null
+                !calculatedShouldShowResumeOverlay && !playerUiState.isShowNextEpisode && !playerUiState.isPipMode && !controlsState.isLocked && errorMessage == null
         val isShowSpeedUp =
-            isHolding && !isPipMode && !controlsState.isLocked && !calculatedShouldShowResumeOverlay && !isShowNextEpisode && errorMessage == null
+            isHolding && !playerUiState.isPipMode && !controlsState.isLocked && !calculatedShouldShowResumeOverlay && !playerUiState.isShowNextEpisode && errorMessage == null
         AnimatedVisibility(
             visible = isPlayerControlsVisible,
             enter = fadeIn(),
@@ -337,7 +339,7 @@ fun VideoPlayer(
                 episodes = episodes,
                 isLocked = controlsState.isLocked,
                 isHolding = isHolding,
-                isFullscreen = isFullscreen,
+                isFullscreen = playerUiState.isFullscreen,
                 isShowSpeedUp = isShowSpeedUp,
                 handlePlay = { playerAction(HlsPlayerAction.Play) },
                 handlePause = { playerAction(HlsPlayerAction.Pause) },
@@ -352,8 +354,6 @@ fun VideoPlayer(
                     }
                 },
                 onPreviousEpisode = {
-                    val currentEpisode = episodeDetailComplement.servers.episodeNo
-                    val prevEpisode = episodes.find { it.episodeNo == currentEpisode - 1 }
                     if (prevEpisode != null) {
                         handleSelectedEpisodeServer(
                             episodeSourcesQuery.copy(id = prevEpisode.episodeId),
@@ -362,12 +362,9 @@ fun VideoPlayer(
                     }
                 },
                 onNextEpisode = {
-                    val currentEpisode = episodeDetailComplement.servers.episodeNo
-                    val nextEpisode = episodes.find { it.episodeNo == currentEpisode + 1 }
                     if (nextEpisode != null) {
                         handleSelectedEpisodeServer(
-                            episodeSourcesQuery.copy(id = nextEpisode.episodeId),
-                            false
+                            episodeSourcesQuery.copy(id = nextEpisode.episodeId), false
                         )
                     }
                 },
@@ -391,7 +388,7 @@ fun VideoPlayer(
                                 isFullscreen = false,
                                 isLandscape = false,
                                 activity = activity,
-                                onFullscreenChange = onFullscreenChange,
+                                setFullscreenChange = setFullscreenChange,
                                 isLockLandscapeOrientation = true
                             )
                         }
@@ -407,10 +404,10 @@ fun VideoPlayer(
                             activity.window?.let { window ->
                                 FullscreenUtils.handleFullscreenToggle(
                                     window = window,
-                                    isFullscreen = isFullscreen,
+                                    isFullscreen = playerUiState.isFullscreen,
                                     isLandscape = isLandscape,
                                     activity = activity,
-                                    onFullscreenChange = onFullscreenChange
+                                    setFullscreenChange = setFullscreenChange
                                 )
                             }
                         }
@@ -426,8 +423,8 @@ fun VideoPlayer(
 
         CustomModalBottomSheet(
             modifier = Modifier.align(Alignment.BottomCenter),
-            isVisible = showSubtitleSheet && !isPipMode && !controlsState.isLocked,
-            isFullscreen = isFullscreen,
+            isVisible = showSubtitleSheet && !playerUiState.isPipMode && !controlsState.isLocked,
+            isFullscreen = playerUiState.isFullscreen,
             isLandscape = isLandscape,
             config = BottomSheetConfig(
                 landscapeWidthFraction = 0.4f,
@@ -447,8 +444,8 @@ fun VideoPlayer(
 
         CustomModalBottomSheet(
             modifier = Modifier.align(Alignment.BottomCenter),
-            isVisible = showPlaybackSpeedSheet && !isPipMode && !controlsState.isLocked,
-            isFullscreen = isFullscreen,
+            isVisible = showPlaybackSpeedSheet && !playerUiState.isPipMode && !controlsState.isLocked,
+            isFullscreen = playerUiState.isFullscreen,
             isLandscape = isLandscape,
             config = BottomSheetConfig(
                 landscapeWidthFraction = 0.4f,
@@ -469,7 +466,7 @@ fun VideoPlayer(
             seekDirection = isShowSeekIndicator,
             seekAmount = seekAmount,
             isLandscape = isLandscape,
-            isFullscreen = isFullscreen,
+            isFullscreen = playerUiState.isFullscreen,
             errorMessage = errorMessage,
             modifier = Modifier.align(Alignment.Center)
         )
@@ -478,48 +475,47 @@ fun VideoPlayer(
             ResumePlaybackOverlay(
                 modifier = Modifier.align(Alignment.Center),
                 isVisible = calculatedShouldShowResumeOverlay,
-                isPipMode = isPipMode,
+                isPipMode = playerUiState.isPipMode,
                 lastTimestamp = timestamp,
                 onDismiss = {
-                    setShowResumeOverlay(false)
+                    setShowResume(false)
                     playerAction(HlsPlayerAction.RequestToggleControlsVisibility(true))
                 },
                 onRestart = {
                     playerAction(HlsPlayerAction.SeekTo(0))
                     playerAction(HlsPlayerAction.Play)
-                    setShowResumeOverlay(false)
+                    setShowResume(false)
                 },
                 onResume = {
                     playerAction(HlsPlayerAction.SeekTo(it))
                     playerAction(HlsPlayerAction.Play)
-                    setShowResumeOverlay(false)
+                    setShowResume(false)
                 }
             )
         }
 
-        NextEpisodeOverlay(
-            modifier = Modifier.align(Alignment.Center),
-            isVisible = isShowNextEpisode,
-            nextEpisodeName = nextEpisodeName,
-            onDismiss = {
-                setShowNextEpisode(false)
-                playerAction(HlsPlayerAction.RequestToggleControlsVisibility(true))
-            },
-            onRestart = {
-                playerAction(HlsPlayerAction.SeekTo(0))
-                playerAction(HlsPlayerAction.Play)
-                setShowNextEpisode(false)
-            },
-            onSkipNext = {
-                handleSelectedEpisodeServer(
-                    episodeSourcesQuery.copy(
-                        id = episodes.find { it.name == nextEpisodeName }?.episodeId ?: ""
-                    ),
-                    false
-                )
-                setShowNextEpisode(false)
-            }
-        )
+        nextEpisode?.let { nextEpisode ->
+            NextEpisodeOverlay(
+                modifier = Modifier.align(Alignment.Center),
+                isVisible = playerUiState.isShowNextEpisode,
+                nextEpisodeName = nextEpisode.name,
+                onDismiss = {
+                    setShowNextEpisode(false)
+                    playerAction(HlsPlayerAction.RequestToggleControlsVisibility(true))
+                },
+                onRestart = {
+                    playerAction(HlsPlayerAction.SeekTo(0))
+                    playerAction(HlsPlayerAction.Play)
+                    setShowNextEpisode(false)
+                },
+                onSkipNext = {
+                    handleSelectedEpisodeServer(
+                        episodeSourcesQuery.copy(id = nextEpisode.episodeId), false
+                    )
+                    setShowNextEpisode(false)
+                }
+            )
+        }
 
         RetryButton(
             modifier = Modifier.align(Alignment.Center),
@@ -528,7 +524,7 @@ fun VideoPlayer(
         )
 
         val isSkipVisible =
-            !isPipMode && !controlsState.isLocked && !isHolding && !isDraggingSeekBar && coreState.playbackState != Player.STATE_ENDED && !calculatedShouldShowResumeOverlay && !isShowNextEpisode && errorMessage == null
+            !playerUiState.isPipMode && !controlsState.isLocked && !isHolding && !isDraggingSeekBar && coreState.playbackState != Player.STATE_ENDED && !calculatedShouldShowResumeOverlay && !playerUiState.isShowNextEpisode && errorMessage == null
         SkipButton(
             label = "Skip Intro",
             isVisible = controlsState.showIntroButton && isSkipVisible,
@@ -557,7 +553,7 @@ fun VideoPlayer(
         )
 
         LockButton(
-            isLocked = controlsState.isLocked && !isPipMode && errorMessage == null,
+            isLocked = controlsState.isLocked && !playerUiState.isPipMode && errorMessage == null,
             onClick = {
                 (context as? FragmentActivity)?.let { activity ->
                     activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR

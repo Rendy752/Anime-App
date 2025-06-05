@@ -32,10 +32,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavBackStackEntry
-import com.luminoverse.animevibe.models.AnimeDetail
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
-import com.luminoverse.animevibe.models.animeDetailPlaceholder
 import com.luminoverse.animevibe.models.episodeDetailComplementPlaceholder
 import com.luminoverse.animevibe.models.episodePlaceholder
 import com.luminoverse.animevibe.ui.animeDetail.DetailAction
@@ -45,7 +43,7 @@ import com.luminoverse.animevibe.utils.basicContainer
 @Composable
 fun EpisodeDetailItem(
     modifier: Modifier = Modifier,
-    animeDetail: AnimeDetail = animeDetailPlaceholder,
+    animeImage: String? = null,
     lastEpisodeWatchedId: String? = null,
     episode: Episode = episodePlaceholder,
     isNewEpisode: Boolean = true,
@@ -98,7 +96,7 @@ fun EpisodeDetailItem(
                 modifier = Modifier
                     .fillMaxHeight()
                     .weight(0.4f),
-                imageUrl = animeDetail.images.webp.large_image_url,
+                imageUrl = animeImage,
                 screenshot = episodeDetailComplement?.screenshot
             )
 

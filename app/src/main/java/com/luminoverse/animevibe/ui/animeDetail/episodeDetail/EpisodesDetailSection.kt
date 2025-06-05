@@ -176,7 +176,7 @@ fun EpisodesDetailSection(
                             } else {
                                 items(filteredEpisodes) { episode ->
                                     EpisodeDetailItem(
-                                        animeDetail = animeDetail,
+                                        animeImage = animeDetail.images.webp.large_image_url,
                                         lastEpisodeWatchedId = data.lastEpisodeWatchedId,
                                         episode = episode,
                                         isNewEpisode = episode.episodeId in detailState.newEpisodeIdList,

@@ -40,12 +40,11 @@ data class WatchState(
 )
 
 data class PlayerUiState(
+    val isLoading: Boolean = false,
     val isFullscreen: Boolean = false,
     val isPipMode: Boolean = false,
-    val isShowResumeOverlay: Boolean = false,
-    val isShowNextEpisode: Boolean = false,
-    val nextEpisodeName: String = "",
-    val currentErrorMessage: String? = null
+    val isShowResume: Boolean = false,
+    val isShowNextEpisode: Boolean = false
 )
 
 sealed class WatchAction {
@@ -61,11 +60,11 @@ sealed class WatchAction {
         WatchAction()
 
     data class LoadEpisodeDetailComplement(val episodeId: String) : WatchAction()
+    data class SetIsLoading(val isLoading: Boolean) : WatchAction()
     data class SetFullscreen(val isFullscreen: Boolean) : WatchAction()
     data class SetPipMode(val isPipMode: Boolean) : WatchAction()
-    data class SetShowResumeOverlay(val isShow: Boolean) : WatchAction()
-    data class SetShowNextEpisode(val isShow: Boolean, val nextEpisodeName: String = "") :
-        WatchAction()
+    data class SetShowResume(val isShow: Boolean) : WatchAction()
+    data class SetShowNextEpisode(val isShow: Boolean) : WatchAction()
 
     data class SetErrorMessage(val message: String?) : WatchAction()
     data class SetFavorite(val isFavorite: Boolean, val updateComplement: Boolean = true) :
@@ -94,21 +93,28 @@ class AnimeWatchViewModel @Inject constructor(
         viewModelScope.launch {
             hlsPlayerUtils.playerCoreState.collect { coreState ->
                 if (coreState.error != null) {
-                    _playerUiState.update {
-                        it.copy(
-                            currentErrorMessage = coreState.error.message ?: "Unknown player error"
+                    onAction(
+                        WatchAction.SetErrorMessage(
+                            coreState.error.message ?: "Unknown player error"
                         )
-                    }
-                } else {
-                    _playerUiState.update { it.copy(currentErrorMessage = null) }
+                    )
                 }
 
-                if (coreState.playbackState == Player.STATE_ENDED) {
-                    _playerUiState.update {
-                        it.copy(
-                            isShowNextEpisode = true,
-                            nextEpisodeName = "Next Episode..."
-                        )
+                when (coreState.playbackState) {
+                    Player.STATE_ENDED -> _playerUiState.update {
+                        it.copy(isShowNextEpisode = true, isLoading = false)
+                    }
+
+                    Player.STATE_READY -> {
+                        _playerUiState.update { it.copy(isLoading = false) }
+                    }
+
+                    Player.STATE_BUFFERING -> {
+                        _playerUiState.update { it.copy(isLoading = true) }
+                    }
+
+                    Player.STATE_IDLE -> {
+                        _playerUiState.update { it.copy(isLoading = true) }
                     }
                 }
             }
@@ -135,17 +141,17 @@ class AnimeWatchViewModel @Inject constructor(
             is WatchAction.UpdateLastEpisodeWatchedId -> updateLastEpisodeWatchedId(action.lastEpisodeWatchedId)
             is WatchAction.UpdateEpisodeDetailComplement -> updateEpisodeDetailComplement(action.updatedEpisodeDetailComplement)
             is WatchAction.LoadEpisodeDetailComplement -> loadEpisodeDetailComplement(action.episodeId)
+
+            is WatchAction.SetIsLoading -> _playerUiState.update { it.copy(isLoading = action.isLoading) }
             is WatchAction.SetFullscreen -> _playerUiState.update { it.copy(isFullscreen = action.isFullscreen) }
             is WatchAction.SetPipMode -> _playerUiState.update { it.copy(isPipMode = action.isPipMode) }
-            is WatchAction.SetShowResumeOverlay -> _playerUiState.update {
-                it.copy(isShowResumeOverlay = action.isShow)
+            is WatchAction.SetShowResume -> _playerUiState.update {
+                it.copy(isShowResume = action.isShow)
             }
 
-            is WatchAction.SetShowNextEpisode -> _playerUiState.update {
-                it.copy(isShowNextEpisode = action.isShow, nextEpisodeName = action.nextEpisodeName)
-            }
-
+            is WatchAction.SetShowNextEpisode -> _playerUiState.update { it.copy(isShowNextEpisode = action.isShow) }
             is WatchAction.SetErrorMessage -> _watchState.update { it.copy(errorMessage = action.message) }
+
             is WatchAction.SetFavorite -> {
                 _watchState.update { it.copy(isFavorite = action.isFavorite) }
                 if (action.updateComplement) {

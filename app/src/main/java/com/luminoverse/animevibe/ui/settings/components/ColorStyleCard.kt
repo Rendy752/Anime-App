@@ -108,7 +108,7 @@ fun ColorStyleCard(
                         )
                         else EpisodeDetailItem(
                             modifier = Modifier.heightIn(max = 100.dp),
-                            animeDetail = animeDetailSample.data ?: animeDetailPlaceholder,
+                            animeImage = animeDetailSample.data?.images?.webp?.large_image_url ?: animeDetailPlaceholder.images.webp.large_image_url,
                             lastEpisodeWatchedId = episodePlaceholder.episodeId,
                             episode = episodePlaceholder.copy(
                                 name = animeDetailSample.data?.title ?: episodePlaceholder.name

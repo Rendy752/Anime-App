@@ -23,7 +23,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.fragment.app.FragmentActivity
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -33,6 +32,7 @@ import com.luminoverse.animevibe.AnimeApplication
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
+import com.luminoverse.animevibe.ui.animeWatch.PlayerUiState
 import com.luminoverse.animevibe.ui.animeWatch.WatchState
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
@@ -53,10 +53,12 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun VideoPlayerSection(
     watchState: WatchState,
+    playerUiState: PlayerUiState,
     coreState: PlayerCoreState,
     controlsState: StateFlow<ControlsState>,
     positionState: StateFlow<PositionState>,
     playerAction: (HlsPlayerAction) -> Unit,
+    isLandscape: Boolean,
     getPlayer: () -> ExoPlayer?,
     updateStoredWatchState: (EpisodeDetailComplement) -> Unit,
     onHandleBackPress: () -> Unit,
@@ -65,12 +67,12 @@ fun VideoPlayerSection(
     episodes: List<Episode>,
     episodeSourcesQuery: EpisodeSourcesQuery,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery, Boolean) -> Unit,
-    isPipMode: Boolean,
     onEnterPipMode: () -> Unit,
-    isFullscreen: Boolean,
-    onFullscreenChange: (Boolean) -> Unit,
-    isLandscape: Boolean,
-    onPlayerError: (String?) -> Unit,
+    setIsLoading: (Boolean) -> Unit,
+    setFullscreenChange: (Boolean) -> Unit,
+    setShowResume: (Boolean) -> Unit,
+    setShowNextEpisode: (Boolean) -> Unit,
+    setPlayerError: (String?) -> Unit,
     modifier: Modifier = Modifier,
     videoSize: Modifier
 ) {
@@ -83,10 +85,6 @@ fun VideoPlayerSection(
     var mediaBrowser by remember { mutableStateOf<MediaBrowserCompat?>(null) }
     var mediaController by remember { mutableStateOf<MediaControllerCompat?>(null) }
     var mediaPlaybackService by remember { mutableStateOf<MediaPlaybackService?>(null) }
-    var isLoading by remember { mutableStateOf(true) }
-    var isShowResumeOverlay by remember { mutableStateOf(watchState.episodeDetailComplement.data?.lastTimestamp != null) }
-    var isShowNextEpisode by remember { mutableStateOf(false) }
-    var nextEpisodeName by remember { mutableStateOf("") }
     val coroutineScope = rememberCoroutineScope()
 
     val application = context.applicationContext as AnimeApplication
@@ -122,8 +120,8 @@ fun VideoPlayerSection(
             )
         } else {
             Log.w("VideoPlayerSection", "Player is null")
-            onPlayerError("Player not initialized")
-            isLoading = false
+            setPlayerError("Player not initialized")
+            setIsLoading(false)
             return
         }
 
@@ -161,16 +159,16 @@ fun VideoPlayerSection(
                 mediaPlaybackService = null
                 playerView.player = null
                 playerAction(HlsPlayerAction.SetVideoSurface(null))
-                onPlayerError("Service disconnected")
-                isLoading = false
+                setPlayerError("Service disconnected")
+                setIsLoading(false)
             }
         }
     }
 
     fun initializePlayer() {
         Log.d("VideoPlayerSection", "Initializing player for episode: ${episodeSourcesQuery.id}")
-        isLoading = true
-        onPlayerError(null)
+        setIsLoading(true)
+        setPlayerError(null)
 
         if (application.isMediaServiceBound()) {
             watchState.episodeDetailComplement.data?.let {
@@ -190,8 +188,8 @@ fun VideoPlayerSection(
                 Log.d("VideoPlayerSection", "Binding to MediaPlaybackService")
             } catch (e: Exception) {
                 Log.e("VideoPlayerSection", "Failed to bind service", e)
-                onPlayerError("Failed to bind service")
-                isLoading = false
+                setPlayerError("Failed to bind service")
+                setIsLoading(false)
             }
         }
     }
@@ -205,8 +203,8 @@ fun VideoPlayerSection(
             )
             initializePlayer()
         } else {
-            onPlayerError("Failed to load video after $maxRetries attempts")
-            isLoading = false
+            setPlayerError("Failed to load video after $maxRetries attempts")
+            setIsLoading(false)
         }
     }
 
@@ -216,7 +214,7 @@ fun VideoPlayerSection(
                 state?.let {
                     val isPlaying = state.state == PlaybackStateCompat.STATE_PLAYING
                     if (isPlaying) {
-                        isShowResumeOverlay = false
+                        setShowResume(false)
                     }
                     Log.d(
                         "VideoPlayerSection",
@@ -238,8 +236,8 @@ fun VideoPlayerSection(
                         Log.d("VideoPlayerSection", "MediaController initialized")
                     } catch (e: Exception) {
                         Log.e("VideoPlayerSection", "MediaController initialization failed", e)
-                        onPlayerError("Media controller initialization failed")
-                        isLoading = false
+                        setPlayerError("Media controller initialization failed")
+                        setIsLoading(false)
                     }
                 }
             }
@@ -252,8 +250,8 @@ fun VideoPlayerSection(
 
             override fun onConnectionFailed() {
                 Log.e("VideoPlayerSection", "MediaBrowser connection failed")
-                onPlayerError("Media browser connection failed")
-                isLoading = false
+                setPlayerError("Media browser connection failed")
+                setIsLoading(false)
             }
         }
     }
@@ -271,45 +269,8 @@ fun VideoPlayerSection(
                     )
                     handleSelectedEpisodeServer(episodeSourcesQuery, true)
                 } else {
-                    onPlayerError("Playback failed: ${error.message}")
-                    isLoading = false
-                }
-            }
-
-            override fun onPlaybackStateChanged(playbackState: Int) {
-                when (playbackState) {
-                    Player.STATE_ENDED -> {
-                        Log.d("VideoPlayerSection", "Episode ended, showing next episode overlay")
-                        watchState.episodeDetailComplement.data?.let { episodeDetailComplement ->
-                            val nextEpisode =
-                                episodes.find { it.episodeNo == episodeDetailComplement.servers.episodeNo + 1 }
-                            if (nextEpisode != null) {
-                                nextEpisodeName = nextEpisode.name
-                                isShowNextEpisode = true
-                            } else {
-                                isShowNextEpisode = false
-                            }
-                            isShowResumeOverlay = false
-                            (context as? FragmentActivity)?.window?.clearFlags(
-                                android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
-                            )
-                        }
-                    }
-
-                    Player.STATE_READY -> {
-                        isLoading = false
-                        Log.d("VideoPlayerSection", "Player ready")
-                    }
-
-                    Player.STATE_BUFFERING -> {
-                        isLoading = true
-                        Log.d("VideoPlayerSection", "Player buffering")
-                    }
-
-                    Player.STATE_IDLE -> {
-                        isLoading = true
-                        Log.d("VideoPlayerSection", "Player idle")
-                    }
+                    setPlayerError("Playback failed: ${error.message}")
+                    setIsLoading(false)
                 }
             }
         }
@@ -326,8 +287,8 @@ fun VideoPlayerSection(
                 connect()
             } catch (e: Exception) {
                 Log.e("VideoPlayerSection", "MediaBrowser connection failed", e)
-                onPlayerError("Media browser connection failed")
-                isLoading = false
+                setPlayerError("Media browser connection failed")
+                setIsLoading(false)
             }
         }
 
@@ -389,10 +350,10 @@ fun VideoPlayerSection(
                         currentPosition = it.lastTimestamp ?: 0,
                         duration = it.duration ?: 0
                     ),
-                    onReady = { isLoading = false },
+                    onReady = { setIsLoading(false) },
                     onError = { error ->
-                        onPlayerError(error)
-                        isLoading = false
+                        setPlayerError(error)
+                        setIsLoading(false)
                     }
                 )
             )
@@ -403,9 +364,8 @@ fun VideoPlayerSection(
                 episodes,
                 episodeSourcesQuery
             )
-            isShowResumeOverlay = it.lastTimestamp != null
-            isShowNextEpisode = false
-            nextEpisodeName = ""
+            setShowResume(it.lastTimestamp != null)
+            setShowNextEpisode(false)
         }
     }
 
@@ -418,8 +378,8 @@ fun VideoPlayerSection(
 
     LaunchedEffect(watchState.errorMessage) {
         if (watchState.errorMessage != null) {
-            onPlayerError(watchState.errorMessage)
-            isLoading = false
+            setPlayerError(watchState.errorMessage)
+            setIsLoading(false)
             Log.d("VideoPlayerSection", "Error from watchState: ${watchState.errorMessage}")
         }
     }
@@ -430,25 +390,22 @@ fun VideoPlayerSection(
                 playerView = playerView,
                 player = it,
                 coreState = coreState,
+                playerUiState = playerUiState,
                 controlsState = controlsState,
                 positionState = positionState,
                 playerAction = playerAction,
                 mediaController = mediaController,
                 onHandleBackPress = onHandleBackPress,
                 episodeDetailComplement = episodeDetailComplement,
+                episodeDetailComplements = watchState.episodeDetailComplements,
                 episodes = episodes,
                 episodeSourcesQuery = episodeSourcesQuery,
                 handleSelectedEpisodeServer = handleSelectedEpisodeServer,
-                isPipMode = isPipMode,
                 onEnterPipMode = onEnterPipMode,
-                isFullscreen = isFullscreen,
-                onFullscreenChange = onFullscreenChange,
                 isAutoPlayVideo = isAutoPlayVideo,
-                isShowResumeOverlay = isShowResumeOverlay,
-                setShowResumeOverlay = { isShowResumeOverlay = it },
-                isShowNextEpisode = isShowNextEpisode,
-                setShowNextEpisode = { isShowNextEpisode = it },
-                nextEpisodeName = nextEpisodeName,
+                setFullscreenChange = setFullscreenChange,
+                setShowResume = setShowResume,
+                setShowNextEpisode = setShowNextEpisode,
                 isLandscape = isLandscape,
                 errorMessage = watchState.errorMessage,
                 modifier = modifier,
