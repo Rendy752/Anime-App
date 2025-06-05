@@ -250,18 +250,14 @@ class HlsPlayerUtils @Inject constructor(
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 Log.d("HlsPlayerUtils", "onIsPlayingChanged: $isPlaying")
                 _playerCoreState.update { it.copy(isPlaying = isPlaying) }
-                // This state change will be picked up by the collector that calls manageAutoHideControls.
                 if (isPlaying) {
                     startPositionUpdates()
                     startIntroOutroCheck()
                     startPeriodicWatchStateUpdates(updateStoredWatchStateCallback)
-                    // Request controls to be visible (will auto-hide if conditions are met)
-                    // dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true)) // Redundant if handled by collector
                 } else {
                     stopPositionUpdates()
                     stopIntroOutroCheck()
                     stopPeriodicWatchStateUpdates()
-                    // Force controls visible on pause
                     dispatch(
                         HlsPlayerAction.RequestToggleControlsVisibility(
                             isVisible = true, force = true
@@ -281,7 +277,6 @@ class HlsPlayerUtils @Inject constructor(
                 if (playbackState == Player.STATE_READY) {
                     _positionState.update { it.copy(duration = exoPlayer?.duration ?: 0) }
                 }
-                // Handle episode end logic (perhaps in ViewModel observing this state)
             }
 
             override fun onPlayerError(error: PlaybackException) {
@@ -291,7 +286,14 @@ class HlsPlayerUtils @Inject constructor(
         }
     }
 
-    fun getPlayer(): ExoPlayer? = exoPlayer
+    fun getPlayer(): ExoPlayer? {
+        if (exoPlayer == null) {
+            Log.w("HlsPlayerUtils", "Player was null. Re-initializing.")
+            initializePlayerInternal()
+            videoSurface?.let { setVideoSurface(it) }
+        }
+        return exoPlayer
+    }
 
     private fun captureFrame(): Bitmap? {
         return when (val surface = videoSurface) {
@@ -319,7 +321,7 @@ class HlsPlayerUtils @Inject constructor(
                             Log.e("HlsPlayerUtils", "PixelCopy failed: $result")
                         }
                     }, Handler(Looper.getMainLooper()))
-                    latch.await(1, TimeUnit.SECONDS) //
+                    latch.await(1, TimeUnit.SECONDS)
                     bitmap
                 } catch (e: Exception) {
                     Log.e("HlsPlayerUtils", "Failed to capture frame from SurfaceView", e)

@@ -329,7 +329,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                 MediaMetadataCompat.Builder()
                     .putString(
                         MediaMetadataCompat.METADATA_KEY_TITLE,
-                        "Eps. ${complement.number}, ${complement.episodeTitle}"
+                        complement.episodeTitle
                     )
                     .putString(MediaMetadataCompat.METADATA_KEY_ALBUM, complement.animeTitle)
                     .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, duration)
