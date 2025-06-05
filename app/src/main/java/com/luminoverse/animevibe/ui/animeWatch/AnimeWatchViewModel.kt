@@ -94,13 +94,22 @@ class AnimeWatchViewModel @Inject constructor(
         viewModelScope.launch {
             hlsPlayerUtils.playerCoreState.collect { coreState ->
                 if (coreState.error != null) {
-                    _playerUiState.update { it.copy(currentErrorMessage = coreState.error.message ?: "Unknown player error") }
+                    _playerUiState.update {
+                        it.copy(
+                            currentErrorMessage = coreState.error.message ?: "Unknown player error"
+                        )
+                    }
                 } else {
                     _playerUiState.update { it.copy(currentErrorMessage = null) }
                 }
 
                 if (coreState.playbackState == Player.STATE_ENDED) {
-                    _playerUiState.update { it.copy(isShowNextEpisode = true, nextEpisodeName = "Next Episode...") }
+                    _playerUiState.update {
+                        it.copy(
+                            isShowNextEpisode = true,
+                            nextEpisodeName = "Next Episode..."
+                        )
+                    }
                 }
             }
         }
@@ -228,6 +237,7 @@ class AnimeWatchViewModel @Inject constructor(
                                         episodeSourcesResource.message
                                             ?: "Failed to fetch episode sources"
                                     ),
+                                    errorMessage = "Failed to fetch episode sources, returning to the previous episode. Check your internet connection or try again later after 1 hour."
                                 )
                             }
                             return@launch
@@ -274,7 +284,8 @@ class AnimeWatchViewModel @Inject constructor(
                                 episodeDetailComplement = Resource.Error(
                                     episodeServersResource.message
                                         ?: "Failed to fetch episode servers"
-                                )
+                                ),
+                                errorMessage = "Failed to fetch episode servers, returning to the previous episode. Check your internet connection or try again later after 1 hour."
                             )
                         }
                         return@launch
@@ -369,7 +380,8 @@ class AnimeWatchViewModel @Inject constructor(
                                         it.copy(
                                             episodeDetailComplement = Resource.Error(
                                                 "Failed to fetch episode sources after $attempt attempts"
-                                            )
+                                            ),
+                                            errorMessage = "Failed to fetch episode sources after $attempt attempts, returning to the previous episode. Check your internet connection or try again later after 1 hour."
                                         )
                                     }
                                     return@launch
@@ -382,7 +394,8 @@ class AnimeWatchViewModel @Inject constructor(
                         it.copy(
                             episodeDetailComplement = Resource.Error(
                                 "Failed to fetch episode sources after $maxAttempts attempts"
-                            )
+                            ),
+                            errorMessage = "Failed to fetch episode sources after $maxAttempts attempts, returning to the previous episode. Check your internet connection or try again later after 1 hour."
                         )
                     }
                 }
@@ -393,7 +406,8 @@ class AnimeWatchViewModel @Inject constructor(
                 it.copy(
                     episodeDetailComplement = Resource.Error(
                         e.message ?: "An unexpected error occurred"
-                    )
+                    ),
+                    errorMessage = e.message ?: "An unexpected error occurred"
                 )
             }
         } finally {
@@ -453,9 +467,8 @@ class AnimeWatchViewModel @Inject constructor(
                 _watchState.update {
                     it.copy(
                         episodeDetailComplement = Resource.Success(updatedWithFavorite),
-                        episodeDetailComplements = it.episodeDetailComplements + (updatedWithFavorite.id to Resource.Success(
-                            updatedWithFavorite
-                        ))
+                        episodeDetailComplements = it.episodeDetailComplements +
+                                (updatedWithFavorite.id to Resource.Success(updatedWithFavorite))
                     )
                 }
             }

@@ -22,13 +22,10 @@ import androidx.fragment.app.FragmentActivity
 import androidx.navigation.NavHostController
 import com.luminoverse.animevibe.ui.main.MainState
 import com.luminoverse.animevibe.utils.FullscreenUtils
-import com.luminoverse.animevibe.utils.resource.Resource
 import com.luminoverse.animevibe.utils.receivers.ScreenOffReceiver
 import com.luminoverse.animevibe.utils.receivers.ScreenOnReceiver
 import com.luminoverse.animevibe.ui.animeWatch.components.AnimeWatchContent
 import kotlinx.coroutines.launch
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import com.luminoverse.animevibe.ui.main.MainActivity
 import androidx.compose.foundation.layout.padding
 import androidx.media3.exoplayer.ExoPlayer
@@ -49,7 +46,7 @@ fun AnimeWatchScreen(
     playerUiState: PlayerUiState,
     hlsPlayerCoreState: PlayerCoreState,
     hlsControlsState: StateFlow<ControlsState>,
-    hlsPositionState:  StateFlow<PositionState>,
+    hlsPositionState: StateFlow<PositionState>,
     onAction: (WatchAction) -> Unit,
     dispatchPlayerAction: (HlsPlayerAction) -> Unit,
     getPlayer: () -> ExoPlayer?,
@@ -96,15 +93,6 @@ fun AnimeWatchScreen(
     LaunchedEffect(Unit) {
         scope.launch {
             onAction(WatchAction.SetInitialState(malId, episodeId))
-        }
-    }
-
-    LaunchedEffect(watchState.episodeDetailComplement) {
-        if (watchState.episodeDetailComplement is Resource.Error) {
-            snackbarHostState.showSnackbar(
-                "Failed to fetch episode sources, returning to the previous episode. Check your internet connection or try again later after 1 hour."
-            )
-            onAction(WatchAction.HandleSelectedEpisodeServer(watchState.episodeSourcesQuery))
         }
     }
 
@@ -182,39 +170,9 @@ fun AnimeWatchScreen(
                     dispatchPlayerAction = dispatchPlayerAction,
                     getPlayer = getPlayer,
                     onHandleBackPress = onBackPress,
-                    onFavoriteToggle = { updatedComplement ->
-                        onAction(WatchAction.SetFavorite(updatedComplement.isFavorite))
-                    },
-                    updateStoredWatchState = { position, duration, screenshot ->
-                        val updatedComplement =
-                            (watchState.episodeDetailComplement as? Resource.Success)?.data?.copy(
-                                isFavorite = watchState.isFavorite,
-                                lastTimestamp = position,
-                                duration = duration,
-                                screenshot = screenshot,
-                                lastWatched = LocalDateTime.now()
-                                    .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-                            )
-                        updatedComplement?.let {
-                            onAction(WatchAction.UpdateEpisodeDetailComplement(it))
-                            onAction(WatchAction.UpdateLastEpisodeWatchedId(it.id))
-                        }
-                    },
-                    onLoadEpisodeDetailComplement = {
-                        onAction(WatchAction.LoadEpisodeDetailComplement(it))
-                    },
+                    onAction = onAction,
                     scrollState = scrollState,
                     onEnterPipMode = onEnterPipMode,
-                    onFullscreenChange = { onAction(WatchAction.SetFullscreen(it)) },
-                    onPlayerError = { onAction(WatchAction.SetErrorMessage(it)) },
-                    handleSelectedEpisodeServer = { episodeSourcesQuery, isRefresh ->
-                        onAction(
-                            WatchAction.HandleSelectedEpisodeServer(
-                                episodeSourcesQuery = episodeSourcesQuery,
-                                isRefresh = isRefresh
-                            )
-                        )
-                    },
                     modifier = videoPlayerModifier,
                     videoSize = videoSize
                 )

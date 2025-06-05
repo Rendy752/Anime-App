@@ -45,6 +45,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 @SuppressLint("ImplicitSamInstance")
 @OptIn(UnstableApi::class, ExperimentalComposeUiApi::class)
@@ -52,11 +54,11 @@ import kotlinx.coroutines.launch
 fun VideoPlayerSection(
     watchState: WatchState,
     coreState: PlayerCoreState,
-    controlsState:  StateFlow<ControlsState>,
-    positionState:  StateFlow<PositionState>,
+    controlsState: StateFlow<ControlsState>,
+    positionState: StateFlow<PositionState>,
     playerAction: (HlsPlayerAction) -> Unit,
     getPlayer: () -> ExoPlayer?,
-    updateStoredWatchState: (Long?, Long?, String?) -> Unit,
+    updateStoredWatchState: (EpisodeDetailComplement) -> Unit,
     onHandleBackPress: () -> Unit,
     isScreenOn: Boolean,
     isAutoPlayVideo: Boolean,
@@ -74,7 +76,7 @@ fun VideoPlayerSection(
 ) {
     val context = LocalContext.current
     var retryCount by remember { mutableIntStateOf(0) }
-    val maxRetries = 3
+    val maxRetries = 2
 
     val playerView = remember { PlayerView(context).apply { useController = false } }
     val player by remember { mutableStateOf(getPlayer()) }
@@ -98,7 +100,20 @@ fun VideoPlayerSection(
     ) {
         if (player != null) {
             playerView.player = player
-            playerAction(HlsPlayerAction.UpdateWatchState(updateStoredWatchState))
+            playerAction(HlsPlayerAction.UpdateWatchState { position, duration, screenshot ->
+                watchState.episodeDetailComplement.data?.let {
+                    updateStoredWatchState(
+                        it.copy(
+                            isFavorite = watchState.isFavorite,
+                            lastTimestamp = position,
+                            duration = duration,
+                            screenshot = screenshot,
+                            lastWatched = LocalDateTime.now()
+                                .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                        )
+                    )
+                }
+            })
             val videoSurface = playerView.videoSurfaceView
             playerAction(HlsPlayerAction.SetVideoSurface(videoSurface))
             Log.d(
@@ -119,11 +134,6 @@ fun VideoPlayerSection(
                 query = query,
                 handleSelectedEpisodeServer = { episodeQuery ->
                     handleSelectedEpisodeServer(episodeQuery, false)
-                },
-                onPlayerError = { error ->
-                    Log.e("VideoPlayerSection", "Player error: $error")
-                    onPlayerError(error)
-                    isLoading = false
                 }
             )
         )
@@ -285,14 +295,17 @@ fun VideoPlayerSection(
                             )
                         }
                     }
+
                     Player.STATE_READY -> {
                         isLoading = false
                         Log.d("VideoPlayerSection", "Player ready")
                     }
+
                     Player.STATE_BUFFERING -> {
                         isLoading = true
                         Log.d("VideoPlayerSection", "Player buffering")
                     }
+
                     Player.STATE_IDLE -> {
                         isLoading = true
                         Log.d("VideoPlayerSection", "Player idle")
@@ -329,16 +342,25 @@ fun VideoPlayerSection(
                         val isNotificationActive = state.isForeground
                         Log.d("VideoPlayerSection", "isForeground: $isNotificationActive")
                         if (!isNotificationActive) {
-                            Log.d("VideoPlayerSection", "Stopping MediaPlaybackService (no notification active)")
+                            Log.d(
+                                "VideoPlayerSection",
+                                "Stopping MediaPlaybackService (no notification active)"
+                            )
                             mediaPlaybackService?.dispatch(MediaPlaybackAction.StopService)
                             if (!application.isMediaServiceBound()) {
                                 context.unbindService(serviceConnection)
                                 Log.d("VideoPlayerSection", "Unbound service")
                             } else {
-                                Log.d("VideoPlayerSection", "Service kept bound by AnimeApplication")
+                                Log.d(
+                                    "VideoPlayerSection",
+                                    "Service kept bound by AnimeApplication"
+                                )
                             }
                         } else {
-                            Log.d("VideoPlayerSection", "Keeping service alive due to foreground notification")
+                            Log.d(
+                                "VideoPlayerSection",
+                                "Keeping service alive due to foreground notification"
+                            )
                         }
                         this@launch.cancel()
                     }

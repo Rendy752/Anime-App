@@ -71,8 +71,7 @@ sealed class MediaPlaybackAction {
         val complement: EpisodeDetailComplement,
         val episodes: List<Episode>,
         val query: EpisodeSourcesQuery,
-        val handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
-        val onPlayerError: (String?) -> Unit
+        val handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit
     ) : MediaPlaybackAction()
 
     data object StopService : MediaPlaybackAction()
@@ -122,8 +121,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                 action.complement,
                 action.episodes,
                 action.query,
-                action.handleSelectedEpisodeServer,
-                action.onPlayerError,
+                action.handleSelectedEpisodeServer
             )
 
             is MediaPlaybackAction.StopService -> stopService()
@@ -402,7 +400,10 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         coroutineScope.launch {
             hlsPlayerUtils.positionState.collectLatest { posState ->
                 _state.update {
-                    it.copy(currentPosition = posState.currentPosition, duration = posState.duration)
+                    it.copy(
+                        currentPosition = posState.currentPosition,
+                        duration = posState.duration
+                    )
                 }
                 updatePlaybackState(_state.value.playbackState)
                 if (hlsPlayerUtils.playerCoreState.value.playbackState == Player.STATE_READY && posState.duration > 0) {
@@ -417,7 +418,6 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         episodes: List<Episode>,
         query: EpisodeSourcesQuery,
         handler: (EpisodeSourcesQuery) -> Unit,
-        onPlayerError: (String?) -> Unit,
     ) {
         handleSelectedEpisodeServer = handler
         _state.update {
@@ -429,15 +429,6 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         }
 
         coroutineScope.launch {
-            if (query.id != complement.id) {
-                Log.w(
-                    "MediaPlaybackService",
-                    "Mismatch in episodeSourcesQuery.id (${query.id}) and episodeDetailComplement.id (${complement.id})"
-                )
-                onPlayerError("Episode data mismatch")
-                _state.update { it.copy(errorMessage = "Episode data mismatch") }
-                return@launch
-            }
             updateMediaMetadata(hlsPlayerUtils.getPlayer()?.duration?.takeIf { it > 0 } ?: 0)
             updateNotification()
         }

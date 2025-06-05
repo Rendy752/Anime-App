@@ -17,10 +17,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.navigation.NavController
-import com.luminoverse.animevibe.models.EpisodeDetailComplement
-import com.luminoverse.animevibe.models.EpisodeSourcesQuery
 import com.luminoverse.animevibe.ui.animeWatch.WatchState
 import com.luminoverse.animevibe.ui.animeWatch.PlayerUiState
+import com.luminoverse.animevibe.ui.animeWatch.WatchAction
 import com.luminoverse.animevibe.ui.animeWatch.infoContent.InfoContentSection
 import com.luminoverse.animevibe.ui.animeWatch.videoPlayer.VideoPlayerSection
 import com.luminoverse.animevibe.ui.animeWatch.watchContent.WatchContentSection
@@ -42,19 +41,14 @@ fun AnimeWatchContent(
     playerUiState: PlayerUiState,
     mainState: MainState,
     playerCoreState: PlayerCoreState,
-    controlsState:  StateFlow<ControlsState>,
-    positionState:  StateFlow<PositionState>,
+    controlsState: StateFlow<ControlsState>,
+    positionState: StateFlow<PositionState>,
     dispatchPlayerAction: (HlsPlayerAction) -> Unit,
     getPlayer: () -> ExoPlayer?,
     onHandleBackPress: () -> Unit,
-    onFavoriteToggle: (EpisodeDetailComplement) -> Unit,
-    updateStoredWatchState: (Long?, Long?, String?) -> Unit,
-    onLoadEpisodeDetailComplement: (String) -> Unit,
+    onAction: (WatchAction) -> Unit,
     scrollState: LazyListState,
     onEnterPipMode: () -> Unit,
-    onFullscreenChange: (Boolean) -> Unit,
-    onPlayerError: (String?) -> Unit,
-    handleSelectedEpisodeServer: (EpisodeSourcesQuery, Boolean) -> Unit,
     modifier: Modifier,
     videoSize: Modifier
 ) {
@@ -70,21 +64,28 @@ fun AnimeWatchContent(
                         positionState = positionState,
                         playerAction = dispatchPlayerAction,
                         getPlayer = getPlayer,
-                        updateStoredWatchState = updateStoredWatchState,
+                        updateStoredWatchState = {
+                            onAction(WatchAction.UpdateEpisodeDetailComplement(it))
+                            onAction(WatchAction.UpdateLastEpisodeWatchedId(it.id))
+                        },
                         onHandleBackPress = onHandleBackPress,
                         isScreenOn = isScreenOn,
                         isAutoPlayVideo = isAutoPlayVideo,
                         episodes = episodeList,
                         episodeSourcesQuery = query,
                         handleSelectedEpisodeServer = { episodeSourcesQuery, isRefresh ->
-                            handleSelectedEpisodeServer(episodeSourcesQuery, isRefresh)
+                            onAction(
+                                WatchAction.HandleSelectedEpisodeServer(
+                                    episodeSourcesQuery = episodeSourcesQuery, isRefresh = isRefresh
+                                )
+                            )
                         },
                         isPipMode = playerUiState.isPipMode,
                         onEnterPipMode = onEnterPipMode,
                         isFullscreen = playerUiState.isFullscreen,
-                        onFullscreenChange = onFullscreenChange,
+                        onFullscreenChange = { onAction(WatchAction.SetFullscreen(it)) },
                         isLandscape = mainState.isLandscape,
-                        onPlayerError = onPlayerError,
+                        onPlayerError = { onAction(WatchAction.SetErrorMessage(it)) },
                         modifier = modifier,
                         videoSize = videoSize
                     )
@@ -108,18 +109,26 @@ fun AnimeWatchContent(
                             WatchContentSection(
                                 animeDetail = watchState.animeDetail,
                                 networkStatus = mainState.networkStatus,
-                                onFavoriteToggle = onFavoriteToggle,
                                 isFavorite = watchState.isFavorite,
-                                episodeDetailComplements = watchState.episodeDetailComplements,
-                                onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,
+                                onFavoriteToggle = { updatedComplement ->
+                                    onAction(WatchAction.SetFavorite(updatedComplement.isFavorite))
+                                },
                                 episodeDetailComplement = watchState.episodeDetailComplement,
+                                onLoadEpisodeDetailComplement = {
+                                    onAction(WatchAction.LoadEpisodeDetailComplement(it))
+                                },
+                                episodeDetailComplements = watchState.episodeDetailComplements,
                                 episodes = episodeList,
                                 newEpisodeCount = watchState.newEpisodeCount,
                                 episodeSourcesQuery = query,
                                 serverScrollState = serverScrollState,
                                 handleSelectedEpisodeServer = {
-                                    handleSelectedEpisodeServer(it, false)
-                                }
+                                    onAction(
+                                        WatchAction.HandleSelectedEpisodeServer(
+                                            episodeSourcesQuery = it, isRefresh = false
+                                        )
+                                    )
+                                },
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                             InfoContentSection(
@@ -144,16 +153,26 @@ fun AnimeWatchContent(
                         WatchContentSection(
                             animeDetail = watchState.animeDetail,
                             networkStatus = mainState.networkStatus,
-                            onFavoriteToggle = onFavoriteToggle,
                             isFavorite = watchState.isFavorite,
-                            episodeDetailComplements = watchState.episodeDetailComplements,
-                            onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,
+                            onFavoriteToggle = { updatedComplement ->
+                                onAction(WatchAction.SetFavorite(updatedComplement.isFavorite))
+                            },
                             episodeDetailComplement = watchState.episodeDetailComplement,
+                            onLoadEpisodeDetailComplement = {
+                                onAction(WatchAction.LoadEpisodeDetailComplement(it))
+                            },
+                            episodeDetailComplements = watchState.episodeDetailComplements,
                             episodes = episodeList,
                             newEpisodeCount = watchState.newEpisodeCount,
                             episodeSourcesQuery = query,
                             serverScrollState = serverScrollState,
-                            handleSelectedEpisodeServer = { handleSelectedEpisodeServer(it, false) }
+                            handleSelectedEpisodeServer = {
+                                onAction(
+                                    WatchAction.HandleSelectedEpisodeServer(
+                                        episodeSourcesQuery = it, isRefresh = false
+                                    )
+                                )
+                            },
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         InfoContentSection(
