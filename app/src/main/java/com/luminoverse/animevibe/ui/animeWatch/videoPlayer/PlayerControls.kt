@@ -37,7 +37,6 @@ import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -82,6 +81,8 @@ fun PlayerControls(
     dragSeekPosition: Long,
     isDraggingSeekBar: Boolean,
     onDraggingSeekBarChange: (Boolean, Long) -> Unit,
+    showRemainingTime: Boolean,
+    setShowRemainingTime: (Boolean) -> Unit,
     onPipClick: () -> Unit,
     onLockClick: () -> Unit,
     onSubtitleClick: () -> Unit,
@@ -96,7 +97,7 @@ fun PlayerControls(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = if(isHolding) 0f else 0.6f))
+            .background(Color.Black.copy(alpha = if (isHolding) 0f else 0.6f))
     ) {
         AnimatedVisibility(
             visible = shouldShowControls,
@@ -118,13 +119,15 @@ fun PlayerControls(
                     horizontalArrangement = Arrangement.Start,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    IconButton(onClick = onHandleBackPress) {
-                        Icon(
-                            imageVector = Icons.Default.ArrowBackIosNew,
-                            contentDescription = "Return back",
-                            tint = Color.White
-                        )
-                    }
+                    Icon(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .clickable { onHandleBackPress() }
+                            .padding(8.dp),
+                        imageVector = Icons.Default.ArrowBackIosNew,
+                        contentDescription = "Return back",
+                        tint = Color.White
+                    )
                     if (isFullscreen) Column {
                         Text(
                             text = episodeDetailComplement.episodeTitle,
@@ -145,34 +148,42 @@ fun PlayerControls(
                     }
                 }
                 Row {
-                    IconButton(onClick = onPipClick) {
-                        Icon(
-                            imageVector = Icons.Default.PictureInPictureAlt,
-                            contentDescription = "Picture in Picture",
-                            tint = Color.White
-                        )
-                    }
-                    IconButton(onClick = onPlaybackSpeedClick) {
-                        Icon(
-                            imageVector = Icons.Default.Speed,
-                            contentDescription = "Speed",
-                            tint = Color.White
-                        )
-                    }
-                    IconButton(onClick = onSubtitleClick) {
-                        Icon(
-                            imageVector = Icons.Default.Subtitles,
-                            contentDescription = "Subtitles",
-                            tint = Color.White
-                        )
-                    }
-                    IconButton(onClick = onLockClick) {
-                        Icon(
-                            imageVector = if (isLocked) Icons.Default.Lock else Icons.Default.LockOpen,
-                            contentDescription = if (isLocked) "Unlock" else "Lock",
-                            tint = Color.White
-                        )
-                    }
+                    Icon(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .clickable { onPipClick() }
+                            .padding(8.dp),
+                        imageVector = Icons.Default.PictureInPictureAlt,
+                        contentDescription = "Picture in Picture",
+                        tint = Color.White
+                    )
+                    Icon(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .clickable { onPlaybackSpeedClick() }
+                            .padding(8.dp),
+                        imageVector = Icons.Default.Speed,
+                        contentDescription = "Speed",
+                        tint = Color.White
+                    )
+                    Icon(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .clickable { onSubtitleClick() }
+                            .padding(8.dp),
+                        imageVector = Icons.Default.Subtitles,
+                        contentDescription = "Subtitles",
+                        tint = Color.White
+                    )
+                    Icon(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .clickable { onLockClick() }
+                            .padding(8.dp),
+                        imageVector = if (isLocked) Icons.Default.Lock else Icons.Default.LockOpen,
+                        contentDescription = if (isLocked) "Unlock" else "Lock",
+                        tint = Color.White
+                    )
                 }
             }
         }
@@ -311,8 +322,13 @@ fun PlayerControls(
                     .padding(vertical = 8.dp, horizontal = 16.dp),
                 contentAlignment = Alignment.Center
             ) {
+                val remainingTime = positionState.duration - dragSeekPosition
                 Text(
-                    text = formatTimestamp(dragSeekPosition),
+                    text = if (showRemainingTime && positionState.duration > 0) {
+                        "-${formatTimestamp(remainingTime)}"
+                    } else {
+                        formatTimestamp(dragSeekPosition)
+                    },
                     color = Color.White,
                     fontSize = 24.sp,
                     fontWeight = FontWeight.Bold
@@ -337,13 +353,25 @@ fun PlayerControls(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .clickable { setShowRemainingTime(!showRemainingTime) }
+                            .padding(8.dp),
                         text = buildAnnotatedString {
                             withStyle(
                                 style = SpanStyle(
                                     color = Color.White,
                                     fontWeight = FontWeight.Bold
-                                )
-                            ) { append(formatTimestamp(positionState.currentPosition)) }
+                                ),
+                            ) {
+                                if (showRemainingTime && positionState.duration > 0) {
+                                    val remainingTime =
+                                        positionState.duration - positionState.currentPosition
+                                    append("-${formatTimestamp(remainingTime)}")
+                                } else {
+                                    append(formatTimestamp(positionState.currentPosition))
+                                }
+                            }
                             withStyle(style = SpanStyle(color = Color.White.copy(alpha = 0.8f))) {
                                 append(" / ")
                                 append(if (positionState.duration > 0) formatTimestamp(positionState.duration) else "--:--")
@@ -351,13 +379,15 @@ fun PlayerControls(
                         },
                         fontSize = 14.sp
                     )
-                    IconButton(onClick = onFullscreenToggle) {
-                        Icon(
-                            imageVector = if (isFullscreen) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
-                            contentDescription = if (isFullscreen) "Exit Fullscreen" else "Enter Fullscreen",
-                            tint = Color.White
-                        )
-                    }
+                    Icon(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .clickable { onFullscreenToggle() }
+                            .padding(8.dp),
+                        imageVector = if (isFullscreen) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
+                        contentDescription = if (isFullscreen) "Exit Fullscreen" else "Enter Fullscreen",
+                        tint = Color.White
+                    )
                 }
             }
             CustomSeekBar(

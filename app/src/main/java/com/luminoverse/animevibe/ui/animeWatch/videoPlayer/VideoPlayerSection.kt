@@ -347,7 +347,10 @@ fun VideoPlayerSection(
                     videoData = it.sources,
                     isAutoPlayVideo = isAutoPlayVideo,
                     positionState = PositionState(
-                        currentPosition = it.lastTimestamp ?: 0,
+                        currentPosition =
+                            if (isAutoPlayVideo && ((it.lastTimestamp ?: 0) < (it.duration ?: 0)))
+                                it.lastTimestamp ?: 0
+                            else 0,
                         duration = it.duration ?: 0
                     ),
                     onReady = { setIsLoading(false) },

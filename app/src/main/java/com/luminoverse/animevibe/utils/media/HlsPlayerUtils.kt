@@ -403,7 +403,7 @@ class HlsPlayerUtils @Inject constructor(
                         while (player.playbackState != Player.STATE_READY) {
                             delay(100)
                         }
-                        if (isAutoPlayVideo && positionState.currentPosition > 0) {
+                        if (isAutoPlayVideo && (positionState.currentPosition < positionState.duration)) {
                             seekTo(positionState.currentPosition)
                         }
                         if (isAutoPlayVideo) {

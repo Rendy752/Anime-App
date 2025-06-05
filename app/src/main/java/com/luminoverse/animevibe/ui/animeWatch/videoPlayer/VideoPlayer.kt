@@ -107,6 +107,7 @@ fun VideoPlayer(
     var previousPlaybackSpeed by remember { mutableFloatStateOf(controlsState.playbackSpeed) }
     var speedUpText by remember { mutableStateOf("") }
     var isHolding by remember { mutableStateOf(false) }
+    var showRemainingTime by remember { mutableStateOf(false) }
     var isDraggingSeekBar by remember { mutableStateOf(false) }
     var dragSeekPosition by remember { mutableLongStateOf(0L) }
     var seekDisplayHandler by remember { mutableStateOf<Handler?>(null) }
@@ -379,6 +380,8 @@ fun VideoPlayer(
                     dragSeekPosition = position
                 },
                 isDraggingSeekBar = isDraggingSeekBar,
+                showRemainingTime = showRemainingTime,
+                setShowRemainingTime = { showRemainingTime = it },
                 onPipClick = { onEnterPipMode() },
                 onLockClick = {
                     (context as? FragmentActivity)?.let { activity ->
@@ -498,7 +501,11 @@ fun VideoPlayer(
             NextEpisodeOverlay(
                 modifier = Modifier.align(Alignment.Center),
                 isVisible = playerUiState.isShowNextEpisode,
-                nextEpisodeName = nextEpisode.name,
+                isLandscape = isLandscape,
+                isPipMode = playerUiState.isPipMode,
+                animeImage = episodeDetailComplement.imageUrl,
+                nextEpisode = nextEpisode,
+                nextEpisodeDetailComplement = episodeDetailComplements[nextEpisode.episodeId]?.data,
                 onDismiss = {
                     setShowNextEpisode(false)
                     playerAction(HlsPlayerAction.RequestToggleControlsVisibility(true))
@@ -508,7 +515,7 @@ fun VideoPlayer(
                     playerAction(HlsPlayerAction.Play)
                     setShowNextEpisode(false)
                 },
-                onSkipNext = {
+                onPlayNext = {
                     handleSelectedEpisodeServer(
                         episodeSourcesQuery.copy(id = nextEpisode.episodeId), false
                     )

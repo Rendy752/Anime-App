@@ -102,7 +102,7 @@ fun AnimeWatchContent(
                         modifier = Modifier
                             .padding(8.dp)
                             .fillMaxSize()
-                            .weight(0.5f),
+                            .weight(0.3f),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center,
                         state = scrollState
