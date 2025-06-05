@@ -84,7 +84,6 @@ class WidgetUpdateWorker @AssistedInject constructor(
 
         try {
             val episode = repository.getCachedLatestWatchedEpisodeDetailComplement()
-            log("Episode fetched: $episode")
             if (episode != null) {
                 views.setTextViewText(
                     R.id.widget_episode_title,

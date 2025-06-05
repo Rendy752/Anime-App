@@ -4,7 +4,6 @@ import android.content.pm.ActivityInfo
 import android.os.Handler
 import android.os.Looper
 import android.support.v4.media.session.MediaControllerCompat
-import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -36,6 +35,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.CaptionStyleCompat
 import androidx.media3.ui.PlayerView
@@ -46,11 +46,13 @@ import com.luminoverse.animevibe.ui.common.BottomSheetConfig
 import com.luminoverse.animevibe.ui.common.CustomModalBottomSheet
 import com.luminoverse.animevibe.ui.common.ScreenshotDisplay
 import com.luminoverse.animevibe.utils.FullscreenUtils
+import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
-import com.luminoverse.animevibe.utils.media.PlaybackStatusState
-import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
+import com.luminoverse.animevibe.utils.media.PlayerCoreState
+import com.luminoverse.animevibe.utils.media.PositionState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
@@ -63,8 +65,11 @@ private const val DOUBLE_TAP_THRESHOLD_MILLIS = 300L
 @Composable
 fun VideoPlayer(
     playerView: PlayerView,
-    player: Player,
-    playbackStatusState: PlaybackStatusState,
+    player: ExoPlayer,
+    coreState: PlayerCoreState,
+    controlsState:  StateFlow<ControlsState>,
+    positionState:  StateFlow<PositionState>,
+    playerAction: (HlsPlayerAction) -> Unit,
     mediaController: MediaControllerCompat?,
     onHandleBackPress: () -> Unit,
     episodeDetailComplement: EpisodeDetailComplement,
@@ -86,8 +91,9 @@ fun VideoPlayer(
     modifier: Modifier = Modifier,
     videoSize: Modifier
 ) {
-    val controlsState by HlsPlayerUtils.controlsState.collectAsStateWithLifecycle()
-    val positionState by HlsPlayerUtils.positionState.collectAsStateWithLifecycle()
+    val controlsState by controlsState.collectAsStateWithLifecycle()
+    val positionState by positionState.collectAsStateWithLifecycle()
+
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var isFirstLoad by remember { mutableStateOf(true) }
@@ -121,9 +127,9 @@ fun VideoPlayer(
                 val numCalls = abs(totalSeekSeconds) / fixedSeekPerCall
                 repeat(numCalls) {
                     if (totalSeekSeconds > 0) {
-                        HlsPlayerUtils.dispatch(HlsPlayerAction.FastForward)
+                        playerAction(HlsPlayerAction.FastForward)
                     } else {
-                        HlsPlayerUtils.dispatch(HlsPlayerAction.Rewind)
+                        playerAction(HlsPlayerAction.Rewind)
                     }
                 }
             }
@@ -132,33 +138,21 @@ fun VideoPlayer(
             seekAmount = 0L
             isSeeking = false
             fastForwardRewindCounter = 0
-            HlsPlayerUtils.dispatch(HlsPlayerAction.Play)
+            playerAction(HlsPlayerAction.Play)
             Log.d("PlayerView", "Seek actions completed and states reset.")
         }
     }
 
-    LaunchedEffect(playbackStatusState.isPlaying) {
-        if (playbackStatusState.isPlaying) isFirstLoad = false
+    LaunchedEffect(coreState, player.isPlaying) {
+        if (coreState.playbackState == Player.STATE_READY && player.isPlaying) {
+            isFirstLoad = false
+        }
     }
 
     val calculatedShouldShowResumeOverlay = !isAutoPlayVideo && isShowResumeOverlay &&
             episodeDetailComplement.lastTimestamp != null &&
-            playbackStatusState.isReady &&
-            !playbackStatusState.isPlaying &&
+            coreState.playbackState == Player.STATE_READY && !player.isPlaying &&
             errorMessage == null
-
-    val mediaControllerCallback = remember {
-        object : MediaControllerCompat.Callback() {
-            override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
-                state?.let {
-                    val isPlaying = it.state == PlaybackStateCompat.STATE_PLAYING
-                    if (isPlaying) {
-                        setShowResumeOverlay(false)
-                    }
-                }
-            }
-        }
-    }
 
     DisposableEffect(
         mediaController,
@@ -167,14 +161,12 @@ fun VideoPlayer(
         calculatedShouldShowResumeOverlay,
         isShowNextEpisode
     ) {
-        mediaController?.registerCallback(mediaControllerCallback)
         onDispose {
-            mediaController?.unregisterCallback(mediaControllerCallback)
             seekDisplayHandler?.removeCallbacksAndMessages(null)
             longPressJob?.cancel()
             if (isHolding) {
                 isHolding = false
-                HlsPlayerUtils.dispatch(HlsPlayerAction.SetPlaybackSpeed(previousPlaybackSpeed))
+                playerAction(HlsPlayerAction.SetPlaybackSpeed(previousPlaybackSpeed))
             }
             Log.d("PlayerView", "PlayerView disposed, MediaControllerCallback unregistered")
         }
@@ -182,13 +174,13 @@ fun VideoPlayer(
 
     fun handleSingleTap() {
         if (!controlsState.isLocked && !isHolding) {
-            HlsPlayerUtils.dispatch(HlsPlayerAction.RequestToggleControlsVisibility(!controlsState.isControlsVisible))
+            playerAction(HlsPlayerAction.RequestToggleControlsVisibility(!controlsState.isControlsVisible))
             Log.d("PlayerView", "Single tap: Toggled controls visibility")
         }
     }
 
     fun handleDoubleTap(x: Float, screenWidth: Float) {
-        if (!controlsState.isLocked && playbackStatusState.isReady) {
+        if (!controlsState.isLocked) {
             Log.d("PlayerView", "Double tap at x=$x")
             val newSeekDirection = when {
                 x < screenWidth * 0.4 -> -1
@@ -198,7 +190,7 @@ fun VideoPlayer(
 
             if (newSeekDirection != 0) {
                 seekDisplayHandler?.removeCallbacks(seekDisplayRunnable!!)
-                HlsPlayerUtils.dispatch(HlsPlayerAction.Pause)
+                playerAction(HlsPlayerAction.Pause)
                 val seekIncrementSeconds = (DEFAULT_SEEK_INCREMENT / 1000L)
 
                 if (isShowSeekIndicator != newSeekDirection && isShowSeekIndicator != 0) {
@@ -217,7 +209,7 @@ fun VideoPlayer(
                     FAST_FORWARD_REWIND_DEBOUNCE_MILLIS
                 )
             } else {
-                HlsPlayerUtils.dispatch(HlsPlayerAction.Play)
+                playerAction(HlsPlayerAction.Play)
                 seekDisplayHandler?.removeCallbacks(seekDisplayRunnable!!)
                 if (fastForwardRewindCounter == 0) {
                     isShowSeekIndicator = 0
@@ -230,11 +222,11 @@ fun VideoPlayer(
     }
 
     fun handleLongPressStart() {
-        if (controlsState.isLocked || !player.isPlaying || player.playbackState != Player.STATE_READY) return
+        if (controlsState.isLocked || !player.isPlaying || coreState.playbackState != Player.STATE_READY) return
         isHolding = true
         speedUpText = "2x speed"
         previousPlaybackSpeed = controlsState.playbackSpeed
-        HlsPlayerUtils.dispatch(HlsPlayerAction.SetPlaybackSpeed(2f, fromLongPress = true))
+        playerAction(HlsPlayerAction.SetPlaybackSpeed(2f, fromLongPress = true))
         Log.d("PlayerView", "Long press started: Speed set to 2x")
     }
 
@@ -242,7 +234,7 @@ fun VideoPlayer(
         if (isHolding) {
             isHolding = false
             speedUpText = ""
-            HlsPlayerUtils.dispatch(HlsPlayerAction.SetPlaybackSpeed(previousPlaybackSpeed))
+            playerAction(HlsPlayerAction.SetPlaybackSpeed(previousPlaybackSpeed))
             Log.d("PlayerView", "Long press ended")
         }
     }
@@ -318,17 +310,10 @@ fun VideoPlayer(
                             )
                         )
                     }
-                    view.resizeMode =
-                        if (isFullscreen && isLandscape) AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-                        else AspectRatioFrameLayout.RESIZE_MODE_FIT
-
+                    view.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
                     view.subtitleView?.setPadding(
                         0, 0, 0,
-                        if (!isPipMode && controlsState.isControlsVisible && !(!isLandscape && isFullscreen)) {
-                            if (isFullscreen) 250 else 100
-                        } else {
-                            if (!isPipMode && isFullscreen && isLandscape) 150 else 0
-                        }
+                        if (!isPipMode && controlsState.isControlsVisible && (isLandscape || !isFullscreen)) 100 else 0
                     )
                 }
             )
@@ -344,7 +329,8 @@ fun VideoPlayer(
             exit = fadeOut()
         ) {
             PlayerControls(
-                playbackStatusState = playbackStatusState,
+                isPlaying = player.isPlaying,
+                playbackState = coreState.playbackState,
                 positionState = positionState,
                 onHandleBackPress = onHandleBackPress,
                 episodeDetailComplement = episodeDetailComplement,
@@ -353,15 +339,15 @@ fun VideoPlayer(
                 isHolding = isHolding,
                 isFullscreen = isFullscreen,
                 isShowSpeedUp = isShowSpeedUp,
-                handlePlay = { HlsPlayerUtils.dispatch(HlsPlayerAction.Play) },
-                handlePause = { HlsPlayerUtils.dispatch(HlsPlayerAction.Pause) },
+                handlePlay = { playerAction(HlsPlayerAction.Play) },
+                handlePause = { playerAction(HlsPlayerAction.Pause) },
                 onPlayPauseRestart = {
-                    when (playbackStatusState.playbackState) {
-                        Player.STATE_ENDED -> HlsPlayerUtils.dispatch(HlsPlayerAction.SeekTo(0))
-                        else -> if (playbackStatusState.isPlaying) {
-                            HlsPlayerUtils.dispatch(HlsPlayerAction.Pause)
+                    when (coreState.playbackState) {
+                        Player.STATE_ENDED -> playerAction(HlsPlayerAction.SeekTo(0))
+                        else -> if (player.isPlaying) {
+                            playerAction(HlsPlayerAction.Pause)
                         } else {
-                            HlsPlayerUtils.dispatch(HlsPlayerAction.Play)
+                            playerAction(HlsPlayerAction.Play)
                         }
                     }
                 },
@@ -386,7 +372,7 @@ fun VideoPlayer(
                     }
                 },
                 onSeekTo = { position ->
-                    HlsPlayerUtils.dispatch(HlsPlayerAction.SeekTo(position))
+                    playerAction(HlsPlayerAction.SeekTo(position))
                 },
                 seekAmount = seekAmount * 1000L,
                 isShowSeekIndicator = isShowSeekIndicator,
@@ -410,8 +396,8 @@ fun VideoPlayer(
                             )
                         }
                     }
-                    HlsPlayerUtils.dispatch(HlsPlayerAction.Play)
-                    HlsPlayerUtils.dispatch(HlsPlayerAction.ToggleLock(!controlsState.isLocked))
+                    playerAction(HlsPlayerAction.Play)
+                    playerAction(HlsPlayerAction.ToggleLock(true))
                 },
                 onSubtitleClick = { showSubtitleSheet = true },
                 onPlaybackSpeedClick = { showPlaybackSpeedSheet = true },
@@ -435,7 +421,7 @@ fun VideoPlayer(
 
         LoadingIndicator(
             modifier = Modifier.align(Alignment.Center),
-            isVisible = (playbackStatusState.playbackState == Player.STATE_BUFFERING || playbackStatusState.playbackState == Player.STATE_IDLE) && !isPlayerControlsVisible
+            isVisible = (coreState.playbackState == Player.STATE_BUFFERING || coreState.playbackState == Player.STATE_IDLE) && !isPlayerControlsVisible
         )
 
         CustomModalBottomSheet(
@@ -453,7 +439,7 @@ fun VideoPlayer(
                 tracks = episodeDetailComplement.sources.tracks,
                 selectedSubtitle = controlsState.selectedSubtitle,
                 onSubtitleSelected = { track ->
-                    HlsPlayerUtils.dispatch(HlsPlayerAction.SetSubtitle(track))
+                    playerAction(HlsPlayerAction.SetSubtitle(track))
                     showSubtitleSheet = false
                 }
             )
@@ -473,7 +459,7 @@ fun VideoPlayer(
             PlaybackSpeedContent(
                 selectedPlaybackSpeed = controlsState.playbackSpeed,
                 onSpeedChange = { speed ->
-                    HlsPlayerUtils.dispatch(HlsPlayerAction.SetPlaybackSpeed(speed))
+                    playerAction(HlsPlayerAction.SetPlaybackSpeed(speed))
                     showPlaybackSpeedSheet = false
                 }
             )
@@ -496,16 +482,16 @@ fun VideoPlayer(
                 lastTimestamp = timestamp,
                 onDismiss = {
                     setShowResumeOverlay(false)
-                    HlsPlayerUtils.dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
+                    playerAction(HlsPlayerAction.RequestToggleControlsVisibility(true))
                 },
                 onRestart = {
-                    HlsPlayerUtils.dispatch(HlsPlayerAction.SeekTo(0))
-                    HlsPlayerUtils.dispatch(HlsPlayerAction.Play)
+                    playerAction(HlsPlayerAction.SeekTo(0))
+                    playerAction(HlsPlayerAction.Play)
                     setShowResumeOverlay(false)
                 },
                 onResume = {
-                    HlsPlayerUtils.dispatch(HlsPlayerAction.SeekTo(it))
-                    HlsPlayerUtils.dispatch(HlsPlayerAction.Play)
+                    playerAction(HlsPlayerAction.SeekTo(it))
+                    playerAction(HlsPlayerAction.Play)
                     setShowResumeOverlay(false)
                 }
             )
@@ -517,11 +503,11 @@ fun VideoPlayer(
             nextEpisodeName = nextEpisodeName,
             onDismiss = {
                 setShowNextEpisode(false)
-                HlsPlayerUtils.dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
+                playerAction(HlsPlayerAction.RequestToggleControlsVisibility(true))
             },
             onRestart = {
-                HlsPlayerUtils.dispatch(HlsPlayerAction.SeekTo(0))
-                HlsPlayerUtils.dispatch(HlsPlayerAction.Play)
+                playerAction(HlsPlayerAction.SeekTo(0))
+                playerAction(HlsPlayerAction.Play)
                 setShowNextEpisode(false)
             },
             onSkipNext = {
@@ -542,13 +528,13 @@ fun VideoPlayer(
         )
 
         val isSkipVisible =
-            !isPipMode && !controlsState.isLocked && !isHolding && !isDraggingSeekBar && playbackStatusState.playbackState != Player.STATE_ENDED && !calculatedShouldShowResumeOverlay && !isShowNextEpisode && errorMessage == null
+            !isPipMode && !controlsState.isLocked && !isHolding && !isDraggingSeekBar && coreState.playbackState != Player.STATE_ENDED && !calculatedShouldShowResumeOverlay && !isShowNextEpisode && errorMessage == null
         SkipButton(
             label = "Skip Intro",
             isVisible = controlsState.showIntroButton && isSkipVisible,
             onSkip = {
                 episodeDetailComplement.sources.intro?.end?.let { endTime ->
-                    HlsPlayerUtils.dispatch(HlsPlayerAction.SkipIntro(endTime))
+                    playerAction(HlsPlayerAction.SkipIntro(endTime))
                 }
             },
             modifier = Modifier.align(Alignment.BottomEnd)
@@ -558,7 +544,7 @@ fun VideoPlayer(
             isVisible = controlsState.showOutroButton && isSkipVisible,
             onSkip = {
                 episodeDetailComplement.sources.outro?.end?.let { endTime ->
-                    HlsPlayerUtils.dispatch(HlsPlayerAction.SkipOutro(endTime))
+                    playerAction(HlsPlayerAction.SkipOutro(endTime))
                 }
             },
             modifier = Modifier.align(Alignment.BottomEnd)
@@ -576,8 +562,7 @@ fun VideoPlayer(
                 (context as? FragmentActivity)?.let { activity ->
                     activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
                 }
-                HlsPlayerUtils.dispatch(HlsPlayerAction.ToggleLock(!controlsState.isLocked))
-                HlsPlayerUtils.dispatch(HlsPlayerAction.RequestToggleControlsVisibility(true))
+                playerAction(HlsPlayerAction.ToggleLock(false))
             },
             modifier = Modifier.align(Alignment.TopEnd)
         )

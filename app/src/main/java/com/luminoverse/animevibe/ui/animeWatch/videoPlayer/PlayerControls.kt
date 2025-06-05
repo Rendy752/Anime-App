@@ -57,12 +57,12 @@ import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.ui.common.CircularLoadingIndicator
 import com.luminoverse.animevibe.utils.TimeUtils.formatTimestamp
-import com.luminoverse.animevibe.utils.media.PlaybackStatusState
 import com.luminoverse.animevibe.utils.media.PositionState
 
 @Composable
 fun PlayerControls(
-    playbackStatusState: PlaybackStatusState,
+    isPlaying: Boolean,
+    playbackState: Int,
     positionState: PositionState,
     onHandleBackPress: () -> Unit,
     episodeDetailComplement: EpisodeDetailComplement,
@@ -217,7 +217,7 @@ fun PlayerControls(
                         .size(56.dp)
                         .clip(CircleShape)
                         .clickable(
-                            enabled = playbackStatusState.playbackState != Player.STATE_BUFFERING && playbackStatusState.playbackState != Player.STATE_IDLE,
+                            enabled = playbackState != Player.STATE_BUFFERING && playbackState != Player.STATE_IDLE,
                             onClick = onPlayPauseRestart
                         )
                         .background(
@@ -229,11 +229,11 @@ fun PlayerControls(
                         modifier = Modifier
                             .size(40.dp)
                             .align(Alignment.Center),
-                        targetState = when (playbackStatusState.playbackState) {
+                        targetState = when (playbackState) {
                             Player.STATE_BUFFERING -> "buffering"
                             Player.STATE_IDLE -> "idle"
                             Player.STATE_ENDED -> "ended"
-                            else -> if (playbackStatusState.isPlaying) "playing" else "paused"
+                            else -> if (isPlaying) "playing" else "paused"
                         },
                         transitionSpec = {
                             (fadeIn(tween(300)) + scaleIn(tween(300), initialScale = 0.8f))

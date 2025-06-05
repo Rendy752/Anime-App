@@ -34,9 +34,13 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 import android.content.pm.PackageManager
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
+    @Inject
+    lateinit var hlsPlayerUtils: HlsPlayerUtils
+
     private val onPictureInPictureModeChangedListeners = mutableListOf<(Boolean) -> Unit>()
     private lateinit var navController: NavHostController
     private var lastInteractionTime = System.currentTimeMillis()
@@ -74,14 +78,16 @@ class MainActivity : AppCompatActivity() {
             navController = rememberNavController()
             val mainViewModel: MainViewModel = hiltViewModel()
             val state by mainViewModel.state.collectAsStateWithLifecycle()
-            val hlsPlaybackStatusState by HlsPlayerUtils.playbackStatusState.collectAsStateWithLifecycle()
 
             val configuration = LocalConfiguration.current
             val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
             val resetIdleTimer = { lastInteractionTime = System.currentTimeMillis() }
 
             LaunchedEffect(Unit) {
-                startIdleDetection { mainViewModel.onAction(MainAction.SetIsShowIdleDialog(it)) }
+                startIdleDetection(
+                    isShowIdleDialog = mainViewModel.state.value.isShowIdleDialog,
+                    action = { mainViewModel.onAction(MainAction.SetIsShowIdleDialog(it)) }
+                )
             }
 
             BackHandler {
@@ -119,10 +125,8 @@ class MainActivity : AppCompatActivity() {
                 MainScreen(
                     navController = navController,
                     intentChannel = intentChannel,
-                    resetIdleTimer = resetIdleTimer,
                     mainState = state.copy(isLandscape = isLandscape),
                     mainAction = mainViewModel::onAction,
-                    hlsPlaybackStatusState = hlsPlaybackStatusState
                 )
             }
         }
@@ -173,7 +177,7 @@ class MainActivity : AppCompatActivity() {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, configuration)
         onPictureInPictureModeChangedListeners.forEach {
             if (!isInPictureInPictureMode && !lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
-                HlsPlayerUtils.dispatch(HlsPlayerAction.Pause)
+                hlsPlayerUtils.dispatch(HlsPlayerAction.Pause)
             }
             it(isInPictureInPictureMode)
         }
@@ -191,7 +195,7 @@ class MainActivity : AppCompatActivity() {
         super.onUserLeaveHint()
         if (::navController.isInitialized) {
             val currentRoute = navController.currentDestination?.route
-            val isPlaying = HlsPlayerUtils.playbackStatusState.value.isPlaying
+            val isPlaying = hlsPlayerUtils.getPlayer()?.isPlaying == true
             if (currentRoute?.startsWith("animeWatch/") == true && isPlaying) {
                 pipParamsBuilder.setActions(buildPipActions(this@MainActivity, true))
                 enterPictureInPictureMode(pipParamsBuilder.build())
@@ -210,7 +214,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun startIdleDetection(action: (Boolean) -> Unit) {
+    private fun startIdleDetection(isShowIdleDialog: Boolean, action: (Boolean) -> Unit) {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 while (true) {
@@ -218,9 +222,11 @@ class MainActivity : AppCompatActivity() {
                     val currentTime = System.currentTimeMillis()
                     val isIdle = currentTime - lastInteractionTime > idleTimeoutMillis
                     val currentRoute = navController.currentDestination?.route
+
                     if (isIdle && currentRoute?.startsWith("animeWatch/") != true) {
-                        action(true)
-                        break
+                        if (!isShowIdleDialog) {
+                            action(true)
+                        }
                     }
                 }
             }

@@ -12,7 +12,6 @@ import android.util.Log
 import androidx.work.Configuration
 import com.chuckerteam.chucker.api.Chucker
 import com.luminoverse.animevibe.utils.factories.AnimeWorkerFactory
-import com.luminoverse.animevibe.utils.workers.BroadcastNotificationWorker
 import com.luminoverse.animevibe.utils.media.MediaPlaybackAction
 import com.luminoverse.animevibe.utils.media.MediaPlaybackService
 import com.luminoverse.animevibe.utils.debug.NotificationDebugUtil
@@ -20,6 +19,7 @@ import com.luminoverse.animevibe.utils.handlers.NotificationHandler
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
 import com.luminoverse.animevibe.utils.shake.ShakeDetector
+import com.luminoverse.animevibe.utils.workers.BroadcastNotificationWorker
 import com.luminoverse.animevibe.utils.workers.UnfinishedWatchNotificationWorker
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -40,6 +40,9 @@ class AnimeApplication : Application(), Configuration.Provider {
 
     @Inject
     lateinit var notificationHandler: NotificationHandler
+
+    @Inject
+    lateinit var hlsPlayerUtils: HlsPlayerUtils
 
     private lateinit var sensorManager: SensorManager
     private lateinit var shakeDetector: ShakeDetector
@@ -67,7 +70,7 @@ class AnimeApplication : Application(), Configuration.Provider {
             setupSensor()
         }
 
-        HlsPlayerUtils.dispatch(HlsPlayerAction.InitializeHlsPlayer(this))
+        Log.d(TAG, "HlsPlayerUtils instance: $hlsPlayerUtils")
         manageMediaService(true)
     }
 
@@ -77,11 +80,12 @@ class AnimeApplication : Application(), Configuration.Provider {
         if (BuildConfig.DEBUG) {
             sensorManager.unregisterListener(shakeDetector)
         }
+        hlsPlayerUtils.dispatch(HlsPlayerAction.Release)
         coroutineScope.cancel()
     }
 
     fun cleanupService() {
-        HlsPlayerUtils.dispatch(HlsPlayerAction.Release)
+        hlsPlayerUtils.dispatch(HlsPlayerAction.Release)
         mediaPlaybackService?.let { service ->
             Log.d(TAG, "Cleaning up MediaPlaybackService")
             service.dispatch(MediaPlaybackAction.StopService)
@@ -95,7 +99,8 @@ class AnimeApplication : Application(), Configuration.Provider {
                 val isForeground = try {
                     service.isForeground()
                 } catch (_: Exception) {
-                    val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+                    val notificationManager =
+                        getSystemService(NOTIFICATION_SERVICE) as NotificationManager
                     notificationManager.activeNotifications.any { it.id == service.getNotificationId() }
                 }
                 if (!isForeground) {
@@ -129,7 +134,8 @@ class AnimeApplication : Application(), Configuration.Provider {
             serviceConnection = object : ServiceConnection {
                 override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
                     Log.d(TAG, "MediaPlaybackService connected")
-                    mediaPlaybackService = (service as MediaPlaybackService.MediaPlaybackBinder).getService()
+                    mediaPlaybackService =
+                        (service as MediaPlaybackService.MediaPlaybackBinder).getService()
                     isServiceBound = true
                 }
 

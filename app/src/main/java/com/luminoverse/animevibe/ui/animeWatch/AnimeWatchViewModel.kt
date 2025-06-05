@@ -2,6 +2,8 @@ package com.luminoverse.animevibe.ui.animeWatch
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.media3.common.Player
+import androidx.media3.exoplayer.ExoPlayer
 import com.luminoverse.animevibe.models.AnimeDetail
 import com.luminoverse.animevibe.models.AnimeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
@@ -9,6 +11,11 @@ import com.luminoverse.animevibe.models.EpisodeSourcesQuery
 import com.luminoverse.animevibe.models.episodeSourcesQueryPlaceholder
 import com.luminoverse.animevibe.repository.AnimeEpisodeDetailRepository
 import com.luminoverse.animevibe.utils.ComplementUtils
+import com.luminoverse.animevibe.utils.media.ControlsState
+import com.luminoverse.animevibe.utils.media.HlsPlayerAction
+import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
+import com.luminoverse.animevibe.utils.media.PlayerCoreState
+import com.luminoverse.animevibe.utils.media.PositionState
 import com.luminoverse.animevibe.utils.resource.Resource
 import com.luminoverse.animevibe.utils.media.StreamingUtils
 import com.luminoverse.animevibe.utils.media.StreamingUtils.getDefaultEpisodeQueries
@@ -35,17 +42,10 @@ data class WatchState(
 data class PlayerUiState(
     val isFullscreen: Boolean = false,
     val isPipMode: Boolean = false,
-    val isLocked: Boolean = false,
     val isShowResumeOverlay: Boolean = false,
     val isShowNextEpisode: Boolean = false,
     val nextEpisodeName: String = "",
-    val isShowPip: Boolean = false,
-    val isShowSpeedUp: Boolean = false,
-    val speedUpText: String = "1x speed",
-    val isShowSeekIndicator: Boolean = false,
-    val seekDirection: Int = 0,
-    val seekAmount: Long = 0L,
-    val isSeeking: Boolean = false
+    val currentErrorMessage: String? = null
 )
 
 sealed class WatchAction {
@@ -63,7 +63,6 @@ sealed class WatchAction {
     data class LoadEpisodeDetailComplement(val episodeId: String) : WatchAction()
     data class SetFullscreen(val isFullscreen: Boolean) : WatchAction()
     data class SetPipMode(val isPipMode: Boolean) : WatchAction()
-    data class SetLocked(val isLocked: Boolean) : WatchAction()
     data class SetShowResumeOverlay(val isShow: Boolean) : WatchAction()
     data class SetShowNextEpisode(val isShow: Boolean, val nextEpisodeName: String = "") :
         WatchAction()
@@ -75,7 +74,8 @@ sealed class WatchAction {
 
 @HiltViewModel
 class AnimeWatchViewModel @Inject constructor(
-    private val animeEpisodeDetailRepository: AnimeEpisodeDetailRepository
+    private val animeEpisodeDetailRepository: AnimeEpisodeDetailRepository,
+    val hlsPlayerUtils: HlsPlayerUtils
 ) : ViewModel() {
 
     private val _watchState = MutableStateFlow(WatchState())
@@ -84,7 +84,35 @@ class AnimeWatchViewModel @Inject constructor(
     private val _playerUiState = MutableStateFlow(PlayerUiState())
     val playerUiState: StateFlow<PlayerUiState> = _playerUiState.asStateFlow()
 
+    val playerCoreState: StateFlow<PlayerCoreState> = hlsPlayerUtils.playerCoreState
+    val controlsState: StateFlow<ControlsState> = hlsPlayerUtils.controlsState
+    val positionState: StateFlow<PositionState> = hlsPlayerUtils.positionState
+
     private val _defaultEpisodeDetailComplement = MutableStateFlow<EpisodeDetailComplement?>(null)
+
+    init {
+        viewModelScope.launch {
+            hlsPlayerUtils.playerCoreState.collect { coreState ->
+                if (coreState.error != null) {
+                    _playerUiState.update { it.copy(currentErrorMessage = coreState.error.message ?: "Unknown player error") }
+                } else {
+                    _playerUiState.update { it.copy(currentErrorMessage = null) }
+                }
+
+                if (coreState.playbackState == Player.STATE_ENDED) {
+                    _playerUiState.update { it.copy(isShowNextEpisode = true, nextEpisodeName = "Next Episode...") }
+                }
+            }
+        }
+    }
+
+    fun getPlayer(): ExoPlayer? {
+        return hlsPlayerUtils.getPlayer()
+    }
+
+    fun dispatchPlayerAction(action: HlsPlayerAction) {
+        hlsPlayerUtils.dispatch(action)
+    }
 
     fun onAction(action: WatchAction) {
         when (action) {
@@ -100,7 +128,6 @@ class AnimeWatchViewModel @Inject constructor(
             is WatchAction.LoadEpisodeDetailComplement -> loadEpisodeDetailComplement(action.episodeId)
             is WatchAction.SetFullscreen -> _playerUiState.update { it.copy(isFullscreen = action.isFullscreen) }
             is WatchAction.SetPipMode -> _playerUiState.update { it.copy(isPipMode = action.isPipMode) }
-            is WatchAction.SetLocked -> _playerUiState.update { it.copy(isLocked = action.isLocked) }
             is WatchAction.SetShowResumeOverlay -> _playerUiState.update {
                 it.copy(isShowResumeOverlay = action.isShow)
             }

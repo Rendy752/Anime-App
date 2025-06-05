@@ -31,7 +31,12 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import com.luminoverse.animevibe.ui.main.MainActivity
 import androidx.compose.foundation.layout.padding
-import com.luminoverse.animevibe.utils.media.PlaybackStatusState
+import androidx.media3.exoplayer.ExoPlayer
+import com.luminoverse.animevibe.utils.media.ControlsState
+import com.luminoverse.animevibe.utils.media.HlsPlayerAction
+import com.luminoverse.animevibe.utils.media.PlayerCoreState
+import com.luminoverse.animevibe.utils.media.PositionState
+import kotlinx.coroutines.flow.StateFlow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,8 +47,12 @@ fun AnimeWatchScreen(
     mainState: MainState,
     watchState: WatchState,
     playerUiState: PlayerUiState,
-    hlsPlaybackStatusState: PlaybackStatusState,
+    hlsPlayerCoreState: PlayerCoreState,
+    hlsControlsState: StateFlow<ControlsState>,
+    hlsPositionState:  StateFlow<PositionState>,
     onAction: (WatchAction) -> Unit,
+    dispatchPlayerAction: (HlsPlayerAction) -> Unit,
+    getPlayer: () -> ExoPlayer?,
     onEnterPipMode: () -> Unit
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -166,8 +175,12 @@ fun AnimeWatchScreen(
                     isScreenOn = isScreenOn,
                     isAutoPlayVideo = mainState.isAutoPlayVideo,
                     playerUiState = playerUiState,
-                    hlsPlaybackStatusState = hlsPlaybackStatusState,
                     mainState = mainState,
+                    playerCoreState = hlsPlayerCoreState,
+                    controlsState = hlsControlsState,
+                    positionState = hlsPositionState,
+                    dispatchPlayerAction = dispatchPlayerAction,
+                    getPlayer = getPlayer,
                     onHandleBackPress = onBackPress,
                     onFavoriteToggle = { updatedComplement ->
                         onAction(WatchAction.SetFavorite(updatedComplement.isFavorite))

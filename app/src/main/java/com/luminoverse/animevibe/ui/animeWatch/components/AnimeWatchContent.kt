@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.media3.exoplayer.ExoPlayer
 import androidx.navigation.NavController
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
@@ -25,8 +26,12 @@ import com.luminoverse.animevibe.ui.animeWatch.videoPlayer.VideoPlayerSection
 import com.luminoverse.animevibe.ui.animeWatch.watchContent.WatchContentSection
 import com.luminoverse.animevibe.ui.common.SkeletonBox
 import com.luminoverse.animevibe.ui.main.MainState
-import com.luminoverse.animevibe.utils.media.PlaybackStatusState
+import com.luminoverse.animevibe.utils.media.ControlsState
+import com.luminoverse.animevibe.utils.media.HlsPlayerAction
+import com.luminoverse.animevibe.utils.media.PlayerCoreState
+import com.luminoverse.animevibe.utils.media.PositionState
 import com.luminoverse.animevibe.utils.resource.Resource
+import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 fun AnimeWatchContent(
@@ -35,8 +40,12 @@ fun AnimeWatchContent(
     isScreenOn: Boolean,
     isAutoPlayVideo: Boolean,
     playerUiState: PlayerUiState,
-    hlsPlaybackStatusState: PlaybackStatusState,
     mainState: MainState,
+    playerCoreState: PlayerCoreState,
+    controlsState:  StateFlow<ControlsState>,
+    positionState:  StateFlow<PositionState>,
+    dispatchPlayerAction: (HlsPlayerAction) -> Unit,
+    getPlayer: () -> ExoPlayer?,
     onHandleBackPress: () -> Unit,
     onFavoriteToggle: (EpisodeDetailComplement) -> Unit,
     updateStoredWatchState: (Long?, Long?, String?) -> Unit,
@@ -55,8 +64,13 @@ fun AnimeWatchContent(
             Row(modifier = Modifier.fillMaxWidth()) {
                 if (watchState.episodeDetailComplement is Resource.Success) {
                     VideoPlayerSection(
-                        updateStoredWatchState = updateStoredWatchState,
                         watchState = watchState,
+                        coreState = playerCoreState,
+                        controlsState = controlsState,
+                        positionState = positionState,
+                        playerAction = dispatchPlayerAction,
+                        getPlayer = getPlayer,
+                        updateStoredWatchState = updateStoredWatchState,
                         onHandleBackPress = onHandleBackPress,
                         isScreenOn = isScreenOn,
                         isAutoPlayVideo = isAutoPlayVideo,
@@ -65,7 +79,6 @@ fun AnimeWatchContent(
                         handleSelectedEpisodeServer = { episodeSourcesQuery, isRefresh ->
                             handleSelectedEpisodeServer(episodeSourcesQuery, isRefresh)
                         },
-                        hlsPlaybackStatusState = hlsPlaybackStatusState,
                         isPipMode = playerUiState.isPipMode,
                         onEnterPipMode = onEnterPipMode,
                         isFullscreen = playerUiState.isFullscreen,
