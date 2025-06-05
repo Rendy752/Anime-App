@@ -20,7 +20,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,7 +35,6 @@ import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.episodeDetailComplementPlaceholder
 import com.luminoverse.animevibe.models.episodePlaceholder
-import com.luminoverse.animevibe.ui.animeDetail.DetailAction
 import com.luminoverse.animevibe.utils.watch.WatchUtils.getEpisodeBackgroundColor
 import com.luminoverse.animevibe.utils.basicContainer
 
@@ -46,20 +44,20 @@ fun EpisodeDetailItem(
     animeImage: String? = null,
     lastEpisodeWatchedId: String? = null,
     episode: Episode = episodePlaceholder,
-    isNewEpisode: Boolean = true,
+    isNewEpisode: Boolean = false,
     episodeDetailComplement: EpisodeDetailComplement? = episodeDetailComplementPlaceholder,
     query: String = "",
-    onAction: (DetailAction) -> Unit = {},
-    onClick: (String) -> Unit = {},
+    loadEpisodeDetailComplement: (String) -> Unit = {},
+    onClick: () -> Unit = {},
     navBackStackEntry: NavBackStackEntry? = null,
-    titleMaxLines: Int? = null
+    titleMaxLines: Int? = null,
+    isSameWidthContent: Boolean = false
 ) {
-    val lifecycleState by navBackStackEntry?.lifecycle?.currentStateFlow?.collectAsStateWithLifecycle()
-        ?: return
-
-    LaunchedEffect(episode.episodeId, lifecycleState) {
-        if (episodeDetailComplement == null || lifecycleState.isAtLeast(Lifecycle.State.RESUMED)) {
-            onAction(DetailAction.LoadEpisodeDetailComplement(episode.episodeId))
+    navBackStackEntry?.lifecycle?.currentStateFlow?.collectAsStateWithLifecycle()?.value?.let { lifecycleState ->
+        LaunchedEffect(episode.episodeId, lifecycleState) {
+            if (episodeDetailComplement == null || lifecycleState.isAtLeast(Lifecycle.State.RESUMED)) {
+                loadEpisodeDetailComplement(episode.episodeId)
+            }
         }
     }
 
@@ -74,7 +72,7 @@ fun EpisodeDetailItem(
     Box(
         modifier = modifier
             .basicContainer(
-                onItemClick = { onClick(episode.episodeId) },
+                onItemClick = { onClick() },
                 backgroundBrush = getEpisodeBackgroundColor(
                     episode.filler,
                     episodeDetailComplement
@@ -95,14 +93,14 @@ fun EpisodeDetailItem(
             ScreenshotDisplay(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .weight(0.4f),
+                    .weight(if (isSameWidthContent) 0.5f else 0.4f),
                 imageUrl = animeImage,
                 screenshot = episodeDetailComplement?.screenshot
             )
 
             Column(
                 modifier = Modifier
-                    .weight(0.6f)
+                    .weight(if (isSameWidthContent) 0.5f else 0.6f)
                     .fillMaxHeight(),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {

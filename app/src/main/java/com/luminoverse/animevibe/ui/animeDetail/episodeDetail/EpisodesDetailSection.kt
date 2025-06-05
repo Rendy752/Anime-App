@@ -182,8 +182,10 @@ fun EpisodesDetailSection(
                                         isNewEpisode = episode.episodeId in detailState.newEpisodeIdList,
                                         episodeDetailComplement = detailState.episodeDetailComplements[episode.episodeId]?.data,
                                         query = episodeFilterState.episodeQuery.title,
-                                        onAction = onAction,
-                                        onClick = onEpisodeClick,
+                                        loadEpisodeDetailComplement = {
+                                            onAction(DetailAction.LoadEpisodeDetailComplement(it))
+                                        },
+                                        onClick = { onEpisodeClick(episode.episodeId) },
                                         navBackStackEntry = navBackStackEntry
                                     )
                                 }

@@ -35,7 +35,6 @@ import com.luminoverse.animevibe.ui.settings.components.ColorStyleCard
 import com.luminoverse.animevibe.ui.settings.components.ContrastModeChips
 import com.luminoverse.animevibe.ui.theme.ColorStyle
 import com.luminoverse.animevibe.utils.resource.Resource
-import androidx.navigation.NavBackStackEntry
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview
@@ -45,7 +44,6 @@ fun SettingsScreen(
     mainAction: (MainAction) -> Unit = {},
     state: SettingsState = SettingsState(),
     action: (SettingsAction) -> Unit = {},
-    navBackStackEntry: NavBackStackEntry? = null
 ) {
     val colorStyleCardScrollState = rememberScrollState()
     val context = LocalContext.current
@@ -179,7 +177,6 @@ fun SettingsScreen(
                             isDarkMode = mainState.isDarkMode,
                             contrastMode = mainState.contrastMode,
                             onColorStyleSelected = { mainAction(MainAction.SetColorStyle(style)) },
-                            navBackStackEntry = navBackStackEntry
                         )
                     }
                 }

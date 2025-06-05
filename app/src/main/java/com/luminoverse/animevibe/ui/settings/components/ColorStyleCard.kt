@@ -23,7 +23,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavBackStackEntry
 import com.luminoverse.animevibe.models.AnimeDetail
 import com.luminoverse.animevibe.models.animeDetailPlaceholder
 import com.luminoverse.animevibe.models.episodeDetailComplementPlaceholder
@@ -53,7 +52,6 @@ fun ColorStyleCard(
     isDarkMode: Boolean,
     contrastMode: ContrastMode,
     onColorStyleSelected: () -> Unit,
-    navBackStackEntry: NavBackStackEntry?,
     modifier: Modifier = Modifier
 ) {
     val colorScheme = ColorUtils.generateColorScheme(colorStyle, isDarkMode, contrastMode)
@@ -113,6 +111,7 @@ fun ColorStyleCard(
                             episode = episodePlaceholder.copy(
                                 name = animeDetailSample.data?.title ?: episodePlaceholder.name
                             ),
+                            isNewEpisode = true,
                             episodeDetailComplement = episodeDetailComplementPlaceholder.copy(
                                 lastWatched = SimpleDateFormat.getDateInstance().format(Date()),
                                 lastTimestamp = 260_000L,
@@ -121,7 +120,6 @@ fun ColorStyleCard(
                             query = (animeDetailSample.data?.title ?: episodePlaceholder.name).let {
                                 if (it.length > 3) it.take(3) else it
                             },
-                            navBackStackEntry = navBackStackEntry,
                             titleMaxLines = 2
                         )
 
