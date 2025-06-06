@@ -62,6 +62,7 @@ private const val FAST_FORWARD_REWIND_DEBOUNCE_MILLIS = 1000L
 private const val DEFAULT_SEEK_INCREMENT = 10000L
 private const val LONG_PRESS_THRESHOLD_MILLIS = 500L
 private const val DOUBLE_TAP_THRESHOLD_MILLIS = 300L
+private const val LOCK_BUTTON_DISPLAY_DURATION_MS = 3000L
 
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable
@@ -107,6 +108,7 @@ fun VideoPlayer(
     var previousPlaybackSpeed by remember { mutableFloatStateOf(controlsState.playbackSpeed) }
     var speedUpText by remember { mutableStateOf("") }
     var isHolding by remember { mutableStateOf(false) }
+    var showLockReminder by remember { mutableStateOf(false) }
     var showRemainingTime by remember { mutableStateOf(false) }
     var isDraggingSeekBar by remember { mutableStateOf(false) }
     var dragSeekPosition by remember { mutableLongStateOf(0L) }
@@ -152,6 +154,17 @@ fun VideoPlayer(
         }
     }
 
+    LaunchedEffect(controlsState.isLocked) {
+        showLockReminder = controlsState.isLocked
+    }
+
+    LaunchedEffect(showLockReminder) {
+        if (showLockReminder) {
+            delay(LOCK_BUTTON_DISPLAY_DURATION_MS)
+            showLockReminder = false
+        }
+    }
+
     val calculatedShouldShowResumeOverlay = !isAutoPlayVideo && playerUiState.isShowResume &&
             episodeDetailComplement.lastTimestamp != null &&
             coreState.playbackState == Player.STATE_READY && !player.isPlaying &&
@@ -171,6 +184,7 @@ fun VideoPlayer(
                 isHolding = false
                 playerAction(HlsPlayerAction.SetPlaybackSpeed(previousPlaybackSpeed))
             }
+            showLockReminder = false
             Log.d("PlayerView", "PlayerView disposed, MediaControllerCallback unregistered")
         }
     }
@@ -179,6 +193,9 @@ fun VideoPlayer(
         if (!controlsState.isLocked && !isHolding) {
             playerAction(HlsPlayerAction.RequestToggleControlsVisibility(!controlsState.isControlsVisible))
             Log.d("PlayerView", "Single tap: Toggled controls visibility")
+        } else if (controlsState.isLocked) {
+            showLockReminder = true
+            Log.d("PlayerView", "Single tap: Player is locked, showing lock reminder.")
         }
     }
 
@@ -574,8 +591,11 @@ fun VideoPlayer(
             speedText = speedUpText
         )
 
+        val isLockButtonVisible = controlsState.isLocked &&
+                !playerUiState.isPipMode &&
+                errorMessage == null && showLockReminder
         LockButton(
-            isLocked = controlsState.isLocked && !playerUiState.isPipMode && errorMessage == null,
+            visible = isLockButtonVisible,
             onClick = {
                 (context as? FragmentActivity)?.let { activity ->
                     activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR

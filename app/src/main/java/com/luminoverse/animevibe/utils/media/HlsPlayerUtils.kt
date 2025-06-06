@@ -267,6 +267,7 @@ class HlsPlayerUtils @Inject constructor(
                     _positionState.update { it.copy(duration = exoPlayer?.duration ?: 0) }
                 }
                 if (playbackState == Player.STATE_ENDED) {
+                    dispatch(HlsPlayerAction.ToggleLock(false))
                     _playerCoreState.update {
                         it.copy(
                             isPlaying = false, isLoading = false, error = null
