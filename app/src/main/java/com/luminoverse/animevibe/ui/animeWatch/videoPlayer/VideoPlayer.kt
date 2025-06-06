@@ -229,7 +229,7 @@ fun VideoPlayer(
         isHolding = true
         speedUpText = "2x speed"
         previousPlaybackSpeed = controlsState.playbackSpeed
-        playerAction(HlsPlayerAction.SetPlaybackSpeed(2f, fromLongPress = true))
+        playerAction(HlsPlayerAction.SetPlaybackSpeed(2f))
         Log.d("PlayerView", "Long press started: Speed set to 2x")
     }
 
@@ -341,7 +341,6 @@ fun VideoPlayer(
                 nextEpisode = nextEpisode,
                 nextEpisodeDetailComplement = episodeDetailComplements[nextEpisode?.episodeId]?.data,
                 isLocked = controlsState.isLocked,
-                isHolding = isHolding,
                 isFullscreen = playerUiState.isFullscreen,
                 isShowSpeedUp = isShowSpeedUp,
                 handlePlay = { playerAction(HlsPlayerAction.Play) },

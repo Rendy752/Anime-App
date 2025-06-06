@@ -85,9 +85,7 @@ sealed class HlsPlayerAction {
     data class SeekTo(val positionMs: Long) : HlsPlayerAction()
     data object FastForward : HlsPlayerAction()
     data object Rewind : HlsPlayerAction()
-    data class SetPlaybackSpeed(val speed: Float, val fromLongPress: Boolean = false) :
-        HlsPlayerAction()
-
+    data class SetPlaybackSpeed(val speed: Float) : HlsPlayerAction()
     data object Release : HlsPlayerAction()
     data class SetVideoSurface(val surface: Any?) : HlsPlayerAction()
     data class UpdateWatchState(val updateStoredWatchState: (Long?, Long?, String?) -> Unit) :
@@ -189,10 +187,7 @@ class HlsPlayerUtils @Inject constructor(
             is HlsPlayerAction.SeekTo -> seekTo(action.positionMs)
             is HlsPlayerAction.FastForward -> fastForward()
             is HlsPlayerAction.Rewind -> rewind()
-            is HlsPlayerAction.SetPlaybackSpeed -> setPlaybackSpeed(
-                action.speed, action.fromLongPress
-            )
-
+            is HlsPlayerAction.SetPlaybackSpeed -> setPlaybackSpeed(action.speed)
             is HlsPlayerAction.Release -> release()
             is HlsPlayerAction.SetVideoSurface -> setVideoSurface(action.surface)
             is HlsPlayerAction.UpdateWatchState -> updateWatchState(action.updateStoredWatchState)
@@ -486,15 +481,9 @@ class HlsPlayerUtils @Inject constructor(
         }
     }
 
-    private fun setPlaybackSpeed(speed: Float, fromLongPress: Boolean) {
+    private fun setPlaybackSpeed(speed: Float) {
         exoPlayer?.setPlaybackSpeed(speed)
-        _controlsState.update { it.copy(playbackSpeed = speed) }
-        if (fromLongPress) {
-            _controlsState.update { it.copy(isControlsVisible = true) }
-            controlsHideJob?.cancel()
-        } else {
-            _controlsState.update { it.copy(isControlsVisible = false) }
-        }
+        _controlsState.update { it.copy(playbackSpeed = speed, isControlsVisible = false) }
     }
 
     private fun setVideoSurface(surface: Any?) {
