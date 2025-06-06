@@ -59,7 +59,8 @@ data class PlayerCoreState(
 
 data class PositionState(
     val currentPosition: Long = 0,
-    val duration: Long = 0
+    val duration: Long = 0,
+    val bufferedPosition: Long = 0
 )
 
 data class ControlsState(
@@ -413,7 +414,8 @@ class HlsPlayerUtils @Inject constructor(
                         _positionState.update {
                             it.copy(
                                 currentPosition = player.currentPosition,
-                                duration = player.duration
+                                duration = player.duration,
+                                bufferedPosition = player.bufferedPosition
                             )
                         }
                         onReady()
@@ -548,10 +550,12 @@ class HlsPlayerUtils @Inject constructor(
                 if (player != null && (player.isPlaying || player.playbackState == Player.STATE_BUFFERING)) {
                     val duration = player.duration.takeIf { it > 0 } ?: 0
                     val position = player.currentPosition.coerceAtMost(duration)
+                    val bufferedPosition = player.bufferedPosition.coerceAtMost(duration)
                     _positionState.update {
                         it.copy(
                             currentPosition = position,
-                            duration = duration
+                            duration = duration,
+                            bufferedPosition = bufferedPosition
                         )
                     }
                 }

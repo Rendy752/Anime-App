@@ -421,8 +421,7 @@ fun PlayerControls(
                 }
             }
             CustomSeekBar(
-                currentPosition = positionState.currentPosition,
-                duration = positionState.duration,
+                positionState = positionState,
                 introStart = episodeDetailComplement.sources.intro?.start?.times(1000L) ?: 0L,
                 introEnd = episodeDetailComplement.sources.intro?.end?.times(1000L) ?: 0L,
                 outroStart = episodeDetailComplement.sources.outro?.start?.times(1000L) ?: 0L,

@@ -27,11 +27,11 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.luminoverse.animevibe.utils.media.PositionState
 
 @Composable
 fun CustomSeekBar(
-    currentPosition: Long,
-    duration: Long,
+    positionState: PositionState,
     introStart: Long,
     introEnd: Long,
     outroStart: Long,
@@ -47,21 +47,28 @@ fun CustomSeekBar(
     trackHeight: Dp = 4.dp
 ) {
     var isDragging by remember { mutableStateOf(false) }
-    var dragPosition by remember { mutableFloatStateOf(currentPosition.toFloat()) }
+    var dragPosition by remember { mutableFloatStateOf(positionState.currentPosition.toFloat()) }
     var initialDragX by remember { mutableFloatStateOf(0f) }
     var initialThumbPositionOnDragStart by remember { mutableFloatStateOf(0f) }
     var trackWidthPx by remember { mutableFloatStateOf(0f) }
-    val progress = if (duration > 0) currentPosition.toFloat() / duration else 0f
+    val progress =
+        if (positionState.duration > 0) positionState.currentPosition.toFloat() / positionState.duration else 0f
+    val bufferedProgress =
+        if (positionState.duration > 0) positionState.bufferedPosition.toFloat() / positionState.duration else 0f
     val density = LocalDensity.current
     val dragSensitivityFactor = 1f
 
-    LaunchedEffect(currentPosition, isDragging, seekAmount, isShowSeekIndicator) {
+    LaunchedEffect(positionState.currentPosition, isDragging, seekAmount, isShowSeekIndicator) {
         if (!isDragging) {
             if (isShowSeekIndicator != 0) {
-                val targetPosition = (currentPosition + (seekAmount * isShowSeekIndicator)).coerceIn(0L, duration)
+                val targetPosition =
+                    (positionState.currentPosition + (seekAmount * isShowSeekIndicator)).coerceIn(
+                        0L,
+                        positionState.duration
+                    )
                 dragPosition = targetPosition.toFloat()
             } else {
-                dragPosition = currentPosition.toFloat()
+                dragPosition = positionState.currentPosition.toFloat()
             }
         }
     }
@@ -88,20 +95,21 @@ fun CustomSeekBar(
                     },
                     onDragEnd = {
                         isDragging = false
-                        if (duration > 0 && trackWidthPx > 0) {
-                            val finalSeekPosition = dragPosition.toLong().coerceIn(0, duration)
+                        if (positionState.duration > 0 && trackWidthPx > 0) {
+                            val finalSeekPosition =
+                                dragPosition.toLong().coerceIn(0, positionState.duration)
                             onSeekTo(finalSeekPosition)
                             handlePlay()
                         }
                     },
                     onDrag = { change, _ ->
-                        if (duration > 0 && trackWidthPx > 0) {
+                        if (positionState.duration > 0 && trackWidthPx > 0) {
                             val dragDeltaX = change.position.x - initialDragX
                             val timeDelta =
-                                (dragDeltaX / trackWidthPx) * duration * dragSensitivityFactor
+                                (dragDeltaX / trackWidthPx) * positionState.duration * dragSensitivityFactor
                             val newPosition =
                                 (initialThumbPositionOnDragStart + timeDelta).coerceIn(
-                                    0f, duration.toFloat()
+                                    0f, positionState.duration.toFloat()
                                 )
                             dragPosition = newPosition
                         }
@@ -118,9 +126,19 @@ fun CustomSeekBar(
                 .align(Alignment.Center)
         )
 
-        if (introStart >= 0 && introEnd > introStart && duration > 0) {
-            val introStartProgress = (introStart.toFloat() / duration).coerceIn(0f, 1f)
-            val introEndProgress = (introEnd.toFloat() / duration).coerceIn(0f, 1f)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth(bufferedProgress)
+                .height(trackHeight)
+                .clip(RoundedCornerShape(4.dp))
+                .background(Color.Gray.copy(alpha = 0.5f))
+                .align(Alignment.CenterStart)
+        )
+
+        if (introStart >= 0 && introEnd > introStart && positionState.duration > 0) {
+            val introStartProgress =
+                (introStart.toFloat() / positionState.duration).coerceIn(0f, 1f)
+            val introEndProgress = (introEnd.toFloat() / positionState.duration).coerceIn(0f, 1f)
             val introWidthPx = (introEndProgress - introStartProgress) * trackWidthPx
             Box(
                 modifier = Modifier
@@ -133,9 +151,10 @@ fun CustomSeekBar(
             )
         }
 
-        if (outroStart >= 0 && outroEnd > outroStart && duration > 0) {
-            val outroStartProgress = (outroStart.toFloat() / duration).coerceIn(0f, 1f)
-            val outroEndProgress = (outroEnd.toFloat() / duration).coerceIn(0f, 1f)
+        if (outroStart >= 0 && outroEnd > outroStart && positionState.duration > 0) {
+            val outroStartProgress =
+                (outroStart.toFloat() / positionState.duration).coerceIn(0f, 1f)
+            val outroEndProgress = (outroEnd.toFloat() / positionState.duration).coerceIn(0f, 1f)
             val outroWidthPx = (outroEndProgress - outroStartProgress) * trackWidthPx
             Box(
                 modifier = Modifier
@@ -151,7 +170,9 @@ fun CustomSeekBar(
         Box(
             modifier = Modifier
                 .fillMaxWidth(
-                    if (isDragging || isShowSeekIndicator != 0) (dragPosition / duration).coerceIn(0f, 1f)
+                    if (isDragging || isShowSeekIndicator != 0) (dragPosition / positionState.duration).coerceIn(
+                        0f, 1f
+                    )
                     else progress
                 )
                 .height(trackHeight)
@@ -164,7 +185,9 @@ fun CustomSeekBar(
             modifier = Modifier
                 .offset(x = with(density) {
                     val currentThumbPositionPx =
-                        (if (isDragging || isShowSeekIndicator != 0) (dragPosition / duration).coerceIn(0f, 1f)
+                        (if (isDragging || isShowSeekIndicator != 0) (dragPosition / positionState.duration).coerceIn(
+                            0f, 1f
+                        )
                         else progress) * trackWidthPx
                     (currentThumbPositionPx - (thumbSize.toPx() / 2f)).toDp()
                 })
