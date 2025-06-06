@@ -1,4 +1,4 @@
-package com.luminoverse.animevibe.ui.animeWatch.videoPlayer
+package com.luminoverse.animevibe.ui.animeWatch.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.padding

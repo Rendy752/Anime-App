@@ -95,10 +95,7 @@ sealed class HlsPlayerAction {
     data class SkipIntro(val endTime: Long) : HlsPlayerAction()
     data class SkipOutro(val endTime: Long) : HlsPlayerAction()
     data class SetSubtitle(val track: Track?) : HlsPlayerAction()
-    data class RequestToggleControlsVisibility(
-        val isVisible: Boolean, val force: Boolean = false
-    ) : HlsPlayerAction()
-
+    data class RequestToggleControlsVisibility(val isVisible: Boolean? = null) : HlsPlayerAction()
     data class ToggleLock(val isLocked: Boolean) : HlsPlayerAction()
 }
 
@@ -197,7 +194,7 @@ class HlsPlayerUtils @Inject constructor(
             is HlsPlayerAction.SetSubtitle -> setSubtitle(action.track)
             is HlsPlayerAction.RequestToggleControlsVisibility -> {
                 _controlsState.update {
-                    it.copy(isControlsVisible = if (action.force) action.isVisible else !it.isControlsVisible)
+                    it.copy(isControlsVisible = action.isVisible ?: !it.isControlsVisible)
                 }
             }
 
@@ -246,9 +243,7 @@ class HlsPlayerUtils @Inject constructor(
                     stopIntroOutroCheck()
                     stopPeriodicWatchStateUpdates()
                     dispatch(
-                        HlsPlayerAction.RequestToggleControlsVisibility(
-                            isVisible = true, force = true
-                        )
+                        HlsPlayerAction.RequestToggleControlsVisibility(isVisible = true)
                     )
                 }
             }
@@ -428,7 +423,7 @@ class HlsPlayerUtils @Inject constructor(
                 onError("Player not initialized")
             }
             dispatch(
-                HlsPlayerAction.RequestToggleControlsVisibility(isVisible = true, force = true)
+                HlsPlayerAction.RequestToggleControlsVisibility(isVisible = true)
             )
         } catch (e: Exception) {
             onError("Failed to set media: ${e.message ?: "Unknown error"}")

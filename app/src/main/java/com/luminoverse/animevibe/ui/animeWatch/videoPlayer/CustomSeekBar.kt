@@ -53,7 +53,7 @@ fun CustomSeekBar(
     var trackWidthPx by remember { mutableFloatStateOf(0f) }
     val progress =
         if (positionState.duration > 0) positionState.currentPosition.toFloat() / positionState.duration else 0f
-    val bufferedProgress =
+    val bufferedProgressRatio =
         if (positionState.duration > 0) positionState.bufferedPosition.toFloat() / positionState.duration else 0f
     val density = LocalDensity.current
     val dragSensitivityFactor = 1f
@@ -63,8 +63,7 @@ fun CustomSeekBar(
             if (isShowSeekIndicator != 0) {
                 val targetPosition =
                     (positionState.currentPosition + (seekAmount * isShowSeekIndicator)).coerceIn(
-                        0L,
-                        positionState.duration
+                        0L, positionState.duration
                     )
                 dragPosition = targetPosition.toFloat()
             } else {
@@ -126,14 +125,20 @@ fun CustomSeekBar(
                 .align(Alignment.Center)
         )
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(bufferedProgress)
-                .height(trackHeight)
-                .clip(RoundedCornerShape(4.dp))
-                .background(Color.Gray.copy(alpha = 0.5f))
-                .align(Alignment.CenterStart)
-        )
+        if (positionState.duration > 0 && bufferedProgressRatio > progress) {
+            val bufferedSegmentStartPx = progress * trackWidthPx
+            val bufferedSegmentWidthPx = (bufferedProgressRatio - progress) * trackWidthPx
+
+            Box(
+                modifier = Modifier
+                    .offset(x = with(density) { bufferedSegmentStartPx.toDp() })
+                    .width(with(density) { bufferedSegmentWidthPx.toDp() })
+                    .height(trackHeight)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(Color.Gray.copy(alpha = 0.5f))
+                    .align(Alignment.CenterStart)
+            )
+        }
 
         if (introStart >= 0 && introEnd > introStart && positionState.duration > 0) {
             val introStartProgress =

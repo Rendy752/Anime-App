@@ -1,3 +1,4 @@
+// PlayerControls.kt
 package com.luminoverse.animevibe.ui.animeWatch.videoPlayer
 
 import androidx.compose.animation.AnimatedContent
@@ -5,10 +6,10 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -36,8 +37,8 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
-import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Subtitles
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -76,22 +77,21 @@ fun PlayerControls(
     isShowSpeedUp: Boolean,
     handlePlay: () -> Unit,
     handlePause: () -> Unit,
-    onPlayPauseRestart: () -> Unit,
     onPreviousEpisode: () -> Unit,
     onNextEpisode: () -> Unit,
     onSeekTo: (Long) -> Unit,
     seekAmount: Long,
     isShowSeekIndicator: Int,
     dragSeekPosition: Long,
-    isDraggingSeekBar: Boolean,
     onDraggingSeekBarChange: (Boolean, Long) -> Unit,
+    isDraggingSeekBar: Boolean,
     showRemainingTime: Boolean,
     setShowRemainingTime: (Boolean) -> Unit,
     onPipClick: () -> Unit,
     onLockClick: () -> Unit,
     onSubtitleClick: () -> Unit,
     onPlaybackSpeedClick: () -> Unit,
-    onFullscreenToggle: () -> Unit
+    onFullscreenToggle: () -> Unit,
 ) {
     val currentEpisode = episodeDetailComplement.servers.episodeNo
     val hasPreviousEpisode = episodes.any { it.episodeNo == currentEpisode - 1 }
@@ -259,7 +259,16 @@ fun PlayerControls(
                         .clip(CircleShape)
                         .clickable(
                             enabled = playbackState != Player.STATE_BUFFERING && playbackState != Player.STATE_IDLE,
-                            onClick = onPlayPauseRestart
+                            onClick = {
+                                when (playbackState) {
+                                    Player.STATE_ENDED -> onSeekTo(0)
+                                    else -> if (isPlaying) {
+                                        handlePause()
+                                    } else {
+                                        handlePlay()
+                                    }
+                                }
+                            }
                         )
                         .background(
                             color = Color.Black.copy(alpha = 0.4f),
@@ -431,7 +440,7 @@ fun PlayerControls(
                 onSeekTo = onSeekTo,
                 onDraggingSeekBarChange = onDraggingSeekBarChange,
                 seekAmount = seekAmount,
-                isShowSeekIndicator = isShowSeekIndicator
+                isShowSeekIndicator = isShowSeekIndicator,
             )
         }
     }

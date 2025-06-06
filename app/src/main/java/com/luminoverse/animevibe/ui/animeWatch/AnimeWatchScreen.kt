@@ -33,6 +33,7 @@ import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
 import com.luminoverse.animevibe.utils.media.PositionState
+import com.luminoverse.animevibe.utils.resource.Resource
 import kotlinx.coroutines.flow.StateFlow
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -117,6 +118,17 @@ fun AnimeWatchScreen(
         }
     }
 
+    LaunchedEffect(mainState.isConnected) {
+        if (mainState.isConnected && watchState.episodeDetailComplement is Resource.Error) {
+            onAction(
+                WatchAction.HandleSelectedEpisodeServer(
+                    watchState.episodeSourcesQuery,
+                    isRefresh = true
+                )
+            )
+        }
+    }
+
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { paddingValues ->
@@ -160,6 +172,7 @@ fun AnimeWatchScreen(
                 AnimeWatchContent(
                     navController = navController,
                     watchState = watchState,
+                    isConnected = mainState.isConnected,
                     isScreenOn = isScreenOn,
                     isAutoPlayVideo = mainState.isAutoPlayVideo,
                     playerUiState = playerUiState,

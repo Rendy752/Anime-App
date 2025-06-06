@@ -36,6 +36,7 @@ import kotlinx.coroutines.flow.StateFlow
 fun AnimeWatchContent(
     navController: NavController,
     watchState: WatchState,
+    isConnected: Boolean,
     isScreenOn: Boolean,
     isAutoPlayVideo: Boolean,
     playerUiState: PlayerUiState,
@@ -59,6 +60,7 @@ fun AnimeWatchContent(
                 if (watchState.episodeDetailComplement is Resource.Success) {
                     VideoPlayerSection(
                         watchState = watchState,
+                        isConnected = isConnected,
                         playerUiState = playerUiState,
                         coreState = playerCoreState,
                         controlsState = controlsState,
@@ -94,6 +96,17 @@ fun AnimeWatchContent(
                 } else {
                     Box(modifier = modifier.then(videoSize)) {
                         SkeletonBox(modifier = Modifier.fillMaxSize())
+                        RetryButton(
+                            modifier = Modifier.align(Alignment.Center),
+                            isVisible = watchState.episodeDetailComplement is Resource.Error,
+                            onRetry = {
+                                onAction(
+                                    WatchAction.HandleSelectedEpisodeServer(
+                                        episodeSourcesQuery = query, isRefresh = true
+                                    )
+                                )
+                            }
+                        )
                     }
                 }
 

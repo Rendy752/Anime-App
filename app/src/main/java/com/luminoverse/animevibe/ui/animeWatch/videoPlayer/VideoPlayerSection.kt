@@ -53,6 +53,7 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun VideoPlayerSection(
     watchState: WatchState,
+    isConnected: Boolean,
     playerUiState: PlayerUiState,
     coreState: PlayerCoreState,
     controlsState: StateFlow<ControlsState>,
@@ -145,11 +146,7 @@ fun VideoPlayerSection(
                     val binder = service as MediaPlaybackService.MediaPlaybackBinder
                     mediaPlaybackService = binder.getService()
                     setupPlayer(
-                        mediaPlaybackService,
-                        playerView,
-                        it,
-                        episodes,
-                        episodeSourcesQuery
+                        mediaPlaybackService, playerView, it, episodes, episodeSourcesQuery
                     )
                 }
             }
@@ -261,6 +258,15 @@ fun VideoPlayerSection(
 
         val playerListener = object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) {
+                if (!isConnected) {
+                    Log.w(
+                        "VideoPlayerSection",
+                        "Playback error while not connected to internet. Ignoring retry."
+                    )
+                    setPlayerError("Playback failed: No internet connection. ${error.message}")
+                    setIsLoading(false)
+                    return
+                }
                 if (retryCount < maxRetries) {
                     retryCount++
                     Log.d(

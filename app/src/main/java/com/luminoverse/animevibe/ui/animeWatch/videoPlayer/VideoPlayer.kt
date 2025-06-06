@@ -43,6 +43,7 @@ import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
 import com.luminoverse.animevibe.ui.animeWatch.PlayerUiState
+import com.luminoverse.animevibe.ui.animeWatch.components.RetryButton
 import com.luminoverse.animevibe.ui.common.BottomSheetConfig
 import com.luminoverse.animevibe.ui.common.CustomModalBottomSheet
 import com.luminoverse.animevibe.ui.common.ScreenshotDisplay
@@ -121,6 +122,11 @@ fun VideoPlayer(
     var showSubtitleSheet by remember { mutableStateOf(false) }
     var showPlaybackSpeedSheet by remember { mutableStateOf(false) }
 
+    val thumbnailTrackUrl = remember(episodeDetailComplement) {
+        episodeDetailComplement.sources.tracks.find { it.kind == "thumbnails" }?.file
+    }
+    var isBufferingFromSeeking by remember { mutableStateOf(false) }
+
     LaunchedEffect(Unit) {
         seekDisplayHandler = Handler(Looper.getMainLooper())
         seekDisplayRunnable = Runnable {
@@ -148,6 +154,15 @@ fun VideoPlayer(
         }
     }
 
+    LaunchedEffect(coreState.playbackState, isDraggingSeekBar) {
+        if (isDraggingSeekBar && (coreState.playbackState == Player.STATE_READY || coreState.playbackState == Player.STATE_BUFFERING)
+        ) {
+            isBufferingFromSeeking = true
+        } else if (coreState.playbackState != Player.STATE_BUFFERING) {
+            isBufferingFromSeeking = false
+        }
+    }
+
     LaunchedEffect(coreState, player.isPlaying) {
         if (coreState.playbackState == Player.STATE_READY && player.isPlaying) {
             isFirstLoad = false
@@ -159,7 +174,7 @@ fun VideoPlayer(
     }
 
     LaunchedEffect(showLockReminder) {
-        if (showLockReminder) {
+        if (showLockReminder && controlsState.isLocked) {
             delay(LOCK_BUTTON_DISPLAY_DURATION_MS)
             showLockReminder = false
         }
@@ -191,7 +206,7 @@ fun VideoPlayer(
 
     fun handleSingleTap() {
         if (!controlsState.isLocked && !isHolding) {
-            playerAction(HlsPlayerAction.RequestToggleControlsVisibility(!controlsState.isControlsVisible))
+            playerAction(HlsPlayerAction.RequestToggleControlsVisibility())
             Log.d("PlayerView", "Single tap: Toggled controls visibility")
         } else if (controlsState.isLocked) {
             showLockReminder = true
@@ -339,6 +354,26 @@ fun VideoPlayer(
             )
         }
 
+        thumbnailTrackUrl?.let {
+            val showThumbnail =
+                isBufferingFromSeeking || (!player.isPlaying && isDraggingSeekBar && !isFirstLoad)
+            val thumbnailSeekPositionKey = remember(dragSeekPosition) {
+                (dragSeekPosition / 10000L) * 10000L
+            }
+
+            AnimatedVisibility(
+                visible = showThumbnail,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                ThumbnailPreview(
+                    modifier = Modifier.fillMaxSize(),
+                    seekPosition = thumbnailSeekPositionKey,
+                    thumbnailTrackUrl = it
+                )
+            }
+        }
+
         val isPlayerControlsVisible = (controlsState.isControlsVisible || isDraggingSeekBar) &&
                 !calculatedShouldShowResumeOverlay && !playerUiState.isPipMode && !controlsState.isLocked && errorMessage == null
         val isShowSpeedUp =
@@ -361,17 +396,7 @@ fun VideoPlayer(
                 isFullscreen = playerUiState.isFullscreen,
                 isShowSpeedUp = isShowSpeedUp,
                 handlePlay = { playerAction(HlsPlayerAction.Play) },
-                handlePause = { playerAction(HlsPlayerAction.Pause) },
-                onPlayPauseRestart = {
-                    when (coreState.playbackState) {
-                        Player.STATE_ENDED -> playerAction(HlsPlayerAction.SeekTo(0))
-                        else -> if (player.isPlaying) {
-                            playerAction(HlsPlayerAction.Pause)
-                        } else {
-                            playerAction(HlsPlayerAction.Play)
-                        }
-                    }
-                },
+                handlePause = { playerAction(HlsPlayerAction.Pause);isFirstLoad = false },
                 onPreviousEpisode = {
                     if (prevEpisode != null) {
                         handleSelectedEpisodeServer(
@@ -505,10 +530,7 @@ fun VideoPlayer(
                 onDismiss = {
                     setShowResume(false)
                     playerAction(
-                        HlsPlayerAction.RequestToggleControlsVisibility(
-                            true,
-                            force = true
-                        )
+                        HlsPlayerAction.RequestToggleControlsVisibility(true)
                     )
                 },
                 onRestart = {
@@ -536,10 +558,7 @@ fun VideoPlayer(
                 onDismiss = {
                     setShowNextEpisode(false)
                     playerAction(
-                        HlsPlayerAction.RequestToggleControlsVisibility(
-                            true,
-                            force = true
-                        )
+                        HlsPlayerAction.RequestToggleControlsVisibility(true)
                     )
                 },
                 onRestart = {
