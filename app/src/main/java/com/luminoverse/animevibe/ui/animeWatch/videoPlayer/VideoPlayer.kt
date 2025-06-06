@@ -183,7 +183,7 @@ fun VideoPlayer(
     }
 
     fun handleDoubleTap(x: Float, screenWidth: Float) {
-        if (!controlsState.isLocked) {
+        if (!controlsState.isLocked && coreState.playbackState != Player.STATE_IDLE && !isFirstLoad) {
             Log.d("PlayerView", "Double tap at x=$x")
             val newSeekDirection = when {
                 x < screenWidth * 0.4 -> -1
@@ -225,7 +225,7 @@ fun VideoPlayer(
     }
 
     fun handleLongPressStart() {
-        if (controlsState.isLocked || !player.isPlaying || coreState.playbackState != Player.STATE_READY) return
+        if (controlsState.isLocked || !player.isPlaying || coreState.playbackState != Player.STATE_IDLE && isFirstLoad) return
         isHolding = true
         speedUpText = "2x speed"
         previousPlaybackSpeed = controlsState.playbackSpeed
@@ -323,7 +323,7 @@ fun VideoPlayer(
         }
 
         val isPlayerControlsVisible = (controlsState.isControlsVisible || isDraggingSeekBar) &&
-                !calculatedShouldShowResumeOverlay && !playerUiState.isShowNextEpisode && !playerUiState.isPipMode && !controlsState.isLocked && errorMessage == null
+                !calculatedShouldShowResumeOverlay && !playerUiState.isPipMode && !controlsState.isLocked && errorMessage == null
         val isShowSpeedUp =
             isHolding && !playerUiState.isPipMode && !controlsState.isLocked && !calculatedShouldShowResumeOverlay && !playerUiState.isShowNextEpisode && errorMessage == null
         AnimatedVisibility(
@@ -338,6 +338,8 @@ fun VideoPlayer(
                 onHandleBackPress = onHandleBackPress,
                 episodeDetailComplement = episodeDetailComplement,
                 episodes = episodes,
+                nextEpisode = nextEpisode,
+                nextEpisodeDetailComplement = episodeDetailComplements[nextEpisode?.episodeId]?.data,
                 isLocked = controlsState.isLocked,
                 isHolding = isHolding,
                 isFullscreen = playerUiState.isFullscreen,
@@ -367,6 +369,7 @@ fun VideoPlayer(
                         handleSelectedEpisodeServer(
                             episodeSourcesQuery.copy(id = nextEpisode.episodeId), false
                         )
+                        setShowNextEpisode(false)
                     }
                 },
                 onSeekTo = { position ->
@@ -395,6 +398,9 @@ fun VideoPlayer(
                                 isLockLandscapeOrientation = true
                             )
                         }
+                    }
+                    if (coreState.playbackState == Player.STATE_ENDED) {
+                        playerAction(HlsPlayerAction.SeekTo(0))
                     }
                     playerAction(HlsPlayerAction.Play)
                     playerAction(HlsPlayerAction.ToggleLock(true))
@@ -482,7 +488,12 @@ fun VideoPlayer(
                 lastTimestamp = timestamp,
                 onDismiss = {
                     setShowResume(false)
-                    playerAction(HlsPlayerAction.RequestToggleControlsVisibility(true))
+                    playerAction(
+                        HlsPlayerAction.RequestToggleControlsVisibility(
+                            true,
+                            force = true
+                        )
+                    )
                 },
                 onRestart = {
                     playerAction(HlsPlayerAction.SeekTo(0))
@@ -508,7 +519,12 @@ fun VideoPlayer(
                 nextEpisodeDetailComplement = episodeDetailComplements[nextEpisode.episodeId]?.data,
                 onDismiss = {
                     setShowNextEpisode(false)
-                    playerAction(HlsPlayerAction.RequestToggleControlsVisibility(true))
+                    playerAction(
+                        HlsPlayerAction.RequestToggleControlsVisibility(
+                            true,
+                            force = true
+                        )
+                    )
                 },
                 onRestart = {
                     playerAction(HlsPlayerAction.SeekTo(0))

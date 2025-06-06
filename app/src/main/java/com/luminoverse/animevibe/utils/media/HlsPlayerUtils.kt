@@ -200,24 +200,15 @@ class HlsPlayerUtils @Inject constructor(
             is HlsPlayerAction.SkipOutro -> skipOutro(action.endTime)
             is HlsPlayerAction.SetSubtitle -> setSubtitle(action.track)
             is HlsPlayerAction.RequestToggleControlsVisibility -> {
-                Log.d(
-                    "HlsPlayerUtils",
-                    "RequestToggleControlsVisibility action received. Target: ${action.isVisible}, Force: ${action.force}"
-                )
                 _controlsState.update {
                     it.copy(isControlsVisible = if (action.force) action.isVisible else !it.isControlsVisible)
                 }
-                Log.d(
-                    "HlsPlayerUtils",
-                    "ControlsState updated. isControlsVisible now: ${_controlsState.value.isControlsVisible}"
-                )
             }
 
             is HlsPlayerAction.ToggleLock -> {
                 _controlsState.update {
                     it.copy(
-                        isLocked = action.isLocked,
-                        isControlsVisible = !action.isLocked
+                        isLocked = action.isLocked, isControlsVisible = !action.isLocked
                     )
                 }
             }
@@ -271,16 +262,31 @@ class HlsPlayerUtils @Inject constructor(
                 _playerCoreState.update {
                     it.copy(
                         playbackState = playbackState,
-                        isLoading = playbackState == Player.STATE_BUFFERING
+                        isLoading = playbackState == Player.STATE_BUFFERING,
+                        error = null
                     )
                 }
                 if (playbackState == Player.STATE_READY) {
+                    _playerCoreState.update { it.copy(isLoading = false, error = null) }
                     _positionState.update { it.copy(duration = exoPlayer?.duration ?: 0) }
+                }
+                if (playbackState == Player.STATE_ENDED) {
+                    _playerCoreState.update {
+                        it.copy(
+                            isPlaying = false, isLoading = false, error = null
+                        )
+                    }
                 }
             }
 
             override fun onPlayerError(error: PlaybackException) {
-                _playerCoreState.update { it.copy(error = error) }
+                _playerCoreState.update {
+                    it.copy(
+                        isPlaying = false,
+                        isLoading = false,
+                        error = error
+                    )
+                }
                 Log.e("HlsPlayerUtils", "PlayerError: ${error.message}", error)
             }
         }

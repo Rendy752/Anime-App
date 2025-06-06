@@ -4,6 +4,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -27,6 +29,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -52,7 +55,19 @@ fun NextEpisodeOverlay(
 ) {
     AnimatedVisibility(
         modifier = modifier
-            .fillMaxSize(),
+            .fillMaxSize()
+            .then(
+                if (isVisible) {
+                    Modifier.pointerInput(Unit) {
+                        awaitEachGesture {
+                            awaitFirstDown(requireUnconsumed = false)
+                            do {
+                                val event = awaitPointerEvent()
+                                event.changes.forEach { it.consume() }
+                            } while (event.changes.any { it.pressed })
+                        }
+                    }
+                } else Modifier),
         visible = isVisible,
         enter = fadeIn(),
         exit = fadeOut()
@@ -60,7 +75,7 @@ fun NextEpisodeOverlay(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.8f))
+                .background(MaterialTheme.colorScheme.surfaceContainer)
                 .padding(16.dp),
             verticalArrangement = if (isLandscape) Arrangement.SpaceBetween else Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
@@ -116,7 +131,6 @@ fun NextEpisodeOverlay(
                     episode = nextEpisode,
                     episodeDetailComplement = nextEpisodeDetailComplement,
                     onClick = { onPlayNext() },
-                    navBackStackEntry = null,
                     titleMaxLines = 4,
                     isSameWidthContent = true
                 )

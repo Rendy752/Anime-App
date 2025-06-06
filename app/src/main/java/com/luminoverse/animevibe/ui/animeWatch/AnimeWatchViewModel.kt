@@ -101,16 +101,23 @@ class AnimeWatchViewModel @Inject constructor(
                 }
 
                 when (coreState.playbackState) {
-                    Player.STATE_ENDED -> _playerUiState.update {
-                        it.copy(isShowNextEpisode = true, isLoading = false)
+                    Player.STATE_ENDED -> {
+                        _playerUiState.update {
+                            it.copy(isShowNextEpisode = true, isLoading = false)
+                        }
+                        onAction(WatchAction.SetErrorMessage(null))
                     }
 
                     Player.STATE_READY -> {
                         _playerUiState.update { it.copy(isLoading = false) }
+                        onAction(WatchAction.SetErrorMessage(null))
                     }
 
                     Player.STATE_BUFFERING -> {
                         _playerUiState.update { it.copy(isLoading = true) }
+                        if (coreState.error == null) {
+                            onAction(WatchAction.SetErrorMessage(null))
+                        }
                     }
 
                     Player.STATE_IDLE -> {
@@ -217,7 +224,8 @@ class AnimeWatchViewModel @Inject constructor(
                                 episodeDetailComplement = Resource.Success(
                                     cachedEpisodeDetailComplement
                                 ),
-                                isFavorite = newIsFavorite
+                                isFavorite = newIsFavorite,
+                                errorMessage = null
                             )
                         }
                         return@launch
@@ -228,9 +236,7 @@ class AnimeWatchViewModel @Inject constructor(
                             episodeServersResource,
                             { id, server, category ->
                                 animeEpisodeDetailRepository.getEpisodeSources(
-                                    id,
-                                    server,
-                                    category
+                                    id, server, category
                                 )
                             },
                             episodeSourcesQuery
@@ -266,7 +272,8 @@ class AnimeWatchViewModel @Inject constructor(
                                         episodeDetailComplement = Resource.Success(
                                             updatedEpisodeDetailComplement
                                         ),
-                                        isFavorite = newIsFavorite
+                                        isFavorite = newIsFavorite,
+                                        errorMessage = null
                                     )
                                 }
                                 return@launch
@@ -355,14 +362,17 @@ class AnimeWatchViewModel @Inject constructor(
                                                         episodeDetailComplements = it.episodeDetailComplements + (remoteEpisodeDetailComplement.id to Resource.Success(
                                                             remoteEpisodeDetailComplement
                                                         )),
-                                                        isFavorite = false
+                                                        isFavorite = false,
                                                     )
                                                 }
                                             }
                                         }
                                     }
                                     _watchState.update {
-                                        it.copy(episodeSourcesQuery = newQuery ?: currentQuery)
+                                        it.copy(
+                                            episodeSourcesQuery = newQuery ?: currentQuery,
+                                            errorMessage = null
+                                        )
                                     }
                                     return@launch
                                 }

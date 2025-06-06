@@ -1,5 +1,6 @@
 package com.luminoverse.animevibe.ui.common
 
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Base64
 import androidx.compose.foundation.Image
@@ -21,6 +22,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.animeDetailPlaceholder
+import androidx.core.graphics.get
 
 @Preview
 @Composable
@@ -31,10 +33,35 @@ fun ScreenshotDisplay(
     onClick: (() -> Unit)? = null,
 ) {
     var showDialog by remember { mutableStateOf(false) }
+
+    fun isBitmapMostlyBlack(bitmap: Bitmap): Boolean {
+        if (bitmap.isRecycled || bitmap.width == 0 || bitmap.height == 0) return true
+        val threshold = 5
+        val sampleSize = 100
+        var blackPixelCount = 0
+        val totalPixelsToSample = minOf(bitmap.width * bitmap.height, sampleSize)
+
+        repeat(totalPixelsToSample) {
+            val x = (Math.random() * bitmap.width).toInt()
+            val y = (Math.random() * bitmap.height).toInt()
+            val pixel = bitmap[x, y]
+            val r = (pixel shr 16) and 0xff
+            val g = (pixel shr 8) and 0xff
+            val b = pixel and 0xff
+
+            if (r <= threshold && g <= threshold && b <= threshold) {
+                blackPixelCount++
+            }
+        }
+        return blackPixelCount.toFloat() / totalPixelsToSample > 0.8
+    }
+
     val screenshotBitmap = screenshot?.let { base64String ->
         try {
             val decodedBytes = Base64.decode(base64String, Base64.DEFAULT)
-            BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
+            val bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
+            if (bitmap != null && !isBitmapMostlyBlack(bitmap)) bitmap
+            else null
         } catch (_: Exception) {
             null
         }
@@ -83,7 +110,7 @@ fun ScreenshotDisplay(
 
     if (showDialog) {
         ImagePreviewDialog(
-            image = screenshotBitmap ?: imageUrl,
+            image = screenshotBitmap?.asImageBitmap() ?: imageUrl,
             contentDescription = "Episode Screenshot Preview",
             onDismiss = { showDialog = false }
         )

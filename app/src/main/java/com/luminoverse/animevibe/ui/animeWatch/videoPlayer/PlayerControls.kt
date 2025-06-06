@@ -16,8 +16,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
@@ -55,6 +57,7 @@ import androidx.media3.common.Player
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.ui.common.CircularLoadingIndicator
+import com.luminoverse.animevibe.ui.common.EpisodeDetailItem
 import com.luminoverse.animevibe.utils.TimeUtils.formatTimestamp
 import com.luminoverse.animevibe.utils.media.PositionState
 
@@ -66,6 +69,8 @@ fun PlayerControls(
     onHandleBackPress: () -> Unit,
     episodeDetailComplement: EpisodeDetailComplement,
     episodes: List<Episode>,
+    nextEpisode: Episode?,
+    nextEpisodeDetailComplement: EpisodeDetailComplement?,
     isLocked: Boolean,
     isHolding: Boolean,
     isFullscreen: Boolean,
@@ -128,23 +133,49 @@ fun PlayerControls(
                         contentDescription = "Return back",
                         tint = Color.White
                     )
-                    if (isFullscreen) Column {
-                        Text(
-                            text = episodeDetailComplement.episodeTitle,
-                            style = MaterialTheme.typography.titleMedium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            fontSize = 20.sp,
-                            color = Color.White
-                        )
-                        Text(
-                            text = episodeDetailComplement.animeTitle,
-                            style = MaterialTheme.typography.bodyMedium,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            fontSize = 14.sp,
-                            color = Color.White.copy(alpha = 0.8f)
-                        )
+                    AnimatedVisibility(
+                        visible = isFullscreen && (playbackState != Player.STATE_ENDED || nextEpisode == null),
+                        enter = fadeIn(animationSpec = tween(durationMillis = 300)),
+                        exit = fadeOut(animationSpec = tween(durationMillis = 300)),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column {
+                            Text(
+                                text = episodeDetailComplement.episodeTitle,
+                                style = MaterialTheme.typography.titleMedium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                fontSize = 20.sp,
+                                color = Color.White
+                            )
+                            Text(
+                                text = episodeDetailComplement.animeTitle,
+                                style = MaterialTheme.typography.bodyMedium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                fontSize = 14.sp,
+                                color = Color.White.copy(alpha = 0.8f)
+                            )
+                        }
+                    }
+                    nextEpisode?.let { nextEpisode ->
+                        AnimatedVisibility(
+                            visible = playbackState == Player.STATE_ENDED,
+                            enter = fadeIn(animationSpec = tween(durationMillis = 300)),
+                            exit = fadeOut(animationSpec = tween(durationMillis = 300)),
+                        ) {
+                            EpisodeDetailItem(
+                                modifier = Modifier
+                                    .heightIn(max = 60.dp)
+                                    .aspectRatio(3.25f),
+                                animeImage = episodeDetailComplement.imageUrl,
+                                episode = nextEpisode,
+                                episodeDetailComplement = nextEpisodeDetailComplement,
+                                onClick = { onNextEpisode() },
+                                titleMaxLines = 4,
+                                isSameWidthContent = true
+                            )
+                        }
                     }
                 }
                 Row {
