@@ -146,7 +146,7 @@ fun CustomSeekBar(
                     .width(with(density) { introWidthPx.toDp() })
                     .height(trackHeight)
                     .clip(RoundedCornerShape(4.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
                     .align(Alignment.CenterStart)
             )
         }
@@ -162,7 +162,7 @@ fun CustomSeekBar(
                     .width(with(density) { outroWidthPx.toDp() })
                     .height(trackHeight)
                     .clip(RoundedCornerShape(4.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
                     .align(Alignment.CenterStart)
             )
         }
