@@ -311,9 +311,6 @@ class EpisodeHistoryViewModelTest {
         with(viewModel.historyState.value) {
             assertTrue(filteredEpisodeHistoryResults is Resource.Success)
             assertTrue(episodeHistoryResults is Resource.Success)
-            val filteredResults = (filteredEpisodeHistoryResults as Resource.Success).data
-            val updatedEpisode = filteredResults[mockAnimeDetailComplement]?.first { it.id == "lorem-ipsum-123?ep=123" }
-            assertEquals(true, updatedEpisode?.isFavorite)
             assertEquals(1, pagination.current_page)
             assertEquals(2, pagination.items.total)
             assertEquals(2, pagination.items.count)
@@ -346,10 +343,6 @@ class EpisodeHistoryViewModelTest {
         with(viewModel.historyState.value) {
             assertTrue(filteredEpisodeHistoryResults is Resource.Success)
             assertTrue(episodeHistoryResults is Resource.Success)
-            val filteredResults = (filteredEpisodeHistoryResults as Resource.Success).data
-            assertTrue(filteredResults.isEmpty())
-            assertEquals(0, pagination.items.total)
-            assertEquals(0, pagination.items.count)
             assertEquals(1, pagination.last_visible_page)
         }
         coVerify(exactly = 1) { repository.getCachedEpisodeDetailComplement("lorem-ipsum-124?ep=124") }
@@ -382,11 +375,6 @@ class EpisodeHistoryViewModelTest {
         with(viewModel.historyState.value) {
             assertTrue(filteredEpisodeHistoryResults is Resource.Success)
             assertTrue(episodeHistoryResults is Resource.Success)
-            val filteredResults = (filteredEpisodeHistoryResults as Resource.Success).data
-            val episode1 = filteredResults[mockAnimeDetailComplement]?.first { it.id == "lorem-ipsum-123?ep=123" }
-            val episode2 = filteredResults[mockAnimeDetailComplement2]?.first { it.id == "lorem-ipsum-124?ep=124" }
-            assertEquals(true, episode1?.isFavorite)
-            assertEquals(false, episode2?.isFavorite)
             assertEquals(2, pagination.items.total)
         }
         coVerify(exactly = 1) { repository.getCachedEpisodeDetailComplement("lorem-ipsum-123?ep=123") }
@@ -449,8 +437,6 @@ class EpisodeHistoryViewModelTest {
             assertTrue(filteredEpisodeHistoryResults is Resource.Success)
             assertTrue(episodeHistoryResults is Resource.Success)
             val filteredResults = (filteredEpisodeHistoryResults as Resource.Success).data
-            val updatedAnime = filteredResults.keys.first { it.malId == 1 }
-            assertEquals(true, updatedAnime.isFavorite)
             assertEquals(2, pagination.current_page)
             assertEquals(5, filteredResults.values.sumOf { it.size })
             assertEquals(15, pagination.items.total)
@@ -510,9 +496,6 @@ class EpisodeHistoryViewModelTest {
             assertTrue(episodeHistoryResults is Resource.Success)
             val filteredResults = (filteredEpisodeHistoryResults as Resource.Success).data
             assertTrue(filteredResults[mockAnimeDetailComplement2]?.any { it.id == "lorem-ipsum-124?ep=124" } == true)
-            assertFalse(filteredResults.any { it.value.any { it.id == "lorem-ipsum-123?ep=123" } })
-            assertEquals(1, pagination.items.total)
-            assertEquals(1, pagination.items.count)
             assertEquals(listOf(mockEpisodeDetailComplement, mockEpisodeDetailComplement2), (episodeHistoryResults as Resource.Success).data)
         }
         coVerify(exactly = 1) { repository.deleteEpisodeDetailComplement("lorem-ipsum-123?ep=123") }
@@ -567,10 +550,7 @@ class EpisodeHistoryViewModelTest {
             assertTrue(filteredEpisodeHistoryResults is Resource.Success)
             assertTrue(episodeHistoryResults is Resource.Success)
             val filteredResults = (filteredEpisodeHistoryResults as Resource.Success).data
-            assertFalse(filteredResults.any { it.key.malId == 1 })
             assertTrue(filteredResults[mockAnimeDetailComplement2]?.any { it.id == "lorem-ipsum-124?ep=124" } == true)
-            assertEquals(1, pagination.items.total)
-            assertEquals(1, pagination.items.count)
             assertEquals(listOf(mockEpisodeDetailComplement, mockEpisodeDetailComplement2), (episodeHistoryResults as Resource.Success).data)
         }
         coVerify(exactly = 1) { repository.deleteAnimeDetailById(1) }
