@@ -9,6 +9,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.PictureInPictureAlt
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.material3.Icon
@@ -26,6 +27,7 @@ import com.luminoverse.animevibe.utils.basicContainer
 fun SettingsContent(
     onDismiss: () -> Unit,
     onLockClick: () -> Unit,
+    onPipClick: () -> Unit,
     selectedPlaybackSpeed: Float,
     onPlaybackSpeedClick: () -> Unit,
     isSubtitleAvailable: Boolean,
@@ -57,6 +59,36 @@ fun SettingsContent(
                     )
                     Text(
                         text = "Lock Screen",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+        }
+        item {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .basicContainer(
+                        roundedCornerShape = RoundedCornerShape(0.dp),
+                        outerPadding = PaddingValues(0.dp),
+                        innerPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                        onItemClick = { onPipClick(); onDismiss() }
+                    ),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PictureInPictureAlt,
+                        contentDescription = "Lock Icon",
+                        tint = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Enter Picture-in-Picture",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -118,7 +150,9 @@ fun SettingsContent(
                         innerPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                         onItemClick = if (isSubtitleAvailable) {
                             { onSubtitleClick(); onDismiss() }
-                        } else {{}}
+                        } else {
+                            {}
+                        }
                     ),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically

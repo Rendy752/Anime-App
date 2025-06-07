@@ -30,7 +30,6 @@ import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PictureInPictureAlt
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay
 import androidx.compose.material.icons.filled.Settings
@@ -83,7 +82,6 @@ fun PlayerControls(
     isDraggingSeekBar: Boolean,
     showRemainingTime: Boolean,
     setShowRemainingTime: (Boolean) -> Unit,
-    onPipClick: () -> Unit,
     onSettingsClick: () -> Unit,
     onFullscreenToggle: () -> Unit,
 ) {
@@ -169,15 +167,6 @@ fun PlayerControls(
                     }
                 }
                 Row {
-                    Icon(
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .clickable { onPipClick() }
-                            .padding(8.dp),
-                        imageVector = Icons.Default.PictureInPictureAlt,
-                        contentDescription = "Picture in Picture",
-                        tint = Color.White
-                    )
                     Icon(
                         modifier = Modifier
                             .clip(CircleShape)

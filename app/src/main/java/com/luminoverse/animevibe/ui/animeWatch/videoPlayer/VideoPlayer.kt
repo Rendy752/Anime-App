@@ -422,7 +422,6 @@ fun VideoPlayer(
                 isDraggingSeekBar = isDraggingSeekBar,
                 showRemainingTime = showRemainingTime,
                 setShowRemainingTime = { showRemainingTime = it },
-                onPipClick = { onEnterPipMode() },
                 onSettingsClick = { showSettingsSheet = true },
                 onFullscreenToggle = {
                     if (!controlsState.isLocked) {
@@ -596,6 +595,7 @@ fun VideoPlayer(
                     playerAction(HlsPlayerAction.Play)
                     playerAction(HlsPlayerAction.ToggleLock(true))
                 },
+                onPipClick = { onEnterPipMode() },
                 selectedPlaybackSpeed = controlsState.playbackSpeed,
                 onPlaybackSpeedClick = { showPlaybackSpeedSheet = true },
                 isSubtitleAvailable = episodeDetailComplement.sources.tracks.any { it.kind == "captions" } == true,
