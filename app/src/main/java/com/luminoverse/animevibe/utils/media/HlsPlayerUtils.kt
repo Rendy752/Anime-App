@@ -503,9 +503,6 @@ class HlsPlayerUtils @Inject constructor(
 
     private fun updateWatchState(updateStoredWatchState: (Long?, Long?, String?) -> Unit) {
         this.updateStoredWatchStateCallback = updateStoredWatchState
-        if (_playerCoreState.value.isPlaying && _playerCoreState.value.playbackState == Player.STATE_READY) {
-            startPeriodicWatchStateUpdates(updateStoredWatchState)
-        }
     }
 
     private fun startPeriodicWatchStateUpdates(updateStoredWatchState: ((Long?, Long?, String?) -> Unit)?) {

@@ -437,6 +437,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
     private fun stopService() {
         Log.d("MediaPlaybackService", "stopService called")
         hlsPlayerUtils.dispatch(HlsPlayerAction.Pause)
+        updatePlaybackState(PlaybackStateCompat.STATE_STOPPED)
         stopForeground(STOP_FOREGROUND_REMOVE)
         isForeground.set(false)
         _state.update { it.copy(isForeground = false) }
