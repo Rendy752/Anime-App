@@ -1,9 +1,9 @@
 package com.luminoverse.animevibe.ui.common
 
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -24,8 +24,9 @@ fun ToggleWithLabel(
     modifier: Modifier = Modifier
 ) {
     Row(
+        modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
-        modifier = modifier
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Column(
             modifier = Modifier.weight(1f)
@@ -43,9 +44,7 @@ fun ToggleWithLabel(
         )
         Switch(
             checked = isActive,
-            modifier = Modifier
-                .scale(animatedScale)
-                .padding(10.dp),
+            modifier = Modifier.scale(animatedScale),
             onCheckedChange = onToggle
         )
     }

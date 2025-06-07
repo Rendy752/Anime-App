@@ -1,7 +1,6 @@
 package com.luminoverse.animevibe.models
 
 import android.os.Parcelable
-import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
 
@@ -9,16 +8,19 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class EpisodeSourcesQuery(
     val id: String,
-    var server: String,
+    val server: String,
     val category: String
 ) : Parcelable {
-    @IgnoredOnParcel
-    private val serverMap = mapOf(
-        "vidsrc" to "vidstreaming"
-    )
 
-    init {
-        this.server = serverMap.getOrDefault(server, server)
+    companion object {
+        private val serverMap = mapOf(
+            "vidsrc" to "vidstreaming"
+        )
+
+        fun create(id: String, rawServer: String, category: String): EpisodeSourcesQuery {
+            val mappedServer = serverMap.getOrDefault(rawServer, rawServer)
+            return EpisodeSourcesQuery(id = id, server = mappedServer, category = category)
+        }
     }
 }
 

@@ -7,7 +7,7 @@ import com.luminoverse.animevibe.repository.AnimeRecommendationsRepository
 import com.luminoverse.animevibe.ui.animeRecommendations.AnimeRecommendationsViewModel
 import com.luminoverse.animevibe.ui.animeRecommendations.RecommendationsAction
 import com.luminoverse.animevibe.ui.animeRecommendations.RecommendationsState
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.resource.Resource
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify

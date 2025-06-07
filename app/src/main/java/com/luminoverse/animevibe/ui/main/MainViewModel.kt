@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
-import androidx.compose.runtime.Stable
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
@@ -22,13 +21,13 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-@Stable
 data class MainState(
     val isDarkMode: Boolean = false,
     val contrastMode: ContrastMode = ContrastMode.Normal,
     val colorStyle: ColorStyle = ColorStyle.Default,
-    val notificationEnabled: Boolean = false,
-    val showQuitDialog: Boolean = false,
+    val isNotificationEnabled: Boolean = false,
+    val isAutoPlayVideo: Boolean = true,
+    val isRtl: Boolean = false,
     val isConnected: Boolean = true,
     val networkStatus: NetworkStatus = networkStatusPlaceholder,
     val isShowIdleDialog: Boolean = false,
@@ -40,7 +39,8 @@ sealed class MainAction {
     data class SetContrastMode(val contrastMode: ContrastMode) : MainAction()
     data class SetColorStyle(val colorStyle: ColorStyle) : MainAction()
     data class SetNotificationEnabled(val enabled: Boolean) : MainAction()
-    data class SetShowQuitDialog(val show: Boolean) : MainAction()
+    data class SetAutoPlayVideo(val isAutoPlayVideo: Boolean) : MainAction()
+    data class SetRtl(val isRtl: Boolean) : MainAction()
     data class SetIsConnected(val connected: Boolean) : MainAction()
     data class SetNetworkStatus(val status: NetworkStatus) : MainAction()
     data class SetIsShowIdleDialog(val show: Boolean) : MainAction()
@@ -64,7 +64,9 @@ class MainViewModel @Inject constructor(
                 ?.let { ContrastMode.valueOf(it) } ?: ContrastMode.Normal,
             colorStyle = themePrefs.getString("color_style", ColorStyle.Default.name)
                 ?.let { ColorStyle.valueOf(it) } ?: ColorStyle.Default,
-            notificationEnabled = settingsPrefs.getBoolean("notifications_enabled", false)
+            isNotificationEnabled = settingsPrefs.getBoolean("notifications_enabled", false),
+            isAutoPlayVideo = settingsPrefs.getBoolean("auto_play_video", true),
+            isRtl = settingsPrefs.getBoolean("rtl", false)
         )
     )
 
@@ -72,7 +74,6 @@ class MainViewModel @Inject constructor(
 
     init {
         startNetworkMonitoring()
-        println("MainViewModel initialized with notificationEnabled: ${_state.value.notificationEnabled}")
         checkNotificationPermission()
     }
 
@@ -82,7 +83,8 @@ class MainViewModel @Inject constructor(
             is MainAction.SetContrastMode -> setContrastMode(action.contrastMode)
             is MainAction.SetColorStyle -> setColorStyle(action.colorStyle)
             is MainAction.SetNotificationEnabled -> setNotificationEnabled(action.enabled)
-            is MainAction.SetShowQuitDialog -> setShowQuitDialog(action.show)
+            is MainAction.SetAutoPlayVideo -> setAutoPlayVideo(action.isAutoPlayVideo)
+            is MainAction.SetRtl -> setRtl(action.isRtl)
             is MainAction.SetIsConnected -> setIsConnected(action.connected)
             is MainAction.SetNetworkStatus -> setNetworkStatus(action.status)
             is MainAction.SetIsShowIdleDialog -> setIsShowIdleDialog(action.show)
@@ -98,13 +100,13 @@ class MainViewModel @Inject constructor(
             )
             val isGranted = permissionStatus == PackageManager.PERMISSION_GRANTED
             println("POST_NOTIFICATIONS permission status: permissionStatus=$permissionStatus, isGranted=$isGranted")
-            if (isGranted != _state.value.notificationEnabled) {
-                println("Syncing notificationEnabled with permission: newValue=$isGranted")
+            if (isGranted != _state.value.isNotificationEnabled) {
+                println("Syncing isNotificationEnabled with permission: newValue=$isGranted")
                 setNotificationEnabled(isGranted)
             }
         } else {
-            println("POST_NOTIFICATIONS not required (pre-TIRAMISU), setting notificationEnabled=true")
-            if (!_state.value.notificationEnabled) {
+            println("POST_NOTIFICATIONS not required (pre-TIRAMISU), setting isNotificationEnabled=true")
+            if (!_state.value.isNotificationEnabled) {
                 setNotificationEnabled(true)
             }
         }
@@ -126,16 +128,18 @@ class MainViewModel @Inject constructor(
     }
 
     private fun setNotificationEnabled(enabled: Boolean) {
-        println("setNotificationEnabled called with enabled=$enabled")
-        _state.update { it.copy(notificationEnabled = enabled) }
+        _state.update { it.copy(isNotificationEnabled = enabled) }
         settingsPrefs.edit { putBoolean("notifications_enabled", enabled) }
-        println("Updated notificationEnabled state to: ${_state.value.notificationEnabled}")
-        val persisted = settingsPrefs.getBoolean("notifications_enabled", true)
-        println("Persisted notifications_enabled in SharedPreferences: $persisted")
     }
 
-    private fun setShowQuitDialog(show: Boolean) {
-        _state.update { it.copy(showQuitDialog = show) }
+    private fun setAutoPlayVideo(isAutoPlayVideo: Boolean) {
+        _state.update { it.copy(isAutoPlayVideo = isAutoPlayVideo) }
+        settingsPrefs.edit { putBoolean("auto_play_video", isAutoPlayVideo) }
+    }
+
+    private fun setRtl(isRtl: Boolean) {
+        _state.update { it.copy(isRtl = isRtl) }
+        settingsPrefs.edit { putBoolean("rtl", isRtl) }
     }
 
     private fun setIsConnected(connected: Boolean) {

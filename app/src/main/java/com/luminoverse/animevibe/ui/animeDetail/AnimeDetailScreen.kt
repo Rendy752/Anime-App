@@ -21,7 +21,7 @@ import com.luminoverse.animevibe.ui.animeDetail.components.LoadingContent
 import com.luminoverse.animevibe.ui.animeDetail.components.SuccessContent
 import com.luminoverse.animevibe.ui.common.MessageDisplay
 import com.luminoverse.animevibe.ui.main.MainState
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.resource.Resource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -92,7 +92,7 @@ fun AnimeDetailScreen(
                 is Resource.Error -> Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
-                ) { MessageDisplay(detailState.animeDetail.message ?: "Error") }
+                ) { MessageDisplay(message = detailState.animeDetail.message ?: "Error") }
             }
         }
     }

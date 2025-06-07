@@ -12,7 +12,7 @@ import com.luminoverse.animevibe.ui.animeHome.HomeAction
 import com.luminoverse.animevibe.ui.animeHome.HomeState
 import com.luminoverse.animevibe.ui.animeHome.AnimeHomeViewModel
 import com.luminoverse.animevibe.ui.animeHome.CarouselState
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.resource.Resource
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify

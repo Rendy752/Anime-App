@@ -8,6 +8,7 @@ import com.luminoverse.animevibe.models.EpisodeServersResponse
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
 import com.luminoverse.animevibe.models.EpisodeSourcesResponse
 import com.luminoverse.animevibe.repository.AnimeEpisodeDetailRepository
+import com.luminoverse.animevibe.utils.resource.Resource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.Instant

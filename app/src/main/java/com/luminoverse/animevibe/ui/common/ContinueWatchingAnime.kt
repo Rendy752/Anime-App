@@ -31,7 +31,7 @@ import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.episodeDetailComplementPlaceholder
 import com.luminoverse.animevibe.utils.basicContainer
-import com.luminoverse.animevibe.utils.WatchUtils.getEpisodeBackgroundColor
+import com.luminoverse.animevibe.utils.watch.WatchUtils.getEpisodeBackgroundColor
 
 @Preview
 @Composable
@@ -72,7 +72,9 @@ fun ContinueWatchingAnime(
                     .width(75.dp)
                     .height(100.dp)
                     .aspectRatio(3f / 4f),
-                isClickable = episodeDetailComplement.imageUrl != null
+                onClick = if (episodeDetailComplement.imageUrl != null) null else {
+                    {}
+                }
             )
             Column(
                 modifier = Modifier

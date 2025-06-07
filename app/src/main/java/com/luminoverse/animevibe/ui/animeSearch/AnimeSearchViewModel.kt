@@ -10,7 +10,7 @@ import com.luminoverse.animevibe.models.Producer
 import com.luminoverse.animevibe.models.ProducersResponse
 import com.luminoverse.animevibe.models.ProducersSearchQueryState
 import com.luminoverse.animevibe.repository.AnimeSearchRepository
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.resource.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow

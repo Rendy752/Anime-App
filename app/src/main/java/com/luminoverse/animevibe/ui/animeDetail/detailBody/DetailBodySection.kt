@@ -46,18 +46,45 @@ fun DetailBodySection(animeDetail: AnimeDetail, navController: NavController) {
             Column(
                 modifier = Modifier.weight(1f)
             ) {
-                DataTextWithIcon("Status", animeDetail.status, Icons.Default.Info)
-                DataTextWithIcon("Type", animeDetail.type ?: "Unknown", Icons.Default.PlayCircle)
-                DataTextWithIcon("Source", animeDetail.source, Icons.AutoMirrored.Filled.MenuBook)
-                DataTextWithIcon("Season", animeDetail.season ?: "-", Icons.Default.CalendarMonth)
                 DataTextWithIcon(
-                    "Released", animeDetail.year?.toString() ?: "-", Icons.Default.Event
+                    label = "Status",
+                    value = animeDetail.status,
+                    icon = Icons.Default.Info
                 )
-                DataTextWithIcon("Aired", animeDetail.aired.string, Icons.Default.DateRange)
-                DataTextWithIcon("Rating", animeDetail.rating ?: "Unknown", Icons.Default.Star)
                 DataTextWithIcon(
-                    "Episodes", animeDetail.episodes.toString(),
-                    Icons.AutoMirrored.Filled.List
+                    label = "Type",
+                    value = animeDetail.type ?: "Unknown",
+                    icon = Icons.Default.PlayCircle
+                )
+                DataTextWithIcon(
+                    label = "Source",
+                    value = animeDetail.source,
+                    icon = Icons.AutoMirrored.Filled.MenuBook
+                )
+                DataTextWithIcon(
+                    label = "Season",
+                    value = animeDetail.season ?: "-",
+                    icon = Icons.Default.CalendarMonth
+                )
+                DataTextWithIcon(
+                    label = "Released",
+                    value = animeDetail.year?.toString() ?: "-",
+                    icon = Icons.Default.Event
+                )
+                DataTextWithIcon(
+                    label = "Aired",
+                    value = animeDetail.aired.string,
+                    icon = Icons.Default.DateRange
+                )
+                DataTextWithIcon(
+                    label = "Rating",
+                    value = animeDetail.rating ?: "Unknown",
+                    icon = Icons.Default.Star
+                )
+                DataTextWithIcon(
+                    label =
+                        "Episodes", value = animeDetail.episodes.toString(),
+                    icon = Icons.AutoMirrored.Filled.List
                 )
 
                 val genreItems = animeDetail.genres?.map { genre ->
@@ -70,7 +97,11 @@ fun DetailBodySection(animeDetail: AnimeDetail, navController: NavController) {
                         )
                     }
                 }
-                ClickableDataTextWithIcon("Genres", genreItems, Icons.AutoMirrored.Filled.Label)
+                ClickableDataTextWithIcon(
+                    label = "Genres",
+                    items = genreItems,
+                    icon = Icons.AutoMirrored.Filled.Label
+                )
             }
             Column(
                 modifier = Modifier.weight(1f)
@@ -85,7 +116,11 @@ fun DetailBodySection(animeDetail: AnimeDetail, navController: NavController) {
                         )
                     }
                 }
-                ClickableDataTextWithIcon("Studios", studioItems, Icons.Default.Apartment)
+                ClickableDataTextWithIcon(
+                    label = "Studios",
+                    items = studioItems,
+                    icon = Icons.Default.Apartment
+                )
 
                 val producerItems = animeDetail.producers?.map { producer ->
                     ClickableItem(producer.name) {
@@ -97,7 +132,11 @@ fun DetailBodySection(animeDetail: AnimeDetail, navController: NavController) {
                         )
                     }
                 }
-                ClickableDataTextWithIcon("Producers", producerItems, Icons.Default.Apartment)
+                ClickableDataTextWithIcon(
+                    label = "Producers",
+                    items = producerItems,
+                    icon = Icons.Default.Apartment
+                )
 
                 val licensorItems = animeDetail.licensors?.map { licensor ->
                     ClickableItem(licensor.name) {
@@ -109,13 +148,21 @@ fun DetailBodySection(animeDetail: AnimeDetail, navController: NavController) {
                         )
                     }
                 }
-                ClickableDataTextWithIcon("Licensors", licensorItems, Icons.Default.Apartment)
+                ClickableDataTextWithIcon(
+                    label = "Licensors",
+                    items = licensorItems,
+                    icon = Icons.Default.Apartment
+                )
 
                 DataTextWithIcon(
-                    "Broadcast", animeDetail.broadcast.string ?: "-",
-                    Icons.Default.NotificationsActive
+                    label = "Broadcast", value = animeDetail.broadcast.string ?: "-",
+                    icon = Icons.Default.NotificationsActive
                 )
-                DataTextWithIcon("Duration", animeDetail.duration, Icons.Default.AccessTime)
+                DataTextWithIcon(
+                    label = "Duration",
+                    value = animeDetail.duration,
+                    icon = Icons.Default.AccessTime
+                )
             }
         }
     }
@@ -133,16 +180,12 @@ fun DetailBodySectionSkeleton() {
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 repeat(9) {
                     DataTextWithIconSkeleton()
                 }
             }
-            Column(
-                modifier = Modifier.weight(1f)
-            ) {
+            Column(modifier = Modifier.weight(1f)) {
                 repeat(5) {
                     DataTextWithIconSkeleton()
                 }

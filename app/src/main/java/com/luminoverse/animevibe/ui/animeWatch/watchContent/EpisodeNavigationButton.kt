@@ -24,7 +24,7 @@ import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
 import com.luminoverse.animevibe.ui.common.SkeletonBox
 import com.luminoverse.animevibe.utils.basicContainer
-import com.luminoverse.animevibe.utils.WatchUtils.getEpisodeBackgroundColor
+import com.luminoverse.animevibe.utils.watch.WatchUtils.getEpisodeBackgroundColor
 
 @Composable
 fun EpisodeNavigationButton(

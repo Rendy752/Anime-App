@@ -5,10 +5,12 @@ import com.luminoverse.animevibe.data.local.dao.AnimeDetailComplementDao
 import com.luminoverse.animevibe.data.local.dao.AnimeDetailDao
 import com.luminoverse.animevibe.data.local.dao.EpisodeDetailComplementDao
 import com.luminoverse.animevibe.data.local.dao.GenreDao
+import com.luminoverse.animevibe.data.local.dao.NotificationDao
 import com.luminoverse.animevibe.data.local.database.AnimeDetailComplementDatabase
 import com.luminoverse.animevibe.data.local.database.AnimeDetailDatabase
 import com.luminoverse.animevibe.data.local.database.EpisodeDetailComplementDatabase
 import com.luminoverse.animevibe.data.local.database.GenreDatabase
+import com.luminoverse.animevibe.data.local.database.NotificationDatabase
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -66,5 +68,17 @@ object DatabaseModule {
     @Singleton
     fun provideGenreDao(database: GenreDatabase): GenreDao {
         return database.getGenreDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideNotificationDatabase(@ApplicationContext context: Context): NotificationDatabase {
+        return NotificationDatabase.getDatabase(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideNotificationDao(database: NotificationDatabase): NotificationDao {
+        return database.getNotificationDao()
     }
 }

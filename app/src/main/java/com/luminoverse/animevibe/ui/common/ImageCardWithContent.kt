@@ -9,6 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -23,6 +24,9 @@ fun ImageCardWithContent(
     modifier: Modifier = Modifier,
     height: Dp = 200.dp
 ) {
+    val layoutDirection = LocalLayoutDirection.current
+    val isRtl = layoutDirection == androidx.compose.ui.unit.LayoutDirection.Rtl
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -37,7 +41,7 @@ fun ImageCardWithContent(
                 .fillMaxWidth(0.75f)
                 .align(Alignment.CenterEnd),
             roundedCorners = ImageRoundedCorner.NONE,
-            isClickable = false
+            onClick = onItemClick
         )
 
         Box(
@@ -51,8 +55,8 @@ fun ImageCardWithContent(
                             contentBackgroundColor,
                             Color.Transparent
                         ),
-                        startX = 0f,
-                        endX = Float.POSITIVE_INFINITY
+                        startX = if (isRtl) Float.POSITIVE_INFINITY else 0f,
+                        endX = if (isRtl) 0f else Float.POSITIVE_INFINITY
                     )
                 )
         )
@@ -70,20 +74,20 @@ fun ImageCardWithContent(
                     .fillMaxWidth(0.6f)
                     .padding(vertical = 16.dp),
                 verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.Start
+                horizontalAlignment = if (isRtl) Alignment.End else Alignment.Start
             ) {
                 leftContent()
             }
 
             rightContent?.let {
                 Row(
-                    horizontalArrangement = Arrangement.End,
+                    horizontalArrangement = if (isRtl) Arrangement.Start else Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Spacer(modifier = Modifier.width(8.dp))
                     Column(
                         modifier = Modifier.wrapContentWidth(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
+                        horizontalAlignment = if (isRtl) Alignment.Start else Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
                         it()

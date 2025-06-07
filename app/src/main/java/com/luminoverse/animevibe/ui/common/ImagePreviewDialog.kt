@@ -19,6 +19,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
+import androidx.compose.ui.graphics.ImageBitmap
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,6 +53,15 @@ fun ImagePreviewDialog(
                             is Bitmap -> {
                                 Image(
                                     bitmap = image.asImageBitmap(),
+                                    contentDescription = contentDescription,
+                                    modifier = Modifier.fillMaxSize(),
+                                    contentScale = ContentScale.Fit
+                                )
+                            }
+
+                            is ImageBitmap -> {
+                                Image(
+                                    bitmap = image,
                                     contentDescription = contentDescription,
                                     modifier = Modifier.fillMaxSize(),
                                     contentScale = ContentScale.Fit

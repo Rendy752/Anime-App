@@ -8,7 +8,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.luminoverse.animevibe.ui.animeRecommendations.AnimeRecommendationsScreen
 import com.luminoverse.animevibe.ui.theme.AppTheme
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.resource.Resource
 import dagger.hilt.android.testing.HiltAndroidRule
 import dagger.hilt.android.testing.HiltAndroidTest
 import io.mockk.every

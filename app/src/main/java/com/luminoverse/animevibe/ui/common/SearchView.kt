@@ -80,6 +80,6 @@ fun SearchViewSkeleton(modifier: Modifier = Modifier) {
         modifier = modifier
             .clip(RoundedCornerShape(8.dp))
             .background(MaterialTheme.colorScheme.primaryContainer),
-        height = 56.dp
+        height = 64.dp
     )
 }

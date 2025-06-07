@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.sp
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
 import com.luminoverse.animevibe.ui.common.SkeletonBox
-import com.luminoverse.animevibe.utils.WatchUtils.getServerCategoryIcon
+import com.luminoverse.animevibe.utils.watch.WatchUtils.getServerCategoryIcon
 
 @Composable
 fun EpisodeInfo(

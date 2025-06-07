@@ -67,7 +67,7 @@ object TimeUtils {
             val zonedDateTime =
                 ZonedDateTime.parse(dateString, formatter.withZone(ZoneId.systemDefault()))
             val date = Date.from(zonedDateTime.toInstant())
-            prettyTime.format(date)
+            "\u202A${prettyTime.format(date)}\u202C"
         } catch (e: Exception) {
             println("Error parsing date: ${e.message}")
             ""
@@ -188,6 +188,50 @@ object TimeUtils {
         } else {
             String.format(Locale.US, "%02d:%02d", minutes, seconds)
         }
+    }
+
+    fun parseTimestamp(timestamp: String): Long {
+        val parts = timestamp.split(":", ".").map { it.toInt() }
+
+        var milliseconds = 0L
+        when (parts.size) {
+            4 -> {
+                val hours = parts[0]
+                val minutes = parts[1]
+                val seconds = parts[2]
+                val millis = parts[3]
+                milliseconds += TimeUnit.HOURS.toMillis(hours.toLong())
+                milliseconds += TimeUnit.MINUTES.toMillis(minutes.toLong())
+                milliseconds += TimeUnit.SECONDS.toMillis(seconds.toLong())
+                milliseconds += millis.toLong()
+            }
+
+            3 -> {
+                if (timestamp.count { it == ':' } == 1) {
+                    val minutes = parts[0]
+                    val seconds = parts[1]
+                    val millis = parts[2]
+                    milliseconds += TimeUnit.MINUTES.toMillis(minutes.toLong())
+                    milliseconds += TimeUnit.SECONDS.toMillis(seconds.toLong())
+                    milliseconds += millis.toLong()
+                } else {
+                    val seconds = parts[0]
+                    val millis = parts[1]
+                    milliseconds += TimeUnit.SECONDS.toMillis(seconds.toLong())
+                    milliseconds += millis.toLong()
+                }
+            }
+
+            2 -> {
+                val seconds = parts[0]
+                val millis = parts[1]
+                milliseconds += TimeUnit.SECONDS.toMillis(seconds.toLong())
+                milliseconds += millis.toLong()
+            }
+
+            else -> throw IllegalArgumentException("Invalid timestamp format: $timestamp")
+        }
+        return milliseconds
     }
 
     fun calculateRemainingTime(broadcast: Broadcast): String {

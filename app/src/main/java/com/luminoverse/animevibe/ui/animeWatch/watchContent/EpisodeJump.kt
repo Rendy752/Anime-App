@@ -24,6 +24,7 @@ import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.ui.common.SearchView
 import com.luminoverse.animevibe.utils.Debounce
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,17 +34,19 @@ fun EpisodeJump(
 ) {
     val scope = rememberCoroutineScope()
     var episodeNumberInput by remember { mutableStateOf("") }
-    val debounce = remember(episodeNumberInput) {
-        Debounce(scope, 500L) { newQuery ->
-            val filteredValue = newQuery.filter { it.isDigit() }
-            val intValue = filteredValue.toIntOrNull()
-            if (intValue == null || (intValue >= 1 && intValue <= episodes.size)) {
-                episodeNumberInput = filteredValue
-                intValue?.let { episodeNo ->
-                    val index = episodes.indexOfFirst { it.episodeNo == episodeNo }
-                    if (index != -1) {
-                        scope.launch {
+    val totalEpisodes = episodes.size
+
+    val debounce = remember {
+        Debounce(scope, 1000L) { filteredQuery ->
+            val intValue = filteredQuery.toIntOrNull()
+            if (intValue != null && intValue >= 1 && intValue <= totalEpisodes) {
+                val index = episodes.indexOfFirst { it.episodeNo == intValue }
+                if (index != -1) {
+                    scope.launch {
+                        if (abs(gridState.firstVisibleItemIndex - index) < 20) {
                             gridState.animateScrollToItem(index)
+                        } else {
+                            gridState.scrollToItem(index)
                         }
                     }
                 }
@@ -69,7 +72,7 @@ fun EpisodeJump(
                 overflow = TextOverflow.Ellipsis
             )
             Text(
-                episodes.size.toString(),
+                totalEpisodes.toString(),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
             )
@@ -77,9 +80,15 @@ fun EpisodeJump(
 
         SearchView(
             query = episodeNumberInput,
-            onQueryChange = {
-                episodeNumberInput = it
-                debounce.query(it)
+            onQueryChange = { newText ->
+                val filteredText = newText.filter { it.isDigit() && it != '0' }
+                val newIntValue = filteredText.toIntOrNull()
+                episodeNumberInput = if (newIntValue == null || newIntValue <= totalEpisodes) {
+                    filteredText
+                } else {
+                    totalEpisodes.toString()
+                }
+                debounce.query(episodeNumberInput)
             },
             keyboardType = KeyboardType.Number,
             placeholder = "Jump to Episode",

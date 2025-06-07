@@ -11,13 +11,17 @@ import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -44,30 +48,35 @@ import com.luminoverse.animevibe.ui.main.navigation.getBottomBarEnterTransition
 import com.luminoverse.animevibe.ui.main.navigation.getBottomBarExitTransition
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.main.navigation.navigateTo
+import com.luminoverse.animevibe.ui.main.navigation.navigateToAdjacentRoute
 import com.luminoverse.animevibe.ui.settings.SettingsScreen
 import com.luminoverse.animevibe.ui.settings.SettingsViewModel
-import com.luminoverse.animevibe.utils.HlsPlayerUtils
-import com.luminoverse.animevibe.utils.PipUtil.buildPipActions
+import com.luminoverse.animevibe.utils.media.PipUtil.buildPipActions
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.launch
+import kotlin.math.abs
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
     navController: NavHostController,
     intentChannel: Channel<Intent>,
-    onResetIdleTimer: () -> Unit,
     mainState: MainState,
-    mainAction: (MainAction) -> Unit
+    mainAction: (MainAction) -> Unit,
 ) {
     val activity = LocalActivity.current
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute by rememberUpdatedState(navBackStackEntry?.destination?.route)
     val isConnected by rememberUpdatedState(mainState.isConnected)
+    val isRtl by rememberUpdatedState(mainState.isRtl)
     val isCurrentBottomScreen by remember(currentRoute) {
         derivedStateOf { NavRoute.bottomRoutes.any { it.route == currentRoute } }
     }
+    val coroutineScope = rememberCoroutineScope()
+    var isNavigating by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         intentChannel.receiveAsFlow()
@@ -120,23 +129,33 @@ fun MainScreen(
             }
     }
 
-    LaunchedEffect(currentRoute) {
-        onResetIdleTimer()
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .navigationBarsPadding()
+            .background(MaterialTheme.colorScheme.surface)
+            .then(if (isCurrentBottomScreen) Modifier.navigationBarsPadding() else Modifier)
     ) {
         NavHost(
             navController = navController,
             startDestination = NavRoute.Home.route,
-            modifier = Modifier.weight(1f),
-            enterTransition = { getBottomBarEnterTransition(initialState, targetState) },
-            exitTransition = { getBottomBarExitTransition(initialState, targetState) },
-            popEnterTransition = { getBottomBarEnterTransition(initialState, targetState) },
-            popExitTransition = { getBottomBarExitTransition(initialState, targetState) }
+            modifier = Modifier
+                .weight(1f)
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures { _, dragAmount ->
+                        if (abs(dragAmount) > 100f && !isNavigating) {
+                            isNavigating = true
+                            coroutineScope.launch(Dispatchers.Main) {
+                                val isNextLogical = if (isRtl) dragAmount > 0 else dragAmount < 0
+                                navigateToAdjacentRoute(isNextLogical, currentRoute, navController)
+                                isNavigating = false
+                            }
+                        }
+                    }
+                },
+            enterTransition = { getBottomBarEnterTransition(initialState, targetState, isRtl) },
+            exitTransition = { getBottomBarExitTransition(initialState, targetState, isRtl) },
+            popEnterTransition = { getBottomBarEnterTransition(initialState, targetState, isRtl) },
+            popExitTransition = { getBottomBarExitTransition(initialState, targetState, isRtl) }
         ) {
             composable(NavRoute.Home.route) {
                 val viewModel: AnimeHomeViewModel = hiltViewModel()
@@ -213,7 +232,6 @@ fun MainScreen(
                     mainAction = mainAction,
                     state = settingsState,
                     action = viewModel::onAction,
-                    navBackStackEntry = navBackStackEntry
                 )
             }
             composable(
@@ -240,7 +258,8 @@ fun MainScreen(
                     hiltViewModel(LocalActivity.current as ViewModelStoreOwner)
                 val watchState by viewModel.watchState.collectAsStateWithLifecycle()
                 val playerUiState by viewModel.playerUiState.collectAsStateWithLifecycle()
-                val hlsPlayerState by HlsPlayerUtils.state.collectAsStateWithLifecycle()
+                val playerCoreState by viewModel.playerCoreState.collectAsStateWithLifecycle()
+
                 val activity = LocalActivity.current as? MainActivity
 
                 DisposableEffect(activity) {
@@ -259,9 +278,10 @@ fun MainScreen(
                     }
                 }
 
-                LaunchedEffect(playerUiState.isPipMode, hlsPlayerState.isPlaying) {
+                val isPlaying by remember { derivedStateOf { playerCoreState.isPlaying } }
+                LaunchedEffect(isPlaying) {
                     activity?.window?.let { window ->
-                        if (hlsPlayerState.isPlaying && !playerUiState.isPipMode) {
+                        if (isPlaying && !playerUiState.isPipMode) {
                             window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                         } else {
                             window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
@@ -270,9 +290,9 @@ fun MainScreen(
                     if (playerUiState.isPipMode && activity != null) {
                         Log.d(
                             "MainScreen",
-                            "Updating PiP params: isPlaying=${hlsPlayerState.isPlaying}"
+                            "Updating PiP params: isPlaying=${playerCoreState.isPlaying}"
                         )
-                        val actions = buildPipActions(activity, hlsPlayerState.isPlaying)
+                        val actions = buildPipActions(activity, playerCoreState.isPlaying)
                         activity.setPictureInPictureParams(
                             PictureInPictureParams.Builder()
                                 .setActions(actions)
@@ -297,15 +317,20 @@ fun MainScreen(
                     mainState = mainState,
                     watchState = watchState,
                     playerUiState = playerUiState,
-                    hlsPlayerState = hlsPlayerState,
+                    hlsPlayerCoreState = playerCoreState,
+                    hlsControlsState = viewModel.controlsState,
+                    hlsPositionState = viewModel.positionState,
                     onAction = viewModel::onAction,
+                    dispatchPlayerAction = viewModel::dispatchPlayerAction,
+                    getPlayer = viewModel::getPlayer,
                     onEnterPipMode = {
                         if (isConnected && activity != null) {
                             Log.d(
                                 "MainScreen",
-                                "Entering PiP: isPlaying=${hlsPlayerState.isPlaying}"
+                                "Entering PiP: isPlaying=${playerCoreState.isPlaying}"
                             )
-                            val actions = buildPipActions(activity, hlsPlayerState.isPlaying)
+                            val actions =
+                                buildPipActions(activity, playerCoreState.isPlaying)
                             activity.enterPictureInPictureMode(
                                 PictureInPictureParams.Builder()
                                     .setActions(actions)

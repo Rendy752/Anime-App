@@ -11,10 +11,15 @@ import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.utils.basicContainer
 
 @Composable
-fun MessageDisplay(message: String, isError: Boolean = true, isRounded: Boolean = true) {
+fun MessageDisplay(
+    modifier: Modifier = Modifier,
+    message: String,
+    isError: Boolean = true,
+    isRounded: Boolean = true
+) {
     Text(
         text = message,
-        modifier = Modifier
+        modifier = modifier
             .basicContainer(
                 isError = isError,
                 isPrimary = !isError,
