@@ -4,7 +4,6 @@ import android.app.Application
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
-import androidx.compose.runtime.Stable
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
@@ -22,7 +21,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-@Stable
 data class MainState(
     val isDarkMode: Boolean = false,
     val contrastMode: ContrastMode = ContrastMode.Normal,

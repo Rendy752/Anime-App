@@ -86,6 +86,10 @@ class AnimeApplication : Application(), Configuration.Provider {
 
     fun cleanupService() {
         hlsPlayerUtils.dispatch(HlsPlayerAction.Release)
+        stopMediaPlaybackService()
+    }
+
+    fun stopMediaPlaybackService() {
         mediaPlaybackService?.let { service ->
             Log.d(TAG, "Cleaning up MediaPlaybackService")
             service.dispatch(MediaPlaybackAction.StopService)

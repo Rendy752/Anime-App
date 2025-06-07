@@ -34,6 +34,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 import android.content.pm.PackageManager
+import com.luminoverse.animevibe.utils.media.MediaPlaybackAction
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -199,6 +200,9 @@ class MainActivity : AppCompatActivity() {
             if (currentRoute?.startsWith("animeWatch/") == true && isPlaying) {
                 pipParamsBuilder.setActions(buildPipActions(this@MainActivity, true))
                 enterPictureInPictureMode(pipParamsBuilder.build())
+            } else {
+                (applicationContext as AnimeApplication).getMediaPlaybackService()
+                    ?.dispatch(MediaPlaybackAction.StopService)
             }
         }
     }
