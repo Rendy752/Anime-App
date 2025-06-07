@@ -44,8 +44,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 
 @SuppressLint("ImplicitSamInstance")
 @OptIn(UnstableApi::class, ExperimentalComposeUiApi::class)
@@ -54,7 +52,6 @@ fun VideoPlayerSection(
     episodeDetailComplement: EpisodeDetailComplement,
     episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
     errorMessage: String?,
-    isFavorite: Boolean,
     isConnected: Boolean,
     playerUiState: PlayerUiState,
     coreState: PlayerCoreState,
@@ -63,7 +60,7 @@ fun VideoPlayerSection(
     playerAction: (HlsPlayerAction) -> Unit,
     isLandscape: Boolean,
     getPlayer: () -> ExoPlayer?,
-    updateStoredWatchState: (EpisodeDetailComplement) -> Unit,
+    updateStoredWatchState: (Long?, Long?, String?) -> Unit,
     onHandleBackPress: () -> Unit,
     isScreenOn: Boolean,
     isAutoPlayVideo: Boolean,
@@ -71,6 +68,7 @@ fun VideoPlayerSection(
     episodeSourcesQuery: EpisodeSourcesQuery,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery, Boolean) -> Unit,
     onEnterPipMode: () -> Unit,
+    addErrorSourceQueryList: () -> Unit,
     setIsLoading: (Boolean) -> Unit,
     setFullscreenChange: (Boolean) -> Unit,
     setShowResume: (Boolean) -> Unit,
@@ -90,26 +88,11 @@ fun VideoPlayerSection(
 
     val application = context.applicationContext as AnimeApplication
 
-    fun setupPlayer(
-        service: MediaPlaybackService?,
-        playerView: PlayerView,
-        complement: EpisodeDetailComplement,
-        episodes: List<Episode>,
-        query: EpisodeSourcesQuery
-    ) {
+    fun setupPlayer() {
         if (player != null) {
             playerView.player = player
             playerAction(HlsPlayerAction.UpdateWatchState { position, duration, screenshot ->
-                updateStoredWatchState(
-                    episodeDetailComplement.copy(
-                        isFavorite = isFavorite,
-                        lastTimestamp = position,
-                        duration = duration,
-                        screenshot = screenshot,
-                        lastWatched = LocalDateTime.now()
-                            .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-                    )
-                )
+                updateStoredWatchState(position, duration, screenshot)
             })
             val videoSurface = playerView.videoSurfaceView
             playerAction(HlsPlayerAction.SetVideoSurface(videoSurface))
@@ -124,11 +107,11 @@ fun VideoPlayerSection(
             return
         }
 
-        service?.dispatch(
+        mediaPlaybackService?.dispatch(
             MediaPlaybackAction.SetEpisodeData(
-                complement = complement,
+                complement = episodeDetailComplement,
                 episodes = episodes,
-                query = query,
+                query = episodeSourcesQuery,
                 handleSelectedEpisodeServer = { episodeQuery ->
                     handleSelectedEpisodeServer(episodeQuery, false)
                 }
@@ -142,13 +125,7 @@ fun VideoPlayerSection(
                 Log.d("VideoPlayerSection", "Service connected")
                 val binder = service as MediaPlaybackService.MediaPlaybackBinder
                 mediaPlaybackService = binder.getService()
-                setupPlayer(
-                    mediaPlaybackService,
-                    playerView,
-                    episodeDetailComplement,
-                    episodes,
-                    episodeSourcesQuery
-                )
+                setupPlayer()
             }
 
             override fun onServiceDisconnected(name: ComponentName?) {
@@ -169,13 +146,7 @@ fun VideoPlayerSection(
 
         if (application.isMediaServiceBound()) {
             mediaPlaybackService = application.getMediaPlaybackService()
-            setupPlayer(
-                mediaPlaybackService,
-                playerView,
-                episodeDetailComplement,
-                episodes,
-                episodeSourcesQuery
-            )
+            setupPlayer()
         } else {
             val intent = Intent(context, MediaPlaybackService::class.java)
             try {
@@ -189,7 +160,7 @@ fun VideoPlayerSection(
         }
     }
 
-    LaunchedEffect(retryCount) {
+    LaunchedEffect(episodeDetailComplement.sources.sources[0].url, retryCount) {
         delay(500L)
         if (retryCount < maxRetries) {
             Log.d(
@@ -251,8 +222,9 @@ fun VideoPlayerSection(
         }
     }
 
-    DisposableEffect(Unit) {
+    DisposableEffect(episodeDetailComplement.sources.sources[0].url) {
         initializePlayer()
+        retryCount = 0
 
         val playerListener = object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) {
@@ -271,6 +243,7 @@ fun VideoPlayerSection(
                         "VideoPlayerSection",
                         "Playback error, retrying ($retryCount/$maxRetries)"
                     )
+                    addErrorSourceQueryList()
                     handleSelectedEpisodeServer(episodeSourcesQuery, true)
                 } else {
                     setPlayerError("Playback failed: ${error.message}")
@@ -343,7 +316,7 @@ fun VideoPlayerSection(
         }
     }
 
-    LaunchedEffect(Unit) {
+    LaunchedEffect(episodeDetailComplement.sources.sources[0].url) {
         Log.d("VideoPlayerSection", "episodeSourcesQuery changed: ${episodeSourcesQuery.id}")
         playerAction(
             HlsPlayerAction.SetMedia(
@@ -351,8 +324,8 @@ fun VideoPlayerSection(
                 isAutoPlayVideo = isAutoPlayVideo,
                 positionState = PositionState(
                     currentPosition =
-                        if (isAutoPlayVideo && ((episodeDetailComplement.lastTimestamp
-                                ?: 0) < (episodeDetailComplement.duration ?: 0))
+                        if (isAutoPlayVideo && ((episodeDetailComplement.lastTimestamp ?: 0) <
+                                    (episodeDetailComplement.duration ?: 0))
                         )
                             episodeDetailComplement.lastTimestamp ?: 0
                         else 0,
@@ -365,13 +338,7 @@ fun VideoPlayerSection(
                 }
             )
         )
-        setupPlayer(
-            mediaPlaybackService,
-            playerView,
-            episodeDetailComplement,
-            episodes,
-            episodeSourcesQuery
-        )
+        setupPlayer()
         setShowResume(episodeDetailComplement.lastTimestamp != null)
         setShowNextEpisode(false)
     }

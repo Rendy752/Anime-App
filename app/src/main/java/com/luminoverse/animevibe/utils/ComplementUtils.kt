@@ -132,14 +132,11 @@ object ComplementUtils {
         repository: AnimeEpisodeDetailRepository,
         episodeId: String,
         isFavorite: Boolean
-    ): EpisodeDetailComplement? = withContext(Dispatchers.IO) {
+    ) = withContext(Dispatchers.IO) {
         val episode = repository.getCachedEpisodeDetailComplement(episodeId)
         if (episode != null) {
             val updatedEpisode = episode.copy(isFavorite = isFavorite)
             repository.updateEpisodeDetailComplement(updatedEpisode)
-            updatedEpisode
-        } else {
-            null
         }
     }
 }

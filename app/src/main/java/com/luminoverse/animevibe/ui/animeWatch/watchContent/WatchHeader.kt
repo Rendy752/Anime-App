@@ -7,6 +7,10 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -24,14 +28,15 @@ import com.luminoverse.animevibe.utils.basicContainer
 fun WatchHeader(
     title: String?,
     networkStatus: NetworkStatus,
-    onFavoriteToggle: (EpisodeDetailComplement) -> Unit,
-    isFavorite: Boolean,
+    onFavoriteToggle: (Boolean) -> Unit,
     episode: Episode,
     episodeDetailComplement: EpisodeDetailComplement,
     episodeSourcesQuery: EpisodeSourcesQuery?,
+    errorSourceQueryList: List<EpisodeSourcesQuery>,
     serverScrollState: ScrollState,
     onServerSelected: (EpisodeSourcesQuery) -> Unit,
 ) {
+    var isFavorite by remember { mutableStateOf(episodeDetailComplement.isFavorite) }
     Column(
         modifier = Modifier
             .basicContainer(
@@ -51,9 +56,11 @@ fun WatchHeader(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 CurrentlyWatchingHeader(
-                    episodeDetailComplement = episodeDetailComplement,
                     networkStatus = networkStatus,
-                    onFavoriteToggle = onFavoriteToggle,
+                    onFavoriteToggle = {
+                        isFavorite = !isFavorite
+                        onFavoriteToggle(isFavorite)
+                    },
                     isFavorite = isFavorite
                 )
                 EpisodeInfo(
@@ -64,7 +71,9 @@ fun WatchHeader(
                 )
                 ServerSelection(
                     scrollState = serverScrollState,
+                    episodeId = episode.episodeId,
                     episodeSourcesQuery = episodeSourcesQuery,
+                    errorSourceQueryList = errorSourceQueryList,
                     servers = servers,
                     onServerSelected = onServerSelected
                 )
@@ -94,7 +103,6 @@ fun WatchHeaderSkeleton(
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         CurrentlyWatchingHeader(
-            episodeDetailComplement = episodeDetailComplement,
             networkStatus = networkStatus,
             onFavoriteToggle = {},
             isFavorite = false

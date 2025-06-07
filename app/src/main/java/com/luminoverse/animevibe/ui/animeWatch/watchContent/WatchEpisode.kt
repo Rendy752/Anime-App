@@ -21,7 +21,8 @@ import com.luminoverse.animevibe.utils.basicContainer
 fun WatchEpisode(
     episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
     onLoadEpisodeDetailComplement: (String) -> Unit,
-    episodeDetailComplement: Resource<EpisodeDetailComplement>,
+    isRefreshing: Boolean,
+    episodeDetailComplement: EpisodeDetailComplement?,
     episodes: List<Episode>,
     newEpisodeCount: Int,
     episodeSourcesQuery: EpisodeSourcesQuery?,
@@ -39,9 +40,9 @@ fun WatchEpisode(
     ) {
         EpisodeJump(episodes = episodes, gridState = gridState)
 
-        if (episodeDetailComplement is Resource.Success) {
+        if (episodeDetailComplement != null && !isRefreshing) {
             EpisodeNavigation(
-                episodeDetailComplement = episodeDetailComplement.data,
+                episodeDetailComplement = episodeDetailComplement,
                 episodeDetailComplements = episodeDetailComplements,
                 onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,
                 episodes = episodes,
@@ -57,7 +58,7 @@ fun WatchEpisode(
             newEpisodeCount = newEpisodeCount,
             episodeDetailComplements = episodeDetailComplements,
             onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,
-            episodeDetailComplement = if (episodeDetailComplement is Resource.Success) episodeDetailComplement.data else null,
+            episodeDetailComplement = episodeDetailComplement,
             episodeSourcesQuery = episodeSourcesQuery,
             handleSelectedEpisodeServer = handleSelectedEpisodeServer,
             gridState = gridState

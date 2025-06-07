@@ -33,14 +33,13 @@ import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
 import com.luminoverse.animevibe.utils.media.PositionState
-import com.luminoverse.animevibe.utils.resource.Resource
 import kotlinx.coroutines.flow.StateFlow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnimeWatchScreen(
-    malId: Int = 0,
-    episodeId: String = "",
+    malId: Int,
+    episodeId: String,
     navController: NavHostController,
     mainState: MainState,
     watchState: WatchState,
@@ -119,7 +118,7 @@ fun AnimeWatchScreen(
     }
 
     LaunchedEffect(mainState.isConnected) {
-        if (mainState.isConnected && watchState.episodeDetailComplement is Resource.Error && watchState.episodeSourcesQuery != null) {
+        if (mainState.isConnected && watchState.episodeDetailComplement == null && watchState.episodeSourcesQuery != null) {
             onAction(
                 WatchAction.HandleSelectedEpisodeServer(
                     watchState.episodeSourcesQuery,
@@ -172,6 +171,8 @@ fun AnimeWatchScreen(
                     )
                     .then(videoSize)
                 AnimeWatchContent(
+                    malId = malId,
+                    episodeId = episodeId,
                     navController = navController,
                     watchState = watchState,
                     isConnected = mainState.isConnected,

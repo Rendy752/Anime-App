@@ -31,11 +31,12 @@ import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
 import com.luminoverse.animevibe.utils.media.PositionState
-import com.luminoverse.animevibe.utils.resource.Resource
 import kotlinx.coroutines.flow.StateFlow
 
 @Composable
 fun AnimeWatchContent(
+    malId: Int,
+    episodeId: String,
     navController: NavController,
     watchState: WatchState,
     isConnected: Boolean,
@@ -70,16 +71,15 @@ fun AnimeWatchContent(
                 .then(videoSize)
                 .background(MaterialTheme.colorScheme.surfaceContainer)
         ) {
-            if (watchState.animeDetailComplement == null || watchState.animeDetailComplement.episodes == null || watchState.episodeSourcesQuery == null || watchState.episodeDetailComplement !is Resource.Success) Box(
+            if (watchState.episodeDetailComplement?.sources?.sources[0]?.url == null || watchState.episodeDetailComplement.id != episodeId || watchState.animeDetailComplement?.episodes == null || watchState.episodeSourcesQuery == null) Box(
                 modifier = modifier
                     .then(videoSize)
                     .background(MaterialTheme.colorScheme.surfaceContainer)
             ) else {
                 VideoPlayerSection(
-                    episodeDetailComplement = watchState.episodeDetailComplement.data,
+                    episodeDetailComplement = watchState.episodeDetailComplement,
                     episodeDetailComplements = watchState.episodeDetailComplements,
                     errorMessage = watchState.errorMessage,
-                    isFavorite = watchState.isFavorite,
                     isConnected = isConnected,
                     playerUiState = playerUiState,
                     coreState = playerCoreState,
@@ -88,9 +88,13 @@ fun AnimeWatchContent(
                     playerAction = dispatchPlayerAction,
                     isLandscape = mainState.isLandscape,
                     getPlayer = getPlayer,
-                    updateStoredWatchState = {
-                        onAction(WatchAction.UpdateEpisodeDetailComplement(it))
-                        onAction(WatchAction.UpdateLastEpisodeWatchedId(it.id))
+                    updateStoredWatchState = { currentPosition, duration, screenShot ->
+                        onAction(WatchAction.UpdateLastEpisodeWatchedId(watchState.episodeDetailComplement.id))
+                        onAction(
+                            WatchAction.UpdateStoredWatchState(
+                                currentPosition, duration, screenShot
+                            )
+                        )
                     },
                     onHandleBackPress = onHandleBackPress,
                     isScreenOn = isScreenOn,
@@ -105,6 +109,7 @@ fun AnimeWatchContent(
                         )
                     },
                     onEnterPipMode = onEnterPipMode,
+                    addErrorSourceQueryList = { onAction(WatchAction.AddErrorSourceQueryList(watchState.episodeSourcesQuery)) },
                     setIsLoading = { onAction(WatchAction.SetIsLoading(it)) },
                     setFullscreenChange = { onAction(WatchAction.SetFullscreen(it)) },
                     setShowResume = { onAction(WatchAction.SetShowResume(it)) },
@@ -115,7 +120,7 @@ fun AnimeWatchContent(
             watchState.episodeSourcesQuery?.let { episodeSourcesQuery ->
                 RetryButton(
                     modifier = Modifier.align(Alignment.Center),
-                    isVisible = watchState.episodeDetailComplement is Resource.Error,
+                    isVisible = watchState.episodeDetailComplement == null && watchState.errorMessage != null && !watchState.isRefreshing,
                     onRetry = {
                         onAction(
                             WatchAction.HandleSelectedEpisodeServer(
@@ -127,7 +132,7 @@ fun AnimeWatchContent(
             }
         }
 
-        if (mainState.isLandscape && !playerUiState.isPipMode && !playerUiState.isFullscreen && watchState.animeDetailComplement?.episodes != null) {
+        if (mainState.isLandscape && !playerUiState.isPipMode && !playerUiState.isFullscreen && watchState.animeDetailComplement?.episodes != null && watchState.animeDetail?.mal_id == malId && watchState.animeDetailComplement.malId == malId) {
             LazyColumn(
                 modifier = Modifier
                     .padding(8.dp)
@@ -141,10 +146,10 @@ fun AnimeWatchContent(
                     WatchContentSection(
                         animeDetail = watchState.animeDetail,
                         networkStatus = mainState.networkStatus,
-                        isFavorite = watchState.isFavorite,
-                        onFavoriteToggle = { updatedComplement ->
-                            onAction(WatchAction.SetFavorite(updatedComplement.isFavorite))
+                        onFavoriteToggle = { isFavorite ->
+                            onAction(WatchAction.SetFavorite(isFavorite))
                         },
+                        isRefreshing = watchState.isRefreshing,
                         episodeDetailComplement = watchState.episodeDetailComplement,
                         onLoadEpisodeDetailComplement = {
                             onAction(WatchAction.LoadEpisodeDetailComplement(it))
@@ -153,6 +158,7 @@ fun AnimeWatchContent(
                         episodes = watchState.animeDetailComplement.episodes,
                         newEpisodeCount = watchState.newEpisodeCount,
                         episodeSourcesQuery = watchState.episodeSourcesQuery,
+                        errorSourceQueryList = playerUiState.errorSourceQueryList,
                         serverScrollState = serverScrollState,
                         handleSelectedEpisodeServer = {
                             onAction(
@@ -172,7 +178,7 @@ fun AnimeWatchContent(
         }
     }
 
-    if (!mainState.isLandscape && !playerUiState.isPipMode && !playerUiState.isFullscreen && watchState.animeDetailComplement?.episodes != null) {
+    if (!mainState.isLandscape && !playerUiState.isPipMode && !playerUiState.isFullscreen && watchState.animeDetailComplement?.episodes != null && watchState.animeDetail?.mal_id == malId && watchState.animeDetailComplement.malId == malId) {
         LazyColumn(
             modifier = Modifier
                 .padding(8.dp)
@@ -185,10 +191,10 @@ fun AnimeWatchContent(
                 WatchContentSection(
                     animeDetail = watchState.animeDetail,
                     networkStatus = mainState.networkStatus,
-                    isFavorite = watchState.isFavorite,
-                    onFavoriteToggle = { updatedComplement ->
-                        onAction(WatchAction.SetFavorite(updatedComplement.isFavorite))
+                    onFavoriteToggle = { isFavorite ->
+                        onAction(WatchAction.SetFavorite(isFavorite))
                     },
+                    isRefreshing = watchState.isRefreshing,
                     episodeDetailComplement = watchState.episodeDetailComplement,
                     onLoadEpisodeDetailComplement = {
                         onAction(WatchAction.LoadEpisodeDetailComplement(it))
@@ -197,6 +203,7 @@ fun AnimeWatchContent(
                     episodes = watchState.animeDetailComplement.episodes,
                     newEpisodeCount = watchState.newEpisodeCount,
                     episodeSourcesQuery = watchState.episodeSourcesQuery,
+                    errorSourceQueryList = playerUiState.errorSourceQueryList,
                     serverScrollState = serverScrollState,
                     handleSelectedEpisodeServer = {
                         onAction(

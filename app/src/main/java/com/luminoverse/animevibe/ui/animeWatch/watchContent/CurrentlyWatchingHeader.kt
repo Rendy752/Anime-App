@@ -23,16 +23,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.NetworkStatus
 import com.luminoverse.animevibe.ui.common.DebouncedIconButton
 import com.luminoverse.animevibe.ui.theme.watchingEpisode
 
 @Composable
 fun CurrentlyWatchingHeader(
-    episodeDetailComplement: EpisodeDetailComplement,
     networkStatus: NetworkStatus,
-    onFavoriteToggle: (EpisodeDetailComplement) -> Unit,
+    onFavoriteToggle: () -> Unit,
     isFavorite: Boolean
 ) {
     Row(
@@ -72,11 +70,7 @@ fun CurrentlyWatchingHeader(
             }
             DebouncedIconButton(
                 onClick = {
-                    onFavoriteToggle(
-                        episodeDetailComplement.copy(
-                            isFavorite = !isFavorite
-                        )
-                    )
+                    onFavoriteToggle()
                 },
                 modifier = Modifier.semantics {
                     contentDescription =
