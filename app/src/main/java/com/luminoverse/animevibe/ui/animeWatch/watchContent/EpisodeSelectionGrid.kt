@@ -68,9 +68,9 @@ fun EpisodeSelectionGrid(
         Debounce(coroutineScope) { episodeId ->
             handleSelectedEpisodeServer(
                 episodeSourcesQuery?.copy(id = episodeId)
-                    ?: EpisodeSourcesQuery(
+                    ?: EpisodeSourcesQuery.create(
                         id = episodeId,
-                        server = "vidsrc",
+                        rawServer = "vidsrc",
                         category = "sub"
                     )
             )

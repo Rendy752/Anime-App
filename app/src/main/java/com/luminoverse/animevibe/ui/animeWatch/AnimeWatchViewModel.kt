@@ -32,7 +32,7 @@ data class WatchState(
     val animeDetailComplement: AnimeDetailComplement? = null,
     val episodeDetailComplement: Resource<EpisodeDetailComplement> = Resource.Loading(),
     val episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>> = emptyMap(),
-    val episodeSourcesQuery: EpisodeSourcesQuery = episodeSourcesQueryPlaceholder,
+    val episodeSourcesQuery: EpisodeSourcesQuery? = null,
     val isRefreshing: Boolean = false,
     val isFavorite: Boolean = false,
     val errorMessage: String? = null,
@@ -192,7 +192,12 @@ class AnimeWatchViewModel @Inject constructor(
                 _watchState.update { it.copy(isFavorite = initialIsFavorite) }
 
                 val initialQuery = defaultEpisode?.sourcesQuery?.copy(id = episodeId)
-                    ?: episodeSourcesQueryPlaceholder.copy(id = episodeId)
+                    ?: EpisodeSourcesQuery(id = episodeId,
+                        server = defaultEpisode?.sourcesQuery?.server
+                            ?: episodeSourcesQueryPlaceholder.server,
+                        category = defaultEpisode?.sourcesQuery?.category
+                            ?: episodeSourcesQueryPlaceholder.category
+                    )
                 onAction(WatchAction.HandleSelectedEpisodeServer(initialQuery, isFirstInit = true))
             }
         }
@@ -209,7 +214,8 @@ class AnimeWatchViewModel @Inject constructor(
             _watchState.update {
                 it.copy(
                     isRefreshing = true,
-                    episodeDetailComplement = Resource.Loading()
+                    episodeSourcesQuery = episodeSourcesQuery,
+                    episodeDetailComplement = Resource.Loading(null)
                 )
             }
             if (!isRefresh) {
@@ -469,7 +475,6 @@ class AnimeWatchViewModel @Inject constructor(
                 if (complement.lastEpisodeWatchedId == lastEpisodeWatchedId) return@launch
                 val updatedComplement = complement.copy(lastEpisodeWatchedId = lastEpisodeWatchedId)
                 animeEpisodeDetailRepository.updateCachedAnimeDetailComplement(updatedComplement)
-                _watchState.update { it.copy(animeDetailComplement = updatedComplement) }
             }
         }
     }
@@ -479,15 +484,6 @@ class AnimeWatchViewModel @Inject constructor(
             val updatedWithFavorite =
                 updatedEpisodeDetailComplement.copy(isFavorite = _watchState.value.isFavorite)
             animeEpisodeDetailRepository.updateEpisodeDetailComplement(updatedWithFavorite)
-            if (_watchState.value.episodeDetailComplement is Resource.Success) {
-                _watchState.update {
-                    it.copy(
-                        episodeDetailComplement = Resource.Success(updatedWithFavorite),
-                        episodeDetailComplements = it.episodeDetailComplements +
-                                (updatedWithFavorite.id to Resource.Success(updatedWithFavorite))
-                    )
-                }
-            }
         }
     }
 

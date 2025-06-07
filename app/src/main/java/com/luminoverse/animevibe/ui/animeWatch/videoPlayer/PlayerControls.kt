@@ -29,16 +29,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBackIosNew
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PictureInPictureAlt
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Replay
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
-import androidx.compose.material.icons.filled.Subtitles
-import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -69,10 +66,9 @@ fun PlayerControls(
     positionState: PositionState,
     onHandleBackPress: () -> Unit,
     episodeDetailComplement: EpisodeDetailComplement,
-    episodes: List<Episode>,
+    hasPreviousEpisode: Boolean,
     nextEpisode: Episode?,
     nextEpisodeDetailComplement: EpisodeDetailComplement?,
-    isLocked: Boolean,
     isFullscreen: Boolean,
     isShowSpeedUp: Boolean,
     handlePlay: () -> Unit,
@@ -88,14 +84,9 @@ fun PlayerControls(
     showRemainingTime: Boolean,
     setShowRemainingTime: (Boolean) -> Unit,
     onPipClick: () -> Unit,
-    onLockClick: () -> Unit,
-    onSubtitleClick: () -> Unit,
-    onPlaybackSpeedClick: () -> Unit,
+    onSettingsClick: () -> Unit,
     onFullscreenToggle: () -> Unit,
 ) {
-    val currentEpisode = episodeDetailComplement.servers.episodeNo
-    val hasPreviousEpisode = episodes.any { it.episodeNo == currentEpisode - 1 }
-    val hasNextEpisode = episodes.any { it.episodeNo == currentEpisode + 1 }
     val shouldShowControls = isShowSeekIndicator == 0 && !isDraggingSeekBar && !isShowSpeedUp
 
     Box(
@@ -190,28 +181,10 @@ fun PlayerControls(
                     Icon(
                         modifier = Modifier
                             .clip(CircleShape)
-                            .clickable { onPlaybackSpeedClick() }
+                            .clickable { onSettingsClick() }
                             .padding(8.dp),
-                        imageVector = Icons.Default.Speed,
-                        contentDescription = "Speed",
-                        tint = Color.White
-                    )
-                    Icon(
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .clickable { onSubtitleClick() }
-                            .padding(8.dp),
-                        imageVector = Icons.Default.Subtitles,
-                        contentDescription = "Subtitles",
-                        tint = Color.White
-                    )
-                    Icon(
-                        modifier = Modifier
-                            .clip(CircleShape)
-                            .clickable { onLockClick() }
-                            .padding(8.dp),
-                        imageVector = if (isLocked) Icons.Default.Lock else Icons.Default.LockOpen,
-                        contentDescription = if (isLocked) "Unlock" else "Lock",
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = "Settings",
                         tint = Color.White
                     )
                 }
@@ -324,7 +297,7 @@ fun PlayerControls(
                     modifier = Modifier
                         .size(40.dp)
                         .clip(CircleShape)
-                        .clickable(enabled = hasNextEpisode, onClick = onNextEpisode)
+                        .clickable(enabled = nextEpisode != null, onClick = onNextEpisode)
                         .background(
                             color = Color.Black.copy(alpha = 0.4f),
                             shape = CircleShape
@@ -333,7 +306,7 @@ fun PlayerControls(
                     Icon(
                         imageVector = Icons.Default.SkipNext,
                         contentDescription = "Next Episode",
-                        tint = if (hasNextEpisode) Color.White else Color.Gray,
+                        tint = if (nextEpisode != null) Color.White else Color.Gray,
                         modifier = Modifier
                             .size(24.dp)
                             .align(Alignment.Center)

@@ -22,15 +22,15 @@ object StreamingUtils {
         val queries = mutableListOf<EpisodeSourcesQuery>()
 
         episodeServers.sub.reversed().forEach { server ->
-            queries.add(EpisodeSourcesQuery(episodeId, server.serverName, "sub"))
+            queries.add(EpisodeSourcesQuery.create(episodeId, server.serverName, "sub"))
         }
 
         episodeServers.dub.reversed().forEach { server ->
-            queries.add(EpisodeSourcesQuery(episodeId, server.serverName, "dub"))
+            queries.add(EpisodeSourcesQuery.create(episodeId, server.serverName, "dub"))
         }
 
         episodeServers.raw.reversed().forEach { server ->
-            queries.add(EpisodeSourcesQuery(episodeId, server.serverName, "raw"))
+            queries.add(EpisodeSourcesQuery.create(episodeId, server.serverName, "raw"))
         }
 
         return queries
@@ -50,14 +50,9 @@ object StreamingUtils {
         }
 
         val queriesToTry = mutableListOf<EpisodeSourcesQuery>()
-        if (episodeSourcesQuery != null && !isServerRecentlyFailed(
-                episodeSourcesQuery.server,
-                episodeSourcesQuery.category
-            )
-        ) {
+        if (episodeSourcesQuery != null) {
             queriesToTry.add(episodeSourcesQuery)
         }
-        queriesToTry.addAll(allQueries.filter { !isServerRecentlyFailed(it.server, it.category) })
 
         val usedServers = mutableSetOf<String>()
 

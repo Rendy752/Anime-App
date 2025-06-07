@@ -94,7 +94,7 @@ class EpisodeHistoryViewModel @Inject constructor(
                 is Resource.Error -> _historyState.update {
                     it.copy(
                         isRefreshing = false,
-                        filteredEpisodeHistoryResults = Resource.Error(allEpisodesResult.message ?: "Error fetching history"),
+                        filteredEpisodeHistoryResults = Resource.Error(allEpisodesResult.message),
                         episodeHistoryResults = allEpisodesResult,
                         pagination = defaultCompletePagination
                     )

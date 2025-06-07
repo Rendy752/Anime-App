@@ -88,9 +88,7 @@ fun VideoPlayer(
     setShowResume: (Boolean) -> Unit,
     setShowNextEpisode: (Boolean) -> Unit,
     isLandscape: Boolean,
-    errorMessage: String?,
-    modifier: Modifier = Modifier,
-    videoSize: Modifier
+    errorMessage: String?
 ) {
     val controlsState by controlsState.collectAsStateWithLifecycle()
     val positionState by positionState.collectAsStateWithLifecycle()
@@ -119,6 +117,7 @@ fun VideoPlayer(
     var lastTapTime by remember { mutableLongStateOf(0L) }
     var lastTapX by remember { mutableStateOf<Float?>(null) }
 
+    var showSettingsSheet by remember { mutableStateOf(false) }
     var showSubtitleSheet by remember { mutableStateOf(false) }
     var showPlaybackSpeedSheet by remember { mutableStateOf(false) }
 
@@ -275,8 +274,7 @@ fun VideoPlayer(
     }
 
     Box(
-        modifier = modifier
-            .then(videoSize)
+        modifier = Modifier
             .pointerInput(Unit) {
                 awaitEachGesture {
                     val down = awaitFirstDown()
@@ -332,7 +330,6 @@ fun VideoPlayer(
                 factory = { playerView },
                 modifier = Modifier.fillMaxSize(),
                 update = { view ->
-                    view.useController = false
                     view.subtitleView?.apply {
                         setStyle(
                             CaptionStyleCompat(
@@ -389,10 +386,9 @@ fun VideoPlayer(
                 positionState = positionState,
                 onHandleBackPress = onHandleBackPress,
                 episodeDetailComplement = episodeDetailComplement,
-                episodes = episodes,
+                hasPreviousEpisode = prevEpisode != null,
                 nextEpisode = nextEpisode,
                 nextEpisodeDetailComplement = episodeDetailComplements[nextEpisode?.episodeId]?.data,
-                isLocked = controlsState.isLocked,
                 isFullscreen = playerUiState.isFullscreen,
                 isShowSpeedUp = isShowSpeedUp,
                 handlePlay = { playerAction(HlsPlayerAction.Play) },
@@ -427,27 +423,7 @@ fun VideoPlayer(
                 showRemainingTime = showRemainingTime,
                 setShowRemainingTime = { showRemainingTime = it },
                 onPipClick = { onEnterPipMode() },
-                onLockClick = {
-                    (context as? FragmentActivity)?.let { activity ->
-                        activity.window?.let { window ->
-                            FullscreenUtils.handleFullscreenToggle(
-                                window = window,
-                                isFullscreen = false,
-                                isLandscape = false,
-                                activity = activity,
-                                setFullscreenChange = setFullscreenChange,
-                                isLockLandscapeOrientation = true
-                            )
-                        }
-                    }
-                    if (coreState.playbackState == Player.STATE_ENDED) {
-                        playerAction(HlsPlayerAction.SeekTo(0))
-                    }
-                    playerAction(HlsPlayerAction.Play)
-                    playerAction(HlsPlayerAction.ToggleLock(true))
-                },
-                onSubtitleClick = { showSubtitleSheet = true },
-                onPlaybackSpeedClick = { showPlaybackSpeedSheet = true },
+                onSettingsClick = { showSettingsSheet = true },
                 onFullscreenToggle = {
                     if (!controlsState.isLocked) {
                         (context as? FragmentActivity)?.let { activity ->
@@ -470,47 +446,6 @@ fun VideoPlayer(
             modifier = Modifier.align(Alignment.Center),
             isVisible = (coreState.playbackState == Player.STATE_BUFFERING || coreState.playbackState == Player.STATE_IDLE) && !isPlayerControlsVisible
         )
-
-        CustomModalBottomSheet(
-            modifier = Modifier.align(Alignment.BottomCenter),
-            isVisible = showSubtitleSheet && !playerUiState.isPipMode && !controlsState.isLocked,
-            isFullscreen = playerUiState.isFullscreen,
-            isLandscape = isLandscape,
-            config = BottomSheetConfig(
-                landscapeWidthFraction = 0.4f,
-                landscapeHeightFraction = 0.7f
-            ),
-            onDismiss = { showSubtitleSheet = false }
-        ) {
-            SubtitleContent(
-                tracks = episodeDetailComplement.sources.tracks,
-                selectedSubtitle = controlsState.selectedSubtitle,
-                onSubtitleSelected = { track ->
-                    playerAction(HlsPlayerAction.SetSubtitle(track))
-                    showSubtitleSheet = false
-                }
-            )
-        }
-
-        CustomModalBottomSheet(
-            modifier = Modifier.align(Alignment.BottomCenter),
-            isVisible = showPlaybackSpeedSheet && !playerUiState.isPipMode && !controlsState.isLocked,
-            isFullscreen = playerUiState.isFullscreen,
-            isLandscape = isLandscape,
-            config = BottomSheetConfig(
-                landscapeWidthFraction = 0.4f,
-                landscapeHeightFraction = 0.7f
-            ),
-            onDismiss = { showPlaybackSpeedSheet = false }
-        ) {
-            PlaybackSpeedContent(
-                selectedPlaybackSpeed = controlsState.playbackSpeed,
-                onSpeedChange = { speed ->
-                    playerAction(HlsPlayerAction.SetPlaybackSpeed(speed))
-                    showPlaybackSpeedSheet = false
-                }
-            )
-        }
 
         SeekIndicator(
             seekDirection = isShowSeekIndicator,
@@ -583,26 +518,29 @@ fun VideoPlayer(
 
         val isSkipVisible =
             !playerUiState.isPipMode && !controlsState.isLocked && !isHolding && !isDraggingSeekBar && coreState.playbackState != Player.STATE_ENDED && !calculatedShouldShowResumeOverlay && !playerUiState.isShowNextEpisode && errorMessage == null
-        SkipButton(
-            label = "Skip Intro",
-            isVisible = controlsState.showIntroButton && isSkipVisible,
-            onSkip = {
-                episodeDetailComplement.sources.intro?.end?.let { endTime ->
-                    playerAction(HlsPlayerAction.SkipIntro(endTime))
-                }
-            },
-            modifier = Modifier.align(Alignment.BottomEnd)
-        )
-        SkipButton(
-            label = "Skip Outro",
-            isVisible = controlsState.showOutroButton && isSkipVisible,
-            onSkip = {
-                episodeDetailComplement.sources.outro?.end?.let { endTime ->
-                    playerAction(HlsPlayerAction.SkipOutro(endTime))
-                }
-            },
-            modifier = Modifier.align(Alignment.BottomEnd)
-        )
+
+        episodeDetailComplement.sources.let { sources ->
+            SkipButton(
+                label = "Skip Intro",
+                isVisible = controlsState.showIntroButton && isSkipVisible,
+                onSkip = {
+                    sources.intro?.end?.let { endTime ->
+                        playerAction(HlsPlayerAction.SkipIntro(endTime))
+                    }
+                },
+                modifier = Modifier.align(Alignment.BottomEnd)
+            )
+            SkipButton(
+                label = "Skip Outro",
+                isVisible = controlsState.showOutroButton && isSkipVisible,
+                onSkip = {
+                    sources.outro?.end?.let { endTime ->
+                        playerAction(HlsPlayerAction.SkipOutro(endTime))
+                    }
+                },
+                modifier = Modifier.align(Alignment.BottomEnd)
+            )
+        }
 
         SpeedUpIndicator(
             modifier = Modifier.align(Alignment.TopCenter),
@@ -623,5 +561,90 @@ fun VideoPlayer(
             },
             modifier = Modifier.align(Alignment.TopEnd)
         )
+
+        CustomModalBottomSheet(
+            modifier = Modifier.align(Alignment.BottomCenter),
+            isVisible = showSettingsSheet && !playerUiState.isPipMode && !controlsState.isLocked,
+            isFullscreen = playerUiState.isFullscreen,
+            isLandscape = isLandscape,
+            config = BottomSheetConfig(
+                landscapeWidthFraction = 0.4f,
+                landscapeHeightFraction = 0.7f
+            ),
+            onDismiss = { showSettingsSheet = false }
+        ) {
+            SettingsContent(
+                onDismiss = {
+                    showSettingsSheet = false
+                },
+                onLockClick = {
+                    (context as? FragmentActivity)?.let { activity ->
+                        activity.window?.let { window ->
+                            FullscreenUtils.handleFullscreenToggle(
+                                window = window,
+                                isFullscreen = false,
+                                isLandscape = false,
+                                activity = activity,
+                                setFullscreenChange = setFullscreenChange,
+                                isLockLandscapeOrientation = true
+                            )
+                        }
+                    }
+                    if (coreState.playbackState == Player.STATE_ENDED) {
+                        playerAction(HlsPlayerAction.SeekTo(0))
+                    }
+                    playerAction(HlsPlayerAction.Play)
+                    playerAction(HlsPlayerAction.ToggleLock(true))
+                },
+                selectedPlaybackSpeed = controlsState.playbackSpeed,
+                onPlaybackSpeedClick = { showPlaybackSpeedSheet = true },
+                isSubtitleAvailable = episodeDetailComplement.sources.tracks.any { it.kind == "captions" } == true,
+                selectedSubtitle = controlsState.selectedSubtitle,
+                onSubtitleClick = { showSubtitleSheet = true }
+            )
+        }
+
+        episodeDetailComplement.sources.tracks.let { tracks ->
+            CustomModalBottomSheet(
+                modifier = Modifier.align(Alignment.BottomCenter),
+                isVisible = showSubtitleSheet && !playerUiState.isPipMode && !controlsState.isLocked,
+                isFullscreen = playerUiState.isFullscreen,
+                isLandscape = isLandscape,
+                config = BottomSheetConfig(
+                    landscapeWidthFraction = 0.4f,
+                    landscapeHeightFraction = 0.7f
+                ),
+                onDismiss = { showSubtitleSheet = false }
+            ) {
+                SubtitleContent(
+                    tracks = tracks,
+                    selectedSubtitle = controlsState.selectedSubtitle,
+                    onSubtitleSelected = { track ->
+                        playerAction(HlsPlayerAction.SetSubtitle(track))
+                        showSubtitleSheet = false
+                    }
+                )
+            }
+        }
+
+        CustomModalBottomSheet(
+            modifier = Modifier.align(Alignment.BottomCenter),
+            isVisible = showPlaybackSpeedSheet && !playerUiState.isPipMode && !controlsState.isLocked,
+            isFullscreen = playerUiState.isFullscreen,
+            isLandscape = isLandscape,
+            config = BottomSheetConfig(
+                landscapeWidthFraction = 0.4f,
+                landscapeHeightFraction = 0.7f
+            ),
+            onDismiss = { showPlaybackSpeedSheet = false }
+        ) {
+            PlaybackSpeedContent(
+                selectedPlaybackSpeed = controlsState.playbackSpeed,
+                onSpeedChange = { speed ->
+                    playerAction(HlsPlayerAction.SetPlaybackSpeed(speed))
+                    showPlaybackSpeedSheet = false
+                }
+            )
+        }
     }
 }

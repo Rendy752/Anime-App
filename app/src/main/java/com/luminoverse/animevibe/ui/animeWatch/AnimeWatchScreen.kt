@@ -119,7 +119,7 @@ fun AnimeWatchScreen(
     }
 
     LaunchedEffect(mainState.isConnected) {
-        if (mainState.isConnected && watchState.episodeDetailComplement is Resource.Error) {
+        if (mainState.isConnected && watchState.episodeDetailComplement is Resource.Error && watchState.episodeSourcesQuery != null) {
             onAction(
                 WatchAction.HandleSelectedEpisodeServer(
                     watchState.episodeSourcesQuery,
@@ -135,12 +135,14 @@ fun AnimeWatchScreen(
         PullToRefreshBox(
             isRefreshing = watchState.isRefreshing,
             onRefresh = {
-                onAction(
-                    WatchAction.HandleSelectedEpisodeServer(
-                        watchState.episodeSourcesQuery,
-                        isRefresh = true
+                watchState.episodeSourcesQuery?.let { episodeSourcesQuery ->
+                    onAction(
+                        WatchAction.HandleSelectedEpisodeServer(
+                            episodeSourcesQuery,
+                            isRefresh = true
+                        )
                     )
-                )
+                }
             },
             modifier = Modifier
                 .fillMaxSize()
