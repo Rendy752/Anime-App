@@ -68,21 +68,24 @@ fun AnimeWatchScreen(
     }
     val screenOnReceiver = remember { ScreenOnReceiver { isScreenOn = true } }
 
-    val onBackPress: () -> Unit = {
-        if (playerUiState.isFullscreen) {
-            (context as? FragmentActivity)?.let { activity ->
-                activity.window?.let { window ->
-                    FullscreenUtils.handleFullscreenToggle(
-                        window = window,
-                        isFullscreen = true,
-                        isLandscape = mainState.isLandscape,
-                        activity = activity,
-                        setFullscreenChange = { onAction(WatchAction.SetFullscreen(it)) }
-                    )
+    val isFullscreen by remember { derivedStateOf { playerUiState.isFullscreen } }
+    val onBackPress = remember(playerUiState.isFullscreen, mainState.isLandscape) {
+        {
+            if (isFullscreen) {
+                (context as? FragmentActivity)?.let { activity ->
+                    activity.window?.let { window ->
+                        FullscreenUtils.handleFullscreenToggle(
+                            window = window,
+                            isFullscreen = true,
+                            isLandscape = mainState.isLandscape,
+                            activity = activity,
+                            setFullscreenChange = { onAction(WatchAction.SetFullscreen(it)) }
+                        )
+                    }
                 }
+            } else {
+                navController.popBackStack()
             }
-        } else {
-            navController.popBackStack()
         }
     }
 
@@ -145,7 +148,7 @@ fun AnimeWatchScreen(
             },
             modifier = Modifier
                 .fillMaxSize()
-                .padding(if (playerUiState.isFullscreen) PaddingValues(0.dp) else paddingValues),
+                .padding(if (isFullscreen) PaddingValues(0.dp) else paddingValues),
             state = pullToRefreshState,
             indicator = {
                 PullToRefreshDefaults.Indicator(
@@ -158,24 +161,22 @@ fun AnimeWatchScreen(
             }
         ) {
             val videoSize =
-                if (mainState.isLandscape || playerUiState.isFullscreen) Modifier.fillMaxSize()
+                if (mainState.isLandscape || isFullscreen) Modifier.fillMaxSize()
                 else if (!playerUiState.isPipMode) Modifier.height(250.dp)
                 else Modifier.fillMaxSize()
 
             Column(modifier = Modifier.fillMaxSize()) {
                 val videoPlayerModifier = Modifier
                     .then(
-                        if (mainState.isLandscape && !playerUiState.isFullscreen) Modifier.weight(
+                        if (mainState.isLandscape && !isFullscreen) Modifier.weight(
                             0.5f
                         ) else Modifier.fillMaxWidth()
                     )
                     .then(videoSize)
                 AnimeWatchContent(
                     malId = malId,
-                    episodeId = episodeId,
                     navController = navController,
                     watchState = watchState,
-                    isConnected = mainState.isConnected,
                     isScreenOn = isScreenOn,
                     isAutoPlayVideo = mainState.isAutoPlayVideo,
                     playerUiState = playerUiState,

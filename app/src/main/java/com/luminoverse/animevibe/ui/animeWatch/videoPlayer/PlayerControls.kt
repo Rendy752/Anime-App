@@ -63,7 +63,7 @@ fun PlayerControls(
     isPlaying: Boolean,
     playbackState: Int,
     positionState: PositionState,
-    onHandleBackPress: () -> Unit,
+    onHandleBackPress: () -> Any?,
     episodeDetailComplement: EpisodeDetailComplement,
     hasPreviousEpisode: Boolean,
     nextEpisode: Episode?,

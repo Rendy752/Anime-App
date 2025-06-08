@@ -25,7 +25,6 @@ fun WatchContentSection(
     episodes: List<Episode>,
     newEpisodeCount: Int,
     episodeSourcesQuery: EpisodeSourcesQuery?,
-    errorSourceQueryList: List<EpisodeSourcesQuery>,
     serverScrollState: ScrollState,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
 ) {
@@ -41,7 +40,6 @@ fun WatchContentSection(
                             episode = currentEpisode,
                             episodeDetailComplement = episodeDetailComplement,
                             episodeSourcesQuery = episodeSourcesQuery,
-                            errorSourceQueryList = errorSourceQueryList,
                             serverScrollState = serverScrollState,
                             onServerSelected = { handleSelectedEpisodeServer(it) }
                         )

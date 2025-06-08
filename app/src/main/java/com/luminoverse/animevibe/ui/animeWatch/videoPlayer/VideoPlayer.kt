@@ -76,7 +76,7 @@ fun VideoPlayer(
     positionState: StateFlow<PositionState>,
     playerAction: (HlsPlayerAction) -> Unit,
     mediaController: MediaControllerCompat?,
-    onHandleBackPress: () -> Unit,
+    onHandleBackPress: () -> Any?,
     episodeDetailComplement: EpisodeDetailComplement,
     episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
     episodes: List<Episode>,
@@ -443,7 +443,7 @@ fun VideoPlayer(
 
         LoadingIndicator(
             modifier = Modifier.align(Alignment.Center),
-            isVisible = (coreState.playbackState == Player.STATE_BUFFERING || coreState.playbackState == Player.STATE_IDLE) && !isPlayerControlsVisible
+            isVisible = (coreState.playbackState == Player.STATE_BUFFERING || coreState.playbackState == Player.STATE_IDLE) && !isPlayerControlsVisible && errorMessage == null
         )
 
         SeekIndicator(

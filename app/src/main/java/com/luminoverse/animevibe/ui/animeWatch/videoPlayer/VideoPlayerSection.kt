@@ -15,7 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -40,7 +39,6 @@ import com.luminoverse.animevibe.utils.media.PlayerCoreState
 import com.luminoverse.animevibe.utils.media.PositionState
 import com.luminoverse.animevibe.utils.resource.Resource
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -52,7 +50,6 @@ fun VideoPlayerSection(
     episodeDetailComplement: EpisodeDetailComplement,
     episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
     errorMessage: String?,
-    isConnected: Boolean,
     playerUiState: PlayerUiState,
     coreState: PlayerCoreState,
     controlsState: StateFlow<ControlsState>,
@@ -61,22 +58,19 @@ fun VideoPlayerSection(
     isLandscape: Boolean,
     getPlayer: () -> ExoPlayer?,
     updateStoredWatchState: (Long?, Long?, String?) -> Unit,
-    onHandleBackPress: () -> Unit,
+    onHandleBackPress: () -> Any?,
     isScreenOn: Boolean,
     isAutoPlayVideo: Boolean,
     episodes: List<Episode>,
     episodeSourcesQuery: EpisodeSourcesQuery,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery, Boolean) -> Unit,
     onEnterPipMode: () -> Unit,
-    addErrorSourceQueryList: () -> Unit,
     setFullscreenChange: (Boolean) -> Unit,
     setShowResume: (Boolean) -> Unit,
     setShowNextEpisode: (Boolean) -> Unit,
     setPlayerError: (String?) -> Unit,
 ) {
     val context = LocalContext.current
-    var retryCount by remember { mutableIntStateOf(0) }
-    val maxRetries = 2
 
     val playerView = remember { PlayerView(context).apply { useController = false } }
     val player by remember { mutableStateOf(getPlayer()) }
@@ -155,16 +149,9 @@ fun VideoPlayerSection(
         }
     }
 
-    LaunchedEffect(episodeDetailComplement.sources.sources[0].url, retryCount) {
-        delay(500L)
-        if (retryCount < maxRetries) {
-            Log.d(
-                "VideoPlayerSection",
-                "Attempting playback, retry #$retryCount for episode: ${episodeSourcesQuery.id}"
-            )
+    LaunchedEffect(player, episodeSourcesQuery) {
+        if (player == null || player?.playbackState == Player.STATE_IDLE) {
             initializePlayer()
-        } else {
-            setPlayerError("Failed to load video after $maxRetries attempts")
         }
     }
 
@@ -214,31 +201,12 @@ fun VideoPlayerSection(
         }
     }
 
-    DisposableEffect(episodeDetailComplement.sources.sources[0].url) {
+    DisposableEffect(Unit) {
         initializePlayer()
-        retryCount = 0
 
         val playerListener = object : Player.Listener {
             override fun onPlayerError(error: PlaybackException) {
-                if (!isConnected) {
-                    Log.w(
-                        "VideoPlayerSection",
-                        "Playback error while not connected to internet. Ignoring retry."
-                    )
-                    setPlayerError("Playback failed: No internet connection. ${error.message}")
-                    return
-                }
-                if (retryCount < maxRetries) {
-                    retryCount++
-                    Log.d(
-                        "VideoPlayerSection",
-                        "Playback error, retrying ($retryCount/$maxRetries)"
-                    )
-                    addErrorSourceQueryList()
-                    handleSelectedEpisodeServer(episodeSourcesQuery, true)
-                } else {
-                    setPlayerError("Playback failed: ${error.message}")
-                }
+                setPlayerError("Playback failed: ${error.message}, try a different server.")
             }
         }
         player?.addListener(playerListener)
@@ -289,7 +257,7 @@ fun VideoPlayerSection(
                                 "Keeping service alive due to foreground notification"
                             )
                         }
-                        this@launch.cancel()
+                        cancel()
                     }
                 }
 
@@ -315,14 +283,11 @@ fun VideoPlayerSection(
                     currentPosition =
                         if (isAutoPlayVideo && ((episodeDetailComplement.lastTimestamp ?: 0) <
                                     (episodeDetailComplement.duration ?: 0))
-                        )
-                            episodeDetailComplement.lastTimestamp ?: 0
+                        ) episodeDetailComplement.lastTimestamp ?: 0
                         else 0,
                     duration = episodeDetailComplement.duration ?: 0
                 ),
-                onError = { error ->
-                    setPlayerError(error)
-                }
+                onError = { error -> setPlayerError(error) }
             )
         )
         setupPlayer()

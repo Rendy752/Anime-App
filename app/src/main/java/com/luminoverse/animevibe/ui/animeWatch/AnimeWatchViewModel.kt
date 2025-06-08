@@ -1,5 +1,6 @@
 package com.luminoverse.animevibe.ui.animeWatch
 
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.Player
@@ -39,6 +40,7 @@ data class WatchState(
     val newEpisodeCount: Int = 0
 )
 
+@Stable
 data class PlayerUiState(
     val errorSourceQueryList: List<EpisodeSourcesQuery> = emptyList(),
     val isFullscreen: Boolean = false,

@@ -32,7 +32,6 @@ fun WatchHeader(
     episode: Episode,
     episodeDetailComplement: EpisodeDetailComplement,
     episodeSourcesQuery: EpisodeSourcesQuery?,
-    errorSourceQueryList: List<EpisodeSourcesQuery>,
     serverScrollState: ScrollState,
     onServerSelected: (EpisodeSourcesQuery) -> Unit,
 ) {
@@ -71,9 +70,7 @@ fun WatchHeader(
                 )
                 ServerSelection(
                     scrollState = serverScrollState,
-                    episodeId = episode.episodeId,
                     episodeSourcesQuery = episodeSourcesQuery,
-                    errorSourceQueryList = errorSourceQueryList,
                     servers = servers,
                     onServerSelected = onServerSelected
                 )

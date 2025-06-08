@@ -23,20 +23,15 @@ fun ServerSegmentedButton(
     type: String,
     servers: List<Server>,
     onServerSelected: (EpisodeSourcesQuery) -> Unit,
-    episodeId: String,
     episodeSourcesQuery: EpisodeSourcesQuery,
-    errorSourceQueryList: List<EpisodeSourcesQuery>,
     modifier: Modifier = Modifier
 ) {
     if (servers.isEmpty()) return
     val selectedIndex: MutableState<Int> = remember { mutableIntStateOf(-1) }
-    val serverMap = mapOf(
-        "vidstreaming" to "vidsrc"
-    )
 
     LaunchedEffect(episodeSourcesQuery) {
         val compareServer =
-            serverMap.getOrDefault(episodeSourcesQuery.server, episodeSourcesQuery.server)
+            if (episodeSourcesQuery.server == "vidstreaming") "vidsrc" else episodeSourcesQuery.server
         val index = servers.indexOfFirst {
             it.serverName == compareServer && type == episodeSourcesQuery.category
         }
@@ -66,12 +61,7 @@ fun ServerSegmentedButton(
                     )
                 },
                 selected = index == selectedIndex.value,
-                enabled = index != selectedIndex.value || (errorSourceQueryList.any { errorQuery ->
-                    errorQuery.category == type &&
-                            serverMap.getOrDefault(
-                                errorQuery.server, errorQuery.server
-                            ) == server.serverName && episodeId == errorQuery.id
-                }),
+                enabled = index != selectedIndex.value,
                 label = {
                     Text(server.serverName)
                 },

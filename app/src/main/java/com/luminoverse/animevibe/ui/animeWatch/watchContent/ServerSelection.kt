@@ -18,9 +18,7 @@ import com.luminoverse.animevibe.models.EpisodeSourcesQuery
 @Composable
 fun ServerSelection(
     scrollState: ScrollState,
-    episodeId: String,
     episodeSourcesQuery: EpisodeSourcesQuery?,
-    errorSourceQueryList: List<EpisodeSourcesQuery>,
     servers: EpisodeServersResponse,
     onServerSelected: (EpisodeSourcesQuery) -> Unit
 ) {
@@ -47,9 +45,7 @@ fun ServerSelection(
                             type = type,
                             servers = servers,
                             onServerSelected = onServerSelected,
-                            episodeId = episodeId,
                             episodeSourcesQuery = query,
-                            errorSourceQueryList = errorSourceQueryList
                         )
                     }
                 }

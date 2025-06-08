@@ -14,6 +14,7 @@ import android.view.PixelCopy
 import android.view.SurfaceView
 import android.view.TextureView
 import androidx.annotation.OptIn
+import androidx.compose.runtime.Stable
 import androidx.core.graphics.createBitmap
 import androidx.core.graphics.scale
 import androidx.core.net.toUri
@@ -50,6 +51,7 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
+@Stable
 data class PlayerCoreState(
     val isPlaying: Boolean = false,
     val playbackState: Int = Player.STATE_IDLE,

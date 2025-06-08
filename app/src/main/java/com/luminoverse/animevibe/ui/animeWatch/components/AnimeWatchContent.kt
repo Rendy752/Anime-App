@@ -36,10 +36,8 @@ import kotlinx.coroutines.flow.StateFlow
 @Composable
 fun AnimeWatchContent(
     malId: Int,
-    episodeId: String,
     navController: NavController,
     watchState: WatchState,
-    isConnected: Boolean,
     isScreenOn: Boolean,
     isAutoPlayVideo: Boolean,
     playerUiState: PlayerUiState,
@@ -49,7 +47,7 @@ fun AnimeWatchContent(
     positionState: StateFlow<PositionState>,
     dispatchPlayerAction: (HlsPlayerAction) -> Unit,
     getPlayer: () -> ExoPlayer?,
-    onHandleBackPress: () -> Unit,
+    onHandleBackPress: () -> Any?,
     onAction: (WatchAction) -> Unit,
     scrollState: LazyListState,
     onEnterPipMode: () -> Unit,
@@ -70,7 +68,7 @@ fun AnimeWatchContent(
                 .then(videoSize)
                 .background(MaterialTheme.colorScheme.surfaceContainer)
         ) {
-            if (watchState.episodeDetailComplement?.sources?.sources[0]?.url == null || watchState.episodeDetailComplement.id != episodeId || watchState.animeDetailComplement?.episodes == null || watchState.episodeSourcesQuery == null) Box(
+            if (watchState.episodeDetailComplement?.sources?.sources[0]?.url == null || watchState.animeDetailComplement?.episodes == null || watchState.episodeSourcesQuery == null) Box(
                 modifier = modifier
                     .then(videoSize)
                     .background(MaterialTheme.colorScheme.surfaceContainer)
@@ -79,7 +77,6 @@ fun AnimeWatchContent(
                     episodeDetailComplement = watchState.episodeDetailComplement,
                     episodeDetailComplements = watchState.episodeDetailComplements,
                     errorMessage = watchState.errorMessage,
-                    isConnected = isConnected,
                     playerUiState = playerUiState,
                     coreState = playerCoreState,
                     controlsState = controlsState,
@@ -108,7 +105,6 @@ fun AnimeWatchContent(
                         )
                     },
                     onEnterPipMode = onEnterPipMode,
-                    addErrorSourceQueryList = { onAction(WatchAction.AddErrorSourceQueryList(watchState.episodeSourcesQuery)) },
                     setFullscreenChange = { onAction(WatchAction.SetFullscreen(it)) },
                     setShowResume = { onAction(WatchAction.SetShowResume(it)) },
                     setShowNextEpisode = { onAction(WatchAction.SetShowNextEpisode(it)) },
@@ -156,7 +152,6 @@ fun AnimeWatchContent(
                         episodes = watchState.animeDetailComplement.episodes,
                         newEpisodeCount = watchState.newEpisodeCount,
                         episodeSourcesQuery = watchState.episodeSourcesQuery,
-                        errorSourceQueryList = playerUiState.errorSourceQueryList,
                         serverScrollState = serverScrollState,
                         handleSelectedEpisodeServer = {
                             onAction(
@@ -201,7 +196,6 @@ fun AnimeWatchContent(
                     episodes = watchState.animeDetailComplement.episodes,
                     newEpisodeCount = watchState.newEpisodeCount,
                     episodeSourcesQuery = watchState.episodeSourcesQuery,
-                    errorSourceQueryList = playerUiState.errorSourceQueryList,
                     serverScrollState = serverScrollState,
                     handleSelectedEpisodeServer = {
                         onAction(
