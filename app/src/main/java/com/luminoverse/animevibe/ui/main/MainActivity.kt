@@ -11,7 +11,6 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
-import androidx.activity.OnBackPressedCallback
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -75,7 +74,6 @@ class MainActivity : AppCompatActivity() {
         intent?.let { intentChannel.trySend(it) }
 
         requestNotificationPermission()
-        setupBackPressHandler()
 
         setContent {
             navController = rememberNavController()
@@ -128,6 +126,7 @@ class MainActivity : AppCompatActivity() {
                 MainScreen(
                     navController = navController,
                     intentChannel = intentChannel,
+                    resetIdleTimer = resetIdleTimer,
                     mainState = state.copy(isLandscape = isLandscape),
                     mainAction = mainViewModel::onAction,
                 )
@@ -166,15 +165,6 @@ class MainActivity : AppCompatActivity() {
         super.onNewIntent(intent)
         intent.let { intentChannel.trySend(it) }
         lastInteractionTime = System.currentTimeMillis()
-    }
-
-    private fun setupBackPressHandler() {
-        val callback = object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                lastInteractionTime = System.currentTimeMillis()
-            }
-        }
-        onBackPressedDispatcher.addCallback(this, callback)
     }
 
     override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {

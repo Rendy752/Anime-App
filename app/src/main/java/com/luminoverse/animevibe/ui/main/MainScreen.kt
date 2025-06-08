@@ -64,6 +64,7 @@ import kotlin.math.abs
 fun MainScreen(
     navController: NavHostController,
     intentChannel: Channel<Intent>,
+    resetIdleTimer: () -> Unit,
     mainState: MainState,
     mainAction: (MainAction) -> Unit,
 ) {
@@ -77,6 +78,10 @@ fun MainScreen(
     }
     val coroutineScope = rememberCoroutineScope()
     var isNavigating by remember { mutableStateOf(false) }
+
+    LaunchedEffect(currentRoute) {
+        resetIdleTimer()
+    }
 
     LaunchedEffect(Unit) {
         intentChannel.receiveAsFlow()
