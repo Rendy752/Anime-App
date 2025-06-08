@@ -82,7 +82,7 @@ fun EpisodesDetailSection(
                         )
                     }
                 }
-            } else {
+            } else if (animeDetailComplement !is Resource.Error) {
                 EpisodeInfoRowSkeleton()
             }
         }
@@ -118,20 +118,25 @@ fun EpisodesDetailSection(
                                 modifier = Modifier.weight(1f)
                             )
                         }
+                        val retryButtonModifier = Modifier
+                            .then(
+                                if (data.episodes.size >= 4) Modifier.size(64.dp)
+                                else Modifier.fillMaxWidth()
+                            )
+                            .height(64.dp)
                         if (animeDetail.airing && animeDetailComplement !is Resource.Loading) {
                             RetryButton(
-                                modifier = if (data.episodes.size >= 4) Modifier.size(64.dp)
-                                else Modifier
-                                    .fillMaxWidth()
-                                    .height(64.dp),
+                                modifier = retryButtonModifier,
                                 onClick = { onAction(DetailAction.LoadAllEpisode(true)) }
                             )
-                        } else {
+                        } else if (animeDetailComplement is Resource.Loading) {
                             Box(
-                                modifier = modifier
-                                    .clip(RoundedCornerShape(16.dp))
-                                    .size(64.dp)
-                                    .background(MaterialTheme.colorScheme.primaryContainer),
+                                modifier = retryButtonModifier
+                                    .basicContainer(
+                                        isPrimary = true,
+                                        innerPadding = PaddingValues(0.dp),
+                                        outerPadding = PaddingValues(0.dp)
+                                    ),
                                 contentAlignment = Alignment.Center
                             ) { CircularLoadingIndicator() }
                         }
@@ -180,7 +185,7 @@ fun EpisodesDetailSection(
                     )
                 }
             }
-        } else {
+        } else if (animeDetailComplement !is Resource.Error) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -211,7 +216,11 @@ fun EpisodesDetailSection(
                     EpisodeDetailItemSkeleton()
                 }
             }
+        } else {
+            MessageDisplay(
+                modifier = Modifier.fillMaxWidth(),
+                message = animeDetailComplement.message
+            )
         }
-        if (animeDetailComplement is Resource.Error) MessageDisplay(message = animeDetailComplement.message)
     }
 }

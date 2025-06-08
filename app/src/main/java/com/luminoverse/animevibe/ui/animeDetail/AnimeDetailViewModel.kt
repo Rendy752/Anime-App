@@ -120,7 +120,7 @@ class AnimeDetailViewModel @Inject constructor(
             return@launch
         }
 
-        if (animeDetail.type == "Music") return@launch handleMusicAnimeType(animeDetail)
+        if (animeDetail.type == "Music") return@launch handleUnvailableEpisode(animeDetail.mal_id)
         if (handleCachedComplement(animeDetail, isRefresh)) return@launch
         if (handleNewEpisodes(animeDetail, isCurrentAnimeDetailComplement)) return@launch
 
@@ -185,16 +185,14 @@ class AnimeDetailViewModel @Inject constructor(
         return false
     }
 
-    private fun handleMusicAnimeType(animeDetail: AnimeDetail) {
+    private fun handleUnvailableEpisode(malId: Int) {
         viewModelScope.launch {
             val complement = ComplementUtils.getOrCreateAnimeDetailComplement(
                 repository = animeEpisodeDetailRepository,
-                malId = animeDetail.mal_id
+                malId = malId
             )
             if (complement != null) {
-                _detailState.update {
-                    it.copy(animeDetailComplement = Resource.Success(complement))
-                }
+                _detailState.update { it.copy(animeDetailComplement = Resource.Success(complement)) }
             } else {
                 _detailState.update { it.copy(animeDetailComplement = Resource.Error("Failed to create anime complement")) }
             }
@@ -292,6 +290,7 @@ class AnimeDetailViewModel @Inject constructor(
                 }
             }
         }
+        handleUnvailableEpisode(animeMalId)
         _detailState.update { it.copy(animeDetailComplement = Resource.Error("No valid episode found")) }
     }
 

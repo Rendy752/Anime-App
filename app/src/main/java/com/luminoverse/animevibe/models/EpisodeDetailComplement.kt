@@ -1,6 +1,7 @@
 package com.luminoverse.animevibe.models
 
 import android.os.Parcelable
+import androidx.compose.runtime.Stable
 import androidx.room.Entity
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
@@ -13,6 +14,7 @@ import java.time.Instant
 
 @Parcelize
 @Serializable
+@Stable
 data class EpisodeDetailComplement(
     val id: String,
     val malId: Int,
@@ -31,7 +33,7 @@ data class EpisodeDetailComplement(
     val lastTimestamp: Long? = null,
     val duration: Long? = null,
     val createdAt: Long = Instant.now().epochSecond,
-    var updatedAt: Long = Instant.now().epochSecond
+    val updatedAt: Long = Instant.now().epochSecond
 ) : Parcelable
 
 val episodeDetailComplementPlaceholder = EpisodeDetailComplement(
