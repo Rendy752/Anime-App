@@ -146,8 +146,6 @@ class AnimeDetailViewModelTest {
                 any(), any(), any(), any(), any(), any(), any()
             )
         } returns episodeDetailComplementPlaceholder.copy(id = "lorem-ipsum-123?ep=123")
-
-        coEvery { StreamingUtils.isServerAvailable(any()) } returns true
     }
 
     @After
@@ -159,7 +157,6 @@ class AnimeDetailViewModelTest {
         unmockkObject(StreamingUtils)
         unmockkObject(FilterUtils)
         unmockkObject(ComplementUtils)
-        StreamingUtils.failedServers.clear()
     }
 
     @Test

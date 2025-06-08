@@ -41,7 +41,6 @@ data class WatchState(
 
 data class PlayerUiState(
     val errorSourceQueryList: List<EpisodeSourcesQuery> = emptyList(),
-    val isLoading: Boolean = false,
     val isFullscreen: Boolean = false,
     val isPipMode: Boolean = false,
     val isShowResume: Boolean = false,
@@ -65,7 +64,6 @@ sealed class WatchAction {
     data class AddErrorSourceQueryList(val errorSourceQueryList: EpisodeSourcesQuery) :
         WatchAction()
 
-    data class SetIsLoading(val isLoading: Boolean) : WatchAction()
     data class SetFullscreen(val isFullscreen: Boolean) : WatchAction()
     data class SetPipMode(val isPipMode: Boolean) : WatchAction()
     data class SetShowResume(val isShow: Boolean) : WatchAction()
@@ -108,25 +106,19 @@ class AnimeWatchViewModel @Inject constructor(
                 when (coreState.playbackState) {
                     Player.STATE_ENDED -> {
                         _playerUiState.update {
-                            it.copy(isShowNextEpisode = true, isLoading = false)
+                            it.copy(isShowNextEpisode = true)
                         }
                         onAction(WatchAction.SetErrorMessage(null))
                     }
 
                     Player.STATE_READY -> {
-                        _playerUiState.update { it.copy(isLoading = false) }
                         onAction(WatchAction.SetErrorMessage(null))
                     }
 
                     Player.STATE_BUFFERING -> {
-                        _playerUiState.update { it.copy(isLoading = true) }
                         if (coreState.error == null) {
                             onAction(WatchAction.SetErrorMessage(null))
                         }
-                    }
-
-                    Player.STATE_IDLE -> {
-                        _playerUiState.update { it.copy(isLoading = true) }
                     }
                 }
             }
@@ -159,7 +151,6 @@ class AnimeWatchViewModel @Inject constructor(
                 it.copy(errorSourceQueryList = it.errorSourceQueryList + action.errorSourceQueryList)
             }
 
-            is WatchAction.SetIsLoading -> _playerUiState.update { it.copy(isLoading = action.isLoading) }
             is WatchAction.SetFullscreen -> _playerUiState.update { it.copy(isFullscreen = action.isFullscreen) }
             is WatchAction.SetPipMode -> _playerUiState.update { it.copy(isPipMode = action.isPipMode) }
             is WatchAction.SetShowResume -> _playerUiState.update {

@@ -60,7 +60,6 @@ fun AnimeWatchContent(
     LaunchedEffect(watchState.errorMessage) {
         if (watchState.errorMessage != null) {
             onAction(WatchAction.SetErrorMessage(watchState.errorMessage))
-            onAction(WatchAction.SetIsLoading(false))
             Log.d("VideoPlayerSection", "Error from watchState: ${watchState.errorMessage}")
         }
     }
@@ -110,7 +109,6 @@ fun AnimeWatchContent(
                     },
                     onEnterPipMode = onEnterPipMode,
                     addErrorSourceQueryList = { onAction(WatchAction.AddErrorSourceQueryList(watchState.episodeSourcesQuery)) },
-                    setIsLoading = { onAction(WatchAction.SetIsLoading(it)) },
                     setFullscreenChange = { onAction(WatchAction.SetFullscreen(it)) },
                     setShowResume = { onAction(WatchAction.SetShowResume(it)) },
                     setShowNextEpisode = { onAction(WatchAction.SetShowNextEpisode(it)) },

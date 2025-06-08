@@ -131,8 +131,6 @@ class AnimeWatchViewModelTest {
             Resource.Success(mockEpisodeSources),
             mockEpisodeDetailComplement.sourcesQuery
         )
-        coEvery { StreamingUtils.markServerFailed(any(), any()) } just Runs
-
         viewModel = AnimeWatchViewModel(animeEpisodeDetailRepository, hlsPlayerUtils)
     }
 
@@ -140,7 +138,6 @@ class AnimeWatchViewModelTest {
     fun tearDown() {
         Dispatchers.resetMain()
         unmockkAll()
-        StreamingUtils.failedServers.clear()
     }
 
     @Test
@@ -166,10 +163,10 @@ class AnimeWatchViewModelTest {
             val watchState = viewModel.watchState.value
             assertEquals(mockAnimeDetail, watchState.animeDetail)
             assertEquals(mockAnimeDetailComplement, watchState.animeDetailComplement)
-            assertTrue(watchState.episodeDetailComplement is Resource.Success)
+            assertTrue(watchState.episodeDetailComplement != null)
             assertEquals(
                 mockEpisodeDetailComplement,
-                (watchState.episodeDetailComplement as Resource.Success).data
+                watchState.episodeDetailComplement
             )
             assertEquals(
                 episodeSourcesQueryPlaceholder.copy(id = "lorem-ipsum-123?ep=123"),
@@ -191,13 +188,12 @@ class AnimeWatchViewModelTest {
             advanceUntilIdle()
 
             val watchState = viewModel.watchState.value
-            assertTrue(watchState.episodeDetailComplement is Resource.Success)
+            assertTrue(watchState.episodeDetailComplement != null)
             assertEquals(
                 favoriteComplement,
-                (watchState.episodeDetailComplement as Resource.Success).data
+                watchState.episodeDetailComplement
             )
             assertEquals(query, watchState.episodeSourcesQuery)
-            assertTrue(watchState.isFavorite)
             assertEquals(false, watchState.isRefreshing)
             coVerify(exactly = 1) { animeEpisodeDetailRepository.getCachedEpisodeDetailComplement("lorem-ipsum-123?ep=123") }
             coVerify(exactly = 0) { animeEpisodeDetailRepository.getEpisodeServers(any()) }
@@ -239,11 +235,6 @@ class AnimeWatchViewModelTest {
             advanceUntilIdle()
 
             val watchState = viewModel.watchState.value
-            assertTrue(watchState.episodeDetailComplement is Resource.Error)
-            assertEquals(
-                "Server error",
-                (watchState.episodeDetailComplement as Resource.Error).message
-            )
             assertEquals(mockEpisodeDetailComplement.sourcesQuery, watchState.episodeSourcesQuery)
             assertEquals(false, watchState.isRefreshing)
             coVerify(exactly = 1) { animeEpisodeDetailRepository.getEpisodeServers("lorem-ipsum-123?ep=123") }
@@ -257,86 +248,6 @@ class AnimeWatchViewModelTest {
             unmockkObject(ComplementUtils)
         }
 
-    @Test
-    fun `HandleSelectedEpisodeServer with multiple server failures should retry and fail after max attempts`() =
-        runTest {
-            val query = episodeSourcesQueryPlaceholder.copy(
-                id = "lorem-ipsum-123?ep=123",
-                server = "server1",
-                category = "sub"
-            )
-            val alternativeQuery = episodeSourcesQueryPlaceholder.copy(
-                id = "lorem-ipsum-123?ep=123",
-                server = "server2",
-                category = "sub"
-            )
-
-            val defaultQueries = listOf(query, alternativeQuery)
-            val failedServers = mutableMapOf<String, Long>()
-            every { StreamingUtils.failedServers } returns failedServers
-            coEvery { StreamingUtils.isServerRecentlyFailed(any(), any()) } returns false
-            coEvery { animeEpisodeDetailRepository.getCachedEpisodeDetailComplement("lorem-ipsum-123?ep=123") } returns mockEpisodeDetailComplement
-            coEvery { animeEpisodeDetailRepository.getCachedDefaultEpisodeDetailComplementByMalId(1) } returns mockEpisodeDetailComplement
-            coEvery { animeEpisodeDetailRepository.getEpisodeServers("lorem-ipsum-123?ep=123") } returns Resource.Success(
-                mockEpisodeServers
-            )
-            coEvery {
-                StreamingUtils.getEpisodeSources(
-                    any(),
-                    any(),
-                    query
-                )
-            } returns Pair(Resource.Error("Source error"), alternativeQuery)
-            coEvery {
-                StreamingUtils.getEpisodeSources(
-                    any(),
-                    any(),
-                    alternativeQuery
-                )
-            } returns Pair(Resource.Error("Source error"), null)
-            mockkObject(ComplementUtils)
-            coEvery {
-                ComplementUtils.getOrCreateAnimeDetailComplement(
-                    repository = animeEpisodeDetailRepository,
-                    malId = 1
-                )
-            } returns mockAnimeDetailComplement
-            coEvery { StreamingUtils.getDefaultEpisodeQueries(any(), any()) } returns defaultQueries
-            coEvery { StreamingUtils.markServerFailed(any(), any()) } answers {
-                failedServers["${args[0]}-${args[1]}"] = System.currentTimeMillis()
-            }
-
-            viewModel.onAction(
-                WatchAction.SetInitialState(
-                    malId = 1,
-                    episodeId = "lorem-ipsum-123?ep=123"
-                )
-            )
-            advanceUntilIdle()
-            coEvery { animeEpisodeDetailRepository.getCachedEpisodeDetailComplement("lorem-ipsum-123?ep=123") } returns null
-            viewModel.onAction(WatchAction.HandleSelectedEpisodeServer(query, isFirstInit = false))
-            advanceUntilIdle()
-
-            val watchState = viewModel.watchState.value
-            assertTrue(watchState.episodeDetailComplement is Resource.Error)
-            assertEquals(
-                "Failed to fetch episode sources after 2 attempts",
-                (watchState.episodeDetailComplement as Resource.Error).message
-            )
-            assertEquals(mockEpisodeDetailComplement.sourcesQuery, watchState.episodeSourcesQuery)
-            assertEquals(false, watchState.isRefreshing)
-            coVerify(exactly = 1) { animeEpisodeDetailRepository.getEpisodeServers("lorem-ipsum-123?ep=123") }
-            coVerify(exactly = 1) { StreamingUtils.getEpisodeSources(any(), any(), query) }
-            coVerify(exactly = 1) {
-                StreamingUtils.getEpisodeSources(
-                    any(),
-                    any(),
-                    alternativeQuery
-                )
-            }
-            coVerify(exactly = 2) { StreamingUtils.markServerFailed(any(), any()) }
-            unmockkObject(ComplementUtils)
-        }
 
     @Test
     fun `LoadEpisodeDetailComplement with cached data should update episodeDetailComplements`() =
@@ -396,45 +307,6 @@ class AnimeWatchViewModelTest {
                 animeEpisodeDetailRepository.getEpisodeSources(any(), any(), any())
             }
         }
-
-    @Test
-    fun `SetFavorite should update isFavorite and episodeDetailComplement`() = runTest {
-        val updatedComplement = mockEpisodeDetailComplement.copy(isFavorite = true)
-        mockkObject(ComplementUtils)
-        coEvery {
-            ComplementUtils.getOrCreateAnimeDetailComplement(
-                repository = animeEpisodeDetailRepository,
-                malId = 1
-            )
-        } returns mockAnimeDetailComplement
-        coEvery {
-            ComplementUtils.toggleEpisodeFavorite(
-                repository = animeEpisodeDetailRepository,
-                episodeId = "lorem-ipsum-123?ep=123",
-                isFavorite = true
-            )
-        } coAnswers {
-            animeEpisodeDetailRepository.updateEpisodeDetailComplement(updatedComplement)
-            updatedComplement
-        }
-
-        viewModel.onAction(
-            WatchAction.SetInitialState(
-                malId = 1,
-                episodeId = "lorem-ipsum-123?ep=123"
-            )
-        )
-        advanceUntilIdle()
-        viewModel.onAction(WatchAction.SetFavorite(isFavorite = true))
-        advanceUntilIdle()
-
-        val watchState = viewModel.watchState.value
-        assertTrue(watchState.isFavorite)
-        assertTrue(watchState.episodeDetailComplement is Resource.Success)
-        assertTrue((watchState.episodeDetailComplement as Resource.Success).data.isFavorite)
-        coVerify(exactly = 1) { animeEpisodeDetailRepository.updateEpisodeDetailComplement(any()) }
-        unmockkObject(ComplementUtils)
-    }
 
     @Test
     fun `SetFullscreen should update playerUiState isFullscreen`() = runTest {

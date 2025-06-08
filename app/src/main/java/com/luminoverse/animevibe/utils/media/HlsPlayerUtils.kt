@@ -77,7 +77,6 @@ sealed class HlsPlayerAction {
         val videoData: EpisodeSourcesResponse,
         val isAutoPlayVideo: Boolean,
         val positionState: PositionState,
-        val onReady: () -> Unit,
         val onError: (String) -> Unit
     ) : HlsPlayerAction()
 
@@ -176,7 +175,6 @@ class HlsPlayerUtils @Inject constructor(
                 action.videoData,
                 action.isAutoPlayVideo,
                 action.positionState,
-                action.onReady,
                 action.onError
             )
 
@@ -352,7 +350,6 @@ class HlsPlayerUtils @Inject constructor(
         videoData: EpisodeSourcesResponse,
         isAutoPlayVideo: Boolean,
         positionState: PositionState,
-        onReady: () -> Unit,
         onError: (String) -> Unit
     ) {
         try {
@@ -414,7 +411,6 @@ class HlsPlayerUtils @Inject constructor(
                                 bufferedPosition = player.bufferedPosition
                             )
                         }
-                        onReady()
                     }
                 } else {
                     onError("Invalid HLS source")

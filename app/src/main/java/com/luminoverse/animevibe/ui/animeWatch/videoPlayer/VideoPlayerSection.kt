@@ -69,7 +69,6 @@ fun VideoPlayerSection(
     handleSelectedEpisodeServer: (EpisodeSourcesQuery, Boolean) -> Unit,
     onEnterPipMode: () -> Unit,
     addErrorSourceQueryList: () -> Unit,
-    setIsLoading: (Boolean) -> Unit,
     setFullscreenChange: (Boolean) -> Unit,
     setShowResume: (Boolean) -> Unit,
     setShowNextEpisode: (Boolean) -> Unit,
@@ -103,7 +102,6 @@ fun VideoPlayerSection(
         } else {
             Log.w("VideoPlayerSection", "Player is null")
             setPlayerError("Player not initialized")
-            setIsLoading(false)
             return
         }
 
@@ -134,14 +132,12 @@ fun VideoPlayerSection(
                 playerView.player = null
                 playerAction(HlsPlayerAction.SetVideoSurface(null))
                 setPlayerError("Service disconnected")
-                setIsLoading(false)
             }
         }
     }
 
     fun initializePlayer() {
         Log.d("VideoPlayerSection", "Initializing player for episode: ${episodeSourcesQuery.id}")
-        setIsLoading(true)
         setPlayerError(null)
 
         if (application.isMediaServiceBound()) {
@@ -155,7 +151,6 @@ fun VideoPlayerSection(
             } catch (e: Exception) {
                 Log.e("VideoPlayerSection", "Failed to bind service", e)
                 setPlayerError("Failed to bind service")
-                setIsLoading(false)
             }
         }
     }
@@ -170,7 +165,6 @@ fun VideoPlayerSection(
             initializePlayer()
         } else {
             setPlayerError("Failed to load video after $maxRetries attempts")
-            setIsLoading(false)
         }
     }
 
@@ -203,7 +197,6 @@ fun VideoPlayerSection(
                     } catch (e: Exception) {
                         Log.e("VideoPlayerSection", "MediaController initialization failed", e)
                         setPlayerError("Media controller initialization failed")
-                        setIsLoading(false)
                     }
                 }
             }
@@ -217,7 +210,6 @@ fun VideoPlayerSection(
             override fun onConnectionFailed() {
                 Log.e("VideoPlayerSection", "MediaBrowser connection failed")
                 setPlayerError("Media browser connection failed")
-                setIsLoading(false)
             }
         }
     }
@@ -234,7 +226,6 @@ fun VideoPlayerSection(
                         "Playback error while not connected to internet. Ignoring retry."
                     )
                     setPlayerError("Playback failed: No internet connection. ${error.message}")
-                    setIsLoading(false)
                     return
                 }
                 if (retryCount < maxRetries) {
@@ -247,7 +238,6 @@ fun VideoPlayerSection(
                     handleSelectedEpisodeServer(episodeSourcesQuery, true)
                 } else {
                     setPlayerError("Playback failed: ${error.message}")
-                    setIsLoading(false)
                 }
             }
         }
@@ -265,7 +255,6 @@ fun VideoPlayerSection(
             } catch (e: Exception) {
                 Log.e("VideoPlayerSection", "MediaBrowser connection failed", e)
                 setPlayerError("Media browser connection failed")
-                setIsLoading(false)
             }
         }
 
@@ -331,10 +320,8 @@ fun VideoPlayerSection(
                         else 0,
                     duration = episodeDetailComplement.duration ?: 0
                 ),
-                onReady = { setIsLoading(false) },
                 onError = { error ->
                     setPlayerError(error)
-                    setIsLoading(false)
                 }
             )
         )
