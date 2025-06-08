@@ -143,7 +143,7 @@ class AnimeDetailViewModelTest {
         )
         coEvery {
             ComplementUtils.createEpisodeDetailComplement(
-                any(), any(), any(), any(), any(), any(), any()
+                any(), any(), any(), any(), any(), any(), any(), any(), any()
             )
         } returns episodeDetailComplementPlaceholder.copy(id = "lorem-ipsum-123?ep=123")
     }
@@ -181,7 +181,7 @@ class AnimeDetailViewModelTest {
             )
             assertTrue(
                 "Episode detail complement should be success",
-                state.episodeDetailComplements["lorem-ipsum-123?ep=123"] is Resource.Success
+                state.episodeDetailComplements["lorem-ipsum-123?ep=123"] != null
             )
             coVerify(exactly = 1) { animeEpisodeDetailRepository.getAnimeDetail(animeId) }
             coVerify(exactly = 1) { animeEpisodeDetailRepository.getAnimeAniwatchSearch(any()) }
@@ -220,15 +220,54 @@ class AnimeDetailViewModelTest {
 
         val state = viewModel.detailState.value
         assertTrue("Anime detail should be success", state.animeDetail is Resource.Success)
-        assertTrue("Anime detail complement should be success", state.animeDetailComplement is Resource.Success)
+        assertTrue(
+            "Anime detail complement should be success",
+            state.animeDetailComplement is Resource.Success
+        )
         assertEquals("lorem-ipsum-123?ep=123", state.defaultEpisodeId)
-        assertTrue("Episode detail complements should contain key", state.episodeDetailComplements.containsKey("lorem-ipsum-123?ep=123"))
-        assertTrue("Episode detail complement should be success", state.episodeDetailComplements["lorem-ipsum-123?ep=123"] is Resource.Success)
-        coVerify(exactly = 1) { animeEpisodeDetailRepository.getEpisodeSources("lorem-ipsum-123?ep=123", "vidstreaming", "sub") }
-        coVerify(exactly = 0) { animeEpisodeDetailRepository.getEpisodeSources("lorem-ipsum-123?ep=123", "server1", "sub") }
-        coVerify(exactly = 0) { animeEpisodeDetailRepository.getEpisodeSources("lorem-ipsum-123?ep=123", "server2", "sub") }
-        coVerify(exactly = 0) { animeEpisodeDetailRepository.getEpisodeSources("lorem-ipsum-123?ep=123", "dubserver1", "dub") }
-        coVerify(exactly = 0) { animeEpisodeDetailRepository.getEpisodeSources("lorem-ipsum-123?ep=123", "dubserver2", "dub") }
+        assertTrue(
+            "Episode detail complements should contain key",
+            state.episodeDetailComplements.containsKey("lorem-ipsum-123?ep=123")
+        )
+        assertTrue(
+            "Episode detail complement should be success",
+            state.episodeDetailComplements["lorem-ipsum-123?ep=123"] != null
+        )
+        coVerify(exactly = 1) {
+            animeEpisodeDetailRepository.getEpisodeSources(
+                "lorem-ipsum-123?ep=123",
+                "vidstreaming",
+                "sub"
+            )
+        }
+        coVerify(exactly = 0) {
+            animeEpisodeDetailRepository.getEpisodeSources(
+                "lorem-ipsum-123?ep=123",
+                "server1",
+                "sub"
+            )
+        }
+        coVerify(exactly = 0) {
+            animeEpisodeDetailRepository.getEpisodeSources(
+                "lorem-ipsum-123?ep=123",
+                "server2",
+                "sub"
+            )
+        }
+        coVerify(exactly = 0) {
+            animeEpisodeDetailRepository.getEpisodeSources(
+                "lorem-ipsum-123?ep=123",
+                "dubserver1",
+                "dub"
+            )
+        }
+        coVerify(exactly = 0) {
+            animeEpisodeDetailRepository.getEpisodeSources(
+                "lorem-ipsum-123?ep=123",
+                "dubserver2",
+                "dub"
+            )
+        }
     }
 
     @Test
@@ -255,7 +294,7 @@ class AnimeDetailViewModelTest {
     fun `loadAnimeDetail should handle null episode sources query`() = runTest {
         viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository)
         val animeId = 1735
-        coEvery { StreamingUtils.getEpisodeSources(any(), any(), any()) } returns Pair(
+        coEvery { StreamingUtils.getEpisodeSourcesResult(any(), any(), any()) } returns Pair(
             Resource.Error("All servers failed"),
             null
         )
@@ -286,7 +325,12 @@ class AnimeDetailViewModelTest {
         val animeId = 1735
         val mismatchedSourcesResponse = mockk<EpisodeSourcesResponse> {
             every { malID } returns 9999
-            every { sources } returns listOf(Source(url = "https://example.com/stream", type = "video"))
+            every { sources } returns listOf(
+                Source(
+                    url = "https://example.com/stream",
+                    type = "video"
+                )
+            )
         }
         coEvery {
             animeEpisodeDetailRepository.getEpisodeSources("lorem-ipsum-123?ep=123", any(), any())
@@ -297,13 +341,25 @@ class AnimeDetailViewModelTest {
 
         val state = viewModel.detailState.value
         assertTrue("Anime detail should be success", state.animeDetail is Resource.Success)
-        assertTrue("Anime detail complement should be error", state.animeDetailComplement is Resource.Error)
-        assertEquals("No valid episode found", (state.animeDetailComplement as Resource.Error).message)
+        assertTrue(
+            "Anime detail complement should be error",
+            state.animeDetailComplement is Resource.Error
+        )
+        assertEquals(
+            "No valid episode found",
+            (state.animeDetailComplement as Resource.Error).message
+        )
         coVerify(exactly = 1) { animeEpisodeDetailRepository.getAnimeDetail(animeId) }
         coVerify(exactly = 1) { animeEpisodeDetailRepository.getAnimeAniwatchSearch(any()) }
         coVerify(exactly = 1) { animeEpisodeDetailRepository.getEpisodes("anime-1735") }
         coVerify(exactly = 1) { animeEpisodeDetailRepository.getEpisodeServers("lorem-ipsum-123?ep=123") }
-        coVerify(exactly = 1) { animeEpisodeDetailRepository.getEpisodeSources("lorem-ipsum-123?ep=123", any(), any()) }
+        coVerify(exactly = 1) {
+            animeEpisodeDetailRepository.getEpisodeSources(
+                "lorem-ipsum-123?ep=123",
+                any(),
+                any()
+            )
+        }
         coVerify(exactly = 0) { animeEpisodeDetailRepository.insertCachedEpisodeDetailComplement(any()) }
     }
 
@@ -311,7 +367,7 @@ class AnimeDetailViewModelTest {
     fun `loadAnimeDetail should handle episode sources failure`() = runTest {
         viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository)
         val animeId = 1735
-        coEvery { StreamingUtils.getEpisodeSources(any(), any(), any()) } returns Pair(
+        coEvery { StreamingUtils.getEpisodeSourcesResult(any(), any(), any()) } returns Pair(
             Resource.Error("Server error"),
             null
         )
@@ -373,7 +429,7 @@ class AnimeDetailViewModelTest {
 
         viewModel.onAction(DetailAction.LoadAnimeDetail(1735))
         advanceUntilIdle()
-        viewModel.onAction(DetailAction.LoadEpisodeDetailComplement(episodeId))
+        viewModel.onAction(DetailAction.LoadEpisodeDetail(episodeId))
         advanceUntilIdle()
 
         val state = viewModel.detailState.value
@@ -383,7 +439,7 @@ class AnimeDetailViewModelTest {
         )
         assertTrue(
             "Episode detail complement should be success",
-            state.episodeDetailComplements[episodeId] is Resource.Success
+            state.episodeDetailComplements[episodeId] != null
         )
         coVerify(exactly = 1) {
             animeEpisodeDetailRepository.getCachedEpisodeDetailComplement(
@@ -403,7 +459,7 @@ class AnimeDetailViewModelTest {
 
         viewModel.onAction(DetailAction.LoadAnimeDetail(animeId))
         advanceUntilIdle()
-        viewModel.onAction(DetailAction.LoadEpisodeDetailComplement(episodeId))
+        viewModel.onAction(DetailAction.LoadEpisodeDetail(episodeId))
         advanceUntilIdle()
 
         val state = viewModel.detailState.value
@@ -413,11 +469,7 @@ class AnimeDetailViewModelTest {
         )
         assertTrue(
             "Episode detail complement should be error",
-            state.episodeDetailComplements[episodeId] is Resource.Error
-        )
-        assertEquals(
-            "Episode complement not found",
-            (state.episodeDetailComplements[episodeId] as Resource.Error).message
+            state.episodeDetailComplements[episodeId] == null
         )
         coVerify(exactly = 1) {
             animeEpisodeDetailRepository.getCachedEpisodeDetailComplement(
@@ -462,7 +514,6 @@ class AnimeDetailViewModelTest {
             )
         }
         coVerify(exactly = 0) { animeEpisodeDetailRepository.getAnimeAniwatchSearch(any()) }
-        coVerify(exactly = 1) { animeEpisodeDetailRepository.updateCachedAnimeDetailComplement(any()) }
     }
 
     @Test
@@ -555,6 +606,6 @@ class AnimeDetailViewModelTest {
             "isFavorite should be true",
             state.animeDetailComplement.data?.isFavorite == true
         )
-        coVerify(exactly = 2) { animeEpisodeDetailRepository.updateCachedAnimeDetailComplement(any()) }
+        coVerify(exactly = 1) { animeEpisodeDetailRepository.updateCachedAnimeDetailComplement(any()) }
     }
 }

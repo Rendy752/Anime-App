@@ -229,8 +229,8 @@ class AnimeWatchViewModel @Inject constructor(
                     } else {
                         val episodeServersResource =
                             Resource.Success(cachedEpisodeDetailComplement.servers)
-                        val (episodeSourcesResource, availableEpisodeSourcesQuery) = StreamingUtils.getEpisodeSources(
-                            response = episodeServersResource,
+                        val (episodeSourcesResource, availableEpisodeSourcesQuery) = StreamingUtils.getEpisodeSourcesResult(
+                            episodeServersResponse = episodeServersResource.data,
                             getEpisodeSources = { id, server, category ->
                                 animeEpisodeDetailRepository.getEpisodeSources(id, server, category)
                             },
@@ -284,8 +284,8 @@ class AnimeWatchViewModel @Inject constructor(
                         return@launch
                     }
 
-                    val (episodeSourcesResource, availableEpisodeSourcesQuery) = StreamingUtils.getEpisodeSources(
-                        response = episodeServersResource,
+                    val (episodeSourcesResource, availableEpisodeSourcesQuery) = StreamingUtils.getEpisodeSourcesResult(
+                        episodeServersResponse = episodeServersResource.data,
                         getEpisodeSources = { id, server, category ->
                             animeEpisodeDetailRepository.getEpisodeSources(id, server, category)
                         },
@@ -318,7 +318,9 @@ class AnimeWatchViewModel @Inject constructor(
                                     currentEpisode?.let { episode ->
                                         ComplementUtils.createEpisodeDetailComplement(
                                             repository = animeEpisodeDetailRepository,
-                                            animeDetail = animeDetail,
+                                            animeDetailMalId = animeDetail.mal_id,
+                                            animeDetailTitle = animeDetail.title,
+                                            animeDetailImageUrl = animeDetail.images.webp.large_image_url,
                                             animeDetailComplement = animeDetailComplement,
                                             episode = episode,
                                             servers = servers,

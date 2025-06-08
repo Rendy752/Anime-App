@@ -16,16 +16,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.luminoverse.animevibe.models.AnimeDetail
 import com.luminoverse.animevibe.models.Relation
 import com.luminoverse.animevibe.ui.animeDetail.DetailAction
-import com.luminoverse.animevibe.ui.animeDetail.DetailState
 import com.luminoverse.animevibe.utils.basicContainer
+import com.luminoverse.animevibe.utils.resource.Resource
 
 @Composable
 fun RelationSection(
     navController: NavController,
     relations: List<Relation>?,
-    detailState: DetailState,
+    relationAnimeDetails: Map<Int, Resource<AnimeDetail>>,
     onAction: (DetailAction) -> Unit,
     onItemClickListener: (Int) -> Unit
 ) {
@@ -54,7 +55,7 @@ fun RelationSection(
             items(relations) { relation ->
                 RelationEntryColumn(
                     relation = relation,
-                    detailState = detailState,
+                    relationAnimeDetails = relationAnimeDetails,
                     navController = navController,
                     onAction = onAction,
                     onItemClickListener = onItemClickListener

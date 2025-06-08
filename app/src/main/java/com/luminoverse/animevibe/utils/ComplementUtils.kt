@@ -77,7 +77,9 @@ object ComplementUtils {
      */
     suspend fun createEpisodeDetailComplement(
         repository: AnimeEpisodeDetailRepository,
-        animeDetail: AnimeDetail,
+        animeDetailMalId: Int,
+        animeDetailTitle: String,
+        animeDetailImageUrl: String?,
         animeDetailComplement: AnimeDetailComplement,
         episode: Episode,
         servers: EpisodeServersResponse,
@@ -86,11 +88,11 @@ object ComplementUtils {
     ): EpisodeDetailComplement = withContext(Dispatchers.IO) {
         val complement = EpisodeDetailComplement(
             id = episode.episodeId,
-            malId = animeDetail.mal_id,
+            malId = animeDetailMalId,
             aniwatchId = animeDetailComplement.id,
-            animeTitle = animeDetail.title,
+            animeTitle = animeDetailTitle,
             episodeTitle = episode.name,
-            imageUrl = animeDetail.images.webp.large_image_url,
+            imageUrl = animeDetailImageUrl,
             number = episode.episodeNo,
             isFiller = episode.filler,
             servers = servers,

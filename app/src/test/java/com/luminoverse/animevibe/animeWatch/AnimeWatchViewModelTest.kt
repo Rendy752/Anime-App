@@ -122,7 +122,7 @@ class AnimeWatchViewModelTest {
 
         mockkObject(StreamingUtils)
         coEvery {
-            StreamingUtils.getEpisodeSources(
+            StreamingUtils.getEpisodeSourcesResult(
                 any(),
                 any(),
                 any()

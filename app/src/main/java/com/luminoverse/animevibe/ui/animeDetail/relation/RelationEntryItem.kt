@@ -3,8 +3,8 @@ package com.luminoverse.animevibe.ui.animeDetail.relation
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavController
+import com.luminoverse.animevibe.models.AnimeDetail
 import com.luminoverse.animevibe.ui.animeDetail.DetailAction
-import com.luminoverse.animevibe.ui.animeDetail.DetailState
 import com.luminoverse.animevibe.ui.common.AnimeSearchItem
 import com.luminoverse.animevibe.ui.common.AnimeSearchItemSkeleton
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
@@ -15,18 +15,17 @@ import com.luminoverse.animevibe.utils.resource.Resource
 fun RelationEntryItem(
     entryId: Int,
     entryName: String,
-    detailState: DetailState,
+    relationDetail: Resource<AnimeDetail>?,
     navController: NavController,
     onAction: (DetailAction) -> Unit,
     onItemClickListener: (Int) -> Unit
 ) {
     LaunchedEffect(entryId) {
-        if (detailState.relationAnimeDetails[entryId] == null) {
+        if (relationDetail == null) {
             onAction(DetailAction.LoadRelationAnimeDetail(entryId))
         }
     }
 
-    val relationDetail = detailState.relationAnimeDetails[entryId]
 
     when (relationDetail) {
         is Resource.Loading -> AnimeSearchItemSkeleton()

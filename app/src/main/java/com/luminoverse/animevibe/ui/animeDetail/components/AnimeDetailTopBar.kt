@@ -104,12 +104,12 @@ fun AnimeDetailTopBar(
                         }
                     }
 
-                    if (animeDetailComplement is Resource.Success &&
+                    if ((animeDetailComplement is Resource.Success || animeDetailComplement is Resource.Loading) &&
                         animeDetailComplement.data?.episodes?.isNotEmpty() == true &&
                         defaultEpisodeId != null
                     ) {
                         animeDetailComplement.data.let { animeDetailComplement ->
-                            animeDetailComplement.episodes?.let { episodes ->
+                            animeDetailComplement?.episodes?.let { episodes ->
                                 IconButton(onClick = {
                                     navController.navigateTo(
                                         NavRoute.AnimeWatch.fromParams(

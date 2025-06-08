@@ -142,7 +142,7 @@ private fun LazyListScope.rightColumnContent(
         RelationSection(
             navController = navController,
             relations = animeDetail.relations,
-            detailState = detailState,
+            relationAnimeDetails = detailState.relationAnimeDetails,
             onAction = onAction,
             onItemClickListener = onAnimeIdChange
         )
@@ -150,7 +150,9 @@ private fun LazyListScope.rightColumnContent(
     item {
         EpisodesDetailSection(
             animeDetail = animeDetail,
-            detailState = detailState,
+            animeDetailComplement = detailState.animeDetailComplement,
+            newEpisodeIdList = detailState.newEpisodeIdList,
+            episodeDetailComplements = detailState.episodeDetailComplements,
             episodeFilterState = episodeFilterState,
             navBackStackEntry = navController.currentBackStackEntry,
             onEpisodeClick = { episodeId ->

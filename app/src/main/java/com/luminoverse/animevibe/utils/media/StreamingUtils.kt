@@ -7,38 +7,27 @@ import com.luminoverse.animevibe.models.EpisodeSourcesResponse
 import com.luminoverse.animevibe.utils.resource.Resource
 
 object StreamingUtils {
-    fun getDefaultEpisodeQueries(
-        response: Resource<EpisodeServersResponse>,
-        episodeId: String
-    ): List<EpisodeSourcesQuery> {
-        val episodeServers = response.data ?: return emptyList()
-        val queries = mutableListOf<EpisodeSourcesQuery>()
-
-        episodeServers.sub.reversed().forEach { server ->
-            queries.add(EpisodeSourcesQuery.create(episodeId, server.serverName, "sub"))
+    private fun getDefaultEpisodeQueries(episodeServersResponse: EpisodeServersResponse): List<EpisodeSourcesQuery> {
+        return mapOf(
+            "sub" to episodeServersResponse.sub,
+            "dub" to episodeServersResponse.dub,
+            "raw" to episodeServersResponse.raw
+        ).flatMap { (category, servers) ->
+            servers.reversed().map { server ->
+                EpisodeSourcesQuery.create(
+                    episodeServersResponse.episodeId, server.serverName, category
+                )
+            }
         }
-
-        episodeServers.dub.reversed().forEach { server ->
-            queries.add(EpisodeSourcesQuery.create(episodeId, server.serverName, "dub"))
-        }
-
-        episodeServers.raw.reversed().forEach { server ->
-            queries.add(EpisodeSourcesQuery.create(episodeId, server.serverName, "raw"))
-        }
-
-        return queries
     }
 
-    suspend fun getEpisodeSources(
-        response: Resource<EpisodeServersResponse>,
+    suspend fun getEpisodeSourcesResult(
+        episodeServersResponse: EpisodeServersResponse,
         getEpisodeSources: suspend (String, String, String) -> Resource<EpisodeSourcesResponse>,
         errorSourceQueryList: List<EpisodeSourcesQuery> = emptyList(),
         episodeSourcesQuery: EpisodeSourcesQuery? = null
     ): Pair<Resource<EpisodeSourcesResponse>, EpisodeSourcesQuery?> {
-        val episodeDefaultId = response.data?.episodeId
-            ?: return Pair(Resource.Error("No default episode found"), null)
-
-        val defaultQueries = getDefaultEpisodeQueries(response, episodeDefaultId)
+        val defaultQueries = getDefaultEpisodeQueries(episodeServersResponse)
         if (defaultQueries.isEmpty()) {
             return Pair(Resource.Error("No episode servers found"), null)
         }
@@ -51,9 +40,7 @@ object StreamingUtils {
             }
         }
         prioritizedQueries.addAll(defaultQueries.filter {
-            !errorSourceQueryList.contains(it) && !prioritizedQueries.contains(
-                it
-            )
+            !errorSourceQueryList.contains(it) && !prioritizedQueries.contains(it)
         })
 
         for (query in prioritizedQueries) {
