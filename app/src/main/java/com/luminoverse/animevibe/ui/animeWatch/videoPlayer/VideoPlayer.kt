@@ -180,8 +180,7 @@ fun VideoPlayer(
 
     val calculatedShouldShowResumeOverlay = !isAutoPlayVideo && playerUiState.isShowResume &&
             episodeDetailComplement.lastTimestamp != null &&
-            coreState.playbackState == Player.STATE_READY && !player.isPlaying &&
-            errorMessage == null
+            coreState.playbackState == Player.STATE_READY && !player.isPlaying
 
     DisposableEffect(
         mediaController,
@@ -371,9 +370,9 @@ fun VideoPlayer(
         }
 
         val isPlayerControlsVisible = (controlsState.isControlsVisible || isDraggingSeekBar) &&
-                !calculatedShouldShowResumeOverlay && !playerUiState.isPipMode && !controlsState.isLocked && errorMessage == null
+                !calculatedShouldShowResumeOverlay && !playerUiState.isPipMode && !controlsState.isLocked
         val isShowSpeedUp =
-            isHolding && !playerUiState.isPipMode && !controlsState.isLocked && !calculatedShouldShowResumeOverlay && !playerUiState.isShowNextEpisode && errorMessage == null
+            isHolding && !playerUiState.isPipMode && !controlsState.isLocked && !calculatedShouldShowResumeOverlay && !playerUiState.isShowNextEpisode
         AnimatedVisibility(
             visible = isPlayerControlsVisible,
             enter = fadeIn(),
@@ -450,7 +449,6 @@ fun VideoPlayer(
             seekAmount = seekAmount,
             isLandscape = isLandscape,
             isFullscreen = playerUiState.isFullscreen,
-            errorMessage = errorMessage,
             modifier = Modifier.align(Alignment.Center)
         )
 
@@ -509,7 +507,7 @@ fun VideoPlayer(
         }
 
         val isSkipVisible =
-            !playerUiState.isPipMode && !controlsState.isLocked && !isHolding && !isDraggingSeekBar && coreState.playbackState != Player.STATE_ENDED && !calculatedShouldShowResumeOverlay && !playerUiState.isShowNextEpisode && errorMessage == null
+            !playerUiState.isPipMode && !controlsState.isLocked && !isHolding && !isDraggingSeekBar && coreState.playbackState != Player.STATE_ENDED && !calculatedShouldShowResumeOverlay && !playerUiState.isShowNextEpisode
 
         episodeDetailComplement.sources.let { sources ->
             SkipButton(
@@ -541,8 +539,7 @@ fun VideoPlayer(
         )
 
         val isLockButtonVisible = controlsState.isLocked &&
-                !playerUiState.isPipMode &&
-                errorMessage == null && showLockReminder
+                !playerUiState.isPipMode && showLockReminder
         LockButton(
             visible = isLockButtonVisible,
             onClick = {

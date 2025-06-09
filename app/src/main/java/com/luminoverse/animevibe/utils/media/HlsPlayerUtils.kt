@@ -237,7 +237,7 @@ class HlsPlayerUtils @Inject constructor(
                 if (isPlaying) {
                     startPositionUpdates()
                     startIntroOutroCheck()
-                    startPeriodicWatchStateUpdates(updateStoredWatchStateCallback)
+                    startPeriodicWatchStateUpdates()
                 } else {
                     stopPositionUpdates()
                     stopIntroOutroCheck()
@@ -263,11 +263,21 @@ class HlsPlayerUtils @Inject constructor(
                 }
                 if (playbackState == Player.STATE_ENDED) {
                     dispatch(HlsPlayerAction.ToggleLock(false))
-                    _positionState.update {
-                        it.copy(
-                            currentPosition = exoPlayer?.duration ?: 0,
-                            duration = exoPlayer?.duration ?: 0
-                        )
+                    exoPlayer?.let { player ->
+                        updateStoredWatchStateCallback?.let { updateStoredWatchState ->
+                            watchStateUpdateJob = playerCoroutineScope.launch {
+                                val position = player.currentPosition
+                                val duration = player.duration.takeIf { it > 0 } ?: 0
+                                val screenshot = captureScreenshot()
+                                updateStoredWatchState.invoke(position, duration, screenshot)
+                            }
+                        }
+                        _positionState.update {
+                            it.copy(
+                                currentPosition = player.duration,
+                                duration = player.duration
+                            )
+                        }
                     }
                     _playerCoreState.update {
                         it.copy(
@@ -509,27 +519,26 @@ class HlsPlayerUtils @Inject constructor(
         this.updateStoredWatchStateCallback = updateStoredWatchState
     }
 
-    private fun startPeriodicWatchStateUpdates(updateStoredWatchState: ((Long?, Long?, String?) -> Unit)?) {
-        if (updateStoredWatchState == null) {
-            return
-        }
-        stopPeriodicWatchStateUpdates()
-        watchStateUpdateJob = playerCoroutineScope.launch {
-            while (true) {
-                val player = exoPlayer
-                if (player != null && player.isPlaying && player.playbackState == Player.STATE_READY && player.duration > 0 && player.currentPosition > 10_000) {
-                    try {
-                        withTimeout(5_000L) {
-                            val position = player.currentPosition
-                            val duration = player.duration.takeIf { it > 0 } ?: 0
-                            val screenshot = captureScreenshot()
-                            updateStoredWatchState.invoke(position, duration, screenshot)
+    private fun startPeriodicWatchStateUpdates() {
+        updateStoredWatchStateCallback?.let { updateStoredWatchState ->
+            stopPeriodicWatchStateUpdates()
+            watchStateUpdateJob = playerCoroutineScope.launch {
+                while (true) {
+                    val player = exoPlayer
+                    if (player != null && player.isPlaying && player.playbackState == Player.STATE_READY && player.duration > 0 && player.currentPosition > 10_000) {
+                        try {
+                            withTimeout(5_000L) {
+                                val position = player.currentPosition
+                                val duration = player.duration.takeIf { it > 0 } ?: 0
+                                val screenshot = captureScreenshot()
+                                updateStoredWatchState.invoke(position, duration, screenshot)
+                            }
+                        } catch (e: Exception) {
+                            Log.e("HlsPlayerUtils", "Failed to save periodic watch state", e)
                         }
-                    } catch (e: Exception) {
-                        Log.e("HlsPlayerUtils", "Failed to save periodic watch state", e)
                     }
+                    delay(WATCH_STATE_UPDATE_INTERVAL_MS)
                 }
-                delay(WATCH_STATE_UPDATE_INTERVAL_MS)
             }
         }
     }

@@ -34,7 +34,6 @@ fun SeekIndicator(
     seekAmount: Long,
     isLandscape: Boolean,
     isFullscreen: Boolean,
-    errorMessage: String?,
     modifier: Modifier = Modifier
 ) {
     val horizontalBias = when (seekDirection) {
@@ -44,7 +43,7 @@ fun SeekIndicator(
     }
 
     AnimatedVisibility(
-        visible = seekAmount != 0L && seekDirection != 0 && errorMessage == null,
+        visible = seekAmount != 0L && seekDirection != 0,
         enter = scaleIn(animationSpec = tween(durationMillis = 300)) + fadeIn(
             animationSpec = tween(
                 durationMillis = 300

@@ -349,7 +349,7 @@ class AnimeWatchViewModel @Inject constructor(
                     }
                     _watchState.update {
                         it.copy(
-                            errorMessage = "Failed to fetch episode sources."
+                            errorMessage = "Sorry, we couldn't find any working servers for this episode right now. Please try again later."
                         )
                     }
                 }

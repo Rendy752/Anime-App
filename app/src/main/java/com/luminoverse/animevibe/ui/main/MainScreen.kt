@@ -23,7 +23,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.ViewModelStoreOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -270,8 +269,7 @@ fun MainScreen(
                 route = NavRoute.AnimeWatch.ROUTE_PATTERN,
                 arguments = NavRoute.AnimeWatch(0, "").arguments
             ) { backStackEntry ->
-                val viewModel: AnimeWatchViewModel =
-                    hiltViewModel(LocalActivity.current as ViewModelStoreOwner)
+                val viewModel: AnimeWatchViewModel = hiltViewModel()
                 val watchState by viewModel.watchState.collectAsStateWithLifecycle()
                 val playerUiState by viewModel.playerUiState.collectAsStateWithLifecycle()
                 val playerCoreState by viewModel.playerCoreState.collectAsStateWithLifecycle()
