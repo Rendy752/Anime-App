@@ -121,8 +121,10 @@ class AnimeDetailViewModel @Inject constructor(
         }
 
         if (animeDetail.type == "Music") return@launch handleUnavailableEpisode(animeDetail.mal_id)
-        if (handleCachedComplement(animeDetail, isRefresh)) return@launch
-        if (handleNewEpisodes(animeDetail, isCurrentAnimeDetailComplement)) return@launch
+        if (handleCachedComplement(animeDetail, isRefresh)) {
+            if (isRefresh) detectNewEpisodes(animeDetail, isCurrentAnimeDetailComplement)
+            return@launch
+        }
 
         handleUnregisteredEpisode(
             animeMalId = animeDetail.mal_id,
@@ -138,11 +140,12 @@ class AnimeDetailViewModel @Inject constructor(
     ): Boolean {
         val cachedComplement =
             animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(animeDetail.mal_id)
-        if (cachedComplement != null && !isRefresh) {
+        cachedComplement?.let {
             val updatedComplement = ComplementUtils.updateAnimeDetailComplementWithEpisodes(
                 repository = animeEpisodeDetailRepository,
                 animeDetail = animeDetail,
-                animeDetailComplement = cachedComplement
+                animeDetailComplement = it,
+                isRefresh = isRefresh
             )
             if (updatedComplement != null) {
                 updateSuccessAdditionalState(updatedComplement)
@@ -152,37 +155,23 @@ class AnimeDetailViewModel @Inject constructor(
         return false
     }
 
-    private suspend fun handleNewEpisodes(
+    private suspend fun detectNewEpisodes(
         animeDetail: AnimeDetail,
         isCurrentAnimeDetailComplement: Resource<AnimeDetailComplement?>
-    ): Boolean {
+    ) {
         isCurrentAnimeDetailComplement.data?.episodes?.let { currentEpisodes ->
             val currentEpisodeIds = currentEpisodes.map { it.episodeId }.toSet()
             val cachedComplement =
                 animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(
                     animeDetail.mal_id
                 )
-            cachedComplement?.let {
-                val updatedComplement = ComplementUtils.updateAnimeDetailComplementWithEpisodes(
-                    repository = animeEpisodeDetailRepository,
-                    animeDetail = animeDetail,
-                    animeDetailComplement = it,
-                    isRefresh = true
-                )
-                val newEpisodes = updatedComplement?.episodes ?: emptyList()
-                val newEpisodeIds = newEpisodes
+            cachedComplement?.episodes?.let { cachedEpisodes ->
+                val newEpisodeIds = cachedEpisodes
                     .filter { episode -> episode.episodeId !in currentEpisodeIds }
                     .map { episode -> episode.episodeId }
-                _detailState.update { state ->
-                    state.copy(
-                        animeDetailComplement = Resource.Success(updatedComplement),
-                        newEpisodeIdList = newEpisodeIds
-                    )
-                }
+                _detailState.update { it.copy(newEpisodeIdList = newEpisodeIds) }
             }
-            return true
         }
-        return false
     }
 
     private fun handleUnavailableEpisode(malId: Int) {

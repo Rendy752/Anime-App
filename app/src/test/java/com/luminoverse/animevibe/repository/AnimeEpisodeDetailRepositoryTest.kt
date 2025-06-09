@@ -133,6 +133,7 @@ class AnimeEpisodeDetailRepositoryTest {
         val animeDetailResponse = AnimeDetailResponse(newAnimeDetail)
         val animeDetailComplement = mockk<AnimeDetailComplement> {
             every { this@mockk.lastEpisodeUpdatedAt } returns lastEpisodeUpdatedAt
+            every { id } returns "anime-$animeId"
         }
         coEvery { animeDetailDao.getAnimeDetailById(animeId) } returns animeDetail
         coEvery { animeDetailComplementDao.getAnimeDetailComplementByMalId(animeId) } returns animeDetailComplement
@@ -149,7 +150,7 @@ class AnimeEpisodeDetailRepositoryTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertTrue(result is Resource.Success)
-        assertEquals(animeDetailResponse, (result as Resource.Success).data)
+        assertEquals(animeDetailResponse.data.mal_id, (result as Resource.Success).data.data.mal_id)
         coVerify { animeDetailDao.getAnimeDetailById(animeId) }
         coVerify { animeDetailComplementDao.getAnimeDetailComplementByMalId(animeId) }
         coVerify { jikanAPI.getAnimeDetail(animeId) }

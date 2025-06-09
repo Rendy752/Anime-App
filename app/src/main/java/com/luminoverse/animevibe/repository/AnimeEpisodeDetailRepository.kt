@@ -51,7 +51,7 @@ class AnimeEpisodeDetailRepository(
     ): Boolean {
         val complement =
             animeDetailComplement ?: getCachedAnimeDetailComplementByMalId(animeDetail.mal_id)
-        return animeDetail.airing && complement?.id?.isEmpty() == true && complement.id.all { it.isDigit() } &&
+        return animeDetail.airing && complement?.id?.isNotEmpty() == true && !complement.id.all { it.isDigit() } &&
                 TimeUtils.isEpisodeAreUpToDate(
                     animeDetail.broadcast.time,
                     animeDetail.broadcast.timezone,

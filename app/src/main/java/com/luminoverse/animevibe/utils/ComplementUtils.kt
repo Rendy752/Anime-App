@@ -47,11 +47,10 @@ object ComplementUtils {
         repository: AnimeEpisodeDetailRepository,
         animeDetail: AnimeDetail,
         animeDetailComplement: AnimeDetailComplement,
-        isRefresh: Boolean = false
+        isRefresh: Boolean
     ): AnimeDetailComplement? = withContext(Dispatchers.IO) {
-        if (repository.isDataNeedUpdate(animeDetail, animeDetailComplement)
-            || !isRefresh
-        ) return@withContext animeDetailComplement
+        val isDataNeedUpdate = repository.isDataNeedUpdate(animeDetail, animeDetailComplement)
+        if (!isDataNeedUpdate || !isRefresh) return@withContext animeDetailComplement
 
         val episodesResponse = repository.getEpisodes(animeDetailComplement.id)
         if (episodesResponse is Resource.Success) {
