@@ -75,7 +75,7 @@ fun VideoPlayer(
     positionState: StateFlow<PositionState>,
     playerAction: (HlsPlayerAction) -> Unit,
     mediaController: MediaControllerCompat?,
-    onHandleBackPress: () -> Any?,
+    onHandleBackPress: () -> Unit,
     episodeDetailComplement: EpisodeDetailComplement,
     episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
     episodes: List<Episode>,

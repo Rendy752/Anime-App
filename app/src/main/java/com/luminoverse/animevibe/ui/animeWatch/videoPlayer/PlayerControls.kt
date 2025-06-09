@@ -1,4 +1,3 @@
-// PlayerControls.kt
 package com.luminoverse.animevibe.ui.animeWatch.videoPlayer
 
 import androidx.compose.animation.AnimatedContent
@@ -63,7 +62,7 @@ fun PlayerControls(
     isPlaying: Boolean,
     playbackState: Int,
     positionState: PositionState,
-    onHandleBackPress: () -> Any?,
+    onHandleBackPress: () -> Unit,
     episodeDetailComplement: EpisodeDetailComplement,
     hasPreviousEpisode: Boolean,
     nextEpisode: Episode?,

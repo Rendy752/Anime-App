@@ -18,7 +18,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.fragment.app.FragmentActivity
 import androidx.navigation.NavHostController
 import com.luminoverse.animevibe.ui.main.MainState
 import com.luminoverse.animevibe.utils.FullscreenUtils
@@ -28,6 +27,7 @@ import com.luminoverse.animevibe.ui.animeWatch.components.AnimeWatchContent
 import kotlinx.coroutines.launch
 import com.luminoverse.animevibe.ui.main.MainActivity
 import androidx.compose.foundation.layout.padding
+import androidx.fragment.app.FragmentActivity
 import androidx.media3.exoplayer.ExoPlayer
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
@@ -68,24 +68,21 @@ fun AnimeWatchScreen(
     }
     val screenOnReceiver = remember { ScreenOnReceiver { isScreenOn = true } }
 
-    val isFullscreen by remember { derivedStateOf { playerUiState.isFullscreen } }
-    val onBackPress = remember(playerUiState.isFullscreen, mainState.isLandscape) {
-        {
-            if (isFullscreen) {
-                (context as? FragmentActivity)?.let { activity ->
-                    activity.window?.let { window ->
-                        FullscreenUtils.handleFullscreenToggle(
-                            window = window,
-                            isFullscreen = true,
-                            isLandscape = mainState.isLandscape,
-                            activity = activity,
-                            setFullscreenChange = { onAction(WatchAction.SetFullscreen(it)) }
-                        )
-                    }
+    val onBackPress: () -> Unit = {
+        if (playerUiState.isFullscreen) {
+            (context as? FragmentActivity)?.let { activity ->
+                activity.window?.let { window ->
+                    FullscreenUtils.handleFullscreenToggle(
+                        window = window,
+                        isFullscreen = true,
+                        isLandscape = mainState.isLandscape,
+                        activity = activity,
+                        setFullscreenChange = { onAction(WatchAction.SetFullscreen(it)) }
+                    )
                 }
-            } else {
-                navController.popBackStack()
             }
+        } else {
+            navController.popBackStack()
         }
     }
 
@@ -148,7 +145,7 @@ fun AnimeWatchScreen(
             },
             modifier = Modifier
                 .fillMaxSize()
-                .padding(if (isFullscreen) PaddingValues(0.dp) else paddingValues),
+                .padding(if (playerUiState.isFullscreen) PaddingValues(0.dp) else paddingValues),
             state = pullToRefreshState,
             indicator = {
                 PullToRefreshDefaults.Indicator(
@@ -161,14 +158,14 @@ fun AnimeWatchScreen(
             }
         ) {
             val videoSize =
-                if (mainState.isLandscape || isFullscreen) Modifier.fillMaxSize()
+                if (mainState.isLandscape || playerUiState.isFullscreen) Modifier.fillMaxSize()
                 else if (!playerUiState.isPipMode) Modifier.height(250.dp)
                 else Modifier.fillMaxSize()
 
             Column(modifier = Modifier.fillMaxSize()) {
                 val videoPlayerModifier = Modifier
                     .then(
-                        if (mainState.isLandscape && !isFullscreen) Modifier.weight(
+                        if (mainState.isLandscape && !playerUiState.isFullscreen) Modifier.weight(
                             0.5f
                         ) else Modifier.fillMaxWidth()
                     )

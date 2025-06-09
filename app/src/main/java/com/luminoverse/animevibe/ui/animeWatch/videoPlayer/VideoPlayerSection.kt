@@ -58,7 +58,7 @@ fun VideoPlayerSection(
     isLandscape: Boolean,
     getPlayer: () -> ExoPlayer?,
     updateStoredWatchState: (Long?, Long?, String?) -> Unit,
-    onHandleBackPress: () -> Any?,
+    onHandleBackPress: () -> Unit,
     isScreenOn: Boolean,
     isAutoPlayVideo: Boolean,
     episodes: List<Episode>,

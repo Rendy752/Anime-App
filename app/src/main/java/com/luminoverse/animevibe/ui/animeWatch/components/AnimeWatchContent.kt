@@ -47,7 +47,7 @@ fun AnimeWatchContent(
     positionState: StateFlow<PositionState>,
     dispatchPlayerAction: (HlsPlayerAction) -> Unit,
     getPlayer: () -> ExoPlayer?,
-    onHandleBackPress: () -> Any?,
+    onHandleBackPress: () -> Unit,
     onAction: (WatchAction) -> Unit,
     scrollState: LazyListState,
     onEnterPipMode: () -> Unit,
