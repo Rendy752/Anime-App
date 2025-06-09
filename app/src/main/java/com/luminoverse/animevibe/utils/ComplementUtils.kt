@@ -49,24 +49,20 @@ object ComplementUtils {
         animeDetailComplement: AnimeDetailComplement,
         isRefresh: Boolean = false
     ): AnimeDetailComplement? = withContext(Dispatchers.IO) {
-        if (!TimeUtils.isEpisodeAreUpToDate(
-                animeDetail.broadcast.time,
-                animeDetail.broadcast.timezone,
-                animeDetail.broadcast.day,
-                animeDetailComplement.lastEpisodeUpdatedAt
-            ) || isRefresh
-        ) {
-            val episodesResponse = repository.getEpisodes(animeDetailComplement.id)
-            if (episodesResponse is Resource.Success) {
-                val episodes = episodesResponse.data.episodes
-                if (episodes != animeDetailComplement.episodes) {
-                    val updatedAnimeDetail = animeDetailComplement.copy(
-                        episodes = episodes,
-                        lastEpisodeUpdatedAt = Instant.now().epochSecond
-                    )
-                    repository.updateCachedAnimeDetailComplement(updatedAnimeDetail)
-                    return@withContext updatedAnimeDetail
-                }
+        if (repository.isDataNeedUpdate(animeDetail, animeDetailComplement)
+            || !isRefresh
+        ) return@withContext animeDetailComplement
+
+        val episodesResponse = repository.getEpisodes(animeDetailComplement.id)
+        if (episodesResponse is Resource.Success) {
+            val episodes = episodesResponse.data.episodes
+            if (episodes != animeDetailComplement.episodes) {
+                val updatedAnimeDetail = animeDetailComplement.copy(
+                    episodes = episodes,
+                    lastEpisodeUpdatedAt = Instant.now().epochSecond
+                )
+                repository.updateCachedAnimeDetailComplement(updatedAnimeDetail)
+                return@withContext updatedAnimeDetail
             }
         }
         animeDetailComplement

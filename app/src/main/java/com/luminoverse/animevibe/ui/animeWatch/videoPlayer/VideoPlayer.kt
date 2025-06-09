@@ -43,7 +43,6 @@ import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
 import com.luminoverse.animevibe.ui.animeWatch.PlayerUiState
-import com.luminoverse.animevibe.ui.animeWatch.components.RetryButton
 import com.luminoverse.animevibe.ui.common.BottomSheetConfig
 import com.luminoverse.animevibe.ui.common.CustomModalBottomSheet
 import com.luminoverse.animevibe.ui.common.ScreenshotDisplay
@@ -508,12 +507,6 @@ fun VideoPlayer(
                 }
             )
         }
-
-        RetryButton(
-            modifier = Modifier.align(Alignment.Center),
-            isVisible = errorMessage != null,
-            onRetry = { handleSelectedEpisodeServer(episodeSourcesQuery, true) }
-        )
 
         val isSkipVisible =
             !playerUiState.isPipMode && !controlsState.isLocked && !isHolding && !isDraggingSeekBar && coreState.playbackState != Player.STATE_ENDED && !calculatedShouldShowResumeOverlay && !playerUiState.isShowNextEpisode && errorMessage == null

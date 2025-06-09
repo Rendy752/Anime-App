@@ -305,12 +305,8 @@ class AnimeDetailViewModelTest {
         val state = viewModel.detailState.value
         assertTrue("Anime detail should be success", state.animeDetail is Resource.Success)
         assertTrue(
-            "Anime detail complement should be error",
-            state.animeDetailComplement is Resource.Error
-        )
-        assertEquals(
-            "No valid episode found",
-            (state.animeDetailComplement as Resource.Error).message
+            "Anime detail complement should be success as default",
+            state.animeDetailComplement is Resource.Success
         )
         coVerify(exactly = 1) { animeEpisodeDetailRepository.getAnimeDetail(animeId) }
         coVerify(exactly = 1) { animeEpisodeDetailRepository.getAnimeAniwatchSearch(any()) }
@@ -342,12 +338,8 @@ class AnimeDetailViewModelTest {
         val state = viewModel.detailState.value
         assertTrue("Anime detail should be success", state.animeDetail is Resource.Success)
         assertTrue(
-            "Anime detail complement should be error",
-            state.animeDetailComplement is Resource.Error
-        )
-        assertEquals(
-            "No valid episode found",
-            (state.animeDetailComplement as Resource.Error).message
+            "Anime detail complement should be success as default",
+            state.animeDetailComplement is Resource.Success
         )
         coVerify(exactly = 1) { animeEpisodeDetailRepository.getAnimeDetail(animeId) }
         coVerify(exactly = 1) { animeEpisodeDetailRepository.getAnimeAniwatchSearch(any()) }
@@ -378,12 +370,8 @@ class AnimeDetailViewModelTest {
         val state = viewModel.detailState.value
         assertTrue("Anime detail should be success", state.animeDetail is Resource.Success)
         assertTrue(
-            "Anime detail complement should be error",
-            state.animeDetailComplement is Resource.Error
-        )
-        assertEquals(
-            "No valid episode found",
-            (state.animeDetailComplement as Resource.Error).message
+            "Anime detail complement should be success as default",
+            state.animeDetailComplement is Resource.Success
         )
         coVerify(exactly = 1) { animeEpisodeDetailRepository.getAnimeDetail(animeId) }
         coVerify(exactly = 1) { animeEpisodeDetailRepository.getAnimeAniwatchSearch(any()) }

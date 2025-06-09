@@ -45,14 +45,19 @@ class AnimeEpisodeDetailRepository(
         animeDetailDao.deleteAnimeDetailById(id)
     }
 
-    private suspend fun isDataNeedUpdate(animeDetail: AnimeDetail): Boolean {
-        val complement = getCachedAnimeDetailComplementByMalId(animeDetail.mal_id)
-        return animeDetail.airing && TimeUtils.isEpisodeAreUpToDate(
-            animeDetail.broadcast.time,
-            animeDetail.broadcast.timezone,
-            animeDetail.broadcast.day,
-            complement?.lastEpisodeUpdatedAt
-        )
+    suspend fun isDataNeedUpdate(
+        animeDetail: AnimeDetail,
+        animeDetailComplement: AnimeDetailComplement? = null
+    ): Boolean {
+        val complement =
+            animeDetailComplement ?: getCachedAnimeDetailComplementByMalId(animeDetail.mal_id)
+        return animeDetail.airing && complement?.id?.isEmpty() == true && complement.id.all { it.isDigit() } &&
+                TimeUtils.isEpisodeAreUpToDate(
+                    animeDetail.broadcast.time,
+                    animeDetail.broadcast.timezone,
+                    animeDetail.broadcast.day,
+                    complement.lastEpisodeUpdatedAt
+                )
     }
 
     suspend fun getCachedAnimeDetailComplementByMalId(malId: Int): AnimeDetailComplement? =
@@ -104,9 +109,7 @@ class AnimeEpisodeDetailRepository(
 
     suspend fun getEpisodeSources(episodeId: String, server: String, category: String) =
         ResponseHandler.handleCommonResponse(safeApiCall {
-            runwayAPI.getEpisodeSources(
-                episodeId, server, category
-            )
+            runwayAPI.getEpisodeSources(episodeId, server, category)
         })
 
     suspend fun getEpisodes(id: String): Resource<EpisodesResponse> =
