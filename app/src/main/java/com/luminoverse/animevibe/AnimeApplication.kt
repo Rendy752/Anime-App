@@ -19,8 +19,6 @@ import com.luminoverse.animevibe.utils.handlers.NotificationHandler
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
 import com.luminoverse.animevibe.utils.shake.ShakeDetector
-import com.luminoverse.animevibe.utils.workers.BroadcastNotificationWorker
-import com.luminoverse.animevibe.utils.workers.UnfinishedWatchNotificationWorker
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -62,9 +60,6 @@ class AnimeApplication : Application(), Configuration.Provider {
         super.onCreate()
         Log.d(TAG, "onCreate called")
         notificationHandler.createNotificationChannel(this)
-
-        BroadcastNotificationWorker.schedule(this)
-        UnfinishedWatchNotificationWorker.schedule(this)
 
         if (BuildConfig.DEBUG) {
             setupSensor()

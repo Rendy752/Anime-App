@@ -1,3 +1,4 @@
+// UnfinishedWatchNotificationWorker.kt
 package com.luminoverse.animevibe.utils.workers
 
 import android.app.NotificationManager
@@ -35,155 +36,138 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
     }
 
     companion object {
-        private const val WORK_NAME = "anime_unfinished_notification_work"
-        private const val MAX_RETRIES = 3
-
         private fun log(message: String) {
             println("UnfinishedWatchNotificationWorker: $message")
         }
 
-        fun schedule(context: Context) {
-            val notificationManager = context.getSystemService<NotificationManager>()
-            if (!notificationManager?.areNotificationsEnabled()!!) {
-                log("Notifications disabled, skipping scheduling")
-                return
+        const val UNIQUE_WORK_NAME = "anime_unfinished_notification_work"
+        // Added forceReschedule parameter
+        fun schedule(context: Context, forceReschedule: Boolean = false) { //
+            val notificationManager = context.getSystemService<NotificationManager>() //
+            if (!notificationManager?.areNotificationsEnabled()!!) { //
+                log("Notifications disabled, skipping scheduling") //
+                return //
             }
 
-            val workManager = WorkManager.getInstance(context)
-            val currentTime = ZonedDateTime.now(ZoneId.of("Asia/Jakarta"))
-            val times = listOf(
-                currentTime.with(LocalTime.of(8, 0)),
-                currentTime.with(LocalTime.of(20, 0))
+            val workManager = WorkManager.getInstance(context) //
+            val currentTime = ZonedDateTime.now(ZoneId.of("Asia/Jakarta")) //
+
+            val targetTimes = listOf( //
+                LocalTime.of(8, 0), //
+                LocalTime.of(20, 0) //
             )
 
-            times.forEachIndexed { index, targetTime ->
-                val workInfo = workManager.getWorkInfosForUniqueWork("${WORK_NAME}_$index").get()
-                if (workInfo.any { it.state == WorkInfo.State.ENQUEUED || it.state == WorkInfo.State.RUNNING }) {
-                    log("Work ${WORK_NAME}_$index already scheduled, skipping")
-                    return@forEachIndexed
+            targetTimes.forEachIndexed { index, targetTime -> //
+                val uniqueWorkName = "${UNIQUE_WORK_NAME}_$index" //
+
+                if (!forceReschedule) { //
+                    val workInfo = workManager.getWorkInfosForUniqueWork(uniqueWorkName).get() //
+                    if (workInfo.any { it.state == WorkInfo.State.ENQUEUED || it.state == WorkInfo.State.RUNNING }) { //
+                        log("Work $uniqueWorkName already scheduled, skipping") //
+                        return@forEachIndexed //
+                    }
                 }
 
-                val adjustedTime =
-                    if (currentTime.isAfter(targetTime)) targetTime.plusDays(1) else targetTime
-                val delay = Duration.between(currentTime, adjustedTime).toMillis()
+                var adjustedTargetTime = currentTime.with(targetTime) //
+                if (currentTime.isAfter(adjustedTargetTime)) { //
+                    adjustedTargetTime = adjustedTargetTime.plusDays(1) //
+                }
 
-                val workRequest = PeriodicWorkRequestBuilder<UnfinishedWatchNotificationWorker>(
-                    repeatInterval = 1,
-                    repeatIntervalTimeUnit = TimeUnit.DAYS
+                val delay = Duration.between(currentTime, adjustedTargetTime).toMillis() //
+
+                val workRequest = PeriodicWorkRequestBuilder<UnfinishedWatchNotificationWorker>( //
+                    repeatInterval = 1, //
+                    repeatIntervalTimeUnit = TimeUnit.DAYS //
                 )
-                    .setInitialDelay(delay, TimeUnit.MILLISECONDS)
-                    .setConstraints(
-                        Constraints.Builder().setRequiredNetworkType(NetworkType.NOT_REQUIRED)
-                            .build()
+                    .setInitialDelay(delay, TimeUnit.MILLISECONDS) //
+                    .setConstraints( //
+                        Constraints.Builder().setRequiredNetworkType(NetworkType.NOT_REQUIRED) //
+                            .build() //
                     )
-                    .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.MINUTES)
-                    .addTag("unfinished_notification_$index")
-                    .build()
+                    .setBackoffCriteria(BackoffPolicy.EXPONENTIAL, 30, TimeUnit.MINUTES) //
+                    .addTag("unfinished_notification_$index") //
+                    .build() //
 
-                workManager.enqueueUniquePeriodicWork(
-                    "${WORK_NAME}_$index",
-                    ExistingPeriodicWorkPolicy.REPLACE,
-                    workRequest
+                workManager.enqueueUniquePeriodicWork( //
+                    uniqueWorkName, //
+                    ExistingPeriodicWorkPolicy.REPLACE, //
+                    workRequest //
                 )
-                log("Scheduled unfinished notification worker at $adjustedTime (delay: ${delay}ms, index=$index)")
+                log("Scheduled unfinished notification worker for $targetTime at $adjustedTargetTime (delay: ${delay}ms, index=$index)") //
             }
         }
     }
 
-    override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
-        val attempt = params.runAttemptCount + 1
-        val currentTime = ZonedDateTime.now(ZoneId.of("Asia/Jakarta"))
-        log("Started at $currentTime, attempt $attempt of $MAX_RETRIES")
-
-        if (attempt > MAX_RETRIES) {
-            log("Max retries reached")
-            return@withContext Result.failure(workDataOf("error" to "Max retries exceeded"))
-        }
-
+    override suspend fun doWork(): Result = withContext(Dispatchers.IO) { //
+        log("doWork started. Run attempt: ${params.runAttemptCount}") //
         try {
-            val notificationManager = context.getSystemService<NotificationManager>()
-            if (!notificationManager?.areNotificationsEnabled()!!) {
-                log("Notifications disabled, retrying")
-                return@withContext Result.retry()
+            val (episode, remainingEpisodes) = animeEpisodeDetailRepository.getRandomCachedUnfinishedEpisode() //
+
+            if (episode == null) { //
+                log("No unfinished episodes found. Returning success.") //
+                return@withContext Result.success() //
             }
 
-            val currentLocalTime = currentTime.toLocalTime()
-            val isMorningWindow = currentLocalTime.isAfter(LocalTime.of(7, 45)) &&
-                    currentLocalTime.isBefore(LocalTime.of(8, 15))
-            val isEveningWindow = currentLocalTime.isAfter(LocalTime.of(19, 45)) &&
-                    currentLocalTime.isBefore(LocalTime.of(20, 15))
-            if (!isMorningWindow && !isEveningWindow) {
-                log("Outside 8 AM/8 PM window (current time: $currentLocalTime), skipping processing")
-                return@withContext Result.success()
+            val result = sendNotificationForEpisode(episode, remainingEpisodes) //
+            if (result) { //
+                log("Notification sent successfully for ${episode.animeTitle}.") //
+                Result.success() //
+            } else {
+                val accessId = "${episode.malId}||${episode.id}" //
+                if (notificationRepository.checkDuplicateNotification( //
+                        accessId, //
+                        "UnfinishedWatch" //
+                    ) //
+                ) { //
+                    log("Notification was a duplicate for ${episode.animeTitle}. Returning success.") //
+                    Result.success() //
+                } else {
+                    log("Notification failed for ${episode.animeTitle}. Attempting retry.") //
+                    if (params.runAttemptCount < 5) { //
+                        Result.retry() //
+                    } else {
+                        log("Max retries reached for ${episode.animeTitle}. Returning failure.") //
+                        Result.failure() //
+                    }
+                }
             }
-
-            notificationRepository.cleanOldNotifications()
-            log("Cleaned old notifications")
-
-            val success = processRandomUnfinishedEpisode()
-            log("Completed at $currentTime, notification sent: $success")
-            Result.success()
-        } catch (e: Exception) {
-            log("Error: ${e.javaClass.name}, message=${e.message}, stacktrace=${e.stackTraceToString()}")
-            Result.failure(workDataOf("error" to e.message))
+        } catch (e: Exception) { //
+            log("Error in doWork: ${e.message}, stacktrace=${e.stackTraceToString()}") //
+            if (params.runAttemptCount < 5) { //
+                Result.retry() //
+            } else {
+                log("Max retries reached due to exception. Returning failure.") //
+                Result.failure(workDataOf("error" to e.message)) //
+            }
         }
     }
 
-    private suspend fun processRandomUnfinishedEpisode(): Boolean {
-        val (episode, remainingEpisodes) = try {
-            animeEpisodeDetailRepository.getRandomCachedUnfinishedEpisode()
-        } catch (e: Exception) {
-            log("Failed to get random episode: ${e.message}")
-            return false
-        }
-
-        if (episode == null) {
-            log("No unfinished episodes found")
-            return false
-        }
-        log("Found unfinished episode: ${episode.animeTitle}, malId=${episode.malId}, episode=${episode.number}, remaining=$remainingEpisodes")
-
-        val animeDetail = try {
-            animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(episode.malId)
-        } catch (e: Exception) {
-            log("Failed to get anime detail for malId=${episode.malId}: ${e.message}")
-            return false
-        }
-
-        if (animeDetail == null || animeDetail.eps == null || episode.number >= animeDetail.eps) {
-            log("Invalid anime detail or episode not unfinished for malId=${episode.malId}")
-            return false
-        }
-
-        return sendNotificationForEpisode(episode, remainingEpisodes)
-    }
-
-    private suspend fun sendNotificationForEpisode(
-        episode: EpisodeDetailComplement,
-        remainingEpisodes: Int
+    private suspend fun sendNotificationForEpisode( //
+        episode: EpisodeDetailComplement, //
+        remainingEpisodes: Int //
     ): Boolean {
-        val accessId = "${episode.malId}||${episode.id}"
-        if (notificationRepository.checkDuplicateNotification(accessId, "UnfinishedWatch")) {
-            log("Duplicate notification for ${episode.animeTitle} (accessId=$accessId)")
-            return false
+        val accessId = "${episode.malId}||${episode.id}" //
+        if (notificationRepository.checkDuplicateNotification(accessId, "UnfinishedWatch")) { //
+            log("Duplicate notification for ${episode.animeTitle} (accessId=$accessId)") //
+            return false //
         }
 
-        val notification = Notification(
-            accessId = accessId,
-            imageUrl = episode.imageUrl ?: "",
-            contentText = "Hey, left off watching ${episode.animeTitle} Episode ${episode.number}? You have $remainingEpisodes episode${if (remainingEpisodes > 1) "s" else ""} left to enjoy. Dive back in to see what happens next!",
-            type = "UnfinishedWatch"
+        val notification = Notification( //
+            accessId = accessId, //
+            imageUrl = episode.imageUrl ?: "", //
+            contentText = "Hey, left off watching ${episode.animeTitle} Episode ${episode.number}? You have $remainingEpisodes episode${if (remainingEpisodes > 1) "s" else ""} left to enjoy. Dive back in to see what happens next!", //
+            type = "UnfinishedWatch" //
         )
         try {
-            val savedId = notificationRepository.saveNotification(notification)
-            log("Saved notification: ${episode.animeTitle} (accessId=$accessId, notificationId=$savedId)")
-            notificationHandler.sendNotification(context, notification, accessId.hashCode())
-            notificationRepository.markNotificationAsSent(savedId)
-            log("Sent notification for ${episode.animeTitle} (accessId=$accessId)")
-            return true
-        } catch (e: Exception) {
-            log("Failed to send notification for ${episode.animeTitle}: ${e.message}, stacktrace=${e.stackTraceToString()}")
-            return false
+            val savedId = notificationRepository.saveNotification(notification) //
+            log("Saved notification: ${episode.animeTitle} (accessId=$accessId, notificationId=$savedId)") //
+            notificationHandler.sendNotification(context, notification, accessId.hashCode()) //
+            notificationRepository.markNotificationAsSent(savedId) //
+            log("Sent notification for ${episode.animeTitle} (accessId=$accessId)") //
+            return true //
+        } catch (e: Exception) { //
+            log("Failed to send notification for ${episode.animeTitle}: ${e.message}, stacktrace=${e.stackTraceToString()}") //
+            return false //
         }
     }
 }
