@@ -17,7 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.navigation.NavController
-import com.luminoverse.animevibe.BuildConfig.YOUTUBE_URL
+import com.luminoverse.animevibe.android.BuildConfig.YOUTUBE_URL
 import com.luminoverse.animevibe.models.AnimeDetail
 import com.luminoverse.animevibe.models.NameAndUrl
 import com.luminoverse.animevibe.ui.animeDetail.DetailAction

@@ -22,7 +22,7 @@ import androidx.media.MediaBrowserServiceCompat
 import androidx.media.session.MediaButtonReceiver
 import androidx.media3.common.Player
 import androidx.media3.session.R as RMedia3
-import com.luminoverse.animevibe.R
+import com.luminoverse.animevibe.android.R
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery

@@ -24,7 +24,7 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "AnimeVibe"
-include(":androidApp")
 include(":shared")
+include(":androidApp")
 include(":webApp")
 include(":iosApp")

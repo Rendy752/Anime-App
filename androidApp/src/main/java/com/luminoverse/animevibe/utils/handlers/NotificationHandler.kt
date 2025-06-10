@@ -10,7 +10,7 @@ import androidx.core.graphics.drawable.toBitmap
 import androidx.core.net.toUri
 import coil.imageLoader
 import coil.request.ImageRequest
-import com.luminoverse.animevibe.R
+import com.luminoverse.animevibe.android.R
 import com.luminoverse.animevibe.models.Notification
 import com.luminoverse.animevibe.utils.receivers.NotificationReceiver
 import kotlinx.coroutines.Dispatchers

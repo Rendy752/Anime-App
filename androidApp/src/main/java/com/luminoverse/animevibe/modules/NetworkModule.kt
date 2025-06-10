@@ -2,7 +2,7 @@ package com.luminoverse.animevibe.modules
 
 import android.app.Application
 import android.content.Context
-import com.luminoverse.animevibe.BuildConfig.DEBUG
+import com.luminoverse.animevibe.android.BuildConfig.DEBUG
 import com.chuckerteam.chucker.api.ChuckerCollector
 import com.chuckerteam.chucker.api.ChuckerInterceptor
 import com.chuckerteam.chucker.api.RetentionManager

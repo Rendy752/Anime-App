@@ -1,6 +1,6 @@
 package com.luminoverse.animevibe.data.remote.api
 
-import com.luminoverse.animevibe.BuildConfig
+import com.luminoverse.animevibe.android.BuildConfig
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory

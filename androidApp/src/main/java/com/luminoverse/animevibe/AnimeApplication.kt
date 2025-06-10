@@ -11,6 +11,7 @@ import android.os.IBinder
 import android.util.Log
 import androidx.work.Configuration
 import com.chuckerteam.chucker.api.Chucker
+import com.luminoverse.animevibe.android.BuildConfig
 import com.luminoverse.animevibe.utils.factories.AnimeWorkerFactory
 import com.luminoverse.animevibe.utils.media.MediaPlaybackAction
 import com.luminoverse.animevibe.utils.media.MediaPlaybackService

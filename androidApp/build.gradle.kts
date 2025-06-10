@@ -2,6 +2,8 @@ import org.gradle.api.tasks.testing.logging.TestExceptionFormat
 import java.util.Properties
 
 plugins {
+    alias(libs.plugins.jetbrains.compose)
+    alias(libs.plugins.compose.compiler)
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     id("kotlin-kapt")
@@ -9,11 +11,10 @@ plugins {
     id("kotlin-parcelize")
     id("kotlinx-serialization")
     id("com.google.devtools.ksp")
-    kotlin("plugin.compose")
 }
 
 android {
-    namespace = "com.luminoverse.animevibe"
+    namespace = "com.luminoverse.animevibe.android"
     compileSdk = 35
 
     val localProperties = Properties()
@@ -127,6 +128,8 @@ android {
 }
 
 dependencies {
+    implementation(project(":shared"))
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.material)
 
@@ -143,49 +146,50 @@ dependencies {
     debugImplementation(libs.compose.ui.tooling)
     debugImplementation(libs.compose.ui.test.manifest)
 
-    // ViewModel
-    implementation(libs.androidx.lifecycle.viewmodel.ktx.v286)
+    // ViewModel (Android-specific lifecycle)
+    implementation(libs.androidx.lifecycle.viewmodel.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
 
-    // Room
+    // Room (Android-specific persistence)
     implementation(libs.androidx.room.runtime)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)
 
-    // Worker
+    // Worker (Android-specific background tasks)
     implementation(libs.androidx.work.runtime.ktx)
 
-    // Coroutines
+    // Coroutines (Android-specific dispatchers if needed, core is in shared)
     implementation(libs.kotlinx.coroutines.android)
-    implementation(libs.kotlinx.coroutines.core)
 
-    // Retrofit
+    // Retrofit (if you keep it Android-specific for some reason, otherwise move to shared with Ktor)
+    // If you plan to use Retrofit in shared, you need a multiplatform Http client like Ktor.
+    // If Retrofit remains only for Android, keep it here.
     implementation(libs.retrofit)
     implementation(libs.converter.gson)
     implementation(libs.okhttp)
     implementation(libs.logging.interceptor)
 
-    // Coil
+    // Coil (Android-specific image loading)
     implementation(libs.coil.compose)
 
-    // PrettyTime
+    // PrettyTime (if not moved to shared with a multiplatform alternative)
     implementation(libs.prettytime)
 
-    // Hilt
+    // Hilt (Android-specific DI)
     implementation(libs.hilt.android)
     implementation(libs.androidx.hilt.navigation.compose)
     kapt(libs.hilt.android.compiler)
 
-    // Kotlinx Serialization
-    implementation(libs.kotlinx.serialization.json)
+    // Kotlinx Serialization (core is in shared, Android-specific if needed)
+    // `kotlinx.serialization.json` should be in shared
 
-    // Splash screen
+    // Splash screen (Android-specific)
     implementation(libs.androidx.core.splashscreen)
 
-    // Commons text
+    // Commons text (if not moved to shared)
     implementation(libs.commons.text)
 
-    // ExoPlayer
+    // ExoPlayer (Android-specific media playback)
     implementation(libs.androidx.legacy.support.v4)
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.ui)
@@ -193,11 +197,11 @@ dependencies {
     implementation(libs.androidx.media3.session)
     implementation(libs.media3.datasource)
 
-    // Chucker
+    // Chucker (Android-specific debugging tool)
     debugImplementation(libs.library)
     releaseImplementation(libs.library.no.op)
 
-    // Testing Dependencies
+    // Testing Dependencies (Android-specific)
     testImplementation(libs.junit)
     testImplementation(libs.androidx.core.testing)
     testImplementation(libs.kotlinx.coroutines.test)
