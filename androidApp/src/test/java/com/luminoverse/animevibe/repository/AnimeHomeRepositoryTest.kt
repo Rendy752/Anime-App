@@ -138,7 +138,7 @@ class AnimeHomeRepositoryTest {
             println("Unexpected result: $result")
         }
         Assert.assertTrue(result is Resource.Error)
-        Assert.assertTrue((result as Resource.Error).message?.contains("Unknown error") == true)
+        Assert.assertTrue((result as Resource.Error).message.contains("Unknown error") == true)
         coVerify {
             animeApi.getAnimeSchedules(any(), any(), any(), any(), any(), any())
         }
@@ -193,7 +193,7 @@ class AnimeHomeRepositoryTest {
             println("Unexpected result: $result")
         }
         Assert.assertTrue(result is Resource.Error)
-        Assert.assertTrue((result as Resource.Error).message?.contains("Unknown error") == true)
+        Assert.assertTrue((result as Resource.Error).message.contains("Unknown error") == true)
         coVerify { animeApi.getTop20Anime() }
     }
 }

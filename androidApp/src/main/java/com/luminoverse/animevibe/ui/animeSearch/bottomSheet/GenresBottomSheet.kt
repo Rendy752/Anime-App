@@ -125,7 +125,7 @@ fun GenresBottomSheet(
                     is Resource.Error -> {
                         RetryButton(
                             modifier = Modifier.padding(16.dp),
-                            message = genres.message ?: "Error loading genres",
+                            message = genres.message,
                             onClick = { fetchGenres() }
                         )
                     }

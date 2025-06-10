@@ -239,7 +239,6 @@ fun AnimeRecommendationsScreen(
                         ) {
                             MessageDisplay(
                                 message = recommendationsState.animeRecommendations.message
-                                    ?: "Error Loading Data"
                             )
                         }
                     }

@@ -146,7 +146,7 @@ class AnimeSearchRepositoryTest {
             println("Unexpected result: $result")
         }
         Assert.assertTrue(result is Resource.Error)
-        Assert.assertTrue((result as Resource.Error).message?.contains("Unknown error") == true)
+        Assert.assertTrue((result as Resource.Error).message.contains("Unknown error") == true)
         coVerify {
             animeApi.getAnimeSearch(
                 any(),
@@ -202,7 +202,7 @@ class AnimeSearchRepositoryTest {
             println("Unexpected result: $result")
         }
         Assert.assertTrue(result is Resource.Error)
-        Assert.assertTrue((result as Resource.Error).message?.contains("Unknown error") == true)
+        Assert.assertTrue((result as Resource.Error).message.contains("Unknown error") == true)
         coVerify { animeApi.getRandomAnime(sfw = true) }
     }
 
@@ -233,7 +233,7 @@ class AnimeSearchRepositoryTest {
             println("Unexpected result: $result")
         }
         Assert.assertTrue(result is Resource.Error)
-        Assert.assertTrue((result as Resource.Error).message?.contains("Unknown error") == true)
+        Assert.assertTrue((result as Resource.Error).message.contains("Unknown error") == true)
         coVerify { animeApi.getGenres() }
     }
 
@@ -281,7 +281,7 @@ class AnimeSearchRepositoryTest {
             println("Unexpected result: $result")
         }
         Assert.assertTrue(result is Resource.Error)
-        Assert.assertTrue((result as Resource.Error).message?.contains("Unknown error") == true)
+        Assert.assertTrue((result as Resource.Error).message.contains("Unknown error") == true)
         coVerify { animeApi.getProducers(any(), any(), any(), any(), any(), any()) }
     }
 
@@ -314,7 +314,7 @@ class AnimeSearchRepositoryTest {
             println("Unexpected result: $result")
         }
         Assert.assertTrue(result is Resource.Error)
-        Assert.assertTrue((result as Resource.Error).message?.contains("Unknown error") == true)
+        Assert.assertTrue((result as Resource.Error).message.contains("Unknown error") == true)
         coVerify { animeApi.getProducer(malId) }
     }
 

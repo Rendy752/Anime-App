@@ -97,7 +97,7 @@ fun HistoryContent(
             Box(
                 modifier = modifier,
                 contentAlignment = Alignment.Center
-            ) { MessageDisplay(message = results.message ?: "Error loading history") }
+            ) { MessageDisplay(message = results.message) }
         }
     }
 }

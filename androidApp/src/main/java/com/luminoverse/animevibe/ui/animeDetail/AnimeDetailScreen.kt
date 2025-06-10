@@ -92,7 +92,7 @@ fun AnimeDetailScreen(
                 is Resource.Error -> Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
-                ) { MessageDisplay(message = detailState.animeDetail.message ?: "Error") }
+                ) { MessageDisplay(message = detailState.animeDetail.message) }
             }
         }
     }

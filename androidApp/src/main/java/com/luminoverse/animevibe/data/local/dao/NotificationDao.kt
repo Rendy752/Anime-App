@@ -13,9 +13,6 @@ interface NotificationDao {
     @Query("SELECT * FROM notifications WHERE accessId = :accessId AND type = :type")
     suspend fun getNotificationsByAccessIdAndType(accessId: String, type: String): List<Notification>
 
-    @Query("SELECT * FROM notifications WHERE sentAt IS NULL")
-    suspend fun getPendingNotifications(): List<Notification>
-
     @Query("UPDATE notifications SET sentAt = :sentAt WHERE id = :id")
     suspend fun updateNotificationSentTime(id: Long, sentAt: Long)
 

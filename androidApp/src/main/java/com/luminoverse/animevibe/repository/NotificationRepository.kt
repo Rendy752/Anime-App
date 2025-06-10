@@ -53,12 +53,6 @@ class NotificationRepository @Inject constructor(
         }
     }
 
-    suspend fun getPendingNotifications(): List<Notification> {
-        val pending = notificationDao.getPendingNotifications()
-        log("Fetched ${pending.size} pending notifications")
-        return pending
-    }
-
     suspend fun cleanOldNotifications() {
         val cutoff = Instant.now().minusSeconds(NOTIFICATION_CLEANUP_DAYS * 24 * 60 * 60).epochSecond
         val deleted = notificationDao.deleteOldNotifications(cutoff)
