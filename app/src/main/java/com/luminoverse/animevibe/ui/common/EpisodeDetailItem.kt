@@ -1,5 +1,6 @@
 package com.luminoverse.animevibe.ui.common
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,14 +11,15 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,35 +31,33 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavBackStackEntry
-import com.luminoverse.animevibe.models.AnimeDetail
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
-import com.luminoverse.animevibe.models.animeDetailPlaceholder
 import com.luminoverse.animevibe.models.episodeDetailComplementPlaceholder
 import com.luminoverse.animevibe.models.episodePlaceholder
-import com.luminoverse.animevibe.ui.animeDetail.DetailAction
-import com.luminoverse.animevibe.utils.WatchUtils.getEpisodeBackgroundColor
+import com.luminoverse.animevibe.utils.watch.WatchUtils.getEpisodeBackgroundColor
 import com.luminoverse.animevibe.utils.basicContainer
 
 @Composable
 fun EpisodeDetailItem(
     modifier: Modifier = Modifier,
-    animeDetail: AnimeDetail = animeDetailPlaceholder,
+    animeImage: String? = null,
     lastEpisodeWatchedId: String? = null,
     episode: Episode = episodePlaceholder,
+    isNewEpisode: Boolean = false,
     episodeDetailComplement: EpisodeDetailComplement? = episodeDetailComplementPlaceholder,
     query: String = "",
-    onAction: (DetailAction) -> Unit = {},
-    onClick: (String) -> Unit = {},
+    loadEpisodeDetailComplement: (String) -> Unit = {},
+    onClick: () -> Unit = {},
     navBackStackEntry: NavBackStackEntry? = null,
-    titleMaxLines: Int? = null
+    titleMaxLines: Int? = null,
+    isSameWidthContent: Boolean = false
 ) {
-    val lifecycleState by navBackStackEntry?.lifecycle?.currentStateFlow?.collectAsStateWithLifecycle()
-        ?: return
-
-    LaunchedEffect(episode.episodeId, lifecycleState) {
-        if (episodeDetailComplement == null || lifecycleState.isAtLeast(Lifecycle.State.RESUMED)) {
-            onAction(DetailAction.LoadEpisodeDetailComplement(episode.episodeId))
+    navBackStackEntry?.lifecycle?.currentStateFlow?.collectAsStateWithLifecycle()?.value?.let { lifecycleState ->
+        LaunchedEffect(episode.episodeId, lifecycleState) {
+            if (episodeDetailComplement == null || lifecycleState.isAtLeast(Lifecycle.State.RESUMED)) {
+                loadEpisodeDetailComplement(episode.episodeId)
+            }
         }
     }
 
@@ -72,7 +72,7 @@ fun EpisodeDetailItem(
     Box(
         modifier = modifier
             .basicContainer(
-                onItemClick = { onClick(episode.episodeId) },
+                onItemClick = { onClick() },
                 backgroundBrush = getEpisodeBackgroundColor(
                     episode.filler,
                     episodeDetailComplement
@@ -93,14 +93,14 @@ fun EpisodeDetailItem(
             ScreenshotDisplay(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .weight(0.4f),
-                imageUrl = animeDetail.images.webp.large_image_url,
+                    .weight(if (isSameWidthContent) 0.5f else 0.4f),
+                imageUrl = animeImage,
                 screenshot = episodeDetailComplement?.screenshot
             )
 
             Column(
                 modifier = Modifier
-                    .weight(0.6f)
+                    .weight(if (isSameWidthContent) 0.5f else 0.6f)
                     .fillMaxHeight(),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
@@ -148,6 +148,18 @@ fun EpisodeDetailItem(
                     }
                 }
             }
+        }
+
+        if (isNewEpisode) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = 4.dp, end = 4.dp)
+                    .size(8.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary),
+                contentAlignment = Alignment.Center
+            ) {}
         }
 
         progress?.let {

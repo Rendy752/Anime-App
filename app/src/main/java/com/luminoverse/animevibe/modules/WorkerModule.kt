@@ -1,22 +1,51 @@
 package com.luminoverse.animevibe.modules
 
-import com.luminoverse.animevibe.utils.AnimeBroadcastNotificationWorker
-import com.luminoverse.animevibe.utils.ChildWorkerFactory
+import com.luminoverse.animevibe.utils.workers.BroadcastNotificationWorker
+import com.luminoverse.animevibe.utils.workers.UnfinishedWatchNotificationWorker
+import com.luminoverse.animevibe.utils.workers.NotificationDeliveryWorker
+import com.luminoverse.animevibe.utils.workers.WidgetUpdateWorker
+import com.luminoverse.animevibe.utils.factories.ChildWorkerFactory
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import dagger.multibindings.IntoMap
 import dagger.multibindings.StringKey
+import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-interface WorkerModule {
+abstract class WorkerModule {
 
     @Binds
     @IntoMap
-    @StringKey("com.luminoverse.animevibe.utils.AnimeBroadcastNotificationWorker")
-    fun bindAnimeBroadcastNotificationWorker(
-        factory: AnimeBroadcastNotificationWorker.Factory
+    @StringKey("com.luminoverse.animevibe.utils.workers.UnfinishedWatchNotificationWorker")
+    @Singleton
+    abstract fun bindUnfinishedWatchNotificationWorkerFactory(
+        factory: UnfinishedWatchNotificationWorker.Factory
+    ): ChildWorkerFactory
+
+    @Binds
+    @IntoMap
+    @StringKey("com.luminoverse.animevibe.utils.workers.BroadcastNotificationWorker")
+    @Singleton
+    abstract fun bindBroadcastNotificationWorkerFactory(
+        factory: BroadcastNotificationWorker.Factory
+    ): ChildWorkerFactory
+
+    @Binds
+    @IntoMap
+    @StringKey("com.luminoverse.animevibe.utils.workers.NotificationDeliveryWorker")
+    @Singleton
+    abstract fun bindNotificationDeliveryWorkerFactory(
+        factory: NotificationDeliveryWorker.Factory
+    ): ChildWorkerFactory
+
+    @Binds
+    @IntoMap
+    @StringKey("com.luminoverse.animevibe.utils.workers.WidgetUpdateWorker")
+    @Singleton
+    abstract fun bindWidgetUpdateWorkerFactory(
+        factory: WidgetUpdateWorker.Factory
     ): ChildWorkerFactory
 }

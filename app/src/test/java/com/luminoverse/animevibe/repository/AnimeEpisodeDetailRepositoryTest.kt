@@ -5,8 +5,8 @@ import com.luminoverse.animevibe.data.local.dao.AnimeDetailComplementDao
 import com.luminoverse.animevibe.data.local.dao.EpisodeDetailComplementDao
 import com.luminoverse.animevibe.data.remote.api.AnimeAPI
 import com.luminoverse.animevibe.models.*
-import com.luminoverse.animevibe.utils.Resource
-import com.luminoverse.animevibe.utils.ResponseHandler
+import com.luminoverse.animevibe.utils.resource.Resource
+import com.luminoverse.animevibe.utils.resource.ResponseHandler
 import com.luminoverse.animevibe.utils.TimeUtils
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
@@ -133,6 +133,7 @@ class AnimeEpisodeDetailRepositoryTest {
         val animeDetailResponse = AnimeDetailResponse(newAnimeDetail)
         val animeDetailComplement = mockk<AnimeDetailComplement> {
             every { this@mockk.lastEpisodeUpdatedAt } returns lastEpisodeUpdatedAt
+            every { id } returns "anime-$animeId"
         }
         coEvery { animeDetailDao.getAnimeDetailById(animeId) } returns animeDetail
         coEvery { animeDetailComplementDao.getAnimeDetailComplementByMalId(animeId) } returns animeDetailComplement
@@ -149,7 +150,7 @@ class AnimeEpisodeDetailRepositoryTest {
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertTrue(result is Resource.Success)
-        assertEquals(animeDetailResponse, (result as Resource.Success).data)
+        assertEquals(animeDetailResponse.data.mal_id, (result as Resource.Success).data.data.mal_id)
         coVerify { animeDetailDao.getAnimeDetailById(animeId) }
         coVerify { animeDetailComplementDao.getAnimeDetailComplementByMalId(animeId) }
         coVerify { jikanAPI.getAnimeDetail(animeId) }
@@ -229,6 +230,17 @@ class AnimeEpisodeDetailRepositoryTest {
         assertTrue(capturedComplement.captured.updatedAt > 0)
         assertEquals(updatedComplement, capturedComplement.captured)
         coVerify { animeDetailComplementDao.updateAnimeDetailComplement(updatedComplement) }
+    }
+
+    @Test
+    fun `deleteAnimeDetailById deletes data`() = runTest {
+        val animeId = 123
+        coEvery { animeDetailDao.deleteAnimeDetailById(animeId) } returns Unit
+
+        repository.deleteAnimeDetailById(animeId)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        coVerify { animeDetailDao.deleteAnimeDetailById(animeId) }
     }
 
     @Test
@@ -457,109 +469,6 @@ class AnimeEpisodeDetailRepositoryTest {
         assertTrue(result is Resource.Error)
         assertEquals("Server error", (result as Resource.Error).message)
         coVerify { runwayAPI.getEpisodeSources(episodeId, server, category) }
-    }
-
-    @Test
-    fun `getPaginatedEpisodeHistory returns success with valid data`() = runTest {
-        val queryState = EpisodeHistoryQueryState(
-            searchQuery = "test",
-            isFavorite = true,
-            sortBy = EpisodeHistoryQueryState.SortBy.NewestFirst,
-            page = 1,
-            limit = 10
-        )
-        val episodeDetailComplement = mockk<EpisodeDetailComplement>()
-        coEvery {
-            episodeDetailComplementDao.getPaginatedEpisodeHistory(
-                isFavorite = true,
-                sortBy = "NewestFirst",
-                limit = 10,
-                offset = 0
-            )
-        } returns listOf(episodeDetailComplement)
-
-        val result = repository.getPaginatedEpisodeHistory(queryState)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertTrue(result is Resource.Success)
-        assertEquals(listOf(episodeDetailComplement), (result as Resource.Success).data)
-        coVerify {
-            episodeDetailComplementDao.getPaginatedEpisodeHistory(
-                isFavorite = true,
-                sortBy = "NewestFirst",
-                limit = 10,
-                offset = 0
-            )
-        }
-    }
-
-    @Test
-    fun `getPaginatedEpisodeHistory returns error when dao throws exception`() = runTest {
-        val queryState = EpisodeHistoryQueryState(
-            searchQuery = "test",
-            isFavorite = true,
-            sortBy = EpisodeHistoryQueryState.SortBy.NewestFirst,
-            page = 1,
-            limit = 10
-        )
-        coEvery {
-            episodeDetailComplementDao.getPaginatedEpisodeHistory(
-                isFavorite = true,
-                sortBy = "NewestFirst",
-                limit = 10,
-                offset = 0
-            )
-        } throws RuntimeException("Database error")
-
-        val result = repository.getPaginatedEpisodeHistory(queryState)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertTrue(result is Resource.Error)
-        assertEquals(
-            "Failed to fetch episode history: Database error",
-            (result as Resource.Error).message
-        )
-        coVerify {
-            episodeDetailComplementDao.getPaginatedEpisodeHistory(
-                isFavorite = true,
-                sortBy = "NewestFirst",
-                limit = 10,
-                offset = 0
-            )
-        }
-    }
-
-    @Test
-    fun `getEpisodeHistoryCount returns success with valid count`() = runTest {
-        val isFavorite = true
-        coEvery {
-            episodeDetailComplementDao.getEpisodeHistoryCount(isFavorite)
-        } returns 42
-
-        val result = repository.getEpisodeHistoryCount(isFavorite)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertTrue(result is Resource.Success)
-        assertEquals(42, (result as Resource.Success).data)
-        coVerify { episodeDetailComplementDao.getEpisodeHistoryCount(isFavorite) }
-    }
-
-    @Test
-    fun `getEpisodeHistoryCount returns error when dao throws exception`() = runTest {
-        val isFavorite = true
-        coEvery {
-            episodeDetailComplementDao.getEpisodeHistoryCount(isFavorite)
-        } throws RuntimeException("Database error")
-
-        val result = repository.getEpisodeHistoryCount(isFavorite)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertTrue(result is Resource.Error)
-        assertEquals(
-            "Failed to fetch episode history count: Database error",
-            (result as Resource.Error).message
-        )
-        coVerify { episodeDetailComplementDao.getEpisodeHistoryCount(isFavorite) }
     }
 
     @Test

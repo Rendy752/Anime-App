@@ -7,7 +7,7 @@ import com.luminoverse.animevibe.models.defaultCompletePagination
 import com.luminoverse.animevibe.repository.AnimeSearchRepository
 import com.luminoverse.animevibe.ui.settings.SettingsAction
 import com.luminoverse.animevibe.ui.settings.SettingsViewModel
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.resource.Resource
 import io.mockk.clearMocks
 import io.mockk.coEvery
 import io.mockk.coVerify

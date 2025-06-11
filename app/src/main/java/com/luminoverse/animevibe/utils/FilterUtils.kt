@@ -3,6 +3,7 @@ package com.luminoverse.animevibe.utils
 import com.luminoverse.animevibe.models.AnimeSearchQueryState
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
+import com.luminoverse.animevibe.utils.watch.AnimeTitleFinder
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
@@ -92,7 +93,7 @@ object FilterUtils {
     fun filterEpisodes(
         episodes: List<Episode>,
         query: EpisodeQueryState,
-        episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
+        episodeDetailComplements: Map<String, EpisodeDetailComplement?>,
         lastEpisodeWatchedId: String? = null
     ): List<Episode> {
         val episodeExtractors = listOf<(Episode) -> String>(
@@ -112,19 +113,15 @@ object FilterUtils {
 
         val filteredEpisodes = titleFilteredEpisodes.filter { episode ->
             val matchesFavorite = query.isFavorite?.let { isFavorite ->
-                val complement = episodeDetailComplements[episode.episodeId]
-                complement is Resource.Success && complement.data.isFavorite == isFavorite
+                episodeDetailComplements[episode.episodeId]?.isFavorite == isFavorite
             } != false
 
             val matchesWatched = query.isWatched?.let { isWatched ->
-                val complement = episodeDetailComplements[episode.episodeId]
-                if (complement is Resource.Success) {
-                    val isActuallyWatched =
-                        complement.data.lastWatched != null && complement.data.lastTimestamp != null
-                    isActuallyWatched == isWatched
-                } else {
-                    false
-                }
+                val complement = episodeDetailComplements[episode.episodeId] ?: return@let false
+                val isActuallyWatched =
+                    complement.lastWatched != null && complement.lastTimestamp != null
+
+                isActuallyWatched == isWatched
             } != false
 
             matchesFavorite && matchesWatched

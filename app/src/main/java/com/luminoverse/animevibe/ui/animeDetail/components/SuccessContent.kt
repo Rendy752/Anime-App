@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -32,8 +33,8 @@ import com.luminoverse.animevibe.ui.common.DetailCommonBody
 import com.luminoverse.animevibe.ui.common.YoutubePreview
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.main.navigation.navigateTo
-import com.luminoverse.animevibe.utils.AnimeTitleFinder.normalizeTitle
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.watch.AnimeTitleFinder.normalizeTitle
+import com.luminoverse.animevibe.utils.resource.Resource
 
 @Composable
 fun SuccessContent(
@@ -54,35 +55,26 @@ fun SuccessContent(
                 modifier = Modifier.fillMaxSize(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                LazyColumn(modifier = Modifier.weight(1f), state = portraitScrollState) {
-                    item {
-                        LeftColumnContent(
-                            animeDetail = animeDetail,
-                            navController = navController
-                        )
-                    }
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(top = 8.dp),
+                    state = portraitScrollState,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    leftColumnContent(
+                        animeDetail = animeDetail,
+                        navController = navController
+                    )
                 }
-                LazyColumn(modifier = Modifier.weight(1f), state = landscapeScrollState) {
-                    item {
-                        RightColumnContent(
-                            animeDetail = animeDetail,
-                            detailState = detailState,
-                            episodeFilterState = episodeFilterState,
-                            navController = navController,
-                            context = context,
-                            onAction = onAction,
-                            onAnimeIdChange = onAnimeIdChange
-                        )
-                    }
-                }
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                state = portraitScrollState
-            ) {
-                item {
-                    VerticalColumnContent(
+                LazyColumn(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(top = 8.dp),
+                    state = landscapeScrollState,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    rightColumnContent(
                         animeDetail = animeDetail,
                         detailState = detailState,
                         episodeFilterState = episodeFilterState,
@@ -93,12 +85,44 @@ fun SuccessContent(
                     )
                 }
             }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(top = 8.dp),
+                state = portraitScrollState,
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                leftColumnContent(
+                    animeDetail = animeDetail,
+                    navController = navController
+                )
+                rightColumnContent(
+                    animeDetail = animeDetail,
+                    detailState = detailState,
+                    episodeFilterState = episodeFilterState,
+                    navController = navController,
+                    context = context,
+                    onAction = onAction,
+                    onAnimeIdChange = onAnimeIdChange
+                )
+            }
         }
     }
 }
 
-@Composable
-private fun VerticalColumnContent(
+private fun LazyListScope.leftColumnContent(
+    animeDetail: AnimeDetail,
+    navController: NavController
+) {
+    item { AnimeHeader(animeDetail = animeDetail) }
+    item { NumericDetailSection(animeDetail = animeDetail) }
+    item { YoutubePreview(embedUrl = animeDetail.trailer.embed_url) }
+    item { DetailBodySection(animeDetail = animeDetail, navController = navController) }
+}
+
+private fun LazyListScope.rightColumnContent(
     animeDetail: AnimeDetail,
     detailState: DetailState,
     episodeFilterState: EpisodeFilterState,
@@ -107,61 +131,28 @@ private fun VerticalColumnContent(
     onAction: (DetailAction) -> Unit,
     onAnimeIdChange: (Int) -> Unit
 ) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        LeftColumnContent(animeDetail = animeDetail, navController = navController)
-        RightColumnContent(
-            animeDetail = animeDetail,
-            detailState = detailState,
-            episodeFilterState = episodeFilterState,
-            navController = navController,
-            context = context,
-            onAction = onAction,
-            onAnimeIdChange = onAnimeIdChange
-        )
+    val commonBodyItems = listOf(
+        "Background" to animeDetail.background,
+        "Synopsis" to animeDetail.synopsis,
+    )
+    items(commonBodyItems.size) { index ->
+        DetailCommonBody(commonBodyItems[index].first, commonBodyItems[index].second)
     }
-}
-
-@Composable
-private fun LeftColumnContent(animeDetail: AnimeDetail, navController: NavController) {
-    Column(
-        modifier = Modifier.padding(top = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        AnimeHeader(animeDetail = animeDetail)
-        NumericDetailSection(animeDetail = animeDetail)
-        YoutubePreview(embedUrl = animeDetail.trailer.embed_url)
-        DetailBodySection(animeDetail = animeDetail, navController = navController)
-    }
-}
-
-@Composable
-private fun RightColumnContent(
-    animeDetail: AnimeDetail,
-    detailState: DetailState,
-    episodeFilterState: EpisodeFilterState,
-    navController: NavController,
-    context: Context,
-    onAction: (DetailAction) -> Unit,
-    onAnimeIdChange: (Int) -> Unit
-) {
-    Column(
-        modifier = Modifier.padding(top = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        listOf(
-            "Background" to animeDetail.background,
-            "Synopsis" to animeDetail.synopsis,
-        ).forEach { DetailCommonBody(it.first, it.second) }
+    item {
         RelationSection(
             navController = navController,
             relations = animeDetail.relations,
-            detailState = detailState,
+            relationAnimeDetails = detailState.relationAnimeDetails,
             onAction = onAction,
             onItemClickListener = onAnimeIdChange
         )
+    }
+    item {
         EpisodesDetailSection(
             animeDetail = animeDetail,
-            detailState = detailState,
+            animeDetailComplement = detailState.animeDetailComplement,
+            newEpisodeIdList = detailState.newEpisodeIdList,
+            episodeDetailComplements = detailState.episodeDetailComplements,
             episodeFilterState = episodeFilterState,
             navBackStackEntry = navController.currentBackStackEntry,
             onEpisodeClick = { episodeId ->
@@ -178,8 +169,8 @@ private fun RightColumnContent(
             },
             onAction = onAction
         )
-        CommonListContent(animeDetail, context)
     }
+    item { CommonListContent(animeDetail, context) }
 }
 
 private fun convertToNameAndUrl(list: List<String>?): List<NameAndUrl>? =
@@ -193,6 +184,7 @@ private fun convertToNameAndUrl(list: List<String>?): List<NameAndUrl>? =
 private fun CommonListContent(animeDetail: AnimeDetail, context: Context) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier,
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         listOf(

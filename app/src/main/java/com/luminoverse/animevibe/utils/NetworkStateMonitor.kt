@@ -124,7 +124,6 @@ class NetworkStateMonitor(context: Context) {
      * Returns true only if an HTTP connection is successful and not redirected to a carrier page.
      */
     private fun checkInternetAccess(): Boolean {
-        // Primary check: HTTP to google.com
         try {
             val url = URL("https://www.google.com")
             val connection = url.openConnection() as HttpURLConnection
@@ -155,7 +154,6 @@ class NetworkStateMonitor(context: Context) {
             Log.w(TAG, "HTTP check to google.com failed: ${e.message}")
         }
 
-        // Secondary check: HTTP to example.com
         try {
             val url = URL("https://example.com")
             val connection = url.openConnection() as HttpURLConnection

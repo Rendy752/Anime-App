@@ -24,7 +24,7 @@ data class AnimeDetailComplement(
     val episodes: List<Episode>? = null,
     val lastEpisodeUpdatedAt: Long = Instant.now().epochSecond,
     val createdAt: Long = Instant.now().epochSecond,
-    var updatedAt: Long = Instant.now().epochSecond
+    val updatedAt: Long = Instant.now().epochSecond
 ) : Parcelable
 
 val animeDetailComplementPlaceholder = AnimeDetailComplement(

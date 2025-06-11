@@ -8,6 +8,7 @@ import com.luminoverse.animevibe.models.EpisodeServersResponse
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
 import com.luminoverse.animevibe.models.EpisodeSourcesResponse
 import com.luminoverse.animevibe.repository.AnimeEpisodeDetailRepository
+import com.luminoverse.animevibe.utils.resource.Resource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.time.Instant
@@ -46,26 +47,21 @@ object ComplementUtils {
         repository: AnimeEpisodeDetailRepository,
         animeDetail: AnimeDetail,
         animeDetailComplement: AnimeDetailComplement,
-        isRefresh: Boolean = false
+        isRefresh: Boolean
     ): AnimeDetailComplement? = withContext(Dispatchers.IO) {
-        if (!TimeUtils.isEpisodeAreUpToDate(
-                animeDetail.broadcast.time,
-                animeDetail.broadcast.timezone,
-                animeDetail.broadcast.day,
-                animeDetailComplement.lastEpisodeUpdatedAt
-            ) || isRefresh
-        ) {
-            val episodesResponse = repository.getEpisodes(animeDetailComplement.id)
-            if (episodesResponse is Resource.Success) {
-                val episodes = episodesResponse.data.episodes
-                if (episodes != animeDetailComplement.episodes) {
-                    val updatedAnimeDetail = animeDetailComplement.copy(
-                        episodes = episodes,
-                        lastEpisodeUpdatedAt = Instant.now().epochSecond
-                    )
-                    repository.updateCachedAnimeDetailComplement(updatedAnimeDetail)
-                    return@withContext updatedAnimeDetail
-                }
+        val isDataNeedUpdate = repository.isDataNeedUpdate(animeDetail, animeDetailComplement)
+        if (!isDataNeedUpdate || !isRefresh) return@withContext animeDetailComplement
+
+        val episodesResponse = repository.getEpisodes(animeDetailComplement.id)
+        if (episodesResponse is Resource.Success) {
+            val episodes = episodesResponse.data.episodes
+            if (episodes != animeDetailComplement.episodes) {
+                val updatedAnimeDetail = animeDetailComplement.copy(
+                    episodes = episodes,
+                    lastEpisodeUpdatedAt = Instant.now().epochSecond
+                )
+                repository.updateCachedAnimeDetailComplement(updatedAnimeDetail)
+                return@withContext updatedAnimeDetail
             }
         }
         animeDetailComplement
@@ -76,7 +72,9 @@ object ComplementUtils {
      */
     suspend fun createEpisodeDetailComplement(
         repository: AnimeEpisodeDetailRepository,
-        animeDetail: AnimeDetail,
+        animeDetailMalId: Int,
+        animeDetailTitle: String,
+        animeDetailImageUrl: String?,
         animeDetailComplement: AnimeDetailComplement,
         episode: Episode,
         servers: EpisodeServersResponse,
@@ -85,11 +83,11 @@ object ComplementUtils {
     ): EpisodeDetailComplement = withContext(Dispatchers.IO) {
         val complement = EpisodeDetailComplement(
             id = episode.episodeId,
-            malId = animeDetail.mal_id,
+            malId = animeDetailMalId,
             aniwatchId = animeDetailComplement.id,
-            animeTitle = animeDetail.title,
+            animeTitle = animeDetailTitle,
             episodeTitle = episode.name,
-            imageUrl = animeDetail.images.webp.large_image_url,
+            imageUrl = animeDetailImageUrl,
             number = episode.episodeNo,
             isFiller = episode.filler,
             servers = servers,
@@ -131,14 +129,11 @@ object ComplementUtils {
         repository: AnimeEpisodeDetailRepository,
         episodeId: String,
         isFavorite: Boolean
-    ): EpisodeDetailComplement? = withContext(Dispatchers.IO) {
+    ) = withContext(Dispatchers.IO) {
         val episode = repository.getCachedEpisodeDetailComplement(episodeId)
         if (episode != null) {
             val updatedEpisode = episode.copy(isFavorite = isFavorite)
             repository.updateEpisodeDetailComplement(updatedEpisode)
-            updatedEpisode
-        } else {
-            null
         }
     }
 }

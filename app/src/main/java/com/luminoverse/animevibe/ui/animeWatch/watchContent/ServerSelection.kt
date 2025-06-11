@@ -45,7 +45,7 @@ fun ServerSelection(
                             type = type,
                             servers = servers,
                             onServerSelected = onServerSelected,
-                            episodeSourcesQuery = query
+                            episodeSourcesQuery = query,
                         )
                     }
                 }

@@ -9,45 +9,57 @@ import com.luminoverse.animevibe.models.AnimeDetail
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.models.NetworkStatus
+import com.luminoverse.animevibe.models.episodeDetailComplementPlaceholder
+import com.luminoverse.animevibe.utils.resource.Resource
 
 @Composable
 fun WatchContentSection(
     animeDetail: AnimeDetail?,
-    isFavorite: Boolean,
+    networkStatus: NetworkStatus,
+    onFavoriteToggle: (Boolean) -> Unit,
     episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
     onLoadEpisodeDetailComplement: (String) -> Unit,
-    episodeDetailComplement: Resource<EpisodeDetailComplement>,
+    isRefreshing: Boolean,
+    episodeDetailComplement: EpisodeDetailComplement?,
     episodes: List<Episode>,
+    newEpisodeCount: Int,
     episodeSourcesQuery: EpisodeSourcesQuery?,
     serverScrollState: ScrollState,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (episodeDetailComplement is Resource.Success) {
-            episodeDetailComplement.data.let { episodeDetail ->
-                val currentEpisode =
-                    episodes.find { it.episodeId == episodeDetail.servers.episodeId }
-                currentEpisode?.let { currentEpisode ->
-                    WatchHeader(
-                        title = animeDetail?.title,
-                        isFavorite = isFavorite,
-                        episode = currentEpisode,
-                        episodeDetailComplement = episodeDetail,
-                        episodeSourcesQuery = episodeSourcesQuery,
-                        serverScrollState = serverScrollState,
-                        onServerSelected = { handleSelectedEpisodeServer(it) }
-                    )
-                }
+        if (!isRefreshing) {
+            episodeDetailComplement?.let { episodeDetailComplement ->
+                episodes.find { it.episodeId == episodeDetailComplement.id }
+                    ?.let { currentEpisode ->
+                        WatchHeader(
+                            title = animeDetail?.title,
+                            networkStatus = networkStatus,
+                            onFavoriteToggle = onFavoriteToggle,
+                            episode = currentEpisode,
+                            episodeDetailComplement = episodeDetailComplement,
+                            episodeSourcesQuery = episodeSourcesQuery,
+                            serverScrollState = serverScrollState,
+                            onServerSelected = { handleSelectedEpisodeServer(it) }
+                        )
+                    }
             }
         } else {
-            WatchHeaderSkeleton()
+            WatchHeaderSkeleton(
+                episode = episodes.first(),
+                episodeDetailComplement = episodeDetailComplement
+                    ?: episodeDetailComplementPlaceholder,
+                networkStatus = networkStatus
+            )
         }
         if (episodes.size > 1) WatchEpisode(
             episodeDetailComplements = episodeDetailComplements,
             onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,
+            isRefreshing = isRefreshing,
             episodeDetailComplement = episodeDetailComplement,
             episodes = episodes,
+            newEpisodeCount = newEpisodeCount,
             episodeSourcesQuery = episodeSourcesQuery,
             handleSelectedEpisodeServer = handleSelectedEpisodeServer
         )

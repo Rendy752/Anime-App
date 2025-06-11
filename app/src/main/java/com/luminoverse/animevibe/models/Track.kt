@@ -1,11 +1,13 @@
 package com.luminoverse.animevibe.models
 
 import android.os.Parcelable
+import androidx.compose.runtime.Stable
 import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.Serializable
 
 @Parcelize
 @Serializable
+@Stable
 data class Track(
     val file: String,
     val label: String? = null,
@@ -14,8 +16,8 @@ data class Track(
 ): Parcelable
 
 val trackPlaceholder = Track(
-    file = "https://cdn.myanimelist.net/images/",
-    label = "English",
-    kind = "sub",
-    default = true
+    file = "",
+    label = "None",
+    kind = "captions",
+    default = false
 )

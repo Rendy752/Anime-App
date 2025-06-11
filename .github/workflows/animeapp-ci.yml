@@ -4,11 +4,13 @@ on:
   push:
     branches:
       - master
+      - staging
       - feature/*
       - enhancement/*
   pull_request:
     branches:
       - master
+      - staging
       - feature/*
       - enhancement/*
 

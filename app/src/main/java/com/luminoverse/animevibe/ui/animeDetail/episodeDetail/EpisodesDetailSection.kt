@@ -2,12 +2,15 @@ package com.luminoverse.animevibe.ui.animeDetail.episodeDetail
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -22,9 +25,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavBackStackEntry
 import com.luminoverse.animevibe.models.AnimeDetail
+import com.luminoverse.animevibe.models.AnimeDetailComplement
+import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.ui.animeDetail.DetailAction
-import com.luminoverse.animevibe.ui.animeDetail.DetailState
 import com.luminoverse.animevibe.ui.animeDetail.EpisodeFilterState
+import com.luminoverse.animevibe.ui.common.CircularLoadingIndicator
 import com.luminoverse.animevibe.ui.common.EpisodeDetailItem
 import com.luminoverse.animevibe.ui.common.EpisodeDetailItemSkeleton
 import com.luminoverse.animevibe.ui.common.EpisodeInfoRow
@@ -35,14 +40,16 @@ import com.luminoverse.animevibe.ui.common.SearchView
 import com.luminoverse.animevibe.ui.common.SearchViewSkeleton
 import com.luminoverse.animevibe.ui.common.SkeletonBox
 import com.luminoverse.animevibe.utils.FilterUtils
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.resource.Resource
 import com.luminoverse.animevibe.utils.basicContainer
 
 @Composable
 fun EpisodesDetailSection(
     modifier: Modifier = Modifier,
     animeDetail: AnimeDetail,
-    detailState: DetailState,
+    animeDetailComplement: Resource<AnimeDetailComplement?>,
+    newEpisodeIdList: List<String>,
+    episodeDetailComplements: Map<String, EpisodeDetailComplement?>,
     episodeFilterState: EpisodeFilterState,
     navBackStackEntry: NavBackStackEntry?,
     onEpisodeClick: (String) -> Unit,
@@ -65,8 +72,8 @@ fun EpisodesDetailSection(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
             )
-            if (detailState.animeDetailComplement is Resource.Success) {
-                detailState.animeDetailComplement.data?.let { data ->
+            if (animeDetailComplement.data != null) {
+                animeDetailComplement.data?.let { data ->
                     if (data.episodes?.isNotEmpty() == true) {
                         EpisodeInfoRow(
                             subCount = data.sub,
@@ -75,7 +82,7 @@ fun EpisodesDetailSection(
                         )
                     }
                 }
-            } else if (detailState.animeDetailComplement is Resource.Loading) {
+            } else if (animeDetailComplement !is Resource.Error) {
                 EpisodeInfoRowSkeleton()
             }
         }
@@ -84,113 +91,136 @@ fun EpisodesDetailSection(
                 .fillMaxWidth()
                 .padding(bottom = 8.dp)
         )
-        when (detailState.animeDetailComplement) {
-            is Resource.Loading -> {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    SearchViewSkeleton(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(end = 4.dp)
-                    )
-                    if (animeDetail.airing) SkeletonBox(
-                        modifier = modifier
-                            .clip(RoundedCornerShape(16.dp))
-                            .background(MaterialTheme.colorScheme.primaryContainer),
-                        height = 56.dp,
-                        width = 56.dp
-                    )
-                }
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(max = 400.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    repeat(3) {
-                        EpisodeDetailItemSkeleton()
-                    }
-                }
-            }
 
-            is Resource.Success -> {
-                detailState.animeDetailComplement.data?.let { data ->
-                    if (animeDetail.type == "Music") {
-                        MessageDisplay(message = "Anime is a music, no episodes available")
-                    } else if (data.episodes?.isNotEmpty() == true) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(bottom = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            if (data.episodes.size >= 4) {
-                                SearchView(
-                                    query = episodeFilterState.episodeQuery.title,
-                                    onQueryChange = {
-                                        onAction(
-                                            DetailAction.UpdateEpisodeQueryState(
-                                                episodeFilterState.episodeQuery.copy(title = it)
-                                            )
+        if (animeDetailComplement.data != null) {
+            animeDetailComplement.data?.let { data ->
+                if (animeDetail.type == "Music") {
+                    MessageDisplay(message = "Anime is a music, no episodes available")
+                } else if (data.episodes?.isNotEmpty() == true) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        if (data.episodes.size >= 4) {
+                            SearchView(
+                                query = episodeFilterState.episodeQuery.title,
+                                onQueryChange = {
+                                    onAction(
+                                        DetailAction.UpdateEpisodeQueryState(
+                                            episodeFilterState.episodeQuery.copy(title = it)
                                         )
-                                    },
-                                    placeholder = "Search",
-                                    modifier = Modifier.weight(1f)
-                                )
-                            }
-                            if (animeDetail.airing) RetryButton(
-                                modifier = if (data.episodes.size >= 4) Modifier else Modifier.fillMaxWidth(),
-                                onClick = { onAction(DetailAction.LoadEpisodes(true)) }
+                                    )
+                                },
+                                placeholder = "Search",
+                                modifier = Modifier.weight(1f)
                             )
                         }
-                        val filteredEpisodes = FilterUtils.filterEpisodes(
-                            episodes = data.episodes.reversed(),
-                            query = episodeFilterState.episodeQuery,
-                            episodeDetailComplements = detailState.episodeDetailComplements,
-                            lastEpisodeWatchedId = data.lastEpisodeWatchedId
-                        )
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(max = 400.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            if (filteredEpisodes.isEmpty() && episodeFilterState.episodeQuery.title.isNotEmpty()) {
-                                item {
-                                    MessageDisplay(message = "No episodes found")
-                                }
-                            } else {
-                                items(filteredEpisodes) { episode ->
-                                    EpisodeDetailItem(
-                                        animeDetail = animeDetail,
-                                        lastEpisodeWatchedId = data.lastEpisodeWatchedId,
-                                        episode = episode,
-                                        episodeDetailComplement = detailState.episodeDetailComplements[episode.episodeId]?.data,
-                                        query = episodeFilterState.episodeQuery.title,
-                                        onAction = onAction,
-                                        onClick = onEpisodeClick,
-                                        navBackStackEntry = navBackStackEntry
-                                    )
-                                }
+                        val retryButtonModifier = Modifier
+                            .then(
+                                if (data.episodes.size >= 4) Modifier.size(64.dp)
+                                else Modifier.fillMaxWidth()
+                            )
+                            .height(64.dp)
+                        if (animeDetail.airing && animeDetailComplement !is Resource.Loading) {
+                            RetryButton(
+                                modifier = retryButtonModifier,
+                                onClick = { onAction(DetailAction.LoadAllEpisode(true)) }
+                            )
+                        } else if (animeDetailComplement is Resource.Loading) {
+                            Box(
+                                modifier = retryButtonModifier
+                                    .basicContainer(
+                                        isPrimary = true,
+                                        innerPadding = PaddingValues(0.dp),
+                                        outerPadding = PaddingValues(0.dp)
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) { CircularLoadingIndicator() }
+                        }
+                    }
+                    val filteredEpisodes = FilterUtils.filterEpisodes(
+                        episodes = data.episodes.reversed(),
+                        query = episodeFilterState.episodeQuery,
+                        episodeDetailComplements = episodeDetailComplements,
+                        lastEpisodeWatchedId = data.lastEpisodeWatchedId
+                    )
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 400.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        if (filteredEpisodes.isEmpty() && episodeFilterState.episodeQuery.title.isNotEmpty()) {
+                            item {
+                                MessageDisplay(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    message = "No episodes found"
+                                )
+                            }
+                        } else {
+                            items(filteredEpisodes) { episode ->
+                                EpisodeDetailItem(
+                                    animeImage = animeDetail.images.webp.large_image_url,
+                                    lastEpisodeWatchedId = data.lastEpisodeWatchedId,
+                                    episode = episode,
+                                    isNewEpisode = episode.episodeId in newEpisodeIdList,
+                                    episodeDetailComplement = episodeDetailComplements[episode.episodeId],
+                                    query = episodeFilterState.episodeQuery.title,
+                                    loadEpisodeDetailComplement = {
+                                        onAction(DetailAction.LoadEpisodeDetail(it))
+                                    },
+                                    onClick = { onEpisodeClick(episode.episodeId) },
+                                    navBackStackEntry = navBackStackEntry
+                                )
                             }
                         }
-                    } else {
-                        MessageDisplay(message = "No episodes found")
                     }
+                } else {
+                    MessageDisplay(
+                        modifier = Modifier.fillMaxWidth(),
+                        message = "No episodes found"
+                    )
                 }
             }
-
-            is Resource.Error -> {
-                MessageDisplay(
-                    message = detailState.animeDetailComplement.message ?: "Error loading episodes"
+        } else if (animeDetailComplement !is Resource.Error) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                SearchViewSkeleton(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 4.dp)
+                )
+                if (animeDetail.airing) SkeletonBox(
+                    modifier = modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    height = 64.dp,
+                    width = 64.dp
                 )
             }
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 400.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                repeat(3) {
+                    EpisodeDetailItemSkeleton()
+                }
+            }
+        } else {
+            MessageDisplay(
+                modifier = Modifier.fillMaxWidth(),
+                message = animeDetailComplement.message
+            )
         }
     }
 }

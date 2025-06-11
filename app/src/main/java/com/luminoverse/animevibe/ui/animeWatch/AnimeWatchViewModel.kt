@@ -1,7 +1,10 @@
 package com.luminoverse.animevibe.ui.animeWatch
 
+import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.media3.common.Player
+import androidx.media3.exoplayer.ExoPlayer
 import com.luminoverse.animevibe.models.AnimeDetail
 import com.luminoverse.animevibe.models.AnimeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
@@ -9,42 +12,41 @@ import com.luminoverse.animevibe.models.EpisodeSourcesQuery
 import com.luminoverse.animevibe.models.episodeSourcesQueryPlaceholder
 import com.luminoverse.animevibe.repository.AnimeEpisodeDetailRepository
 import com.luminoverse.animevibe.utils.ComplementUtils
-import com.luminoverse.animevibe.utils.Resource
-import com.luminoverse.animevibe.utils.StreamingUtils
+import com.luminoverse.animevibe.utils.media.ControlsState
+import com.luminoverse.animevibe.utils.media.HlsPlayerAction
+import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
+import com.luminoverse.animevibe.utils.media.PlayerCoreState
+import com.luminoverse.animevibe.utils.media.PositionState
+import com.luminoverse.animevibe.utils.resource.Resource
+import com.luminoverse.animevibe.utils.media.StreamingUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 data class WatchState(
     val animeDetail: AnimeDetail? = null,
     val animeDetailComplement: AnimeDetailComplement? = null,
-    val episodeDetailComplement: Resource<EpisodeDetailComplement> = Resource.Loading(),
+    val episodeDetailComplement: EpisodeDetailComplement? = null,
     val episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>> = emptyMap(),
-    val episodeSourcesQuery: EpisodeSourcesQuery = episodeSourcesQueryPlaceholder,
+    val episodeSourcesQuery: EpisodeSourcesQuery? = null,
     val isRefreshing: Boolean = false,
-    val isFavorite: Boolean = false,
     val errorMessage: String? = null,
-    val selectedContentIndex: Int = 0
+    val newEpisodeCount: Int = 0
 )
 
+@Stable
 data class PlayerUiState(
+    val errorSourceQueryList: List<EpisodeSourcesQuery> = emptyList(),
     val isFullscreen: Boolean = false,
     val isPipMode: Boolean = false,
-    val isLocked: Boolean = false,
-    val isShowResumeOverlay: Boolean = false,
-    val isShowNextEpisode: Boolean = false,
-    val nextEpisodeName: String = "",
-    val isShowPip: Boolean = false,
-    val isShowSpeedUp: Boolean = false,
-    val speedUpText: String = "1x speed",
-    val isShowSeekIndicator: Boolean = false,
-    val seekDirection: Int = 0,
-    val seekAmount: Long = 0L,
-    val isSeeking: Boolean = false
+    val isShowResume: Boolean = false,
+    val isShowNextEpisode: Boolean = false
 )
 
 sealed class WatchAction {
@@ -56,18 +58,19 @@ sealed class WatchAction {
     ) : WatchAction()
 
     data class UpdateLastEpisodeWatchedId(val lastEpisodeWatchedId: String) : WatchAction()
-    data class UpdateEpisodeDetailComplement(val updatedEpisodeDetailComplement: EpisodeDetailComplement) :
-        WatchAction()
+    data class UpdateStoredWatchState(
+        val currentPosition: Long?, val duration: Long?, val screenShot: String?
+    ) : WatchAction()
 
     data class LoadEpisodeDetailComplement(val episodeId: String) : WatchAction()
-    data class SetFullscreen(val isFullscreen: Boolean) : WatchAction()
-    data class SetPipMode(val isPipMode: Boolean) : WatchAction()
-    data class SetLocked(val isLocked: Boolean) : WatchAction()
-    data class SetShowResumeOverlay(val isShow: Boolean) : WatchAction()
-    data class SetShowNextEpisode(val isShow: Boolean, val nextEpisodeName: String = "") :
+    data class AddErrorSourceQueryList(val errorSourceQueryList: EpisodeSourcesQuery) :
         WatchAction()
 
-    data class SetSelectedContentIndex(val index: Int) : WatchAction()
+    data class SetFullscreen(val isFullscreen: Boolean) : WatchAction()
+    data class SetPipMode(val isPipMode: Boolean) : WatchAction()
+    data class SetShowResume(val isShow: Boolean) : WatchAction()
+    data class SetShowNextEpisode(val isShow: Boolean) : WatchAction()
+
     data class SetErrorMessage(val message: String?) : WatchAction()
     data class SetFavorite(val isFavorite: Boolean, val updateComplement: Boolean = true) :
         WatchAction()
@@ -75,7 +78,8 @@ sealed class WatchAction {
 
 @HiltViewModel
 class AnimeWatchViewModel @Inject constructor(
-    private val animeEpisodeDetailRepository: AnimeEpisodeDetailRepository
+    private val animeEpisodeDetailRepository: AnimeEpisodeDetailRepository,
+    val hlsPlayerUtils: HlsPlayerUtils
 ) : ViewModel() {
 
     private val _watchState = MutableStateFlow(WatchState())
@@ -84,42 +88,81 @@ class AnimeWatchViewModel @Inject constructor(
     private val _playerUiState = MutableStateFlow(PlayerUiState())
     val playerUiState: StateFlow<PlayerUiState> = _playerUiState.asStateFlow()
 
+    val playerCoreState: StateFlow<PlayerCoreState> = hlsPlayerUtils.playerCoreState
+    val controlsState: StateFlow<ControlsState> = hlsPlayerUtils.controlsState
+    val positionState: StateFlow<PositionState> = hlsPlayerUtils.positionState
+
     private val _defaultEpisodeDetailComplement = MutableStateFlow<EpisodeDetailComplement?>(null)
+
+    init {
+        viewModelScope.launch {
+            hlsPlayerUtils.playerCoreState.collect { coreState ->
+                if (coreState.error != null) {
+                    onAction(
+                        WatchAction.SetErrorMessage(
+                            coreState.error.message ?: "Unknown player error"
+                        )
+                    )
+                }
+
+                when (coreState.playbackState) {
+                    Player.STATE_ENDED -> {
+                        _playerUiState.update {
+                            it.copy(isShowNextEpisode = true)
+                        }
+                        onAction(WatchAction.SetErrorMessage(null))
+                    }
+
+                    Player.STATE_READY -> {
+                        onAction(WatchAction.SetErrorMessage(null))
+                    }
+
+                    Player.STATE_BUFFERING -> {
+                        if (coreState.error == null) {
+                            onAction(WatchAction.SetErrorMessage(null))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    fun getPlayer(): ExoPlayer? {
+        return hlsPlayerUtils.getPlayer()
+    }
+
+    fun dispatchPlayerAction(action: HlsPlayerAction) {
+        hlsPlayerUtils.dispatch(action)
+    }
 
     fun onAction(action: WatchAction) {
         when (action) {
             is WatchAction.SetInitialState -> setInitialState(action.malId, action.episodeId)
             is WatchAction.HandleSelectedEpisodeServer -> handleSelectedEpisodeServer(
-                action.episodeSourcesQuery,
-                action.isFirstInit,
-                action.isRefresh
+                action.episodeSourcesQuery, action.isFirstInit, action.isRefresh
             )
 
             is WatchAction.UpdateLastEpisodeWatchedId -> updateLastEpisodeWatchedId(action.lastEpisodeWatchedId)
-            is WatchAction.UpdateEpisodeDetailComplement -> updateEpisodeDetailComplement(action.updatedEpisodeDetailComplement)
+            is WatchAction.UpdateStoredWatchState -> updateStoredWatchState(
+                action.currentPosition, action.duration, action.screenShot
+            )
+
             is WatchAction.LoadEpisodeDetailComplement -> loadEpisodeDetailComplement(action.episodeId)
+
+            is WatchAction.AddErrorSourceQueryList -> _playerUiState.update {
+                it.copy(errorSourceQueryList = it.errorSourceQueryList + action.errorSourceQueryList)
+            }
+
             is WatchAction.SetFullscreen -> _playerUiState.update { it.copy(isFullscreen = action.isFullscreen) }
             is WatchAction.SetPipMode -> _playerUiState.update { it.copy(isPipMode = action.isPipMode) }
-            is WatchAction.SetLocked -> _playerUiState.update { it.copy(isLocked = action.isLocked) }
-            is WatchAction.SetShowResumeOverlay -> _playerUiState.update {
-                it.copy(
-                    isShowResumeOverlay = action.isShow
-                )
+            is WatchAction.SetShowResume -> _playerUiState.update {
+                it.copy(isShowResume = action.isShow)
             }
 
-            is WatchAction.SetShowNextEpisode -> _playerUiState.update {
-                it.copy(isShowNextEpisode = action.isShow, nextEpisodeName = action.nextEpisodeName)
-            }
-
-            is WatchAction.SetSelectedContentIndex -> _watchState.update {
-                it.copy(
-                    selectedContentIndex = action.index
-                )
-            }
-
+            is WatchAction.SetShowNextEpisode -> _playerUiState.update { it.copy(isShowNextEpisode = action.isShow) }
             is WatchAction.SetErrorMessage -> _watchState.update { it.copy(errorMessage = action.message) }
+
             is WatchAction.SetFavorite -> {
-                _watchState.update { it.copy(isFavorite = action.isFavorite) }
                 if (action.updateComplement) {
                     updateFavoriteInComplement(action.isFavorite)
                 }
@@ -147,11 +190,14 @@ class AnimeWatchViewModel @Inject constructor(
                     )
                 }
                 _defaultEpisodeDetailComplement.value = defaultEpisode
-                val initialIsFavorite = defaultEpisode?.isFavorite == true
-                _watchState.update { it.copy(isFavorite = initialIsFavorite) }
-
                 val initialQuery = defaultEpisode?.sourcesQuery?.copy(id = episodeId)
-                    ?: episodeSourcesQueryPlaceholder.copy(id = episodeId)
+                    ?: EpisodeSourcesQuery(
+                        id = episodeId,
+                        server = defaultEpisode?.sourcesQuery?.server
+                            ?: episodeSourcesQueryPlaceholder.server,
+                        category = defaultEpisode?.sourcesQuery?.category
+                            ?: episodeSourcesQueryPlaceholder.category
+                    )
                 onAction(WatchAction.HandleSelectedEpisodeServer(initialQuery, isFirstInit = true))
             }
         }
@@ -162,13 +208,11 @@ class AnimeWatchViewModel @Inject constructor(
         isFirstInit: Boolean = false,
         isRefresh: Boolean = false
     ) = viewModelScope.launch {
-        val tempEpisodeDetailComplement =
-            (_watchState.value.episodeDetailComplement as? Resource.Success)?.data
         try {
             _watchState.update {
                 it.copy(
                     isRefreshing = true,
-                    episodeDetailComplement = Resource.Loading()
+                    episodeSourcesQuery = episodeSourcesQuery,
                 )
             }
             if (!isRefresh) {
@@ -176,60 +220,49 @@ class AnimeWatchViewModel @Inject constructor(
                     getCachedEpisodeDetailComplement(episodeSourcesQuery.id)
                 if (cachedEpisodeDetailComplement != null) {
                     if (cachedEpisodeDetailComplement.sourcesQuery == episodeSourcesQuery || isFirstInit) {
-                        val newIsFavorite = cachedEpisodeDetailComplement.isFavorite
                         _watchState.update {
                             it.copy(
                                 episodeSourcesQuery = cachedEpisodeDetailComplement.sourcesQuery,
-                                episodeDetailComplement = Resource.Success(
-                                    cachedEpisodeDetailComplement
-                                ),
-                                isFavorite = newIsFavorite
+                                episodeDetailComplement = cachedEpisodeDetailComplement,
+                                errorMessage = null
                             )
                         }
                         return@launch
                     } else {
                         val episodeServersResource =
                             Resource.Success(cachedEpisodeDetailComplement.servers)
-                        val (episodeSourcesResource) = StreamingUtils.getEpisodeSources(
-                            episodeServersResource,
-                            { id, server, category ->
-                                animeEpisodeDetailRepository.getEpisodeSources(
-                                    id,
-                                    server,
-                                    category
-                                )
+                        val (episodeSourcesResource, availableEpisodeSourcesQuery) = StreamingUtils.getEpisodeSourcesResult(
+                            episodeServersResponse = episodeServersResource.data,
+                            getEpisodeSources = { id, server, category ->
+                                animeEpisodeDetailRepository.getEpisodeSources(id, server, category)
                             },
-                            episodeSourcesQuery
+                            errorSourceQueryList = _playerUiState.value.errorSourceQueryList,
+                            episodeSourcesQuery = episodeSourcesQuery
                         )
                         if (episodeSourcesResource !is Resource.Success) {
-                            restoreDefaultValues(tempEpisodeDetailComplement)
                             _watchState.update {
-                                it.copy(
-                                    episodeDetailComplement = Resource.Error(
-                                        episodeSourcesResource.message
-                                            ?: "Failed to fetch episode sources"
-                                    )
-                                )
+                                it.copy(errorMessage = "Failed to fetch episode sources.")
                             }
                             return@launch
                         }
                         episodeServersResource.data.let { servers ->
                             episodeSourcesResource.data.let { sources ->
-                                val newIsFavorite = cachedEpisodeDetailComplement.isFavorite
                                 val updatedEpisodeDetailComplement =
                                     cachedEpisodeDetailComplement.copy(
                                         servers = servers,
                                         sources = sources,
-                                        sourcesQuery = episodeSourcesQuery
+                                        sourcesQuery = availableEpisodeSourcesQuery
+                                            ?: episodeSourcesQuery
                                     )
-                                updateEpisodeDetailComplement(updatedEpisodeDetailComplement)
+                                animeEpisodeDetailRepository.updateEpisodeDetailComplement(
+                                    updatedEpisodeDetailComplement
+                                )
                                 _watchState.update {
                                     it.copy(
-                                        episodeSourcesQuery = episodeSourcesQuery,
-                                        episodeDetailComplement = Resource.Success(
-                                            updatedEpisodeDetailComplement
-                                        ),
-                                        isFavorite = newIsFavorite
+                                        episodeSourcesQuery = availableEpisodeSourcesQuery
+                                            ?: episodeSourcesQuery,
+                                        episodeDetailComplement = updatedEpisodeDetailComplement,
+                                        errorMessage = null
                                     )
                                 }
                                 return@launch
@@ -239,108 +272,127 @@ class AnimeWatchViewModel @Inject constructor(
                 }
             }
 
-            val episodeServersResource =
-                animeEpisodeDetailRepository.getEpisodeServers(episodeSourcesQuery.id)
-            if (episodeServersResource !is Resource.Success) {
-                restoreDefaultValues(tempEpisodeDetailComplement)
-                _watchState.update {
-                    it.copy(
-                        episodeDetailComplement = Resource.Error(
-                            episodeServersResource.message ?: "Failed to fetch episode servers"
-                        )
-                    )
-                }
-                return@launch
-            }
-
-            val (episodeSourcesResource) = StreamingUtils.getEpisodeSources(
-                episodeServersResource,
-                { id, server, category ->
-                    animeEpisodeDetailRepository.getEpisodeSources(
-                        id,
-                        server,
-                        category
-                    )
-                },
-                episodeSourcesQuery
-            )
-            if (episodeSourcesResource !is Resource.Success) {
-                restoreDefaultValues(tempEpisodeDetailComplement)
-                _watchState.update {
-                    it.copy(
-                        episodeDetailComplement = Resource.Error(
-                            episodeSourcesResource.message ?: "Failed to fetch episode sources"
-                        )
-                    )
-                }
-                return@launch
-            }
-
-            episodeServersResource.data.let { servers ->
-                episodeSourcesResource.data.let { sources ->
-                    var cachedEpisodeDetailComplement =
-                        getCachedEpisodeDetailComplement(episodeSourcesQuery.id)
-                    val newIsFavorite = cachedEpisodeDetailComplement?.isFavorite == true
-                    if (cachedEpisodeDetailComplement != null) {
-                        cachedEpisodeDetailComplement = cachedEpisodeDetailComplement.copy(
-                            servers = servers,
-                            sources = sources,
-                            sourcesQuery = episodeSourcesQuery
-                        )
-                        updateEpisodeDetailComplement(cachedEpisodeDetailComplement)
+            _watchState.value.animeDetail?.let { animeDetail ->
+                _watchState.value.animeDetailComplement?.let { animeDetailComplement ->
+                    if (animeDetail.airing && isRefresh) {
+                        viewModelScope.launch { updateEpisodes() }
+                    }
+                    val episodeServersResource =
+                        animeEpisodeDetailRepository.getEpisodeServers(episodeSourcesQuery.id)
+                    if (episodeServersResource !is Resource.Success) {
                         _watchState.update {
-                            it.copy(
-                                episodeDetailComplement = Resource.Success(
-                                    cachedEpisodeDetailComplement
-                                ),
-                                isFavorite = newIsFavorite
-                            )
+                            it.copy(errorMessage = "Failed to fetch episode servers.")
                         }
-                    } else {
-                        _watchState.value.animeDetail?.let { animeDetail ->
-                            _watchState.value.animeDetailComplement?.let { animeDetailComplement ->
-                                val currentEpisode =
-                                    animeDetailComplement.episodes?.firstOrNull { it.episodeId == servers.episodeId }
-                                currentEpisode?.let { episode ->
-                                    ComplementUtils.createEpisodeDetailComplement(
-                                        repository = animeEpisodeDetailRepository,
-                                        animeDetail = animeDetail,
-                                        animeDetailComplement = animeDetailComplement,
-                                        episode = episode,
-                                        servers = servers,
-                                        sources = sources,
-                                        sourcesQuery = episodeSourcesQuery
-                                    ).let { remoteEpisodeDetailComplement ->
-                                        _watchState.update {
-                                            it.copy(
-                                                episodeDetailComplement = Resource.Success(
-                                                    remoteEpisodeDetailComplement
-                                                ),
-                                                episodeDetailComplements = it.episodeDetailComplements + (remoteEpisodeDetailComplement.id to Resource.Success(
-                                                    remoteEpisodeDetailComplement
-                                                )),
-                                                isFavorite = false
-                                            )
+                        return@launch
+                    }
+
+                    val (episodeSourcesResource, availableEpisodeSourcesQuery) = StreamingUtils.getEpisodeSourcesResult(
+                        episodeServersResponse = episodeServersResource.data,
+                        getEpisodeSources = { id, server, category ->
+                            animeEpisodeDetailRepository.getEpisodeSources(id, server, category)
+                        },
+                        errorSourceQueryList = _playerUiState.value.errorSourceQueryList,
+                        episodeSourcesQuery = episodeSourcesQuery
+                    )
+                    if (episodeSourcesResource is Resource.Success && availableEpisodeSourcesQuery != null) {
+                        episodeServersResource.data.let { servers ->
+                            episodeSourcesResource.data.let { sources ->
+                                var cachedEpisodeDetailComplement =
+                                    getCachedEpisodeDetailComplement(episodeSourcesQuery.id)
+                                if (cachedEpisodeDetailComplement != null) {
+                                    cachedEpisodeDetailComplement =
+                                        cachedEpisodeDetailComplement.copy(
+                                            servers = servers,
+                                            sources = sources,
+                                            sourcesQuery = availableEpisodeSourcesQuery
+                                        )
+                                    animeEpisodeDetailRepository.updateEpisodeDetailComplement(
+                                        cachedEpisodeDetailComplement
+                                    )
+                                    _watchState.update {
+                                        it.copy(
+                                            episodeDetailComplement = cachedEpisodeDetailComplement,
+                                        )
+                                    }
+                                } else {
+                                    val currentEpisode =
+                                        animeDetailComplement.episodes?.firstOrNull { it.episodeId == servers.episodeId }
+                                    currentEpisode?.let { episode ->
+                                        ComplementUtils.createEpisodeDetailComplement(
+                                            repository = animeEpisodeDetailRepository,
+                                            animeDetailMalId = animeDetail.mal_id,
+                                            animeDetailTitle = animeDetail.title,
+                                            animeDetailImageUrl = animeDetail.images.webp.large_image_url,
+                                            animeDetailComplement = animeDetailComplement,
+                                            episode = episode,
+                                            servers = servers,
+                                            sources = sources,
+                                            sourcesQuery = availableEpisodeSourcesQuery
+                                        ).let { remoteEpisodeDetailComplement ->
+                                            _watchState.update {
+                                                it.copy(
+                                                    episodeDetailComplement = remoteEpisodeDetailComplement,
+                                                )
+                                            }
                                         }
                                     }
                                 }
+                                _watchState.update {
+                                    it.copy(
+                                        episodeSourcesQuery = availableEpisodeSourcesQuery,
+                                        errorMessage = null
+                                    )
+                                }
+                                return@launch
                             }
                         }
                     }
-                    _watchState.update { it.copy(episodeSourcesQuery = episodeSourcesQuery) }
+                    _watchState.update {
+                        it.copy(
+                            errorMessage = "Sorry, we couldn't find any working servers for this episode right now. Please try again later."
+                        )
+                    }
                 }
             }
         } catch (e: Exception) {
-            restoreDefaultValues(tempEpisodeDetailComplement)
+            restoreDefaultValues()
             _watchState.update {
-                it.copy(
-                    episodeDetailComplement = Resource.Error(
-                        e.message ?: "An unexpected error occurred"
-                    )
-                )
+                it.copy(errorMessage = e.message ?: "An unexpected error occurred")
             }
         } finally {
             _watchState.update { it.copy(isRefreshing = false) }
+        }
+    }
+
+    private fun updateEpisodes() = viewModelScope.launch {
+        try {
+            _watchState.value.animeDetail?.let { animeDetail ->
+                if (animeDetail.type == "Music") return@launch
+                _watchState.value.animeDetailComplement?.let { animeDetailComplement ->
+                    val currentEpisodeCount = animeDetailComplement.episodes?.size ?: 0
+                    val cachedComplement =
+                        animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(
+                            animeDetail.mal_id
+                        )
+                    cachedComplement?.let {
+                        val updatedComplement =
+                            ComplementUtils.updateAnimeDetailComplementWithEpisodes(
+                                repository = animeEpisodeDetailRepository,
+                                animeDetail = animeDetail,
+                                animeDetailComplement = it,
+                                isRefresh = true
+                            )
+                        val newEpisodeCount = updatedComplement?.episodes?.size ?: 0
+                        _watchState.update {
+                            it.copy(
+                                animeDetailComplement = updatedComplement,
+                                newEpisodeCount = newEpisodeCount - currentEpisodeCount
+                            )
+                        }
+                    }
+                }
+            }
+        } finally {
         }
     }
 
@@ -350,25 +402,43 @@ class AnimeWatchViewModel @Inject constructor(
                 if (complement.lastEpisodeWatchedId == lastEpisodeWatchedId) return@launch
                 val updatedComplement = complement.copy(lastEpisodeWatchedId = lastEpisodeWatchedId)
                 animeEpisodeDetailRepository.updateCachedAnimeDetailComplement(updatedComplement)
-                _watchState.update { it.copy(animeDetailComplement = updatedComplement) }
             }
         }
     }
 
-    private fun updateEpisodeDetailComplement(updatedEpisodeDetailComplement: EpisodeDetailComplement) {
-        viewModelScope.launch {
-            val updatedWithFavorite =
-                updatedEpisodeDetailComplement.copy(isFavorite = _watchState.value.isFavorite)
-            animeEpisodeDetailRepository.updateEpisodeDetailComplement(updatedWithFavorite)
-            if (_watchState.value.episodeDetailComplement is Resource.Success) {
-                _watchState.update {
-                    it.copy(
-                        episodeDetailComplement = Resource.Success(updatedWithFavorite),
-                        episodeDetailComplements = it.episodeDetailComplements + (updatedWithFavorite.id to Resource.Success(
-                            updatedWithFavorite
-                        ))
+    private fun updateStoredWatchState(
+        currentPosition: Long?,
+        duration: Long?,
+        screenShot: String?
+    ) {
+        _watchState.value.episodeDetailComplement?.let { episodeDetailComplement ->
+            viewModelScope.launch {
+                val cachedEpisodeDetailComplement =
+                    animeEpisodeDetailRepository.getCachedEpisodeDetailComplement(
+                        episodeDetailComplement.id
                     )
+                cachedEpisodeDetailComplement?.let {
+                    animeEpisodeDetailRepository.updateEpisodeDetailComplement(
+                        it.copy(
+                            lastTimestamp = currentPosition,
+                            duration = duration,
+                            screenshot = screenShot,
+                            lastWatched = LocalDateTime.now()
+                                .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                        )
+                    )
+                    return@launch
                 }
+
+                animeEpisodeDetailRepository.insertCachedEpisodeDetailComplement(
+                    episodeDetailComplement.copy(
+                        lastTimestamp = currentPosition,
+                        duration = duration,
+                        screenshot = screenShot,
+                        lastWatched = LocalDateTime.now()
+                            .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                    )
+                )
             }
         }
     }
@@ -402,21 +472,12 @@ class AnimeWatchViewModel @Inject constructor(
 
     private fun updateFavoriteInComplement(isFavorite: Boolean) {
         viewModelScope.launch {
-            (_watchState.value.episodeDetailComplement as? Resource.Success)?.data?.let { complement ->
+            _watchState.value.episodeDetailComplement?.let { complement ->
                 ComplementUtils.toggleEpisodeFavorite(
                     repository = animeEpisodeDetailRepository,
                     episodeId = complement.id,
                     isFavorite = isFavorite
-                )?.let { updatedComplement ->
-                    _watchState.update {
-                        it.copy(
-                            episodeDetailComplement = Resource.Success(updatedComplement),
-                            episodeDetailComplements = it.episodeDetailComplements + (updatedComplement.id to Resource.Success(
-                                updatedComplement
-                            ))
-                        )
-                    }
-                }
+                )
             }
         }
     }
@@ -425,28 +486,16 @@ class AnimeWatchViewModel @Inject constructor(
         return animeEpisodeDetailRepository.getCachedEpisodeDetailComplement(episodeId)
     }
 
-    private fun restoreDefaultValues(episodeDetailComplement: EpisodeDetailComplement?) {
-        episodeDetailComplement?.let { complement ->
+    private fun restoreDefaultValues() {
+        _defaultEpisodeDetailComplement.value?.let { default ->
             _watchState.update {
                 it.copy(
-                    episodeDetailComplement = Resource.Success(complement),
-                    episodeSourcesQuery = complement.sourcesQuery,
-                    episodeDetailComplements = it.episodeDetailComplements + (complement.id to Resource.Success(
-                        complement
+                    episodeDetailComplement = default,
+                    episodeSourcesQuery = default.sourcesQuery,
+                    episodeDetailComplements = it.episodeDetailComplements + (default.id to Resource.Success(
+                        default
                     ))
                 )
-            }
-        } ?: run {
-            _defaultEpisodeDetailComplement.value?.let { default ->
-                _watchState.update {
-                    it.copy(
-                        episodeDetailComplement = Resource.Success(default),
-                        episodeSourcesQuery = default.sourcesQuery,
-                        episodeDetailComplements = it.episodeDetailComplements + (default.id to Resource.Success(
-                            default
-                        ))
-                    )
-                }
             }
         }
     }

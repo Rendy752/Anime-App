@@ -1,17 +1,22 @@
 package com.luminoverse.animevibe.ui.animeWatch.videoPlayer
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,20 +32,30 @@ import com.luminoverse.animevibe.utils.basicContainer
 
 @Composable
 fun ResumePlaybackOverlay(
+    modifier: Modifier = Modifier,
+    isVisible: Boolean,
     isPipMode: Boolean,
     lastTimestamp: Long,
-    onClose: () -> Unit,
+    onDismiss: () -> Unit,
     onRestart: () -> Unit,
-    onResume: (Long) -> Unit,
-    modifier: Modifier
+    onResume: (Long) -> Unit
 ) {
-    Box(
-        modifier = modifier.basicContainer(isPrimary = true, innerPadding = PaddingValues(8.dp))
+    AnimatedVisibility(
+        modifier = modifier
+            .fillMaxSize()
+            .clickable(onClick = onDismiss),
+        visible = isVisible,
+        enter = fadeIn(),
+        exit = fadeOut()
     ) {
         Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .wrapContentSize(Alignment.Center)
+                .basicContainer(isPrimary = true, innerPadding = PaddingValues(8.dp))
+                .widthIn(min = 192.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.padding(top = if (!isPipMode) 16.dp else 0.dp)
+            verticalArrangement = Arrangement.Center,
         ) {
             Text(
                 buildAnnotatedString {
@@ -53,6 +68,7 @@ fun ResumePlaybackOverlay(
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onPrimary
             )
+            Spacer(modifier = Modifier.height(8.dp))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -97,16 +113,6 @@ fun ResumePlaybackOverlay(
                     )
                 }
             }
-        }
-        if (!isPipMode) IconButton(
-            onClick = onClose,
-            modifier = Modifier.align(Alignment.TopEnd)
-        ) {
-            Icon(
-                Icons.Filled.Close,
-                contentDescription = "Close",
-                tint = MaterialTheme.colorScheme.error
-            )
         }
     }
 }

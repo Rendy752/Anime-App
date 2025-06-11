@@ -14,7 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.Producer
-import com.luminoverse.animevibe.ui.common.FilterChipSkeleton
+import com.luminoverse.animevibe.ui.common.FilterChipViewSkeleton
 import com.luminoverse.animevibe.ui.common.FilterChipView
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -82,7 +82,7 @@ fun FilterChipFlowSkeleton(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         repeat(count) {
-            FilterChipSkeleton()
+            FilterChipViewSkeleton()
         }
     }
 }

@@ -4,16 +4,23 @@
     <selectionStates>
       <SelectionState runConfigName="AnimeVibe.app">
         <option name="selectionMode" value="DROPDOWN" />
+        <DropdownSelection timestamp="2025-06-03T14:32:03.445660100Z">
+          <Target type="DEFAULT_BOOT">
+            <handle>
+              <DeviceId pluginId="PhysicalDevice" identifier="serial=10DE5E0E9D0009H" />
+            </handle>
+          </Target>
+        </DropdownSelection>
         <DialogSelection>
           <targets>
             <Target type="DEFAULT_BOOT">
               <handle>
-                <DeviceId pluginId="PhysicalDevice" identifier="serial=10DE5E0E9D0009H" />
+                <DeviceId pluginId="PhysicalDevice" identifier="serial=3644be14" />
               </handle>
             </Target>
             <Target type="DEFAULT_BOOT">
               <handle>
-                <DeviceId pluginId="PhysicalDevice" identifier="serial=3644be14" />
+                <DeviceId pluginId="PhysicalDevice" identifier="serial=10DE5E0E9D0009H" />
               </handle>
             </Target>
           </targets>

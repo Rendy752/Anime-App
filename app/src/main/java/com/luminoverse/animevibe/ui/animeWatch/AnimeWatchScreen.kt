@@ -4,10 +4,10 @@ import android.content.Intent
 import android.content.IntentFilter
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
@@ -18,38 +18,44 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import androidx.fragment.app.FragmentActivity
 import androidx.navigation.NavHostController
 import com.luminoverse.animevibe.ui.main.MainState
 import com.luminoverse.animevibe.utils.FullscreenUtils
-import com.luminoverse.animevibe.utils.Resource
-import com.luminoverse.animevibe.utils.ScreenOffReceiver
-import com.luminoverse.animevibe.utils.ScreenOnReceiver
-import com.luminoverse.animevibe.ui.animeWatch.components.AnimeWatchTopBar
+import com.luminoverse.animevibe.utils.receivers.ScreenOffReceiver
+import com.luminoverse.animevibe.utils.receivers.ScreenOnReceiver
 import com.luminoverse.animevibe.ui.animeWatch.components.AnimeWatchContent
 import kotlinx.coroutines.launch
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import com.luminoverse.animevibe.ui.main.MainActivity
-import com.luminoverse.animevibe.utils.HlsPlayerState
+import androidx.compose.foundation.layout.padding
+import androidx.fragment.app.FragmentActivity
+import androidx.media3.exoplayer.ExoPlayer
+import com.luminoverse.animevibe.utils.media.ControlsState
+import com.luminoverse.animevibe.utils.media.HlsPlayerAction
+import com.luminoverse.animevibe.utils.media.PlayerCoreState
+import com.luminoverse.animevibe.utils.media.PositionState
+import kotlinx.coroutines.flow.StateFlow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnimeWatchScreen(
-    malId: Int = 0,
-    episodeId: String = "",
+    malId: Int,
+    episodeId: String,
     navController: NavHostController,
     mainState: MainState,
     watchState: WatchState,
     playerUiState: PlayerUiState,
-    hlsPlayerState: HlsPlayerState,
+    hlsPlayerCoreState: PlayerCoreState,
+    hlsControlsState: StateFlow<ControlsState>,
+    hlsPositionState: StateFlow<PositionState>,
     onAction: (WatchAction) -> Unit,
+    dispatchPlayerAction: (HlsPlayerAction) -> Unit,
+    getPlayer: () -> ExoPlayer?,
     onEnterPipMode: () -> Unit
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val scrollState = rememberLazyListState()
-    val state = rememberPullToRefreshState()
+    val pullToRefreshState = rememberPullToRefreshState()
 
     var isScreenOn by remember { mutableStateOf(true) }
     val context = LocalContext.current
@@ -71,7 +77,7 @@ fun AnimeWatchScreen(
                         isFullscreen = true,
                         isLandscape = mainState.isLandscape,
                         activity = activity,
-                        onFullscreenChange = { onAction(WatchAction.SetFullscreen(it)) }
+                        setFullscreenChange = { onAction(WatchAction.SetFullscreen(it)) }
                     )
                 }
             }
@@ -87,15 +93,6 @@ fun AnimeWatchScreen(
     LaunchedEffect(Unit) {
         scope.launch {
             onAction(WatchAction.SetInitialState(malId, episodeId))
-        }
-    }
-
-    LaunchedEffect(watchState.episodeDetailComplement) {
-        if (watchState.episodeDetailComplement is Resource.Error) {
-            snackbarHostState.showSnackbar(
-                "Failed to fetch episode sources, returning to the previous episode. Check your internet connection or try again later after 1 hour."
-            )
-            onAction(WatchAction.HandleSelectedEpisodeServer(watchState.episodeSourcesQuery))
         }
     }
 
@@ -120,89 +117,76 @@ fun AnimeWatchScreen(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            if (!playerUiState.isPipMode && !playerUiState.isFullscreen) AnimeWatchTopBar(
-                watchState = watchState,
-                mainState = mainState,
-                onContentIndexChange = { onAction(WatchAction.SetSelectedContentIndex(it)) },
-                onHandleBackPress = onBackPress,
-                onFavoriteToggle = { updatedComplement ->
-                    onAction(WatchAction.SetFavorite(updatedComplement.isFavorite))
-                }
+    LaunchedEffect(mainState.isConnected) {
+        if (mainState.isConnected && watchState.episodeDetailComplement == null && watchState.episodeSourcesQuery != null) {
+            onAction(
+                WatchAction.HandleSelectedEpisodeServer(
+                    watchState.episodeSourcesQuery,
+                    isRefresh = true
+                )
             )
         }
+    }
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { paddingValues ->
         PullToRefreshBox(
             isRefreshing = watchState.isRefreshing,
             onRefresh = {
-                onAction(
-                    WatchAction.HandleSelectedEpisodeServer(
-                        watchState.episodeSourcesQuery,
-                        isRefresh = true
+                watchState.episodeSourcesQuery?.let { episodeSourcesQuery ->
+                    onAction(
+                        WatchAction.HandleSelectedEpisodeServer(
+                            episodeSourcesQuery,
+                            isRefresh = true
+                        )
                     )
-                )
+                }
             },
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues),
-            state = state,
+                .padding(if (playerUiState.isFullscreen) PaddingValues(0.dp) else paddingValues),
+            state = pullToRefreshState,
             indicator = {
                 PullToRefreshDefaults.Indicator(
                     isRefreshing = watchState.isRefreshing,
                     containerColor = MaterialTheme.colorScheme.primary,
                     color = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.align(Alignment.TopCenter),
-                    state = state
+                    state = pullToRefreshState
                 )
             }
         ) {
-            val videoSize = if (mainState.isLandscape) Modifier.fillMaxSize()
-            else if (!playerUiState.isPipMode && !playerUiState.isFullscreen) Modifier.height(250.dp)
-            else Modifier.fillMaxSize()
+            val videoSize =
+                if (mainState.isLandscape || playerUiState.isFullscreen) Modifier.fillMaxSize()
+                else if (!playerUiState.isPipMode) Modifier.height(250.dp)
+                else Modifier.fillMaxSize()
 
             Column(modifier = Modifier.fillMaxSize()) {
                 val videoPlayerModifier = Modifier
-                    .then(if (mainState.isLandscape) Modifier.weight(0.5f) else Modifier.fillMaxWidth())
+                    .then(
+                        if (mainState.isLandscape && !playerUiState.isFullscreen) Modifier.weight(
+                            0.5f
+                        ) else Modifier.fillMaxWidth()
+                    )
                     .then(videoSize)
                 AnimeWatchContent(
+                    malId = malId,
                     navController = navController,
                     watchState = watchState,
                     isScreenOn = isScreenOn,
+                    isAutoPlayVideo = mainState.isAutoPlayVideo,
                     playerUiState = playerUiState,
-                    hlsPlayerState = hlsPlayerState,
                     mainState = mainState,
-                    updateStoredWatchState = { position, duration, screenshot ->
-                        val updatedComplement =
-                            (watchState.episodeDetailComplement as? Resource.Success)?.data?.copy(
-                                isFavorite = watchState.isFavorite,
-                                lastTimestamp = position,
-                                duration = duration,
-                                screenshot = screenshot,
-                                lastWatched = LocalDateTime.now()
-                                    .format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-                            )
-                        updatedComplement?.let {
-                            onAction(WatchAction.UpdateEpisodeDetailComplement(it))
-                            onAction(WatchAction.UpdateLastEpisodeWatchedId(it.id))
-                        }
-                    },
-                    onLoadEpisodeDetailComplement = {
-                        onAction(WatchAction.LoadEpisodeDetailComplement(it))
-                    },
+                    playerCoreState = hlsPlayerCoreState,
+                    controlsState = hlsControlsState,
+                    positionState = hlsPositionState,
+                    dispatchPlayerAction = dispatchPlayerAction,
+                    getPlayer = getPlayer,
+                    onHandleBackPress = onBackPress,
+                    onAction = onAction,
                     scrollState = scrollState,
                     onEnterPipMode = onEnterPipMode,
-                    onFullscreenChange = { onAction(WatchAction.SetFullscreen(it)) },
-                    onPlayerError = { onAction(WatchAction.SetErrorMessage(it)) },
-                    handleSelectedEpisodeServer = { episodeSourcesQuery, isRefresh ->
-                        onAction(
-                            WatchAction.HandleSelectedEpisodeServer(
-                                episodeSourcesQuery = episodeSourcesQuery,
-                                isRefresh = isRefresh
-                            )
-                        )
-                    },
                     modifier = videoPlayerModifier,
                     videoSize = videoSize
                 )

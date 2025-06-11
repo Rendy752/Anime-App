@@ -2,7 +2,7 @@ package com.luminoverse.animevibe.repository
 
 import com.luminoverse.animevibe.data.remote.api.AnimeAPI
 import com.luminoverse.animevibe.models.*
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.resource.Resource
 import com.luminoverse.animevibe.utils.TimeUtils
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers

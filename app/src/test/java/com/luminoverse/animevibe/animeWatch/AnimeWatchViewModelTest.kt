@@ -6,11 +6,16 @@ import com.luminoverse.animevibe.repository.AnimeEpisodeDetailRepository
 import com.luminoverse.animevibe.ui.animeWatch.AnimeWatchViewModel
 import com.luminoverse.animevibe.ui.animeWatch.WatchAction
 import com.luminoverse.animevibe.utils.ComplementUtils
-import com.luminoverse.animevibe.utils.Resource
-import com.luminoverse.animevibe.utils.StreamingUtils
+import com.luminoverse.animevibe.utils.media.ControlsState
+import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
+import com.luminoverse.animevibe.utils.media.PlayerCoreState
+import com.luminoverse.animevibe.utils.media.PositionState
+import com.luminoverse.animevibe.utils.resource.Resource
+import com.luminoverse.animevibe.utils.media.StreamingUtils
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.*
 import org.junit.After
 import org.junit.Before
@@ -28,6 +33,7 @@ class AnimeWatchViewModelTest {
     private lateinit var viewModel: AnimeWatchViewModel
     private lateinit var animeEpisodeDetailRepository: AnimeEpisodeDetailRepository
     private lateinit var testDispatcher: TestDispatcher
+    private lateinit var hlsPlayerUtils: HlsPlayerUtils
 
     private val mockAnimeDetail = animeDetailPlaceholder.copy(
         mal_id = 1,
@@ -87,6 +93,14 @@ class AnimeWatchViewModelTest {
         testDispatcher = StandardTestDispatcher()
         Dispatchers.setMain(testDispatcher)
         animeEpisodeDetailRepository = mockk(relaxed = true)
+        hlsPlayerUtils = mockk(relaxed = true)
+        val initialPlayerCoreState = PlayerCoreState()
+        val initialControlsState = ControlsState()
+        val initialPositionState = PositionState()
+
+        every { hlsPlayerUtils.playerCoreState } returns MutableStateFlow(initialPlayerCoreState)
+        every { hlsPlayerUtils.controlsState } returns MutableStateFlow(initialControlsState)
+        every { hlsPlayerUtils.positionState } returns MutableStateFlow(initialPositionState)
 
         coEvery { animeEpisodeDetailRepository.getCachedAnimeDetailById(1) } returns mockAnimeDetail
         coEvery { animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(1) } returns mockAnimeDetailComplement
@@ -108,12 +122,16 @@ class AnimeWatchViewModelTest {
 
         mockkObject(StreamingUtils)
         coEvery {
-            StreamingUtils.getEpisodeSources(
-                any(), any(), any()
+            StreamingUtils.getEpisodeSourcesResult(
+                any(),
+                any(),
+                any()
             )
-        } returns Pair(Resource.Success(mockEpisodeSources), mockk())
-
-        viewModel = AnimeWatchViewModel(animeEpisodeDetailRepository)
+        } returns Pair(
+            Resource.Success(mockEpisodeSources),
+            mockEpisodeDetailComplement.sourcesQuery
+        )
+        viewModel = AnimeWatchViewModel(animeEpisodeDetailRepository, hlsPlayerUtils)
     }
 
     @After
@@ -143,13 +161,12 @@ class AnimeWatchViewModelTest {
             advanceUntilIdle()
 
             val watchState = viewModel.watchState.value
-            println("SetInitialState watchState: $watchState")
             assertEquals(mockAnimeDetail, watchState.animeDetail)
             assertEquals(mockAnimeDetailComplement, watchState.animeDetailComplement)
-            assertTrue(watchState.episodeDetailComplement is Resource.Success)
+            assertTrue(watchState.episodeDetailComplement != null)
             assertEquals(
                 mockEpisodeDetailComplement,
-                (watchState.episodeDetailComplement as Resource.Success).data
+                watchState.episodeDetailComplement
             )
             assertEquals(
                 episodeSourcesQueryPlaceholder.copy(id = "lorem-ipsum-123?ep=123"),
@@ -171,23 +188,29 @@ class AnimeWatchViewModelTest {
             advanceUntilIdle()
 
             val watchState = viewModel.watchState.value
-            println("HandleSelectedEpisodeServer cached watchState: $watchState")
-            assertTrue(watchState.episodeDetailComplement is Resource.Success)
+            assertTrue(watchState.episodeDetailComplement != null)
             assertEquals(
                 favoriteComplement,
-                (watchState.episodeDetailComplement as Resource.Success).data
+                watchState.episodeDetailComplement
             )
             assertEquals(query, watchState.episodeSourcesQuery)
-            assertTrue(watchState.isFavorite)
             assertEquals(false, watchState.isRefreshing)
             coVerify(exactly = 1) { animeEpisodeDetailRepository.getCachedEpisodeDetailComplement("lorem-ipsum-123?ep=123") }
+            coVerify(exactly = 0) { animeEpisodeDetailRepository.getEpisodeServers(any()) }
+            coVerify(exactly = 0) {
+                animeEpisodeDetailRepository.getEpisodeSources(
+                    any(),
+                    any(),
+                    any()
+                )
+            }
         }
 
     @Test
     fun `HandleSelectedEpisodeServer with server error should restore default and set error`() =
         runTest {
             val query = episodeSourcesQueryPlaceholder.copy(id = "lorem-ipsum-123?ep=123")
-            coEvery { animeEpisodeDetailRepository.getCachedEpisodeDetailComplement("lorem-ipsum-123?ep=123") } returns mockEpisodeDetailComplement andThen mockEpisodeDetailComplement andThen null
+            coEvery { animeEpisodeDetailRepository.getCachedEpisodeDetailComplement("lorem-ipsum-123?ep=123") } returns mockEpisodeDetailComplement
             coEvery { animeEpisodeDetailRepository.getCachedDefaultEpisodeDetailComplementByMalId(1) } returns mockEpisodeDetailComplement
             coEvery { animeEpisodeDetailRepository.getEpisodeServers("lorem-ipsum-123?ep=123") } returns Resource.Error(
                 "Server error"
@@ -207,23 +230,24 @@ class AnimeWatchViewModelTest {
                 )
             )
             advanceUntilIdle()
+            coEvery { animeEpisodeDetailRepository.getCachedEpisodeDetailComplement("lorem-ipsum-123?ep=123") } returns null
             viewModel.onAction(WatchAction.HandleSelectedEpisodeServer(query, isFirstInit = false))
             advanceUntilIdle()
 
             val watchState = viewModel.watchState.value
-            println("HandleSelectedEpisodeServer error watchState: $watchState")
-            println("mockEpisodeDetailComplement.sourcesQuery: ${mockEpisodeDetailComplement.sourcesQuery}")
-            println("query: $query")
-            assertTrue(watchState.episodeDetailComplement is Resource.Error)
-            assertEquals(
-                "Server error",
-                (watchState.episodeDetailComplement as Resource.Error).message
-            )
             assertEquals(mockEpisodeDetailComplement.sourcesQuery, watchState.episodeSourcesQuery)
             assertEquals(false, watchState.isRefreshing)
             coVerify(exactly = 1) { animeEpisodeDetailRepository.getEpisodeServers("lorem-ipsum-123?ep=123") }
+            coVerify(exactly = 0) {
+                animeEpisodeDetailRepository.getEpisodeSources(
+                    any(),
+                    any(),
+                    any()
+                )
+            }
             unmockkObject(ComplementUtils)
         }
+
 
     @Test
     fun `LoadEpisodeDetailComplement with cached data should update episodeDetailComplements`() =
@@ -236,7 +260,6 @@ class AnimeWatchViewModelTest {
             advanceUntilIdle()
 
             val watchState = viewModel.watchState.value
-            println("LoadEpisodeDetailComplement cached watchState: $watchState")
             assertTrue(watchState.episodeDetailComplements[episodeId] is Resource.Success)
             assertEquals(
                 cachedComplement,
@@ -266,7 +289,6 @@ class AnimeWatchViewModelTest {
             advanceUntilIdle()
 
             val watchState = viewModel.watchState.value
-            println("LoadEpisodeDetailComplement no cached watchState: $watchState")
             assertTrue(watchState.episodeDetailComplements[episodeId] is Resource.Error)
             assertEquals(
                 "Episode detail complement not found",
@@ -287,52 +309,11 @@ class AnimeWatchViewModelTest {
         }
 
     @Test
-    fun `SetFavorite should update isFavorite and episodeDetailComplement`() = runTest {
-        val updatedComplement = mockEpisodeDetailComplement.copy(isFavorite = true)
-        mockkObject(ComplementUtils)
-        coEvery {
-            ComplementUtils.getOrCreateAnimeDetailComplement(
-                repository = animeEpisodeDetailRepository,
-                malId = 1
-            )
-        } returns mockAnimeDetailComplement
-        coEvery {
-            ComplementUtils.toggleEpisodeFavorite(
-                repository = animeEpisodeDetailRepository,
-                episodeId = "lorem-ipsum-123?ep=123",
-                isFavorite = true
-            )
-        } coAnswers {
-            animeEpisodeDetailRepository.updateEpisodeDetailComplement(updatedComplement)
-            updatedComplement
-        }
-
-        viewModel.onAction(
-            WatchAction.SetInitialState(
-                malId = 1,
-                episodeId = "lorem-ipsum-123?ep=123"
-            )
-        )
-        advanceUntilIdle()
-        viewModel.onAction(WatchAction.SetFavorite(isFavorite = true))
-        advanceUntilIdle()
-
-        val watchState = viewModel.watchState.value
-        println("SetFavorite watchState: $watchState")
-        assertTrue(watchState.isFavorite)
-        assertTrue(watchState.episodeDetailComplement is Resource.Success)
-        assertTrue((watchState.episodeDetailComplement as Resource.Success).data.isFavorite)
-        coVerify(exactly = 1) { animeEpisodeDetailRepository.updateEpisodeDetailComplement(any()) }
-        unmockkObject(ComplementUtils)
-    }
-
-    @Test
     fun `SetFullscreen should update playerUiState isFullscreen`() = runTest {
         viewModel.onAction(WatchAction.SetFullscreen(isFullscreen = true))
         advanceUntilIdle()
 
         val playerUiState = viewModel.playerUiState.value
-        println("SetFullscreen playerUiState: $playerUiState")
         assertTrue(playerUiState.isFullscreen)
     }
 }

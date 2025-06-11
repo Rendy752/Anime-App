@@ -23,7 +23,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavBackStackEntry
 import com.luminoverse.animevibe.models.AnimeDetail
 import com.luminoverse.animevibe.models.animeDetailPlaceholder
 import com.luminoverse.animevibe.models.episodeDetailComplementPlaceholder
@@ -40,7 +39,7 @@ import com.luminoverse.animevibe.ui.common.ContinueWatchingAnime
 import com.luminoverse.animevibe.ui.theme.ColorStyle
 import com.luminoverse.animevibe.ui.theme.ContrastMode
 import com.luminoverse.animevibe.utils.ColorUtils
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.resource.Resource
 import java.text.SimpleDateFormat
 import java.util.Date
 
@@ -53,7 +52,6 @@ fun ColorStyleCard(
     isDarkMode: Boolean,
     contrastMode: ContrastMode,
     onColorStyleSelected: () -> Unit,
-    navBackStackEntry: NavBackStackEntry?,
     modifier: Modifier = Modifier
 ) {
     val colorScheme = ColorUtils.generateColorScheme(colorStyle, isDarkMode, contrastMode)
@@ -91,11 +89,11 @@ fun ColorStyleCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     if (animeDetailSample is Resource.Loading) AnimeScheduleItemSkeleton(
-                        modifier = Modifier.widthIn(max = 100.dp)
+                        modifier = Modifier.widthIn(max = 130.dp)
                     )
                     else AnimeScheduleItem(
                         animeDetail = animeDetailSample.data ?: animeDetailPlaceholder,
-                        modifier = Modifier.widthIn(max = 100.dp)
+                        modifier = Modifier.widthIn(max = 130.dp)
                     )
 
                     Column(
@@ -108,11 +106,12 @@ fun ColorStyleCard(
                         )
                         else EpisodeDetailItem(
                             modifier = Modifier.heightIn(max = 100.dp),
-                            animeDetail = animeDetailSample.data ?: animeDetailPlaceholder,
+                            animeImage = animeDetailSample.data?.images?.webp?.large_image_url ?: animeDetailPlaceholder.images.webp.large_image_url,
                             lastEpisodeWatchedId = episodePlaceholder.episodeId,
                             episode = episodePlaceholder.copy(
                                 name = animeDetailSample.data?.title ?: episodePlaceholder.name
                             ),
+                            isNewEpisode = true,
                             episodeDetailComplement = episodeDetailComplementPlaceholder.copy(
                                 lastWatched = SimpleDateFormat.getDateInstance().format(Date()),
                                 lastTimestamp = 260_000L,
@@ -121,8 +120,7 @@ fun ColorStyleCard(
                             query = (animeDetailSample.data?.title ?: episodePlaceholder.name).let {
                                 if (it.length > 3) it.take(3) else it
                             },
-                            navBackStackEntry = navBackStackEntry,
-                            titleMaxLines = 3
+                            titleMaxLines = 2
                         )
 
                         ContinueWatchingAnime(

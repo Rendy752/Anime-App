@@ -13,21 +13,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.luminoverse.animevibe.models.AnimeDetail
 import com.luminoverse.animevibe.models.Relation
 import com.luminoverse.animevibe.ui.animeDetail.DetailAction
-import com.luminoverse.animevibe.ui.animeDetail.DetailState
+import com.luminoverse.animevibe.utils.resource.Resource
 
 @Composable
 fun RelationEntryColumn(
     relation: Relation,
-    detailState: DetailState,
+    relationAnimeDetails: Map<Int, Resource<AnimeDetail>>,
     navController: NavController,
     onAction: (DetailAction) -> Unit,
     onItemClickListener: (Int) -> Unit
 ) {
     Column {
         Text(
-            text = "${relation.entry.size} ${relation.relation}",
+            text = "\u202A${relation.entry.size} ${relation.relation}\u202C",
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.SemiBold
         )
@@ -42,7 +43,7 @@ fun RelationEntryColumn(
                 RelationEntryItem(
                     entryId = entry.mal_id,
                     entryName = entry.name,
-                    detailState = detailState,
+                    relationDetail = relationAnimeDetails[entry.mal_id],
                     navController = navController,
                     onAction = onAction,
                     onItemClickListener = onItemClickListener

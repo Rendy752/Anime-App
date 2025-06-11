@@ -5,7 +5,7 @@ import com.luminoverse.animevibe.models.*
 import com.luminoverse.animevibe.repository.AnimeSearchRepository
 import com.luminoverse.animevibe.ui.animeSearch.AnimeSearchViewModel
 import com.luminoverse.animevibe.ui.animeSearch.SearchAction
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.resource.Resource
 import io.mockk.*
 import io.mockk.impl.annotations.MockK
 import kotlinx.coroutines.Dispatchers

@@ -30,7 +30,7 @@ import com.luminoverse.animevibe.ui.common.DebouncedIconButton
 import com.luminoverse.animevibe.ui.common.SkeletonBox
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.main.navigation.navigateTo
-import com.luminoverse.animevibe.utils.Resource
+import com.luminoverse.animevibe.utils.resource.Resource
 import com.luminoverse.animevibe.utils.ShareUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -104,12 +104,12 @@ fun AnimeDetailTopBar(
                         }
                     }
 
-                    if (animeDetailComplement is Resource.Success &&
+                    if ((animeDetailComplement is Resource.Success || animeDetailComplement is Resource.Loading) &&
                         animeDetailComplement.data?.episodes?.isNotEmpty() == true &&
                         defaultEpisodeId != null
                     ) {
                         animeDetailComplement.data.let { animeDetailComplement ->
-                            animeDetailComplement.episodes?.let { episodes ->
+                            animeDetailComplement?.episodes?.let { episodes ->
                                 IconButton(onClick = {
                                     navController.navigateTo(
                                         NavRoute.AnimeWatch.fromParams(

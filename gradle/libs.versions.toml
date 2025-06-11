@@ -1,5 +1,5 @@
 [versions]
-agp = "8.10.0"
+agp = "8.10.1"
 commonsText = "1.10.0"
 coreSplashscreen = "1.0.1"
 coreTesting = "2.2.0"
