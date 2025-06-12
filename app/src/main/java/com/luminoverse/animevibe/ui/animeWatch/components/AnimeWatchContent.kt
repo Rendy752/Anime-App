@@ -114,7 +114,7 @@ fun AnimeWatchContent(
             watchState.episodeSourcesQuery?.let { episodeSourcesQuery ->
                 RetryButton(
                     modifier = Modifier.align(Alignment.Center),
-                    isVisible = watchState.episodeDetailComplement == null && watchState.errorMessage != null && !watchState.isRefreshing,
+                    isVisible = watchState.errorMessage != null && !watchState.isRefreshing,
                     onRetry = {
                         onAction(
                             WatchAction.HandleSelectedEpisodeServer(
