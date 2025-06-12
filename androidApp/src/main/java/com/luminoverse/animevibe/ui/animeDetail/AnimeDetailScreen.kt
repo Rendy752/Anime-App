@@ -56,7 +56,6 @@ fun AnimeDetailScreen(
         AnimeDetailTopBar(
             animeDetail = detailState.animeDetail,
             animeDetailComplement = detailState.animeDetailComplement,
-            defaultEpisodeId = detailState.defaultEpisodeId,
             navController = navController,
             onFavoriteToggle = { onAction(DetailAction.ToggleFavorite(it)) }
         )

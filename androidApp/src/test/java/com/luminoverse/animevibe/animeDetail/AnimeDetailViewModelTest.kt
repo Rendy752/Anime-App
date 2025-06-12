@@ -174,7 +174,6 @@ class AnimeDetailViewModelTest {
                 "Anime detail complement should be success",
                 state.animeDetailComplement is Resource.Success
             )
-            assertEquals("lorem-ipsum-123?ep=123", state.defaultEpisodeId)
             assertTrue(
                 "Episode detail complements should contain key",
                 state.episodeDetailComplements.containsKey("lorem-ipsum-123?ep=123")
@@ -224,7 +223,6 @@ class AnimeDetailViewModelTest {
             "Anime detail complement should be success",
             state.animeDetailComplement is Resource.Success
         )
-        assertEquals("lorem-ipsum-123?ep=123", state.defaultEpisodeId)
         assertTrue(
             "Episode detail complements should contain key",
             state.episodeDetailComplements.containsKey("lorem-ipsum-123?ep=123")
@@ -495,7 +493,6 @@ class AnimeDetailViewModelTest {
             "Filtered episodes should not be empty",
             filterState.filteredEpisodes.isNotEmpty()
         )
-        assertEquals("lorem-ipsum-123?ep=123", detailState.defaultEpisodeId)
         coVerify(exactly = 1) {
             animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(
                 animeId

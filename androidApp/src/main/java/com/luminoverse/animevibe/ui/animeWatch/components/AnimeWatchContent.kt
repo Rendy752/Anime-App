@@ -68,7 +68,7 @@ fun AnimeWatchContent(
                 .then(videoSize)
                 .background(MaterialTheme.colorScheme.surfaceContainer)
         ) {
-            if (watchState.episodeDetailComplement?.sources?.sources[0]?.url == null || watchState.animeDetailComplement?.episodes == null || watchState.episodeSourcesQuery == null) Box(
+            if (watchState.episodeDetailComplement?.sources?.sources?.isEmpty() == true || watchState.episodeDetailComplement?.sources?.sources[0]?.url == null || watchState.animeDetailComplement?.episodes == null || watchState.episodeSourcesQuery == null) Box(
                 modifier = modifier
                     .then(videoSize)
                     .background(MaterialTheme.colorScheme.surfaceContainer)

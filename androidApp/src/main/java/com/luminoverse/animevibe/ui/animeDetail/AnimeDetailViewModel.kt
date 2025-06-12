@@ -21,7 +21,6 @@ import javax.inject.Inject
 data class DetailState(
     val animeDetail: Resource<AnimeDetailResponse> = Resource.Loading(),
     val animeDetailComplement: Resource<AnimeDetailComplement?> = Resource.Loading(),
-    val defaultEpisodeId: String? = null,
     val newEpisodeIdList: List<String> = emptyList(),
     val relationAnimeDetails: Map<Int, Resource<AnimeDetail>> = emptyMap(),
     val episodeDetailComplements: Map<String, EpisodeDetailComplement?> = emptyMap()
@@ -237,7 +236,8 @@ class AnimeDetailViewModel @Inject constructor(
                 episodeServersResponse = defaultEpisodeServersResponse.data,
                 getEpisodeSources = { id, server, category ->
                     animeEpisodeDetailRepository.getEpisodeSources(id, server, category)
-                }
+                },
+                emptySourcesCheck = false
             )
             if (defaultEpisodeSourcesResponse !is Resource.Success) continue
             if (checkEpisodeSourceMalId(defaultEpisodeSourcesResponse)) {
@@ -269,7 +269,6 @@ class AnimeDetailViewModel @Inject constructor(
                         ).let { episodeComplement ->
                             _detailState.update {
                                 it.copy(
-                                    defaultEpisodeId = episodeComplement.id,
                                     episodeDetailComplements = it.episodeDetailComplements + (episodeComplement.id to episodeComplement)
                                 )
                             }
@@ -286,9 +285,6 @@ class AnimeDetailViewModel @Inject constructor(
         _detailState.update { it.copy(animeDetailComplement = Resource.Success(complement)) }
         _episodeFilterState.update {
             it.copy(filteredEpisodes = complement.episodes?.reversed() ?: emptyList())
-        }
-        complement.episodes?.firstOrNull()?.let { firstEpisode ->
-            _detailState.update { it.copy(defaultEpisodeId = firstEpisode.episodeId) }
         }
     }
 

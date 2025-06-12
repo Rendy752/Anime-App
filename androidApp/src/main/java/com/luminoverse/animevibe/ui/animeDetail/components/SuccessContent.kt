@@ -156,15 +156,13 @@ private fun LazyListScope.rightColumnContent(
             episodeFilterState = episodeFilterState,
             navBackStackEntry = navController.currentBackStackEntry,
             onEpisodeClick = { episodeId ->
-                detailState.defaultEpisodeId?.let {
-                    if (detailState.animeDetailComplement is Resource.Success) {
-                        navController.navigateTo(
-                            NavRoute.AnimeWatch.fromParams(
-                                malId = animeDetail.mal_id,
-                                episodeId = episodeId
-                            )
+                if (detailState.animeDetailComplement is Resource.Success) {
+                    navController.navigateTo(
+                        NavRoute.AnimeWatch.fromParams(
+                            malId = animeDetail.mal_id,
+                            episodeId = episodeId
                         )
-                    }
+                    )
                 }
             },
             onAction = onAction

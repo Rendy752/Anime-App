@@ -24,6 +24,7 @@ object StreamingUtils {
     suspend fun getEpisodeSourcesResult(
         episodeServersResponse: EpisodeServersResponse,
         getEpisodeSources: suspend (String, String, String) -> Resource<EpisodeSourcesResponse>,
+        emptySourcesCheck: Boolean = true,
         errorSourceQueryList: List<EpisodeSourcesQuery> = emptyList(),
         episodeSourcesQuery: EpisodeSourcesQuery? = null
     ): Pair<Resource<EpisodeSourcesResponse>, EpisodeSourcesQuery?> {
@@ -46,7 +47,11 @@ object StreamingUtils {
         for (query in prioritizedQueries) {
             try {
                 val sourcesResult = getEpisodeSources(query.id, query.server, query.category)
-                if (sourcesResult is Resource.Success && sourcesResult.data.sources.isNotEmpty()) {
+                val isSuccess = sourcesResult is Resource.Success
+                val hasSources = if (emptySourcesCheck) {
+                    sourcesResult is Resource.Success && sourcesResult.data.sources.isNotEmpty()
+                } else isSuccess
+                if (isSuccess && hasSources) {
                     return Pair(sourcesResult, query)
                 }
             } catch (e: Exception) {

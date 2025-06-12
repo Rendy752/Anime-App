@@ -27,7 +27,7 @@ android {
         applicationId = "com.luminoverse.animevibe"
         minSdk = 27
         targetSdk = 35
-        versionCode = 4
+        versionCode = 5
         versionName = "1.0.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -111,6 +111,12 @@ android {
         testLogging {
             showStackTraces = true
             exceptionFormat = TestExceptionFormat.FULL
+        }
+    }
+
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1,LICENSE.md,LICENSE-notice.md}"
         }
     }
 

@@ -38,7 +38,6 @@ import com.luminoverse.animevibe.utils.ShareUtils
 fun AnimeDetailTopBar(
     animeDetail: Resource<AnimeDetailResponse>?,
     animeDetailComplement: Resource<AnimeDetailComplement?>?,
-    defaultEpisodeId: String?,
     navController: NavController,
     onFavoriteToggle: (Boolean) -> Unit
 ) {
@@ -104,10 +103,7 @@ fun AnimeDetailTopBar(
                         }
                     }
 
-                    if ((animeDetailComplement is Resource.Success || animeDetailComplement is Resource.Loading) &&
-                        animeDetailComplement.data?.episodes?.isNotEmpty() == true &&
-                        defaultEpisodeId != null
-                    ) {
+                    if ((animeDetailComplement is Resource.Success || animeDetailComplement is Resource.Loading) && animeDetailComplement.data?.episodes?.isNotEmpty() == true) {
                         animeDetailComplement.data.let { animeDetailComplement ->
                             animeDetailComplement?.episodes?.let { episodes ->
                                 IconButton(onClick = {
@@ -115,7 +111,7 @@ fun AnimeDetailTopBar(
                                         NavRoute.AnimeWatch.fromParams(
                                             malId = animeDetailData.mal_id,
                                             episodeId = animeDetailComplement.lastEpisodeWatchedId
-                                                ?: defaultEpisodeId
+                                                ?: episodes.first().episodeId
                                         )
                                     )
                                 }) {
