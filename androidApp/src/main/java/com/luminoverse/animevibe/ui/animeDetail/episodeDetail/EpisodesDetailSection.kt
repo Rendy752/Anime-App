@@ -166,13 +166,13 @@ fun EpisodesDetailSection(
                                     animeImage = animeDetail.images.webp.large_image_url,
                                     lastEpisodeWatchedId = data.lastEpisodeWatchedId,
                                     episode = episode,
-                                    isNewEpisode = episode.episodeId in newEpisodeIdList,
-                                    episodeDetailComplement = episodeDetailComplements[episode.episodeId],
+                                    isNewEpisode = episode.id in newEpisodeIdList,
+                                    episodeDetailComplement = episodeDetailComplements[episode.id],
                                     query = episodeFilterState.episodeQuery.title,
                                     loadEpisodeDetailComplement = {
                                         onAction(DetailAction.LoadEpisodeDetail(it))
                                     },
-                                    onClick = { onEpisodeClick(episode.episodeId) },
+                                    onClick = { onEpisodeClick(episode.id) },
                                     navBackStackEntry = navBackStackEntry
                                 )
                             }

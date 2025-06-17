@@ -2,10 +2,10 @@ package com.luminoverse.animevibe.animeDetail
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.luminoverse.animevibe.models.*
-import com.luminoverse.animevibe.models.serverPlaceholder
 import com.luminoverse.animevibe.repository.AnimeEpisodeDetailRepository
 import com.luminoverse.animevibe.ui.animeDetail.AnimeDetailViewModel
 import com.luminoverse.animevibe.ui.animeDetail.DetailAction
+import com.luminoverse.animevibe.ui.common.AnimeAniwatchCommonResponse
 import com.luminoverse.animevibe.utils.watch.AnimeTitleFinder
 import com.luminoverse.animevibe.utils.ComplementUtils
 import com.luminoverse.animevibe.utils.FilterUtils
@@ -53,12 +53,23 @@ class AnimeDetailViewModelTest {
         coEvery { animeEpisodeDetailRepository.insertCachedAnimeDetailComplement(any()) } just Runs
         coEvery { animeEpisodeDetailRepository.insertCachedEpisodeDetailComplement(any()) } just Runs
         coEvery { animeEpisodeDetailRepository.getAnimeAniwatchSearch(any()) } returns Resource.Success(
-            AnimeAniwatchSearchResponse(animes = listOf(animeAniwatchPlaceholder.copy(id = "anime-1735")))
+            AnimeAniwatchCommonResponse(
+                success = true,
+                results = AnimeAniwatchSearchResponse(
+                    data = listOf(
+                        animeAniwatchPlaceholder.copy(id = "anime-1735")
+                    ),
+                    totalPage = 1
+                )
+            )
         )
         coEvery { animeEpisodeDetailRepository.getEpisodes("anime-1735") } returns Resource.Success(
-            EpisodesResponse(
-                totalEpisodes = 1,
-                episodes = listOf(episodePlaceholder.copy(episodeId = "lorem-ipsum-123?ep=123"))
+            AnimeAniwatchCommonResponse(
+                success = true,
+                results = EpisodesResponse(
+                    totalEpisodes = 1,
+                    episodes = listOf(episodePlaceholder.copy(id = "lorem-ipsum-123?ep=123"))
+                )
             )
         )
         coEvery {
@@ -67,18 +78,22 @@ class AnimeDetailViewModelTest {
             )
         } returns listOf(animeAniwatchPlaceholder)
         coEvery { animeEpisodeDetailRepository.getEpisodeServers("lorem-ipsum-123?ep=123") } returns Resource.Success(
-            episodeServersResponsePlaceholder.copy(
-                episodeId = "lorem-ipsum-123?ep=123",
-                sub = listOf(
-                    serverPlaceholder.copy(serverName = "server2"),
-                    serverPlaceholder.copy(serverName = "server1"),
-                    serverPlaceholder.copy(serverName = "vidstreaming")
-                ),
-                dub = listOf(
-                    serverPlaceholder.copy(serverName = "dubserver1"),
-                    serverPlaceholder.copy(serverName = "dubserver2")
-                ),
-                raw = emptyList()
+            AnimeAniwatchCommonResponse(
+                success = true,
+                results = listOf(
+                    episodeServerPlaceholder.copy(
+                        data_id = "lorem-ipsum-123?ep=123",
+                        type = "sub",
+                        server_id = "123",
+                        serverName = "vidstreaming",
+                    ),
+                    episodeServerPlaceholder.copy(
+                        data_id = "lorem-ipsum-123?ep=123",
+                        type = "dub",
+                        server_id = "123",
+                        serverName = "vidstreaming",
+                    )
+                )
             )
         )
         coEvery {
@@ -102,9 +117,18 @@ class AnimeDetailViewModelTest {
                 "sub"
             )
         } returns Resource.Success(
-            episodeSourcesResponsePlaceholder.copy(
-                malID = 1735,
-                sources = listOf(Source(url = "https://example.com/stream", type = "video"))
+            AnimeAniwatchCommonResponse(
+                success = true,
+                results = episodeSourcesResponsePlaceholder.copy(
+                    streamingLink = episodeSourcesPlaceholder.copy(
+                        id = "1735",
+                        link = sourcePlaceholder.copy(
+                            file = "https://example.com/stream",
+                            type = "video"
+                        )
+                    ),
+                    servers = listOf(episodeServerPlaceholder.copy(serverName = "vidstreaming"))
+                )
             )
         )
         coEvery {
@@ -120,10 +144,21 @@ class AnimeDetailViewModelTest {
                 "dubserver2",
                 "dub"
             )
+        } returns Resource.Error("Dubserver2 failed")
+        coEvery {
+            animeEpisodeDetailRepository.getEpisodeSources(
+                "lorem-ipsum-123?ep=123",
+                "vidstreaming",
+                "dub"
+            )
         } returns Resource.Success(
-            episodeSourcesResponsePlaceholder.copy(
-                malID = 1735,
-                sources = listOf(Source(url = "https://example.com/stream", type = "video"))
+            AnimeAniwatchCommonResponse(
+                success = true,
+                results = episodeSourcesResponsePlaceholder.copy(
+                    streamingLink = episodeSourcesPlaceholder.copy(
+                        link = sourcePlaceholder.copy(file = "https://example.com/stream", type = "video")
+                    )
+                )
             )
         )
         coEvery { animeEpisodeDetailRepository.updateCachedAnimeDetailComplement(any()) } just Runs
@@ -132,14 +167,14 @@ class AnimeDetailViewModelTest {
         } returns animeDetailComplementPlaceholder.copy(
             id = "anime-1735",
             malId = 1735,
-            episodes = listOf(episodePlaceholder.copy(episodeId = "lorem-ipsum-123?ep=123"))
+            episodes = listOf(episodePlaceholder.copy(id = "lorem-ipsum-123?ep=123"))
         )
         coEvery {
             ComplementUtils.updateAnimeDetailComplementWithEpisodes(any(), any(), any(), any())
         } returns animeDetailComplementPlaceholder.copy(
             id = "anime-1735",
             malId = 1735,
-            episodes = listOf(episodePlaceholder.copy(episodeId = "lorem-ipsum-123?ep=123"))
+            episodes = listOf(episodePlaceholder.copy(id = "lorem-ipsum-123?ep=123"))
         )
         coEvery {
             ComplementUtils.createEpisodeDetailComplement(
@@ -174,99 +209,10 @@ class AnimeDetailViewModelTest {
                 "Anime detail complement should be success",
                 state.animeDetailComplement is Resource.Success
             )
-            assertTrue(
-                "Episode detail complements should contain key",
-                state.episodeDetailComplements.containsKey("lorem-ipsum-123?ep=123")
-            )
-            assertTrue(
-                "Episode detail complement should be success",
-                state.episodeDetailComplements["lorem-ipsum-123?ep=123"] != null
-            )
             coVerify(exactly = 1) { animeEpisodeDetailRepository.getAnimeDetail(animeId) }
             coVerify(exactly = 1) { animeEpisodeDetailRepository.getAnimeAniwatchSearch(any()) }
             coVerify(exactly = 1) { animeEpisodeDetailRepository.getEpisodes("anime-1735") }
-            coVerify(exactly = 1) { animeEpisodeDetailRepository.getEpisodeServers("lorem-ipsum-123?ep=123") }
-            coVerify(exactly = 1) {
-                animeEpisodeDetailRepository.getEpisodeSources(
-                    "lorem-ipsum-123?ep=123",
-                    "vidstreaming",
-                    "sub"
-                )
-            }
-            coVerify(exactly = 0) {
-                animeEpisodeDetailRepository.getEpisodeSources(
-                    "lorem-ipsum-123?ep=123",
-                    "server1",
-                    "sub"
-                )
-            }
-            coVerify(exactly = 0) {
-                animeEpisodeDetailRepository.getEpisodeSources(
-                    "lorem-ipsum-123?ep=123",
-                    "server2",
-                    "sub"
-                )
-            }
         }
-
-    @Test
-    fun `loadAnimeDetail should prioritize last server in sub category`() = runTest {
-        viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository)
-        val animeId = 1735
-
-        viewModel.onAction(DetailAction.LoadAnimeDetail(animeId))
-        advanceUntilIdle()
-
-        val state = viewModel.detailState.value
-        assertTrue("Anime detail should be success", state.animeDetail is Resource.Success)
-        assertTrue(
-            "Anime detail complement should be success",
-            state.animeDetailComplement is Resource.Success
-        )
-        assertTrue(
-            "Episode detail complements should contain key",
-            state.episodeDetailComplements.containsKey("lorem-ipsum-123?ep=123")
-        )
-        assertTrue(
-            "Episode detail complement should be success",
-            state.episodeDetailComplements["lorem-ipsum-123?ep=123"] != null
-        )
-        coVerify(exactly = 1) {
-            animeEpisodeDetailRepository.getEpisodeSources(
-                "lorem-ipsum-123?ep=123",
-                "vidstreaming",
-                "sub"
-            )
-        }
-        coVerify(exactly = 0) {
-            animeEpisodeDetailRepository.getEpisodeSources(
-                "lorem-ipsum-123?ep=123",
-                "server1",
-                "sub"
-            )
-        }
-        coVerify(exactly = 0) {
-            animeEpisodeDetailRepository.getEpisodeSources(
-                "lorem-ipsum-123?ep=123",
-                "server2",
-                "sub"
-            )
-        }
-        coVerify(exactly = 0) {
-            animeEpisodeDetailRepository.getEpisodeSources(
-                "lorem-ipsum-123?ep=123",
-                "dubserver1",
-                "dub"
-            )
-        }
-        coVerify(exactly = 0) {
-            animeEpisodeDetailRepository.getEpisodeSources(
-                "lorem-ipsum-123?ep=123",
-                "dubserver2",
-                "dub"
-            )
-        }
-    }
 
     @Test
     fun `loadAnimeDetail should handle error and not trigger loadEpisodes`() = runTest {
@@ -309,47 +255,6 @@ class AnimeDetailViewModelTest {
         coVerify(exactly = 1) { animeEpisodeDetailRepository.getAnimeDetail(animeId) }
         coVerify(exactly = 1) { animeEpisodeDetailRepository.getAnimeAniwatchSearch(any()) }
         coVerify(exactly = 1) { animeEpisodeDetailRepository.getEpisodes("anime-1735") }
-        coVerify(exactly = 1) { animeEpisodeDetailRepository.getEpisodeServers("lorem-ipsum-123?ep=123") }
-        coVerify(exactly = 0) { animeEpisodeDetailRepository.insertCachedEpisodeDetailComplement(any()) }
-    }
-
-    @Test
-    fun `loadAnimeDetail should handle mismatched malID in episode sources`() = runTest {
-        viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository)
-        val animeId = 1735
-        val mismatchedSourcesResponse = mockk<EpisodeSourcesResponse> {
-            every { malID } returns 9999
-            every { sources } returns listOf(
-                Source(
-                    url = "https://example.com/stream",
-                    type = "video"
-                )
-            )
-        }
-        coEvery {
-            animeEpisodeDetailRepository.getEpisodeSources("lorem-ipsum-123?ep=123", any(), any())
-        } returns Resource.Success(mismatchedSourcesResponse)
-
-        viewModel.onAction(DetailAction.LoadAnimeDetail(animeId))
-        advanceUntilIdle()
-
-        val state = viewModel.detailState.value
-        assertTrue("Anime detail should be success", state.animeDetail is Resource.Success)
-        assertTrue(
-            "Anime detail complement should be success as default",
-            state.animeDetailComplement is Resource.Success
-        )
-        coVerify(exactly = 1) { animeEpisodeDetailRepository.getAnimeDetail(animeId) }
-        coVerify(exactly = 1) { animeEpisodeDetailRepository.getAnimeAniwatchSearch(any()) }
-        coVerify(exactly = 1) { animeEpisodeDetailRepository.getEpisodes("anime-1735") }
-        coVerify(exactly = 1) { animeEpisodeDetailRepository.getEpisodeServers("lorem-ipsum-123?ep=123") }
-        coVerify(exactly = 1) {
-            animeEpisodeDetailRepository.getEpisodeSources(
-                "lorem-ipsum-123?ep=123",
-                any(),
-                any()
-            )
-        }
         coVerify(exactly = 0) { animeEpisodeDetailRepository.insertCachedEpisodeDetailComplement(any()) }
     }
 
@@ -374,7 +279,6 @@ class AnimeDetailViewModelTest {
         coVerify(exactly = 1) { animeEpisodeDetailRepository.getAnimeDetail(animeId) }
         coVerify(exactly = 1) { animeEpisodeDetailRepository.getAnimeAniwatchSearch(any()) }
         coVerify(exactly = 1) { animeEpisodeDetailRepository.getEpisodes("anime-1735") }
-        coVerify(exactly = 1) { animeEpisodeDetailRepository.getEpisodeServers("lorem-ipsum-123?ep=123") }
         coVerify(exactly = 0) { animeEpisodeDetailRepository.insertCachedEpisodeDetailComplement(any()) }
     }
 

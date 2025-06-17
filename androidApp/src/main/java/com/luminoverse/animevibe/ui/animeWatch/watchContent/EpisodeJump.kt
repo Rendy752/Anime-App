@@ -40,7 +40,7 @@ fun EpisodeJump(
         Debounce(scope, 1000L) { filteredQuery ->
             val intValue = filteredQuery.toIntOrNull()
             if (intValue != null && intValue >= 1 && intValue <= totalEpisodes) {
-                val index = episodes.indexOfFirst { it.episodeNo == intValue }
+                val index = episodes.indexOfFirst { it.episode_no == intValue }
                 if (index != -1) {
                     scope.launch {
                         if (abs(gridState.firstVisibleItemIndex - index) < 20) {

@@ -26,6 +26,7 @@ import com.luminoverse.animevibe.ui.animeWatch.PlayerUiState
 import com.luminoverse.animevibe.ui.animeWatch.WatchAction
 import com.luminoverse.animevibe.ui.animeWatch.videoPlayer.VideoPlayerSection
 import com.luminoverse.animevibe.ui.animeWatch.watchContent.WatchContentSection
+import com.luminoverse.animevibe.ui.common.ScreenshotDisplay
 import com.luminoverse.animevibe.ui.main.MainState
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
@@ -68,11 +69,16 @@ fun AnimeWatchContent(
                 .then(videoSize)
                 .background(MaterialTheme.colorScheme.surfaceContainer)
         ) {
-            if (watchState.episodeDetailComplement?.sources?.sources?.isEmpty() == true || watchState.episodeDetailComplement?.sources?.sources[0]?.url == null || watchState.animeDetailComplement?.episodes == null || watchState.episodeSourcesQuery == null) Box(
-                modifier = modifier
-                    .then(videoSize)
-                    .background(MaterialTheme.colorScheme.surfaceContainer)
-            ) else {
+            if (watchState.episodeDetailComplement == null || watchState.episodeDetailComplement.sources.link.file.isEmpty() == true || watchState.animeDetailComplement?.episodes == null || watchState.episodeSourcesQuery == null) {
+                if (watchState.errorMessage != null && !watchState.isRefreshing && !playerCoreState.isPlaying) ScreenshotDisplay(
+                    imageUrl = watchState.animeDetail?.images?.webp?.large_image_url,
+                    modifier = modifier.then(videoSize),
+                ) else Box(
+                    modifier = modifier
+                        .then(videoSize)
+                        .background(MaterialTheme.colorScheme.surfaceContainer)
+                )
+            } else {
                 VideoPlayerSection(
                     episodeDetailComplement = watchState.episodeDetailComplement,
                     episodeDetailComplements = watchState.episodeDetailComplements,
@@ -114,7 +120,7 @@ fun AnimeWatchContent(
             watchState.episodeSourcesQuery?.let { episodeSourcesQuery ->
                 RetryButton(
                     modifier = Modifier.align(Alignment.Center),
-                    isVisible = watchState.errorMessage != null && !watchState.isRefreshing,
+                    isVisible = watchState.errorMessage != null && !watchState.isRefreshing && !playerCoreState.isPlaying,
                     onRetry = {
                         onAction(
                             WatchAction.HandleSelectedEpisodeServer(

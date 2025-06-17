@@ -1,9 +1,9 @@
 package com.luminoverse.animevibe.data.local.entities
 
 import androidx.room.TypeConverter
-import com.luminoverse.animevibe.models.EpisodeServersResponse
+import com.luminoverse.animevibe.models.EpisodeServer
+import com.luminoverse.animevibe.models.EpisodeSources
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
-import com.luminoverse.animevibe.models.EpisodeSourcesResponse
 import kotlinx.serialization.json.Json
 
 class EpisodeDetailComplementConverter {
@@ -11,22 +11,22 @@ class EpisodeDetailComplementConverter {
     private val json = Json { ignoreUnknownKeys = true }
 
     @TypeConverter
-    fun fromEpisodeServersResponse(value: EpisodeServersResponse): String {
+    fun fromEpisodeServerList(value: List<EpisodeServer>): String {
         return json.encodeToString(value)
     }
 
     @TypeConverter
-    fun toEpisodeServersResponse(value: String): EpisodeServersResponse {
-        return json.decodeFromString(value)
+    fun toEpisodeServerList(value: String): List<EpisodeServer> {
+        return json.decodeFromString<List<EpisodeServer>>(value)
     }
 
     @TypeConverter
-    fun fromEpisodeSourcesResponse(value: EpisodeSourcesResponse): String {
+    fun fromEpisodeSources(value: EpisodeSources): String {
         return json.encodeToString(value)
     }
 
     @TypeConverter
-    fun toEpisodeSourcesResponse(value: String): EpisodeSourcesResponse {
+    fun toEpisodeSources(value: String): EpisodeSources {
         return json.decodeFromString(value)
     }
 

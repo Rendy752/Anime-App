@@ -273,7 +273,7 @@ fun VideoPlayerSection(
         }
     }
 
-    LaunchedEffect(episodeDetailComplement.sources.sources[0].url) {
+    LaunchedEffect(episodeDetailComplement.sources.link.file) {
         Log.d("VideoPlayerSection", "episodeSourcesQuery changed: ${episodeSourcesQuery.id}")
         playerAction(
             HlsPlayerAction.SetMedia(

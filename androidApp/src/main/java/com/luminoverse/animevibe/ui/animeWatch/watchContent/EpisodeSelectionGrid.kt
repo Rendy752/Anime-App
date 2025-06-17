@@ -40,15 +40,15 @@ fun EpisodeSelectionGrid(
     val (hasScrolledInitially, setHasScrolledInitially) = remember { mutableStateOf(false) }
 
     LaunchedEffect(episodeDetailComplement, episodes) {
-        val targetEpisodeId = episodeDetailComplement?.servers?.episodeId
-        val targetEpisodeNo = episodeDetailComplement?.servers?.episodeNo
+        val targetEpisodeId = episodeDetailComplement?.id
+        val targetEpisodeNo = episodeDetailComplement?.number
 
         if (targetEpisodeId != null) {
             setSelectedEpisodeId(targetEpisodeId)
         }
 
         if (targetEpisodeNo != null && !hasScrolledInitially) {
-            val targetIndex = episodes.indexOfFirst { it.episodeNo == targetEpisodeNo }
+            val targetIndex = episodes.indexOfFirst { it.episode_no == targetEpisodeNo }
             if (targetIndex != -1) {
                 val currentFirstVisibleIndex = gridState.firstVisibleItemIndex
                 val scrollThreshold = 50
@@ -87,7 +87,7 @@ fun EpisodeSelectionGrid(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        itemsIndexed(episodes, key = { _, episode -> episode.episodeId }) { index, episode ->
+        itemsIndexed(episodes, key = { _, episode -> episode.id }) { index, episode ->
             val (isItemVisible, setIsItemVisible) = remember { mutableStateOf(false) }
 
             LaunchedEffect(gridState, index) {
@@ -104,13 +104,13 @@ fun EpisodeSelectionGrid(
                     }
             }
 
-            if (isItemVisible && episodeDetailComplements[episode.episodeId] == null) {
-                LaunchedEffect(episode.episodeId) {
-                    onLoadEpisodeDetailComplement(episode.episodeId)
+            if (isItemVisible && episodeDetailComplements[episode.id] == null) {
+                LaunchedEffect(episode.id) {
+                    onLoadEpisodeDetailComplement(episode.id)
                 }
             }
 
-            val complementResource = episodeDetailComplements[episode.episodeId]
+            val complementResource = episodeDetailComplements[episode.id]
             WatchEpisodeItem(
                 currentEpisode = episodeDetailComplement,
                 episode = episode,
@@ -120,7 +120,7 @@ fun EpisodeSelectionGrid(
                     setSelectedEpisodeId(episodeId)
                     episodeSelectionDebounce.query(episodeId)
                 },
-                isSelected = episode.episodeId == selectedEpisodeId
+                isSelected = episode.id == selectedEpisodeId
             )
         }
     }

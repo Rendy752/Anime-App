@@ -16,21 +16,6 @@ interface EpisodeDetailComplementDao {
     @Query("SELECT * FROM episode_detail_complement WHERE id = :id")
     suspend fun getEpisodeDetailComplementById(id: String): EpisodeDetailComplement?
 
-    @Query(
-        """
-            SELECT * FROM episode_detail_complement
-            WHERE malId = :malId
-            ORDER BY
-                CASE
-                    WHEN lastWatched IS NOT NULL AND lastTimestamp IS NOT NULL THEN 0
-                    ELSE 1
-                END,
-                lastWatched DESC
-            LIMIT 1
-        """
-    )
-    suspend fun getDefaultEpisodeDetailComplementByMalId(malId: Int): EpisodeDetailComplement
-
     @Query("SELECT * FROM episode_detail_complement WHERE lastWatched IS NOT NULL AND lastTimestamp IS NOT NULL ORDER BY lastWatched DESC LIMIT 1")
     suspend fun getLatestWatchedEpisodeDetailComplement(): EpisodeDetailComplement?
 

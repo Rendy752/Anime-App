@@ -4,12 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.luminoverse.animevibe.models.*
 import com.luminoverse.animevibe.repository.AnimeEpisodeDetailRepository
-import com.luminoverse.animevibe.utils.watch.AnimeTitleFinder
 import com.luminoverse.animevibe.utils.watch.AnimeTitleFinder.normalizeTitle
 import com.luminoverse.animevibe.utils.ComplementUtils
 import com.luminoverse.animevibe.utils.FilterUtils
 import com.luminoverse.animevibe.utils.resource.Resource
-import com.luminoverse.animevibe.utils.media.StreamingUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -127,10 +125,8 @@ class AnimeDetailViewModel @Inject constructor(
 
         handleUnregisteredEpisode(
             animeMalId = animeDetail.mal_id,
-            animeImageUrl = animeDetail.images.webp.large_image_url,
             animeEnglishTitle = animeDetail.title_english,
             animeTitle = animeDetail.title,
-            animeTitleSynonyms = animeDetail.title_synonyms
         )
     }
 
@@ -159,15 +155,15 @@ class AnimeDetailViewModel @Inject constructor(
         isCurrentAnimeDetailComplement: Resource<AnimeDetailComplement?>
     ) {
         isCurrentAnimeDetailComplement.data?.episodes?.let { currentEpisodes ->
-            val currentEpisodeIds = currentEpisodes.map { it.episodeId }.toSet()
+            val currentEpisodeIds = currentEpisodes.map { it.id }.toSet()
             val cachedComplement =
                 animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(
                     animeDetail.mal_id
                 )
             cachedComplement?.episodes?.let { cachedEpisodes ->
                 val newEpisodeIds = cachedEpisodes
-                    .filter { episode -> episode.episodeId !in currentEpisodeIds }
-                    .map { episode -> episode.episodeId }
+                    .filter { episode -> episode.id !in currentEpisodeIds }
+                    .map { episode -> episode.id }
                 _detailState.update { it.copy(newEpisodeIdList = newEpisodeIds) }
             }
         }
@@ -189,10 +185,8 @@ class AnimeDetailViewModel @Inject constructor(
 
     private suspend fun handleUnregisteredEpisode(
         animeMalId: Int,
-        animeImageUrl: String?,
         animeEnglishTitle: String?,
         animeTitle: String,
-        animeTitleSynonyms: List<String>?
     ) {
         val searchTitle = (animeEnglishTitle ?: animeTitle).normalizeTitle()
         val animeAniwatchSearchResponse =
@@ -208,77 +202,28 @@ class AnimeDetailViewModel @Inject constructor(
             return
         }
 
-        val targetTitles = listOfNotNull(
-            animeTitle,
-            animeEnglishTitle
-        ) + (animeTitleSynonyms ?: emptyList())
-        val animeAniwatchs = AnimeTitleFinder.findClosestMatches(
-            targetTitles = targetTitles,
-            data = animeAniwatchSearchResponse.data.animes,
-            maxResults = 2,
-            titleExtractor = { it.name }
-        )
-        if (animeAniwatchs.isEmpty()) {
-            _detailState.update { it.copy(animeDetailComplement = Resource.Error("No episode found")) }
-            return
-        }
-        for (animeAniwatch in animeAniwatchs) {
-            val animeId = animeAniwatch.id.substringBefore("?").trim()
-            val episodesResponse = animeEpisodeDetailRepository.getEpisodes(animeId)
-            if (episodesResponse !is Resource.Success) continue
-
-            val defaultEpisode = episodesResponse.data.episodes.firstOrNull() ?: continue
-            val defaultEpisodeServersResponse =
-                animeEpisodeDetailRepository.getEpisodeServers(defaultEpisode.episodeId)
-            if (defaultEpisodeServersResponse !is Resource.Success) continue
-
-            val (defaultEpisodeSourcesResponse, defaultEpisodeSourcesQuery) = StreamingUtils.getEpisodeSourcesResult(
-                episodeServersResponse = defaultEpisodeServersResponse.data,
-                getEpisodeSources = { id, server, category ->
-                    animeEpisodeDetailRepository.getEpisodeSources(id, server, category)
-                },
-                emptySourcesCheck = false
-            )
-            if (defaultEpisodeSourcesResponse !is Resource.Success) continue
-            if (checkEpisodeSourceMalId(defaultEpisodeSourcesResponse)) {
-                val complement = ComplementUtils.getOrCreateAnimeDetailComplement(
-                    repository = animeEpisodeDetailRepository,
-                    id = animeId,
-                    malId = animeMalId
-                )?.copy(
-                    id = animeId,
-                    episodes = episodesResponse.data.episodes,
-                    eps = animeAniwatch.episodes?.eps,
-                    sub = animeAniwatch.episodes?.sub,
-                    dub = animeAniwatch.episodes?.dub
-                )
-                if (complement != null) {
-                    animeEpisodeDetailRepository.updateCachedAnimeDetailComplement(complement)
-                    updateSuccessAdditionalState(complement)
-                    if (defaultEpisodeSourcesQuery != null) {
-                        ComplementUtils.createEpisodeDetailComplement(
-                            repository = animeEpisodeDetailRepository,
-                            animeDetailMalId = animeMalId,
-                            animeDetailTitle = animeTitle,
-                            animeDetailImageUrl = animeImageUrl,
-                            animeDetailComplement = complement,
-                            episode = defaultEpisode,
-                            servers = defaultEpisodeServersResponse.data,
-                            sources = defaultEpisodeSourcesResponse.data,
-                            sourcesQuery = defaultEpisodeSourcesQuery
-                        ).let { episodeComplement ->
-                            _detailState.update {
-                                it.copy(
-                                    episodeDetailComplements = it.episodeDetailComplements + (episodeComplement.id to episodeComplement)
-                                )
-                            }
-                        }
-                    }
-                    return
-                }
+        val relatedAnime =
+            animeAniwatchSearchResponse.data.results.data.find { it.malID == animeMalId } ?: run {
+                handleUnavailableEpisode(animeMalId)
+                return
             }
+        val episodesResource = animeEpisodeDetailRepository.getEpisodes(relatedAnime.id)
+
+        val complement = ComplementUtils.getOrCreateAnimeDetailComplement(
+            repository = animeEpisodeDetailRepository,
+            id = relatedAnime.id,
+            malId = animeMalId
+        )?.copy(
+            id = relatedAnime.id,
+            episodes = if (episodesResource is Resource.Success) episodesResource.data.results.episodes else null,
+            eps = relatedAnime.tvInfo.eps,
+            sub = relatedAnime.tvInfo.sub,
+            dub = relatedAnime.tvInfo.dub
+        )
+        if (complement != null) {
+            animeEpisodeDetailRepository.updateCachedAnimeDetailComplement(complement)
+            updateSuccessAdditionalState(complement)
         }
-        handleUnavailableEpisode(animeMalId)
     }
 
     private fun updateSuccessAdditionalState(complement: AnimeDetailComplement) {
@@ -326,7 +271,4 @@ class AnimeDetailViewModel @Inject constructor(
             }
         }
     }
-
-    private fun checkEpisodeSourceMalId(response: Resource<EpisodeSourcesResponse>): Boolean =
-        _detailState.value.animeDetail.data?.data?.mal_id == response.data?.malID
 }

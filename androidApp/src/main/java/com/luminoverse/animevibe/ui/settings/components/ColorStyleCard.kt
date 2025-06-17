@@ -107,9 +107,9 @@ fun ColorStyleCard(
                         else EpisodeDetailItem(
                             modifier = Modifier.heightIn(max = 100.dp),
                             animeImage = animeDetailSample.data?.images?.webp?.large_image_url ?: animeDetailPlaceholder.images.webp.large_image_url,
-                            lastEpisodeWatchedId = episodePlaceholder.episodeId,
+                            lastEpisodeWatchedId = episodePlaceholder.id,
                             episode = episodePlaceholder.copy(
-                                name = animeDetailSample.data?.title ?: episodePlaceholder.name
+                                title = animeDetailSample.data?.title ?: episodePlaceholder.title
                             ),
                             isNewEpisode = true,
                             episodeDetailComplement = episodeDetailComplementPlaceholder.copy(
@@ -117,7 +117,7 @@ fun ColorStyleCard(
                                 lastTimestamp = 260_000L,
                                 duration = 300_000L
                             ),
-                            query = (animeDetailSample.data?.title ?: episodePlaceholder.name).let {
+                            query = (animeDetailSample.data?.title ?: episodePlaceholder.title).let {
                                 if (it.length > 3) it.take(3) else it
                             },
                             titleMaxLines = 2

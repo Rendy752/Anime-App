@@ -54,9 +54,9 @@ fun EpisodeDetailItem(
     isSameWidthContent: Boolean = false
 ) {
     navBackStackEntry?.lifecycle?.currentStateFlow?.collectAsStateWithLifecycle()?.value?.let { lifecycleState ->
-        LaunchedEffect(episode.episodeId, lifecycleState) {
+        LaunchedEffect(episode.id, lifecycleState) {
             if (episodeDetailComplement == null || lifecycleState.isAtLeast(Lifecycle.State.RESUMED)) {
-                loadEpisodeDetailComplement(episode.episodeId)
+                loadEpisodeDetailComplement(episode.id)
             }
         }
     }
@@ -105,7 +105,7 @@ fun EpisodeDetailItem(
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = highlightText(episode.name, query),
+                    text = highlightText(episode.title, query),
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = titleMaxLines ?: Int.MAX_VALUE,
@@ -118,13 +118,13 @@ fun EpisodeDetailItem(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Ep. ${episode.episodeNo}",
+                        text = "Ep. ${episode.episode_no}",
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     lastEpisodeWatchedId?.let {
-                        if (episode.episodeId == it) {
+                        if (episode.id == it) {
                             Text(
                                 text = "Last Watched",
                                 modifier = Modifier

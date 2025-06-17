@@ -111,7 +111,7 @@ fun AnimeDetailTopBar(
                                         NavRoute.AnimeWatch.fromParams(
                                             malId = animeDetailData.mal_id,
                                             episodeId = animeDetailComplement.lastEpisodeWatchedId
-                                                ?: episodes.first().episodeId
+                                                ?: episodes.first().id
                                         )
                                     )
                                 }) {

@@ -97,8 +97,8 @@ object FilterUtils {
         lastEpisodeWatchedId: String? = null
     ): List<Episode> {
         val episodeExtractors = listOf<(Episode) -> String>(
-            { it.name.takeIf { name -> name.isNotEmpty() } ?: "" },
-            { it.episodeNo.toString() }
+            { it.title.takeIf { title -> title.isNotEmpty() } ?: "" },
+            { it.episode_no.toString() }
         )
 
         val titleFilteredEpisodes = if (query.title.isBlank()) {
@@ -113,11 +113,11 @@ object FilterUtils {
 
         val filteredEpisodes = titleFilteredEpisodes.filter { episode ->
             val matchesFavorite = query.isFavorite?.let { isFavorite ->
-                episodeDetailComplements[episode.episodeId]?.isFavorite == isFavorite
+                episodeDetailComplements[episode.id]?.isFavorite == isFavorite
             } != false
 
             val matchesWatched = query.isWatched?.let { isWatched ->
-                val complement = episodeDetailComplements[episode.episodeId] ?: return@let false
+                val complement = episodeDetailComplements[episode.id] ?: return@let false
                 val isActuallyWatched =
                     complement.lastWatched != null && complement.lastTimestamp != null
 
@@ -128,7 +128,7 @@ object FilterUtils {
         }
 
         return if (lastEpisodeWatchedId != null) {
-            val (lastWatched, others) = filteredEpisodes.partition { it.episodeId == lastEpisodeWatchedId }
+            val (lastWatched, others) = filteredEpisodes.partition { it.id == lastEpisodeWatchedId }
             lastWatched + others
         } else {
             filteredEpisodes

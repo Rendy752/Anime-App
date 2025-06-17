@@ -9,8 +9,10 @@ import com.luminoverse.animevibe.models.AnimeDetailComplement
 import com.luminoverse.animevibe.models.AnimeDetailResponse
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeHistoryQueryState
-import com.luminoverse.animevibe.models.EpisodeServersResponse
+import com.luminoverse.animevibe.models.EpisodeServer
+import com.luminoverse.animevibe.models.EpisodeSourcesResponse
 import com.luminoverse.animevibe.models.EpisodesResponse
+import com.luminoverse.animevibe.ui.common.AnimeAniwatchCommonResponse
 import com.luminoverse.animevibe.utils.resource.Resource
 import com.luminoverse.animevibe.utils.resource.ResponseHandler
 import com.luminoverse.animevibe.utils.resource.ResponseHandler.safeApiCall
@@ -81,9 +83,6 @@ class AnimeEpisodeDetailRepository(
     suspend fun getCachedLatestWatchedEpisodeDetailComplement(): EpisodeDetailComplement? =
         episodeDetailComplementDao.getLatestWatchedEpisodeDetailComplement()
 
-    suspend fun getCachedDefaultEpisodeDetailComplementByMalId(malId: Int): EpisodeDetailComplement =
-        episodeDetailComplementDao.getDefaultEpisodeDetailComplementByMalId(malId)
-
     suspend fun getCachedEpisodeDetailComplement(id: String): EpisodeDetailComplement? =
         episodeDetailComplementDao.getEpisodeDetailComplementById(id)
 
@@ -104,15 +103,22 @@ class AnimeEpisodeDetailRepository(
     suspend fun getAnimeAniwatchSearch(keyword: String) =
         ResponseHandler.handleCommonResponse(safeApiCall { runwayAPI.getAnimeAniwatchSearch(keyword) })
 
-    suspend fun getEpisodeServers(episodeId: String): Resource<EpisodeServersResponse> =
-        ResponseHandler.handleCommonResponse(safeApiCall { runwayAPI.getEpisodeServers(episodeId) })
+    suspend fun getEpisodeServers(id: String): Resource<AnimeAniwatchCommonResponse<List<EpisodeServer>>> {
+        val animeId = id.split("?ep=").first()
+        val episodeId = id.split("?ep=").last()
+        return ResponseHandler.handleCommonResponse(safeApiCall { runwayAPI.getEpisodeServers(animeId,episodeId) })
+    }
 
-    suspend fun getEpisodeSources(episodeId: String, server: String, category: String) =
+    suspend fun getEpisodeSources(
+        episodeId: String,
+        server: String,
+        type: String
+    ): Resource<AnimeAniwatchCommonResponse<EpisodeSourcesResponse>> =
         ResponseHandler.handleCommonResponse(safeApiCall {
-            runwayAPI.getEpisodeSources(episodeId, server, category)
+            runwayAPI.getEpisodeSources(episodeId, server, type)
         })
 
-    suspend fun getEpisodes(id: String): Resource<EpisodesResponse> =
+    suspend fun getEpisodes(id: String): Resource<AnimeAniwatchCommonResponse<EpisodesResponse>> =
         ResponseHandler.handleCommonResponse(safeApiCall { runwayAPI.getEpisodes(id) })
 
     suspend fun getAllEpisodeHistory(queryState: EpisodeHistoryQueryState): Resource<List<EpisodeDetailComplement>> {

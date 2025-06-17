@@ -28,6 +28,6 @@ data class EpisodeSourcesQuery(
 
 val episodeSourcesQueryPlaceholder = EpisodeSourcesQuery(
     id = "lorem-ipsum-123?ep=123",
-    server = "vidstreaming",
+    server = "HD-2",
     category = "sub"
 )

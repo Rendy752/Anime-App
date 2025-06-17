@@ -9,11 +9,11 @@ import kotlinx.serialization.Serializable
 @Serializable
 @Stable
 data class Source(
-    val url: String,
+    val file: String,
     val type: String
 ) : Parcelable
 
 val sourcePlaceholder = Source(
-    url = "http://example.com",
+    file = "http://example.com",
     type = "captions"
 )

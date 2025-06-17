@@ -5,12 +5,13 @@ import com.luminoverse.animevibe.models.AnimeDetailResponse
 import com.luminoverse.animevibe.models.AnimeRecommendationResponse
 import com.luminoverse.animevibe.models.ListAnimeDetailResponse
 import com.luminoverse.animevibe.models.AnimeSearchResponse
-import com.luminoverse.animevibe.models.EpisodeServersResponse
+import com.luminoverse.animevibe.models.EpisodeServer
 import com.luminoverse.animevibe.models.EpisodeSourcesResponse
 import com.luminoverse.animevibe.models.EpisodesResponse
 import com.luminoverse.animevibe.models.GenresResponse
 import com.luminoverse.animevibe.models.ProducerResponse
 import com.luminoverse.animevibe.models.ProducersResponse
+import com.luminoverse.animevibe.ui.common.AnimeAniwatchCommonResponse
 import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Path
@@ -91,25 +92,26 @@ interface AnimeAPI {
         @Path("id") id: Int
     ): Response<ProducerResponse>
 
-    @GET("/aniwatch/search")
+    @GET("/api/search")
     suspend fun getAnimeAniwatchSearch(
         @Query("keyword") keyword: String
-    ): Response<AnimeAniwatchSearchResponse>
+    ): Response<AnimeAniwatchCommonResponse<AnimeAniwatchSearchResponse>>
 
-    @GET("/aniwatch/episodes/{id}")
+    @GET("/api/episodes/{id}")
     suspend fun getEpisodes(
         @Path("id") id: String
-    ): Response<EpisodesResponse>
+    ): Response<AnimeAniwatchCommonResponse<EpisodesResponse>>
 
-    @GET("/aniwatch/servers")
+    @GET("/api/servers/{id}")
     suspend fun getEpisodeServers(
-        @Query("id") episodeId: String
-    ): Response<EpisodeServersResponse>
+        @Path("id") animeId: String,
+        @Query("ep") episodeId: String
+    ): Response<AnimeAniwatchCommonResponse<List<EpisodeServer>>>
 
-    @GET("/aniwatch/episode-srcs")
+    @GET("/api/stream")
     suspend fun getEpisodeSources(
         @Query("id") episodeId: String,
         @Query("server") server: String,
-        @Query("category") category: String
-    ): Response<EpisodeSourcesResponse>
+        @Query("type") type: String
+    ): Response<AnimeAniwatchCommonResponse<EpisodeSourcesResponse>>
 }

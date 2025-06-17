@@ -7,15 +7,17 @@ import kotlinx.serialization.Serializable
 @Parcelize
 @Serializable
 data class Episode(
-    val name: String,
-    val episodeNo: Int,
-    val episodeId: String,
+    val episode_no: Int,
+    val id: String,
+    val title: String,
+    val japanese_title: String,
     val filler: Boolean
-): Parcelable
+) : Parcelable
 
 val episodePlaceholder = Episode(
-    name = "Title of Episode",
-    episodeNo = 1,
-    episodeId = "lorem-ipsum-123?ep=123",
+    episode_no = 1,
+    id = "lorem-ipsum-123?ep=123",
+    title = "Title of Episode",
+    japanese_title = "Japanese Title of Episode",
     filler = false
 )

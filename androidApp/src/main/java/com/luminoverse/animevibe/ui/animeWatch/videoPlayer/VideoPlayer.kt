@@ -91,9 +91,9 @@ fun VideoPlayer(
 ) {
     val controlsState by controlsState.collectAsStateWithLifecycle()
     val positionState by positionState.collectAsStateWithLifecycle()
-    val currentEpisode = episodeDetailComplement.servers.episodeNo
-    val prevEpisode = episodes.find { it.episodeNo == currentEpisode - 1 }
-    val nextEpisode = episodes.find { it.episodeNo == currentEpisode + 1 }
+    val currentEpisode = episodeDetailComplement.number
+    val prevEpisode = episodes.find { it.episode_no == currentEpisode - 1 }
+    val nextEpisode = episodes.find { it.episode_no == currentEpisode + 1 }
 
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -386,7 +386,7 @@ fun VideoPlayer(
                 episodeDetailComplement = episodeDetailComplement,
                 hasPreviousEpisode = prevEpisode != null,
                 nextEpisode = nextEpisode,
-                nextEpisodeDetailComplement = episodeDetailComplements[nextEpisode?.episodeId]?.data,
+                nextEpisodeDetailComplement = episodeDetailComplements[nextEpisode?.id]?.data,
                 isFullscreen = playerUiState.isFullscreen,
                 isShowSpeedUp = isShowSpeedUp,
                 handlePlay = { playerAction(HlsPlayerAction.Play) },
@@ -394,7 +394,7 @@ fun VideoPlayer(
                 onPreviousEpisode = {
                     if (prevEpisode != null) {
                         handleSelectedEpisodeServer(
-                            episodeSourcesQuery.copy(id = prevEpisode.episodeId),
+                            episodeSourcesQuery.copy(id = prevEpisode.id),
                             false
                         )
                     }
@@ -402,7 +402,7 @@ fun VideoPlayer(
                 onNextEpisode = {
                     if (nextEpisode != null) {
                         handleSelectedEpisodeServer(
-                            episodeSourcesQuery.copy(id = nextEpisode.episodeId), false
+                            episodeSourcesQuery.copy(id = nextEpisode.id), false
                         )
                         setShowNextEpisode(false)
                     }
@@ -485,7 +485,7 @@ fun VideoPlayer(
                 isPipMode = playerUiState.isPipMode,
                 animeImage = episodeDetailComplement.imageUrl,
                 nextEpisode = nextEpisode,
-                nextEpisodeDetailComplement = episodeDetailComplements[nextEpisode.episodeId]?.data,
+                nextEpisodeDetailComplement = episodeDetailComplements[nextEpisode.id]?.data,
                 onDismiss = {
                     setShowNextEpisode(false)
                     playerAction(
@@ -499,7 +499,7 @@ fun VideoPlayer(
                 },
                 onPlayNext = {
                     handleSelectedEpisodeServer(
-                        episodeSourcesQuery.copy(id = nextEpisode.episodeId), false
+                        episodeSourcesQuery.copy(id = nextEpisode.id), false
                     )
                     setShowNextEpisode(false)
                 }
@@ -514,9 +514,7 @@ fun VideoPlayer(
                 label = "Skip Intro",
                 isVisible = controlsState.showIntroButton && isSkipVisible,
                 onSkip = {
-                    sources.intro?.end?.let { endTime ->
-                        playerAction(HlsPlayerAction.SkipIntro(endTime))
-                    }
+                    playerAction(HlsPlayerAction.SkipIntro(sources.intro.end))
                 },
                 modifier = Modifier.align(Alignment.BottomEnd)
             )
@@ -524,9 +522,7 @@ fun VideoPlayer(
                 label = "Skip Outro",
                 isVisible = controlsState.showOutroButton && isSkipVisible,
                 onSkip = {
-                    sources.outro?.end?.let { endTime ->
-                        playerAction(HlsPlayerAction.SkipOutro(endTime))
-                    }
+                    playerAction(HlsPlayerAction.SkipOutro(sources.outro.end))
                 },
                 modifier = Modifier.align(Alignment.BottomEnd)
             )

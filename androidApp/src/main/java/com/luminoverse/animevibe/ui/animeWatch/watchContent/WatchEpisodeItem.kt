@@ -59,7 +59,7 @@ fun WatchEpisodeItem(
     isSelected: Boolean
 ) {
     val isCurrentEpisode =
-        if (currentEpisode != null) currentEpisode.servers.episodeNo == episode.episodeNo else false
+        if (currentEpisode != null) currentEpisode.number == episode.episode_no else false
     var showTooltip by remember { mutableStateOf(false) }
     val backgroundColor =
         getEpisodeBackgroundColor(
@@ -90,7 +90,7 @@ fun WatchEpisodeItem(
                     if (!isCurrentEpisode) {
                         Modifier.pointerInput(Unit) {
                             detectTapGestures(
-                                onTap = { onEpisodeClick(episode.episodeId) },
+                                onTap = { onEpisodeClick(episode.id) },
                                 onLongPress = { showTooltip = true },
                             )
                         }
@@ -101,7 +101,7 @@ fun WatchEpisodeItem(
             contentAlignment = Alignment.Center,
         ) {
             Text(
-                text = episode.episodeNo.toString(),
+                text = episode.episode_no.toString(),
                 textAlign = TextAlign.Center,
                 fontWeight = FontWeight.Bold
             )
@@ -131,7 +131,7 @@ fun WatchEpisodeItem(
                     modifier = Modifier.padding(8.dp)
                 ) {
                     Text(
-                        text = episode.name,
+                        text = episode.title,
                         modifier = Modifier.padding(8.dp)
                     )
                 }

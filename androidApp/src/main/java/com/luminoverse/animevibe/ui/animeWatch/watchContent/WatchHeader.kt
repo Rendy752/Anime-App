@@ -65,7 +65,7 @@ fun WatchHeader(
                 EpisodeInfo(
                     title = title,
                     episode = episode,
-                    episodeNo = servers.episodeNo,
+                    episodeNo = episodeDetailComplement.number,
                     episodeSourcesQuery = episodeSourcesQuery
                 )
                 ServerSelection(

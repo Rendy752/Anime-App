@@ -34,9 +34,10 @@ class EpisodeHistoryViewModelTest {
         lastEpisodeWatchedId = "lorem-ipsum-123?ep=123",
         episodes = listOf(
             Episode(
-                episodeId = "lorem-ipsum-123?ep=123",
-                episodeNo = 1,
-                name = "Episode 1",
+                id = "lorem-ipsum-123?ep=123",
+                episode_no = 1,
+                title = "Episode 1",
+                japanese_title = "Episode 1",
                 filler = false
             )
         ),
@@ -58,8 +59,8 @@ class EpisodeHistoryViewModelTest {
         imageUrl = "test_image_url",
         number = 1,
         isFiller = false,
-        servers = episodeServersResponsePlaceholder,
-        sources = episodeSourcesResponsePlaceholder,
+        servers = listOf(episodeServerPlaceholder),
+        sources = episodeSourcesPlaceholder,
         sourcesQuery = episodeSourcesQueryPlaceholder,
         isFavorite = false,
         lastWatched = "2025-05-12T23:54:02.306274",

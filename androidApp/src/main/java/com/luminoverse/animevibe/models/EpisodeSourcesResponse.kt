@@ -9,19 +9,34 @@ import kotlinx.serialization.Serializable
 @Serializable
 @Stable
 data class EpisodeSourcesResponse(
-    val tracks: List<Track>,
-    val intro: TimeRange?,
-    val outro: TimeRange?,
-    val sources: List<Source>,
-    val anilistID: Int,
-    val malID: Int
+    val streamingLink: EpisodeSources,
+    val servers: List<EpisodeServer>
 ) : Parcelable
 
-val episodeSourcesResponsePlaceholder = EpisodeSourcesResponse(
+@Parcelize
+@Serializable
+@Stable
+data class EpisodeSources(
+    val id: String,
+    val type: String,
+    val link: Source,
+    val tracks: List<Track>,
+    val intro: TimeRange,
+    val outro: TimeRange,
+    val server: String
+) : Parcelable
+
+val episodeSourcesPlaceholder = EpisodeSources(
+    id = "1156440",
+    type = "sub",
+    link = sourcePlaceholder,
     tracks = listOf(trackPlaceholder),
     intro = timeRangePlaceholder,
     outro = timeRangePlaceholder,
-    sources = listOf(sourcePlaceholder),
-    anilistID = 1,
-    malID = 1735
+    server = "hd-1"
+)
+
+val episodeSourcesResponsePlaceholder = EpisodeSourcesResponse(
+    streamingLink = episodeSourcesPlaceholder,
+    servers = listOf(episodeServerPlaceholder)
 )

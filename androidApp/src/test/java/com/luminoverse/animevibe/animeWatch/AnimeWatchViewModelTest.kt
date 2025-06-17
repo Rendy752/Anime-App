@@ -5,6 +5,7 @@ import com.luminoverse.animevibe.models.*
 import com.luminoverse.animevibe.repository.AnimeEpisodeDetailRepository
 import com.luminoverse.animevibe.ui.animeWatch.AnimeWatchViewModel
 import com.luminoverse.animevibe.ui.animeWatch.WatchAction
+import com.luminoverse.animevibe.ui.common.AnimeAniwatchCommonResponse
 import com.luminoverse.animevibe.utils.ComplementUtils
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
@@ -57,15 +58,15 @@ class AnimeWatchViewModelTest {
         lastEpisodeWatchedId = "lorem-ipsum-123?ep=123",
         episodes = listOf(
             episodePlaceholder.copy(
-                episodeId = "lorem-ipsum-123?ep=123",
-                episodeNo = 1,
-                name = "Episode 1",
+                id = "lorem-ipsum-123?ep=123",
+                episode_no = 1,
+                title = "Episode 1",
                 filler = false
             ),
             episodePlaceholder.copy(
-                episodeId = "lorem-ipsum-123?ep=124",
-                episodeNo = 2,
-                name = "Episode 2",
+                id = "lorem-ipsum-123?ep=124",
+                episode_no = 2,
+                title = "Episode 2",
                 filler = false
             )
         )
@@ -79,14 +80,20 @@ class AnimeWatchViewModelTest {
         imageUrl = "test_image_url",
         number = 1,
         isFiller = false,
-        servers = episodeServersResponsePlaceholder.copy(episodeId = "lorem-ipsum-123?ep=123"),
-        sources = episodeSourcesResponsePlaceholder,
+        servers = listOf(episodeServerPlaceholder.copy(server_id = "lorem-ipsum-123?ep=123")),
+        sources = episodeSourcesPlaceholder,
         sourcesQuery = episodeSourcesQueryPlaceholder.copy(id = "lorem-ipsum-123?ep=123"),
         isFavorite = false
     )
     private val mockEpisodeServers =
-        episodeServersResponsePlaceholder.copy(episodeId = "lorem-ipsum-123?ep=123")
-    private val mockEpisodeSources = episodeSourcesResponsePlaceholder
+        AnimeAniwatchCommonResponse(
+            success = true,
+            results = listOf(episodeServerPlaceholder.copy(server_id = "lorem-ipsum-123?ep=123"))
+        )
+    private val mockEpisodeSources = AnimeAniwatchCommonResponse(
+        success = true,
+        results = episodeSourcesResponsePlaceholder
+    )
 
     @Before
     fun setUp() {
@@ -105,7 +112,6 @@ class AnimeWatchViewModelTest {
         coEvery { animeEpisodeDetailRepository.getCachedAnimeDetailById(1) } returns mockAnimeDetail
         coEvery { animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(1) } returns mockAnimeDetailComplement
         coEvery { animeEpisodeDetailRepository.getCachedEpisodeDetailComplement("lorem-ipsum-123?ep=123") } returns mockEpisodeDetailComplement
-        coEvery { animeEpisodeDetailRepository.getCachedDefaultEpisodeDetailComplementByMalId(1) } returns mockEpisodeDetailComplement
         coEvery { animeEpisodeDetailRepository.getEpisodeServers("lorem-ipsum-123?ep=123") } returns Resource.Success(
             mockEpisodeServers
         )
@@ -211,7 +217,6 @@ class AnimeWatchViewModelTest {
         runTest {
             val query = episodeSourcesQueryPlaceholder.copy(id = "lorem-ipsum-123?ep=123")
             coEvery { animeEpisodeDetailRepository.getCachedEpisodeDetailComplement("lorem-ipsum-123?ep=123") } returns mockEpisodeDetailComplement
-            coEvery { animeEpisodeDetailRepository.getCachedDefaultEpisodeDetailComplementByMalId(1) } returns mockEpisodeDetailComplement
             coEvery { animeEpisodeDetailRepository.getEpisodeServers("lorem-ipsum-123?ep=123") } returns Resource.Error(
                 "Server error"
             )

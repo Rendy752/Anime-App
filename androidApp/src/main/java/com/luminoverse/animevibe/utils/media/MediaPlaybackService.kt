@@ -48,10 +48,10 @@ import kotlinx.coroutines.withContext
 import java.net.URLEncoder
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
+import androidx.core.graphics.scale
 
 private const val NOTIFICATION_ID = 123
 private const val CHANNEL_ID = "anime_playback_channel"
-private const val IMAGE_SIZE = 512
 private const val NOTIFICATION_UPDATE_INTERVAL_MS = 1_000L
 
 data class MediaPlaybackState(
@@ -190,13 +190,37 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                 .build()
             val request = ImageRequest.Builder(this@MediaPlaybackService)
                 .data(url)
-                .size(IMAGE_SIZE, IMAGE_SIZE)
-                .allowHardware(false)
+                .size(1024)
                 .build()
             val result = imageLoader.execute(request)
-            (result as? SuccessResult)?.drawable?.let { it as? BitmapDrawable }?.bitmap
+            val originalBitmap =
+                (result as? SuccessResult)?.drawable?.let { it as? BitmapDrawable }?.bitmap
+
+            originalBitmap?.let { bitmap ->
+                val width = bitmap.width
+                val height = bitmap.height
+
+                val squareSize = width.coerceAtMost(height)
+
+                val left = (width - squareSize) / 2
+                val top = (height - squareSize) / 2
+
+                val croppedBitmap = Bitmap.createBitmap(bitmap, left, top, squareSize, squareSize)
+
+                val finalNotificationSize = 512
+                val scaledBitmap = croppedBitmap.scale(finalNotificationSize, finalNotificationSize)
+
+                if (croppedBitmap != bitmap) croppedBitmap.recycle()
+                if (scaledBitmap != croppedBitmap) croppedBitmap.recycle()
+
+                scaledBitmap
+            }
         } catch (e: Exception) {
-            Log.e("MediaPlaybackService", "Failed to load image: $url", e)
+            Log.e(
+                "MediaPlaybackService",
+                "Failed to load and process image for notification: $url",
+                e
+            )
             null
         }
     }
@@ -213,10 +237,10 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
             val duration = player.duration.takeIf { it > 0 }?.toInt() ?: 0
             val position = player.currentPosition.takeIf { it >= 0 }?.toInt() ?: 0
 
-            val currentEpisodeNo = _state.value.episodeComplement?.servers?.episodeNo ?: -1
+            val currentEpisodeNo = _state.value.episodeComplement?.number ?: -1
             val hasPreviousEpisode =
-                currentEpisodeNo > 1 && _state.value.episodes.any { it.episodeNo == currentEpisodeNo - 1 }
-            val hasNextEpisode = _state.value.episodes.any { it.episodeNo == currentEpisodeNo + 1 }
+                currentEpisodeNo > 1 && _state.value.episodes.any { it.episode_no == currentEpisodeNo - 1 }
+            val hasNextEpisode = _state.value.episodes.any { it.episode_no == currentEpisodeNo + 1 }
 
             val imageBitmap = loadImageBitmap(_state.value.episodeComplement?.imageUrl)
             val builder = NotificationCompat.Builder(this@MediaPlaybackService, CHANNEL_ID).apply {
@@ -524,11 +548,11 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         }
 
         override fun onSkipToNext() {
-            val currentEpisodeNo = _state.value.episodeComplement?.servers?.episodeNo ?: return
-            val nextEpisode = _state.value.episodes.find { it.episodeNo == currentEpisodeNo + 1 }
+            val currentEpisodeNo = _state.value.episodeComplement?.number ?: return
+            val nextEpisode = _state.value.episodes.find { it.episode_no == currentEpisodeNo + 1 }
             if (nextEpisode != null) {
-                val newQuery = _state.value.episodeQuery?.copy(id = nextEpisode.episodeId)
-                val newComplement = _state.value.episodeComplement?.copy(id = nextEpisode.episodeId)
+                val newQuery = _state.value.episodeQuery?.copy(id = nextEpisode.id)
+                val newComplement = _state.value.episodeComplement?.copy(id = nextEpisode.id)
                 if (newQuery != null && newComplement != null) {
                     _state.update {
                         it.copy(
@@ -539,7 +563,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                     handleSelectedEpisodeServer?.invoke(newQuery)
                     Log.d(
                         "MediaPlaybackService",
-                        "onSkipToNext: Handler invoked for episode ${nextEpisode.episodeId}"
+                        "onSkipToNext: Handler invoked for episode ${nextEpisode.id}"
                     )
                     updateNotification()
                 }
@@ -547,13 +571,13 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         }
 
         override fun onSkipToPrevious() {
-            val currentEpisodeNo = _state.value.episodeComplement?.servers?.episodeNo ?: return
+            val currentEpisodeNo = _state.value.episodeComplement?.number ?: return
             val previousEpisode =
-                _state.value.episodes.find { it.episodeNo == currentEpisodeNo - 1 }
+                _state.value.episodes.find { it.episode_no == currentEpisodeNo - 1 }
             if (previousEpisode != null) {
-                val newQuery = _state.value.episodeQuery?.copy(id = previousEpisode.episodeId)
+                val newQuery = _state.value.episodeQuery?.copy(id = previousEpisode.id)
                 val newComplement =
-                    _state.value.episodeComplement?.copy(id = previousEpisode.episodeId)
+                    _state.value.episodeComplement?.copy(id = previousEpisode.id)
                 if (newQuery != null && newComplement != null) {
                     _state.update {
                         it.copy(
@@ -564,7 +588,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                     handleSelectedEpisodeServer?.invoke(newQuery)
                     Log.d(
                         "MediaPlaybackService",
-                        "onSkipToPrevious: Handler invoked for episode ${previousEpisode.episodeId}"
+                        "onSkipToPrevious: Handler invoked for episode ${previousEpisode.id}"
                     )
                     updateNotification()
                 }

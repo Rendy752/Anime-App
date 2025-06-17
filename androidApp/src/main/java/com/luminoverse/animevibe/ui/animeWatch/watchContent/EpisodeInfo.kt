@@ -39,7 +39,7 @@ fun EpisodeInfo(
             horizontalArrangement = Arrangement.Center
         ) {
             if (title != null) Text(
-                text = if (episode.name != "Full") episode.name else title,
+                text = if (episode.title != "Full") episode.title else title,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 fontWeight = FontWeight.Bold,

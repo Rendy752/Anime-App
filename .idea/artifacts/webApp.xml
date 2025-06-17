@@ -1,0 +1,8 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="webApp">
+    <output-path>$PROJECT_DIR$/webApp/build/libs</output-path>
+    <root id="archive" name="webApp.jar">
+      <element id="module-output" name="AnimeVibe.webApp.main" />
+    </root>
+  </artifact>
+</component>

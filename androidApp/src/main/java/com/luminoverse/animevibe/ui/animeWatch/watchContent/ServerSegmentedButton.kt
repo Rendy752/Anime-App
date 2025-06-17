@@ -13,15 +13,15 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.luminoverse.animevibe.models.EpisodeServer
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
-import com.luminoverse.animevibe.models.Server
 import com.luminoverse.animevibe.ui.common.SkeletonBox
 import com.luminoverse.animevibe.utils.watch.WatchUtils.getServerCategoryIcon
 
 @Composable
 fun ServerSegmentedButton(
     type: String,
-    servers: List<Server>,
+    servers: List<EpisodeServer>,
     onServerSelected: (EpisodeSourcesQuery) -> Unit,
     episodeSourcesQuery: EpisodeSourcesQuery,
     modifier: Modifier = Modifier

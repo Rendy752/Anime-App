@@ -26,7 +26,7 @@ import androidx.media3.common.TrackSelectionParameters
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
-import com.luminoverse.animevibe.models.EpisodeSourcesResponse
+import com.luminoverse.animevibe.models.EpisodeSources
 import com.luminoverse.animevibe.models.Track
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
@@ -76,7 +76,7 @@ data class ControlsState(
 
 sealed class HlsPlayerAction {
     data class SetMedia(
-        val videoData: EpisodeSourcesResponse,
+        val videoData: EpisodeSources,
         val isAutoPlayVideo: Boolean,
         val positionState: PositionState,
         val onError: (String) -> Unit
@@ -126,7 +126,7 @@ class HlsPlayerUtils @Inject constructor(
 
     private var introSkipped = false
     private var outroSkipped = true
-    private var currentVideoData: EpisodeSourcesResponse? = null
+    private var currentVideoData: EpisodeSources? = null
     private var updateStoredWatchStateCallback: ((Long?, Long?, String?) -> Unit)? = null
 
     private val _playerCoreState = MutableStateFlow(PlayerCoreState())
@@ -365,7 +365,7 @@ class HlsPlayerUtils @Inject constructor(
     }
 
     private fun setMedia(
-        videoData: EpisodeSourcesResponse,
+        videoData: EpisodeSources,
         isAutoPlayVideo: Boolean,
         positionState: PositionState,
         onError: (String) -> Unit
@@ -388,8 +388,8 @@ class HlsPlayerUtils @Inject constructor(
                     it.copy(isPlaying = false, playbackState = Player.STATE_IDLE)
                 }
 
-                if (videoData.sources.isNotEmpty() && videoData.sources[0].type == "hls") {
-                    val mediaItemUri = videoData.sources[0].url.toUri()
+                if (videoData.link.file.isNotEmpty() && videoData.link.type == "hls") {
+                    val mediaItemUri = videoData.link.file.toUri()
                     val mediaItemBuilder = MediaItem.Builder().setUri(mediaItemUri)
 
                     if (videoData.tracks.any { it.kind == "captions" }) {
@@ -595,14 +595,10 @@ class HlsPlayerUtils @Inject constructor(
                     val intro = videoData.intro
                     val outro = videoData.outro
 
-                    val shouldShowIntroButton = intro != null &&
-                            currentPositionMs >= intro.start * 1000L &&
-                            currentPositionMs <= intro.end * 1000L &&
-                            !introSkipped
-                    val shouldShowOutroButton = outro != null &&
-                            currentPositionMs >= outro.start * 1000L &&
-                            currentPositionMs <= outro.end * 1000L &&
-                            !outroSkipped
+                    val shouldShowIntroButton =
+                        currentPositionMs >= intro.start * 1000L && currentPositionMs <= intro.end * 1000L && !introSkipped
+                    val shouldShowOutroButton =
+                        currentPositionMs >= outro.start * 1000L && currentPositionMs <= outro.end * 1000L && !outroSkipped
 
                     _controlsState.update {
                         it.copy(
@@ -611,10 +607,10 @@ class HlsPlayerUtils @Inject constructor(
                         )
                     }
 
-                    if (intro != null && (currentPositionMs < intro.start * 1000L || currentPositionMs > intro.end * 1000L)) {
+                    if (currentPositionMs < intro.start * 1000L || currentPositionMs > intro.end * 1000L) {
                         introSkipped = false
                     }
-                    if (outro != null && (currentPositionMs < outro.start * 1000L || currentPositionMs > outro.end * 1000L)) {
+                    if (currentPositionMs < outro.start * 1000L || currentPositionMs > outro.end * 1000L) {
                         outroSkipped = false
                     }
                 }

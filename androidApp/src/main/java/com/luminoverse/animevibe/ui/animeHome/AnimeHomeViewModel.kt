@@ -1,4 +1,3 @@
-// AnimeHomeViewModel.kt
 package com.luminoverse.animevibe.ui.animeHome
 
 import android.app.Application
@@ -13,8 +12,8 @@ import com.luminoverse.animevibe.repository.AnimeEpisodeDetailRepository
 import com.luminoverse.animevibe.repository.AnimeHomeRepository
 import com.luminoverse.animevibe.utils.resource.Resource
 import com.luminoverse.animevibe.utils.TimeUtils.calculateRemainingTime
-import com.luminoverse.animevibe.utils.workers.BroadcastNotificationWorker // Import the worker
-import com.luminoverse.animevibe.utils.workers.UnfinishedWatchNotificationWorker // Import the worker
+import com.luminoverse.animevibe.utils.workers.BroadcastNotificationWorker
+import com.luminoverse.animevibe.utils.workers.UnfinishedWatchNotificationWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -98,9 +97,9 @@ class AnimeHomeViewModel @Inject constructor(
     }
 
     private fun scheduleWorkers() {
-        BroadcastNotificationWorker.schedule(application, false) //
-        UnfinishedWatchNotificationWorker.schedule(application, false) //
-        Log.d("AnimeHomeViewModel", "Workers scheduled from ViewModel.") //
+        BroadcastNotificationWorker.schedule(application, false)
+        UnfinishedWatchNotificationWorker.schedule(application, false)
+        Log.d("AnimeHomeViewModel", "Workers scheduled from ViewModel.")
     }
 
     private fun getAnimeSchedules() = viewModelScope.launch {

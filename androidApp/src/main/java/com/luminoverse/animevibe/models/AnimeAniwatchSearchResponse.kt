@@ -4,37 +4,42 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class AnimeAniwatchSearchResponse(
-    val animes: List<AnimeAniwatch>
+    val data: List<AnimeAniwatch>,
+    val totalPage: Int,
 )
 
 @Serializable
 data class AnimeAniwatch(
     val id: String,
-    val name: String,
-    val img: String? = null,
-    val episodes: EpisodeTypeNumber? = null,
-    val duration: String? = null,
-    val rated: Boolean? = null,
+    val malID: Int,
+    val title: String,
+    val japanese_title: String,
+    val poster: String,
+    val duration: String,
+    val tvInfo: TvInfo
 )
 
 @Serializable
-data class EpisodeTypeNumber(
-    val eps: Int? = null,
+data class TvInfo(
+    val showType: String,
+    val rating: String? = null,
     val sub: Int? = null,
-    val dub: Int? = null
-)
-
-private val episodeTypeNumberPlaceholder = EpisodeTypeNumber(
-    eps = 1,
-    sub = 0,
-    dub = 0
+    val dub: Int? = null,
+    val eps: Int? = null,
 )
 
 val animeAniwatchPlaceholder = AnimeAniwatch(
     id = "anime-1735",
-    name = "Naruto: Shippuuden",
-    img = "",
-    episodes = episodeTypeNumberPlaceholder,
+    malID = 1735,
+    title = "Naruto: Shippuuden",
+    japanese_title = "Naruto: Shippuuden",
+    poster = "",
     duration = "",
-    rated = false,
+    tvInfo = TvInfo(
+        showType = "",
+        rating = "",
+        sub = 0,
+        dub = 0,
+        eps = 0
+    )
 )

@@ -53,7 +53,7 @@ fun EpisodeNavigationButton(
                     episode?.let { episode ->
                         episodeSourcesQuery?.let { episodeSourcesQuery ->
                             handleSelectedEpisodeServer(
-                                episodeSourcesQuery.copy(id = episode.episodeId)
+                                episodeSourcesQuery.copy(id = episode.id)
                             )
                         }
                     }
@@ -72,7 +72,7 @@ fun EpisodeNavigationButton(
             )
         }
         Text(
-            episode?.name ?: "Unknown",
+            episode?.title ?: "Unknown",
             textAlign = TextAlign.Center,
             maxLines = 2,
             overflow = TextOverflow.Companion.Ellipsis,

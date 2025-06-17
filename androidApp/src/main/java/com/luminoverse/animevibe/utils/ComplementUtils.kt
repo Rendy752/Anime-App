@@ -4,9 +4,9 @@ import com.luminoverse.animevibe.models.AnimeDetail
 import com.luminoverse.animevibe.models.AnimeDetailComplement
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
-import com.luminoverse.animevibe.models.EpisodeServersResponse
+import com.luminoverse.animevibe.models.EpisodeServer
+import com.luminoverse.animevibe.models.EpisodeSources
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
-import com.luminoverse.animevibe.models.EpisodeSourcesResponse
 import com.luminoverse.animevibe.repository.AnimeEpisodeDetailRepository
 import com.luminoverse.animevibe.utils.resource.Resource
 import kotlinx.coroutines.Dispatchers
@@ -54,7 +54,7 @@ object ComplementUtils {
 
         val episodesResponse = repository.getEpisodes(animeDetailComplement.id)
         if (episodesResponse is Resource.Success) {
-            val episodes = episodesResponse.data.episodes
+            val episodes = episodesResponse.data.results.episodes
             if (episodes != animeDetailComplement.episodes) {
                 val updatedAnimeDetail = animeDetailComplement.copy(
                     episodes = episodes,
@@ -77,18 +77,18 @@ object ComplementUtils {
         animeDetailImageUrl: String?,
         animeDetailComplement: AnimeDetailComplement,
         episode: Episode,
-        servers: EpisodeServersResponse,
-        sources: EpisodeSourcesResponse,
+        servers: List<EpisodeServer>,
+        sources:  EpisodeSources,
         sourcesQuery: EpisodeSourcesQuery
     ): EpisodeDetailComplement = withContext(Dispatchers.IO) {
         val complement = EpisodeDetailComplement(
-            id = episode.episodeId,
+            id = episode.id,
             malId = animeDetailMalId,
             aniwatchId = animeDetailComplement.id,
             animeTitle = animeDetailTitle,
-            episodeTitle = episode.name,
+            episodeTitle = episode.title,
             imageUrl = animeDetailImageUrl,
-            number = episode.episodeNo,
+            number = episode.episode_no,
             isFiller = episode.filler,
             servers = servers,
             sources = sources,

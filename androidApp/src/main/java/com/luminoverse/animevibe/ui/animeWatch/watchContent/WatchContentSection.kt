@@ -31,7 +31,7 @@ fun WatchContentSection(
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         if (!isRefreshing) {
             episodeDetailComplement?.let { episodeDetailComplement ->
-                episodes.find { it.episodeId == episodeDetailComplement.id }
+                episodes.find { it.id == episodeDetailComplement.id }
                     ?.let { currentEpisode ->
                         WatchHeader(
                             title = animeDetail?.title,

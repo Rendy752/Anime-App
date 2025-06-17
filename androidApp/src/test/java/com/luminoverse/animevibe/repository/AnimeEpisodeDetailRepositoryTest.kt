@@ -5,6 +5,7 @@ import com.luminoverse.animevibe.data.local.dao.AnimeDetailComplementDao
 import com.luminoverse.animevibe.data.local.dao.EpisodeDetailComplementDao
 import com.luminoverse.animevibe.data.remote.api.AnimeAPI
 import com.luminoverse.animevibe.models.*
+import com.luminoverse.animevibe.ui.common.AnimeAniwatchCommonResponse
 import com.luminoverse.animevibe.utils.resource.Resource
 import com.luminoverse.animevibe.utils.resource.ResponseHandler
 import com.luminoverse.animevibe.utils.TimeUtils
@@ -256,19 +257,6 @@ class AnimeEpisodeDetailRepositoryTest {
     }
 
     @Test
-    fun `getCachedDefaultEpisodeDetailComplementByMalId returns cached data`() = runTest {
-        val malId = 123
-        val episodeDetailComplement = mockk<EpisodeDetailComplement>()
-        coEvery { episodeDetailComplementDao.getDefaultEpisodeDetailComplementByMalId(malId) } returns episodeDetailComplement
-
-        val result = repository.getCachedDefaultEpisodeDetailComplementByMalId(malId)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertEquals(episodeDetailComplement, result)
-        coVerify { episodeDetailComplementDao.getDefaultEpisodeDetailComplementByMalId(malId) }
-    }
-
-    @Test
     fun `getCachedEpisodeDetailComplement returns cached data`() = runTest {
         val episodeId = "episode_123"
         val episodeDetailComplement = mockk<EpisodeDetailComplement>()
@@ -318,9 +306,9 @@ class AnimeEpisodeDetailRepositoryTest {
     @Test
     fun `getEpisodes returns success with valid response`() = runTest {
         val id = "anime_123"
-        val episodesResponse = mockk<EpisodesResponse>()
+        val episodesResponse = mockk<AnimeAniwatchCommonResponse<EpisodesResponse>>()
         coEvery { runwayAPI.getEpisodes(id) } returns Response.success(episodesResponse)
-        coEvery { ResponseHandler.handleCommonResponse(any<Response<EpisodesResponse>>()) } returns Resource.Success(
+        coEvery { ResponseHandler.handleCommonResponse(any<Response<AnimeAniwatchCommonResponse<EpisodesResponse>>>()) } returns Resource.Success(
             episodesResponse
         )
 
@@ -353,48 +341,54 @@ class AnimeEpisodeDetailRepositoryTest {
 
     @Test
     fun `getEpisodeServers returns success with valid response`() = runTest {
-        val episodeId = "episode_123"
-        val serversResponse = mockk<EpisodeServersResponse>()
-        coEvery { runwayAPI.getEpisodeServers(episodeId) } returns Response.success(serversResponse)
-        coEvery { ResponseHandler.handleCommonResponse(any<Response<EpisodeServersResponse>>()) } returns Resource.Success(
+        val id = "anime-123?ep=789"
+        val animeId = "anime-123"
+        val episodeId = "789"
+        val serversResponse = mockk<AnimeAniwatchCommonResponse<List<EpisodeServer>>>()
+        coEvery { runwayAPI.getEpisodeServers(animeId, episodeId) } returns Response.success(
+            serversResponse
+        )
+        coEvery { ResponseHandler.handleCommonResponse(any<Response<AnimeAniwatchCommonResponse<List<EpisodeServer>>>>()) } returns Resource.Success(
             serversResponse
         )
 
-        val result = repository.getEpisodeServers(episodeId)
+        val result = repository.getEpisodeServers(id)
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertTrue(result is Resource.Success)
         assertEquals(serversResponse, (result as Resource.Success).data)
-        coVerify { runwayAPI.getEpisodeServers(episodeId) }
+        coVerify { runwayAPI.getEpisodeServers(animeId, episodeId) }
     }
 
     @Test
     fun `getEpisodeServers returns error when api call fails`() = runTest {
-        val episodeId = "episode_123"
-        coEvery { runwayAPI.getEpisodeServers(episodeId) } returns Response.error(
+        val id = "anime-123?ep=789"
+        val animeId = "anime-123"
+        val episodeId = "789"
+        coEvery { runwayAPI.getEpisodeServers(animeId, episodeId) } returns Response.error(
             500,
             "Server error".toResponseBody()
         )
-        coEvery { ResponseHandler.handleCommonResponse(any<Response<EpisodeServersResponse>>()) } returns Resource.Error(
+        coEvery { ResponseHandler.handleCommonResponse(any<Response<EpisodeServer>>()) } returns Resource.Error(
             "Server error"
         )
 
-        val result = repository.getEpisodeServers(episodeId)
+        val result = repository.getEpisodeServers(id)
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertTrue(result is Resource.Error)
         assertEquals("Server error", (result as Resource.Error).message)
-        coVerify { runwayAPI.getEpisodeServers(episodeId) }
+        coVerify { runwayAPI.getEpisodeServers(animeId, episodeId) }
     }
 
     @Test
     fun `getAnimeAniwatchSearch returns success with valid response`() = runTest {
         val keyword = "naruto"
-        val searchResponse = mockk<AnimeAniwatchSearchResponse>()
+        val searchResponse = mockk<AnimeAniwatchCommonResponse<AnimeAniwatchSearchResponse>>()
         coEvery { runwayAPI.getAnimeAniwatchSearch(keyword) } returns Response.success(
             searchResponse
         )
-        coEvery { ResponseHandler.handleCommonResponse(any<Response<AnimeAniwatchSearchResponse>>()) } returns Resource.Success(
+        coEvery { ResponseHandler.handleCommonResponse(any<Response<AnimeAniwatchCommonResponse<AnimeAniwatchSearchResponse>>>()) } returns Resource.Success(
             searchResponse
         )
 
@@ -430,7 +424,7 @@ class AnimeEpisodeDetailRepositoryTest {
         val episodeId = "episode_123"
         val server = "server1"
         val category = "category1"
-        val sourcesResponse = mockk<EpisodeSourcesResponse>()
+        val sourcesResponse = mockk<AnimeAniwatchCommonResponse<EpisodeSourcesResponse>>()
         coEvery {
             runwayAPI.getEpisodeSources(
                 episodeId,
@@ -438,7 +432,7 @@ class AnimeEpisodeDetailRepositoryTest {
                 category
             )
         } returns Response.success(sourcesResponse)
-        coEvery { ResponseHandler.handleCommonResponse(any<Response<EpisodeSourcesResponse>>()) } returns Resource.Success(
+        coEvery { ResponseHandler.handleCommonResponse(any<Response<AnimeAniwatchCommonResponse<EpisodeSourcesResponse>>>()) } returns Resource.Success(
             sourcesResponse
         )
 

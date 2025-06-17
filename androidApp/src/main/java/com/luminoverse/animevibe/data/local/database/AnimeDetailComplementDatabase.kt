@@ -9,7 +9,7 @@ import com.luminoverse.animevibe.data.local.dao.AnimeDetailComplementDao
 import com.luminoverse.animevibe.data.local.entities.AnimeDetailComplementConverter
 import com.luminoverse.animevibe.models.AnimeDetailComplement
 
-@Database(entities = [AnimeDetailComplement::class], version = 4, exportSchema = false)
+@Database(entities = [AnimeDetailComplement::class], version = 5, exportSchema = false)
 @TypeConverters(AnimeDetailComplementConverter::class)
 abstract class AnimeDetailComplementDatabase : RoomDatabase() {
 

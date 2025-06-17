@@ -23,9 +23,9 @@ fun EpisodeNavigation(
     episodeSourcesQuery: EpisodeSourcesQuery?,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
 ) {
-    val currentEpisodeNo = episodeDetailComplement.servers.episodeNo
-    val previousEpisode = episodes.find { it.episodeNo == currentEpisodeNo - 1 }
-    val nextEpisode = episodes.find { it.episodeNo == currentEpisodeNo + 1 }
+    val currentEpisodeNo = episodeDetailComplement.number
+    val previousEpisode = episodes.find { it.episode_no == currentEpisodeNo - 1 }
+    val nextEpisode = episodes.find { it.episode_no == currentEpisodeNo + 1 }
 
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -37,12 +37,12 @@ fun EpisodeNavigation(
             nextEpisode to false
         ).forEach { (episode, isPrevious) ->
             episode?.let {
-                LaunchedEffect(episode.episodeId) {
-                    if (episodeDetailComplements[episode.episodeId] == null) {
-                        onLoadEpisodeDetailComplement(episode.episodeId)
+                LaunchedEffect(episode.id) {
+                    if (episodeDetailComplements[episode.id] == null) {
+                        onLoadEpisodeDetailComplement(episode.id)
                     }
                 }
-                val complementResource = episodeDetailComplements[episode.episodeId]
+                val complementResource = episodeDetailComplements[episode.id]
                 val complement = if (complementResource is Resource.Success) complementResource.data else null
                 EpisodeNavigationButton(
                     modifier = Modifier.weight(1f),

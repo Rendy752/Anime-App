@@ -12,14 +12,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.luminoverse.animevibe.models.EpisodeServersResponse
+import com.luminoverse.animevibe.models.EpisodeServer
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
 
 @Composable
 fun ServerSelection(
     scrollState: ScrollState,
     episodeSourcesQuery: EpisodeSourcesQuery?,
-    servers: EpisodeServersResponse,
+    servers: List<EpisodeServer>,
     onServerSelected: (EpisodeSourcesQuery) -> Unit
 ) {
     Row(
@@ -31,11 +31,8 @@ fun ServerSelection(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         episodeSourcesQuery?.let { query ->
-            listOf(
-                "sub" to servers.sub,
-                "dub" to servers.dub,
-                "raw" to servers.raw
-            ).forEach { (type, servers) ->
+            val groupedServers = servers.groupBy { it.type }
+            groupedServers.forEach { (type, servers) ->
                 if (servers.isNotEmpty()) {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
