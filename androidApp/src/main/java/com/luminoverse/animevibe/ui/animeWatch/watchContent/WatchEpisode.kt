@@ -21,7 +21,6 @@ import com.luminoverse.animevibe.utils.basicContainer
 fun WatchEpisode(
     episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
     onLoadEpisodeDetailComplement: (String) -> Unit,
-    isRefreshing: Boolean,
     episodeDetailComplement: EpisodeDetailComplement?,
     episodes: List<Episode>,
     newEpisodeCount: Int,
@@ -40,7 +39,7 @@ fun WatchEpisode(
     ) {
         EpisodeJump(episodes = episodes, gridState = gridState)
 
-        if (episodeDetailComplement != null && !isRefreshing) {
+        if (episodeDetailComplement != null) {
             EpisodeNavigation(
                 episodeDetailComplement = episodeDetailComplement,
                 episodeDetailComplements = episodeDetailComplements,

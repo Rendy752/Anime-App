@@ -149,7 +149,6 @@ fun AnimeWatchContent(
                         onFavoriteToggle = { isFavorite ->
                             onAction(WatchAction.SetFavorite(isFavorite))
                         },
-                        isRefreshing = watchState.isRefreshing,
                         episodeDetailComplement = watchState.episodeDetailComplement,
                         onLoadEpisodeDetailComplement = {
                             onAction(WatchAction.LoadEpisodeDetailComplement(it))
@@ -193,7 +192,6 @@ fun AnimeWatchContent(
                     onFavoriteToggle = { isFavorite ->
                         onAction(WatchAction.SetFavorite(isFavorite))
                     },
-                    isRefreshing = watchState.isRefreshing,
                     episodeDetailComplement = watchState.episodeDetailComplement,
                     onLoadEpisodeDetailComplement = {
                         onAction(WatchAction.LoadEpisodeDetailComplement(it))
