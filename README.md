@@ -127,7 +127,7 @@ AnimeVibe is a comprehensive, anime-themed Android application using Kotlin and 
             <img src="https://github.com/user-attachments/assets/6723d000-77e8-45e4-a0d2-f484d831c3db" width="300" alt="Streaming Anime Skeleton Loading">
           </td>
           <td style="text-align: center">
-            <img src="https://github.com/user-attachments/assets/25320fea-1a36-48df-a7d8-0702f336539e" width="300" alt="Streaming Anime Portrait">
+            <img src="https://github.com/user-attachments/assets/ecff285a-e7d2-430d-a0ea-a7df8d3bf712" width="300" alt="Streaming Anime Portrait">
           </td>
            <td style="text-align: center">
             <img src="https://github.com/user-attachments/assets/6166cbce-370e-458f-a254-3bbdfb7f23c5" width="700" alt="Streaming Anime Landscape">
