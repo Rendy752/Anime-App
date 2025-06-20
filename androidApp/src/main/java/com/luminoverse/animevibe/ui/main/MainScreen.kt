@@ -50,7 +50,6 @@ import com.luminoverse.animevibe.ui.main.navigation.navigateTo
 import com.luminoverse.animevibe.ui.main.navigation.navigateToAdjacentRoute
 import com.luminoverse.animevibe.ui.settings.SettingsScreen
 import com.luminoverse.animevibe.ui.settings.SettingsViewModel
-import com.luminoverse.animevibe.utils.FullscreenUtils
 import com.luminoverse.animevibe.utils.media.PipUtil.buildPipActions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -81,16 +80,6 @@ fun MainScreen(
 
     LaunchedEffect(currentRoute) {
         resetIdleTimer()
-        if (isCurrentBottomScreen) {
-            activity?.window?.let { window ->
-                FullscreenUtils.handleFullscreenToggle(
-                    window = window,
-                    isFullscreen = true,
-                    isLandscape = true,
-                    activity = activity
-                )
-            }
-        }
     }
 
     LaunchedEffect(Unit) {

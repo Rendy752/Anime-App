@@ -2,24 +2,36 @@ package com.luminoverse.animevibe.ui.animeWatch.components
 
 import android.util.Log
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.navigation.NavController
 import com.luminoverse.animevibe.ui.animeWatch.WatchState
@@ -64,10 +76,15 @@ fun AnimeWatchContent(
         }
     }
 
+    val isContentVisible =
+        !playerUiState.isPipMode && watchState.animeDetailComplement?.episodes != null && watchState.animeDetail?.mal_id == malId && watchState.animeDetailComplement.malId == malId
+
+    // The main layout is a Row that divides the screen in landscape mode
     Row(modifier = Modifier.fillMaxWidth()) {
         Box(
             modifier = modifier
                 .then(videoSize)
+                .weight(if (mainState.isLandscape && watchState.isSideSheetVisible) 0.7f else 1f)
                 .background(MaterialTheme.colorScheme.surfaceContainer)
         ) {
             if (watchState.episodeDetailComplement == null || watchState.episodeDetailComplement.sources.link.file.isEmpty() == true || watchState.animeDetailComplement?.episodes == null || watchState.episodeSourcesQuery == null) {
@@ -112,6 +129,8 @@ fun AnimeWatchContent(
                         )
                     },
                     onEnterPipMode = onEnterPipMode,
+                    isSideSheetVisible = watchState.isSideSheetVisible,
+                    setSideSheetVisibility = { onAction(WatchAction.SetSideSheetVisibility(it)) },
                     setFullscreenChange = { onAction(WatchAction.SetFullscreen(it)) },
                     setShowResume = { onAction(WatchAction.SetShowResume(it)) },
                     setShowNextEpisode = { onAction(WatchAction.SetShowNextEpisode(it)) },
@@ -133,51 +152,82 @@ fun AnimeWatchContent(
             }
         }
 
-        if (mainState.isLandscape && !playerUiState.isPipMode && !playerUiState.isFullscreen && watchState.animeDetailComplement?.episodes != null && watchState.animeDetail?.mal_id == malId && watchState.animeDetailComplement.malId == malId) {
-            LazyColumn(
-                modifier = Modifier
-                    .padding(8.dp)
-                    .fillMaxSize()
-                    .weight(0.3f),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-                state = scrollState
-            ) {
-                item {
-                    WatchContentSection(
-                        animeDetail = watchState.animeDetail,
-                        networkStatus = mainState.networkStatus,
-                        onFavoriteToggle = { isFavorite ->
-                            onAction(WatchAction.SetFavorite(isFavorite))
-                        },
-                        episodeDetailComplement = watchState.episodeDetailComplement,
-                        onLoadEpisodeDetailComplement = {
-                            onAction(WatchAction.LoadEpisodeDetailComplement(it))
-                        },
-                        episodeDetailComplements = watchState.episodeDetailComplements,
-                        episodes = watchState.animeDetailComplement.episodes,
-                        newEpisodeCount = watchState.newEpisodeCount,
-                        episodeSourcesQuery = watchState.episodeSourcesQuery,
-                        serverScrollState = serverScrollState,
-                        handleSelectedEpisodeServer = {
-                            onAction(
-                                WatchAction.HandleSelectedEpisodeServer(
-                                    episodeSourcesQuery = it, isRefresh = false
+        // Side Sheet: Visible only in landscape when the state is true
+        if (mainState.isLandscape && watchState.isSideSheetVisible && isContentVisible) {
+            Column(modifier = Modifier.weight(0.3f)) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Text(
+                        text = "Info",
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        fontSize = 20.sp,
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Icon(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .clickable { onAction(WatchAction.SetSideSheetVisibility(false)) }
+                            .padding(8.dp),
+                        imageVector = Icons.Default.Close,
+                        contentDescription = "Close currently watching anime info",
+                        tint = Color.White
+                    )
+                }
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
+                LazyColumn(
+                    modifier = Modifier
+                        .padding(8.dp)
+                        .fillMaxSize()
+                        .weight(1f),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                    state = scrollState
+                ) {
+                    item {
+                        WatchContentSection(
+                            animeDetail = watchState.animeDetail,
+                            networkStatus = mainState.networkStatus,
+                            onFavoriteToggle = { isFavorite ->
+                                onAction(WatchAction.SetFavorite(isFavorite))
+                            },
+                            episodeDetailComplement = watchState.episodeDetailComplement,
+                            onLoadEpisodeDetailComplement = {
+                                onAction(WatchAction.LoadEpisodeDetailComplement(it))
+                            },
+                            episodeDetailComplements = watchState.episodeDetailComplements,
+                            episodes = watchState.animeDetailComplement.episodes,
+                            newEpisodeCount = watchState.newEpisodeCount,
+                            episodeSourcesQuery = watchState.episodeSourcesQuery,
+                            serverScrollState = serverScrollState,
+                            handleSelectedEpisodeServer = {
+                                onAction(
+                                    WatchAction.HandleSelectedEpisodeServer(
+                                        episodeSourcesQuery = it, isRefresh = false
+                                    )
                                 )
-                            )
-                        },
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    InfoContentSection(
-                        animeDetail = watchState.animeDetail,
-                        navController = navController
-                    )
+                            },
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        InfoContentSection(
+                            animeDetail = watchState.animeDetail,
+                            navController = navController
+                        )
+                    }
                 }
             }
         }
     }
 
-    if (!mainState.isLandscape && !playerUiState.isPipMode && !playerUiState.isFullscreen && watchState.animeDetailComplement?.episodes != null && watchState.animeDetail?.mal_id == malId && watchState.animeDetailComplement.malId == malId) {
+    // Content for Portrait mode
+    if (!mainState.isLandscape && isContentVisible) {
         LazyColumn(
             modifier = Modifier
                 .padding(8.dp)

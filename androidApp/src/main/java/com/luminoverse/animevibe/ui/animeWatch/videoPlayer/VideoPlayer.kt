@@ -47,7 +47,6 @@ import com.luminoverse.animevibe.ui.animeWatch.PlayerUiState
 import com.luminoverse.animevibe.ui.common.BottomSheetConfig
 import com.luminoverse.animevibe.ui.common.CustomModalBottomSheet
 import com.luminoverse.animevibe.ui.common.ScreenshotDisplay
-import com.luminoverse.animevibe.utils.FullscreenUtils
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
@@ -83,6 +82,8 @@ fun VideoPlayer(
     episodeSourcesQuery: EpisodeSourcesQuery,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery, Boolean) -> Unit,
     onEnterPipMode: () -> Unit,
+    isSideSheetVisible: Boolean,
+    setSideSheetVisibility: (Boolean) -> Unit,
     isAutoPlayVideo: Boolean,
     setFullscreenChange: (Boolean) -> Unit,
     setShowResume: (Boolean) -> Unit,
@@ -390,6 +391,8 @@ fun VideoPlayer(
                 hasPreviousEpisode = prevEpisode != null,
                 nextEpisode = nextEpisode,
                 nextEpisodeDetailComplement = episodeDetailComplements[nextEpisode?.id]?.data,
+                isSideSheetVisible = isSideSheetVisible,
+                setSideSheetVisibility = setSideSheetVisibility,
                 isFullscreen = playerUiState.isFullscreen,
                 isShowSpeedUp = isShowSpeedUp,
                 handlePlay = { playerAction(HlsPlayerAction.Play) },
@@ -426,17 +429,7 @@ fun VideoPlayer(
                 onSettingsClick = { showSettingsSheet = true },
                 onFullscreenToggle = {
                     if (!controlsState.isLocked) {
-                        (context as? FragmentActivity)?.let { activity ->
-                            activity.window?.let { window ->
-                                FullscreenUtils.handleFullscreenToggle(
-                                    window = window,
-                                    isFullscreen = playerUiState.isFullscreen,
-                                    isLandscape = isLandscape,
-                                    activity = activity,
-                                    setFullscreenChange = setFullscreenChange
-                                )
-                            }
-                        }
+                        setFullscreenChange(!playerUiState.isFullscreen)
                     }
                 }
             )
@@ -566,18 +559,7 @@ fun VideoPlayer(
                     showSettingsSheet = false
                 },
                 onLockClick = {
-                    (context as? FragmentActivity)?.let { activity ->
-                        activity.window?.let { window ->
-                            FullscreenUtils.handleFullscreenToggle(
-                                window = window,
-                                isFullscreen = false,
-                                isLandscape = false,
-                                activity = activity,
-                                setFullscreenChange = setFullscreenChange,
-                                isLockLandscapeOrientation = true
-                            )
-                        }
-                    }
+                    setFullscreenChange(true)
                     if (coreState.playbackState == Player.STATE_ENDED) {
                         playerAction(HlsPlayerAction.SeekTo(0))
                     }

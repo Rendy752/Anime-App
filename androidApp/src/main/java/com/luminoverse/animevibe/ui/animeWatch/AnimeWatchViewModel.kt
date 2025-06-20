@@ -37,7 +37,8 @@ data class WatchState(
     val episodeSourcesQuery: EpisodeSourcesQuery? = null,
     val isRefreshing: Boolean = false,
     val errorMessage: String? = null,
-    val newEpisodeCount: Int = 0
+    val newEpisodeCount: Int = 0,
+    val isSideSheetVisible: Boolean = false
 )
 
 @Stable
@@ -70,6 +71,7 @@ sealed class WatchAction {
     data class SetPipMode(val isPipMode: Boolean) : WatchAction()
     data class SetShowResume(val isShow: Boolean) : WatchAction()
     data class SetShowNextEpisode(val isShow: Boolean) : WatchAction()
+    data class SetSideSheetVisibility(val isVisible: Boolean) : WatchAction()
 
     data class SetErrorMessage(val message: String?) : WatchAction()
     data class SetFavorite(val isFavorite: Boolean, val updateComplement: Boolean = true) :
@@ -160,6 +162,7 @@ class AnimeWatchViewModel @Inject constructor(
             }
 
             is WatchAction.SetShowNextEpisode -> _playerUiState.update { it.copy(isShowNextEpisode = action.isShow) }
+            is WatchAction.SetSideSheetVisibility -> _watchState.update { it.copy(isSideSheetVisible = action.isVisible) }
             is WatchAction.SetErrorMessage -> _watchState.update { it.copy(errorMessage = action.message) }
 
             is WatchAction.SetFavorite -> {

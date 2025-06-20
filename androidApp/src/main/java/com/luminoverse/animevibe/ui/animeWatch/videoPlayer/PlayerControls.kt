@@ -25,7 +25,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBackIosNew
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.Pause
@@ -67,6 +68,8 @@ fun PlayerControls(
     hasPreviousEpisode: Boolean,
     nextEpisode: Episode?,
     nextEpisodeDetailComplement: EpisodeDetailComplement?,
+    isSideSheetVisible: Boolean,
+    setSideSheetVisibility: (Boolean) -> Unit,
     isFullscreen: Boolean,
     isShowSpeedUp: Boolean,
     handlePlay: () -> Unit,
@@ -116,32 +119,46 @@ fun PlayerControls(
                             .clip(CircleShape)
                             .clickable { onHandleBackPress() }
                             .padding(8.dp),
-                        imageVector = Icons.Default.ArrowBackIosNew,
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Return back",
                         tint = Color.White
                     )
                     AnimatedVisibility(
-                        visible = isFullscreen && (playbackState != Player.STATE_ENDED || nextEpisode == null),
+                        visible = isFullscreen && (playbackState != Player.STATE_ENDED || nextEpisode == null) && !isSideSheetVisible,
                         enter = fadeIn(animationSpec = tween(durationMillis = 300)),
                         exit = fadeOut(animationSpec = tween(durationMillis = 300)),
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Column {
-                            Text(
-                                text = episodeDetailComplement.episodeTitle,
-                                style = MaterialTheme.typography.titleMedium,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                fontSize = 20.sp,
-                                color = Color.White
-                            )
-                            Text(
-                                text = episodeDetailComplement.animeTitle,
-                                style = MaterialTheme.typography.bodyMedium,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                fontSize = 14.sp,
-                                color = Color.White.copy(alpha = 0.8f)
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Column {
+                                Text(
+                                    text = episodeDetailComplement.episodeTitle,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    fontSize = 20.sp,
+                                    color = Color.White
+                                )
+                                Text(
+                                    text = episodeDetailComplement.animeTitle,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    fontSize = 14.sp,
+                                    color = Color.White.copy(alpha = 0.8f)
+                                )
+                            }
+                            Icon(
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .clickable { setSideSheetVisibility(true) }
+                                    .padding(8.dp),
+                                imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                                contentDescription = "Open currently watching anime info",
+                                tint = Color.White
                             )
                         }
                     }
@@ -392,10 +409,10 @@ fun PlayerControls(
             }
             CustomSeekBar(
                 positionState = positionState,
-                introStart = episodeDetailComplement.sources.intro?.start?.times(1000L) ?: 0L,
-                introEnd = episodeDetailComplement.sources.intro?.end?.times(1000L) ?: 0L,
-                outroStart = episodeDetailComplement.sources.outro?.start?.times(1000L) ?: 0L,
-                outroEnd = episodeDetailComplement.sources.outro?.end?.times(1000L) ?: 0L,
+                introStart = episodeDetailComplement.sources.intro.start.times(1000L),
+                introEnd = episodeDetailComplement.sources.intro.end.times(1000L),
+                outroStart = episodeDetailComplement.sources.outro.start.times(1000L),
+                outroEnd = episodeDetailComplement.sources.outro.end.times(1000L),
                 handlePlay = handlePlay,
                 handlePause = handlePause,
                 onSeekTo = onSeekTo,
