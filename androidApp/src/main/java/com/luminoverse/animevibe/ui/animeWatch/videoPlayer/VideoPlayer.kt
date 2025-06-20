@@ -14,6 +14,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -116,6 +117,8 @@ fun VideoPlayer(
     var isSeeking by remember { mutableStateOf(false) }
     var fastForwardRewindCounter by remember { mutableIntStateOf(0) }
     var previousPlaybackSpeed by remember { mutableFloatStateOf(controlsState.playbackSpeed) }
+    var offsetX by remember { mutableFloatStateOf(0f) }
+    var offsetY by remember { mutableFloatStateOf(0f) }
     var zoomScaleProgress by remember { mutableFloatStateOf(controlsState.zoom) }
     var isZooming by remember { mutableStateOf(false) }
     val animatedZoom by animateFloatAsState(
@@ -143,6 +146,7 @@ fun VideoPlayer(
         episodeDetailComplement.sources.tracks.find { it.kind == "thumbnails" }?.file
     }
     var isBufferingFromSeeking by remember { mutableStateOf(false) }
+
 
     LaunchedEffect(Unit) {
         seekDisplayHandler = Handler(Looper.getMainLooper())
@@ -232,6 +236,8 @@ fun VideoPlayer(
     fun resetZoom() {
         zoomScaleProgress = 1f
         playerAction(HlsPlayerAction.SetZoom(1f))
+        offsetX = 0f
+        offsetY = 0f
     }
 
     fun handleSingleTap() {
@@ -320,8 +326,9 @@ fun VideoPlayer(
                     }
 
                     var isMultiTouch = false
+                    var isDragging = false
 
-                    while (true) {
+                    do {
                         val event: PointerEvent = awaitPointerEvent()
                         val allFingersUp = event.changes.none { it.pressed }
 
@@ -336,12 +343,27 @@ fun VideoPlayer(
                                 longPressJob?.cancel()
                                 handleLongPressEnd()
                             }
-
                             val zoomChange = event.calculateZoom()
                             zoomScaleProgress =
                                 (zoomScaleProgress * zoomChange).coerceIn(1f, MAX_ZOOM_RATIO)
+
+                        } else if (event.changes.size == 1 && !isMultiTouch && controlsState.zoom > 1.5f && !controlsState.isLocked) {
+                            val pan = event.calculatePan()
+                            if (pan.x != 0f || pan.y != 0f) {
+                                isDragging = true
+                                longPressJob?.cancel()
+                                handleLongPressEnd()
+
+                                val maxOffsetX = (size.width * (zoomScaleProgress - 1)) / 2
+                                val maxOffsetY = (size.height * (zoomScaleProgress - 1)) / 2
+
+                                offsetX = (offsetX + pan.x).coerceIn(-maxOffsetX, maxOffsetX)
+                                offsetY = (offsetY + pan.y).coerceIn(-maxOffsetY, maxOffsetY)
+                            }
                         }
-                    }
+                        event.changes.forEach { if (it.pressed) it.consume() }
+                    } while (event.changes.any { it.pressed })
+
 
                     if (isMultiTouch) {
                         playerAction(HlsPlayerAction.SetZoom(zoomScaleProgress))
@@ -349,8 +371,12 @@ fun VideoPlayer(
                         else if (zoomScaleProgress <= 1.5f) 1.25f
                         else zoomScaleProgress
 
+                        if (zoomScaleProgress <= 1.5f) {
+                            offsetX = 0f
+                            offsetY = 0f
+                        }
                         isZooming = false
-                    } else {
+                    } else if (!isDragging) {
                         longPressJob?.cancel()
                         val currentTime = System.currentTimeMillis()
                         val tapX = down.position.x
@@ -394,7 +420,9 @@ fun VideoPlayer(
                     .then(borderModifier)
                     .graphicsLayer(
                         scaleX = animatedZoom,
-                        scaleY = animatedZoom
+                        scaleY = animatedZoom,
+                        translationX = offsetX,
+                        translationY = offsetY
                     ),
                 update = { view ->
                     view.subtitleView?.apply {
