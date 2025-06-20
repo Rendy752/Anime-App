@@ -11,6 +11,7 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,6 +28,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.Pause
@@ -46,6 +48,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
@@ -57,6 +60,8 @@ import com.luminoverse.animevibe.ui.common.CircularLoadingIndicator
 import com.luminoverse.animevibe.ui.common.EpisodeDetailItem
 import com.luminoverse.animevibe.utils.TimeUtils.formatTimestamp
 import com.luminoverse.animevibe.utils.media.PositionState
+import com.luminoverse.animevibe.utils.media.ZOOM_FILL_THRESHOLD
+import java.util.Locale
 
 @Composable
 fun PlayerControls(
@@ -72,6 +77,8 @@ fun PlayerControls(
     setSideSheetVisibility: (Boolean) -> Unit,
     isLandscape: Boolean,
     isShowSpeedUp: Boolean,
+    zoom: Float,
+    onZoomReset: () -> Unit,
     handlePlay: () -> Unit,
     handlePause: () -> Unit,
     onPreviousEpisode: () -> Unit,
@@ -119,7 +126,7 @@ fun PlayerControls(
                             .clip(CircleShape)
                             .clickable { onHandleBackPress() }
                             .padding(8.dp),
-                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        imageVector = if (isLandscape) Icons.Default.Close else Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Return back",
                         tint = Color.White
                     )
@@ -181,7 +188,24 @@ fun PlayerControls(
                         }
                     }
                 }
-                Row {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    AnimatedVisibility(visible = zoom >= ZOOM_FILL_THRESHOLD) {
+                        Text(
+                            text = String.format(Locale.US, "%.1fx", zoom),
+                            color = Color.White,
+                            fontSize = 14.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .border(2.dp, Color.White, RoundedCornerShape(8.dp))
+                                .clickable { onZoomReset() }
+                                .background(Color.Black.copy(alpha = 0.3f))
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
                     Icon(
                         modifier = Modifier
                             .clip(CircleShape)

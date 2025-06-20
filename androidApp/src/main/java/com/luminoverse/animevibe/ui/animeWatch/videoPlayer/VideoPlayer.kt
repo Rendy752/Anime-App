@@ -6,14 +6,17 @@ import android.os.Looper
 import android.support.v4.media.session.MediaControllerCompat
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -27,10 +30,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.input.pointer.PointerEvent
+import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -51,18 +59,20 @@ import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
 import com.luminoverse.animevibe.utils.media.PositionState
+import com.luminoverse.animevibe.utils.media.ZOOM_FILL_THRESHOLD
 import com.luminoverse.animevibe.utils.resource.Resource
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.util.Locale
 import kotlin.math.abs
 
 private const val FAST_FORWARD_REWIND_DEBOUNCE_MILLIS = 1000L
 private const val DEFAULT_SEEK_INCREMENT = 10000L
 private const val LONG_PRESS_THRESHOLD_MILLIS = 500L
 private const val DOUBLE_TAP_THRESHOLD_MILLIS = 300L
-private const val LOCK_BUTTON_DISPLAY_DURATION_MS = 3000L
+private const val MAX_ZOOM_RATIO = 8f
 
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable
@@ -106,6 +116,13 @@ fun VideoPlayer(
     var isSeeking by remember { mutableStateOf(false) }
     var fastForwardRewindCounter by remember { mutableIntStateOf(0) }
     var previousPlaybackSpeed by remember { mutableFloatStateOf(controlsState.playbackSpeed) }
+    var zoomScaleProgress by remember { mutableFloatStateOf(controlsState.zoom) }
+    var isZooming by remember { mutableStateOf(false) }
+    val animatedZoom by animateFloatAsState(
+        targetValue = zoomScaleProgress,
+        animationSpec = tween(durationMillis = 200),
+        label = "PlayerZoomAnimation"
+    )
     var speedUpText by remember { mutableStateOf("") }
     var isHolding by remember { mutableStateOf(false) }
     var showLockReminder by remember { mutableStateOf(false) }
@@ -176,13 +193,9 @@ fun VideoPlayer(
         }
     }
 
-    LaunchedEffect(controlsState.isLocked) {
-        showLockReminder = controlsState.isLocked
-    }
-
     LaunchedEffect(showLockReminder) {
         if (showLockReminder && controlsState.isLocked) {
-            delay(LOCK_BUTTON_DISPLAY_DURATION_MS)
+            delay(3000)
             showLockReminder = false
         }
     }
@@ -205,9 +218,20 @@ fun VideoPlayer(
                 isHolding = false
                 playerAction(HlsPlayerAction.SetPlaybackSpeed(previousPlaybackSpeed))
             }
-            showLockReminder = false
             Log.d("PlayerView", "PlayerView disposed, MediaControllerCallback unregistered")
         }
+    }
+
+    fun getZoomRatioText(): String {
+        return if (zoomScaleProgress > 1.5f) String.format(Locale.US, "%.1fx", zoomScaleProgress)
+        else if (zoomScaleProgress == ZOOM_FILL_THRESHOLD) "Zoomed to Fill"
+        else if (zoomScaleProgress == 1f) "Original"
+        else ""
+    }
+
+    fun resetZoom() {
+        zoomScaleProgress = 1f
+        playerAction(HlsPlayerAction.SetZoom(1f))
     }
 
     fun handleSingleTap() {
@@ -282,28 +306,54 @@ fun VideoPlayer(
 
     Box(
         modifier = Modifier
+            .fillMaxSize()
+            .clip(RoundedCornerShape(0.dp))
             .pointerInput(Unit) {
                 awaitEachGesture {
-                    val down = awaitFirstDown()
-                    Log.d(
-                        "VideoPlayer",
-                        "Touch down detected at ${down.position.x}, ${down.position.y}"
-                    )
+                    val down: PointerInputChange = awaitFirstDown()
+                    down.consume()
+
                     longPressJob?.cancel()
                     longPressJob = scope.launch {
                         delay(LONG_PRESS_THRESHOLD_MILLIS)
                         handleLongPressStart()
                     }
 
-                    val up = waitForUpOrCancellation()
-                    longPressJob?.cancel()
-                    if (up != null) {
-                        Log.d(
-                            "VideoPlayer",
-                            "Touch up detected at ${up.position.x}, ${up.position.y}"
-                        )
+                    var isMultiTouch = false
+
+                    while (true) {
+                        val event: PointerEvent = awaitPointerEvent()
+                        val allFingersUp = event.changes.none { it.pressed }
+
+                        if (allFingersUp) {
+                            break
+                        }
+
+                        if (event.changes.size > 1 && !controlsState.isLocked) {
+                            if (!isMultiTouch) {
+                                isMultiTouch = true
+                                isZooming = true
+                                longPressJob?.cancel()
+                                handleLongPressEnd()
+                            }
+
+                            val zoomChange = event.calculateZoom()
+                            zoomScaleProgress =
+                                (zoomScaleProgress * zoomChange).coerceIn(1f, MAX_ZOOM_RATIO)
+                        }
+                    }
+
+                    if (isMultiTouch) {
+                        playerAction(HlsPlayerAction.SetZoom(zoomScaleProgress))
+                        zoomScaleProgress = if (zoomScaleProgress < ZOOM_FILL_THRESHOLD) 1f
+                        else if (zoomScaleProgress <= 1.5f) 1.25f
+                        else zoomScaleProgress
+
+                        isZooming = false
+                    } else {
+                        longPressJob?.cancel()
                         val currentTime = System.currentTimeMillis()
-                        val tapX = up.position.x
+                        val tapX = down.position.x
 
                         if (isHolding) {
                             handleLongPressEnd()
@@ -318,13 +368,16 @@ fun VideoPlayer(
                             lastTapTime = currentTime
                             lastTapX = tapX
                         }
-                    } else {
-                        Log.d("VideoPlayer", "Touch cancelled")
-                        handleLongPressEnd()
                     }
                 }
             }
     ) {
+        val borderModifier = if (isZooming) {
+            Modifier.border(16.dp, Color.White.copy(alpha = 0.5f))
+        } else {
+            Modifier
+        }
+
         if (isFirstLoad) {
             ScreenshotDisplay(
                 imageUrl = episodeDetailComplement.imageUrl,
@@ -337,7 +390,12 @@ fun VideoPlayer(
                 factory = { playerView },
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(Color(0xFF1D2025)),
+                    .background(Color(0xFF14161A))
+                    .then(borderModifier)
+                    .graphicsLayer(
+                        scaleX = animatedZoom,
+                        scaleY = animatedZoom
+                    ),
                 update = { view ->
                     view.subtitleView?.apply {
                         setStyle(
@@ -351,7 +409,11 @@ fun VideoPlayer(
                             )
                         )
                     }
-                    view.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                    view.resizeMode = if (controlsState.zoom >= ZOOM_FILL_THRESHOLD) {
+                        AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                    } else {
+                        AspectRatioFrameLayout.RESIZE_MODE_FIT
+                    }
                     view.subtitleView?.setPadding(
                         0, 0, 0,
                         if (!playerUiState.isPipMode && controlsState.isControlsVisible && (isLandscape || !playerUiState.isFullscreen)) 100 else 0
@@ -402,6 +464,10 @@ fun VideoPlayer(
                 setSideSheetVisibility = setSideSheetVisibility,
                 isLandscape = isLandscape,
                 isShowSpeedUp = isShowSpeedUp,
+                zoom = controlsState.zoom,
+                onZoomReset = {
+                    resetZoom()
+                },
                 handlePlay = { playerAction(HlsPlayerAction.Play) },
                 handlePause = { playerAction(HlsPlayerAction.Pause);isFirstLoad = false },
                 onPreviousEpisode = {
@@ -537,8 +603,16 @@ fun VideoPlayer(
             speedText = speedUpText
         )
 
-        val isLockButtonVisible = controlsState.isLocked &&
-                !playerUiState.isPipMode && showLockReminder
+        ZoomIndicator(
+            modifier = Modifier.align(Alignment.TopCenter),
+            visible = isZooming,
+            zoomText = getZoomRatioText(),
+            isClickable = zoomScaleProgress > 1.5f,
+            onCLick = { resetZoom() }
+        )
+
+        val isLockButtonVisible =
+            controlsState.isLocked && !playerUiState.isPipMode && showLockReminder
         LockButton(
             visible = isLockButtonVisible,
             onClick = {
@@ -566,6 +640,7 @@ fun VideoPlayer(
                     showSettingsSheet = false
                 },
                 onLockClick = {
+                    showLockReminder = true
                     setFullscreenChange(true)
                     if (coreState.playbackState == Player.STATE_ENDED) {
                         playerAction(HlsPlayerAction.SeekTo(0))
@@ -625,4 +700,17 @@ fun VideoPlayer(
             )
         }
     }
+}
+
+private fun PointerEvent.calculateZoom(): Float {
+    val changes = this.changes
+    if (changes.size < 2) return 1.0f
+
+    val previousPointers = changes.map { it.previousPosition }
+    val currentPointers = changes.map { it.position }
+
+    val previousDistance = (previousPointers[0] - previousPointers[1]).getDistance()
+    val currentDistance = (currentPointers[0] - currentPointers[1]).getDistance()
+
+    return if (previousDistance == 0f) 1f else currentDistance / previousDistance
 }

@@ -93,7 +93,7 @@ fun AnimeWatchContent(
                         imageUrl = watchState.animeDetail?.images?.webp?.large_image_url,
                         modifier = modifier,
                     ) else Box(
-                        modifier = modifier.background(Color(0xFF1D2025))
+                        modifier = modifier.background(Color(0xFF14161A))
                     )
                 } else {
                     VideoPlayerSection(

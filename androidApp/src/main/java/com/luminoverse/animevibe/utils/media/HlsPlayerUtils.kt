@@ -71,7 +71,8 @@ data class ControlsState(
     val showOutroButton: Boolean = false,
     val isLocked: Boolean = false,
     val selectedSubtitle: Track? = null,
-    val playbackSpeed: Float = 1f
+    val playbackSpeed: Float = 1f,
+    val zoom: Float = 1f
 )
 
 sealed class HlsPlayerAction {
@@ -98,12 +99,14 @@ sealed class HlsPlayerAction {
     data class SetSubtitle(val track: Track?) : HlsPlayerAction()
     data class RequestToggleControlsVisibility(val isVisible: Boolean? = null) : HlsPlayerAction()
     data class ToggleLock(val isLocked: Boolean) : HlsPlayerAction()
+    data class SetZoom(val zoom: Float) : HlsPlayerAction()
 }
 
 private const val CONTROLS_AUTO_HIDE_DELAY_MS = 3_000L
 private const val WATCH_STATE_UPDATE_INTERVAL_MS = 1_000L
 private const val INTRO_OUTRO_CHECK_INTERVAL_MS = 1_000L
 private const val POSITION_UPDATE_INTERVAL_MS = 500L
+const val ZOOM_FILL_THRESHOLD = 1.25f
 
 @Singleton
 @OptIn(UnstableApi::class)
@@ -202,6 +205,17 @@ class HlsPlayerUtils @Inject constructor(
                 _controlsState.update {
                     it.copy(
                         isLocked = action.isLocked, isControlsVisible = !action.isLocked
+                    )
+                }
+            }
+
+            is HlsPlayerAction.SetZoom -> {
+
+                _controlsState.update {
+                    it.copy(
+                        zoom = if (action.zoom < ZOOM_FILL_THRESHOLD) 1f
+                        else if (action.zoom <= 1.5f) 1.25f
+                        else action.zoom
                     )
                 }
             }
