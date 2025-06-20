@@ -70,7 +70,7 @@ fun PlayerControls(
     nextEpisodeDetailComplement: EpisodeDetailComplement?,
     isSideSheetVisible: Boolean,
     setSideSheetVisibility: (Boolean) -> Unit,
-    isFullscreen: Boolean,
+    isLandscape: Boolean,
     isShowSpeedUp: Boolean,
     handlePlay: () -> Unit,
     handlePause: () -> Unit,
@@ -124,16 +124,16 @@ fun PlayerControls(
                         tint = Color.White
                     )
                     AnimatedVisibility(
-                        visible = isFullscreen && (playbackState != Player.STATE_ENDED || nextEpisode == null) && !isSideSheetVisible,
+                        visible = isLandscape && (playbackState != Player.STATE_ENDED || nextEpisode == null) && !isSideSheetVisible,
                         enter = fadeIn(animationSpec = tween(durationMillis = 300)),
-                        exit = fadeOut(animationSpec = tween(durationMillis = 300)),
-                        modifier = Modifier.fillMaxWidth()
+                        exit = fadeOut(animationSpec = tween(durationMillis = 300))
                     ) {
                         Row(
+                            modifier = Modifier.clickable { setSideSheetVisibility(true) },
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Column {
+                            Column(modifier = Modifier.padding(start = 4.dp)) {
                                 Text(
                                     text = episodeDetailComplement.episodeTitle,
                                     style = MaterialTheme.typography.titleMedium,
@@ -154,7 +154,6 @@ fun PlayerControls(
                             Icon(
                                 modifier = Modifier
                                     .clip(CircleShape)
-                                    .clickable { setSideSheetVisibility(true) }
                                     .padding(8.dp),
                                 imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
                                 contentDescription = "Open currently watching anime info",
@@ -401,18 +400,16 @@ fun PlayerControls(
                             .clip(CircleShape)
                             .clickable { onFullscreenToggle() }
                             .padding(8.dp),
-                        imageVector = if (isFullscreen) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
-                        contentDescription = if (isFullscreen) "Exit Fullscreen" else "Enter Fullscreen",
+                        imageVector = if (isLandscape) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
+                        contentDescription = if (isLandscape) "Exit Fullscreen" else "Enter Fullscreen",
                         tint = Color.White
                     )
                 }
             }
             CustomSeekBar(
                 positionState = positionState,
-                introStart = episodeDetailComplement.sources.intro.start.times(1000L),
-                introEnd = episodeDetailComplement.sources.intro.end.times(1000L),
-                outroStart = episodeDetailComplement.sources.outro.start.times(1000L),
-                outroEnd = episodeDetailComplement.sources.outro.end.times(1000L),
+                intro = episodeDetailComplement.sources.intro,
+                outro = episodeDetailComplement.sources.outro,
                 handlePlay = handlePlay,
                 handlePause = handlePause,
                 onSeekTo = onSeekTo,

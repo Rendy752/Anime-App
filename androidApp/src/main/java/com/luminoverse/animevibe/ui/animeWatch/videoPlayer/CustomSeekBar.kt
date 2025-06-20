@@ -27,15 +27,14 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.luminoverse.animevibe.models.TimeRange
 import com.luminoverse.animevibe.utils.media.PositionState
 
 @Composable
 fun CustomSeekBar(
     positionState: PositionState,
-    introStart: Long,
-    introEnd: Long,
-    outroStart: Long,
-    outroEnd: Long,
+    intro: TimeRange,
+    outro: TimeRange,
     handlePlay: () -> Unit,
     handlePause: () -> Unit,
     onSeekTo: (Long) -> Unit,
@@ -46,6 +45,11 @@ fun CustomSeekBar(
     thumbSize: Dp = 10.dp,
     trackHeight: Dp = 4.dp
 ) {
+    val introStart = intro.start.times(1000L)
+    val introEnd = intro.end.times(1000L)
+    val outroStart = outro.start.times(1000L)
+    val outroEnd = outro.end.times(1000L)
+
     var isDragging by remember { mutableStateOf(false) }
     var dragPosition by remember { mutableFloatStateOf(positionState.currentPosition.toFloat()) }
     var initialDragX by remember { mutableFloatStateOf(0f) }

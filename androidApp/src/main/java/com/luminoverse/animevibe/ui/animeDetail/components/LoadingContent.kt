@@ -12,7 +12,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.ui.animeDetail.detailBody.DetailBodySectionSkeleton
-import com.luminoverse.animevibe.ui.animeDetail.numericDetail.NumericDetailSectionSkeleton
+import com.luminoverse.animevibe.ui.common.NumericDetailSectionSkeleton
 import com.luminoverse.animevibe.ui.common.AnimeHeaderSkeleton
 import com.luminoverse.animevibe.ui.common.DetailCommonBodySkeleton
 import com.luminoverse.animevibe.ui.common.YoutubePreviewSkeleton

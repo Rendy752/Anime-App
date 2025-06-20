@@ -26,7 +26,7 @@ import com.luminoverse.animevibe.ui.animeDetail.EpisodeFilterState
 import com.luminoverse.animevibe.ui.animeDetail.clickableList.ClickableListSection
 import com.luminoverse.animevibe.ui.animeDetail.detailBody.DetailBodySection
 import com.luminoverse.animevibe.ui.animeDetail.episodeDetail.EpisodesDetailSection
-import com.luminoverse.animevibe.ui.animeDetail.numericDetail.NumericDetailSection
+import com.luminoverse.animevibe.ui.common.NumericDetailSection
 import com.luminoverse.animevibe.ui.animeDetail.relation.RelationSection
 import com.luminoverse.animevibe.ui.common.AnimeHeader
 import com.luminoverse.animevibe.ui.common.DetailCommonBody
@@ -117,7 +117,16 @@ private fun LazyListScope.leftColumnContent(
     navController: NavController
 ) {
     item { AnimeHeader(animeDetail = animeDetail) }
-    item { NumericDetailSection(animeDetail = animeDetail) }
+    item {
+        NumericDetailSection(
+            score = animeDetail.score,
+            scoredBy = animeDetail.scored_by,
+            rank = animeDetail.rank,
+            popularity = animeDetail.popularity,
+            members = animeDetail.members,
+            favorites = animeDetail.favorites
+        )
+    }
     item { YoutubePreview(embedUrl = animeDetail.trailer.embed_url) }
     item { DetailBodySection(animeDetail = animeDetail, navController = navController) }
 }

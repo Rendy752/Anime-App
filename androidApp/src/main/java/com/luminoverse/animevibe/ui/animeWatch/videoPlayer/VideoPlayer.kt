@@ -154,6 +154,13 @@ fun VideoPlayer(
         }
     }
 
+    LaunchedEffect(isLandscape, playerUiState.isFullscreen) {
+        playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
+        playerView.postDelayed({
+            playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+        }, 1)
+    }
+
     LaunchedEffect(coreState.playbackState, isDraggingSeekBar) {
         if (isDraggingSeekBar && (coreState.playbackState == Player.STATE_READY || coreState.playbackState == Player.STATE_BUFFERING)
         ) {
@@ -393,7 +400,7 @@ fun VideoPlayer(
                 nextEpisodeDetailComplement = episodeDetailComplements[nextEpisode?.id]?.data,
                 isSideSheetVisible = isSideSheetVisible,
                 setSideSheetVisibility = setSideSheetVisibility,
-                isFullscreen = playerUiState.isFullscreen,
+                isLandscape = isLandscape,
                 isShowSpeedUp = isShowSpeedUp,
                 handlePlay = { playerAction(HlsPlayerAction.Play) },
                 handlePause = { playerAction(HlsPlayerAction.Pause);isFirstLoad = false },

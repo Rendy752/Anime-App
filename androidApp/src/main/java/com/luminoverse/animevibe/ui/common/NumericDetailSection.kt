@@ -1,4 +1,4 @@
-package com.luminoverse.animevibe.ui.animeDetail.numericDetail
+package com.luminoverse.animevibe.ui.common
 
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -15,41 +15,51 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.luminoverse.animevibe.models.AnimeDetail
 import com.luminoverse.animevibe.utils.TextUtils.formatNumber
 
 @Composable
-fun NumericDetailSection(animeDetail: AnimeDetail) {
+fun NumericDetailSection(
+    score: Double?,
+    scoredBy: Int?,
+    rank: Int?,
+    popularity: Int,
+    members: Int,
+    favorites: Int
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        NumericDetailItem(
-            title = "Score",
-            value = animeDetail.score?.toString() ?: "N/A",
-            subValue = animeDetail.scored_by?.let { "${it.formatNumber()} Users" } ?: "N/A",
-            icon = Icons.Filled.Score
-        )
-        NumericDetailItem(
-            title = "Ranked",
-            value = animeDetail.rank?.let { "#${it.formatNumber()}" } ?: "N/A",
-            icon = Icons.Filled.Star
-        )
+        score?.let {
+            NumericDetailItem(
+                title = "Score",
+                value = it.toString(),
+                subValue = scoredBy?.let { "${it.formatNumber()} Users" } ?: "N/A",
+                icon = Icons.Filled.Score
+            )
+        }
+        rank?.let {
+            NumericDetailItem(
+                title = "Ranked",
+                value = "#${it.formatNumber()}",
+                icon = Icons.Filled.Star
+            )
+        }
         NumericDetailItem(
             title = "Popularity",
-            value = "#${animeDetail.popularity.formatNumber()}",
+            value = "#${popularity.formatNumber()}",
             icon = Icons.AutoMirrored.Filled.TrendingUp
         )
         NumericDetailItem(
             title = "Members",
-            value = animeDetail.members.formatNumber(),
+            value = members.formatNumber(),
             icon = Icons.Filled.Groups
         )
         NumericDetailItem(
             title = "Favorites",
-            value = animeDetail.favorites.formatNumber(),
+            value = favorites.formatNumber(),
             icon = Icons.Filled.Favorite
         )
     }

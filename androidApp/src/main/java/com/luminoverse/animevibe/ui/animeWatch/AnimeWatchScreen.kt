@@ -214,7 +214,7 @@ fun AnimeWatchScreen(
             },
             modifier = Modifier
                 .fillMaxSize()
-                .padding(if (playerUiState.isFullscreen) PaddingValues(0.dp) else paddingValues),
+                .padding(if (mainState.isLandscape) PaddingValues(0.dp) else paddingValues),
             state = pullToRefreshState,
             indicator = {
                 PullToRefreshDefaults.Indicator(
@@ -226,15 +226,10 @@ fun AnimeWatchScreen(
                 )
             }
         ) {
-            val videoSize =
-                if (mainState.isLandscape || playerUiState.isFullscreen) Modifier.fillMaxSize()
-                else if (!playerUiState.isPipMode) Modifier.height(250.dp)
-                else Modifier.fillMaxSize()
-
             Column(modifier = Modifier.fillMaxSize()) {
                 val videoPlayerModifier = Modifier
                     .fillMaxWidth()
-                    .then(videoSize)
+                    .then(if (mainState.isLandscape) Modifier.fillMaxSize() else Modifier.height(250.dp))
                 AnimeWatchContent(
                     malId = malId,
                     navController = navController,
@@ -253,7 +248,6 @@ fun AnimeWatchScreen(
                     scrollState = scrollState,
                     onEnterPipMode = onEnterPipMode,
                     modifier = videoPlayerModifier,
-                    videoSize = videoSize
                 )
             }
         }
