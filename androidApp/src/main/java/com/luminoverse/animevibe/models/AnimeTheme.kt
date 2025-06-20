@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 
 @Parcelize
 @Serializable
-data class Theme(
+data class AnimeTheme(
     val openings: List<String>?,
     val endings: List<String>?
 ): Parcelable

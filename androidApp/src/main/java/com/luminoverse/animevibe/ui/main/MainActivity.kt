@@ -106,7 +106,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             AppTheme(
-                isDarkMode = state.isDarkMode,
+                themeMode = state.themeMode,
                 contrastMode = state.contrastMode,
                 colorStyle = state.colorStyle,
                 isRtl = state.isRtl

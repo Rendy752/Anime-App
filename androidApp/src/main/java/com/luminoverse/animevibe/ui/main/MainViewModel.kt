@@ -1,8 +1,12 @@
 package com.luminoverse.animevibe.ui.main
 
 import android.app.Application
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.os.Build
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
@@ -12,6 +16,7 @@ import com.luminoverse.animevibe.models.NetworkStatus
 import com.luminoverse.animevibe.models.networkStatusPlaceholder
 import com.luminoverse.animevibe.ui.theme.ColorStyle
 import com.luminoverse.animevibe.ui.theme.ContrastMode
+import com.luminoverse.animevibe.ui.theme.ThemeMode
 import com.luminoverse.animevibe.utils.NetworkStateMonitor
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,6 +27,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 data class MainState(
+    val themeMode: ThemeMode = ThemeMode.System,
     val isDarkMode: Boolean = false,
     val contrastMode: ContrastMode = ContrastMode.Normal,
     val colorStyle: ColorStyle = ColorStyle.Default,
@@ -35,7 +41,7 @@ data class MainState(
 )
 
 sealed class MainAction {
-    data class SetDarkMode(val isDark: Boolean) : MainAction()
+    data class SetThemeMode(val themeMode: ThemeMode) : MainAction()
     data class SetContrastMode(val contrastMode: ContrastMode) : MainAction()
     data class SetColorStyle(val colorStyle: ColorStyle) : MainAction()
     data class SetNotificationEnabled(val enabled: Boolean) : MainAction()
@@ -45,41 +51,63 @@ sealed class MainAction {
     data class SetNetworkStatus(val status: NetworkStatus) : MainAction()
     data class SetIsShowIdleDialog(val show: Boolean) : MainAction()
     data object CheckNotificationPermission : MainAction()
+    data object SyncSystemDarkMode : MainAction()
 }
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
-    application: Application,
+    private val app: Application,
     private val networkStateMonitor: NetworkStateMonitor
-) : AndroidViewModel(application) {
+) : AndroidViewModel(app) {
 
-    private val themePrefs = application.getSharedPreferences("theme_prefs", Context.MODE_PRIVATE)
+    private val themePrefs = app.getSharedPreferences("theme_prefs", Context.MODE_PRIVATE)
     private val settingsPrefs =
-        application.getSharedPreferences("settings_prefs", Context.MODE_PRIVATE)
+        app.getSharedPreferences("settings_prefs", Context.MODE_PRIVATE)
 
-    private val _state = MutableStateFlow(
-        MainState(
-            isDarkMode = themePrefs.getBoolean("is_dark_mode", false),
-            contrastMode = themePrefs.getString("contrast_mode", ContrastMode.Normal.name)
-                ?.let { ContrastMode.valueOf(it) } ?: ContrastMode.Normal,
-            colorStyle = themePrefs.getString("color_style", ColorStyle.Default.name)
-                ?.let { ColorStyle.valueOf(it) } ?: ColorStyle.Default,
-            isNotificationEnabled = settingsPrefs.getBoolean("notifications_enabled", false),
-            isAutoPlayVideo = settingsPrefs.getBoolean("auto_play_video", true),
-            isRtl = settingsPrefs.getBoolean("rtl", false)
-        )
-    )
+    private val _state: MutableStateFlow<MainState>
 
-    val state: StateFlow<MainState> = _state.asStateFlow()
+    val state: StateFlow<MainState>
+
+    private val configurationChangeReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            if (intent?.action == Intent.ACTION_CONFIGURATION_CHANGED) {
+                onAction(MainAction.SyncSystemDarkMode)
+            }
+        }
+    }
 
     init {
+        val initialThemeMode = themePrefs.getString("theme_mode", ThemeMode.System.name)
+            ?.let { ThemeMode.valueOf(it) } ?: ThemeMode.System
+
+        _state = MutableStateFlow(
+            MainState(
+                themeMode = initialThemeMode,
+                isDarkMode = isDarkMode(initialThemeMode),
+                contrastMode = themePrefs.getString("contrast_mode", ContrastMode.Normal.name)
+                    ?.let { ContrastMode.valueOf(it) } ?: ContrastMode.Normal,
+                colorStyle = themePrefs.getString("color_style", ColorStyle.Default.name)
+                    ?.let { ColorStyle.valueOf(it) } ?: ColorStyle.Default,
+                isNotificationEnabled = settingsPrefs.getBoolean("notifications_enabled", false),
+                isAutoPlayVideo = settingsPrefs.getBoolean("auto_play_video", true),
+                isRtl = settingsPrefs.getBoolean("rtl", false)
+            )
+        )
+        state = _state.asStateFlow()
+
+        app.registerReceiver(
+            configurationChangeReceiver,
+            IntentFilter(Intent.ACTION_CONFIGURATION_CHANGED)
+        )
+
         startNetworkMonitoring()
         checkNotificationPermission()
     }
 
     fun onAction(action: MainAction) {
         when (action) {
-            is MainAction.SetDarkMode -> setDarkMode(action.isDark)
+            is MainAction.SetThemeMode -> setThemeMode(action.themeMode)
+            is MainAction.SyncSystemDarkMode -> syncSystemDarkMode()
             is MainAction.SetContrastMode -> setContrastMode(action.contrastMode)
             is MainAction.SetColorStyle -> setColorStyle(action.colorStyle)
             is MainAction.SetNotificationEnabled -> setNotificationEnabled(action.enabled)
@@ -92,29 +120,42 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun checkNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val permissionStatus = ContextCompat.checkSelfPermission(
-                getApplication(),
-                "android.permission.POST_NOTIFICATIONS"
-            )
-            val isGranted = permissionStatus == PackageManager.PERMISSION_GRANTED
-            println("POST_NOTIFICATIONS permission status: permissionStatus=$permissionStatus, isGranted=$isGranted")
-            if (isGranted != _state.value.isNotificationEnabled) {
-                println("Syncing isNotificationEnabled with permission: newValue=$isGranted")
-                setNotificationEnabled(isGranted)
-            }
-        } else {
-            println("POST_NOTIFICATIONS not required (pre-TIRAMISU), setting isNotificationEnabled=true")
-            if (!_state.value.isNotificationEnabled) {
-                setNotificationEnabled(true)
+    private fun isDarkMode(themeMode: ThemeMode): Boolean {
+        return when (themeMode) {
+            ThemeMode.Light -> false
+            ThemeMode.Dark -> true
+            ThemeMode.System -> {
+                val uiMode = app.resources.configuration.uiMode
+                (uiMode and Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES
             }
         }
     }
 
-    private fun setDarkMode(isDark: Boolean) {
-        _state.update { it.copy(isDarkMode = isDark) }
-        themePrefs.edit { putBoolean("is_dark_mode", isDark) }
+    /**
+     * This function is called when the system's configuration changes.
+     * It only updates the state if the current theme mode is 'System'.
+     */
+    private fun syncSystemDarkMode() {
+        if (_state.value.themeMode == ThemeMode.System) {
+            _state.update { currentState ->
+                val newIsDarkMode = isDarkMode(ThemeMode.System)
+                if (currentState.isDarkMode != newIsDarkMode) {
+                    currentState.copy(isDarkMode = newIsDarkMode)
+                } else {
+                    currentState
+                }
+            }
+        }
+    }
+
+    private fun setThemeMode(newThemeMode: ThemeMode) {
+        _state.update {
+            it.copy(
+                themeMode = newThemeMode,
+                isDarkMode = isDarkMode(newThemeMode)
+            )
+        }
+        themePrefs.edit { putString("theme_mode", newThemeMode.name) }
     }
 
     private fun setContrastMode(contrastMode: ContrastMode) {
@@ -154,6 +195,23 @@ class MainViewModel @Inject constructor(
         _state.update { it.copy(isShowIdleDialog = show) }
     }
 
+    fun checkNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val permissionStatus = ContextCompat.checkSelfPermission(
+                getApplication(),
+                "android.permission.POST_NOTIFICATIONS"
+            )
+            val isGranted = permissionStatus == PackageManager.PERMISSION_GRANTED
+            if (isGranted != _state.value.isNotificationEnabled) {
+                setNotificationEnabled(isGranted)
+            }
+        } else {
+            if (!_state.value.isNotificationEnabled) {
+                setNotificationEnabled(true)
+            }
+        }
+    }
+
     private fun startNetworkMonitoring() {
         networkStateMonitor.startMonitoring()
         networkStateMonitor.isConnected.observeForever { isNetworkAvailable ->
@@ -170,6 +228,7 @@ class MainViewModel @Inject constructor(
 
     public override fun onCleared() {
         super.onCleared()
+        app.unregisterReceiver(configurationChangeReceiver)
         networkStateMonitor.stopMonitoring()
     }
 }

@@ -18,6 +18,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.navigation.NavController
@@ -76,7 +77,7 @@ fun AnimeWatchContent(
                 ) else Box(
                     modifier = modifier
                         .then(videoSize)
-                        .background(MaterialTheme.colorScheme.surfaceContainer)
+                        .background(Color(0xFF1D2025))
                 )
             } else {
                 VideoPlayerSection(

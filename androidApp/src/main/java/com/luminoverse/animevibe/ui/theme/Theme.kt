@@ -1,6 +1,7 @@
 package com.luminoverse.animevibe.ui.theme
 
 import android.app.Activity
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -11,23 +12,25 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.core.view.WindowCompat
 import com.luminoverse.animevibe.utils.ColorUtils
 
-enum class ContrastMode {
-    Normal, Medium, High
-}
-
-enum class ColorStyle {
-    Default, Vibrant, Monochrome
-}
+enum class ThemeMode { System, Light, Dark }
+enum class ContrastMode { Normal, Medium, High }
+enum class ColorStyle { Default, Vibrant, Monochrome }
 
 @Composable
 fun AppTheme(
-    isDarkMode: Boolean = false,
+    themeMode: ThemeMode = ThemeMode.System,
     contrastMode: ContrastMode = ContrastMode.Normal,
     colorStyle: ColorStyle = ColorStyle.Default,
     isRtl: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = ColorUtils.generateColorScheme(colorStyle, isDarkMode, contrastMode)
+    val actualIsDarkMode = when(themeMode) {
+        ThemeMode.Light -> false
+        ThemeMode.Dark -> true
+        ThemeMode.System -> isSystemInDarkTheme()
+    }
+
+    val colorScheme = ColorUtils.generateColorScheme(colorStyle, actualIsDarkMode, contrastMode)
     val layoutDirection = if (isRtl) LayoutDirection.Rtl else LayoutDirection.Ltr
 
     val view = LocalView.current
@@ -39,8 +42,8 @@ fun AppTheme(
             window.navigationBarColor = android.graphics.Color.TRANSPARENT
 
             val windowInsetsController = WindowCompat.getInsetsController(window, view)
-            windowInsetsController.isAppearanceLightStatusBars = !isDarkMode
-            windowInsetsController.isAppearanceLightNavigationBars = !isDarkMode
+            windowInsetsController.isAppearanceLightStatusBars = !actualIsDarkMode
+            windowInsetsController.isAppearanceLightNavigationBars = !actualIsDarkMode
         }
     }
     CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {

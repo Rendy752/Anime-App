@@ -89,12 +89,12 @@ class AnimeDetailConverter {
     }
 
     @TypeConverter
-    fun fromTheme(theme: Theme?): String? {
+    fun fromTheme(theme: AnimeTheme?): String? {
         return theme?.let { json.encodeToString(it) }
     }
 
     @TypeConverter
-    fun toTheme(themeJson: String?): Theme? {
+    fun toTheme(themeJson: String?): AnimeTheme? {
         return themeJson?.let { json.decodeFromString(it) }
     }
 

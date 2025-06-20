@@ -50,7 +50,7 @@ data class AnimeDetail(
     val themes: List<CommonIdentity>?,
     val demographics: List<CommonIdentity>?,
     val relations: List<Relation>?,
-    val theme: Theme?,
+    val theme: AnimeTheme?,
     val external: List<NameAndUrl>?,
     val streaming: List<NameAndUrl>?
 ) : Parcelable
@@ -326,7 +326,7 @@ val animeDetailPlaceholder = AnimeDetail(
             )
         )
     ),
-    theme = Theme(
+    theme = AnimeTheme(
         openings = listOf(
             "1: \"Hero's Come Back\" by Nobodyknows+ (eps 1-30)",
             "2: \"distance\" by LONG SHOT PARTY (eps 31-53)",
