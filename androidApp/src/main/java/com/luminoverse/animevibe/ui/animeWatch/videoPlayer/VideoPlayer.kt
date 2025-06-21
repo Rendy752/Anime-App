@@ -6,8 +6,9 @@ import android.os.Looper
 import android.support.v4.media.session.MediaControllerCompat
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -31,6 +32,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
@@ -43,6 +45,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.Player
+import androidx.media3.common.VideoSize
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
@@ -59,7 +62,6 @@ import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
 import com.luminoverse.animevibe.utils.media.PositionState
-import com.luminoverse.animevibe.utils.media.RESIZE_MODE_ZOOM_RATIO
 import com.luminoverse.animevibe.utils.resource.Resource
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -67,6 +69,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.util.Locale
 import kotlin.math.abs
+import kotlin.math.max
 
 private const val FAST_FORWARD_REWIND_DEBOUNCE_MILLIS = 1000L
 private const val DEFAULT_SEEK_INCREMENT = 10000L
@@ -122,7 +125,10 @@ fun VideoPlayer(
     var isZooming by remember { mutableStateOf(false) }
     val animatedZoom by animateFloatAsState(
         targetValue = zoomScaleProgress,
-        animationSpec = tween(durationMillis = 200),
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
         label = "PlayerZoomAnimation"
     )
     var speedUpText by remember { mutableStateOf("") }
@@ -147,6 +153,49 @@ fun VideoPlayer(
     var isBufferingFromSeeking by remember { mutableStateOf(false) }
     var bottomBarHeight by remember { mutableFloatStateOf(0f) }
     var playerSize by remember { mutableStateOf(IntSize.Zero) }
+    var videoSize by remember { mutableStateOf(player.videoSize) }
+
+    DisposableEffect(player) {
+        val listener = object : Player.Listener {
+            override fun onVideoSizeChanged(newVideoSize: VideoSize) {
+                videoSize = newVideoSize
+            }
+        }
+        player.addListener(listener)
+        onDispose {
+            player.removeListener(listener)
+        }
+    }
+
+    val zoomToFillRatio by remember(playerSize, videoSize) {
+        mutableFloatStateOf(
+            if (playerSize.width > 0 && playerSize.height > 0 && videoSize.width > 0 && videoSize.height > 0) {
+                val containerWidth = playerSize.width.toFloat()
+                val containerHeight = playerSize.height.toFloat()
+                val vWidth = videoSize.width.toFloat()
+                val vHeight = videoSize.height.toFloat()
+
+                val containerAspect = containerWidth / containerHeight
+                val videoAspect = vWidth / vHeight
+
+                val fittedWidth: Float
+                val fittedHeight: Float
+                if (videoAspect > containerAspect) {
+                    fittedWidth = containerWidth
+                    fittedHeight = containerWidth / videoAspect
+                } else {
+                    fittedHeight = containerHeight
+                    fittedWidth = containerHeight * videoAspect
+                }
+                max(
+                    containerWidth / fittedWidth,
+                    containerHeight / fittedHeight
+                ).coerceAtLeast(1f)
+            } else {
+                1f
+            }
+        )
+    }
 
     LaunchedEffect(Unit) {
         seekDisplayHandler = Handler(Looper.getMainLooper())
@@ -227,10 +276,11 @@ fun VideoPlayer(
     }
 
     fun getZoomRatioText(): String {
-        return if (zoomScaleProgress > 1.5f) String.format(Locale.US, "%.1fx", zoomScaleProgress)
-        else if (zoomScaleProgress == RESIZE_MODE_ZOOM_RATIO) "Zoomed to Fill"
-        else if (zoomScaleProgress == 1f) "Original"
-        else ""
+        return when {
+            abs(zoomScaleProgress - zoomToFillRatio) < 0.01f && zoomToFillRatio > 1f -> "Full View"
+            zoomScaleProgress > 1f -> String.format(Locale.US, "%.1fx", zoomScaleProgress)
+            else -> "Original"
+        }
     }
 
     fun resetZoom() {
@@ -318,6 +368,7 @@ fun VideoPlayer(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .clipToBounds()
                 .pointerInput(Unit) {
                     awaitEachGesture {
                         val down = awaitFirstDown()
@@ -363,7 +414,7 @@ fun VideoPlayer(
                             } else if (
                                 event.changes.size == 1 &&
                                 !isMultiTouch &&
-                                controlsState.zoom > 1.5f &&
+                                controlsState.zoom > 1f &&
                                 !controlsState.isLocked
                             ) {
                                 val pan = event.calculatePan()
@@ -377,22 +428,54 @@ fun VideoPlayer(
                                         handleLongPressEnd()
                                     }
 
-                                    val maxOffsetX = (size.width * (zoomScaleProgress - 1)) / 2
-                                    val maxOffsetY = (size.height * (zoomScaleProgress - 1)) / 2
+                                    val containerWidth = size.width.toFloat()
+                                    val containerHeight = size.height.toFloat()
+                                    val vWidth = videoSize.width.toFloat()
+                                    val vHeight = videoSize.height.toFloat()
 
-                                    offsetX = (offsetX + pan.x).coerceIn(-maxOffsetX, maxOffsetY)
-                                    offsetY = (offsetY + pan.y).coerceIn(-maxOffsetY, maxOffsetY)
+                                    if (vWidth > 0 && vHeight > 0) {
+                                        val containerAspect = containerWidth / containerHeight
+                                        val videoAspect = vWidth / vHeight
+
+                                        val fittedWidth: Float
+                                        val fittedHeight: Float
+                                        if (videoAspect > containerAspect) {
+                                            fittedWidth = containerWidth
+                                            fittedHeight = containerWidth / videoAspect
+                                        } else {
+                                            fittedHeight = containerHeight
+                                            fittedWidth = containerHeight * videoAspect
+                                        }
+
+                                        val maxOffsetX =
+                                            (fittedWidth * zoomScaleProgress - containerWidth).coerceAtLeast(
+                                                0f
+                                            ) / 2f
+                                        val maxOffsetY =
+                                            (fittedHeight * zoomScaleProgress - containerHeight).coerceAtLeast(
+                                                0f
+                                            ) / 2f
+
+                                        offsetX =
+                                            (offsetX + pan.x).coerceIn(-maxOffsetX, maxOffsetX)
+                                        offsetY =
+                                            (offsetY + pan.y).coerceIn(-maxOffsetY, maxOffsetY)
+                                    }
                                     event.changes.forEach { it.consume() }
                                 }
                             }
                         }
 
                         if (isMultiTouch) {
-                            playerAction(HlsPlayerAction.SetZoom(zoomScaleProgress))
-                            zoomScaleProgress = if (zoomScaleProgress < RESIZE_MODE_ZOOM_RATIO) 1f
-                            else if (zoomScaleProgress <= 1.5f) 1.25f
+                            val halfWayRatio = (1f + zoomToFillRatio) / 2
+                            val finalZoom = if (zoomScaleProgress < halfWayRatio) 1f
+                            else if (zoomScaleProgress in halfWayRatio..zoomToFillRatio) zoomToFillRatio
                             else zoomScaleProgress
-                            if (zoomScaleProgress <= 1.5f) {
+
+                            playerAction(HlsPlayerAction.SetZoom(finalZoom))
+                            zoomScaleProgress = finalZoom
+
+                            if (zoomScaleProgress <= 1.01f) {
                                 offsetX = 0f
                                 offsetY = 0f
                             }
@@ -458,11 +541,7 @@ fun VideoPlayer(
                                 )
                             )
                         }
-                        view.resizeMode = if (controlsState.zoom == RESIZE_MODE_ZOOM_RATIO) {
-                            AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-                        } else {
-                            AspectRatioFrameLayout.RESIZE_MODE_FIT
-                        }
+                        view.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
                         view.subtitleView?.setPadding(
                             0, 0, 0,
                             if (!playerUiState.isPipMode && controlsState.isControlsVisible && (isLandscape || !playerUiState.isFullscreen)) 100 else 0
@@ -514,7 +593,7 @@ fun VideoPlayer(
                 setSideSheetVisibility = setSideSheetVisibility,
                 isLandscape = isLandscape,
                 isShowSpeedUp = (isHolding && !playerUiState.isPipMode && !controlsState.isLocked && !calculatedShouldShowResumeOverlay && !playerUiState.isShowNextEpisode),
-                zoomScaleProgress = zoomScaleProgress,
+                zoomText = getZoomRatioText(),
                 onZoomReset = {
                     resetZoom()
                 },
@@ -659,7 +738,7 @@ fun VideoPlayer(
             visible = isZooming,
             isShowSpeedUp = (isHolding && !playerUiState.isPipMode && !controlsState.isLocked && !calculatedShouldShowResumeOverlay && !playerUiState.isShowNextEpisode),
             zoomText = getZoomRatioText(),
-            isClickable = zoomScaleProgress >= RESIZE_MODE_ZOOM_RATIO,
+            isClickable = zoomScaleProgress > 1f,
             onClick = { resetZoom() }
         )
 

@@ -61,8 +61,6 @@ import com.luminoverse.animevibe.ui.common.CircularLoadingIndicator
 import com.luminoverse.animevibe.ui.common.EpisodeDetailItem
 import com.luminoverse.animevibe.utils.TimeUtils.formatTimestamp
 import com.luminoverse.animevibe.utils.media.PositionState
-import com.luminoverse.animevibe.utils.media.RESIZE_MODE_ZOOM_RATIO
-import java.util.Locale
 
 @Composable
 fun PlayerControls(
@@ -78,7 +76,7 @@ fun PlayerControls(
     setSideSheetVisibility: (Boolean) -> Unit,
     isLandscape: Boolean,
     isShowSpeedUp: Boolean,
-    zoomScaleProgress: Float,
+    zoomText: String,
     onZoomReset: () -> Unit,
     handlePlay: () -> Unit,
     handlePause: () -> Unit,
@@ -194,11 +192,9 @@ fun PlayerControls(
                     horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    AnimatedVisibility(visible = zoomScaleProgress >= RESIZE_MODE_ZOOM_RATIO) {
+                    AnimatedVisibility(visible = zoomText != "Original") {
                         Text(
-                            text = if (zoomScaleProgress > 1.5f) String.format(
-                                Locale.US, "%.1fx", zoomScaleProgress
-                            ) else "Full View",
+                            text = zoomText,
                             color = Color.White,
                             fontSize = 14.sp,
                             textAlign = TextAlign.Center,

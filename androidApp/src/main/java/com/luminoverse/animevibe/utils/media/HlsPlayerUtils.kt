@@ -106,7 +106,6 @@ private const val CONTROLS_AUTO_HIDE_DELAY_MS = 3_000L
 private const val WATCH_STATE_UPDATE_INTERVAL_MS = 1_000L
 private const val INTRO_OUTRO_CHECK_INTERVAL_MS = 1_000L
 private const val POSITION_UPDATE_INTERVAL_MS = 500L
-const val RESIZE_MODE_ZOOM_RATIO = 1.25f
 
 @Singleton
 @OptIn(UnstableApi::class)
@@ -210,13 +209,7 @@ class HlsPlayerUtils @Inject constructor(
             }
 
             is HlsPlayerAction.SetZoom -> {
-                _controlsState.update {
-                    it.copy(
-                        zoom = if (action.zoom < RESIZE_MODE_ZOOM_RATIO) 1f
-                        else if (action.zoom <= 1.5f) RESIZE_MODE_ZOOM_RATIO
-                        else action.zoom
-                    )
-                }
+                _controlsState.update { it.copy(zoom = action.zoom) }
             }
         }
     }
@@ -479,7 +472,12 @@ class HlsPlayerUtils @Inject constructor(
             val clampedPos = positionMs.coerceAtLeast(0)
                 .coerceAtMost(if (duration > 0) duration else Long.MAX_VALUE)
             it.seekTo(clampedPos)
-            _positionState.update { it.copy(currentPosition = clampedPos) }
+            introOutroCheck()
+            _positionState.update {
+                it.copy(
+                    currentPosition = clampedPos, bufferedPosition = clampedPos
+                )
+            }
             _controlsState.update { it.copy(isControlsVisible = true) }
         }
     }
