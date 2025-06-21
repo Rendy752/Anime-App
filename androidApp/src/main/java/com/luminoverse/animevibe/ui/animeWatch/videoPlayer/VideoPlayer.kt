@@ -114,6 +114,7 @@ fun VideoPlayer(
     val scope = rememberCoroutineScope()
     var isFirstLoad by remember { mutableStateOf(true) }
 
+    // Gesture and UI states
     var isShowSeekIndicator by remember { mutableIntStateOf(0) }
     var seekAmount by remember { mutableLongStateOf(0L) }
     var isSeeking by remember { mutableStateOf(false) }
@@ -123,29 +124,21 @@ fun VideoPlayer(
     var offsetY by remember { mutableFloatStateOf(0f) }
     var zoomScaleProgress by remember { mutableFloatStateOf(controlsState.zoom) }
     var isZooming by remember { mutableStateOf(false) }
-    val animatedZoom by animateFloatAsState(
-        targetValue = zoomScaleProgress,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioNoBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
-        label = "PlayerZoomAnimation"
-    )
     var speedUpText by remember { mutableStateOf("") }
     var isHolding by remember { mutableStateOf(false) }
     var showLockReminder by remember { mutableStateOf(false) }
     var showRemainingTime by remember { mutableStateOf(false) }
     var isDraggingSeekBar by remember { mutableStateOf(false) }
     var dragSeekPosition by remember { mutableLongStateOf(0L) }
-    var seekDisplayHandler by remember { mutableStateOf<Handler?>(null) }
-    var seekDisplayRunnable by remember { mutableStateOf<Runnable?>(null) }
-    var longPressJob by remember { mutableStateOf<Job?>(null) }
     var lastTapTime by remember { mutableLongStateOf(0L) }
     var lastTapX by remember { mutableStateOf<Float?>(null) }
-
     var showSettingsSheet by remember { mutableStateOf(false) }
     var showSubtitleSheet by remember { mutableStateOf(false) }
     var showPlaybackSpeedSheet by remember { mutableStateOf(false) }
+
+    var seekDisplayHandler by remember { mutableStateOf<Handler?>(null) }
+    var seekDisplayRunnable by remember { mutableStateOf<Runnable?>(null) }
+    var longPressJob by remember { mutableStateOf<Job?>(null) }
 
     val thumbnailTrackUrl = remember(episodeDetailComplement) {
         episodeDetailComplement.sources.tracks.find { it.kind == "thumbnails" }?.file
@@ -154,6 +147,15 @@ fun VideoPlayer(
     var bottomBarHeight by remember { mutableFloatStateOf(0f) }
     var playerSize by remember { mutableStateOf(IntSize.Zero) }
     var videoSize by remember { mutableStateOf(player.videoSize) }
+
+    val animatedZoom by animateFloatAsState(
+        targetValue = zoomScaleProgress,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = Spring.StiffnessMedium
+        ),
+        label = "PlayerZoomAnimation"
+    )
 
     DisposableEffect(player) {
         val listener = object : Player.Listener {
@@ -410,31 +412,13 @@ fun VideoPlayer(
                                 zoomScaleProgress =
                                     (zoomScaleProgress * zoomChange).coerceIn(1f, MAX_ZOOM_RATIO)
 
-                                val containerWidth = size.width.toFloat()
-                                val containerHeight = size.height.toFloat()
-                                val vWidth = videoSize.width.toFloat()
-                                val vHeight = videoSize.height.toFloat()
-
-                                if (vWidth > 0 && vHeight > 0) {
-                                    val containerAspect = containerWidth / containerHeight
-                                    val videoAspect = vWidth / vHeight
-
-                                    val fittedWidth: Float
-                                    val fittedHeight: Float
-                                    if (videoAspect > containerAspect) {
-                                        fittedWidth = containerWidth
-                                        fittedHeight = containerWidth / videoAspect
-                                    } else {
-                                        fittedHeight = containerHeight
-                                        fittedWidth = containerHeight * videoAspect
-                                    }
-
-                                    val maxOffsetX = (fittedWidth * zoomScaleProgress - containerWidth).coerceAtLeast(0f) / 2f
-                                    val maxOffsetY = (fittedHeight * zoomScaleProgress - containerHeight).coerceAtLeast(0f) / 2f
-
-                                    offsetX = offsetX.coerceIn(-maxOffsetX, maxOffsetX)
-                                    offsetY = offsetY.coerceIn(-maxOffsetY, maxOffsetY)
-                                }
+                                val (maxOffsetX, maxOffsetY) = calculateOffsetBounds(
+                                    size,
+                                    videoSize,
+                                    zoomScaleProgress
+                                )
+                                offsetX = offsetX.coerceIn(-maxOffsetX, maxOffsetX)
+                                offsetY = offsetY.coerceIn(-maxOffsetY, maxOffsetY)
 
                                 event.changes.forEach { it.consume() }
 
@@ -455,39 +439,13 @@ fun VideoPlayer(
                                         handleLongPressEnd()
                                     }
 
-                                    val containerWidth = size.width.toFloat()
-                                    val containerHeight = size.height.toFloat()
-                                    val vWidth = videoSize.width.toFloat()
-                                    val vHeight = videoSize.height.toFloat()
-
-                                    if (vWidth > 0 && vHeight > 0) {
-                                        val containerAspect = containerWidth / containerHeight
-                                        val videoAspect = vWidth / vHeight
-
-                                        val fittedWidth: Float
-                                        val fittedHeight: Float
-                                        if (videoAspect > containerAspect) {
-                                            fittedWidth = containerWidth
-                                            fittedHeight = containerWidth / videoAspect
-                                        } else {
-                                            fittedHeight = containerHeight
-                                            fittedWidth = containerHeight * videoAspect
-                                        }
-
-                                        val maxOffsetX =
-                                            (fittedWidth * zoomScaleProgress - containerWidth).coerceAtLeast(
-                                                0f
-                                            ) / 2f
-                                        val maxOffsetY =
-                                            (fittedHeight * zoomScaleProgress - containerHeight).coerceAtLeast(
-                                                0f
-                                            ) / 2f
-
-                                        offsetX =
-                                            (offsetX + pan.x).coerceIn(-maxOffsetX, maxOffsetX)
-                                        offsetY =
-                                            (offsetY + pan.y).coerceIn(-maxOffsetY, maxOffsetY)
-                                    }
+                                    val (maxOffsetX, maxOffsetY) = calculateOffsetBounds(
+                                        size,
+                                        videoSize,
+                                        zoomScaleProgress
+                                    )
+                                    offsetX = (offsetX + pan.x).coerceIn(-maxOffsetX, maxOffsetX)
+                                    offsetY = (offsetY + pan.y).coerceIn(-maxOffsetY, maxOffsetY)
                                     event.changes.forEach { it.consume() }
                                 }
                             }
@@ -858,4 +816,41 @@ fun VideoPlayer(
             )
         }
     }
+}
+
+/**
+ * A helper function to calculate the maximum allowed pan offsets based on the container size,
+ * the video's intrinsic size, and the current zoom scale. This prevents panning into blank areas.
+ */
+private fun calculateOffsetBounds(
+    containerSize: IntSize,
+    videoSize: VideoSize,
+    scale: Float
+): Pair<Float, Float> {
+    if (containerSize.width == 0 || containerSize.height == 0 || videoSize.width == 0 || videoSize.height == 0) {
+        return 0f to 0f
+    }
+
+    val containerWidth = containerSize.width.toFloat()
+    val containerHeight = containerSize.height.toFloat()
+    val vWidth = videoSize.width.toFloat()
+    val vHeight = videoSize.height.toFloat()
+
+    val containerAspect = containerWidth / containerHeight
+    val videoAspect = vWidth / vHeight
+
+    val fittedWidth: Float
+    val fittedHeight: Float
+    if (videoAspect > containerAspect) {
+        fittedWidth = containerWidth
+        fittedHeight = containerWidth / videoAspect
+    } else {
+        fittedHeight = containerHeight
+        fittedWidth = containerHeight * videoAspect
+    }
+
+    val maxOffsetX = (fittedWidth * scale - containerWidth).coerceAtLeast(0f) / 2f
+    val maxOffsetY = (fittedHeight * scale - containerHeight).coerceAtLeast(0f) / 2f
+
+    return maxOffsetX to maxOffsetY
 }
