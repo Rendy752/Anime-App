@@ -45,6 +45,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
@@ -60,7 +61,7 @@ import com.luminoverse.animevibe.ui.common.CircularLoadingIndicator
 import com.luminoverse.animevibe.ui.common.EpisodeDetailItem
 import com.luminoverse.animevibe.utils.TimeUtils.formatTimestamp
 import com.luminoverse.animevibe.utils.media.PositionState
-import com.luminoverse.animevibe.utils.media.ZOOM_FILL_THRESHOLD
+import com.luminoverse.animevibe.utils.media.RESIZE_MODE_ZOOM_RATIO
 import java.util.Locale
 
 @Composable
@@ -77,7 +78,7 @@ fun PlayerControls(
     setSideSheetVisibility: (Boolean) -> Unit,
     isLandscape: Boolean,
     isShowSpeedUp: Boolean,
-    zoom: Float,
+    zoomScaleProgress: Float,
     onZoomReset: () -> Unit,
     handlePlay: () -> Unit,
     handlePause: () -> Unit,
@@ -93,6 +94,7 @@ fun PlayerControls(
     setShowRemainingTime: (Boolean) -> Unit,
     onSettingsClick: () -> Unit,
     onFullscreenToggle: () -> Unit,
+    onBottomBarMeasured: (Float) -> Unit,
 ) {
     val shouldShowControls = isShowSeekIndicator == 0 && !isDraggingSeekBar && !isShowSpeedUp
 
@@ -112,7 +114,7 @@ fun PlayerControls(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -192,15 +194,17 @@ fun PlayerControls(
                     horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    AnimatedVisibility(visible = zoom >= ZOOM_FILL_THRESHOLD) {
+                    AnimatedVisibility(visible = zoomScaleProgress >= RESIZE_MODE_ZOOM_RATIO) {
                         Text(
-                            text = String.format(Locale.US, "%.1fx", zoom),
+                            text = if (zoomScaleProgress > 1.5f) String.format(
+                                Locale.US, "%.1fx", zoomScaleProgress
+                            ) else "Full View",
                             color = Color.White,
                             fontSize = 14.sp,
                             textAlign = TextAlign.Center,
                             modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .border(2.dp, Color.White, RoundedCornerShape(8.dp))
+                                .clip(RoundedCornerShape(16.dp))
+                                .border(2.dp, Color.White, RoundedCornerShape(16.dp))
                                 .clickable { onZoomReset() }
                                 .background(Color.Black.copy(alpha = 0.3f))
                                 .padding(horizontal = 8.dp, vertical = 4.dp)
@@ -230,7 +234,7 @@ fun PlayerControls(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
+                    .padding(8.dp),
                 horizontalArrangement = Arrangement.spacedBy(64.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -379,7 +383,7 @@ fun PlayerControls(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(8.dp)
                 .align(Alignment.BottomCenter)
         ) {
             AnimatedVisibility(
@@ -431,6 +435,10 @@ fun PlayerControls(
                 }
             }
             CustomSeekBar(
+                modifier = Modifier.onGloballyPositioned {
+                    val heightInPx = it.size.height.toFloat()
+                    onBottomBarMeasured(heightInPx)
+                },
                 positionState = positionState,
                 intro = episodeDetailComplement.sources.intro,
                 outro = episodeDetailComplement.sources.outro,

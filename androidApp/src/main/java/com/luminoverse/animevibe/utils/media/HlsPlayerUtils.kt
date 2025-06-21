@@ -106,7 +106,7 @@ private const val CONTROLS_AUTO_HIDE_DELAY_MS = 3_000L
 private const val WATCH_STATE_UPDATE_INTERVAL_MS = 1_000L
 private const val INTRO_OUTRO_CHECK_INTERVAL_MS = 1_000L
 private const val POSITION_UPDATE_INTERVAL_MS = 500L
-const val ZOOM_FILL_THRESHOLD = 1.25f
+const val RESIZE_MODE_ZOOM_RATIO = 1.25f
 
 @Singleton
 @OptIn(UnstableApi::class)
@@ -210,11 +210,10 @@ class HlsPlayerUtils @Inject constructor(
             }
 
             is HlsPlayerAction.SetZoom -> {
-
                 _controlsState.update {
                     it.copy(
-                        zoom = if (action.zoom < ZOOM_FILL_THRESHOLD) 1f
-                        else if (action.zoom <= 1.5f) 1.25f
+                        zoom = if (action.zoom < RESIZE_MODE_ZOOM_RATIO) 1f
+                        else if (action.zoom <= 1.5f) RESIZE_MODE_ZOOM_RATIO
                         else action.zoom
                     )
                 }

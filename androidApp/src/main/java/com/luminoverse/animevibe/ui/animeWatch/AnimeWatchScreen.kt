@@ -111,7 +111,7 @@ fun AnimeWatchScreen(
         }
 
         if (!isOrientationLockReleased && physicalOrientation == targetLogicalOrientation) {
-            currentActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
+            currentActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
             isOrientationLockReleased = true
         }
     }

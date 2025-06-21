@@ -15,9 +15,9 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculatePan
+import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -27,18 +27,17 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.input.pointer.PointerEvent
-import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.fragment.app.FragmentActivity
@@ -60,7 +59,7 @@ import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
 import com.luminoverse.animevibe.utils.media.PositionState
-import com.luminoverse.animevibe.utils.media.ZOOM_FILL_THRESHOLD
+import com.luminoverse.animevibe.utils.media.RESIZE_MODE_ZOOM_RATIO
 import com.luminoverse.animevibe.utils.resource.Resource
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -146,7 +145,8 @@ fun VideoPlayer(
         episodeDetailComplement.sources.tracks.find { it.kind == "thumbnails" }?.file
     }
     var isBufferingFromSeeking by remember { mutableStateOf(false) }
-
+    var bottomBarHeight by remember { mutableFloatStateOf(0f) }
+    var playerSize by remember { mutableStateOf(IntSize.Zero) }
 
     LaunchedEffect(Unit) {
         seekDisplayHandler = Handler(Looper.getMainLooper())
@@ -228,7 +228,7 @@ fun VideoPlayer(
 
     fun getZoomRatioText(): String {
         return if (zoomScaleProgress > 1.5f) String.format(Locale.US, "%.1fx", zoomScaleProgress)
-        else if (zoomScaleProgress == ZOOM_FILL_THRESHOLD) "Zoomed to Fill"
+        else if (zoomScaleProgress == RESIZE_MODE_ZOOM_RATIO) "Zoomed to Fill"
         else if (zoomScaleProgress == 1f) "Original"
         else ""
     }
@@ -313,142 +313,168 @@ fun VideoPlayer(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .clip(RoundedCornerShape(0.dp))
-            .pointerInput(Unit) {
-                awaitEachGesture {
-                    val down: PointerInputChange = awaitFirstDown()
-                    down.consume()
+            .onSizeChanged { playerSize = it }
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    awaitEachGesture {
+                        val down = awaitFirstDown()
 
-                    longPressJob?.cancel()
-                    longPressJob = scope.launch {
-                        delay(LONG_PRESS_THRESHOLD_MILLIS)
-                        handleLongPressStart()
-                    }
-
-                    var isMultiTouch = false
-                    var isDragging = false
-
-                    do {
-                        val event: PointerEvent = awaitPointerEvent()
-                        val allFingersUp = event.changes.none { it.pressed }
-
-                        if (allFingersUp) {
-                            break
+                        if (controlsState.isControlsVisible && down.position.y > (playerSize.height - bottomBarHeight)) {
+                            return@awaitEachGesture
                         }
 
-                        if (event.changes.size > 1 && !controlsState.isLocked) {
-                            if (!isMultiTouch) {
-                                isMultiTouch = true
-                                isZooming = true
-                                longPressJob?.cancel()
-                                handleLongPressEnd()
-                            }
-                            val zoomChange = event.calculateZoom()
-                            zoomScaleProgress =
-                                (zoomScaleProgress * zoomChange).coerceIn(1f, MAX_ZOOM_RATIO)
-
-                        } else if (event.changes.size == 1 && !isMultiTouch && controlsState.zoom > 1.5f && !controlsState.isLocked) {
-                            val pan = event.calculatePan()
-                            if (pan.x != 0f || pan.y != 0f) {
-                                isDragging = true
-                                longPressJob?.cancel()
-                                handleLongPressEnd()
-
-                                val maxOffsetX = (size.width * (zoomScaleProgress - 1)) / 2
-                                val maxOffsetY = (size.height * (zoomScaleProgress - 1)) / 2
-
-                                offsetX = (offsetX + pan.x).coerceIn(-maxOffsetX, maxOffsetX)
-                                offsetY = (offsetY + pan.y).coerceIn(-maxOffsetY, maxOffsetY)
-                            }
-                        }
-                        event.changes.forEach { if (it.pressed) it.consume() }
-                    } while (event.changes.any { it.pressed })
-
-
-                    if (isMultiTouch) {
-                        playerAction(HlsPlayerAction.SetZoom(zoomScaleProgress))
-                        zoomScaleProgress = if (zoomScaleProgress < ZOOM_FILL_THRESHOLD) 1f
-                        else if (zoomScaleProgress <= 1.5f) 1.25f
-                        else zoomScaleProgress
-
-                        if (zoomScaleProgress <= 1.5f) {
-                            offsetX = 0f
-                            offsetY = 0f
-                        }
-                        isZooming = false
-                    } else if (!isDragging) {
                         longPressJob?.cancel()
-                        val currentTime = System.currentTimeMillis()
-                        val tapX = down.position.x
+                        longPressJob = scope.launch {
+                            delay(LONG_PRESS_THRESHOLD_MILLIS)
+                            handleLongPressStart()
+                            down.consume()
+                        }
 
-                        if (isHolding) {
-                            handleLongPressEnd()
-                        } else {
-                            if (lastTapTime > 0 && (currentTime - lastTapTime) < DOUBLE_TAP_THRESHOLD_MILLIS &&
-                                lastTapX != null && abs(tapX - lastTapX!!) < 100f
-                            ) {
-                                handleDoubleTap(tapX, size.width.toFloat())
-                            } else {
-                                handleSingleTap()
+                        var isMultiTouch = false
+                        var isDragging = false
+
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            val allFingersUp = event.changes.none { it.pressed }
+
+                            if (allFingersUp) {
+                                longPressJob?.cancel()
+                                break
                             }
-                            lastTapTime = currentTime
-                            lastTapX = tapX
+
+                            if (event.changes.size > 1 && !controlsState.isLocked) {
+                                if (!isMultiTouch) {
+                                    isMultiTouch = true
+                                    isZooming = true
+                                    playerAction(
+                                        HlsPlayerAction.RequestToggleControlsVisibility(false)
+                                    )
+                                    longPressJob?.cancel()
+                                    handleLongPressEnd()
+                                }
+                                val zoomChange = event.calculateZoom()
+                                zoomScaleProgress =
+                                    (zoomScaleProgress * zoomChange).coerceIn(1f, MAX_ZOOM_RATIO)
+                                event.changes.forEach { it.consume() }
+
+                            } else if (
+                                event.changes.size == 1 &&
+                                !isMultiTouch &&
+                                controlsState.zoom > 1.5f &&
+                                !controlsState.isLocked
+                            ) {
+                                val pan = event.calculatePan()
+                                if (pan.x != 0f || pan.y != 0f) {
+                                    if (!isDragging) {
+                                        isDragging = true
+                                        playerAction(
+                                            HlsPlayerAction.RequestToggleControlsVisibility(false)
+                                        )
+                                        longPressJob?.cancel()
+                                        handleLongPressEnd()
+                                    }
+
+                                    val maxOffsetX = (size.width * (zoomScaleProgress - 1)) / 2
+                                    val maxOffsetY = (size.height * (zoomScaleProgress - 1)) / 2
+
+                                    offsetX = (offsetX + pan.x).coerceIn(-maxOffsetX, maxOffsetY)
+                                    offsetY = (offsetY + pan.y).coerceIn(-maxOffsetY, maxOffsetY)
+                                    event.changes.forEach { it.consume() }
+                                }
+                            }
+                        }
+
+                        if (isMultiTouch) {
+                            playerAction(HlsPlayerAction.SetZoom(zoomScaleProgress))
+                            zoomScaleProgress = if (zoomScaleProgress < RESIZE_MODE_ZOOM_RATIO) 1f
+                            else if (zoomScaleProgress <= 1.5f) 1.25f
+                            else zoomScaleProgress
+                            if (zoomScaleProgress <= 1.5f) {
+                                offsetX = 0f
+                                offsetY = 0f
+                            }
+                            isZooming = false
+                        } else if (!isDragging) {
+                            longPressJob?.cancel()
+                            val currentTime = System.currentTimeMillis()
+                            val tapX = down.position.x
+
+                            if (isHolding) {
+                                handleLongPressEnd()
+                            } else {
+                                if (lastTapTime > 0 && (currentTime - lastTapTime) < DOUBLE_TAP_THRESHOLD_MILLIS &&
+                                    lastTapX != null && abs(tapX - lastTapX!!) < 100f
+                                ) {
+                                    handleDoubleTap(tapX, size.width.toFloat())
+                                } else {
+                                    handleSingleTap()
+                                }
+                                lastTapTime = currentTime
+                                lastTapX = tapX
+                            }
                         }
                     }
                 }
+        ) {
+            val borderModifier = if (isZooming) {
+                Modifier.border(16.dp, Color.White.copy(alpha = 0.5f))
+            } else {
+                Modifier
             }
-    ) {
-        val borderModifier = if (isZooming) {
-            Modifier.border(16.dp, Color.White.copy(alpha = 0.5f))
-        } else {
-            Modifier
-        }
 
-        if (isFirstLoad) {
-            ScreenshotDisplay(
-                imageUrl = episodeDetailComplement.imageUrl,
-                screenshot = episodeDetailComplement.screenshot,
-                modifier = Modifier.fillMaxSize(),
-                onClick = { handleSingleTap() }
-            )
-        } else {
-            AndroidView(
-                factory = { playerView },
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(Color(0xFF14161A))
-                    .then(borderModifier)
-                    .graphicsLayer(
-                        scaleX = animatedZoom,
-                        scaleY = animatedZoom,
-                        translationX = offsetX,
-                        translationY = offsetY
-                    ),
-                update = { view ->
-                    view.subtitleView?.apply {
-                        setStyle(
-                            CaptionStyleCompat(
-                                Color.White.toArgb(),
-                                Color.Transparent.toArgb(),
-                                Color.Transparent.toArgb(),
-                                CaptionStyleCompat.EDGE_TYPE_OUTLINE,
-                                Color.Black.toArgb(),
-                                null
+            if (isFirstLoad) {
+                ScreenshotDisplay(
+                    imageUrl = episodeDetailComplement.imageUrl,
+                    screenshot = episodeDetailComplement.screenshot,
+                    modifier = Modifier.fillMaxSize(),
+                    onClick = { handleSingleTap() }
+                )
+            } else {
+                AndroidView(
+                    factory = { playerView },
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color(0xFF14161A))
+                        .then(borderModifier)
+                        .graphicsLayer(
+                            scaleX = animatedZoom,
+                            scaleY = animatedZoom,
+                            translationX = offsetX,
+                            translationY = offsetY
+                        ),
+                    update = { view ->
+                        view.subtitleView?.apply {
+                            setStyle(
+                                CaptionStyleCompat(
+                                    Color.White.toArgb(),
+                                    Color.Transparent.toArgb(),
+                                    Color.Transparent.toArgb(),
+                                    CaptionStyleCompat.EDGE_TYPE_OUTLINE,
+                                    Color.Black.toArgb(),
+                                    null
+                                )
                             )
+                        }
+                        view.resizeMode = if (controlsState.zoom == RESIZE_MODE_ZOOM_RATIO) {
+                            AspectRatioFrameLayout.RESIZE_MODE_ZOOM
+                        } else {
+                            AspectRatioFrameLayout.RESIZE_MODE_FIT
+                        }
+                        view.subtitleView?.setPadding(
+                            0, 0, 0,
+                            if (!playerUiState.isPipMode && controlsState.isControlsVisible && (isLandscape || !playerUiState.isFullscreen)) 100 else 0
                         )
                     }
-                    view.resizeMode = if (controlsState.zoom >= ZOOM_FILL_THRESHOLD) {
-                        AspectRatioFrameLayout.RESIZE_MODE_ZOOM
-                    } else {
-                        AspectRatioFrameLayout.RESIZE_MODE_FIT
-                    }
-                    view.subtitleView?.setPadding(
-                        0, 0, 0,
-                        if (!playerUiState.isPipMode && controlsState.isControlsVisible && (isLandscape || !playerUiState.isFullscreen)) 100 else 0
-                    )
-                }
-            )
+                )
+            }
         }
+
+
+        val isPlayerControlsVisible = (controlsState.isControlsVisible || isDraggingSeekBar) &&
+                !calculatedShouldShowResumeOverlay && !playerUiState.isPipMode && !controlsState.isLocked
 
         thumbnailTrackUrl?.let {
             val showThumbnail =
@@ -470,10 +496,6 @@ fun VideoPlayer(
             }
         }
 
-        val isPlayerControlsVisible = (controlsState.isControlsVisible || isDraggingSeekBar) &&
-                !calculatedShouldShowResumeOverlay && !playerUiState.isPipMode && !controlsState.isLocked
-        val isShowSpeedUp =
-            isHolding && !playerUiState.isPipMode && !controlsState.isLocked && !calculatedShouldShowResumeOverlay && !playerUiState.isShowNextEpisode
         AnimatedVisibility(
             visible = isPlayerControlsVisible,
             enter = fadeIn(),
@@ -491,8 +513,8 @@ fun VideoPlayer(
                 isSideSheetVisible = isSideSheetVisible,
                 setSideSheetVisibility = setSideSheetVisibility,
                 isLandscape = isLandscape,
-                isShowSpeedUp = isShowSpeedUp,
-                zoom = controlsState.zoom,
+                isShowSpeedUp = (isHolding && !playerUiState.isPipMode && !controlsState.isLocked && !calculatedShouldShowResumeOverlay && !playerUiState.isShowNextEpisode),
+                zoomScaleProgress = zoomScaleProgress,
                 onZoomReset = {
                     resetZoom()
                 },
@@ -532,7 +554,8 @@ fun VideoPlayer(
                     if (!controlsState.isLocked) {
                         setFullscreenChange(!playerUiState.isFullscreen)
                     }
-                }
+                },
+                onBottomBarMeasured = { height -> bottomBarHeight = height }
             )
         }
 
@@ -627,15 +650,16 @@ fun VideoPlayer(
 
         SpeedUpIndicator(
             modifier = Modifier.align(Alignment.TopCenter),
-            isVisible = isShowSpeedUp,
+            isVisible = (isHolding && !playerUiState.isPipMode && !controlsState.isLocked && !calculatedShouldShowResumeOverlay && !playerUiState.isShowNextEpisode),
             speedText = speedUpText
         )
 
         ZoomIndicator(
             modifier = Modifier.align(Alignment.TopCenter),
             visible = isZooming,
+            isShowSpeedUp = (isHolding && !playerUiState.isPipMode && !controlsState.isLocked && !calculatedShouldShowResumeOverlay && !playerUiState.isShowNextEpisode),
             zoomText = getZoomRatioText(),
-            isClickable = zoomScaleProgress > 1.5f,
+            isClickable = zoomScaleProgress >= RESIZE_MODE_ZOOM_RATIO,
             onClick = { resetZoom() }
         )
 
@@ -728,17 +752,4 @@ fun VideoPlayer(
             )
         }
     }
-}
-
-private fun PointerEvent.calculateZoom(): Float {
-    val changes = this.changes
-    if (changes.size < 2) return 1.0f
-
-    val previousPointers = changes.map { it.previousPosition }
-    val currentPointers = changes.map { it.position }
-
-    val previousDistance = (previousPointers[0] - previousPointers[1]).getDistance()
-    val currentDistance = (currentPointers[0] - currentPointers[1]).getDistance()
-
-    return if (previousDistance == 0f) 1f else currentDistance / previousDistance
 }

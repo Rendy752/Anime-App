@@ -28,6 +28,7 @@ import kotlinx.coroutines.delay
 fun ZoomIndicator(
     modifier: Modifier = Modifier,
     visible: Boolean,
+    isShowSpeedUp: Boolean,
     zoomText: String,
     isClickable: Boolean,
     onClick: () -> Unit
@@ -43,7 +44,7 @@ fun ZoomIndicator(
     }
 
     AnimatedVisibility(
-        visible = isVisible && zoomText.isNotEmpty(),
+        visible = isVisible && zoomText.isNotEmpty() && !isShowSpeedUp,
         modifier = modifier
             .padding(24.dp)
             .background(
@@ -52,7 +53,7 @@ fun ZoomIndicator(
             )
             .then(
                 if (isClickable) Modifier
-                    .border(2.dp, Color.White, RoundedCornerShape(8.dp))
+                    .border(2.dp, Color.White, RoundedCornerShape(16.dp))
                     .clickable { onClick() } else Modifier)
             .padding(horizontal = 16.dp, vertical = 8.dp),
     ) {

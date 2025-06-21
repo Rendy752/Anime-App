@@ -32,6 +32,7 @@ import com.luminoverse.animevibe.utils.media.PositionState
 
 @Composable
 fun CustomSeekBar(
+    modifier: Modifier,
     positionState: PositionState,
     intro: TimeRange,
     outro: TimeRange,
@@ -40,10 +41,7 @@ fun CustomSeekBar(
     onSeekTo: (Long) -> Unit,
     onDraggingSeekBarChange: (Boolean, Long) -> Unit,
     seekAmount: Long,
-    isShowSeekIndicator: Int,
-    touchTargetHeight: Dp = 24.dp,
-    thumbSize: Dp = 10.dp,
-    trackHeight: Dp = 4.dp
+    isShowSeekIndicator: Int
 ) {
     val introStart = intro.start.times(1000L)
     val introEnd = intro.end.times(1000L)
@@ -61,6 +59,10 @@ fun CustomSeekBar(
         if (positionState.duration > 0) positionState.bufferedPosition.toFloat() / positionState.duration else 0f
     val density = LocalDensity.current
     val dragSensitivityFactor = 1f
+
+    val touchTargetHeight: Dp = 24.dp
+    val thumbSize: Dp = 10.dp
+    val trackHeight: Dp = 4.dp
 
     LaunchedEffect(positionState.currentPosition, isDragging, seekAmount, isShowSeekIndicator) {
         if (!isDragging) {
@@ -82,7 +84,7 @@ fun CustomSeekBar(
     }
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .height(touchTargetHeight)
             .onSizeChanged { size ->
