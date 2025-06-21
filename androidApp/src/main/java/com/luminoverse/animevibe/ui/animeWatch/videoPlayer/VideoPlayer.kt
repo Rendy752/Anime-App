@@ -409,6 +409,33 @@ fun VideoPlayer(
                                 val zoomChange = event.calculateZoom()
                                 zoomScaleProgress =
                                     (zoomScaleProgress * zoomChange).coerceIn(1f, MAX_ZOOM_RATIO)
+
+                                val containerWidth = size.width.toFloat()
+                                val containerHeight = size.height.toFloat()
+                                val vWidth = videoSize.width.toFloat()
+                                val vHeight = videoSize.height.toFloat()
+
+                                if (vWidth > 0 && vHeight > 0) {
+                                    val containerAspect = containerWidth / containerHeight
+                                    val videoAspect = vWidth / vHeight
+
+                                    val fittedWidth: Float
+                                    val fittedHeight: Float
+                                    if (videoAspect > containerAspect) {
+                                        fittedWidth = containerWidth
+                                        fittedHeight = containerWidth / videoAspect
+                                    } else {
+                                        fittedHeight = containerHeight
+                                        fittedWidth = containerHeight * videoAspect
+                                    }
+
+                                    val maxOffsetX = (fittedWidth * zoomScaleProgress - containerWidth).coerceAtLeast(0f) / 2f
+                                    val maxOffsetY = (fittedHeight * zoomScaleProgress - containerHeight).coerceAtLeast(0f) / 2f
+
+                                    offsetX = offsetX.coerceIn(-maxOffsetX, maxOffsetX)
+                                    offsetY = offsetY.coerceIn(-maxOffsetY, maxOffsetY)
+                                }
+
                                 event.changes.forEach { it.consume() }
 
                             } else if (
