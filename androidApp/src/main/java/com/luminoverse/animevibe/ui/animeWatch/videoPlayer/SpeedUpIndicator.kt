@@ -24,25 +24,26 @@ fun SpeedUpIndicator(
 ) {
     AnimatedVisibility(
         visible = isVisible,
-        modifier = modifier.padding(24.dp)
+        modifier = modifier
+            .padding(24.dp)
             .background(
                 color = Color.Black.copy(alpha = 0.4f),
                 shape = RoundedCornerShape(16.dp)
             )
             .padding(8.dp),
     ) {
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        Icon(
-            Icons.Filled.Speed,
-            contentDescription = "Speed Up",
-            tint = Color.White,
-            modifier = Modifier.padding(end = 4.dp)
-        )
-        Text(
-            text = speedText,
-            color = Color.White,
-            fontSize = 16.sp
-        )
-    }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                Icons.Filled.Speed,
+                contentDescription = "Speed Up",
+                tint = Color.White,
+                modifier = Modifier.padding(end = 4.dp)
+            )
+            Text(
+                text = speedText,
+                color = Color.White,
+                fontSize = 16.sp
+            )
         }
+    }
 }

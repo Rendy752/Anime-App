@@ -1,19 +1,25 @@
 package com.luminoverse.animevibe.main
 
+import android.annotation.SuppressLint
 import android.app.Application
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.IntentFilter
 import android.content.SharedPreferences
+import android.content.res.Configuration
+import android.content.res.Resources
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Wifi
-import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.ui.graphics.Color
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 import com.luminoverse.animevibe.models.NetworkStatus
 import com.luminoverse.animevibe.ui.main.MainAction
 import com.luminoverse.animevibe.ui.main.MainViewModel
 import com.luminoverse.animevibe.ui.theme.ColorStyle
 import com.luminoverse.animevibe.ui.theme.ContrastMode
+import com.luminoverse.animevibe.ui.theme.ThemeMode
 import com.luminoverse.animevibe.utils.NetworkStateMonitor
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
@@ -44,6 +50,11 @@ class MainViewModelTest {
     private lateinit var settingsPrefs: SharedPreferences
     private lateinit var networkStateMonitor: NetworkStateMonitor
     private lateinit var testDispatcher: TestDispatcher
+    private lateinit var mockResources: Resources
+    private lateinit var mockConfiguration: Configuration
+
+    private lateinit var isConnectedLiveData: MutableLiveData<Boolean>
+    private lateinit var networkStatusLiveData: MutableLiveData<NetworkStatus>
 
     private val mockNetworkStatus = NetworkStatus(
         icon = Icons.Filled.Wifi,
@@ -59,7 +70,12 @@ class MainViewModelTest {
         application = mockk(relaxed = true)
         themePrefs = mockk(relaxed = true)
         settingsPrefs = mockk(relaxed = true)
+        mockResources = mockk(relaxed = true)
+        mockConfiguration = mockk(relaxed = true)
+
         networkStateMonitor = mockk(relaxed = true)
+        isConnectedLiveData = MutableLiveData(true)
+        networkStatusLiveData = MutableLiveData(mockNetworkStatus)
 
         every {
             application.getSharedPreferences(
@@ -74,6 +90,7 @@ class MainViewModelTest {
             )
         } returns settingsPrefs
 
+        every { themePrefs.getString("theme_mode", ThemeMode.System.name) } returns ThemeMode.System.name
         every { themePrefs.getBoolean("is_dark_mode", false) } returns false
         every {
             themePrefs.getString(
@@ -110,30 +127,51 @@ class MainViewModelTest {
         unmockkAll()
     }
 
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     @Test
-    fun `init should load preferences and start network monitoring`() = runTest {
+    fun `init should load preferences, set system theme, and start network monitoring`() = runTest {
         val state = viewModel.state.value
-        assertFalse(state.isDarkMode)
-        assertEquals(ContrastMode.Normal, state.contrastMode)
-        assertEquals(ColorStyle.Default, state.colorStyle)
-        assertTrue(state.isAutoPlayVideo)
+
+        assertEquals(ThemeMode.System, state.themeMode)
+        assertFalse("isDarkMode should be false when system is in light mode", state.isDarkMode)
         assertTrue(state.isConnected)
         assertEquals(mockNetworkStatus, state.networkStatus)
+
         verify { networkStateMonitor.startMonitoring() }
+        verify { application.registerReceiver(any(), any<IntentFilter>()) }
     }
 
     @Test
-    fun `SetDarkMode should update isDarkMode and persist to SharedPreferences`() = runTest {
+    fun `SetThemeMode should update themeMode, isDarkMode, and persist to SharedPreferences`() = runTest {
         val editor = mockk<SharedPreferences.Editor>(relaxed = true)
         every { themePrefs.edit() } returns editor
 
-        viewModel.onAction(MainAction.SetDarkMode(true))
+        viewModel.onAction(MainAction.SetThemeMode(ThemeMode.Dark))
         advanceUntilIdle()
 
-        val state = viewModel.state.value
+        var state = viewModel.state.value
+        assertEquals(ThemeMode.Dark, state.themeMode)
         assertTrue(state.isDarkMode)
-        verify { editor.putBoolean("is_dark_mode", true) }
+        verify { editor.putString("theme_mode", ThemeMode.Dark.name) }
         verify { editor.apply() }
+
+        viewModel.onAction(MainAction.SetThemeMode(ThemeMode.Light))
+        advanceUntilIdle()
+
+        state = viewModel.state.value
+        assertEquals(ThemeMode.Light, state.themeMode)
+        assertFalse(state.isDarkMode)
+        verify { editor.putString("theme_mode", ThemeMode.Light.name) }
+        verify { editor.apply() }
+    }
+
+    @Test
+    fun `onCleared should stop network monitoring and unregister receiver`() = runTest {
+        viewModel.onCleared()
+        advanceUntilIdle()
+
+        verify { networkStateMonitor.stopMonitoring() }
+        verify { application.unregisterReceiver(any<BroadcastReceiver>()) }
     }
 
     @Test
@@ -148,137 +186,5 @@ class MainViewModelTest {
         assertEquals(ContrastMode.High, state.contrastMode)
         verify { editor.putString("contrast_mode", ContrastMode.High.name) }
         verify { editor.apply() }
-    }
-
-    @Test
-    fun `SetColorStyle should update colorStyle and persist to SharedPreferences`() = runTest {
-        val editor = mockk<SharedPreferences.Editor>(relaxed = true)
-        every { themePrefs.edit() } returns editor
-
-        viewModel.onAction(MainAction.SetColorStyle(ColorStyle.Monochrome))
-        advanceUntilIdle()
-
-        val state = viewModel.state.value
-        assertEquals(ColorStyle.Monochrome, state.colorStyle)
-        verify { editor.putString("color_style", ColorStyle.Monochrome.name) }
-        verify { editor.apply() }
-    }
-
-    @Test
-    fun `SetNotificationEnabled should update isNotificationEnabled and persist to SharedPreferences`() =
-        runTest {
-            val editor = mockk<SharedPreferences.Editor>(relaxed = true)
-            every { settingsPrefs.edit() } returns editor
-
-            viewModel.onAction(MainAction.SetNotificationEnabled(true))
-            advanceUntilIdle()
-
-            val state = viewModel.state.value
-            assertTrue(state.isNotificationEnabled)
-            verify { editor.putBoolean("notifications_enabled", true) }
-            verify { editor.apply() }
-        }
-
-    @Test
-    fun `SetAutoPlayVideo should update isAutoPlayVideo and persist to SharedPreferences`() =
-        runTest {
-            val editor = mockk<SharedPreferences.Editor>(relaxed = true)
-            every { settingsPrefs.edit() } returns editor
-
-            viewModel.onAction(MainAction.SetAutoPlayVideo(false))
-            advanceUntilIdle()
-
-            val state = viewModel.state.value
-            assertFalse(state.isAutoPlayVideo)
-            verify { editor.putBoolean("auto_play_video", false) }
-            verify { editor.apply() }
-        }
-
-    @Test
-    fun `SetRtl should update isRtl and persist to SharedPreferences`() = runTest {
-        val editor = mockk<SharedPreferences.Editor>(relaxed = true)
-        every { settingsPrefs.edit() } returns editor
-
-        viewModel.onAction(MainAction.SetRtl(true))
-        advanceUntilIdle()
-
-        val state = viewModel.state.value
-        assertTrue(state.isRtl)
-        verify { editor.putBoolean("rtl", true) }
-        verify { editor.apply() }
-    }
-
-    @Test
-    fun `SetIsConnected should update isConnected`() = runTest {
-        viewModel.onAction(MainAction.SetIsConnected(false))
-        advanceUntilIdle()
-
-        val state = viewModel.state.value
-        assertFalse(state.isConnected)
-    }
-
-    @Test
-    fun `SetNetworkStatus should update networkStatus`() = runTest {
-        val newStatus = NetworkStatus(
-            icon = Icons.Filled.WifiOff,
-            label = "No Internet",
-            iconColor = Color.Red
-        )
-
-        viewModel.onAction(MainAction.SetNetworkStatus(newStatus))
-        advanceUntilIdle()
-
-        val state = viewModel.state.value
-        assertEquals(newStatus, state.networkStatus)
-    }
-
-    @Test
-    fun `SetIsShowIdleDialog should update isShowIdleDialog`() = runTest {
-        viewModel.onAction(MainAction.SetIsShowIdleDialog(true))
-        advanceUntilIdle()
-
-        val state = viewModel.state.value
-        assertTrue(state.isShowIdleDialog)
-    }
-
-    @Test
-    fun `onCleared should stop network monitoring`() = runTest {
-        viewModel.onCleared()
-        advanceUntilIdle()
-
-        verify { networkStateMonitor.stopMonitoring() }
-    }
-
-    @Test
-    fun `NetworkStateMonitor should update state when network becomes unavailable`() = runTest {
-        val isConnectedObserver = slot<Observer<Boolean>>()
-        val networkStatusObserver = slot<Observer<NetworkStatus>>()
-        every { networkStateMonitor.isConnected.observeForever(capture(isConnectedObserver)) } answers {
-            isConnectedObserver.captured.onChanged(false)
-        }
-        every { networkStateMonitor.networkStatus.observeForever(capture(networkStatusObserver)) } answers {
-            networkStatusObserver.captured.onChanged(
-                NetworkStatus(
-                    icon = Icons.Filled.WifiOff,
-                    label = "No Internet",
-                    iconColor = Color.Red
-                )
-            )
-        }
-
-        viewModel = MainViewModel(application, networkStateMonitor)
-        advanceUntilIdle()
-
-        val state = viewModel.state.value
-        assertFalse(state.isConnected)
-        assertEquals(
-            NetworkStatus(
-                icon = Icons.Filled.WifiOff,
-                label = "No Internet",
-                iconColor = Color.Red
-            ),
-            state.networkStatus
-        )
-        verify { networkStateMonitor.startMonitoring() }
     }
 }

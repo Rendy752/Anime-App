@@ -45,6 +45,7 @@ class MainActivity : AppCompatActivity() {
     private val onPictureInPictureModeChangedListeners = mutableListOf<(Boolean) -> Unit>()
     private lateinit var navController: NavHostController
     private var lastInteractionTime = System.currentTimeMillis()
+    val resetIdleTimer = { lastInteractionTime = System.currentTimeMillis() }
     private val idleTimeoutMillis = TimeUnit.MINUTES.toMillis(1)
     private val intentChannel = Channel<Intent>(Channel.CONFLATED)
     private lateinit var pipParamsBuilder: PictureInPictureParams.Builder
@@ -82,7 +83,6 @@ class MainActivity : AppCompatActivity() {
 
             val configuration = LocalConfiguration.current
             val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
-            val resetIdleTimer = { lastInteractionTime = System.currentTimeMillis() }
 
             LaunchedEffect(Unit) {
                 startIdleDetection(
@@ -164,11 +164,11 @@ class MainActivity : AppCompatActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         intent.let { intentChannel.trySend(it) }
-        lastInteractionTime = System.currentTimeMillis()
+        resetIdleTimer()
     }
 
     override fun dispatchTouchEvent(ev: MotionEvent?): Boolean {
-        lastInteractionTime = System.currentTimeMillis()
+        resetIdleTimer()
         return super.dispatchTouchEvent(ev)
     }
 
@@ -195,6 +195,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
+        resetIdleTimer()
         if (::navController.isInitialized) {
             val currentRoute = navController.currentDestination?.route
             val isPlaying = hlsPlayerUtils.getPlayer()?.isPlaying == true
@@ -206,6 +207,11 @@ class MainActivity : AppCompatActivity() {
                     ?.dispatch(MediaPlaybackAction.StopService)
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        resetIdleTimer()
     }
 
     override fun onDestroy() {

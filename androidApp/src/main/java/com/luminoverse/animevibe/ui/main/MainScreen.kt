@@ -49,7 +49,6 @@ import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.main.navigation.navigateTo
 import com.luminoverse.animevibe.ui.main.navigation.navigateToAdjacentRoute
 import com.luminoverse.animevibe.ui.settings.SettingsScreen
-import com.luminoverse.animevibe.ui.settings.SettingsViewModel
 import com.luminoverse.animevibe.utils.media.PipUtil.buildPipActions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -229,14 +228,7 @@ fun MainScreen(
                 )
             }
             composable(NavRoute.Settings.route) {
-                val viewModel: SettingsViewModel = hiltViewModel()
-                val settingsState by viewModel.state.collectAsStateWithLifecycle()
-                SettingsScreen(
-                    mainState = mainState,
-                    mainAction = mainAction,
-                    state = settingsState,
-                    action = viewModel::onAction,
-                )
+                SettingsScreen(mainState = mainState, mainAction = mainAction)
             }
             composable(
                 route = NavRoute.AnimeDetail.ROUTE_PATTERN,

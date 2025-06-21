@@ -21,7 +21,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -35,16 +34,13 @@ import com.luminoverse.animevibe.ui.settings.components.ColorStyleCard
 import com.luminoverse.animevibe.ui.settings.components.ContrastModeChips
 import com.luminoverse.animevibe.ui.settings.components.ThemeModeChips
 import com.luminoverse.animevibe.ui.theme.ColorStyle
-import com.luminoverse.animevibe.utils.resource.Resource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview
 @Composable
 fun SettingsScreen(
     mainState: MainState = MainState(),
-    mainAction: (MainAction) -> Unit = {},
-    state: SettingsState = SettingsState(),
-    action: (SettingsAction) -> Unit = {},
+    mainAction: (MainAction) -> Unit = {}
 ) {
     val colorStyleCardScrollState = rememberScrollState()
     val context = LocalContext.current
@@ -70,11 +66,6 @@ fun SettingsScreen(
             )
         }
         mainAction(MainAction.CheckNotificationPermission)
-    }
-
-    LaunchedEffect(mainState.isConnected) {
-        if (!mainState.isConnected) return@LaunchedEffect
-        if (state.animeDetailSample is Resource.Error) action(SettingsAction.GetRandomAnime)
     }
 
     Scaffold { paddingValues ->
@@ -169,7 +160,6 @@ fun SettingsScreen(
                     )
                     ColorStyle.entries.forEach { style ->
                         ColorStyleCard(
-                            animeDetailSample = state.animeDetailSample,
                             state = colorStyleCardScrollState,
                             colorStyle = style,
                             isSelected = style == mainState.colorStyle,

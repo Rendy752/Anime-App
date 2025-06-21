@@ -23,29 +23,22 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
-import com.luminoverse.animevibe.models.AnimeDetail
 import com.luminoverse.animevibe.models.animeDetailPlaceholder
 import com.luminoverse.animevibe.models.episodeDetailComplementPlaceholder
 import com.luminoverse.animevibe.models.episodePlaceholder
 import com.luminoverse.animevibe.ui.common.EpisodeDetailItem
-import com.luminoverse.animevibe.ui.common.EpisodeDetailItemSkeleton
 import com.luminoverse.animevibe.ui.common.AnimeHeader
-import com.luminoverse.animevibe.ui.common.AnimeHeaderSkeleton
 import com.luminoverse.animevibe.ui.common.AnimeScheduleItem
-import com.luminoverse.animevibe.ui.common.AnimeScheduleItemSkeleton
 import com.luminoverse.animevibe.ui.common.AnimeSearchItem
-import com.luminoverse.animevibe.ui.common.AnimeSearchItemSkeleton
 import com.luminoverse.animevibe.ui.common.ContinueWatchingAnime
 import com.luminoverse.animevibe.ui.theme.ColorStyle
 import com.luminoverse.animevibe.ui.theme.ContrastMode
 import com.luminoverse.animevibe.utils.ColorUtils
-import com.luminoverse.animevibe.utils.resource.Resource
 import java.text.SimpleDateFormat
 import java.util.Date
 
 @Composable
 fun ColorStyleCard(
-    animeDetailSample: Resource<AnimeDetail>,
     state: ScrollState,
     colorStyle: ColorStyle,
     isSelected: Boolean,
@@ -88,11 +81,8 @@ fun ColorStyleCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    if (animeDetailSample is Resource.Loading) AnimeScheduleItemSkeleton(
-                        modifier = Modifier.widthIn(max = 130.dp)
-                    )
-                    else AnimeScheduleItem(
-                        animeDetail = animeDetailSample.data ?: animeDetailPlaceholder,
+                    AnimeScheduleItem(
+                        animeDetail = animeDetailPlaceholder,
                         modifier = Modifier.widthIn(max = 130.dp)
                     )
 
@@ -101,23 +91,18 @@ fun ColorStyleCard(
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        if (animeDetailSample is Resource.Loading) EpisodeDetailItemSkeleton(
-                            modifier = Modifier.heightIn(max = 100.dp)
-                        )
-                        else EpisodeDetailItem(
+                        EpisodeDetailItem(
                             modifier = Modifier.heightIn(max = 100.dp),
-                            animeImage = animeDetailSample.data?.images?.webp?.large_image_url ?: animeDetailPlaceholder.images.webp.large_image_url,
+                            animeImage = animeDetailPlaceholder.images.webp.large_image_url,
                             lastEpisodeWatchedId = episodePlaceholder.id,
-                            episode = episodePlaceholder.copy(
-                                title = animeDetailSample.data?.title ?: episodePlaceholder.title
-                            ),
+                            episode = episodePlaceholder,
                             isNewEpisode = true,
                             episodeDetailComplement = episodeDetailComplementPlaceholder.copy(
                                 lastWatched = SimpleDateFormat.getDateInstance().format(Date()),
                                 lastTimestamp = 260_000L,
                                 duration = 300_000L
                             ),
-                            query = (animeDetailSample.data?.title ?: episodePlaceholder.title).let {
+                            query = episodePlaceholder.title.let {
                                 if (it.length > 3) it.take(3) else it
                             },
                             titleMaxLines = 2
@@ -125,27 +110,19 @@ fun ColorStyleCard(
 
                         ContinueWatchingAnime(
                             episodeDetailComplement = episodeDetailComplementPlaceholder.copy(
-                                animeTitle = animeDetailSample.data?.title
-                                    ?: episodeDetailComplementPlaceholder.animeTitle,
-                                imageUrl = animeDetailSample.data?.images?.webp?.large_image_url
+                                animeTitle = episodeDetailComplementPlaceholder.animeTitle,
+                                imageUrl = animeDetailPlaceholder.images.webp.large_image_url
                             )
                         )
                     }
 
-                    if (animeDetailSample is Resource.Loading) AnimeSearchItemSkeleton(
-                        modifier = Modifier.widthIn(max = 400.dp)
-                    )
-                    else AnimeSearchItem(
+                    AnimeSearchItem(
                         modifier = Modifier.widthIn(max = 400.dp),
-                        animeDetail = animeDetailSample.data ?: animeDetailPlaceholder
+                        animeDetail = animeDetailPlaceholder
                     )
 
-                    if (animeDetailSample is Resource.Loading) AnimeHeaderSkeleton(
-                        modifier = Modifier.widthIn(max = 300.dp),
-                        showImage = false
-                    )
-                    else AnimeHeader(
-                        animeDetail = animeDetailSample.data ?: animeDetailPlaceholder,
+                    AnimeHeader(
+                        animeDetail = animeDetailPlaceholder,
                         modifier = Modifier.widthIn(max = 300.dp),
                         showImage = false
                     )

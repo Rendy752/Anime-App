@@ -636,7 +636,7 @@ fun VideoPlayer(
             visible = isZooming,
             zoomText = getZoomRatioText(),
             isClickable = zoomScaleProgress > 1.5f,
-            onCLick = { resetZoom() }
+            onClick = { resetZoom() }
         )
 
         val isLockButtonVisible =

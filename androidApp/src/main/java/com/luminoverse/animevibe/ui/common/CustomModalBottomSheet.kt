@@ -103,20 +103,15 @@ fun CustomModalBottomSheet(
         modifier = modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.4f))
-            .clickable { onDismiss }
     ) {
-        Popup(
-            onDismissRequest = onDismiss,
-            properties = PopupProperties(focusable = true)
-        ) {
+        Popup(properties = PopupProperties(focusable = true)) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
-                    ) { onDismiss() }
-            ) {
+                    ) { onDismiss() }) {
                 AnimatedVisibility(
                     visible = isVisible,
                     enter = slideInVertically(
@@ -156,6 +151,10 @@ fun CustomModalBottomSheet(
                         .onGloballyPositioned { coordinates ->
                             sheetHeightPx = coordinates.size.height.toFloat()
                         }
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null
+                        ) {}
                 ) {
                     Surface(
                         modifier = Modifier

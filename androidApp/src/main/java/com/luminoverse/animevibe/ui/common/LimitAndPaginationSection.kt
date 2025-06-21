@@ -40,7 +40,7 @@ fun LimitAndPaginationSection(
 
     if (useHorizontalPager) {
         AnimatedVisibility(
-            visible = isVisible,
+            visible = isVisible && pagination != null && pagination.last_visible_page != 1,
             enter = slideInVertically(
                 initialOffsetY = { it },
                 animationSpec = tween(durationMillis = 1000, easing = EaseInOut)

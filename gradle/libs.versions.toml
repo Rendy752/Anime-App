@@ -34,6 +34,7 @@ okhttp = "4.12.0"
 prettytime = "5.0.8.Final"
 retrofit = "2.11.0"
 roomRuntime = "2.7.1"
+slf4jSimple = "2.0.13"
 sqldelight = "2.1.0"
 workRuntimeKtx = "2.10.1"
 
@@ -84,6 +85,7 @@ ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "kto
 ktor-client-js = { module = "io.ktor:ktor-client-js", version.ref = "ktor" }
 
 # SQLDELIGHT (Database)
+slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4jSimple" }
 sqldelight-runtime = { module = "app.cash.sqldelight:runtime", version.ref = "sqldelight" }
 sqldelight-coroutinesExtensions = { module = "app.cash.sqldelight:coroutines-extensions", version.ref = "sqldelight" }
 sqldelight-driverAndroid = { module = "app.cash.sqldelight:android-driver", version.ref = "sqldelight" }

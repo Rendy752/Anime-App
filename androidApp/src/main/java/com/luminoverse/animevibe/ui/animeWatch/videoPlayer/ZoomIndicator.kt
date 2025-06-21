@@ -30,7 +30,7 @@ fun ZoomIndicator(
     visible: Boolean,
     zoomText: String,
     isClickable: Boolean,
-    onCLick: () -> Unit
+    onClick: () -> Unit
 ) {
     var isVisible by remember { mutableStateOf(visible) }
 
@@ -53,7 +53,7 @@ fun ZoomIndicator(
             .then(
                 if (isClickable) Modifier
                     .border(2.dp, Color.White, RoundedCornerShape(8.dp))
-                    .clickable { onCLick() } else Modifier)
+                    .clickable { onClick() } else Modifier)
             .padding(horizontal = 16.dp, vertical = 8.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {

@@ -31,7 +31,6 @@ import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.episodeDetailComplementPlaceholder
 import com.luminoverse.animevibe.utils.basicContainer
-import com.luminoverse.animevibe.utils.watch.WatchUtils.getEpisodeBackgroundColor
 
 @Preview
 @Composable
@@ -47,10 +46,6 @@ fun ContinueWatchingAnime(
             .height(100.dp)
             .width(IntrinsicSize.Max)
             .basicContainer(
-                backgroundBrush = getEpisodeBackgroundColor(
-                    episodeDetailComplement.isFiller,
-                    episodeDetailComplement
-                ),
                 roundedCornerShape = RoundedCornerShape(
                     topStart = 16.dp,
                     bottomStart = 16.dp,
