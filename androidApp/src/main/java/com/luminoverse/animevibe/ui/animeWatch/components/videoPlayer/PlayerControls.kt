@@ -151,6 +151,7 @@ fun PlayerControls(
 
         BottomSection(
             modifier = Modifier.align(Alignment.BottomCenter),
+            errorMessage = errorMessage,
             shouldShowControls = shouldShowControls,
             isShowSeekIndicator = isShowSeekIndicator,
             onFullscreenToggle = onFullscreenToggle,
@@ -530,6 +531,7 @@ private fun MiddleSection(
 @Composable
 private fun BottomSection(
     modifier: Modifier,
+    errorMessage: String?,
     shouldShowControls: Boolean,
     isShowSeekIndicator: Int,
     onFullscreenToggle: () -> Unit,
@@ -610,6 +612,7 @@ private fun BottomSection(
                 val heightInPx = it.size.height.toFloat()
                 onBottomBarMeasured(heightInPx)
             },
+            errorMessage = errorMessage,
             currentPosition = currentPosition,
             duration = duration,
             bufferedPosition = bufferedPosition,

@@ -4,7 +4,6 @@ import android.app.Activity
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ActivityInfo
-import android.view.OrientationEventListener
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -30,15 +29,12 @@ import com.luminoverse.animevibe.ui.animeWatch.components.AnimeWatchContent
 import kotlinx.coroutines.launch
 import com.luminoverse.animevibe.ui.main.MainActivity
 import androidx.compose.foundation.layout.padding
+import androidx.compose.runtime.getValue
 import androidx.media3.exoplayer.ExoPlayer
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
 import kotlinx.coroutines.flow.StateFlow
-
-private enum class PhysicalOrientation {
-    PORTRAIT, LANDSCAPE
-}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,52 +68,6 @@ fun AnimeWatchScreen(
         }
     }
     val screenOnReceiver = remember { ScreenOnReceiver { isScreenOn = true } }
-
-    var physicalOrientation by remember { mutableStateOf(if (mainState.isLandscape) PhysicalOrientation.LANDSCAPE else PhysicalOrientation.PORTRAIT) }
-    var isOrientationLockReleased by remember { mutableStateOf(true) }
-
-    DisposableEffect(Unit) {
-        val orientationEventListener = object : OrientationEventListener(context) {
-            override fun onOrientationChanged(orientation: Int) {
-                if (orientation == ORIENTATION_UNKNOWN) return
-
-                val newOrientation = when (orientation) {
-                    in 75..105, in 255..285 -> PhysicalOrientation.LANDSCAPE
-                    else -> PhysicalOrientation.PORTRAIT
-                }
-
-                if (newOrientation != physicalOrientation) {
-                    physicalOrientation = newOrientation
-                }
-            }
-        }
-        orientationEventListener.enable()
-        onDispose {
-            orientationEventListener.disable()
-        }
-    }
-
-    LaunchedEffect(playerUiState.isFullscreen, physicalOrientation, isOrientationLockReleased) {
-        val currentActivity = context as? Activity ?: return@LaunchedEffect
-
-        val targetLogicalOrientation =
-            if (playerUiState.isFullscreen) PhysicalOrientation.LANDSCAPE else PhysicalOrientation.PORTRAIT
-        val targetActivityInfo =
-            if (playerUiState.isFullscreen) ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE else ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-
-        if (currentActivity.requestedOrientation != targetActivityInfo && !isOrientationLockReleased) {
-            currentActivity.requestedOrientation = targetActivityInfo
-        }
-
-        if (!isOrientationLockReleased && physicalOrientation == targetLogicalOrientation) {
-            currentActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
-            isOrientationLockReleased = true
-        }
-    }
-
-    LaunchedEffect(playerUiState.isFullscreen) {
-        isOrientationLockReleased = false
-    }
 
     LaunchedEffect(mainState.isLandscape) {
         onAction(WatchAction.SetSideSheetVisibility(false))

@@ -46,6 +46,7 @@ import com.luminoverse.animevibe.models.TimeRange
 @Composable
 fun CustomSeekBar(
     modifier: Modifier,
+    errorMessage: String?,
     currentPosition: Long,
     duration: Long,
     bufferedPosition: Long,
@@ -135,7 +136,7 @@ fun CustomSeekBar(
 
                     val dragStart = awaitDragOrCancellation(down.id)
 
-                    if (dragStart != null) {
+                    if (dragStart != null && errorMessage == null) {
                         isDragging = true
                         handlePause()
                         val initialThumbPosOnDrag = dragPosition

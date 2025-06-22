@@ -47,6 +47,7 @@ class VideoPlayerState(
     val playerAction: (HlsPlayerAction) -> Unit,
     val scope: CoroutineScope
 ) {
+    var isFirstLoad by mutableStateOf(true)
     var isShowSeekIndicator by mutableIntStateOf(0)
     var seekAmount by mutableLongStateOf(0L)
     var isSeeking by mutableStateOf(false)
@@ -58,7 +59,7 @@ class VideoPlayerState(
     var isHolding by mutableStateOf(false)
     var showLockReminder by mutableStateOf(false)
     var isDraggingSeekBar by mutableStateOf(false)
-    var dragCancelTrigger by mutableStateOf(0)
+    var dragCancelTrigger by mutableIntStateOf(0)
         private set
     var dragSeekPosition by mutableLongStateOf(0L)
     var showSettingsSheet by mutableStateOf(false)
@@ -115,6 +116,10 @@ class VideoPlayerState(
 
     fun cancelSeekBarDrag() {
         if (isDraggingSeekBar) {
+            isShowSeekIndicator = 0
+            seekAmount = 0L
+            isSeeking = false
+            fastForwardRewindCounter = 0
             isDraggingSeekBar = false
             dragCancelTrigger++
         }
@@ -220,11 +225,12 @@ class VideoPlayerState(
 
 @Composable
 fun rememberVideoPlayerState(
+    key: Any?,
     player: ExoPlayer,
     playerAction: (HlsPlayerAction) -> Unit,
     scope: CoroutineScope = rememberCoroutineScope()
 ): VideoPlayerState {
-    val state = remember {
+    val state = remember(key) {
         VideoPlayerState(
             player = player,
             playerAction = playerAction,
@@ -232,7 +238,7 @@ fun rememberVideoPlayerState(
         )
     }
 
-    DisposableEffect(Unit) {
+    DisposableEffect(key) {
         val listener = object : Player.Listener {
             override fun onVideoSizeChanged(newVideoSize: VideoSize) {
                 state.videoSize = newVideoSize
@@ -251,14 +257,14 @@ suspend fun AwaitPointerEventScope.handleGestures(
     state: VideoPlayerState,
     updatedControlsState: State<ControlsState>,
     updatedCoreState: State<PlayerCoreState>,
-    updatedIsFirstLoadState: State<Boolean>
+    isFirstLoad: Boolean
 ) {
     val down = awaitFirstDown()
 
     state.longPressJob?.cancel()
     state.longPressJob = state.scope.launch {
         delay(LONG_PRESS_THRESHOLD_MILLIS)
-        if (state.player.isPlaying && !updatedControlsState.value.isLocked && !(updatedCoreState.value.playbackState != Player.STATE_IDLE && updatedIsFirstLoadState.value)) {
+        if (state.player.isPlaying && !updatedControlsState.value.isLocked && !(updatedCoreState.value.playbackState != Player.STATE_IDLE && isFirstLoad)) {
             state.handleLongPressStart(updatedControlsState.value.playbackSpeed)
             down.consume()
         }
@@ -279,19 +285,14 @@ suspend fun AwaitPointerEventScope.handleGestures(
                 isMultiTouch = true
                 state.isZooming = true
                 state.playerAction(
-                    HlsPlayerAction.RequestToggleControlsVisibility(
-                        false
-                    )
+                    HlsPlayerAction.RequestToggleControlsVisibility(false)
                 )
                 state.longPressJob?.cancel()
                 state.handleLongPressEnd()
             }
             val zoomChange = event.calculateZoom()
             state.zoomScaleProgress =
-                (state.zoomScaleProgress * zoomChange).coerceIn(
-                    1f,
-                    MAX_ZOOM_RATIO
-                )
+                (state.zoomScaleProgress * zoomChange).coerceIn(1f, MAX_ZOOM_RATIO)
 
             val (maxOffsetX, maxOffsetY) = calculateOffsetBounds(
                 size,
@@ -354,7 +355,7 @@ suspend fun AwaitPointerEventScope.handleGestures(
                     tapX,
                     size.width.toFloat(),
                     updatedCoreState.value,
-                    updatedIsFirstLoadState.value,
+                    isFirstLoad,
                     updatedControlsState.value.isLocked
                 )
             } else {
@@ -382,8 +383,6 @@ fun calculateOffsetBounds(
     val containerWidth = containerSize.width.toFloat()
     val containerHeight = containerSize.height.toFloat()
 
-    // FIXED: Incorporate the pixel aspect ratio to get the true display width.
-    // This is the key to calculating the correct visual boundaries.
     val vWidth = videoSize.width.toFloat() * videoSize.pixelWidthHeightRatio
     val vHeight = videoSize.height.toFloat()
 
@@ -391,17 +390,13 @@ fun calculateOffsetBounds(
     val videoAspect = vWidth / vHeight
 
     val (fittedWidth, fittedHeight) = if (videoAspect > containerAspect) {
-        // Video is wider than the container (letterboxed)
         containerWidth to (containerWidth / videoAspect)
     } else {
-        // Video is taller than or equal to the container (pillarboxed or fills height)
         (containerHeight * videoAspect) to containerHeight
     }
 
-    // Calculate the total size of the overflowing content (how much is outside the screen)
     val overflowX = (fittedWidth * scale - containerWidth).coerceAtLeast(0f)
     val overflowY = (fittedHeight * scale - containerHeight).coerceAtLeast(0f)
 
-    // The maximum offset is half of the total overflow, as it's distributed on both sides
     return (overflowX / 2f) to (overflowY / 2f)
 }

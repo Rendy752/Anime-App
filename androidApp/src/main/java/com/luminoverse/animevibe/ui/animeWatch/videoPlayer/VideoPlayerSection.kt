@@ -85,9 +85,6 @@ fun VideoPlayerSection(
     fun setupPlayer() {
         if (player != null) {
             playerView.player = player
-            playerAction(HlsPlayerAction.UpdateWatchState { position, duration, screenshot ->
-                updateStoredWatchState(position, duration, screenshot)
-            })
             val videoSurface = playerView.videoSurfaceView
             playerAction(HlsPlayerAction.SetVideoSurface(videoSurface))
             Log.d(
@@ -280,11 +277,7 @@ fun VideoPlayerSection(
             HlsPlayerAction.SetMedia(
                 videoData = episodeDetailComplement.sources,
                 isAutoPlayVideo = isAutoPlayVideo,
-                currentPosition =
-                    if (isAutoPlayVideo && ((episodeDetailComplement.lastTimestamp ?: 0) <
-                                (episodeDetailComplement.duration ?: 0))
-                    ) episodeDetailComplement.lastTimestamp ?: 0
-                    else 0,
+                currentPosition = episodeDetailComplement.lastTimestamp ?: 0,
                 duration = episodeDetailComplement.duration ?: 0,
                 onError = { error -> setPlayerError(error) }
             )
@@ -305,6 +298,7 @@ fun VideoPlayerSection(
         VideoPlayer(
             playerView = playerView,
             player = it,
+            updateStoredWatchState = updateStoredWatchState,
             captureScreenshot = captureScreenshot,
             coreState = coreState,
             playerUiState = playerUiState,
