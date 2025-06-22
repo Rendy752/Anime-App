@@ -1,4 +1,4 @@
-package com.luminoverse.animevibe.ui.animeWatch.videoPlayer
+package com.luminoverse.animevibe.ui.animeWatch.components.videoPlayer
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -41,6 +41,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -66,7 +67,7 @@ import com.luminoverse.animevibe.utils.media.PositionState
 fun PlayerControls(
     isPlaying: Boolean,
     playbackState: Int,
-    positionState: PositionState,
+    positionState: State<PositionState>,
     onHandleBackPress: () -> Unit,
     episodeDetailComplement: EpisodeDetailComplement,
     hasPreviousEpisode: Boolean,
@@ -362,9 +363,9 @@ fun PlayerControls(
                     .padding(vertical = 8.dp, horizontal = 16.dp),
                 contentAlignment = Alignment.Center
             ) {
-                val remainingTime = positionState.duration - dragSeekPosition
+                val remainingTime = positionState.value.duration - dragSeekPosition
                 Text(
-                    text = if (showRemainingTime && positionState.duration > 0) {
+                    text = if (showRemainingTime && positionState.value.duration > 0) {
                         "-${formatTimestamp(remainingTime)}"
                     } else {
                         formatTimestamp(dragSeekPosition)
@@ -404,17 +405,17 @@ fun PlayerControls(
                                     fontWeight = FontWeight.Bold
                                 ),
                             ) {
-                                if (showRemainingTime && positionState.duration > 0) {
+                                if (showRemainingTime && positionState.value.duration > 0) {
                                     val remainingTime =
-                                        positionState.duration - positionState.currentPosition
+                                        positionState.value.duration - positionState.value.currentPosition
                                     append("-${formatTimestamp(remainingTime)}")
                                 } else {
-                                    append(formatTimestamp(positionState.currentPosition))
+                                    append(formatTimestamp(positionState.value.currentPosition))
                                 }
                             }
                             withStyle(style = SpanStyle(color = Color.White.copy(alpha = 0.8f))) {
                                 append(" / ")
-                                append(if (positionState.duration > 0) formatTimestamp(positionState.duration) else "--:--")
+                                append(if (positionState.value.duration > 0) formatTimestamp(positionState.value.duration) else "--:--")
                             }
                         },
                         fontSize = 14.sp
@@ -435,7 +436,7 @@ fun PlayerControls(
                     val heightInPx = it.size.height.toFloat()
                     onBottomBarMeasured(heightInPx)
                 },
-                positionState = positionState,
+                positionState = positionState.value,
                 intro = episodeDetailComplement.sources.intro,
                 outro = episodeDetailComplement.sources.outro,
                 handlePlay = handlePlay,

@@ -1,4 +1,4 @@
-package com.luminoverse.animevibe.ui.animeWatch.videoPlayer
+package com.luminoverse.animevibe.ui.animeWatch.components.videoPlayer
 
 import android.graphics.Bitmap
 import android.graphics.Rect

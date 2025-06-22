@@ -67,8 +67,6 @@ data class PositionState(
 
 data class ControlsState(
     val isControlsVisible: Boolean = false,
-    val showIntroButton: Boolean = false,
-    val showOutroButton: Boolean = false,
     val isLocked: Boolean = false,
     val selectedSubtitle: Track? = null,
     val playbackSpeed: Float = 1f,
@@ -94,8 +92,6 @@ sealed class HlsPlayerAction {
     data class UpdateWatchState(val updateStoredWatchState: (Long?, Long?, String?) -> Unit) :
         HlsPlayerAction()
 
-    data class SkipIntro(val endTime: Long) : HlsPlayerAction()
-    data class SkipOutro(val endTime: Long) : HlsPlayerAction()
     data class SetSubtitle(val track: Track?) : HlsPlayerAction()
     data class RequestToggleControlsVisibility(val isVisible: Boolean? = null) : HlsPlayerAction()
     data class ToggleLock(val isLocked: Boolean) : HlsPlayerAction()
@@ -104,7 +100,6 @@ sealed class HlsPlayerAction {
 
 private const val CONTROLS_AUTO_HIDE_DELAY_MS = 3_000L
 private const val WATCH_STATE_UPDATE_INTERVAL_MS = 1_000L
-private const val INTRO_OUTRO_CHECK_INTERVAL_MS = 1_000L
 private const val POSITION_UPDATE_INTERVAL_MS = 500L
 
 @Singleton
@@ -122,12 +117,9 @@ class HlsPlayerUtils @Inject constructor(
     private val playerCoroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     private var watchStateUpdateJob: Job? = null
-    private var introOutroJob: Job? = null
     private var positionUpdateJob: Job? = null
     private var controlsHideJob: Job? = null
 
-    private var introSkipped = false
-    private var outroSkipped = true
     private var currentVideoData: EpisodeSources? = null
     private var updateStoredWatchStateCallback: ((Long?, Long?, String?) -> Unit)? = null
 
@@ -191,8 +183,6 @@ class HlsPlayerUtils @Inject constructor(
             is HlsPlayerAction.Release -> release()
             is HlsPlayerAction.SetVideoSurface -> setVideoSurface(action.surface)
             is HlsPlayerAction.UpdateWatchState -> updateWatchState(action.updateStoredWatchState)
-            is HlsPlayerAction.SkipIntro -> skipIntro(action.endTime)
-            is HlsPlayerAction.SkipOutro -> skipOutro(action.endTime)
             is HlsPlayerAction.SetSubtitle -> setSubtitle(action.track)
             is HlsPlayerAction.RequestToggleControlsVisibility -> {
                 _controlsState.update {
@@ -242,11 +232,9 @@ class HlsPlayerUtils @Inject constructor(
                 _playerCoreState.update { it.copy(isPlaying = isPlaying) }
                 if (isPlaying) {
                     startPositionUpdates()
-                    startIntroOutroCheck()
                     startPeriodicWatchStateUpdates()
                 } else {
                     stopPositionUpdates()
-                    stopIntroOutroCheck()
                     stopPeriodicWatchStateUpdates()
                     dispatch(
                         HlsPlayerAction.RequestToggleControlsVisibility(isVisible = true)
@@ -381,9 +369,6 @@ class HlsPlayerUtils @Inject constructor(
             _positionState.update { positionState }
             _controlsState.update { ControlsState() }
             currentVideoData = videoData
-            introSkipped = false
-            outroSkipped = true
-            stopIntroOutroCheck()
             stopPositionUpdates()
             stopPeriodicWatchStateUpdates()
 
@@ -472,13 +457,11 @@ class HlsPlayerUtils @Inject constructor(
             val clampedPos = positionMs.coerceAtLeast(0)
                 .coerceAtMost(if (duration > 0) duration else Long.MAX_VALUE)
             it.seekTo(clampedPos)
-            introOutroCheck()
             _positionState.update {
                 it.copy(
                     currentPosition = clampedPos, bufferedPosition = clampedPos
                 )
             }
-            _controlsState.update { it.copy(isControlsVisible = true) }
         }
     }
 
@@ -586,78 +569,6 @@ class HlsPlayerUtils @Inject constructor(
         positionUpdateJob = null
     }
 
-    private fun startIntroOutroCheck() {
-        if (introOutroJob?.isActive != true && currentVideoData != null) {
-            stopIntroOutroCheck()
-            introOutroJob = playerCoroutineScope.launch(Dispatchers.Main) {
-                while (true) {
-                    introOutroCheck()
-                    delay(INTRO_OUTRO_CHECK_INTERVAL_MS)
-                }
-            }
-        }
-    }
-
-    private fun introOutroCheck() {
-        try {
-            currentVideoData?.let { videoData ->
-                exoPlayer?.let { player ->
-                    val currentPositionMs = player.currentPosition
-                    val intro = videoData.intro
-                    val outro = videoData.outro
-
-                    val shouldShowIntroButton =
-                        currentPositionMs >= intro.start * 1000L && currentPositionMs <= intro.end * 1000L && !introSkipped
-                    val shouldShowOutroButton =
-                        currentPositionMs >= outro.start * 1000L && currentPositionMs <= outro.end * 1000L && !outroSkipped
-
-                    _controlsState.update {
-                        it.copy(
-                            showIntroButton = shouldShowIntroButton,
-                            showOutroButton = shouldShowOutroButton
-                        )
-                    }
-
-                    if (currentPositionMs < intro.start * 1000L || currentPositionMs > intro.end * 1000L) {
-                        introSkipped = false
-                    }
-                    if (currentPositionMs < outro.start * 1000L || currentPositionMs > outro.end * 1000L) {
-                        outroSkipped = false
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            Log.e("HlsPlayerUtils", "Intro/Outro check failed", e)
-        }
-    }
-
-    private fun stopIntroOutroCheck() {
-        if (introOutroJob?.isActive == true) {
-            introOutroJob?.cancel()
-            introOutroJob = null
-        }
-    }
-
-    private fun skipIntro(endTime: Long) {
-        try {
-            seekTo(endTime * 1000L)
-            introSkipped = true
-            _controlsState.update { it.copy(showIntroButton = false) }
-        } catch (e: Exception) {
-            Log.e("HlsPlayerUtils", "Failed to skip intro", e)
-        }
-    }
-
-    private fun skipOutro(endTime: Long) {
-        try {
-            seekTo(endTime * 1000L)
-            outroSkipped = true
-            _controlsState.update { it.copy(showOutroButton = false) }
-        } catch (e: Exception) {
-            Log.e("HlsPlayerUtils", "Failed to skip outro", e)
-        }
-    }
-
     private fun setSubtitle(track: Track?) {
         try {
             exoPlayer?.let { player ->
@@ -744,11 +655,8 @@ class HlsPlayerUtils @Inject constructor(
             videoSurface = null
             currentVideoData = null
             updateStoredWatchStateCallback = null
-            introSkipped = false
-            outroSkipped = true
 
             stopPeriodicWatchStateUpdates()
-            stopIntroOutroCheck()
             stopPositionUpdates()
             controlsHideJob?.cancel()
             controlsHideJob = null

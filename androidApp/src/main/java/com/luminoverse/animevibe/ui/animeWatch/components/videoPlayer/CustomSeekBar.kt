@@ -1,4 +1,4 @@
-package com.luminoverse.animevibe.ui.animeWatch.videoPlayer
+package com.luminoverse.animevibe.ui.animeWatch.components.videoPlayer
 
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
