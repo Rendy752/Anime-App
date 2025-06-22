@@ -457,6 +457,9 @@ class HlsPlayerUtils @Inject constructor(
             val clampedPos = positionMs.coerceAtLeast(0)
                 .coerceAtMost(if (duration > 0) duration else Long.MAX_VALUE)
             it.seekTo(clampedPos)
+            if (clampedPos == duration) _playerCoreState.update {
+                it.copy(isPlaying = false, playbackState = Player.STATE_ENDED)
+            }
             _positionState.update {
                 it.copy(
                     currentPosition = clampedPos, bufferedPosition = clampedPos

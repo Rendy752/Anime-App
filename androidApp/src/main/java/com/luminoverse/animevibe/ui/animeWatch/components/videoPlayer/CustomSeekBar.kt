@@ -8,7 +8,10 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.awaitDragOrCancellation
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -32,6 +35,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -59,23 +63,21 @@ fun CustomSeekBar(
     val outroEnd = outro.end.times(1000L)
 
     var isDragging by remember { mutableStateOf(false) }
+    var isHolding by remember { mutableStateOf(false) }
     var dragPosition by remember { mutableFloatStateOf(positionState.currentPosition.toFloat()) }
-    var initialDragX by remember { mutableFloatStateOf(0f) }
-    var initialThumbPositionOnDragStart by remember { mutableFloatStateOf(0f) }
     var trackWidthPx by remember { mutableFloatStateOf(0f) }
     val progress =
         if (positionState.duration > 0) positionState.currentPosition.toFloat() / positionState.duration else 0f
     val bufferedProgressRatio =
         if (positionState.duration > 0) positionState.bufferedPosition.toFloat() / positionState.duration else 0f
     val density = LocalDensity.current
-    val dragSensitivityFactor = 1f
 
     val touchTargetHeight: Dp = 24.dp
     val thumbSize: Dp = 10.dp
     val trackHeight: Dp = 4.dp
 
     val animatedThumbSize by animateDpAsState(
-        targetValue = if (isDragging) thumbSize * 1.8f else thumbSize,
+        targetValue = if (isDragging || isHolding) thumbSize * 1.8f else thumbSize,
         label = "thumbSizeAnimation"
     )
 
@@ -95,7 +97,8 @@ fun CustomSeekBar(
             if (isShowSeekIndicator != 0) {
                 val targetPosition =
                     (positionState.currentPosition + (seekAmount * isShowSeekIndicator)).coerceIn(
-                        0L, positionState.duration
+                        0L,
+                        positionState.duration
                     )
                 dragPosition = targetPosition.toFloat()
             } else {
@@ -117,35 +120,37 @@ fun CustomSeekBar(
                 trackWidthPx = size.width.toFloat()
             }
             .pointerInput(Unit) {
-                detectDragGestures(
-                    onDragStart = { offset ->
+                awaitEachGesture {
+                    val down = awaitFirstDown()
+                    isHolding = true
+
+                    val dragStart = awaitDragOrCancellation(down.id)
+
+                    if (dragStart != null) {
                         isDragging = true
-                        initialDragX = offset.x
-                        initialThumbPositionOnDragStart = dragPosition
                         handlePause()
-                    },
-                    onDragEnd = {
+                        val initialThumbPosOnDrag = dragPosition
+
+                        drag(dragStart.id) { change: PointerInputChange ->
+                            isHolding = false
+                            if (positionState.duration > 0 && trackWidthPx > 0) {
+                                val dragAmount = change.position.x - dragStart.position.x
+                                val timeDelta = (dragAmount / trackWidthPx) * positionState.duration
+                                val newPosition = (initialThumbPosOnDrag + timeDelta)
+                                    .coerceIn(0f, positionState.duration.toFloat())
+                                dragPosition = newPosition
+                            }
+                            change.consume()
+                        }
+
                         isDragging = false
-                        if (positionState.duration > 0 && trackWidthPx > 0) {
-                            val finalSeekPosition =
-                                dragPosition.toLong().coerceIn(0, positionState.duration)
-                            onSeekTo(finalSeekPosition)
-                            handlePlay()
-                        }
-                    },
-                    onDrag = { change, _ ->
-                        if (positionState.duration > 0 && trackWidthPx > 0) {
-                            val dragDeltaX = change.position.x - initialDragX
-                            val timeDelta =
-                                (dragDeltaX / trackWidthPx) * positionState.duration * dragSensitivityFactor
-                            val newPosition =
-                                (initialThumbPositionOnDragStart + timeDelta).coerceIn(
-                                    0f, positionState.duration.toFloat()
-                                )
-                            dragPosition = newPosition
-                        }
+                        val finalSeekPosition = dragPosition.toLong().coerceIn(0, positionState.duration)
+                        if (!isHolding) onSeekTo(finalSeekPosition)
+                        handlePlay()
                     }
-                )
+
+                    isHolding = false
+                }
             }
     ) {
         Box(
@@ -241,7 +246,7 @@ fun CustomSeekBar(
             (currentThumbPositionPx - (animatedThumbSize.toPx() / 2f)).toDp()
         }
 
-        val thumbBrush = if (isDragging) {
+        val thumbBrush = if (isDragging || isHolding) {
             with(density) {
                 Brush.radialGradient(
                     colors = listOf(Color.White, Color.White.copy(alpha = 0f)),

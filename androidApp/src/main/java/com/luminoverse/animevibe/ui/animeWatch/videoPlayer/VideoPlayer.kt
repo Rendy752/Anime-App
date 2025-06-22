@@ -181,12 +181,14 @@ fun VideoPlayer(
                         .fillMaxSize()
                         .background(Color(0xFF14161A))
                         .then(borderModifier)
-                        .graphicsLayer(
-                            scaleX = animatedZoom,
-                            scaleY = animatedZoom,
-                            translationX = state.offsetX,
-                            translationY = state.offsetY
-                        ),
+                        .then(if (!playerUiState.isPipMode) {
+                            Modifier.graphicsLayer(
+                                scaleX = animatedZoom,
+                                scaleY = animatedZoom,
+                                translationX = state.offsetX,
+                                translationY = state.offsetY
+                            )
+                        } else Modifier),
                     update = { view ->
                         view.subtitleView?.apply {
                             setStyle(
