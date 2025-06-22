@@ -58,6 +58,8 @@ class VideoPlayerState(
     var isHolding by mutableStateOf(false)
     var showLockReminder by mutableStateOf(false)
     var isDraggingSeekBar by mutableStateOf(false)
+    var dragCancelTrigger by mutableStateOf(0)
+        private set
     var dragSeekPosition by mutableLongStateOf(0L)
     var showSettingsSheet by mutableStateOf(false)
     var showSubtitleSheet by mutableStateOf(false)
@@ -108,6 +110,13 @@ class VideoPlayerState(
             max(playerSize.width / fittedWidth, playerSize.height / fittedHeight).coerceAtLeast(1f)
         } else {
             1f
+        }
+    }
+
+    fun cancelSeekBarDrag() {
+        if (isDraggingSeekBar) {
+            isDraggingSeekBar = false
+            dragCancelTrigger++
         }
     }
 

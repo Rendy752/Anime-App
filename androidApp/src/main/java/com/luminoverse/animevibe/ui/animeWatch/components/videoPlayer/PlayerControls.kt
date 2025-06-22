@@ -45,7 +45,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -69,13 +68,15 @@ import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.ui.common.EpisodeDetailItem
 import com.luminoverse.animevibe.utils.TimeUtils.formatTimestamp
-import com.luminoverse.animevibe.utils.media.PositionState
 
 @Composable
 fun PlayerControls(
     isPlaying: Boolean,
+    currentPosition: Long,
+    duration: Long,
+    bufferedPosition: Long,
     playbackState: Int,
-    positionState: State<PositionState>,
+    errorMessage: String?,
     onHandleBackPress: () -> Unit,
     episodeDetailComplement: EpisodeDetailComplement,
     hasPreviousEpisode: Boolean,
@@ -95,6 +96,7 @@ fun PlayerControls(
     seekAmount: Long,
     isShowSeekIndicator: Int,
     dragSeekPosition: Long,
+    dragCancelTrigger: Int,
     onDraggingSeekBarChange: (Boolean, Long) -> Unit,
     isDraggingSeekBar: Boolean,
     showRemainingTime: Boolean,
@@ -129,6 +131,7 @@ fun PlayerControls(
 
         MiddleSection(
             modifier = Modifier.align(Alignment.Center),
+            errorMessage = errorMessage,
             shouldShowControls = shouldShowControls,
             hasPreviousEpisode = hasPreviousEpisode,
             playbackState = playbackState,
@@ -143,7 +146,7 @@ fun PlayerControls(
             isDraggingSeekBar = isDraggingSeekBar,
             dragSeekPosition = dragSeekPosition,
             showRemainingTime = showRemainingTime,
-            positionState = positionState
+            duration = duration
         )
 
         BottomSection(
@@ -156,10 +159,13 @@ fun PlayerControls(
             handlePause = handlePause,
             onSeekTo = onSeekTo,
             seekAmount = seekAmount,
+            dragCancelTrigger = dragCancelTrigger,
             onDraggingSeekBarChange = onDraggingSeekBarChange,
             showRemainingTime = showRemainingTime,
             setShowRemainingTime = setShowRemainingTime,
-            positionState = positionState,
+            currentPosition = currentPosition,
+            duration = duration,
+            bufferedPosition = bufferedPosition,
             episodeDetailComplement = episodeDetailComplement,
             onBottomBarMeasured = onBottomBarMeasured,
         )
@@ -302,6 +308,7 @@ private fun TopSection(
 
 @Composable
 fun PlayPauseLoadingButton(
+    errorMessage: String?,
     playbackState: Int,
     isPlaying: Boolean,
     onSeekTo: (Long) -> Unit,
@@ -321,7 +328,7 @@ fun PlayPauseLoadingButton(
         label = "loading_border_angle"
     )
 
-    val borderModifier = if (isLoading) {
+    val borderModifier = if (isLoading && errorMessage == null) {
         Modifier.drawBehind {
             val strokeWidth = 3.dp.toPx()
             val brush = Brush.sweepGradient(
@@ -405,6 +412,7 @@ fun PlayPauseLoadingButton(
 @Composable
 private fun MiddleSection(
     modifier: Modifier,
+    errorMessage: String?,
     shouldShowControls: Boolean,
     hasPreviousEpisode: Boolean,
     playbackState: Int,
@@ -419,7 +427,7 @@ private fun MiddleSection(
     isDraggingSeekBar: Boolean,
     dragSeekPosition: Long,
     showRemainingTime: Boolean,
-    positionState: State<PositionState>
+    duration: Long
 ) {
     AnimatedVisibility(
         visible = shouldShowControls,
@@ -455,6 +463,7 @@ private fun MiddleSection(
             }
 
             PlayPauseLoadingButton(
+                errorMessage = errorMessage,
                 playbackState = playbackState,
                 isPlaying = isPlaying,
                 onSeekTo = onSeekTo,
@@ -503,9 +512,9 @@ private fun MiddleSection(
                 .padding(vertical = 8.dp, horizontal = 16.dp),
             contentAlignment = Alignment.Center
         ) {
-            val remainingTime = positionState.value.duration - dragSeekPosition
+            val remainingTime = duration - dragSeekPosition
             Text(
-                text = if (showRemainingTime && positionState.value.duration > 0) {
+                text = if (showRemainingTime && duration > 0) {
                     "-${formatTimestamp(remainingTime)}"
                 } else {
                     formatTimestamp(dragSeekPosition)
@@ -529,10 +538,13 @@ private fun BottomSection(
     handlePause: () -> Unit,
     onSeekTo: (Long) -> Unit,
     seekAmount: Long,
+    dragCancelTrigger: Int,
     onDraggingSeekBarChange: (Boolean, Long) -> Unit,
     showRemainingTime: Boolean,
     setShowRemainingTime: (Boolean) -> Unit,
-    positionState: State<PositionState>,
+    currentPosition: Long,
+    duration: Long,
+    bufferedPosition: Long,
     episodeDetailComplement: EpisodeDetailComplement,
     onBottomBarMeasured: (Float) -> Unit,
 ) {
@@ -563,19 +575,19 @@ private fun BottomSection(
                                 fontWeight = FontWeight.Bold
                             ),
                         ) {
-                            if (showRemainingTime && positionState.value.duration > 0) {
+                            if (showRemainingTime && duration > 0) {
                                 val remainingTime =
-                                    positionState.value.duration - positionState.value.currentPosition
+                                    duration - currentPosition
                                 append("-${formatTimestamp(remainingTime)}")
                             } else {
-                                append(formatTimestamp(positionState.value.currentPosition))
+                                append(formatTimestamp(currentPosition))
                             }
                         }
                         withStyle(style = SpanStyle(color = Color.White.copy(alpha = 0.8f))) {
                             append(" / ")
                             append(
-                                if (positionState.value.duration > 0) formatTimestamp(
-                                    positionState.value.duration
+                                if (duration > 0) formatTimestamp(
+                                    duration
                                 ) else "--:--"
                             )
                         }
@@ -598,12 +610,15 @@ private fun BottomSection(
                 val heightInPx = it.size.height.toFloat()
                 onBottomBarMeasured(heightInPx)
             },
-            positionState = positionState.value,
+            currentPosition = currentPosition,
+            duration = duration,
+            bufferedPosition = bufferedPosition,
             intro = episodeDetailComplement.sources.intro,
             outro = episodeDetailComplement.sources.outro,
             handlePlay = handlePlay,
             handlePause = handlePause,
             onSeekTo = onSeekTo,
+            dragCancelTrigger = dragCancelTrigger,
             onDraggingSeekBarChange = onDraggingSeekBarChange,
             seekAmount = seekAmount,
             isShowSeekIndicator = isShowSeekIndicator,

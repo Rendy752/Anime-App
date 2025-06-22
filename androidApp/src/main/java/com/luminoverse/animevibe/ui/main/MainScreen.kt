@@ -314,10 +314,10 @@ fun MainScreen(
                     playerUiState = playerUiState,
                     hlsPlayerCoreState = playerCoreState,
                     hlsControlsStateFlow = viewModel.controlsState,
-                    hlsPositionStateFlow = viewModel.positionState,
                     onAction = viewModel::onAction,
                     dispatchPlayerAction = viewModel::dispatchPlayerAction,
                     getPlayer = viewModel::getPlayer,
+                    captureScreenshot = { viewModel.captureScreenshot() },
                     onEnterPipMode = {
                         if (isConnected && activity != null) {
                             Log.d(

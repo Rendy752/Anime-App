@@ -49,6 +49,7 @@ import java.net.URLEncoder
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import androidx.core.graphics.scale
+import kotlinx.coroutines.isActive
 
 private const val NOTIFICATION_ID = 123
 private const val CHANNEL_ID = "anime_playback_channel"
@@ -409,6 +410,9 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
     }
 
     private fun observePlayerUtilsState() {
+        val player = hlsPlayerUtils.getPlayer() ?: return
+        var positionUpdateJob: Job? = null
+
         coroutineScope.launch {
             hlsPlayerUtils.playerCoreState.collectLatest { coreState ->
                 val playbackStateCompat = when (coreState.playbackState) {
@@ -419,19 +423,38 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                     else -> PlaybackStateCompat.STATE_NONE
                 }
                 updatePlaybackState(playbackStateCompat, coreState.error?.message)
-            }
-        }
-        coroutineScope.launch {
-            hlsPlayerUtils.positionState.collectLatest { posState ->
-                _state.update {
-                    it.copy(
-                        currentPosition = posState.currentPosition,
-                        duration = posState.duration
-                    )
-                }
-                updatePlaybackState(_state.value.playbackState)
-                if (hlsPlayerUtils.playerCoreState.value.playbackState == Player.STATE_READY && posState.duration > 0) {
-                    updateMediaMetadata(posState.duration)
+
+                if (coreState.isPlaying && coreState.playbackState == Player.STATE_READY) {
+                    if (positionUpdateJob?.isActive != true) {
+                        positionUpdateJob = launch {
+                            while (isActive) {
+                                val currentPosition = player.currentPosition
+                                val duration = if (player.duration > 0) player.duration else 0L
+
+                                _state.update {
+                                    it.copy(
+                                        currentPosition = currentPosition,
+                                        duration = duration
+                                    )
+                                }
+
+                                if (duration > 0) {
+                                    updateMediaMetadata(duration)
+                                }
+
+                                delay(500L)
+                            }
+                        }
+                    }
+                } else {
+                    positionUpdateJob?.cancel()
+
+                    _state.update {
+                        it.copy(
+                            currentPosition = player.currentPosition,
+                            duration = if (player.duration > 0) player.duration else 0L
+                        )
+                    }
                 }
             }
         }

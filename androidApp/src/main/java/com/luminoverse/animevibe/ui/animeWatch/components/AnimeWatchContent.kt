@@ -47,7 +47,6 @@ import com.luminoverse.animevibe.ui.main.MainState
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
-import com.luminoverse.animevibe.utils.media.PositionState
 import kotlinx.coroutines.flow.StateFlow
 
 @Composable
@@ -61,9 +60,9 @@ fun AnimeWatchContent(
     mainState: MainState,
     playerCoreState: PlayerCoreState,
     controlsStateFlow: StateFlow<ControlsState>,
-    positionStateFlow: StateFlow<PositionState>,
     dispatchPlayerAction: (HlsPlayerAction) -> Unit,
     getPlayer: () -> ExoPlayer?,
+    captureScreenshot: suspend () -> String?,
     onHandleBackPress: () -> Unit,
     onAction: (WatchAction) -> Unit,
     scrollState: LazyListState,
@@ -103,10 +102,10 @@ fun AnimeWatchContent(
                         playerUiState = playerUiState,
                         coreState = playerCoreState,
                         controlsStateFlow = controlsStateFlow,
-                        positionStateFlow = positionStateFlow,
                         playerAction = dispatchPlayerAction,
                         isLandscape = mainState.isLandscape,
                         getPlayer = getPlayer,
+                        captureScreenshot = captureScreenshot,
                         updateStoredWatchState = { currentPosition, duration, screenShot ->
                             onAction(WatchAction.UpdateLastEpisodeWatchedId(watchState.episodeDetailComplement.id))
                             onAction(

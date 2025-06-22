@@ -34,7 +34,6 @@ import androidx.media3.exoplayer.ExoPlayer
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
-import com.luminoverse.animevibe.utils.media.PositionState
 import kotlinx.coroutines.flow.StateFlow
 
 private enum class PhysicalOrientation {
@@ -52,10 +51,10 @@ fun AnimeWatchScreen(
     playerUiState: PlayerUiState,
     hlsPlayerCoreState: PlayerCoreState,
     hlsControlsStateFlow: StateFlow<ControlsState>,
-    hlsPositionStateFlow: StateFlow<PositionState>,
     onAction: (WatchAction) -> Unit,
     dispatchPlayerAction: (HlsPlayerAction) -> Unit,
     getPlayer: () -> ExoPlayer?,
+    captureScreenshot: suspend () -> String?,
     onEnterPipMode: () -> Unit
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -240,9 +239,9 @@ fun AnimeWatchScreen(
                     mainState = mainState,
                     playerCoreState = hlsPlayerCoreState,
                     controlsStateFlow = hlsControlsStateFlow,
-                    positionStateFlow = hlsPositionStateFlow,
                     dispatchPlayerAction = dispatchPlayerAction,
                     getPlayer = getPlayer,
+                    captureScreenshot = captureScreenshot,
                     onHandleBackPress = onBackPress,
                     onAction = onAction,
                     scrollState = scrollState,

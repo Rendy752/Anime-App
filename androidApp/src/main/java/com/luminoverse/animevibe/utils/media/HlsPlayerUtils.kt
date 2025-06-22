@@ -59,12 +59,6 @@ data class PlayerCoreState(
     val error: PlaybackException? = null
 )
 
-data class PositionState(
-    val currentPosition: Long = 0,
-    val duration: Long = 0,
-    val bufferedPosition: Long = 0
-)
-
 data class ControlsState(
     val isControlsVisible: Boolean = false,
     val isLocked: Boolean = false,
@@ -77,7 +71,8 @@ sealed class HlsPlayerAction {
     data class SetMedia(
         val videoData: EpisodeSources,
         val isAutoPlayVideo: Boolean,
-        val positionState: PositionState,
+        val currentPosition: Long,
+        val duration: Long,
         val onError: (String) -> Unit
     ) : HlsPlayerAction()
 
@@ -100,7 +95,6 @@ sealed class HlsPlayerAction {
 
 private const val CONTROLS_AUTO_HIDE_DELAY_MS = 3_000L
 private const val WATCH_STATE_UPDATE_INTERVAL_MS = 1_000L
-private const val POSITION_UPDATE_INTERVAL_MS = 500L
 
 @Singleton
 @OptIn(UnstableApi::class)
@@ -117,7 +111,6 @@ class HlsPlayerUtils @Inject constructor(
     private val playerCoroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     private var watchStateUpdateJob: Job? = null
-    private var positionUpdateJob: Job? = null
     private var controlsHideJob: Job? = null
 
     private var currentVideoData: EpisodeSources? = null
@@ -125,9 +118,6 @@ class HlsPlayerUtils @Inject constructor(
 
     private val _playerCoreState = MutableStateFlow(PlayerCoreState())
     val playerCoreState: StateFlow<PlayerCoreState> = _playerCoreState.asStateFlow()
-
-    private val _positionState = MutableStateFlow(PositionState())
-    val positionState: StateFlow<PositionState> = _positionState.asStateFlow()
 
     private val _controlsState = MutableStateFlow(ControlsState())
     val controlsState: StateFlow<ControlsState> = _controlsState.asStateFlow()
@@ -160,7 +150,6 @@ class HlsPlayerUtils @Inject constructor(
             _playerCoreState.update {
                 PlayerCoreState(isPlaying = false, playbackState = Player.STATE_IDLE)
             }
-            _positionState.update { PositionState() }
             _controlsState.update { ControlsState(isControlsVisible = true) }
         }
     }
@@ -170,7 +159,8 @@ class HlsPlayerUtils @Inject constructor(
             is HlsPlayerAction.SetMedia -> setMedia(
                 action.videoData,
                 action.isAutoPlayVideo,
-                action.positionState,
+                action.currentPosition,
+                action.duration,
                 action.onError
             )
 
@@ -231,10 +221,8 @@ class HlsPlayerUtils @Inject constructor(
                 Log.d("HlsPlayerUtils", "onIsPlayingChanged: $isPlaying")
                 _playerCoreState.update { it.copy(isPlaying = isPlaying) }
                 if (isPlaying) {
-                    startPositionUpdates()
                     startPeriodicWatchStateUpdates()
                 } else {
-                    stopPositionUpdates()
                     stopPeriodicWatchStateUpdates()
                     dispatch(
                         HlsPlayerAction.RequestToggleControlsVisibility(isVisible = true)
@@ -253,7 +241,6 @@ class HlsPlayerUtils @Inject constructor(
                 }
                 if (playbackState == Player.STATE_READY) {
                     _playerCoreState.update { it.copy(isLoading = false, error = null) }
-                    _positionState.update { it.copy(duration = exoPlayer?.duration ?: 0) }
                 }
                 if (playbackState == Player.STATE_ENDED) {
                     dispatch(HlsPlayerAction.ToggleLock(false))
@@ -265,12 +252,6 @@ class HlsPlayerUtils @Inject constructor(
                                 val screenshot = captureScreenshot()
                                 updateStoredWatchState.invoke(position, duration, screenshot)
                             }
-                        }
-                        _positionState.update {
-                            it.copy(
-                                currentPosition = player.duration,
-                                duration = player.duration
-                            )
                         }
                     }
                     _playerCoreState.update {
@@ -361,15 +342,13 @@ class HlsPlayerUtils @Inject constructor(
     private fun setMedia(
         videoData: EpisodeSources,
         isAutoPlayVideo: Boolean,
-        positionState: PositionState,
+        currentPosition: Long,
+        duration: Long,
         onError: (String) -> Unit
     ) {
         try {
-            _positionState.update { PositionState() }
-            _positionState.update { positionState }
             _controlsState.update { ControlsState() }
             currentVideoData = videoData
-            stopPositionUpdates()
             stopPeriodicWatchStateUpdates()
 
             exoPlayer?.let { player ->
@@ -407,18 +386,11 @@ class HlsPlayerUtils @Inject constructor(
                         while (player.playbackState != Player.STATE_READY) {
                             delay(100)
                         }
-                        if (isAutoPlayVideo && (positionState.currentPosition < positionState.duration)) {
-                            seekTo(positionState.currentPosition)
+                        if (isAutoPlayVideo && (currentPosition < duration)) {
+                            seekTo(currentPosition)
                         }
                         if (isAutoPlayVideo) {
                             dispatch(HlsPlayerAction.Play)
-                        }
-                        _positionState.update {
-                            it.copy(
-                                currentPosition = player.currentPosition,
-                                duration = player.duration,
-                                bufferedPosition = player.bufferedPosition
-                            )
                         }
                     }
                 } else {
@@ -459,11 +431,6 @@ class HlsPlayerUtils @Inject constructor(
             it.seekTo(clampedPos)
             if (clampedPos == duration) _playerCoreState.update {
                 it.copy(isPlaying = false, playbackState = Player.STATE_ENDED)
-            }
-            _positionState.update {
-                it.copy(
-                    currentPosition = clampedPos, bufferedPosition = clampedPos
-                )
             }
         }
     }
@@ -525,8 +492,8 @@ class HlsPlayerUtils @Inject constructor(
                     if (player != null && player.isPlaying && player.playbackState == Player.STATE_READY && player.duration > 0 && player.currentPosition > 10_000) {
                         try {
                             withTimeout(5_000L) {
-                                val position = player.currentPosition
                                 val duration = player.duration.takeIf { it > 0 } ?: 0
+                                val position = player.currentPosition.coerceAtMost(duration)
                                 val screenshot = captureScreenshot()
                                 updateStoredWatchState.invoke(position, duration, screenshot)
                             }
@@ -543,33 +510,6 @@ class HlsPlayerUtils @Inject constructor(
     private fun stopPeriodicWatchStateUpdates() {
         watchStateUpdateJob?.cancel()
         watchStateUpdateJob = null
-    }
-
-    private fun startPositionUpdates() {
-        stopPositionUpdates()
-        positionUpdateJob = playerCoroutineScope.launch {
-            while (true) {
-                val player = exoPlayer
-                if (player != null && (player.isPlaying || player.playbackState == Player.STATE_BUFFERING)) {
-                    val duration = player.duration.takeIf { it > 0 } ?: 0
-                    val position = player.currentPosition.coerceAtMost(duration)
-                    val bufferedPosition = player.bufferedPosition.coerceAtMost(duration)
-                    _positionState.update {
-                        it.copy(
-                            currentPosition = position,
-                            duration = duration,
-                            bufferedPosition = bufferedPosition
-                        )
-                    }
-                }
-                delay(POSITION_UPDATE_INTERVAL_MS)
-            }
-        }
-    }
-
-    private fun stopPositionUpdates() {
-        positionUpdateJob?.cancel()
-        positionUpdateJob = null
     }
 
     private fun setSubtitle(track: Track?) {
@@ -660,14 +600,12 @@ class HlsPlayerUtils @Inject constructor(
             updateStoredWatchStateCallback = null
 
             stopPeriodicWatchStateUpdates()
-            stopPositionUpdates()
             controlsHideJob?.cancel()
             controlsHideJob = null
 
             playerCoroutineScope.cancel()
             _playerCoreState.update { PlayerCoreState() }
             _controlsState.update { ControlsState() }
-            _positionState.update { PositionState() }
             Log.d("HlsPlayerUtils", "HlsPlayerUtils completely released and state reset")
         } catch (e: Exception) {
             Log.e("HlsPlayerUtils", "Failed to release HlsPlayerUtils", e)

@@ -36,7 +36,6 @@ import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.MediaPlaybackAction
 import com.luminoverse.animevibe.utils.media.MediaPlaybackService
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
-import com.luminoverse.animevibe.utils.media.PositionState
 import com.luminoverse.animevibe.utils.resource.Resource
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.StateFlow
@@ -53,10 +52,10 @@ fun VideoPlayerSection(
     playerUiState: PlayerUiState,
     coreState: PlayerCoreState,
     controlsStateFlow: StateFlow<ControlsState>,
-    positionStateFlow: StateFlow<PositionState>,
     playerAction: (HlsPlayerAction) -> Unit,
     isLandscape: Boolean,
     getPlayer: () -> ExoPlayer?,
+    captureScreenshot: suspend () -> String?,
     updateStoredWatchState: (Long?, Long?, String?) -> Unit,
     onHandleBackPress: () -> Unit,
     isScreenOn: Boolean,
@@ -281,14 +280,12 @@ fun VideoPlayerSection(
             HlsPlayerAction.SetMedia(
                 videoData = episodeDetailComplement.sources,
                 isAutoPlayVideo = isAutoPlayVideo,
-                positionState = PositionState(
-                    currentPosition =
-                        if (isAutoPlayVideo && ((episodeDetailComplement.lastTimestamp ?: 0) <
-                                    (episodeDetailComplement.duration ?: 0))
-                        ) episodeDetailComplement.lastTimestamp ?: 0
-                        else 0,
-                    duration = episodeDetailComplement.duration ?: 0
-                ),
+                currentPosition =
+                    if (isAutoPlayVideo && ((episodeDetailComplement.lastTimestamp ?: 0) <
+                                (episodeDetailComplement.duration ?: 0))
+                    ) episodeDetailComplement.lastTimestamp ?: 0
+                    else 0,
+                duration = episodeDetailComplement.duration ?: 0,
                 onError = { error -> setPlayerError(error) }
             )
         )
@@ -308,10 +305,10 @@ fun VideoPlayerSection(
         VideoPlayer(
             playerView = playerView,
             player = it,
+            captureScreenshot = captureScreenshot,
             coreState = coreState,
             playerUiState = playerUiState,
             controlsStateFlow = controlsStateFlow,
-            positionStateFlow = positionStateFlow,
             playerAction = playerAction,
             onHandleBackPress = onHandleBackPress,
             episodeDetailComplement = episodeDetailComplement,
@@ -322,10 +319,10 @@ fun VideoPlayerSection(
             onEnterPipMode = onEnterPipMode,
             isSideSheetVisible = isSideSheetVisible,
             setSideSheetVisibility = setSideSheetVisibility,
-            isAutoPlayVideo = isAutoPlayVideo,
-            setFullscreenChange = setFullscreenChange,
-            setShowResume = setShowResume,
-            setShowNextEpisode = setShowNextEpisode,
+            isAutoplayEnabled = isAutoPlayVideo,
+            onFullscreenChange = setFullscreenChange,
+            onShowResumeChange = setShowResume,
+            onShowNextEpisodeChange = setShowNextEpisode,
             isLandscape = isLandscape,
             errorMessage = errorMessage
         )

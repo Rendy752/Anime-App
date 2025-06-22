@@ -16,7 +16,6 @@ import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
-import com.luminoverse.animevibe.utils.media.PositionState
 import com.luminoverse.animevibe.utils.resource.Resource
 import com.luminoverse.animevibe.utils.media.StreamingUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -92,7 +91,6 @@ class AnimeWatchViewModel @Inject constructor(
 
     val playerCoreState: StateFlow<PlayerCoreState> = hlsPlayerUtils.playerCoreState
     val controlsState: StateFlow<ControlsState> = hlsPlayerUtils.controlsState
-    val positionState: StateFlow<PositionState> = hlsPlayerUtils.positionState
 
     private val _defaultEpisodeDetailComplement = MutableStateFlow<EpisodeDetailComplement?>(null)
 
@@ -131,6 +129,10 @@ class AnimeWatchViewModel @Inject constructor(
 
     fun getPlayer(): ExoPlayer? {
         return hlsPlayerUtils.getPlayer()
+    }
+
+    suspend fun captureScreenshot(): String? {
+        return hlsPlayerUtils.captureScreenshot()
     }
 
     fun dispatchPlayerAction(action: HlsPlayerAction) {

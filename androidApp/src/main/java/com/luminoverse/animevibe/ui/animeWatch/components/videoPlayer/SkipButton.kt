@@ -12,7 +12,6 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.State
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -21,19 +20,16 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.luminoverse.animevibe.models.TimeRange
-import com.luminoverse.animevibe.utils.media.PositionState
 
 @Composable
 fun SkipButtonsContainer(
     modifier: Modifier = Modifier,
-    positionState: State<PositionState>,
+    currentPosition: Long,
     intro: TimeRange,
     outro: TimeRange,
     isSkipVisible: Boolean,
     onSkip: (Long) -> Unit
 ) {
-    val currentPosition = positionState.value.currentPosition
-
     val showIntroButton =
         currentPosition >= intro.start * 1000L && currentPosition < intro.end * 1000L
 
