@@ -2,6 +2,7 @@ package com.luminoverse.animevibe.ui.animeWatch.videoPlayer
 
 import android.app.Activity
 import android.content.pm.ActivityInfo
+import android.provider.Settings
 import android.view.OrientationEventListener
 import androidx.compose.animation.*
 import androidx.compose.animation.core.Spring
@@ -62,7 +63,11 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 
 private enum class PhysicalOrientation {
-    PORTRAIT, LANDSCAPE
+    PORTRAIT, LANDSCAPE, REVERSE_LANDSCAPE, UNKNOWN;
+
+    fun isLandscape(): Boolean {
+        return this == LANDSCAPE || this == REVERSE_LANDSCAPE
+    }
 }
 
 @androidx.annotation.OptIn(UnstableApi::class)
@@ -152,18 +157,24 @@ fun VideoPlayer(
         }, 1)
     }
 
-    var physicalOrientation by remember { mutableStateOf(if (isLandscape) PhysicalOrientation.LANDSCAPE else PhysicalOrientation.PORTRAIT) }
-    var isOrientationLockReleased by remember { mutableStateOf(true) }
     val context = LocalContext.current
+    val activity = context as? Activity
+    var physicalOrientation by remember { mutableStateOf(PhysicalOrientation.UNKNOWN) }
+    var isOrientationLocked by remember { mutableStateOf(false) }
 
     DisposableEffect(Unit) {
         val orientationEventListener = object : OrientationEventListener(context) {
             override fun onOrientationChanged(orientation: Int) {
-                if (orientation == ORIENTATION_UNKNOWN) return
+                if (orientation == ORIENTATION_UNKNOWN) {
+                    physicalOrientation = PhysicalOrientation.UNKNOWN
+                    return
+                }
 
                 val newOrientation = when (orientation) {
-                    in 75..105, in 255..285 -> PhysicalOrientation.LANDSCAPE
-                    else -> PhysicalOrientation.PORTRAIT
+                    in 345..359, in 0..15 -> PhysicalOrientation.PORTRAIT
+                    in 75..105 -> PhysicalOrientation.REVERSE_LANDSCAPE
+                    in 255..285 -> PhysicalOrientation.LANDSCAPE
+                    else -> PhysicalOrientation.UNKNOWN
                 }
 
                 if (newOrientation != physicalOrientation) {
@@ -177,33 +188,70 @@ fun VideoPlayer(
         }
     }
 
-    LaunchedEffect(controlsState.isLocked, playerUiState.isFullscreen, physicalOrientation, isOrientationLockReleased) {
-        val currentActivity = context as? Activity ?: return@LaunchedEffect
-
-        if (controlsState.isLocked) {
-            val lockedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-            if (currentActivity.requestedOrientation != lockedOrientation) {
-                currentActivity.requestedOrientation = lockedOrientation
-            }
-        } else {
-            val targetLogicalOrientation =
-                if (playerUiState.isFullscreen) PhysicalOrientation.LANDSCAPE else PhysicalOrientation.PORTRAIT
-            val targetActivityInfo =
-                if (playerUiState.isFullscreen) ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE else ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-
-            if (currentActivity.requestedOrientation != targetActivityInfo && !isOrientationLockReleased) {
-                currentActivity.requestedOrientation = targetActivityInfo
-            }
-
-            if (!isOrientationLockReleased && physicalOrientation == targetLogicalOrientation) {
-                currentActivity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_SENSOR
-                isOrientationLockReleased = true
-            }
-        }
+    LaunchedEffect(playerUiState.isFullscreen) {
+        isOrientationLocked = true
     }
 
-    LaunchedEffect(playerUiState.isFullscreen) {
-        isOrientationLockReleased = false
+    LaunchedEffect(
+        controlsState.isLocked,
+        playerUiState.isFullscreen,
+        physicalOrientation,
+        isOrientationLocked
+    ) {
+        if (activity == null) return@LaunchedEffect
+
+        val isSystemAutoRotateEnabled = Settings.System.getInt(
+            context.contentResolver, Settings.System.ACCELEROMETER_ROTATION, 0
+        ) == 1
+
+        if (controlsState.isLocked) {
+            val lockedOrientation = if (isSystemAutoRotateEnabled) {
+                ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+            } else {
+                ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            }
+            if (activity.requestedOrientation != lockedOrientation) {
+                activity.requestedOrientation = lockedOrientation
+            }
+            return@LaunchedEffect
+        }
+
+        val isTargetingLandscape = playerUiState.isFullscreen
+
+        if (isOrientationLocked) {
+            val targetActivityInfo = if (isTargetingLandscape) {
+                when (physicalOrientation) {
+                    PhysicalOrientation.REVERSE_LANDSCAPE -> ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
+                    else -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                }
+            } else {
+                ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            }
+
+            if (activity.requestedOrientation != targetActivityInfo) {
+                activity.requestedOrientation = targetActivityInfo
+            }
+
+            val transitionComplete = if (isTargetingLandscape) {
+                physicalOrientation.isLandscape()
+            } else {
+                physicalOrientation == PhysicalOrientation.PORTRAIT
+            }
+
+            if (transitionComplete) {
+                isOrientationLocked = false
+            }
+        } else {
+            val defaultOrientation = if (isSystemAutoRotateEnabled) {
+                ActivityInfo.SCREEN_ORIENTATION_SENSOR
+            } else {
+                ActivityInfo.SCREEN_ORIENTATION_LOCKED
+            }
+
+            if (activity.requestedOrientation != defaultOrientation) {
+                activity.requestedOrientation = defaultOrientation
+            }
+        }
     }
 
     LaunchedEffect(updatedCoreState.value.playbackState, videoPlayerState.isDraggingSeekBar) {
@@ -337,7 +385,9 @@ fun VideoPlayer(
                 zoomText = videoPlayerState.getZoomRatioText(),
                 onZoomReset = { videoPlayerState.resetZoom() },
                 handlePlay = { playerAction(HlsPlayerAction.Play) },
-                handlePause = { playerAction(HlsPlayerAction.Pause); videoPlayerState.isFirstLoad = false },
+                handlePause = {
+                    playerAction(HlsPlayerAction.Pause); videoPlayerState.isFirstLoad = false
+                },
                 onPreviousEpisode = {
                     prevEpisode?.let {
                         handleSelectedEpisodeServer(episodeSourcesQuery.copy(id = it.id), false)
@@ -472,8 +522,12 @@ fun VideoPlayer(
         LockButton(
             visible = updatedControlsState.value.isLocked && !playerUiState.isPipMode && videoPlayerState.showLockReminder,
             onClick = {
+                val isSystemAutoRotateEnabled = Settings.System.getInt(
+                    context.contentResolver, Settings.System.ACCELEROMETER_ROTATION, 0
+                ) == 1
                 (context as? FragmentActivity)?.requestedOrientation =
-                    ActivityInfo.SCREEN_ORIENTATION_SENSOR
+                    if (isSystemAutoRotateEnabled) ActivityInfo.SCREEN_ORIENTATION_SENSOR
+                    else ActivityInfo.SCREEN_ORIENTATION_LOCKED
                 playerAction(HlsPlayerAction.ToggleLock(false))
             },
             modifier = Modifier.align(Alignment.TopEnd)
