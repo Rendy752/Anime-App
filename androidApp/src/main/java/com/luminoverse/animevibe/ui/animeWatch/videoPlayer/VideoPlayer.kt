@@ -141,6 +141,9 @@ fun VideoPlayer(
 
     LaunchedEffect(updatedCoreState.value.isPlaying) {
         if (updatedCoreState.value.isPlaying) {
+            if (videoPlayerState.isFirstLoad && updatedCoreState.value.playbackState == Player.STATE_READY) {
+                videoPlayerState.isFirstLoad = false
+            }
             while (true) {
                 val currentPosition = player.currentPosition
                 videoPlayerState.updatePosition(currentPosition)
@@ -152,12 +155,6 @@ fun VideoPlayer(
                 }
                 delay(500)
             }
-        }
-    }
-
-    LaunchedEffect(updatedCoreState, player.isPlaying) {
-        if (videoPlayerState.isFirstLoad && updatedCoreState.value.playbackState == Player.STATE_READY && player.isPlaying) {
-            videoPlayerState.isFirstLoad = false
         }
     }
 
@@ -301,8 +298,7 @@ fun VideoPlayer(
                         handleGestures(
                             state = videoPlayerState,
                             updatedControlsState = updatedControlsState,
-                            updatedCoreState = updatedCoreState,
-                            isFirstLoad = videoPlayerState.isFirstLoad
+                            updatedCoreState = updatedCoreState
                         )
                     }
                 }
@@ -400,9 +396,7 @@ fun VideoPlayer(
                 zoomText = videoPlayerState.getZoomRatioText(),
                 onZoomReset = { videoPlayerState.resetZoom() },
                 handlePlay = { playerAction(HlsPlayerAction.Play) },
-                handlePause = {
-                    playerAction(HlsPlayerAction.Pause); videoPlayerState.isFirstLoad = false
-                },
+                handlePause = { playerAction(HlsPlayerAction.Pause) },
                 onPreviousEpisode = {
                     prevEpisode?.let {
                         handleSelectedEpisodeServer(episodeSourcesQuery.copy(id = it.id), false)

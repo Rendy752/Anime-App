@@ -211,7 +211,6 @@ class VideoPlayerState(
         x: Float,
         screenWidth: Float,
         coreState: PlayerCoreState,
-        isFirstLoad: Boolean,
         isLocked: Boolean
     ) {
         if (!isLocked && coreState.playbackState != Player.STATE_IDLE && !isFirstLoad) {
@@ -314,15 +313,14 @@ fun rememberVideoPlayerState(
 suspend fun AwaitPointerEventScope.handleGestures(
     state: VideoPlayerState,
     updatedControlsState: State<ControlsState>,
-    updatedCoreState: State<PlayerCoreState>,
-    isFirstLoad: Boolean
+    updatedCoreState: State<PlayerCoreState>
 ) {
     val down = awaitFirstDown()
 
     state.longPressJob?.cancel()
     state.longPressJob = state.scope.launch {
         delay(LONG_PRESS_THRESHOLD_MILLIS)
-        if (state.player.isPlaying && !updatedControlsState.value.isLocked && !(updatedCoreState.value.playbackState != Player.STATE_IDLE && isFirstLoad)) {
+        if (state.player.isPlaying && !updatedControlsState.value.isLocked) {
             state.handleLongPressStart(updatedControlsState.value.playbackSpeed)
             down.consume()
         }
@@ -413,7 +411,6 @@ suspend fun AwaitPointerEventScope.handleGestures(
                     tapX,
                     size.width.toFloat(),
                     updatedCoreState.value,
-                    isFirstLoad,
                     updatedControlsState.value.isLocked
                 )
             } else {
