@@ -10,6 +10,8 @@ import android.hardware.SensorManager
 import android.os.IBinder
 import android.util.Log
 import androidx.work.Configuration
+import coil.ImageLoader
+import coil.ImageLoaderFactory
 import com.chuckerteam.chucker.api.Chucker
 import com.luminoverse.animevibe.android.BuildConfig
 import com.luminoverse.animevibe.utils.factories.AnimeWorkerFactory
@@ -27,9 +29,10 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import javax.inject.Provider
 
 @HiltAndroidApp
-class AnimeApplication : Application(), Configuration.Provider {
+class AnimeApplication : Application(), Configuration.Provider, ImageLoaderFactory  {
 
     @Inject
     lateinit var workerFactory: AnimeWorkerFactory
@@ -42,6 +45,9 @@ class AnimeApplication : Application(), Configuration.Provider {
 
     @Inject
     lateinit var hlsPlayerUtils: HlsPlayerUtils
+
+    @Inject
+    lateinit var imageLoaderProvider: Provider<ImageLoader>
 
     private lateinit var sensorManager: SensorManager
     private lateinit var shakeDetector: ShakeDetector
@@ -163,6 +169,10 @@ class AnimeApplication : Application(), Configuration.Provider {
             isServiceBound = false
             serviceConnection = null
         }
+    }
+
+    override fun newImageLoader(): ImageLoader {
+        return imageLoaderProvider.get()
     }
 
     private fun setupSensor() {

@@ -19,12 +19,13 @@ import androidx.core.graphics.createBitmap
 import androidx.core.graphics.scale
 import androidx.core.net.toUri
 import androidx.media3.common.MediaItem
-import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionParameters
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import com.luminoverse.animevibe.models.EpisodeSources
 import com.luminoverse.animevibe.models.Track
@@ -44,6 +45,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -94,7 +96,8 @@ private const val CONTROLS_AUTO_HIDE_DELAY_MS = 3_000L
 @Singleton
 @OptIn(UnstableApi::class)
 class HlsPlayerUtils @Inject constructor(
-    @ApplicationContext private val applicationContext: Context
+    @ApplicationContext private val applicationContext: Context,
+    private val okHttpClient: OkHttpClient
 ) {
     private var exoPlayer: ExoPlayer? = null
     private var playerListener: Player.Listener? = null
@@ -131,14 +134,20 @@ class HlsPlayerUtils @Inject constructor(
             audioManager =
                 applicationContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
             val trackSelector = DefaultTrackSelector(applicationContext)
+            val dataSourceFactory = OkHttpDataSource.Factory(okHttpClient)
+
+            val mediaSourceFactory = DefaultMediaSourceFactory(applicationContext)
+                .setDataSourceFactory(dataSourceFactory)
+
             exoPlayer = ExoPlayer.Builder(applicationContext)
                 .setTrackSelector(trackSelector)
+                .setMediaSourceFactory(mediaSourceFactory)
                 .build()
                 .apply {
                     playerListener = createPlayerListener()
                     addListener(playerListener!!)
                     pause()
-                    Log.d("HlsPlayerUtils", "ExoPlayer initialized by Hilt")
+                    Log.d("HlsPlayerUtils", "ExoPlayer initialized by Hilt with custom OkHttpClient")
                 }
             _playerCoreState.update {
                 PlayerCoreState(isPlaying = false, playbackState = Player.STATE_IDLE)
@@ -334,22 +343,6 @@ class HlsPlayerUtils @Inject constructor(
                 if (videoData.link.file.isNotEmpty() && videoData.link.type == "hls") {
                     val mediaItemUri = videoData.link.file.toUri()
                     val mediaItemBuilder = MediaItem.Builder().setUri(mediaItemUri)
-
-                    if (videoData.tracks.any { it.kind == "captions" }) {
-                        val subtitleConfigurations =
-                            mutableListOf<MediaItem.SubtitleConfiguration>()
-                        videoData.tracks.filter { it.kind == "captions" }.forEach { track ->
-                            val subtitleConfiguration =
-                                MediaItem.SubtitleConfiguration.Builder(track.file.toUri())
-                                    .setMimeType(MimeTypes.TEXT_VTT)
-                                    .setLanguage(track.label?.substringBefore("-")?.trim() ?: "")
-                                    .setLabel(track.label?.substringBefore("-")?.trim() ?: "")
-                                    .build()
-                            subtitleConfigurations.add(subtitleConfiguration)
-                        }
-                        mediaItemBuilder.setSubtitleConfigurations(subtitleConfigurations)
-                    }
-
                     player.setMediaItem(mediaItemBuilder.build())
                     player.prepare()
                     player.trackSelectionParameters = TrackSelectionParameters.Builder().build()

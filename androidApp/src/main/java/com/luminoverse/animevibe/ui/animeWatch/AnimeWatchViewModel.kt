@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
+import com.luminoverse.animevibe.data.remote.api.NetworkDataSource
 import com.luminoverse.animevibe.models.AnimeDetail
 import com.luminoverse.animevibe.models.AnimeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
@@ -80,7 +81,8 @@ sealed class WatchAction {
 @HiltViewModel
 class AnimeWatchViewModel @Inject constructor(
     private val animeEpisodeDetailRepository: AnimeEpisodeDetailRepository,
-    val hlsPlayerUtils: HlsPlayerUtils
+    val hlsPlayerUtils: HlsPlayerUtils,
+    val networkDataSource: NetworkDataSource
 ) : ViewModel() {
 
     private val _watchState = MutableStateFlow(WatchState())

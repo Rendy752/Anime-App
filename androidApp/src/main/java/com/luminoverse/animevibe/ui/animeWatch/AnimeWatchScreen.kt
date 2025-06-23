@@ -31,6 +31,7 @@ import com.luminoverse.animevibe.ui.main.MainActivity
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.getValue
 import androidx.media3.exoplayer.ExoPlayer
+import com.luminoverse.animevibe.data.remote.api.NetworkDataSource
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
@@ -42,6 +43,7 @@ fun AnimeWatchScreen(
     malId: Int,
     episodeId: String,
     navController: NavHostController,
+    networkDataSource: NetworkDataSource,
     mainState: MainState,
     watchState: WatchState,
     playerUiState: PlayerUiState,
@@ -182,6 +184,7 @@ fun AnimeWatchScreen(
                 AnimeWatchContent(
                     malId = malId,
                     navController = navController,
+                    networkDataSource = networkDataSource,
                     watchState = watchState,
                     isScreenOn = isScreenOn,
                     isAutoPlayVideo = mainState.isAutoPlayVideo,

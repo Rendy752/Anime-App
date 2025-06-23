@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.navigation.NavController
+import com.luminoverse.animevibe.data.remote.api.NetworkDataSource
 import com.luminoverse.animevibe.ui.animeWatch.WatchState
 import com.luminoverse.animevibe.ui.animeWatch.PlayerUiState
 import com.luminoverse.animevibe.ui.animeWatch.WatchAction
@@ -53,6 +54,7 @@ import kotlinx.coroutines.flow.StateFlow
 fun AnimeWatchContent(
     malId: Int,
     navController: NavController,
+    networkDataSource: NetworkDataSource,
     watchState: WatchState,
     isScreenOn: Boolean,
     isAutoPlayVideo: Boolean,
@@ -98,6 +100,7 @@ fun AnimeWatchContent(
                     VideoPlayerSection(
                         episodeDetailComplement = watchState.episodeDetailComplement,
                         episodeDetailComplements = watchState.episodeDetailComplements,
+                        networkDataSource = networkDataSource,
                         errorMessage = watchState.errorMessage,
                         playerUiState = playerUiState,
                         coreState = playerCoreState,

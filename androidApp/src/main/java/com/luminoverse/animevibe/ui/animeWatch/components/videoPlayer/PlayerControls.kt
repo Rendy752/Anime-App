@@ -103,7 +103,7 @@ fun PlayerControls(
     setShowRemainingTime: (Boolean) -> Unit,
     onSettingsClick: () -> Unit,
     onFullscreenToggle: () -> Unit,
-    onBottomBarMeasured: (Float) -> Unit,
+    onBottomBarMeasured: (Float) -> Unit
 ) {
     val shouldShowControls = isShowSeekIndicator == 0 && !isDraggingSeekBar && !isShowSpeedUp
 
@@ -188,7 +188,7 @@ private fun TopSection(
     zoomText: String,
     onZoomReset: () -> Unit,
     onSettingsClick: () -> Unit,
-    onNextEpisode: () -> Unit,
+    onNextEpisode: () -> Unit
 ) {
     AnimatedVisibility(
         visible = shouldShowControls,
@@ -553,7 +553,7 @@ private fun BottomSection(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(8.dp)
+            .padding(top = 8.dp, start = 8.dp, end = 8.dp, bottom = if (isLandscape) 8.dp else 0.dp)
     ) {
         AnimatedVisibility(
             visible = shouldShowControls,

@@ -27,6 +27,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.PlayerView
 import com.luminoverse.animevibe.AnimeApplication
+import com.luminoverse.animevibe.data.remote.api.NetworkDataSource
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
@@ -48,6 +49,7 @@ import kotlinx.coroutines.launch
 fun VideoPlayerSection(
     episodeDetailComplement: EpisodeDetailComplement,
     episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
+    networkDataSource: NetworkDataSource,
     errorMessage: String?,
     playerUiState: PlayerUiState,
     coreState: PlayerCoreState,
@@ -298,6 +300,7 @@ fun VideoPlayerSection(
         VideoPlayer(
             playerView = playerView,
             player = it,
+            networkDataSource = networkDataSource,
             updateStoredWatchState = updateStoredWatchState,
             captureScreenshot = captureScreenshot,
             coreState = coreState,

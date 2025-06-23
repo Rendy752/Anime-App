@@ -6,6 +6,7 @@ import android.provider.Settings
 import android.view.OrientationEventListener
 import androidx.compose.animation.*
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
@@ -13,6 +14,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.*
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -20,7 +22,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
@@ -32,12 +33,13 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
-import androidx.media3.ui.CaptionStyleCompat
 import androidx.media3.ui.PlayerView
+import com.luminoverse.animevibe.data.remote.api.NetworkDataSource
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
 import com.luminoverse.animevibe.ui.animeWatch.PlayerUiState
+import com.luminoverse.animevibe.ui.animeWatch.components.videoPlayer.CustomSubtitleView
 import com.luminoverse.animevibe.ui.animeWatch.components.videoPlayer.LoadingIndicator
 import com.luminoverse.animevibe.ui.animeWatch.components.videoPlayer.LockButton
 import com.luminoverse.animevibe.ui.animeWatch.components.videoPlayer.NextEpisodeOverlay
@@ -58,6 +60,7 @@ import com.luminoverse.animevibe.ui.common.ScreenshotDisplay
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
+import com.luminoverse.animevibe.utils.media.findActiveCaptionCues
 import com.luminoverse.animevibe.utils.resource.Resource
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
@@ -75,6 +78,7 @@ private enum class PhysicalOrientation {
 fun VideoPlayer(
     playerView: PlayerView,
     player: ExoPlayer,
+    networkDataSource: NetworkDataSource,
     updateStoredWatchState: (Long?, Long?, String?) -> Unit,
     captureScreenshot: suspend () -> String?,
     coreState: PlayerCoreState,
@@ -105,7 +109,8 @@ fun VideoPlayer(
         rememberVideoPlayerState(
             key = episodeDetailComplement.sources.link.file,
             player = player,
-            playerAction = playerAction
+            playerAction = playerAction,
+            networkDataSource = networkDataSource
         )
     val currentPosition by videoPlayerState.currentPosition.collectAsStateWithLifecycle()
 
@@ -117,8 +122,21 @@ fun VideoPlayer(
         }
     }
 
+    val selectedSubtitle = controlsState.selectedSubtitle
+    LaunchedEffect(selectedSubtitle) {
+        if (selectedSubtitle != null) {
+            videoPlayerState.loadAndCacheCaptions(selectedSubtitle.file)
+        }
+    }
+    val activeCaptionCue = selectedSubtitle?.file?.let { url ->
+        videoPlayerState.captionCues[url]?.let { cues ->
+            findActiveCaptionCues(currentPosition, cues)
+        }
+    }
+
     val updatedControlsState = rememberUpdatedState(controlsState)
     val updatedCoreState = rememberUpdatedState(coreState)
+
 
     val animatedZoom by animateFloatAsState(
         targetValue = videoPlayerState.zoomScaleProgress,
@@ -335,22 +353,6 @@ fun VideoPlayer(
                             } else Modifier
                         ),
                     update = { view ->
-                        view.subtitleView?.apply {
-                            setStyle(
-                                CaptionStyleCompat(
-                                    Color.White.toArgb(),
-                                    Color.Transparent.toArgb(),
-                                    Color.Transparent.toArgb(),
-                                    CaptionStyleCompat.EDGE_TYPE_OUTLINE,
-                                    Color.Black.toArgb(),
-                                    null
-                                )
-                            )
-                            setPadding(
-                                0, 0, 0,
-                                if (isCommonPartVisible && updatedControlsState.value.isControlsVisible && (isLandscape || !playerUiState.isFullscreen)) 100 else 0
-                            )
-                        }
                         view.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
                     }
                 )
@@ -374,6 +376,33 @@ fun VideoPlayer(
                 )
             }
         }
+
+        val animatedTopPadding by animateDpAsState(
+            targetValue = if (isCommonPartVisible && isPlayerControlsVisible && isLandscape && !isSideSheetVisible) {
+                videoPlayerState.bottomBarHeight.dp - 16.dp
+            } else {
+                if (isSideSheetVisible) 16.dp else 8.dp
+            },
+            label = "SubtitleTopPadding"
+        )
+
+        val animatedBottomPadding by animateDpAsState(
+            targetValue = if (isCommonPartVisible && isPlayerControlsVisible && isLandscape) {
+                videoPlayerState.bottomBarHeight.dp
+            } else {
+                if (isSideSheetVisible) 16.dp else 8.dp
+            },
+            label = "SubtitleBottomPadding"
+        )
+        CustomSubtitleView(
+            cues = activeCaptionCue,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(
+                    top = animatedTopPadding, bottom = animatedBottomPadding,
+                    start = 8.dp, end = 8.dp
+                )
+        )
 
         AnimatedVisibility(visible = isPlayerControlsVisible, enter = fadeIn(), exit = fadeOut()) {
             PlayerControls(
@@ -502,13 +531,17 @@ fun VideoPlayer(
         )
 
         SpeedUpIndicator(
-            modifier = Modifier.align(Alignment.TopCenter),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 32.dp),
             isVisible = videoPlayerState.isHolding && isCommonPartVisible,
             speedText = videoPlayerState.speedUpText
         )
 
         ZoomIndicator(
-            modifier = Modifier.align(Alignment.TopCenter),
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 32.dp),
             visible = videoPlayerState.isZooming && isCommonPartVisible,
             isShowSpeedUp = videoPlayerState.isHolding,
             zoomText = videoPlayerState.getZoomRatioText(),

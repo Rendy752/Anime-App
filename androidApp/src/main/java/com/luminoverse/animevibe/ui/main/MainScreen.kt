@@ -309,6 +309,7 @@ fun MainScreen(
                     malId = backStackEntry.arguments?.getInt("malId") ?: 0,
                     episodeId = backStackEntry.arguments?.getString("episodeId") ?: "",
                     navController = navController,
+                    networkDataSource = viewModel.networkDataSource,
                     mainState = mainState,
                     watchState = watchState,
                     playerUiState = playerUiState,

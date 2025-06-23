@@ -2,6 +2,7 @@ package com.luminoverse.animevibe.modules
 
 import android.app.Application
 import android.content.Context
+import coil.ImageLoader
 import com.luminoverse.animevibe.android.BuildConfig.DEBUG
 import com.chuckerteam.chucker.api.ChuckerCollector
 import com.chuckerteam.chucker.api.ChuckerInterceptor
@@ -12,6 +13,7 @@ import com.luminoverse.animevibe.data.remote.api.RetrofitInstance
 import com.luminoverse.animevibe.di.AnimeRunwayApi
 import com.luminoverse.animevibe.di.JikanApi
 import com.luminoverse.animevibe.utils.NetworkStateMonitor
+import com.luminoverse.animevibe.utils.PrioritizeIPv4Dns
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -35,6 +37,7 @@ object NetworkModule {
             .connectTimeout(30, TimeUnit.SECONDS)
             .cache(provideCache(context))
             .addInterceptor(EpisodeSourcesCacheInterceptor())
+            .dns(PrioritizeIPv4Dns())
 
         if (DEBUG) {
             val chuckerCollector = ChuckerCollector(
@@ -55,6 +58,19 @@ object NetworkModule {
         val cacheSize = 10 * 1024 * 1024
         val httpCacheDirectory = File(context.cacheDir, "http-cache")
         return Cache(httpCacheDirectory, cacheSize.toLong())
+    }
+
+    @Provides
+    @Singleton
+    fun provideImageLoader(
+        @ApplicationContext context: Context,
+        okHttpClient: OkHttpClient
+    ): ImageLoader {
+        return ImageLoader.Builder(context)
+            .okHttpClient(okHttpClient)
+            .respectCacheHeaders(false)
+            .crossfade(true)
+            .build()
     }
 
     @Provides

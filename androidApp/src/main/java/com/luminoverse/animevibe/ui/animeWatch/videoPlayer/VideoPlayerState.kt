@@ -9,17 +9,22 @@ import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.runtime.*
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntSize
 import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
 import androidx.media3.exoplayer.ExoPlayer
 import coil.ImageLoader
+import coil.imageLoader
 import coil.request.ImageRequest
+import com.luminoverse.animevibe.data.remote.api.NetworkDataSource
+import com.luminoverse.animevibe.utils.media.CaptionCue
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
-import com.luminoverse.animevibe.utils.media.VttCue
-import com.luminoverse.animevibe.utils.media.parseThumbnailVtt
+import com.luminoverse.animevibe.utils.media.ThumbnailCue
+import com.luminoverse.animevibe.utils.media.parseCaptionCues
+import com.luminoverse.animevibe.utils.media.parseThumbnailCues
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -29,7 +34,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import java.net.URL
+import java.io.IOException
 import java.util.*
 import kotlin.math.abs
 import kotlin.math.max
@@ -44,7 +49,9 @@ private const val MAX_ZOOM_RATIO = 8f
 class VideoPlayerState(
     val player: ExoPlayer,
     val playerAction: (HlsPlayerAction) -> Unit,
-    val scope: CoroutineScope
+    val scope: CoroutineScope,
+    private val imageLoader: ImageLoader,
+    private val networkDataSource: NetworkDataSource
 ) {
     var isFirstLoad by mutableStateOf(true)
     private val _currentPosition = MutableStateFlow(0L)
@@ -77,7 +84,9 @@ class VideoPlayerState(
     private var previousPlaybackSpeed by mutableFloatStateOf(1f)
     var lastTapTime by mutableLongStateOf(0L)
     var lastTapX by mutableStateOf<Float?>(null)
-    var thumbnailCues by mutableStateOf<Map<String, List<VttCue>>>(emptyMap())
+    var thumbnailCues by mutableStateOf<Map<String, List<ThumbnailCue>>>(emptyMap())
+        private set
+    var captionCues by mutableStateOf<Map<String, List<CaptionCue>>>(emptyMap())
         private set
 
     fun updatePosition(position: Long) {
@@ -99,19 +108,18 @@ class VideoPlayerState(
             if (thumbnailCues.containsKey(thumbnailUrl)) return@launch
 
             try {
-                val cues = withContext(Dispatchers.IO) {
-                    Log.d(
-                        "VideoPlayerState",
-                        "Fetching VTT from $thumbnailUrl on background thread."
-                    )
-                    val vttContent = URL(thumbnailUrl).readText()
+                val vttContent = networkDataSource.fetchText(thumbnailUrl)
+                if (vttContent.isNullOrEmpty()) {
+                    throw IOException("Failed to fetch thumbnail VTT content or content is empty.")
+                }
+
+                val cues = withContext(Dispatchers.Default) {
                     val baseUrl = thumbnailUrl.substringBeforeLast("/") + "/"
-                    parseThumbnailVtt(vttContent, baseUrl)
+                    parseThumbnailCues(vttContent, baseUrl)
                 }
 
                 thumbnailCues = thumbnailCues + (thumbnailUrl to cues)
 
-                val imageLoader = ImageLoader(context)
                 cues.map { it.imageUrl }.distinct().forEach { imageUrl ->
                     val request = ImageRequest.Builder(context)
                         .data(imageUrl)
@@ -119,9 +127,29 @@ class VideoPlayerState(
                     imageLoader.enqueue(request)
                 }
                 Log.d("VideoPlayerState", "Thumbnails loaded and cached for $thumbnailUrl")
+
             } catch (e: Exception) {
                 Log.e("VideoPlayerState", "Failed to load or cache thumbnails: ${e.message}", e)
                 thumbnailCues = thumbnailCues + (thumbnailUrl to emptyList())
+            }
+        }
+    }
+
+    fun loadAndCacheCaptions(captionUrl: String) {
+        scope.launch {
+            if (captionCues.containsKey(captionUrl)) return@launch
+            try {
+                val vttContent = networkDataSource.fetchText(captionUrl)
+                if (vttContent.isNullOrEmpty()) {
+                    throw IOException("Failed to fetch caption VTT content or content is empty.")
+                }
+
+                val cues = parseCaptionCues(vttContent)
+                captionCues = captionCues + (captionUrl to cues)
+                Log.d("VideoPlayerState", "Captions loaded and cached for $captionUrl")
+            } catch (e: Exception) {
+                Log.e("VideoPlayerState", "Failed to load captions: ${e.message}", e)
+                captionCues = captionCues + (captionUrl to emptyList())
             }
         }
     }
@@ -276,13 +304,17 @@ fun rememberVideoPlayerState(
     key: Any?,
     player: ExoPlayer,
     playerAction: (HlsPlayerAction) -> Unit,
+    networkDataSource: NetworkDataSource,
     scope: CoroutineScope = rememberCoroutineScope()
 ): VideoPlayerState {
+    val imageLoader = LocalContext.current.imageLoader
     val state = remember(key) {
         VideoPlayerState(
             player = player,
             playerAction = playerAction,
-            scope = scope
+            scope = scope,
+            imageLoader = imageLoader,
+            networkDataSource = networkDataSource
         )
     }
 

@@ -1,7 +1,6 @@
 package com.luminoverse.animevibe.ui.animeWatch.components.videoPlayer
 
 import android.graphics.Rect
-import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -14,13 +13,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import coil.ImageLoader
+import coil.compose.AsyncImagePainter
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
 import coil.size.Size
 import com.luminoverse.animevibe.utils.media.CropTransformation
-import com.luminoverse.animevibe.utils.media.VttCue
-import com.luminoverse.animevibe.utils.media.findCueForPosition
+import com.luminoverse.animevibe.utils.media.ThumbnailCue
+import com.luminoverse.animevibe.utils.media.findThumbnailCueForPosition
 
 private enum class ImageLoadingState {
     Loading, Success, Error
@@ -30,20 +29,29 @@ private enum class ImageLoadingState {
 fun ThumbnailPreview(
     modifier: Modifier = Modifier,
     seekPosition: Long,
-    cues: List<VttCue>?,
+    cues: List<ThumbnailCue>?,
 ) {
     val context = LocalContext.current
     var imageLoadingState by remember { mutableStateOf(ImageLoadingState.Loading) }
 
-    val currentCue = cues?.let { findCueForPosition(seekPosition, it) }
-
+    val currentCue = cues?.let { findThumbnailCueForPosition(seekPosition, it) }
     val imageUrl = currentCue?.imageUrl
     val cropRect = currentCue?.let { Rect(it.x, it.y, it.x + it.width, it.y + it.height) }
 
-    LaunchedEffect(imageUrl) {
-        if (imageUrl != null) {
-            imageLoadingState = ImageLoadingState.Loading
-        }
+    val painter = rememberAsyncImagePainter(
+        model = ImageRequest.Builder(context)
+            .data(imageUrl)
+            .size(Size.ORIGINAL)
+            .transformations(
+                if (cropRect != null) listOf(CropTransformation(cropRect)) else emptyList()
+            )
+            .build()
+    )
+
+    imageLoadingState = when (painter.state) {
+        is AsyncImagePainter.State.Loading -> ImageLoadingState.Loading
+        is AsyncImagePainter.State.Success -> ImageLoadingState.Success
+        is AsyncImagePainter.State.Error, is AsyncImagePainter.State.Empty -> ImageLoadingState.Error
     }
 
     Box(
@@ -54,37 +62,14 @@ fun ThumbnailPreview(
         },
         contentAlignment = Alignment.Center
     ) {
-        if (imageUrl != null && cropRect != null) {
-            val imageRequest = remember(imageUrl, cropRect) {
-                ImageRequest.Builder(context)
-                    .data(imageUrl)
-                    .size(Size.ORIGINAL)
-                    .transformations(listOf(CropTransformation(cropRect)))
-                    .crossfade(true)
-                    .listener(
-                        onStart = { imageLoadingState = ImageLoadingState.Loading },
-                        onSuccess = { _, _ -> imageLoadingState = ImageLoadingState.Success },
-                        onError = { _, result ->
-                            Log.e("ThumbnailPreview", "Image failed to load: ${result.throwable}")
-                            imageLoadingState = ImageLoadingState.Error
-                        }
-                    )
-                    .build()
-            }
-            val painter = rememberAsyncImagePainter(
-                model = imageRequest,
-                imageLoader = ImageLoader(context)
+        if (imageUrl != null && imageLoadingState == ImageLoadingState.Success) {
+            Image(
+                painter = painter,
+                contentDescription = "Thumbnail Preview",
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(4.dp))
             )
-
-            if (imageLoadingState == ImageLoadingState.Success) {
-                Image(
-                    painter = painter,
-                    contentDescription = "Thumbnail Preview",
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(RoundedCornerShape(4.dp))
-                )
-            }
         }
     }
 }
