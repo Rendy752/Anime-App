@@ -356,7 +356,8 @@ class HlsPlayerUtils @Inject constructor(
                     setSubtitle(videoData.tracks.firstOrNull { it.kind == "captions" && it.default == true })
 
                     if (isAutoPlayVideo) {
-                        if (currentPosition <= duration) seekTo(currentPosition)
+                        if (currentPosition == duration) seekTo(0)
+                        else if (currentPosition < duration) seekTo(currentPosition)
                         dispatch(HlsPlayerAction.Play)
                     }
                 } else {

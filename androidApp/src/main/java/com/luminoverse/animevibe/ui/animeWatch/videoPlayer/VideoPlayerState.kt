@@ -1,37 +1,36 @@
 package com.luminoverse.animevibe.ui.animeWatch.videoPlayer
 
+import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.calculateZoom
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.Stable
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableLongStateOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
-import androidx.compose.runtime.State
+import androidx.compose.runtime.*
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.unit.IntSize
 import androidx.media3.common.Player
 import androidx.media3.common.VideoSize
 import androidx.media3.exoplayer.ExoPlayer
+import coil.ImageLoader
+import coil.request.ImageRequest
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
+import com.luminoverse.animevibe.utils.media.VttCue
+import com.luminoverse.animevibe.utils.media.parseThumbnailVtt
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.util.Locale
+import kotlinx.coroutines.withContext
+import java.net.URL
+import java.util.*
 import kotlin.math.abs
 import kotlin.math.max
 
@@ -48,6 +47,9 @@ class VideoPlayerState(
     val scope: CoroutineScope
 ) {
     var isFirstLoad by mutableStateOf(true)
+    private val _currentPosition = MutableStateFlow(0L)
+    val currentPosition: StateFlow<Long> = _currentPosition.asStateFlow()
+
     var isShowSeekIndicator by mutableIntStateOf(0)
     var seekAmount by mutableLongStateOf(0L)
     var isSeeking by mutableStateOf(false)
@@ -75,7 +77,54 @@ class VideoPlayerState(
     private var previousPlaybackSpeed by mutableFloatStateOf(1f)
     var lastTapTime by mutableLongStateOf(0L)
     var lastTapX by mutableStateOf<Float?>(null)
+    var thumbnailCues by mutableStateOf<Map<String, List<VttCue>>>(emptyMap())
+        private set
 
+    fun updatePosition(position: Long) {
+        _currentPosition.value = position
+    }
+
+    /**
+     * Loads thumbnail cues from a VTT file and caches the associated thumbnail images.
+     *
+     * This function fetches a VTT file from the provided `thumbnailUrl`, parses it to extract
+     * thumbnail cues (including image URLs and timecodes), and then enqueues image loading
+     * requests for each unique thumbnail image URL using Coil. The parsed cues are stored
+     * in the `thumbnailCues` map.
+     * @param context The Android [Context] used for image loading.
+     * @param thumbnailUrl The URL of the VTT file containing thumbnail information.
+     */
+    fun loadAndCacheThumbnails(context: Context, thumbnailUrl: String) {
+        scope.launch {
+            if (thumbnailCues.containsKey(thumbnailUrl)) return@launch
+
+            try {
+                val cues = withContext(Dispatchers.IO) {
+                    Log.d(
+                        "VideoPlayerState",
+                        "Fetching VTT from $thumbnailUrl on background thread."
+                    )
+                    val vttContent = URL(thumbnailUrl).readText()
+                    val baseUrl = thumbnailUrl.substringBeforeLast("/") + "/"
+                    parseThumbnailVtt(vttContent, baseUrl)
+                }
+
+                thumbnailCues = thumbnailCues + (thumbnailUrl to cues)
+
+                val imageLoader = ImageLoader(context)
+                cues.map { it.imageUrl }.distinct().forEach { imageUrl ->
+                    val request = ImageRequest.Builder(context)
+                        .data(imageUrl)
+                        .build()
+                    imageLoader.enqueue(request)
+                }
+                Log.d("VideoPlayerState", "Thumbnails loaded and cached for $thumbnailUrl")
+            } catch (e: Exception) {
+                Log.e("VideoPlayerState", "Failed to load or cache thumbnails: ${e.message}", e)
+                thumbnailCues = thumbnailCues + (thumbnailUrl to emptyList())
+            }
+        }
+    }
 
     private val seekDisplayHandler = Handler(Looper.getMainLooper())
     private val seekDisplayRunnable = Runnable {
@@ -242,6 +291,15 @@ fun rememberVideoPlayerState(
         val listener = object : Player.Listener {
             override fun onVideoSizeChanged(newVideoSize: VideoSize) {
                 state.videoSize = newVideoSize
+            }
+
+            override fun onPositionDiscontinuity(
+                oldPosition: Player.PositionInfo,
+                newPosition: Player.PositionInfo,
+                reason: Int
+            ) {
+                super.onPositionDiscontinuity(oldPosition, newPosition, reason)
+                state.updatePosition(newPosition.positionMs)
             }
         }
         player.addListener(listener)

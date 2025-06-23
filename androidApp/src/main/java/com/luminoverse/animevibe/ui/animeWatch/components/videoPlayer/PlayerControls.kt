@@ -578,8 +578,7 @@ private fun BottomSection(
                             ),
                         ) {
                             if (showRemainingTime && duration > 0) {
-                                val remainingTime =
-                                    duration - currentPosition
+                                val remainingTime = duration - currentPosition
                                 append("-${formatTimestamp(remainingTime)}")
                             } else {
                                 append(formatTimestamp(currentPosition))

@@ -97,9 +97,25 @@ fun VideoPlayer(
     isLandscape: Boolean,
     errorMessage: String?
 ) {
+    val context = LocalContext.current
+    val activity = context as? Activity
+
     val controlsState by controlsStateFlow.collectAsStateWithLifecycle()
     val videoPlayerState =
-        rememberVideoPlayerState(episodeDetailComplement.sources.link.file, player, playerAction)
+        rememberVideoPlayerState(
+            key = episodeDetailComplement.sources.link.file,
+            player = player,
+            playerAction = playerAction
+        )
+    val currentPosition by videoPlayerState.currentPosition.collectAsStateWithLifecycle()
+
+    val thumbnailTrackUrl =
+        episodeDetailComplement.sources.tracks.find { it.kind == "thumbnails" }?.file
+    LaunchedEffect(thumbnailTrackUrl) {
+        if (thumbnailTrackUrl != null) {
+            videoPlayerState.loadAndCacheThumbnails(context, thumbnailTrackUrl)
+        }
+    }
 
     val updatedControlsState = rememberUpdatedState(controlsState)
     val updatedCoreState = rememberUpdatedState(coreState)
@@ -126,13 +142,15 @@ fun VideoPlayer(
     LaunchedEffect(updatedCoreState.value.isPlaying) {
         if (updatedCoreState.value.isPlaying) {
             while (true) {
-                if (player.duration > 0 && player.currentPosition >= 10_000) {
-                    val position = player.currentPosition
+                val currentPosition = player.currentPosition
+                videoPlayerState.updatePosition(currentPosition)
+                if (player.duration > 0 && currentPosition >= 10_000) {
+                    val position = currentPosition
                     val duration = player.duration
                     val screenshot = captureScreenshot()
                     updateStoredWatchState(position, duration, screenshot)
                 }
-                delay(1000)
+                delay(500)
             }
         }
     }
@@ -157,8 +175,6 @@ fun VideoPlayer(
         }, 1)
     }
 
-    val context = LocalContext.current
-    val activity = context as? Activity
     var physicalOrientation by remember { mutableStateOf(PhysicalOrientation.UNKNOWN) }
     var isOrientationLocked by remember { mutableStateOf(false) }
 
@@ -348,7 +364,7 @@ fun VideoPlayer(
         val isPlayerControlsVisible =
             (updatedControlsState.value.isControlsVisible || videoPlayerState.isDraggingSeekBar) && !shouldShowResumeOverlay && isCommonPartVisible
 
-        episodeDetailComplement.sources.tracks.find { it.kind == "thumbnails" }?.file?.let {
+        thumbnailTrackUrl?.let { url ->
             val showThumbnail =
                 isBufferingFromSeeking || (!player.isPlaying && videoPlayerState.isDraggingSeekBar && !videoPlayerState.isFirstLoad)
             val thumbnailSeekPositionKey =
@@ -358,7 +374,7 @@ fun VideoPlayer(
                 ThumbnailPreview(
                     modifier = Modifier.fillMaxSize(),
                     seekPosition = thumbnailSeekPositionKey,
-                    thumbnailTrackUrl = it
+                    cues = videoPlayerState.thumbnailCues[url]
                 )
             }
         }
@@ -366,8 +382,7 @@ fun VideoPlayer(
         AnimatedVisibility(visible = isPlayerControlsVisible, enter = fadeIn(), exit = fadeOut()) {
             PlayerControls(
                 isPlaying = player.isPlaying,
-                currentPosition = player.currentPosition.takeIf { it > 0 }
-                    ?: episodeDetailComplement.lastTimestamp ?: 0,
+                currentPosition = currentPosition,
                 duration = player.duration.takeIf { it > 0 }
                     ?: episodeDetailComplement.duration ?: 0,
                 bufferedPosition = player.bufferedPosition,
