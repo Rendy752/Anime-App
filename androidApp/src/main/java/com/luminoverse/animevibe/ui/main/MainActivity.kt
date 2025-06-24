@@ -6,12 +6,11 @@ import android.content.res.Configuration
 import android.os.Build
 import android.os.Bundle
 import android.view.MotionEvent
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -22,7 +21,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
@@ -41,22 +39,24 @@ import com.luminoverse.animevibe.ui.common.ConfirmationAlert
 import com.luminoverse.animevibe.ui.theme.AppTheme
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
+import com.luminoverse.animevibe.utils.media.MediaPlaybackAction
 import com.luminoverse.animevibe.utils.media.PipUtil.buildPipActions
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
-import android.content.pm.PackageManager
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.ui.unit.dp
-import com.luminoverse.animevibe.utils.media.MediaPlaybackAction
 import javax.inject.Inject
+import android.content.pm.PackageManager
+import androidx.compose.foundation.layout.consumeWindowInsets
+import androidx.compose.runtime.getValue
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var hlsPlayerUtils: HlsPlayerUtils
+
+    private val mainViewModel: MainViewModel by viewModels()
 
     private val onPictureInPictureModeChangedListeners = mutableListOf<(Boolean) -> Unit>()
     private lateinit var navController: NavHostController
@@ -68,18 +68,14 @@ class MainActivity : AppCompatActivity() {
     private var lastBackPressTime = 0L
     private val backPressTimeoutMillis = 2000L
 
-    // In-App Update properties
     private lateinit var appUpdateManager: AppUpdateManager
     private val updateType = AppUpdateType.FLEXIBLE
     private var installStateUpdatedListener: InstallStateUpdatedListener? = null
-    private val snackbarHostState = SnackbarHostState()
 
-    // Activity result launcher for the update flow
     private val updateActivityResultLauncher =
         registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
             if (result.resultCode != RESULT_OK) {
                 println("Update flow failed! Result code: " + result.resultCode)
-                // Optionally, you can log this event or notify the user.
             }
         }
 
@@ -88,6 +84,7 @@ class MainActivity : AppCompatActivity() {
     ) { isGranted ->
         if (isGranted) {
             println("MainActivity: POST_NOTIFICATIONS permission granted")
+            mainViewModel.onAction(MainAction.CheckNotificationPermission)
         }
     }
 
@@ -100,9 +97,7 @@ class MainActivity : AppCompatActivity() {
 
         installStateUpdatedListener = InstallStateUpdatedListener { state ->
             if (state.installStatus() == InstallStatus.DOWNLOADED) {
-                lifecycleScope.launch {
-                    popupSnackbarForCompleteUpdate()
-                }
+                popupSnackbarForCompleteUpdate()
             }
         }
         appUpdateManager.registerListener(installStateUpdatedListener!!)
@@ -121,16 +116,37 @@ class MainActivity : AppCompatActivity() {
         requestNotificationPermission()
 
         setContent {
-            navController = rememberNavController()
-            val mainViewModel: MainViewModel = hiltViewModel()
             val state by mainViewModel.state.collectAsStateWithLifecycle()
+            val snackbarHostState = remember { SnackbarHostState() }
+
+            navController = rememberNavController()
+
+            LaunchedEffect(state.snackbarMessage) {
+                state.snackbarMessage?.let { snackbarMessage ->
+                    val messageText = when (snackbarMessage.type) {
+                        SnackbarMessageType.SUCCESS -> "✅ ${snackbarMessage.message}"
+                        SnackbarMessageType.ERROR -> "❌ ${snackbarMessage.message}"
+                        SnackbarMessageType.INFO -> "ℹ️ ${snackbarMessage.message}"
+                    }
+                    val result = snackbarHostState.showSnackbar(
+                        message = messageText,
+                        actionLabel = snackbarMessage.actionLabel,
+                        duration = if (snackbarMessage.actionLabel == null) SnackbarDuration.Short else SnackbarDuration.Indefinite
+                    )
+                    if (result == SnackbarResult.ActionPerformed) {
+                        snackbarMessage.onAction?.invoke()
+                    }
+                    mainViewModel.onAction(MainAction.DismissSnackbar)
+                }
+            }
+
 
             val configuration = LocalConfiguration.current
             val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
 
             LaunchedEffect(Unit) {
                 startIdleDetection(
-                    isShowIdleDialog = mainViewModel.state.value.isShowIdleDialog,
+                    isShowIdleDialog = state.isShowIdleDialog,
                     action = { mainViewModel.onAction(MainAction.SetIsShowIdleDialog(it)) }
                 )
             }
@@ -141,11 +157,14 @@ class MainActivity : AppCompatActivity() {
                     finish()
                 } else {
                     lastBackPressTime = currentTime
-                    Toast.makeText(
-                        this@MainActivity,
-                        "Press back again to exit AnimeVibe",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    mainViewModel.onAction(
+                        MainAction.ShowSnackbar(
+                            SnackbarMessage(
+                                message = "Press back again to exit AnimeVibe",
+                                type = SnackbarMessageType.INFO
+                            )
+                        )
+                    )
                 }
             }
 
@@ -155,10 +174,7 @@ class MainActivity : AppCompatActivity() {
                 colorStyle = state.colorStyle,
                 isRtl = state.isRtl
             ) {
-                Scaffold(
-                    snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
-                ) { paddingValues ->
-                    println(paddingValues)
+                Scaffold(snackbarHost = { SnackbarHost(hostState = snackbarHostState) }) { paddingValues ->
                     if (state.isShowIdleDialog) {
                         ConfirmationAlert(
                             title = "Are you still there ?",
@@ -172,7 +188,7 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     MainScreen(
-                        modifier = Modifier.padding(PaddingValues(0.dp)),
+                        modifier = Modifier.consumeWindowInsets(paddingValues),
                         navController = navController,
                         intentChannel = intentChannel,
                         resetIdleTimer = resetIdleTimer,
@@ -193,13 +209,12 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         resetIdleTimer()
+        mainViewModel.onAction(MainAction.CheckNotificationPermission)
         appUpdateManager
             .appUpdateInfo
             .addOnSuccessListener { appUpdateInfo ->
                 if (appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED) {
-                    lifecycleScope.launch {
-                        popupSnackbarForCompleteUpdate()
-                    }
+                    popupSnackbarForCompleteUpdate()
                 }
                 if (appUpdateInfo.updateAvailability()
                     == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS
@@ -215,7 +230,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun checkForAppUpdate() {
         appUpdateManager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
-            val isUpdateAvailable = appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
+            val isUpdateAvailable =
+                appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
             if (isUpdateAvailable && appUpdateInfo.isUpdateTypeAllowed(updateType)) {
                 appUpdateManager.startUpdateFlowForResult(
                     appUpdateInfo,
@@ -228,15 +244,17 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private suspend fun popupSnackbarForCompleteUpdate() {
-        val result = snackbarHostState.showSnackbar(
-            message = "An update has just been downloaded.",
-            actionLabel = "RESTART",
-            duration = SnackbarDuration.Indefinite,
+    private fun popupSnackbarForCompleteUpdate() {
+        mainViewModel.onAction(
+            MainAction.ShowSnackbar(
+                SnackbarMessage(
+                    message = "An update has just been downloaded.",
+                    type = SnackbarMessageType.SUCCESS,
+                    actionLabel = "RESTART",
+                    onAction = { appUpdateManager.completeUpdate() }
+                )
+            )
         )
-        if (result == SnackbarResult.ActionPerformed) {
-            appUpdateManager.completeUpdate()
-        }
     }
 
     private fun requestNotificationPermission() {
@@ -248,12 +266,10 @@ class MainActivity : AppCompatActivity() {
                 }
 
                 shouldShowRequestPermissionRationale(permission) -> {
-                    println("MainActivity: Showing rationale for POST_NOTIFICATIONS permission")
                     requestPermissionLauncher.launch(permission)
                 }
 
                 else -> {
-                    println("MainActivity: Requesting POST_NOTIFICATIONS permission")
                     requestPermissionLauncher.launch(permission)
                 }
             }

@@ -6,7 +6,7 @@ import android.content.IntentFilter
 import android.content.pm.ActivityInfo
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -29,9 +29,13 @@ import com.luminoverse.animevibe.ui.animeWatch.components.AnimeWatchContent
 import kotlinx.coroutines.launch
 import com.luminoverse.animevibe.ui.main.MainActivity
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalDensity
 import androidx.media3.exoplayer.ExoPlayer
 import com.luminoverse.animevibe.data.remote.api.NetworkDataSource
+import com.luminoverse.animevibe.ui.main.SnackbarMessage
+import com.luminoverse.animevibe.ui.main.SnackbarMessageType
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
@@ -45,6 +49,7 @@ fun AnimeWatchScreen(
     navController: NavHostController,
     networkDataSource: NetworkDataSource,
     mainState: MainState,
+    showSnackbar: (SnackbarMessage) -> Unit,
     watchState: WatchState,
     playerUiState: PlayerUiState,
     hlsPlayerCoreState: PlayerCoreState,
@@ -55,7 +60,11 @@ fun AnimeWatchScreen(
     captureScreenshot: suspend () -> String?,
     onEnterPipMode: () -> Unit
 ) {
-    val snackbarHostState = remember { SnackbarHostState() }
+    val density = LocalDensity.current
+    val statusBarPadding = with(density) {
+        WindowInsets.systemBars.getTop(density).toDp()
+    }
+
     val scope = rememberCoroutineScope()
     val scrollState = rememberLazyListState()
     val pullToRefreshState = rememberPullToRefreshState()
@@ -126,14 +135,27 @@ fun AnimeWatchScreen(
         }
     }
 
+    fun refreshEpisodeSources() {
+        watchState.episodeSourcesQuery?.let { episodeSourcesQuery ->
+            onAction(
+                WatchAction.HandleSelectedEpisodeServer(
+                    episodeSourcesQuery,
+                    isRefresh = true
+                )
+            )
+        }
+    }
+
     LaunchedEffect(watchState.errorMessage) {
         watchState.errorMessage?.let { message ->
-            scope.launch {
-                snackbarHostState.showSnackbar(
+            showSnackbar(
+                SnackbarMessage(
                     message = message,
-                    duration = SnackbarDuration.Short
+                    type = SnackbarMessageType.ERROR,
+                    actionLabel = "RETRY",
+                    onAction = { refreshEpisodeSources() }
                 )
-            }
+            )
         }
     }
 
@@ -148,60 +170,47 @@ fun AnimeWatchScreen(
         }
     }
 
-    Scaffold(
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-    ) { paddingValues ->
-        PullToRefreshBox(
-            isRefreshing = watchState.isRefreshing,
-            onRefresh = {
-                watchState.episodeSourcesQuery?.let { episodeSourcesQuery ->
-                    onAction(
-                        WatchAction.HandleSelectedEpisodeServer(
-                            episodeSourcesQuery,
-                            isRefresh = true
-                        )
-                    )
-                }
-            },
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(if (mainState.isLandscape) PaddingValues(0.dp) else paddingValues),
-            state = pullToRefreshState,
-            indicator = {
-                PullToRefreshDefaults.Indicator(
-                    isRefreshing = watchState.isRefreshing,
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.align(Alignment.TopCenter),
-                    state = pullToRefreshState
-                )
-            }
-        ) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                val videoPlayerModifier = Modifier
-                    .fillMaxWidth()
-                    .then(if (mainState.isLandscape) Modifier.fillMaxSize() else Modifier.height(250.dp))
-                AnimeWatchContent(
-                    malId = malId,
-                    navController = navController,
-                    networkDataSource = networkDataSource,
-                    watchState = watchState,
-                    isScreenOn = isScreenOn,
-                    isAutoPlayVideo = mainState.isAutoPlayVideo,
-                    playerUiState = playerUiState,
-                    mainState = mainState,
-                    playerCoreState = hlsPlayerCoreState,
-                    controlsStateFlow = hlsControlsStateFlow,
-                    dispatchPlayerAction = dispatchPlayerAction,
-                    getPlayer = getPlayer,
-                    captureScreenshot = captureScreenshot,
-                    onHandleBackPress = onBackPress,
-                    onAction = onAction,
-                    scrollState = scrollState,
-                    onEnterPipMode = onEnterPipMode,
-                    modifier = videoPlayerModifier,
-                )
-            }
+    PullToRefreshBox(
+        isRefreshing = watchState.isRefreshing,
+        onRefresh = { refreshEpisodeSources() },
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = if (mainState.isLandscape) 0.dp else statusBarPadding),
+        state = pullToRefreshState,
+        indicator = {
+            PullToRefreshDefaults.Indicator(
+                isRefreshing = watchState.isRefreshing,
+                containerColor = MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.align(Alignment.TopCenter),
+                state = pullToRefreshState
+            )
+        }
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            val videoPlayerModifier = Modifier
+                .fillMaxWidth()
+                .then(if (mainState.isLandscape) Modifier.fillMaxSize() else Modifier.height(250.dp))
+            AnimeWatchContent(
+                malId = malId,
+                navController = navController,
+                networkDataSource = networkDataSource,
+                watchState = watchState,
+                isScreenOn = isScreenOn,
+                isAutoPlayVideo = mainState.isAutoPlayVideo,
+                playerUiState = playerUiState,
+                mainState = mainState,
+                playerCoreState = hlsPlayerCoreState,
+                controlsStateFlow = hlsControlsStateFlow,
+                dispatchPlayerAction = dispatchPlayerAction,
+                getPlayer = getPlayer,
+                captureScreenshot = captureScreenshot,
+                onHandleBackPress = onBackPress,
+                onAction = onAction,
+                scrollState = scrollState,
+                onEnterPipMode = onEnterPipMode,
+                modifier = videoPlayerModifier,
+            )
         }
     }
 }

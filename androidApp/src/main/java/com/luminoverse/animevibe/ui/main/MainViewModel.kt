@@ -26,6 +26,27 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+enum class SnackbarMessageType {
+    INFO, SUCCESS, ERROR
+}
+
+/**
+ * Data class to hold all information for displaying a snackbar.
+ *
+ * @param message The text to display in the snackbar.
+ * @param type The type of message, which can affect styling or icons.
+ * @param actionLabel Optional text for an action button on the snackbar.
+ * @param onAction Optional lambda to execute when the action button is pressed.
+ * @param id A unique identifier to ensure the snackbar is re-triggered even with the same message.
+ */
+data class SnackbarMessage(
+    val message: String,
+    val type: SnackbarMessageType = SnackbarMessageType.INFO,
+    val actionLabel: String? = null,
+    val onAction: (() -> Unit)? = null,
+    val id: Long = System.currentTimeMillis()
+)
+
 data class MainState(
     val themeMode: ThemeMode = ThemeMode.System,
     val isDarkMode: Boolean = false,
@@ -37,7 +58,8 @@ data class MainState(
     val isConnected: Boolean = true,
     val networkStatus: NetworkStatus = networkStatusPlaceholder,
     val isShowIdleDialog: Boolean = false,
-    val isLandscape: Boolean = false
+    val isLandscape: Boolean = false,
+    val snackbarMessage: SnackbarMessage? = null
 )
 
 sealed class MainAction {
@@ -52,6 +74,8 @@ sealed class MainAction {
     data class SetIsShowIdleDialog(val show: Boolean) : MainAction()
     data object CheckNotificationPermission : MainAction()
     data object SyncSystemDarkMode : MainAction()
+    data class ShowSnackbar(val message: SnackbarMessage) : MainAction()
+    data object DismissSnackbar : MainAction()
 }
 
 @HiltViewModel
@@ -117,7 +141,17 @@ class MainViewModel @Inject constructor(
             is MainAction.SetNetworkStatus -> setNetworkStatus(action.status)
             is MainAction.SetIsShowIdleDialog -> setIsShowIdleDialog(action.show)
             is MainAction.CheckNotificationPermission -> checkNotificationPermission()
+            is MainAction.ShowSnackbar -> showSnackbar(action.message)
+            is MainAction.DismissSnackbar -> dismissSnackbar()
         }
+    }
+
+    private fun showSnackbar(message: SnackbarMessage) {
+        _state.update { it.copy(snackbarMessage = message) }
+    }
+
+    private fun dismissSnackbar() {
+        _state.update { it.copy(snackbarMessage = null) }
     }
 
     private fun isDarkMode(themeMode: ThemeMode): Boolean {
@@ -131,10 +165,6 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    /**
-     * This function is called when the system's configuration changes.
-     * It only updates the state if the current theme mode is 'System'.
-     */
     private fun syncSystemDarkMode() {
         if (_state.value.themeMode == ThemeMode.System) {
             _state.update { currentState ->

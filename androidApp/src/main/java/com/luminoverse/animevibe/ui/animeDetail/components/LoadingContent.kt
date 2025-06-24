@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.ui.animeDetail.detailBody.DetailBodySectionSkeleton
 import com.luminoverse.animevibe.ui.common.NumericDetailSectionSkeleton
@@ -20,6 +21,7 @@ import com.luminoverse.animevibe.ui.common.YoutubePreviewSkeleton
 @Composable
 fun LoadingContent(
     isLandscape: Boolean,
+    navigationBarBottomPadding: Dp,
     portraitScrollState: LazyListState,
     landscapeScrollState: LazyListState,
 ) {
@@ -42,15 +44,21 @@ fun LoadingContent(
     } else {
         LazyColumn(modifier = Modifier.fillMaxSize(), state = portraitScrollState) {
             item {
-                VerticalColumnContentSkeleton()
+                VerticalColumnContentSkeleton(navigationBarBottomPadding)
             }
         }
     }
 }
 
 @Composable
-private fun VerticalColumnContentSkeleton() {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+private fun VerticalColumnContentSkeleton(navigationBarBottomPadding: Dp) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(bottom = navigationBarBottomPadding),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         LeftColumnContentSkeleton()
         RightColumnContentSkeleton()
     }

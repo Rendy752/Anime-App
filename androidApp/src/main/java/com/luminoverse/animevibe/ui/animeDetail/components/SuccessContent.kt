@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.navigation.NavController
@@ -44,6 +45,7 @@ fun SuccessContent(
     navController: NavController,
     context: Context,
     isLandscape: Boolean,
+    navigationBarBottomPadding: Dp,
     portraitScrollState: LazyListState,
     landscapeScrollState: LazyListState,
     onAction: (DetailAction) -> Unit,
@@ -79,6 +81,7 @@ fun SuccessContent(
                         detailState = detailState,
                         episodeFilterState = episodeFilterState,
                         navController = navController,
+                        navigationBarBottomPadding = navigationBarBottomPadding,
                         context = context,
                         onAction = onAction,
                         onAnimeIdChange = onAnimeIdChange
@@ -103,6 +106,7 @@ fun SuccessContent(
                     detailState = detailState,
                     episodeFilterState = episodeFilterState,
                     navController = navController,
+                    navigationBarBottomPadding = navigationBarBottomPadding,
                     context = context,
                     onAction = onAction,
                     onAnimeIdChange = onAnimeIdChange
@@ -136,6 +140,7 @@ private fun LazyListScope.rightColumnContent(
     detailState: DetailState,
     episodeFilterState: EpisodeFilterState,
     navController: NavController,
+    navigationBarBottomPadding: Dp,
     context: Context,
     onAction: (DetailAction) -> Unit,
     onAnimeIdChange: (Int) -> Unit
@@ -158,6 +163,12 @@ private fun LazyListScope.rightColumnContent(
     }
     item {
         EpisodesDetailSection(
+            modifier = Modifier.padding(
+                bottom = if (
+                    animeDetail.theme?.openings == null && animeDetail.theme?.endings == null &&
+                    animeDetail.external == null && animeDetail.streaming == null
+                ) navigationBarBottomPadding else 0.dp
+            ),
             animeDetail = animeDetail,
             animeDetailComplement = detailState.animeDetailComplement,
             newEpisodeIdList = detailState.newEpisodeIdList,
@@ -177,7 +188,13 @@ private fun LazyListScope.rightColumnContent(
             onAction = onAction
         )
     }
-    item { CommonListContent(animeDetail, context) }
+    item {
+        CommonListContent(
+            animeDetail = animeDetail,
+            context = context,
+            navigationBarBottomPadding = navigationBarBottomPadding
+        )
+    }
 }
 
 private fun convertToNameAndUrl(list: List<String>?): List<NameAndUrl>? =
@@ -188,10 +205,14 @@ private fun convertToNameAndUrl(list: List<String>?): List<NameAndUrl>? =
     }
 
 @Composable
-private fun CommonListContent(animeDetail: AnimeDetail, context: Context) {
+private fun CommonListContent(
+    animeDetail: AnimeDetail,
+    context: Context,
+    navigationBarBottomPadding: Dp
+) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier,
+        modifier = Modifier.padding(bottom = navigationBarBottomPadding),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         listOf(

@@ -4,7 +4,6 @@ import android.app.PictureInPictureParams
 import android.content.Intent
 import android.util.Log
 import android.view.WindowManager
-import android.widget.Toast
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.EaseInOut
@@ -14,14 +13,18 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
@@ -67,16 +70,22 @@ fun MainScreen(
     mainState: MainState,
     mainAction: (MainAction) -> Unit,
 ) {
-    val activity = LocalActivity.current
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute by rememberUpdatedState(navBackStackEntry?.destination?.route)
-    val isConnected by rememberUpdatedState(mainState.isConnected)
-    val isRtl by rememberUpdatedState(mainState.isRtl)
     val isCurrentBottomScreen by remember(currentRoute) {
         derivedStateOf { NavRoute.bottomRoutes.any { it.route == currentRoute } }
     }
+
+    val isConnected by rememberUpdatedState(mainState.isConnected)
+    val isRtl by rememberUpdatedState(mainState.isRtl)
     val coroutineScope = rememberCoroutineScope()
     var isNavigating by remember { mutableStateOf(false) }
+
+    val isBottomNavigationBarVisible = isCurrentBottomScreen && !mainState.isLandscape
+    val density = LocalDensity.current
+    val navBarPadding = with(density) {
+        WindowInsets.systemBars.getBottom(density).toDp()
+    }
 
     LaunchedEffect(currentRoute) {
         resetIdleTimer()
@@ -96,8 +105,14 @@ fun MainScreen(
                                 if (animeId != null) {
                                     navController.navigateTo(NavRoute.AnimeDetail.fromId(animeId))
                                 } else {
-                                    Toast.makeText(activity, "Invalid anime ID", Toast.LENGTH_SHORT)
-                                        .show()
+                                    mainAction(
+                                        MainAction.ShowSnackbar(
+                                            SnackbarMessage(
+                                                message = "Invalid anime ID",
+                                                type = SnackbarMessageType.ERROR
+                                            )
+                                        )
+                                    )
                                 }
                             }
 
@@ -116,16 +131,26 @@ fun MainScreen(
                                         )
                                     )
                                 } else {
-                                    Toast.makeText(
-                                        activity,
-                                        "Invalid watch parameters",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
+                                    mainAction(
+                                        MainAction.ShowSnackbar(
+                                            SnackbarMessage(
+                                                message = "Invalid watch parameters",
+                                                type = SnackbarMessageType.ERROR
+                                            )
+                                        )
+                                    )
                                 }
                             }
 
                             else -> {
-                                Toast.makeText(activity, "Invalid URL", Toast.LENGTH_SHORT).show()
+                                mainAction(
+                                    MainAction.ShowSnackbar(
+                                        SnackbarMessage(
+                                            message = "Invalid URL",
+                                            type = SnackbarMessageType.ERROR
+                                        )
+                                    )
+                                )
                             }
                         }
                     }
@@ -137,7 +162,7 @@ fun MainScreen(
         modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
-            .then(if (isCurrentBottomScreen) Modifier.navigationBarsPadding() else Modifier)
+            .then(if (isBottomNavigationBarVisible) Modifier.padding(bottom = navBarPadding) else Modifier)
     ) {
         NavHost(
             navController = navController,
@@ -312,6 +337,7 @@ fun MainScreen(
                     navController = navController,
                     networkDataSource = viewModel.networkDataSource,
                     mainState = mainState,
+                    showSnackbar = { mainAction.invoke(MainAction.ShowSnackbar(it)) },
                     watchState = watchState,
                     playerUiState = playerUiState,
                     hlsPlayerCoreState = playerCoreState,
@@ -340,7 +366,7 @@ fun MainScreen(
             }
         }
         AnimatedVisibility(
-            visible = isCurrentBottomScreen && !mainState.isLandscape,
+            visible = isBottomNavigationBarVisible,
             enter = slideInVertically(
                 initialOffsetY = { it },
                 animationSpec = tween(durationMillis = 700, easing = EaseInOut)

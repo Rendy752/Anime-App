@@ -27,6 +27,7 @@ import com.luminoverse.animevibe.ui.common.LimitAndPaginationSection
 import com.luminoverse.animevibe.ui.main.MainState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.ui.platform.LocalDensity
 import com.luminoverse.animevibe.ui.common.CustomModalBottomSheet
 import com.luminoverse.animevibe.utils.resource.Resource
 
@@ -42,6 +43,16 @@ fun AnimeSearchScreen(
     filterSelectionState: FilterSelectionState = FilterSelectionState(),
     onAction: (SearchAction) -> Unit = {}
 ) {
+    val density = LocalDensity.current
+    val statusBarPadding = with(density) {
+        WindowInsets.systemBars.getTop(density).toDp()
+    }
+    val navigationBarPadding = with(density) {
+        WindowInsets.systemBars.getBottom(density).toDp()
+    }
+
+    val isTopAppBarVisible = !mainState.isLandscape && (genreId != null || producerId != null)
+
     val state = rememberPullToRefreshState()
     val leftFilterScrollState = rememberScrollState()
     val resultsSectionScrollState = rememberLazyListState()
@@ -63,9 +74,26 @@ fun AnimeSearchScreen(
         onAction(SearchAction.HandleInitialFetch(genreId, producerId))
     }
 
-    Scaffold(
-        topBar = {
-            if (!mainState.isLandscape && (genreId != null || producerId != null)) {
+    PullToRefreshBox(
+        modifier = Modifier.padding(
+            top = statusBarPadding,
+            bottom = if (isTopAppBarVisible) navigationBarPadding else 0.dp
+        ),
+        isRefreshing = searchState.isRefreshing,
+        onRefresh = { onAction(SearchAction.ApplyFilters(searchState.queryState)) },
+        state = state,
+        indicator = {
+            PullToRefreshDefaults.Indicator(
+                isRefreshing = searchState.isRefreshing,
+                containerColor = MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.align(Alignment.TopCenter),
+                state = state
+            )
+        }
+    ) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            if (isTopAppBarVisible) {
                 Column {
                     TopAppBar(
                         title = {
@@ -91,23 +119,6 @@ fun AnimeSearchScreen(
                     )
                 }
             }
-        }
-    ) { paddingValues ->
-        PullToRefreshBox(
-            isRefreshing = searchState.isRefreshing,
-            onRefresh = { onAction(SearchAction.ApplyFilters(searchState.queryState)) },
-            modifier = Modifier.padding(paddingValues),
-            state = state,
-            indicator = {
-                PullToRefreshDefaults.Indicator(
-                    isRefreshing = searchState.isRefreshing,
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.align(Alignment.TopCenter),
-                    state = state
-                )
-            }
-        ) {
             if (mainState.isLandscape) {
                 Row(modifier = Modifier.fillMaxSize()) {
                     Column(
@@ -244,68 +255,68 @@ fun AnimeSearchScreen(
                     )
                 }
             }
+        }
 
-            CustomModalBottomSheet(
-                modifier = Modifier.align(Alignment.BottomCenter),
-                isVisible = isFilterBottomSheetShow,
-                isLandscape = mainState.isLandscape,
-                onDismiss = { isFilterBottomSheetShow = false },
-            ) {
-                FilterBottomSheet(
-                    queryState = searchState.queryState,
-                    applyFilters = { updatedQueryState ->
-                        onAction(SearchAction.ApplyFilters(updatedQueryState))
-                    },
-                    resetBottomSheetFilters = { onAction(SearchAction.ResetBottomSheetFilters) },
-                    onDismiss = { isFilterBottomSheetShow = false }
-                )
-            }
+        CustomModalBottomSheet(
+            modifier = Modifier.align(Alignment.BottomCenter),
+            isVisible = isFilterBottomSheetShow,
+            isLandscape = mainState.isLandscape,
+            onDismiss = { isFilterBottomSheetShow = false },
+        ) {
+            FilterBottomSheet(
+                queryState = searchState.queryState,
+                applyFilters = { updatedQueryState ->
+                    onAction(SearchAction.ApplyFilters(updatedQueryState))
+                },
+                resetBottomSheetFilters = { onAction(SearchAction.ResetBottomSheetFilters) },
+                onDismiss = { isFilterBottomSheetShow = false }
+            )
+        }
 
-            CustomModalBottomSheet(
-                modifier = Modifier.align(Alignment.BottomCenter),
-                isVisible = isGenresBottomSheetShow,
-                isLandscape = mainState.isLandscape,
-                onDismiss = { isGenresBottomSheetShow = false },
-            ) {
-                GenresBottomSheet(
-                    queryState = searchState.queryState,
-                    fetchGenres = { onAction(SearchAction.FetchGenres) },
-                    genres = searchState.genres,
-                    selectedGenres = filterSelectionState.selectedGenres,
-                    setSelectedGenre = { genre ->
-                        onAction(SearchAction.SetSelectedGenre(genre))
-                    },
-                    resetGenreSelection = { onAction(SearchAction.ResetGenreSelection) },
-                    applyGenreFilters = { onAction(SearchAction.ApplyGenreFilters) },
-                    onDismiss = { isGenresBottomSheetShow = false }
-                )
-            }
+        CustomModalBottomSheet(
+            modifier = Modifier.align(Alignment.BottomCenter),
+            isVisible = isGenresBottomSheetShow,
+            isLandscape = mainState.isLandscape,
+            onDismiss = { isGenresBottomSheetShow = false },
+        ) {
+            GenresBottomSheet(
+                queryState = searchState.queryState,
+                fetchGenres = { onAction(SearchAction.FetchGenres) },
+                genres = searchState.genres,
+                selectedGenres = filterSelectionState.selectedGenres,
+                setSelectedGenre = { genre ->
+                    onAction(SearchAction.SetSelectedGenre(genre))
+                },
+                resetGenreSelection = { onAction(SearchAction.ResetGenreSelection) },
+                applyGenreFilters = { onAction(SearchAction.ApplyGenreFilters) },
+                onDismiss = { isGenresBottomSheetShow = false }
+            )
+        }
 
-            CustomModalBottomSheet(
-                modifier = Modifier.align(Alignment.BottomCenter),
-                isVisible = isProducersBottomSheetShow,
-                isLandscape = mainState.isLandscape,
-                onDismiss = { isProducersBottomSheetShow = false },
-            ) {
-                ProducersBottomSheet(
-                    queryState = searchState.queryState,
-                    producers = searchState.producers,
-                    fetchProducers = { onAction(SearchAction.FetchProducers) },
-                    selectedProducers = filterSelectionState.selectedProducers,
-                    producersQueryState = searchState.producersQueryState,
-                    applyProducerQueryStateFilters = { updatedQueryState ->
-                        onAction(
-                            SearchAction.ApplyProducerQueryStateFilters(updatedQueryState)
-                        )
-                    },
-                    setSelectedProducer = { producer ->
-                        onAction(SearchAction.SetSelectedProducer(producer))
-                    },
-                    applyProducerFilters = { onAction(SearchAction.ApplyProducerFilters) },
-                    resetProducerSelection = { onAction(SearchAction.ResetProducerSelection) },
-                    onDismiss = { isProducersBottomSheetShow = false }
-                )
-            }
+        CustomModalBottomSheet(
+            modifier = Modifier.align(Alignment.BottomCenter),
+            isVisible = isProducersBottomSheetShow,
+            isLandscape = mainState.isLandscape,
+            onDismiss = { isProducersBottomSheetShow = false },
+        ) {
+            ProducersBottomSheet(
+                queryState = searchState.queryState,
+                producers = searchState.producers,
+                fetchProducers = { onAction(SearchAction.FetchProducers) },
+                selectedProducers = filterSelectionState.selectedProducers,
+                producersQueryState = searchState.producersQueryState,
+                applyProducerQueryStateFilters = { updatedQueryState ->
+                    onAction(
+                        SearchAction.ApplyProducerQueryStateFilters(updatedQueryState)
+                    )
+                },
+                setSelectedProducer = { producer ->
+                    onAction(SearchAction.SetSelectedProducer(producer))
+                },
+                applyProducerFilters = { onAction(SearchAction.ApplyProducerFilters) },
+                resetProducerSelection = { onAction(SearchAction.ResetProducerSelection) },
+                onDismiss = { isProducersBottomSheetShow = false }
+            )
         }
     }
 }

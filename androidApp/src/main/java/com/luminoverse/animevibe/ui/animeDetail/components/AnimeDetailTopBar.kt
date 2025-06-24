@@ -1,6 +1,8 @@
 package com.luminoverse.animevibe.ui.animeDetail.components
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
@@ -22,6 +24,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.luminoverse.animevibe.models.AnimeDetailComplement
@@ -39,6 +42,8 @@ fun AnimeDetailTopBar(
     animeDetail: Resource<AnimeDetailResponse>?,
     animeDetailComplement: Resource<AnimeDetailComplement?>?,
     navController: NavController,
+    isLandscape: Boolean,
+    navigationBarRightPadding: Dp,
     onFavoriteToggle: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
@@ -134,6 +139,7 @@ fun AnimeDetailTopBar(
                             contentDescription = "Share"
                         )
                     }
+                    if (isLandscape) Spacer(modifier = Modifier.width(navigationBarRightPadding))
                 }
             }
         )

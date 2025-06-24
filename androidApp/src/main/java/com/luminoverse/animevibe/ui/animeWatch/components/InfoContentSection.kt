@@ -2,7 +2,12 @@ package com.luminoverse.animevibe.ui.animeWatch.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.luminoverse.animevibe.models.AnimeDetail
@@ -20,7 +25,15 @@ fun InfoContentSection(
     animeDetail: AnimeDetail?,
     navController: NavController
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    val density = LocalDensity.current
+    val navigationBarPadding = with(density) {
+        WindowInsets.systemBars.getBottom(density).toDp()
+    }
+
+    Column(
+        modifier = Modifier.padding(bottom = navigationBarPadding),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
         if (animeDetail != null) {
             AnimeHeader(animeDetail = animeDetail, navController = navController)
             NumericDetailSection(

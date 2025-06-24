@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.ui.platform.LocalDensity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,6 +29,11 @@ fun EpisodeHistoryScreen(
     historyState: EpisodeHistoryState,
     onAction: (EpisodeHistoryAction) -> Unit
 ) {
+    val density = LocalDensity.current
+    val statusBarPadding = with(density) {
+        WindowInsets.systemBars.getTop(density).toDp()
+    }
+
     val pullToRefreshState = rememberPullToRefreshState()
     val historyListState = rememberLazyListState()
 
@@ -43,96 +49,36 @@ fun EpisodeHistoryScreen(
         }
     }
 
-    Scaffold { paddingValues ->
-        PullToRefreshBox(
-            isRefreshing = historyState.isRefreshing,
-            onRefresh = { onAction(EpisodeHistoryAction.ApplyFilters(historyState.queryState)) },
-            modifier = Modifier.padding(paddingValues),
-            state = pullToRefreshState,
-            indicator = {
-                PullToRefreshDefaults.Indicator(
-                    isRefreshing = historyState.isRefreshing,
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.align(Alignment.TopCenter),
-                    state = pullToRefreshState
-                )
-            }
-        ) {
-            if (mainState.isLandscape) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 8.dp)
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .weight(0.4f)
-                            .fillMaxHeight()
-                            .padding(end = 8.dp)
-                    ) {
-                        FilterContent(
-                            modifier = Modifier.weight(1f),
-                            queryState = historyState.queryState,
-                            onAction = onAction
-                        )
-                        LimitAndPaginationSection(
-                            isVisible = historyState.episodeHistoryResults is Resource.Success,
-                            pagination = historyState.pagination,
-                            query = LimitAndPaginationQueryState(
-                                page = historyState.queryState.page,
-                                limit = historyState.queryState.limit
-                            ),
-                            onQueryChanged = { updatedQuery ->
-                                if (updatedQuery.page != historyState.queryState.page) {
-                                    onAction(EpisodeHistoryAction.ChangePage(updatedQuery.page))
-                                } else if (updatedQuery.limit != historyState.queryState.limit) {
-                                    onAction(
-                                        EpisodeHistoryAction.ApplyFilters(
-                                            historyState.queryState.copy(
-                                                page = 1,
-                                                limit = updatedQuery.limit
-                                                    ?: historyState.queryState.limit
-                                            )
-                                        )
-                                    )
-                                }
-                            },
-                            useHorizontalPager = false
-                        )
-                    }
-
-                    VerticalDivider(modifier = Modifier.fillMaxHeight())
-
-                    HistoryContent(
-                        modifier = Modifier
-                            .weight(0.6f)
-                            .fillMaxHeight()
-                            .padding(start = 8.dp),
-                        navController = navController,
-                        listState = historyListState,
-                        state = historyState,
-                        onAction = onAction
-                    )
-                }
-            } else {
+    PullToRefreshBox(
+        modifier = Modifier.padding(top = statusBarPadding),
+        isRefreshing = historyState.isRefreshing,
+        onRefresh = { onAction(EpisodeHistoryAction.ApplyFilters(historyState.queryState)) },
+        state = pullToRefreshState,
+        indicator = {
+            PullToRefreshDefaults.Indicator(
+                isRefreshing = historyState.isRefreshing,
+                containerColor = MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.align(Alignment.TopCenter),
+                state = pullToRefreshState
+            )
+        }
+    ) {
+        if (mainState.isLandscape) {
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 8.dp)
+            ) {
                 Column(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 8.dp)
+                        .weight(0.4f)
+                        .fillMaxHeight()
+                        .padding(end = 8.dp)
                 ) {
                     FilterContent(
+                        modifier = Modifier.weight(1f),
                         queryState = historyState.queryState,
-                        onAction = onAction
-                    )
-                    HistoryContent(
-                        modifier = Modifier
-                            .padding(top = 4.dp)
-                            .weight(1f)
-                            .fillMaxWidth(),
-                        navController = navController,
-                        listState = historyListState,
-                        state = historyState,
                         onAction = onAction
                     )
                     LimitAndPaginationSection(
@@ -156,9 +102,67 @@ fun EpisodeHistoryScreen(
                                     )
                                 )
                             }
-                        }
+                        },
+                        useHorizontalPager = false
                     )
                 }
+
+                VerticalDivider(modifier = Modifier.fillMaxHeight())
+
+                HistoryContent(
+                    modifier = Modifier
+                        .weight(0.6f)
+                        .fillMaxHeight()
+                        .padding(start = 8.dp),
+                    navController = navController,
+                    listState = historyListState,
+                    state = historyState,
+                    onAction = onAction
+                )
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 8.dp)
+            ) {
+                FilterContent(
+                    queryState = historyState.queryState,
+                    onAction = onAction
+                )
+                HistoryContent(
+                    modifier = Modifier
+                        .padding(top = 4.dp)
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    navController = navController,
+                    listState = historyListState,
+                    state = historyState,
+                    onAction = onAction
+                )
+                LimitAndPaginationSection(
+                    isVisible = historyState.episodeHistoryResults is Resource.Success,
+                    pagination = historyState.pagination,
+                    query = LimitAndPaginationQueryState(
+                        page = historyState.queryState.page,
+                        limit = historyState.queryState.limit
+                    ),
+                    onQueryChanged = { updatedQuery ->
+                        if (updatedQuery.page != historyState.queryState.page) {
+                            onAction(EpisodeHistoryAction.ChangePage(updatedQuery.page))
+                        } else if (updatedQuery.limit != historyState.queryState.limit) {
+                            onAction(
+                                EpisodeHistoryAction.ApplyFilters(
+                                    historyState.queryState.copy(
+                                        page = 1,
+                                        limit = updatedQuery.limit
+                                            ?: historyState.queryState.limit
+                                    )
+                                )
+                            )
+                        }
+                    }
+                )
             }
         }
     }

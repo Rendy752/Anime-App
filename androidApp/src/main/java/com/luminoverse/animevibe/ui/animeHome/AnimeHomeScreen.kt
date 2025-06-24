@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.systemBars
@@ -16,7 +15,6 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -115,145 +113,141 @@ fun AnimeHomeScreen(
         if (homeState.top10Anime is Resource.Error) onAction(HomeAction.GetTop10Anime)
     }
 
-    Scaffold(contentWindowInsets = WindowInsets(0.dp)) { paddingValues ->
-        PullToRefreshBox(
-            isRefreshing = homeState.isRefreshing,
-            onRefresh = { onAction(HomeAction.GetAnimeSchedules) },
-            modifier = Modifier
-                .fillMaxSize()
-                .consumeWindowInsets(paddingValues),
-            state = pullToRefreshState,
-            indicator = {
-                PullToRefreshDefaults.Indicator(
-                    isRefreshing = homeState.isRefreshing,
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.align(Alignment.TopCenter),
-                    state = pullToRefreshState
-                )
-            }
+    PullToRefreshBox(
+        isRefreshing = homeState.isRefreshing,
+        onRefresh = { onAction(HomeAction.GetAnimeSchedules) },
+        modifier = Modifier.fillMaxSize(),
+        state = pullToRefreshState,
+        indicator = {
+            PullToRefreshDefaults.Indicator(
+                isRefreshing = homeState.isRefreshing,
+                containerColor = MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.align(Alignment.TopCenter),
+                state = pullToRefreshState
+            )
+        }
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy((-16).dp)
         ) {
+            when (homeState.top10Anime) {
+                is Resource.Success -> {
+                    TopAnimeCarousel(
+                        modifier = Modifier.height(carouselHeight),
+                        topAnimeList = homeState.top10Anime.data.data,
+                        currentCarouselPage = carouselState.currentCarouselPage,
+                        autoScrollEnabled = carouselState.autoScrollEnabled,
+                        carouselLastInteractionTime = carouselState.carouselLastInteractionTime,
+                        onPageChanged = { onAction(HomeAction.SetCurrentCarouselPage(it)) },
+                        onAutoScrollEnabledChanged = {
+                            onAction(HomeAction.SetAutoScrollEnabled(it))
+                        },
+                        onCarouselInteraction = { onAction(HomeAction.UpdateCarouselLastInteractionTime) },
+                        navController = navController,
+                        scrollProgress = scrollProgress
+                    )
+                }
+
+                is Resource.Loading -> {
+                    TopAnimeCarouselSkeleton(
+                        modifier = Modifier.height(carouselHeight)
+                    )
+                }
+
+                is Resource.Error -> {
+                    TopAnimeCarouselSkeleton(
+                        modifier = Modifier.height(carouselHeight),
+                        isError = true
+                    )
+                }
+            }
             Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy((-16).dp)
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
+                    .background(MaterialTheme.colorScheme.surface)
             ) {
-                when (homeState.top10Anime) {
-                    is Resource.Success -> {
-                        TopAnimeCarousel(
-                            modifier = Modifier.height(carouselHeight),
-                            topAnimeList = homeState.top10Anime.data.data,
-                            currentCarouselPage = carouselState.currentCarouselPage,
-                            autoScrollEnabled = carouselState.autoScrollEnabled,
-                            carouselLastInteractionTime = carouselState.carouselLastInteractionTime,
-                            onPageChanged = { onAction(HomeAction.SetCurrentCarouselPage(it)) },
-                            onAutoScrollEnabledChanged = {
-                                onAction(HomeAction.SetAutoScrollEnabled(it))
-                            },
-                            onCarouselInteraction = { onAction(HomeAction.UpdateCarouselLastInteractionTime) },
-                            navController = navController,
-                            scrollProgress = scrollProgress
+                FilterChipBar(
+                    queryState = homeState.queryState,
+                    onApplyFilters = { onAction(HomeAction.ApplyFilters(it)) }
+                )
+                when (homeState.animeSchedules) {
+                    is Resource.Loading -> {
+                        AnimeSchedulesGridSkeleton(
+                            gridState = gridState,
+                            isLandscape = mainState.isLandscape
                         )
                     }
 
-                    is Resource.Loading -> {
-                        TopAnimeCarouselSkeleton(
-                            modifier = Modifier.height(carouselHeight)
-                        )
+                    is Resource.Success -> {
+                        homeState.animeSchedules.data.let { animeSchedules ->
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                AnimeSchedulesGrid(
+                                    animeSchedules = animeSchedules.data,
+                                    remainingTimes = remainingTimes,
+                                    isLandscape = mainState.isLandscape,
+                                    onItemClick = { anime ->
+                                        navController.navigateTo(
+                                            NavRoute.AnimeDetail.fromId(anime.mal_id)
+                                        )
+                                    },
+                                    gridState = gridState
+                                )
+                            }
+                        }
                     }
 
                     is Resource.Error -> {
-                        TopAnimeCarouselSkeleton(
-                            modifier = Modifier.height(carouselHeight),
-                            isError = true
-                        )
+                        if (mainState.isConnected) Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) { MessageDisplay(message = "Error Loading Data") }
+                        else Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) { MessageDisplay(message = "No internet connection") }
                     }
                 }
-                Column(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
-                        .background(MaterialTheme.colorScheme.surface)
+                LimitAndPaginationSection(
+                    isVisible = homeState.animeSchedules is Resource.Success && !mainState.isLandscape,
+                    pagination = homeState.animeSchedules.data?.pagination,
+                    query = LimitAndPaginationQueryState(
+                        homeState.queryState.page,
+                        homeState.queryState.limit
+                    ),
+                    onQueryChanged = {
+                        onAction(
+                            HomeAction.ApplyFilters(
+                                homeState.queryState.copy(page = it.page, limit = it.limit)
+                            )
+                        )
+                    }
+                )
+            }
+
+            homeState.continueWatchingEpisode?.let { continueWatchingEpisode ->
+                if (homeState.isShowPopup && currentRoute == NavRoute.Home.route) Popup(
+                    alignment = Alignment.BottomEnd,
+                    offset = IntOffset(0, (-200).dp.value.toInt())
                 ) {
-                    FilterChipBar(
-                        queryState = homeState.queryState,
-                        onApplyFilters = { onAction(HomeAction.ApplyFilters(it)) }
-                    )
-                    when (homeState.animeSchedules) {
-                        is Resource.Loading -> {
-                            AnimeSchedulesGridSkeleton(
-                                gridState = gridState,
-                                isLandscape = mainState.isLandscape
-                            )
-                        }
-
-                        is Resource.Success -> {
-                            homeState.animeSchedules.data.let { animeSchedules ->
-                                Column(
-                                    modifier = Modifier.weight(1f),
-                                    verticalArrangement = Arrangement.Center
-                                ) {
-                                    AnimeSchedulesGrid(
-                                        animeSchedules = animeSchedules.data,
-                                        remainingTimes = remainingTimes,
-                                        isLandscape = mainState.isLandscape,
-                                        onItemClick = { anime ->
-                                            navController.navigateTo(
-                                                NavRoute.AnimeDetail.fromId(anime.mal_id)
-                                            )
-                                        },
-                                        gridState = gridState
-                                    )
-                                }
-                            }
-                        }
-
-                        is Resource.Error -> {
-                            if (mainState.isConnected) Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) { MessageDisplay(message = "Error Loading Data") }
-                            else Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) { MessageDisplay(message = "No internet connection") }
-                        }
-                    }
-                    LimitAndPaginationSection(
-                        isVisible = homeState.animeSchedules is Resource.Success && !mainState.isLandscape,
-                        pagination = homeState.animeSchedules.data?.pagination,
-                        query = LimitAndPaginationQueryState(
-                            homeState.queryState.page,
-                            homeState.queryState.limit
-                        ),
-                        onQueryChanged = {
-                            onAction(
-                                HomeAction.ApplyFilters(
-                                    homeState.queryState.copy(page = it.page, limit = it.limit)
+                    ContinueWatchingAnime(
+                        episodeDetailComplement = continueWatchingEpisode,
+                        isMinimized = homeState.isMinimized,
+                        onSetMinimize = { onAction(HomeAction.SetMinimized(it)) },
+                        onTitleClick = { navController.navigateTo(NavRoute.AnimeDetail.fromId(it)) },
+                        onEpisodeClick = { malId, episodeId ->
+                            navController.navigateTo(
+                                NavRoute.AnimeWatch.fromParams(
+                                    malId = malId, episodeId = episodeId
                                 )
                             )
                         }
                     )
-                }
-
-                homeState.continueWatchingEpisode?.let { continueWatchingEpisode ->
-                    if (homeState.isShowPopup && currentRoute == NavRoute.Home.route) Popup(
-                        alignment = Alignment.BottomEnd,
-                        offset = IntOffset(0, (-200).dp.value.toInt())
-                    ) {
-                        ContinueWatchingAnime(
-                            episodeDetailComplement = continueWatchingEpisode,
-                            isMinimized = homeState.isMinimized,
-                            onSetMinimize = { onAction(HomeAction.SetMinimized(it)) },
-                            onTitleClick = { navController.navigateTo(NavRoute.AnimeDetail.fromId(it)) },
-                            onEpisodeClick = { malId, episodeId ->
-                                navController.navigateTo(
-                                    NavRoute.AnimeWatch.fromParams(
-                                        malId = malId, episodeId = episodeId
-                                    )
-                                )
-                            }
-                        )
-                    }
                 }
             }
         }

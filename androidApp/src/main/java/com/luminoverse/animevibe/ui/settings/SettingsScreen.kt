@@ -10,7 +10,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
@@ -18,7 +17,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -68,106 +66,103 @@ fun SettingsScreen(
         mainAction(MainAction.CheckNotificationPermission)
     }
 
-    Scaffold { paddingValues ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .consumeWindowInsets(paddingValues)
-                .padding(horizontal = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            item {
-                ThemeModeChips(
-                    selectedThemeMode = mainState.themeMode,
-                    onThemeModeSelected = { mainAction(MainAction.SetThemeMode(it)) },
-                    modifier = Modifier.padding(top = statusBarPadding)
-                )
-            }
-            item {
-                ToggleWithLabel(
-                    isActive = mainState.isAutoPlayVideo,
-                    label = "Auto Play Video",
-                    description = "Enable auto play video",
-                    onToggle = { mainAction(MainAction.SetAutoPlayVideo(it)) }
-                )
-            }
-            item {
-                ToggleWithLabel(
-                    isActive = mainState.isRtl,
-                    label = "Right-to-Left Layout",
-                    description = "Enable right-to-left layout for text and UI",
-                    onToggle = { mainAction(MainAction.SetRtl(it)) }
-                )
-            }
-            item {
-                ToggleWithLabel(
-                    isActive = mainState.isNotificationEnabled,
-                    label = "Notifications",
-                    description = "Enable notifications",
-                    onToggle = { enable ->
-                        if (enable) {
-                            if (SDK_INT >= 33) {
-                                val permissionStatus = ContextCompat.checkSelfPermission(
-                                    context,
-                                    "android.permission.POST_NOTIFICATIONS"
-                                )
-                                val isGranted =
-                                    permissionStatus == PackageManager.PERMISSION_GRANTED
-                                if (isGranted) {
-                                    mainAction(MainAction.SetNotificationEnabled(true))
-                                } else {
-                                    val shouldShowRequest =
-                                        (context as? ComponentActivity)?.shouldShowRequestPermissionRationale(
-                                            "android.permission.POST_NOTIFICATIONS"
-                                        )
-                                    if (shouldShowRequest == true) {
-                                        permissionLauncher.launch("android.permission.POST_NOTIFICATIONS")
-                                    } else {
-                                        settingsLauncher.launch(
-                                            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                                                putExtra(
-                                                    Settings.EXTRA_APP_PACKAGE,
-                                                    context.packageName
-                                                )
-                                            }
-                                        )
-                                    }
-                                }
-                            } else {
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(horizontal = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        item {
+            ThemeModeChips(
+                selectedThemeMode = mainState.themeMode,
+                onThemeModeSelected = { mainAction(MainAction.SetThemeMode(it)) },
+                modifier = Modifier.padding(top = statusBarPadding)
+            )
+        }
+        item {
+            ToggleWithLabel(
+                isActive = mainState.isAutoPlayVideo,
+                label = "Auto Play Video",
+                description = "Enable auto play video",
+                onToggle = { mainAction(MainAction.SetAutoPlayVideo(it)) }
+            )
+        }
+        item {
+            ToggleWithLabel(
+                isActive = mainState.isRtl,
+                label = "Right-to-Left Layout",
+                description = "Enable right-to-left layout for text and UI",
+                onToggle = { mainAction(MainAction.SetRtl(it)) }
+            )
+        }
+        item {
+            ToggleWithLabel(
+                isActive = mainState.isNotificationEnabled,
+                label = "Notifications",
+                description = "Enable notifications",
+                onToggle = { enable ->
+                    if (enable) {
+                        if (SDK_INT >= 33) {
+                            val permissionStatus = ContextCompat.checkSelfPermission(
+                                context,
+                                "android.permission.POST_NOTIFICATIONS"
+                            )
+                            val isGranted =
+                                permissionStatus == PackageManager.PERMISSION_GRANTED
+                            if (isGranted) {
                                 mainAction(MainAction.SetNotificationEnabled(true))
+                            } else {
+                                val shouldShowRequest =
+                                    (context as? ComponentActivity)?.shouldShowRequestPermissionRationale(
+                                        "android.permission.POST_NOTIFICATIONS"
+                                    )
+                                if (shouldShowRequest == true) {
+                                    permissionLauncher.launch("android.permission.POST_NOTIFICATIONS")
+                                } else {
+                                    settingsLauncher.launch(
+                                        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                            putExtra(
+                                                Settings.EXTRA_APP_PACKAGE,
+                                                context.packageName
+                                            )
+                                        }
+                                    )
+                                }
                             }
                         } else {
-                            settingsLauncher.launch(
-                                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                                    putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                                }
-                            )
+                            mainAction(MainAction.SetNotificationEnabled(true))
                         }
-                    }
-                )
-            }
-            item {
-                ContrastModeChips(
-                    selectedContrastMode = mainState.contrastMode,
-                    onContrastModeChanged = { mainAction(MainAction.SetContrastMode(it)) }
-                )
-            }
-            item {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    Text(
-                        text = "Color Style",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    ColorStyle.entries.forEach { style ->
-                        ColorStyleCard(
-                            state = colorStyleCardScrollState,
-                            colorStyle = style,
-                            isSelected = style == mainState.colorStyle,
-                            isDarkMode = mainState.isDarkMode,
-                            contrastMode = mainState.contrastMode,
-                            onColorStyleSelected = { mainAction(MainAction.SetColorStyle(style)) },
+                    } else {
+                        settingsLauncher.launch(
+                            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
+                                putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
+                            }
                         )
                     }
+                }
+            )
+        }
+        item {
+            ContrastModeChips(
+                selectedContrastMode = mainState.contrastMode,
+                onContrastModeChanged = { mainAction(MainAction.SetContrastMode(it)) }
+            )
+        }
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = "Color Style",
+                    style = MaterialTheme.typography.titleMedium
+                )
+                ColorStyle.entries.forEach { style ->
+                    ColorStyleCard(
+                        state = colorStyleCardScrollState,
+                        colorStyle = style,
+                        isSelected = style == mainState.colorStyle,
+                        isDarkMode = mainState.isDarkMode,
+                        contrastMode = mainState.contrastMode,
+                        onColorStyleSelected = { mainAction(MainAction.SetColorStyle(style)) },
+                    )
                 }
             }
         }

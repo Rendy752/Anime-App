@@ -2,11 +2,12 @@ package com.luminoverse.animevibe.ui.animeDetail
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
@@ -14,6 +15,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.luminoverse.animevibe.ui.animeDetail.components.AnimeDetailTopBar
@@ -33,6 +36,20 @@ fun AnimeDetailScreen(
     episodeFilterState: EpisodeFilterState,
     onAction: (DetailAction) -> Unit
 ) {
+    val density = LocalDensity.current
+    val statusBarPadding = with(density) {
+        WindowInsets.systemBars.getTop(density).toDp()
+    }
+    val navigationBarBottomPadding = with(density) {
+        WindowInsets.systemBars.getBottom(density).toDp()
+    }
+    val navigationBarRightPadding = with(density) {
+        WindowInsets.systemBars.getRight(
+            density,
+            if (mainState.isRtl) LayoutDirection.Rtl else LayoutDirection.Ltr
+        ).toDp()
+    }
+
     val context = LocalContext.current
     val portraitScrollState = rememberLazyListState()
     val landscapeScrollState = rememberLazyListState()
@@ -52,23 +69,26 @@ fun AnimeDetailScreen(
         landscapeScrollState.animateScrollToItem(0)
     }
 
-    Scaffold(topBar = {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(top = statusBarPadding)
+    ) {
         AnimeDetailTopBar(
             animeDetail = detailState.animeDetail,
             animeDetailComplement = detailState.animeDetailComplement,
             navController = navController,
+            isLandscape = mainState.isLandscape,
+            navigationBarRightPadding = navigationBarRightPadding,
             onFavoriteToggle = { onAction(DetailAction.ToggleFavorite(it)) }
         )
-    }) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .padding(paddingValues)
-                .fillMaxSize()
-                .padding(start = 8.dp, end = 8.dp, bottom = 8.dp)
-        ) {
+        Box(modifier = Modifier
+            .weight(1f)
+            .padding(horizontal = 8.dp)) {
             when (detailState.animeDetail) {
                 is Resource.Loading -> LoadingContent(
                     isLandscape = mainState.isLandscape,
+                    navigationBarBottomPadding = navigationBarBottomPadding,
                     portraitScrollState = portraitScrollState,
                     landscapeScrollState = landscapeScrollState,
                 )
@@ -80,6 +100,7 @@ fun AnimeDetailScreen(
                     navController = navController,
                     context = context,
                     isLandscape = mainState.isLandscape,
+                    navigationBarBottomPadding = navigationBarBottomPadding,
                     portraitScrollState = portraitScrollState,
                     landscapeScrollState = landscapeScrollState,
                     onAction = onAction,

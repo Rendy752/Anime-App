@@ -60,7 +60,7 @@ private fun SkipButton(
     AnimatedVisibility(
         visible = isVisible,
         modifier
-            .padding(end = 80.dp, bottom = 80.dp)
+            .padding(end = 64.dp, bottom = 64.dp)
             .clip(RoundedCornerShape(16.dp))
             .border(2.dp, Color.White, RoundedCornerShape(16.dp))
             .clickable { onSkip() }
