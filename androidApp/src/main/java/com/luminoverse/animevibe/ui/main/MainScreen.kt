@@ -60,6 +60,7 @@ import kotlin.math.abs
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
+    modifier: Modifier,
     navController: NavHostController,
     intentChannel: Channel<Intent>,
     resetIdleTimer: () -> Unit,
@@ -133,7 +134,7 @@ fun MainScreen(
     }
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.surface)
             .then(if (isCurrentBottomScreen) Modifier.navigationBarsPadding() else Modifier)

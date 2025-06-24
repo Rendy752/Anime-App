@@ -82,7 +82,6 @@ class NotificationHandler @Inject constructor() {
             .setOnlyAlertOnce(true)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setOngoing(notification.type == "UnfinishedWatch")
             .applyImage(context, notification.type, notification.imageUrl)
             .applyActions(context, actions)
 

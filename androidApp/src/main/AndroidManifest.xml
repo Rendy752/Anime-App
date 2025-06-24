@@ -134,7 +134,6 @@
         <receiver
             android:name="com.luminoverse.animevibe.ui.widget.LatestWatchedWidgetProvider"
             android:label="@string/widget_name"
-            android:description="@string/widget_description"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />

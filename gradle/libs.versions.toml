@@ -1,6 +1,7 @@
 [versions]
 agp = "8.10.1"
 appcompat = "1.6.1"
+appUpdateKtx = "2.1.0"
 coil = "2.5.0"
 commonsText = "1.10.0"
 compose-activity = "1.10.1"
@@ -122,6 +123,8 @@ androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref =
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "roomRuntime" }
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomRuntime" }
 
+# PLAY STORE
+app-update-ktx = { module = "com.google.android.play:app-update-ktx", version.ref = "appUpdateKtx" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

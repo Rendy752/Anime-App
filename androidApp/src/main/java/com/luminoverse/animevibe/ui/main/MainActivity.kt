@@ -11,7 +11,14 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
@@ -22,6 +29,13 @@ import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.google.android.play.core.appupdate.AppUpdateManager
+import com.google.android.play.core.appupdate.AppUpdateManagerFactory
+import com.google.android.play.core.appupdate.AppUpdateOptions
+import com.google.android.play.core.install.InstallStateUpdatedListener
+import com.google.android.play.core.install.model.AppUpdateType
+import com.google.android.play.core.install.model.InstallStatus
+import com.google.android.play.core.install.model.UpdateAvailability
 import com.luminoverse.animevibe.AnimeApplication
 import com.luminoverse.animevibe.ui.common.ConfirmationAlert
 import com.luminoverse.animevibe.ui.theme.AppTheme
@@ -34,6 +48,8 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 import android.content.pm.PackageManager
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.utils.media.MediaPlaybackAction
 import javax.inject.Inject
 
@@ -52,6 +68,21 @@ class MainActivity : AppCompatActivity() {
     private var lastBackPressTime = 0L
     private val backPressTimeoutMillis = 2000L
 
+    // In-App Update properties
+    private lateinit var appUpdateManager: AppUpdateManager
+    private val updateType = AppUpdateType.FLEXIBLE
+    private var installStateUpdatedListener: InstallStateUpdatedListener? = null
+    private val snackbarHostState = SnackbarHostState()
+
+    // Activity result launcher for the update flow
+    private val updateActivityResultLauncher =
+        registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
+            if (result.resultCode != RESULT_OK) {
+                println("Update flow failed! Result code: " + result.resultCode)
+                // Optionally, you can log this event or notify the user.
+            }
+        }
+
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
@@ -64,6 +95,19 @@ class MainActivity : AppCompatActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
+
+        appUpdateManager = AppUpdateManagerFactory.create(applicationContext)
+
+        installStateUpdatedListener = InstallStateUpdatedListener { state ->
+            if (state.installStatus() == InstallStatus.DOWNLOADED) {
+                lifecycleScope.launch {
+                    popupSnackbarForCompleteUpdate()
+                }
+            }
+        }
+        appUpdateManager.registerListener(installStateUpdatedListener!!)
+
+        checkForAppUpdate()
 
         pipParamsBuilder = PictureInPictureParams.Builder().apply {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -111,25 +155,31 @@ class MainActivity : AppCompatActivity() {
                 colorStyle = state.colorStyle,
                 isRtl = state.isRtl
             ) {
-                if (state.isShowIdleDialog) {
-                    ConfirmationAlert(
-                        title = "Are you still there ?",
-                        message = "It seems you haven't interacted with the app for a while. Would you like to quit the app ?",
-                        onConfirm = { finish() },
-                        onCancel = {
-                            mainViewModel.onAction(MainAction.SetIsShowIdleDialog(false))
-                            resetIdleTimer()
-                        }
+                Scaffold(
+                    snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+                ) { paddingValues ->
+                    println(paddingValues)
+                    if (state.isShowIdleDialog) {
+                        ConfirmationAlert(
+                            title = "Are you still there ?",
+                            message = "It seems you haven't interacted with the app for a while. Would you like to quit the app ?",
+                            onConfirm = { finish() },
+                            onCancel = {
+                                mainViewModel.onAction(MainAction.SetIsShowIdleDialog(false))
+                                resetIdleTimer()
+                            }
+                        )
+                    }
+
+                    MainScreen(
+                        modifier = Modifier.padding(PaddingValues(0.dp)),
+                        navController = navController,
+                        intentChannel = intentChannel,
+                        resetIdleTimer = resetIdleTimer,
+                        mainState = state.copy(isLandscape = isLandscape),
+                        mainAction = mainViewModel::onAction,
                     )
                 }
-
-                MainScreen(
-                    navController = navController,
-                    intentChannel = intentChannel,
-                    resetIdleTimer = resetIdleTimer,
-                    mainState = state.copy(isLandscape = isLandscape),
-                    mainAction = mainViewModel::onAction,
-                )
             }
         }
 
@@ -137,6 +187,55 @@ class MainActivity : AppCompatActivity() {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 intent?.let { intentChannel.send(it) }
             }
+        }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        resetIdleTimer()
+        appUpdateManager
+            .appUpdateInfo
+            .addOnSuccessListener { appUpdateInfo ->
+                if (appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED) {
+                    lifecycleScope.launch {
+                        popupSnackbarForCompleteUpdate()
+                    }
+                }
+                if (appUpdateInfo.updateAvailability()
+                    == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS
+                ) {
+                    appUpdateManager.startUpdateFlowForResult(
+                        appUpdateInfo,
+                        updateActivityResultLauncher,
+                        AppUpdateOptions.newBuilder(updateType).build()
+                    )
+                }
+            }
+    }
+
+    private fun checkForAppUpdate() {
+        appUpdateManager.appUpdateInfo.addOnSuccessListener { appUpdateInfo ->
+            val isUpdateAvailable = appUpdateInfo.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
+            if (isUpdateAvailable && appUpdateInfo.isUpdateTypeAllowed(updateType)) {
+                appUpdateManager.startUpdateFlowForResult(
+                    appUpdateInfo,
+                    updateActivityResultLauncher,
+                    AppUpdateOptions.newBuilder(updateType).build()
+                )
+            }
+        }.addOnFailureListener { e ->
+            println("Failed to check for update: ${e.message}")
+        }
+    }
+
+    private suspend fun popupSnackbarForCompleteUpdate() {
+        val result = snackbarHostState.showSnackbar(
+            message = "An update has just been downloaded.",
+            actionLabel = "RESTART",
+            duration = SnackbarDuration.Indefinite,
+        )
+        if (result == SnackbarResult.ActionPerformed) {
+            appUpdateManager.completeUpdate()
         }
     }
 
@@ -209,13 +308,11 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    override fun onResume() {
-        super.onResume()
-        resetIdleTimer()
-    }
-
     override fun onDestroy() {
         super.onDestroy()
+        installStateUpdatedListener?.let {
+            appUpdateManager.unregisterListener(it)
+        }
         (applicationContext as AnimeApplication).cleanupService()
     }
 
