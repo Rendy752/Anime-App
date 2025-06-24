@@ -159,7 +159,8 @@ fun SettingsScreen(
                         state = colorStyleCardScrollState,
                         colorStyle = style,
                         isSelected = style == mainState.colorStyle,
-                        isDarkMode = mainState.isDarkMode,
+                        themeMode = mainState.themeMode,
+                        isRtl = mainState.isRtl,
                         contrastMode = mainState.contrastMode,
                         onColorStyleSelected = { mainAction(MainAction.SetColorStyle(style)) },
                     )

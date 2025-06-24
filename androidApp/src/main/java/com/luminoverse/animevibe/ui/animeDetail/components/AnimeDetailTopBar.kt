@@ -1,8 +1,7 @@
 package com.luminoverse.animevibe.ui.animeDetail.components
 
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
@@ -43,6 +42,7 @@ fun AnimeDetailTopBar(
     animeDetailComplement: Resource<AnimeDetailComplement?>?,
     navController: NavController,
     isLandscape: Boolean,
+    navigationBarLeftPadding: Dp,
     navigationBarRightPadding: Dp,
     onFavoriteToggle: (Boolean) -> Unit
 ) {
@@ -55,7 +55,11 @@ fun AnimeDetailTopBar(
     Column {
         TopAppBar(
             navigationIcon = {
-                IconButton(onClick = { navController.popBackStack() }) {
+                IconButton(
+                    modifier = Modifier.padding(
+                        start = if (isLandscape) navigationBarLeftPadding else 0.dp
+                    ),
+                    onClick = { navController.popBackStack() }) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                 }
             },
@@ -130,16 +134,19 @@ fun AnimeDetailTopBar(
                         }
                     }
 
-                    IconButton(onClick = {
-                        ShareUtils.shareAnimeDetail(context, animeDetailData)
-                    }) {
+                    IconButton(
+                        modifier = Modifier.padding(
+                            end = if (isLandscape) navigationBarRightPadding else 0.dp
+                        ),
+                        onClick = {
+                            ShareUtils.shareAnimeDetail(context, animeDetailData)
+                        }) {
                         Icon(
                             imageVector = Icons.Filled.Share,
                             tint = MaterialTheme.colorScheme.primary,
                             contentDescription = "Share"
                         )
                     }
-                    if (isLandscape) Spacer(modifier = Modifier.width(navigationBarRightPadding))
                 }
             }
         )

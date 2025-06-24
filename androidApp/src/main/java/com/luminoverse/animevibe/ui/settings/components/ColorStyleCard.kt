@@ -31,9 +31,10 @@ import com.luminoverse.animevibe.ui.common.AnimeHeader
 import com.luminoverse.animevibe.ui.common.AnimeScheduleItem
 import com.luminoverse.animevibe.ui.common.AnimeSearchItem
 import com.luminoverse.animevibe.ui.common.ContinueWatchingAnime
+import com.luminoverse.animevibe.ui.theme.AppTheme
 import com.luminoverse.animevibe.ui.theme.ColorStyle
 import com.luminoverse.animevibe.ui.theme.ContrastMode
-import com.luminoverse.animevibe.utils.ColorUtils
+import com.luminoverse.animevibe.ui.theme.ThemeMode
 import java.text.SimpleDateFormat
 import java.util.Date
 
@@ -42,13 +43,12 @@ fun ColorStyleCard(
     state: ScrollState,
     colorStyle: ColorStyle,
     isSelected: Boolean,
-    isDarkMode: Boolean,
+    themeMode: ThemeMode,
+    isRtl: Boolean,
     contrastMode: ContrastMode,
     onColorStyleSelected: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val colorScheme = ColorUtils.generateColorScheme(colorStyle, isDarkMode, contrastMode)
-
     Card(
         modifier = modifier
             .clip(RoundedCornerShape(16.dp))
@@ -72,7 +72,12 @@ fun ColorStyleCard(
                     style = MaterialTheme.typography.bodySmall
                 )
             }
-            MaterialTheme(colorScheme = colorScheme) {
+            AppTheme(
+                themeMode = themeMode,
+                contrastMode = contrastMode,
+                colorStyle = colorStyle,
+                isRtl = isRtl
+            ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()

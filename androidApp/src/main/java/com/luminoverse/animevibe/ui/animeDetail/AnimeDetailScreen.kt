@@ -43,6 +43,12 @@ fun AnimeDetailScreen(
     val navigationBarBottomPadding = with(density) {
         WindowInsets.systemBars.getBottom(density).toDp()
     }
+    val navigationBarLeftPadding = with(density) {
+        WindowInsets.systemBars.getLeft(
+            density,
+            if (mainState.isRtl) LayoutDirection.Rtl else LayoutDirection.Ltr
+        ).toDp()
+    }
     val navigationBarRightPadding = with(density) {
         WindowInsets.systemBars.getRight(
             density,
@@ -79,6 +85,7 @@ fun AnimeDetailScreen(
             animeDetailComplement = detailState.animeDetailComplement,
             navController = navController,
             isLandscape = mainState.isLandscape,
+            navigationBarLeftPadding = navigationBarLeftPadding,
             navigationBarRightPadding = navigationBarRightPadding,
             onFavoriteToggle = { onAction(DetailAction.ToggleFavorite(it)) }
         )
