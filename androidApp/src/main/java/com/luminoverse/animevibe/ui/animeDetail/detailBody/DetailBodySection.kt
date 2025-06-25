@@ -33,9 +33,13 @@ import com.luminoverse.animevibe.ui.main.navigation.navigateTo
 import com.luminoverse.animevibe.utils.basicContainer
 
 @Composable
-fun DetailBodySection(animeDetail: AnimeDetail, navController: NavController) {
+fun DetailBodySection(
+    modifier: Modifier = Modifier,
+    animeDetail: AnimeDetail,
+    navController: NavController
+) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .basicContainer(outerPadding = PaddingValues(0.dp))
             .fillMaxWidth()
     ) {

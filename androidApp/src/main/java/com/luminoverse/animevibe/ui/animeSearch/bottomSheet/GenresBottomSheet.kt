@@ -27,14 +27,13 @@ import com.luminoverse.animevibe.ui.animeSearch.components.CancelButton
 import com.luminoverse.animevibe.ui.animeSearch.components.ResetButton
 import com.luminoverse.animevibe.ui.animeSearch.searchField.FilterChipFlow
 import com.luminoverse.animevibe.ui.animeSearch.searchField.FilterChipFlowSkeleton
-import com.luminoverse.animevibe.ui.common.RetryButton
+import com.luminoverse.animevibe.ui.common.SomethingWentWrongDisplay
 import com.luminoverse.animevibe.utils.resource.Resource
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun GenresBottomSheet(
     queryState: AnimeSearchQueryState,
-    fetchGenres: () -> Unit,
     genres: Resource<GenresResponse>,
     selectedGenres: List<Genre>,
     setSelectedGenre: (Genre) -> Unit,
@@ -123,11 +122,7 @@ fun GenresBottomSheet(
                     }
 
                     is Resource.Error -> {
-                        RetryButton(
-                            modifier = Modifier.padding(16.dp),
-                            message = genres.message,
-                            onClick = { fetchGenres() }
-                        )
+                        SomethingWentWrongDisplay(message = genres.message)
                     }
                 }
             }

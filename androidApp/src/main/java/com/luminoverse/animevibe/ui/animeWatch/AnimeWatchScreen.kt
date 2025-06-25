@@ -50,6 +50,7 @@ fun AnimeWatchScreen(
     networkDataSource: NetworkDataSource,
     mainState: MainState,
     showSnackbar: (SnackbarMessage) -> Unit,
+    dismissSnackbar: () -> Unit,
     watchState: WatchState,
     playerUiState: PlayerUiState,
     hlsPlayerCoreState: PlayerCoreState,
@@ -146,16 +147,20 @@ fun AnimeWatchScreen(
         }
     }
 
-    LaunchedEffect(watchState.errorMessage) {
-        watchState.errorMessage?.let { message ->
-            showSnackbar(
-                SnackbarMessage(
-                    message = message,
-                    type = SnackbarMessageType.ERROR,
-                    actionLabel = "RETRY",
-                    onAction = { refreshEpisodeSources() }
+    LaunchedEffect(watchState.errorMessage, watchState.isRefreshing, mainState.isConnected) {
+        when {
+            watchState.isRefreshing -> dismissSnackbar()
+            watchState.errorMessage != null -> {
+                showSnackbar(
+                    SnackbarMessage(
+                        message = watchState.errorMessage,
+                        type = SnackbarMessageType.ERROR,
+                        actionLabel = "RETRY",
+                        onAction = { refreshEpisodeSources() }
+                    )
                 )
-            )
+            }
+            else -> dismissSnackbar()
         }
     }
 

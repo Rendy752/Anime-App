@@ -43,7 +43,7 @@ import com.luminoverse.animevibe.ui.animeHome.components.TopAnimeCarouselSkeleto
 import com.luminoverse.animevibe.ui.common.ContinueWatchingAnime
 import com.luminoverse.animevibe.ui.common.LimitAndPaginationQueryState
 import com.luminoverse.animevibe.ui.common.LimitAndPaginationSection
-import com.luminoverse.animevibe.ui.common.MessageDisplay
+import com.luminoverse.animevibe.ui.common.SomethingWentWrongDisplay
 import com.luminoverse.animevibe.ui.main.MainState
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.main.navigation.navigateTo
@@ -203,14 +203,15 @@ fun AnimeHomeScreen(
                     }
 
                     is Resource.Error -> {
-                        if (mainState.isConnected) Box(
+                        Box(
                             modifier = Modifier.fillMaxSize(),
                             contentAlignment = Alignment.Center
-                        ) { MessageDisplay(message = "Error Loading Data") }
-                        else Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) { MessageDisplay(message = "No internet connection") }
+                        ) {
+                            SomethingWentWrongDisplay(
+                                message = if (mainState.isConnected) homeState.animeSchedules.message else "No internet connection",
+                                suggestion = if (mainState.isConnected) null else "Please check your internet connection and try again"
+                            )
+                        }
                     }
                 }
                 LimitAndPaginationSection(

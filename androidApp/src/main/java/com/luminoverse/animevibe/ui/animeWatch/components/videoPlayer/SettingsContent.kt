@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -18,7 +19,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.Track
 import com.luminoverse.animevibe.utils.basicContainer
@@ -36,169 +40,108 @@ fun SettingsContent(
 ) {
     LazyColumn(modifier = Modifier.fillMaxWidth()) {
         item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .basicContainer(
-                        roundedCornerShape = RoundedCornerShape(0.dp),
-                        outerPadding = PaddingValues(0.dp),
-                        innerPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                        onItemClick = { onLockClick(); onDismiss() }
-                    ),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Lock,
-                        contentDescription = "Lock Icon",
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "Lock Screen",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-            }
+            SettingsContentItem(
+                icon = Icons.Default.Lock,
+                name = "Lock Screen",
+                onItemClick = { onLockClick(); onDismiss() }
+            )
         }
         item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .basicContainer(
-                        roundedCornerShape = RoundedCornerShape(0.dp),
-                        outerPadding = PaddingValues(0.dp),
-                        innerPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                        onItemClick = { onPipClick(); onDismiss() }
-                    ),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.PictureInPictureAlt,
-                        contentDescription = "Lock Icon",
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "Enter Picture-in-Picture",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-            }
+            SettingsContentItem(
+                icon = Icons.Default.PictureInPictureAlt,
+                name = "Enter Picture-in-Picture",
+                onItemClick = { onPipClick(); onDismiss() }
+            )
         }
         item {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .basicContainer(
-                        roundedCornerShape = RoundedCornerShape(0.dp),
-                        outerPadding = PaddingValues(0.dp),
-                        innerPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                        onItemClick = { onPlaybackSpeedClick();onDismiss() }
-                    ),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Speed,
-                        contentDescription = "Playback Speed Icon",
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "Playback Speed",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "${selectedPlaybackSpeed}x",
-                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
-                        contentDescription = "Forward Icon",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-            }
+            SettingsContentItem(
+                icon = Icons.Default.Speed,
+                name = "Playback Speed",
+                selectedValue = "${selectedPlaybackSpeed}x",
+                onItemClick = { onPlaybackSpeedClick(); onDismiss() }
+            )
         }
         item {
+            SettingsContentItem(
+                icon = Icons.Default.Subtitles,
+                name = "Subtitles",
+                selectedValue = if (isSubtitleAvailable) selectedSubtitle?.label
+                    ?: "None" else "Unavailable",
+                isClickable = isSubtitleAvailable,
+                onItemClick = if (isSubtitleAvailable) {
+                    { onSubtitleClick(); onDismiss() }
+                } else null
+            )
+        }
+    }
+}
+
+@Composable
+private fun SettingsContentItem(
+    icon: ImageVector,
+    name: String,
+    selectedValue: String? = null,
+    isClickable: Boolean = true,
+    onItemClick: (() -> Unit)?
+) {
+    val textColor =
+        if (isClickable) MaterialTheme.colorScheme.onSurface
+        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+    val arrowAndSelectedValueColor =
+        if (isClickable) MaterialTheme.colorScheme.primary
+        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .basicContainer(
+                roundedCornerShape = RoundedCornerShape(0.dp),
+                outerPadding = PaddingValues(0.dp),
+                innerPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                onItemClick = onItemClick
+            ),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = "$name Icon",
+                tint = textColor
+            )
+            Text(
+                text = name,
+                style = MaterialTheme.typography.bodyLarge,
+                color = textColor
+            )
+        }
+
+        selectedValue?.let {
             Row(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .basicContainer(
-                        roundedCornerShape = RoundedCornerShape(0.dp),
-                        outerPadding = PaddingValues(0.dp),
-                        innerPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                        onItemClick = if (isSubtitleAvailable) {
-                            { onSubtitleClick(); onDismiss() }
-                        } else {
-                            {}
-                        }
-                    ),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                    .weight(1f)
+                    .padding(start = 8.dp),
+                horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Subtitles,
-                        contentDescription = "Subtitle Icon",
-                        tint = if (isSubtitleAvailable) {
-                            MaterialTheme.colorScheme.onSurface
-                        } else {
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                        }
-                    )
-                    Text(
-                        text = "Subtitles",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = if (isSubtitleAvailable) {
-                            MaterialTheme.colorScheme.onSurface
-                        } else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                    )
-                }
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = selectedSubtitle?.label ?: "Unavailable",
-                        style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
-                        color = if (isSubtitleAvailable) {
-                            MaterialTheme.colorScheme.primary
-                        } else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                    )
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
-                        contentDescription = "Forward Icon",
-                        tint = if (isSubtitleAvailable) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-                        }
-                    )
-                }
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                    color = arrowAndSelectedValueColor,
+                    textAlign = TextAlign.End,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
+                    contentDescription = "Forward Icon",
+                    tint = arrowAndSelectedValueColor,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
             }
         }
     }

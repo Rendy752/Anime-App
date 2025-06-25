@@ -18,10 +18,10 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.luminoverse.animevibe.utils.basicContainer
 
 @Composable
-fun DetailCommonBody(title: String, body: String?) {
+fun DetailCommonBody(modifier: Modifier = Modifier, title: String, body: String?) {
     if (body != null && body.isNotBlank()) {
         Column(
-            modifier = Modifier
+            modifier = modifier
                 .basicContainer(outerPadding = PaddingValues(0.dp))
                 .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -47,9 +47,12 @@ fun DetailCommonBody(title: String, body: String?) {
 
 @Preview
 @Composable
-fun DetailCommonBodySkeleton(title: String? = "Title") {
+fun DetailCommonBodySkeleton(
+    modifier: Modifier = Modifier,
+    title: String? = "Title"
+) {
     Column(
-        modifier = Modifier
+        modifier = modifier
             .basicContainer(outerPadding = PaddingValues(0.dp))
             .fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally

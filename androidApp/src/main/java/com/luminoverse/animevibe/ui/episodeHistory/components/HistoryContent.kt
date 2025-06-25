@@ -8,7 +8,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
-import com.luminoverse.animevibe.ui.common.MessageDisplay
+import com.luminoverse.animevibe.ui.common.SomethingWentWrongDisplay
 import com.luminoverse.animevibe.ui.episodeHistory.EpisodeHistoryAction
 import com.luminoverse.animevibe.ui.episodeHistory.EpisodeHistoryState
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
@@ -38,7 +38,12 @@ fun HistoryContent(
                 Box(
                     modifier = modifier,
                     contentAlignment = Alignment.Center
-                ) { MessageDisplay(message = "No animes or episodes found") }
+                ) {
+                    SomethingWentWrongDisplay(
+                        message = "No animes or episodes found",
+                        suggestion = "Episodes you watch will appear here."
+                    )
+                }
             } else {
                 LazyColumn(
                     state = listState,
@@ -97,7 +102,7 @@ fun HistoryContent(
             Box(
                 modifier = modifier,
                 contentAlignment = Alignment.Center
-            ) { MessageDisplay(message = results.message) }
+            ) { SomethingWentWrongDisplay(message = results.message) }
         }
     }
 }

@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -186,10 +185,15 @@ fun AnimeWatchContent(
                             tint = MaterialTheme.colorScheme.onSurface
                         )
                     }
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 8.dp))
+
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 8.dp),
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    )
+
                     LazyColumn(
                         modifier = Modifier
-                            .padding(8.dp)
+                            .padding(horizontal = 8.dp)
                             .fillMaxSize()
                             .weight(1f),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -199,7 +203,9 @@ fun AnimeWatchContent(
                         item {
                             InfoContentSection(
                                 animeDetail = watchState.animeDetail,
-                                navController = navController
+                                navController = navController,
+                                isConnected = mainState.isConnected,
+                                isLandscape = mainState.isLandscape
                             )
                         }
                     }
@@ -211,7 +217,7 @@ fun AnimeWatchContent(
     if (!mainState.isLandscape && !playerUiState.isPipMode && watchState.animeDetailComplement?.episodes != null && watchState.animeDetail?.mal_id == malId) {
         LazyColumn(
             modifier = Modifier
-                .padding(8.dp)
+                .padding(horizontal = 8.dp)
                 .fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
@@ -241,10 +247,12 @@ fun AnimeWatchContent(
                         )
                     },
                 )
-                Spacer(modifier = Modifier.height(8.dp))
+
                 InfoContentSection(
                     animeDetail = watchState.animeDetail,
-                    navController = navController
+                    navController = navController,
+                    isConnected = mainState.isConnected,
+                    isLandscape = mainState.isLandscape
                 )
             }
         }

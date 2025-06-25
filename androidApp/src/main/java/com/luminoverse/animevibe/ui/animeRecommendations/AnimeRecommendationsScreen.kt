@@ -21,7 +21,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.luminoverse.animevibe.ui.animeRecommendations.components.RecommendationItem
 import com.luminoverse.animevibe.ui.animeRecommendations.components.RecommendationItemSkeleton
-import com.luminoverse.animevibe.ui.common.MessageDisplay
+import com.luminoverse.animevibe.ui.common.SomethingWentWrongDisplay
 import com.luminoverse.animevibe.ui.main.MainState
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.main.navigation.navigateTo
@@ -234,8 +234,9 @@ fun AnimeRecommendationsScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
                     ) {
-                        MessageDisplay(
-                            message = recommendationsState.animeRecommendations.message
+                        SomethingWentWrongDisplay(
+                            message = if (mainState.isConnected) recommendationsState.animeRecommendations.message else "No internet connection",
+                            suggestion = if (mainState.isConnected) null else "Please check your internet connection and try again"
                         )
                     }
                 }

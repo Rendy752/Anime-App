@@ -3,7 +3,9 @@ package com.luminoverse.animevibe.ui.animeWatch.watchContent
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.AnimeDetail
 import com.luminoverse.animevibe.models.Episode
@@ -26,7 +28,10 @@ fun WatchContentSection(
     serverScrollState: ScrollState,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(
+        modifier = Modifier.padding(top = 8.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
         episodeDetailComplement?.let { episodeDetailComplement ->
             episodes.find { it.id == episodeDetailComplement.id }
                 ?.let { currentEpisode ->

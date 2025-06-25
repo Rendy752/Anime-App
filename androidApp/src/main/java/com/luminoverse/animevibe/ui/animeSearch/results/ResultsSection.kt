@@ -15,7 +15,7 @@ import com.luminoverse.animevibe.models.Genre
 import com.luminoverse.animevibe.models.GenresResponse
 import com.luminoverse.animevibe.ui.common.AnimeSearchItem
 import com.luminoverse.animevibe.ui.common.AnimeSearchItemSkeleton
-import com.luminoverse.animevibe.ui.common.MessageDisplay
+import com.luminoverse.animevibe.ui.common.SomethingWentWrongDisplay
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.main.navigation.navigateTo
 import com.luminoverse.animevibe.utils.resource.Resource
@@ -23,6 +23,7 @@ import com.luminoverse.animevibe.utils.resource.Resource
 @Composable
 fun ResultsSection(
     modifier: Modifier = Modifier,
+    isConnected: Boolean,
     resultsSectionScrollState: LazyListState,
     navController: NavController,
     query: String,
@@ -49,7 +50,10 @@ fun ResultsSection(
             is Resource.Success -> {
                 if (animeSearchResults.data.data.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        MessageDisplay(message = "No Results Found")
+                        SomethingWentWrongDisplay(
+                            message = "No results found",
+                            suggestion = "Try changing your search query"
+                        )
                     }
                 } else {
                     LazyColumn(
@@ -78,7 +82,10 @@ fun ResultsSection(
 
             is Resource.Error -> {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    MessageDisplay(message = "Error Loading Data")
+                    SomethingWentWrongDisplay(
+                        message = if (isConnected) animeSearchResults.message else "No internet connection",
+                        suggestion = if (isConnected) null else "Please check your internet connection and try again"
+                    )
                 }
             }
         }

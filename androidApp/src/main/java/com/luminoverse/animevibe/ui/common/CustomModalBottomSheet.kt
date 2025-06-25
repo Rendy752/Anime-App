@@ -1,6 +1,7 @@
 package com.luminoverse.animevibe.ui.common
 
 import android.annotation.SuppressLint
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
@@ -104,7 +105,12 @@ fun CustomModalBottomSheet(
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.4f))
     ) {
-        Popup(properties = PopupProperties(focusable = true)) {
+        BackHandler(enabled = isVisible, onBack = onDismiss)
+        Popup(
+            properties = PopupProperties(focusable = true),
+            onDismissRequest = onDismiss
+
+        ) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -112,7 +118,8 @@ fun CustomModalBottomSheet(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
                     ) { onDismiss() }) {
-                AnimatedVisibility(
+                // Content of the Bottom Sheet
+                AnimatedVisibility( // Controls the show/hide animation of the sheet
                     visible = isVisible,
                     enter = slideInVertically(
                         initialOffsetY = { fullHeight -> fullHeight },

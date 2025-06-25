@@ -395,13 +395,15 @@ fun VideoPlayer(
             label = "SubtitleBottomPadding"
         )
         CustomSubtitleView(
-            cues = activeCaptionCue,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(
                     top = animatedTopPadding, bottom = animatedBottomPadding,
                     start = 8.dp, end = 8.dp
-                )
+                ),
+            cues = activeCaptionCue,
+            isLandscape = isLandscape,
+            isPipMode = playerUiState.isPipMode
         )
 
         AnimatedVisibility(visible = isPlayerControlsVisible, enter = fadeIn(), exit = fadeOut()) {

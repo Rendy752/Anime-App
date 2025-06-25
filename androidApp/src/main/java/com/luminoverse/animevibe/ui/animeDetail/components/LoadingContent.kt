@@ -66,11 +66,8 @@ private fun VerticalColumnContentSkeleton(navigationBarBottomPadding: Dp) {
 
 @Composable
 private fun LeftColumnContentSkeleton() {
-    Column(
-        modifier = Modifier.padding(top = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        AnimeHeaderSkeleton()
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        AnimeHeaderSkeleton(modifier = Modifier.padding(top = 8.dp))
         NumericDetailSectionSkeleton()
         YoutubePreviewSkeleton()
         DetailBodySectionSkeleton()
@@ -79,16 +76,16 @@ private fun LeftColumnContentSkeleton() {
 
 @Composable
 private fun RightColumnContentSkeleton() {
-    Column(
-        modifier = Modifier.padding(top = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        listOf<String>("Background", "Synopsis").forEach { DetailCommonBodySkeleton(it) }
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        listOf<String>(
+            "Background",
+            "Synopsis"
+        ).forEach { DetailCommonBodySkeleton(modifier = Modifier.padding(top = 8.dp), title = it) }
         listOf<String>(
             "Openings",
             "Endings",
             "Externals",
             "Streamings"
-        ).forEach { DetailCommonBodySkeleton(it) }
+        ).forEach { DetailCommonBodySkeleton(title = it) }
     }
 }

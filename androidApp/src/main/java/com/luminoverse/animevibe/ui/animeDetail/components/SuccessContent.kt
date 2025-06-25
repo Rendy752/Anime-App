@@ -39,48 +39,47 @@ import com.luminoverse.animevibe.utils.resource.Resource
 
 @Composable
 fun SuccessContent(
-    animeDetailData: AnimeDetail?,
     detailState: DetailState,
     episodeFilterState: EpisodeFilterState,
     navController: NavController,
     context: Context,
     isLandscape: Boolean,
+    isConnected: Boolean,
     navigationBarBottomPadding: Dp,
     portraitScrollState: LazyListState,
     landscapeScrollState: LazyListState,
     onAction: (DetailAction) -> Unit,
     onAnimeIdChange: (Int) -> Unit
 ) {
-    animeDetailData?.let { animeDetail ->
+    detailState.animeDetail.data?.data?.let { animeDetail ->
         if (isLandscape) {
             Row(
                 modifier = Modifier.fillMaxSize(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 LazyColumn(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(top = 8.dp),
+                    modifier = Modifier.weight(1f),
                     state = portraitScrollState,
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     leftColumnContent(
                         animeDetail = animeDetail,
+                        isLandscape = isLandscape,
                         navController = navController
                     )
                 }
                 LazyColumn(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(top = 8.dp),
+                    modifier = Modifier.weight(1f),
                     state = landscapeScrollState,
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     rightColumnContent(
                         animeDetail = animeDetail,
+                        isLandscape = isLandscape,
                         detailState = detailState,
                         episodeFilterState = episodeFilterState,
                         navController = navController,
+                        isConnected = isConnected,
                         navigationBarBottomPadding = navigationBarBottomPadding,
                         context = context,
                         onAction = onAction,
@@ -90,22 +89,23 @@ fun SuccessContent(
             }
         } else {
             LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = 8.dp),
+                modifier = Modifier.fillMaxSize(),
                 state = portraitScrollState,
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 leftColumnContent(
                     animeDetail = animeDetail,
+                    isLandscape = isLandscape,
                     navController = navController
                 )
                 rightColumnContent(
                     animeDetail = animeDetail,
+                    isLandscape = isLandscape,
                     detailState = detailState,
                     episodeFilterState = episodeFilterState,
                     navController = navController,
+                    isConnected = isConnected,
                     navigationBarBottomPadding = navigationBarBottomPadding,
                     context = context,
                     onAction = onAction,
@@ -118,9 +118,10 @@ fun SuccessContent(
 
 private fun LazyListScope.leftColumnContent(
     animeDetail: AnimeDetail,
+    isLandscape: Boolean,
     navController: NavController
 ) {
-    item { AnimeHeader(animeDetail = animeDetail) }
+    item { AnimeHeader(modifier = Modifier.padding(top = 8.dp), animeDetail = animeDetail) }
     item {
         NumericDetailSection(
             score = animeDetail.score,
@@ -132,14 +133,21 @@ private fun LazyListScope.leftColumnContent(
         )
     }
     item { YoutubePreview(embedUrl = animeDetail.trailer.embed_url) }
-    item { DetailBodySection(animeDetail = animeDetail, navController = navController) }
+    item {
+        DetailBodySection(
+            modifier = Modifier.padding(bottom = if (isLandscape) 8.dp else 0.dp),
+            animeDetail = animeDetail, navController = navController
+        )
+    }
 }
 
 private fun LazyListScope.rightColumnContent(
     animeDetail: AnimeDetail,
+    isLandscape: Boolean,
     detailState: DetailState,
     episodeFilterState: EpisodeFilterState,
     navController: NavController,
+    isConnected: Boolean,
     navigationBarBottomPadding: Dp,
     context: Context,
     onAction: (DetailAction) -> Unit,
@@ -150,7 +158,11 @@ private fun LazyListScope.rightColumnContent(
         "Synopsis" to animeDetail.synopsis,
     )
     items(commonBodyItems.size) { index ->
-        DetailCommonBody(commonBodyItems[index].first, commonBodyItems[index].second)
+        DetailCommonBody(
+            modifier = Modifier.padding(top = if (isLandscape && index == 0) 8.dp else 0.dp),
+            title = commonBodyItems[index].first,
+            body = commonBodyItems[index].second
+        )
     }
     item {
         RelationSection(
@@ -164,10 +176,12 @@ private fun LazyListScope.rightColumnContent(
     item {
         EpisodesDetailSection(
             modifier = Modifier.padding(
-                bottom = if (
+                bottom = if (isConnected &&
                     animeDetail.theme?.openings == null && animeDetail.theme?.endings == null &&
                     animeDetail.external == null && animeDetail.streaming == null
-                ) navigationBarBottomPadding else 0.dp
+                ) navigationBarBottomPadding else {
+                    if (isConnected) 0.dp else 8.dp
+                }
             ),
             animeDetail = animeDetail,
             animeDetailComplement = detailState.animeDetailComplement,
@@ -192,6 +206,8 @@ private fun LazyListScope.rightColumnContent(
         CommonListContent(
             animeDetail = animeDetail,
             context = context,
+            isConnected = isConnected,
+            isLandscape = isLandscape,
             navigationBarBottomPadding = navigationBarBottomPadding
         )
     }
@@ -208,11 +224,17 @@ private fun convertToNameAndUrl(list: List<String>?): List<NameAndUrl>? =
 private fun CommonListContent(
     animeDetail: AnimeDetail,
     context: Context,
+    isConnected: Boolean,
+    isLandscape: Boolean,
     navigationBarBottomPadding: Dp
 ) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.padding(bottom = navigationBarBottomPadding),
+        modifier = Modifier.padding(
+            bottom = if (isConnected) {
+                if (isLandscape) 8.dp else navigationBarBottomPadding
+            } else 8.dp
+        ),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         listOf(

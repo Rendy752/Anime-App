@@ -18,18 +18,19 @@ fun Modifier.basicContainer(
     isError: Boolean = false,
     isTertiary: Boolean = false,
     isPrimary: Boolean = false,
+    useBorder: Boolean = true,
     onItemClick: (() -> Unit)? = null,
     backgroundBrush: Brush? = null,
     roundedCornerShape: RoundedCornerShape = RoundedCornerShape(16.dp),
     outerPadding: PaddingValues = PaddingValues(8.dp),
     innerPadding: PaddingValues = PaddingValues(16.dp),
-    alpha: Float = 1.0f
+    alpha: Float = 1.0f,
 ): Modifier {
     var modifier = this
         .padding(outerPadding)
         .clip(roundedCornerShape)
         .border(
-            width = 1.dp,
+            width = if (useBorder) 1.dp else 0.dp,
             color = MaterialTheme.colorScheme.surfaceContainerHighest,
             shape = roundedCornerShape
         )

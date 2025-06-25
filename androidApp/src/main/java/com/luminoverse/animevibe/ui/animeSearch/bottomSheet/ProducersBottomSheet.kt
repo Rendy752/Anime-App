@@ -22,8 +22,7 @@ import com.luminoverse.animevibe.ui.animeSearch.searchField.FilterChipFlow
 import com.luminoverse.animevibe.ui.animeSearch.searchField.FilterChipFlowSkeleton
 import com.luminoverse.animevibe.ui.common.LimitAndPaginationQueryState
 import com.luminoverse.animevibe.ui.common.LimitAndPaginationSection
-import com.luminoverse.animevibe.ui.common.MessageDisplay
-import com.luminoverse.animevibe.ui.common.RetryButton
+import com.luminoverse.animevibe.ui.common.SomethingWentWrongDisplay
 import com.luminoverse.animevibe.ui.common.SearchView
 import com.luminoverse.animevibe.utils.Debounce
 import com.luminoverse.animevibe.utils.resource.Resource
@@ -37,7 +36,6 @@ import com.luminoverse.animevibe.utils.resource.Resource
 fun ProducersBottomSheet(
     queryState: AnimeSearchQueryState,
     producers: Resource<ProducersResponse>,
-    fetchProducers: () -> Unit,
     selectedProducers: List<Producer>,
     producersQueryState: ProducersSearchQueryState,
     applyProducerQueryStateFilters: (ProducersSearchQueryState) -> Unit,
@@ -152,18 +150,15 @@ fun ProducersBottomSheet(
                                 else title
                             },
                             getItemId = { it },
-                        ) else MessageDisplay(
+                        ) else SomethingWentWrongDisplay(
                             modifier = Modifier.fillMaxWidth(),
-                            message = "No producers found"
+                            message = "No producers found",
+                            suggestion = "Try changing your search query"
                         )
                     }
 
                     is Resource.Error -> {
-                        RetryButton(
-                            modifier = Modifier.padding(16.dp),
-                            message = producers.message,
-                            onClick = { fetchProducers() }
-                        )
+                        SomethingWentWrongDisplay(message = producers.message)
                     }
                 }
             }

@@ -23,7 +23,9 @@ import com.luminoverse.animevibe.ui.common.YoutubePreviewSkeleton
 @Composable
 fun InfoContentSection(
     animeDetail: AnimeDetail?,
-    navController: NavController
+    navController: NavController,
+    isConnected: Boolean,
+    isLandscape: Boolean
 ) {
     val density = LocalDensity.current
     val navigationBarPadding = with(density) {
@@ -31,11 +33,18 @@ fun InfoContentSection(
     }
 
     Column(
-        modifier = Modifier.padding(bottom = navigationBarPadding),
+        modifier = Modifier.padding(
+            bottom = if (isConnected) {
+                if (isLandscape) 8.dp else navigationBarPadding
+            } else 8.dp
+        ),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         if (animeDetail != null) {
-            AnimeHeader(animeDetail = animeDetail, navController = navController)
+            AnimeHeader(
+                modifier = Modifier.padding(top = 8.dp),
+                animeDetail = animeDetail, navController = navController
+            )
             NumericDetailSection(
                 score = animeDetail.score,
                 scoredBy = animeDetail.scored_by,
@@ -50,13 +59,16 @@ fun InfoContentSection(
                 "Synopsis" to animeDetail.synopsis,
             )
             commonBodyItems.forEach { item ->
-                DetailCommonBody(item.first, item.second)
+                DetailCommonBody(title = item.first, body = item.second)
             }
         } else {
             AnimeHeaderSkeleton()
             NumericDetailSectionSkeleton()
             YoutubePreviewSkeleton()
-            repeat(2) { DetailCommonBodySkeleton() }
+            listOf<String>(
+                "Background",
+                "Synopsis"
+            ).forEach { DetailCommonBodySkeleton(title = it) }
         }
     }
 }

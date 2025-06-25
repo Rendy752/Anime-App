@@ -22,7 +22,7 @@ import androidx.navigation.NavHostController
 import com.luminoverse.animevibe.ui.animeDetail.components.AnimeDetailTopBar
 import com.luminoverse.animevibe.ui.animeDetail.components.LoadingContent
 import com.luminoverse.animevibe.ui.animeDetail.components.SuccessContent
-import com.luminoverse.animevibe.ui.common.MessageDisplay
+import com.luminoverse.animevibe.ui.common.SomethingWentWrongDisplay
 import com.luminoverse.animevibe.ui.main.MainState
 import com.luminoverse.animevibe.utils.resource.Resource
 
@@ -64,8 +64,12 @@ fun AnimeDetailScreen(
     val currentAnimeId = currentAnimeIdState.intValue
 
     LaunchedEffect(mainState.isConnected) {
-        if (mainState.isConnected && detailState.animeDetail is Resource.Error) {
+        if (!mainState.isConnected) return@LaunchedEffect
+        if (detailState.animeDetail is Resource.Error) {
             onAction(DetailAction.LoadAnimeDetail(currentAnimeId))
+        }
+        if (detailState.animeDetailComplement is Resource.Error && detailState.animeDetail is Resource.Success) {
+            onAction(DetailAction.LoadAllEpisode(true))
         }
     }
 
@@ -84,14 +88,17 @@ fun AnimeDetailScreen(
             animeDetail = detailState.animeDetail,
             animeDetailComplement = detailState.animeDetailComplement,
             navController = navController,
+            isRtl = mainState.isRtl,
             isLandscape = mainState.isLandscape,
             navigationBarLeftPadding = navigationBarLeftPadding,
             navigationBarRightPadding = navigationBarRightPadding,
             onFavoriteToggle = { onAction(DetailAction.ToggleFavorite(it)) }
         )
-        Box(modifier = Modifier
-            .weight(1f)
-            .padding(horizontal = 8.dp)) {
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .padding(horizontal = 8.dp)
+        ) {
             when (detailState.animeDetail) {
                 is Resource.Loading -> LoadingContent(
                     isLandscape = mainState.isLandscape,
@@ -101,12 +108,12 @@ fun AnimeDetailScreen(
                 )
 
                 is Resource.Success -> SuccessContent(
-                    animeDetailData = detailState.animeDetail.data.data,
                     detailState = detailState,
                     episodeFilterState = episodeFilterState,
                     navController = navController,
                     context = context,
                     isLandscape = mainState.isLandscape,
+                    isConnected = mainState.isConnected,
                     navigationBarBottomPadding = navigationBarBottomPadding,
                     portraitScrollState = portraitScrollState,
                     landscapeScrollState = landscapeScrollState,
@@ -119,7 +126,12 @@ fun AnimeDetailScreen(
                 is Resource.Error -> Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
-                ) { MessageDisplay(message = detailState.animeDetail.message) }
+                ) {
+                    SomethingWentWrongDisplay(
+                        message = if (mainState.isConnected) detailState.animeDetail.message else "No internet connection",
+                        suggestion = if (mainState.isConnected) null else "Please check your internet connection and try again"
+                    )
+                }
             }
         }
     }

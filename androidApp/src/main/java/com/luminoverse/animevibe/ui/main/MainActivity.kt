@@ -124,9 +124,9 @@ class MainActivity : AppCompatActivity() {
             LaunchedEffect(state.snackbarMessage) {
                 state.snackbarMessage?.let { snackbarMessage ->
                     val messageText = when (snackbarMessage.type) {
-                        SnackbarMessageType.SUCCESS -> "✅ ${snackbarMessage.message}"
-                        SnackbarMessageType.ERROR -> "❌ ${snackbarMessage.message}"
-                        SnackbarMessageType.INFO -> "ℹ️ ${snackbarMessage.message}"
+                        SnackbarMessageType.SUCCESS -> "\u202A✅ ${snackbarMessage.message}\u202C"
+                        SnackbarMessageType.ERROR -> "\u202A❌ ${snackbarMessage.message}\u202C"
+                        SnackbarMessageType.INFO -> "\u202Aℹ️ ${snackbarMessage.message}\u202C"
                     }
                     val result = snackbarHostState.showSnackbar(
                         message = messageText,
@@ -139,7 +139,6 @@ class MainActivity : AppCompatActivity() {
                     mainViewModel.onAction(MainAction.DismissSnackbar)
                 }
             }
-
 
             val configuration = LocalConfiguration.current
             val isLandscape = configuration.orientation == Configuration.ORIENTATION_LANDSCAPE

@@ -3,6 +3,7 @@ package com.luminoverse.animevibe.ui.animeWatch.components.videoPlayer
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,15 +28,17 @@ import java.util.regex.Pattern
  * If more than one cue is active, it places the first cue at the top of the screen
  * and the remaining cues at the bottom. Otherwise, it places all cues at the bottom.
  *
- * @param modifier The modifier to be applied to the layout. For this composable to correctly
- * align, the modifier passed from the parent should allow it to expand,
- * e.g., by using `Modifier.fillMaxSize()`.
+ * @param modifier The modifier to be applied to the layout.
  * @param cues The List of [CaptionCue]s to display. If empty or null, nothing is rendered.
+ * @param isLandscape Whether the player is in landscape mode, to adjust font size.
+ * @param isPipMode Whether the player is in Picture-in-Picture mode, for the smallest font size.
  */
 @Composable
 fun CustomSubtitleView(
     modifier: Modifier = Modifier,
-    cues: List<CaptionCue>?
+    cues: List<CaptionCue>?,
+    isLandscape: Boolean,
+    isPipMode: Boolean
 ) {
     if (cues.isNullOrEmpty()) return
 
@@ -45,8 +48,16 @@ fun CustomSubtitleView(
         val bottomCues = if (hasMultipleCues) cues.drop(1) else cues
 
         if (topCue != null) {
-            Box(modifier = Modifier.align(Alignment.TopCenter)) {
-                SubtitleText(text = topCue.text)
+            Box(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = if (isPipMode) 4.dp else 16.dp)
+            ) {
+                SubtitleText(
+                    text = topCue.text,
+                    isLandscape = isLandscape,
+                    isPipMode = isPipMode
+                )
             }
         }
 
@@ -57,7 +68,11 @@ fun CustomSubtitleView(
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 bottomCues.forEach { cue ->
-                    SubtitleText(text = cue.text)
+                    SubtitleText(
+                        text = cue.text,
+                        isLandscape = isLandscape,
+                        isPipMode = isPipMode
+                    )
                 }
             }
         }
@@ -66,19 +81,34 @@ fun CustomSubtitleView(
 
 /**
  * Renders a single subtitle text with a white fill and black outline effect.
+ * Font size is adjusted based on the screen orientation and mode.
+ *
  * @param text The raw text content of the subtitle cue.
+ * @param isLandscape Whether the player is in landscape mode.
+ * @param isPipMode Whether the player is in Picture-in-Picture mode.
  */
 @Composable
-private fun SubtitleText(text: String) {
+private fun SubtitleText(
+    text: String,
+    isLandscape: Boolean,
+    isPipMode: Boolean
+) {
     val annotatedString = rememberVttAnnotatedString(text = text)
+
+    val fontSize = when {
+        isPipMode -> 10.sp
+        isLandscape -> 16.sp
+        else -> 12.sp
+    }
+    val lineHeight = fontSize * 1.3f
 
     Box(contentAlignment = Alignment.Center) {
         Text(
             text = annotatedString,
             color = Color.Black,
             textAlign = TextAlign.Center,
-            fontSize = 16.sp,
-            lineHeight = 22.sp,
+            fontSize = fontSize,
+            lineHeight = lineHeight,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.offset(x = 1.dp, y = 1.dp)
         )
@@ -86,8 +116,8 @@ private fun SubtitleText(text: String) {
             text = annotatedString,
             color = Color.Black,
             textAlign = TextAlign.Center,
-            fontSize = 16.sp,
-            lineHeight = 22.sp,
+            fontSize = fontSize,
+            lineHeight = lineHeight,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.offset(x = (-1).dp, y = 1.dp)
         )
@@ -95,8 +125,8 @@ private fun SubtitleText(text: String) {
             text = annotatedString,
             color = Color.Black,
             textAlign = TextAlign.Center,
-            fontSize = 16.sp,
-            lineHeight = 22.sp,
+            fontSize = fontSize,
+            lineHeight = lineHeight,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.offset(x = 1.dp, y = (-1).dp)
         )
@@ -104,8 +134,8 @@ private fun SubtitleText(text: String) {
             text = annotatedString,
             color = Color.Black,
             textAlign = TextAlign.Center,
-            fontSize = 16.sp,
-            lineHeight = 22.sp,
+            fontSize = fontSize,
+            lineHeight = lineHeight,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.offset(x = (-1).dp, y = (-1).dp)
         )
@@ -114,8 +144,8 @@ private fun SubtitleText(text: String) {
             text = annotatedString,
             color = Color.White,
             textAlign = TextAlign.Center,
-            fontSize = 16.sp,
-            lineHeight = 22.sp,
+            fontSize = fontSize,
+            lineHeight = lineHeight,
             fontWeight = FontWeight.Bold,
         )
     }

@@ -57,12 +57,12 @@ class NotificationHandler @Inject constructor() {
         val actions = when (notification.type) {
             "Broadcast" -> listOf(
                 actionDetail(notification.accessId),
-                actionClose(notification.accessId)
+                actionClose(notificationId)
             )
 
             "UnfinishedWatch" -> listOf(
                 actionWatch(notification.accessId),
-                actionClose(notification.accessId)
+                actionClose(notificationId)
             )
 
             else -> {
@@ -139,12 +139,12 @@ class NotificationHandler @Inject constructor() {
         extraValue = accessId
     )
 
-    private fun actionClose(accessId: String) = NotificationAction(
+    private fun actionClose(notificationId: Int) = NotificationAction(
         icon = R.drawable.ic_close_black_24dp,
         title = "Close",
         action = "ACTION_CLOSE_NOTIFICATION",
         extraKey = "notification_id",
-        extraValue = accessId
+        extraValue = notificationId.toString()
     )
 
     private fun NotificationCompat.Builder.applyActions(
@@ -187,10 +187,14 @@ class NotificationHandler @Inject constructor() {
                     }
                 }
 
-                "ACTION_CLOSE_NOTIFICATION" -> PendingIntent.getBroadcast(
-                    context, action.extraValue.hashCode(), intent,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                )
+                "ACTION_CLOSE_NOTIFICATION" -> {
+                    val requestCode =
+                        action.extraValue.toIntOrNull() ?: action.extraValue.hashCode()
+                    PendingIntent.getBroadcast(
+                        context, requestCode, intent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    )
+                }
 
                 else -> PendingIntent.getActivity(
                     context, action.extraValue.hashCode(), intent,

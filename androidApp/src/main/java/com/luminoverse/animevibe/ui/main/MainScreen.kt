@@ -13,18 +13,24 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
@@ -42,7 +48,6 @@ import com.luminoverse.animevibe.ui.animeSearch.AnimeSearchViewModel
 import com.luminoverse.animevibe.ui.animeWatch.AnimeWatchScreen
 import com.luminoverse.animevibe.ui.animeWatch.AnimeWatchViewModel
 import com.luminoverse.animevibe.ui.animeWatch.WatchAction
-import com.luminoverse.animevibe.ui.common.MessageDisplay
 import com.luminoverse.animevibe.ui.episodeHistory.EpisodeHistoryScreen
 import com.luminoverse.animevibe.ui.episodeHistory.EpisodeHistoryViewModel
 import com.luminoverse.animevibe.ui.main.navigation.BottomNavigationBar
@@ -52,6 +57,7 @@ import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.main.navigation.navigateTo
 import com.luminoverse.animevibe.ui.main.navigation.navigateToAdjacentRoute
 import com.luminoverse.animevibe.ui.settings.SettingsScreen
+import com.luminoverse.animevibe.utils.basicContainer
 import com.luminoverse.animevibe.utils.media.PipUtil.buildPipActions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -89,6 +95,7 @@ fun MainScreen(
 
     LaunchedEffect(currentRoute) {
         resetIdleTimer()
+        mainAction(MainAction.DismissSnackbar)
     }
 
     LaunchedEffect(Unit) {
@@ -338,6 +345,7 @@ fun MainScreen(
                     networkDataSource = viewModel.networkDataSource,
                     mainState = mainState,
                     showSnackbar = { mainAction.invoke(MainAction.ShowSnackbar(it)) },
+                    dismissSnackbar = { mainAction.invoke(MainAction.DismissSnackbar) },
                     watchState = watchState,
                     playerUiState = playerUiState,
                     hlsPlayerCoreState = playerCoreState,
@@ -347,7 +355,7 @@ fun MainScreen(
                     getPlayer = viewModel::getPlayer,
                     captureScreenshot = { viewModel.captureScreenshot() },
                     onEnterPipMode = {
-                        if (isConnected && activity != null) {
+                        if (activity != null) {
                             Log.d(
                                 "MainScreen",
                                 "Entering PiP: isPlaying=${playerCoreState.isPlaying}"
@@ -390,9 +398,20 @@ fun MainScreen(
                 animationSpec = tween(durationMillis = 700, easing = EaseInOut)
             )
         ) {
-            MessageDisplay(
-                message = "No internet connection",
-                isRounded = false
+            Text(
+                text = "No Internet Connection",
+                modifier = modifier
+                    .basicContainer(
+                        isError = true,
+                        useBorder = false,
+                        roundedCornerShape = RoundedCornerShape(0.dp),
+                        outerPadding = PaddingValues(0.dp),
+                        innerPadding = PaddingValues(8.dp)
+                    ),
+                color = MaterialTheme.colorScheme.onError,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
             )
         }
     }

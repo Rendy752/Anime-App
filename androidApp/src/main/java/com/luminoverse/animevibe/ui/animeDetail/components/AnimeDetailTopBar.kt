@@ -41,6 +41,7 @@ fun AnimeDetailTopBar(
     animeDetail: Resource<AnimeDetailResponse>?,
     animeDetailComplement: Resource<AnimeDetailComplement?>?,
     navController: NavController,
+    isRtl: Boolean,
     isLandscape: Boolean,
     navigationBarLeftPadding: Dp,
     navigationBarRightPadding: Dp,
@@ -57,7 +58,9 @@ fun AnimeDetailTopBar(
             navigationIcon = {
                 IconButton(
                     modifier = Modifier.padding(
-                        start = if (isLandscape) navigationBarLeftPadding else 0.dp
+                        start = if (isLandscape) {
+                            if (!isRtl) navigationBarLeftPadding else navigationBarRightPadding
+                        } else 0.dp
                     ),
                     onClick = { navController.popBackStack() }) {
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -77,13 +80,13 @@ fun AnimeDetailTopBar(
                     )
 
                     is Resource.Error -> Text(
-                        text = "Error",
+                        text = "Something went wrong",
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
 
                     else -> Text(
-                        text = "Empty",
+                        text = "Anime not found",
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -136,7 +139,9 @@ fun AnimeDetailTopBar(
 
                     IconButton(
                         modifier = Modifier.padding(
-                            end = if (isLandscape) navigationBarRightPadding else 0.dp
+                            end = if (isLandscape) {
+                                if (!isRtl) navigationBarRightPadding else navigationBarLeftPadding
+                            } else 0.dp
                         ),
                         onClick = {
                             ShareUtils.shareAnimeDetail(context, animeDetailData)

@@ -180,6 +180,7 @@ fun AnimeSearchScreen(
 
                     ResultsSection(
                         modifier = Modifier.weight(0.5f),
+                        isConnected = mainState.isConnected,
                         resultsSectionScrollState = resultsSectionScrollState,
                         navController = navController,
                         query = searchState.queryState.query,
@@ -223,6 +224,7 @@ fun AnimeSearchScreen(
 
                     ResultsSection(
                         modifier = Modifier.weight(1f),
+                        isConnected = mainState.isConnected,
                         resultsSectionScrollState = resultsSectionScrollState,
                         navController = navController,
                         query = searchState.queryState.query,
@@ -281,7 +283,6 @@ fun AnimeSearchScreen(
         ) {
             GenresBottomSheet(
                 queryState = searchState.queryState,
-                fetchGenres = { onAction(SearchAction.FetchGenres) },
                 genres = searchState.genres,
                 selectedGenres = filterSelectionState.selectedGenres,
                 setSelectedGenre = { genre ->
@@ -302,7 +303,6 @@ fun AnimeSearchScreen(
             ProducersBottomSheet(
                 queryState = searchState.queryState,
                 producers = searchState.producers,
-                fetchProducers = { onAction(SearchAction.FetchProducers) },
                 selectedProducers = filterSelectionState.selectedProducers,
                 producersQueryState = searchState.producersQueryState,
                 applyProducerQueryStateFilters = { updatedQueryState ->

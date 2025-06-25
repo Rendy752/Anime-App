@@ -14,7 +14,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -34,8 +37,7 @@ import com.luminoverse.animevibe.ui.common.EpisodeDetailItem
 import com.luminoverse.animevibe.ui.common.EpisodeDetailItemSkeleton
 import com.luminoverse.animevibe.ui.common.EpisodeInfoRow
 import com.luminoverse.animevibe.ui.common.EpisodeInfoRowSkeleton
-import com.luminoverse.animevibe.ui.common.MessageDisplay
-import com.luminoverse.animevibe.ui.common.RetryButton
+import com.luminoverse.animevibe.ui.common.SomethingWentWrongDisplay
 import com.luminoverse.animevibe.ui.common.SearchView
 import com.luminoverse.animevibe.ui.common.SearchViewSkeleton
 import com.luminoverse.animevibe.ui.common.SkeletonBox
@@ -95,7 +97,10 @@ fun EpisodesDetailSection(
         if (animeDetailComplement.data != null) {
             animeDetailComplement.data?.let { data ->
                 if (animeDetail.type == "Music") {
-                    MessageDisplay(message = "Anime is a music, no episodes available")
+                    SomethingWentWrongDisplay(
+                        message = "Anime is a music",
+                        suggestion = "No episodes available"
+                    )
                 } else if (data.episodes?.isNotEmpty() == true) {
                     Row(
                         modifier = Modifier
@@ -125,10 +130,22 @@ fun EpisodesDetailSection(
                             )
                             .height(64.dp)
                         if (animeDetail.airing && animeDetailComplement !is Resource.Loading) {
-                            RetryButton(
-                                modifier = retryButtonModifier,
-                                onClick = { onAction(DetailAction.LoadAllEpisode(true)) }
-                            )
+                            Row(
+                                horizontalArrangement = Arrangement.Center,
+                                modifier = retryButtonModifier
+                                    .basicContainer(
+                                        isPrimary = true,
+                                        onItemClick = { onAction(DetailAction.LoadAllEpisode(true)) },
+                                        outerPadding = PaddingValues(0.dp)
+                                    ),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Refresh,
+                                    contentDescription = "Retry",
+                                    tint = MaterialTheme.colorScheme.onPrimary
+                                )
+                            }
                         } else if (animeDetailComplement is Resource.Loading) {
                             Box(
                                 modifier = retryButtonModifier
@@ -155,9 +172,10 @@ fun EpisodesDetailSection(
                     ) {
                         if (filteredEpisodes.isEmpty() && episodeFilterState.episodeQuery.title.isNotEmpty()) {
                             item {
-                                MessageDisplay(
+                                SomethingWentWrongDisplay(
                                     modifier = Modifier.fillMaxWidth(),
-                                    message = "No episodes found"
+                                    message = "No episodes matched",
+                                    suggestion = "Try changing your search query"
                                 )
                             }
                         } else {
@@ -179,9 +197,10 @@ fun EpisodesDetailSection(
                         }
                     }
                 } else {
-                    MessageDisplay(
+                    SomethingWentWrongDisplay(
                         modifier = Modifier.fillMaxWidth(),
-                        message = "No episodes found"
+                        message = "No episodes found",
+                        suggestion = "It seems like there are no episodes for this anime."
                     )
                 }
             }
@@ -217,7 +236,7 @@ fun EpisodesDetailSection(
                 }
             }
         } else {
-            MessageDisplay(
+            SomethingWentWrongDisplay(
                 modifier = Modifier.fillMaxWidth(),
                 message = animeDetailComplement.message
             )
