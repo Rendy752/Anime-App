@@ -22,6 +22,7 @@ import com.luminoverse.animevibe.ui.animeSearch.searchField.FilterChipFlow
 import com.luminoverse.animevibe.ui.animeSearch.searchField.FilterChipFlowSkeleton
 import com.luminoverse.animevibe.ui.common.LimitAndPaginationQueryState
 import com.luminoverse.animevibe.ui.common.LimitAndPaginationSection
+import com.luminoverse.animevibe.ui.common.MessageDisplay
 import com.luminoverse.animevibe.ui.common.RetryButton
 import com.luminoverse.animevibe.ui.common.SearchView
 import com.luminoverse.animevibe.utils.Debounce
@@ -103,7 +104,11 @@ fun ProducersBottomSheet(
         }
         HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
-        Column(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+        ) {
             if (selectedProducers.isNotEmpty()) {
                 FilterChipFlow(
                     itemList = selectedProducers,
@@ -128,7 +133,7 @@ fun ProducersBottomSheet(
             }
             HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
             Box(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
                 when (producers) {
@@ -138,7 +143,7 @@ fun ProducersBottomSheet(
 
                     is Resource.Success -> {
                         val producerList = producers.data.data
-                        FilterChipFlow(
+                        if (producerList.isNotEmpty()) FilterChipFlow(
                             itemList = producerList.filter { it !in selectedProducers },
                             onSetSelectedId = { setSelectedProducer(it as Producer) },
                             itemName = {
@@ -147,6 +152,9 @@ fun ProducersBottomSheet(
                                 else title
                             },
                             getItemId = { it },
+                        ) else MessageDisplay(
+                            modifier = Modifier.fillMaxWidth(),
+                            message = "No producers found"
                         )
                     }
 
