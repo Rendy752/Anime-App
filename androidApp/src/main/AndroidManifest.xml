@@ -1,0 +1,154 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.READ_SETTINGS" />
+
+    <uses-permission android:name="com.luminoverse.animevibe.permission.ACCESS_MEDIA_SERVICE" />
+
+    <permission
+        android:name="com.luminoverse.animevibe.permission.ACCESS_MEDIA_SERVICE"
+        android:description="@string/permission_access_media_service_description"
+        android:label="@string/permission_access_media_service_label"
+        android:protectionLevel="signature" />
+
+    <application
+        android:name="com.luminoverse.animevibe.AnimeApplication"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:icon="@mipmap/ic_app_icon"
+        android:label="@string/app_name"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:roundIcon="@mipmap/ic_app_icon_round"
+        android:supportsRtl="true"
+        tools:targetApi="31">
+        <profileable android:shell="true" />
+
+        <activity
+            android:name="com.luminoverse.animevibe.ui.main.MainActivity"
+            android:configChanges="orientation|screenSize|smallestScreenSize|screenLayout"
+            android:exported="true"
+            android:launchMode="standard"
+            android:resizeableActivity="true"
+            android:supportsPictureInPicture="true"
+            android:theme="@style/Theme.App.Starting">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="anime"
+                    android:pathPattern="/detail/.*"
+                    android:scheme="animevibe" />
+            </intent-filter>
+
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="anime"
+                    android:pathPattern="/watch/.*"
+                    android:scheme="animevibe" />
+            </intent-filter>
+        </activity>
+
+        <receiver android:name="com.luminoverse.animevibe.utils.receivers.NotificationReceiver" android:exported="false">
+            <intent-filter>
+                <action android:name="ACTION_OPEN_DETAIL" />
+                <action android:name="ACTION_OPEN_EPISODE" />
+                <action android:name="ACTION_CLOSE_NOTIFICATION" />
+            </intent-filter>
+        </receiver>
+
+        <receiver android:name="com.luminoverse.animevibe.utils.receivers.ServiceRestartReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.luminoverse.animevibe.RESTART_MEDIA_SERVICE" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name="com.luminoverse.animevibe.utils.receivers.ScreenOffReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.SCREEN_OFF" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name="com.luminoverse.animevibe.utils.receivers.ScreenOnReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.SCREEN_ON" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name="com.luminoverse.animevibe.utils.receivers.WidgetRefreshReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.luminoverse.animevibe.REFRESH_WIDGET" />
+            </intent-filter>
+        </receiver>
+
+        <service
+            android:name="com.luminoverse.animevibe.utils.media.MediaPlaybackService"
+            android:exported="true"
+            android:foregroundServiceType="mediaPlayback"
+            android:permission="com.luminoverse.animevibe.permission.ACCESS_MEDIA_SERVICE">
+            <intent-filter>
+                <action android:name="android.media.browse.MediaBrowserService" />
+            </intent-filter>
+        </service>
+
+        <receiver
+            android:name="androidx.media.session.MediaButtonReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </receiver>
+
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="androidx.work.WorkManagerInitializer"
+                android:value="androidx.startup"
+                tools:node="remove" />
+        </provider>
+
+        <receiver
+            android:name="com.luminoverse.animevibe.ui.widget.LatestWatchedWidgetProvider"
+            android:label="@string/widget_name"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_latest_watched_info" />
+        </receiver>
+
+        <activity
+            android:name="com.luminoverse.animevibe.ui.widget.LatestWatchedWidgetConfigActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

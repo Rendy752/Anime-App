@@ -33,7 +33,7 @@ jobs:
           echo "jikan.url=${{ secrets.JIKAN_URL }}" > local.properties
           echo "animerunway.url=${{ secrets.ANIMERUNWAY_URL }}" >> local.properties
           echo "youtube.url=${{ secrets.YOUTUBE_URL }}" >> local.properties
-          echo "storeFile=app/release.keystore" >> local.properties
+          echo "storeFile=androidApp/release.keystore" >> local.properties
           echo "storePassword=${{ secrets.STORE_PASSWORD }}" >> local.properties
           echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> local.properties
           echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> local.properties
@@ -44,9 +44,9 @@ jobs:
             echo "Error: KEYSTORE_BASE64 secret is not set"
             exit 1
           fi
-          mkdir -p app
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > app/release.keystore
-          ls -l app/release.keystore
+          mkdir -p androidApp
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > androidApp/release.keystore
+          ls -l androidApp/release.keystore
 
       - name: Grant Gradle Execute Permissions
         run: chmod +x gradlew
@@ -77,5 +77,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: release-aab
-          path: app/build/outputs/bundle/release/app-release.aab
+          path: androidApp/build/outputs/bundle/release/app-release.aab
           retention-days: 30

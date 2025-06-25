@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:configure="com.luminoverse.animevibe.ui.widget.LatestWatchedWidgetConfigActivity"
+    android:description="@string/latest_watched_widget_description"
+    android:initialLayout="@layout/widget_latest_watched"
+    android:maxResizeWidth="320dp"
+    android:maxResizeHeight="110dp"
+    android:minWidth="250dp"
+    android:minHeight="72dp"
+    android:previewImage="@drawable/widget_latest_watched_preview"
+    android:resizeMode="horizontal|vertical"
+    android:updatePeriodMillis="1800000"
+    android:widgetCategory="home_screen"
+    tools:ignore="UnusedAttribute" />

@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">AnimeVibe</string>
+    <string name="permission_access_media_service_description">Allows access to the anime media playback service.</string>
+    <string name="permission_access_media_service_label">Access Anime Media Service</string>
+    <string name="widget_name">Latest Watched</string>
+    <string name="latest_watched_widget_description">See your latest watched episode</string>
+</resources>
