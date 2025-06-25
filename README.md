@@ -22,10 +22,10 @@ AnimeVibe is a comprehensive, anime-themed Android application using Kotlin and 
     <table>
         <tr>
           <td style="text-align: center">
-            <img src="https://github.com/user-attachments/assets/069b9388-9151-4526-b259-60777385aee5" width="300" alt="Home Portrait">
+            <img src="https://github.com/user-attachments/assets/8629e4aa-db25-41e3-850b-39bb9750fab4" width="300" alt="Home Portrait">
           </td>
           <td style="text-align: center">
-            <img src="https://github.com/user-attachments/assets/57d282ba-7334-40c9-9f37-c7bb21522ed3" width="300" alt="Home Landscape">
+            <img src="https://github.com/user-attachments/assets/9d4a1fe3-8086-47e9-9c94-27ea8b74cf2b" width="600" alt="Home Landscape">
           </td>
         </tr>
       </table>
@@ -33,7 +33,7 @@ AnimeVibe is a comprehensive, anime-themed Android application using Kotlin and 
     <table>
         <tr>
           <td style="text-align: center">
-            <img src="https://github.com/user-attachments/assets/86f57ef0-c2ab-479c-a9ac-eed0a4bd0669" width="300" alt="Home Skeleton Loading">
+            <img src="https://github.com/user-attachments/assets/69d7550b-f61b-4427-9be1-cd655458509e" width="300" alt="Home Skeleton Loading">
           </td>
         </tr>
      </table>
@@ -157,17 +157,41 @@ AnimeVibe is a comprehensive, anime-themed Android application using Kotlin and 
             </td>
          </tr>
       </table>
+* **Latest Watched Widget:**
+    * A home screen widget displaying the most recently watched anime episode with episode title, thumbnail, watch progress, timestamp, and last watched time.
+    * Interactive features: Tap the widget to resume watching the episode via deep linking, or use the refresh button to update the widget with the latest data.
+    * Visual indicators: Progress bar shows episode watch progress, and distinct gradient backgrounds differentiate filler episodes.
+    * Powered by Room Persistence Library for offline data access and Coil for efficient image loading.
+      <table>
+        <tr>
+          <td style="text-align: center">
+            <img src="https://github.com/user-attachments/assets/3e76418e-019b-4dd6-91c8-0ec65fd4aca2" width="300" alt="Add Latest Watched Widget">
+          </td>
+          <td style="text-align: center">
+            <img src="https://github.com/user-attachments/assets/92192ff3-814b-4bed-966f-b632c4d804b1" width="300" alt="Latest Watched Widget">
+          </td>
+        </tr>
+      </table>
 * **Airing Notifications**:
-    * Automated notifications for favorite anime airing soon, powered by a WorkManager-based scheduler checking every 15 minutes.
-    * Notifications include anime title, airing time, and a deep link to the anime’s detail page, with options to view details or dismiss.
+    * Timely reminders for upcoming anime broadcasts, powered by a WorkManager-based scheduler that runs daily at midnight (Asia/Jakarta time).
+    * Checks for airing anime within a 30-minute window (11:45 PM–12:15 AM) and sends notifications for episodes airing within 5 minutes, including a deep link to the anime’s detail page.
+    * Schedules future notifications for later broadcasts, ensuring timely alerts without redundant API calls.
+    * Features duplicate notification prevention, automatic cleanup of old notifications, and temporary pausing of media playback services to optimize performance.
+    * Robust error handling with up to three retries using exponential backoff, and skips processing if notifications are disabled or no internet is available (uses cached data when offline).
     * Configurable via the settings screen, with permission handling for Android 13+.
       <table>
          <tr>
             <td style="text-align: center">
-            <img src="https://github.com/user-attachments/assets/31f6ffb6-07c9-4dab-900b-768cbbbf20a6" width="300" alt="Media Playback 1">
+            <img src="https://github.com/user-attachments/assets/31f6ffb6-07c9-4dab-900b-768cbbbf20a6" width="300" alt="Airing Notification">
           </td>
         </tr>
       </table>
+* **Unfinished Watch Notifications**:
+    * Gentle reminders to resume unfinished anime episodes, scheduled twice daily at 8:00 AM and 8:00 PM (Asia/Jakarta time) using WorkManager.
+    * Operates within 30-minute windows (7:45–8:15 AM and 7:45–8:15 PM), randomly selecting an unfinished episode with remaining episodes in the series.
+    * Notifications include episode title, progress details, and a deep link to resume watching, with the number of remaining episodes for context.
+    * Features duplicate notification prevention, automatic cleanup of old notifications, and validation to ensure only relevant episodes are notified.
+    * Robust error handling with up to three retries using exponential backoff, and skips processing if notifications are disabled.
 * **Offline Data Management:**
     * Implementation of **Room Persistence Library** for local data storage, significantly reducing API requests and improving app performance.
     * Caching of frequently accessed anime data, enabling offline browsing and faster loading times.
