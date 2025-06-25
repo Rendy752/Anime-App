@@ -19,12 +19,14 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.ui.platform.LocalDensity
+import com.luminoverse.animevibe.ui.main.SnackbarMessage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EpisodeHistoryScreen(
     currentRoute: String?,
     navController: NavHostController,
+    showSnackbar: (SnackbarMessage) -> Unit,
     mainState: MainState,
     historyState: EpisodeHistoryState,
     onAction: (EpisodeHistoryAction) -> Unit
@@ -115,6 +117,7 @@ fun EpisodeHistoryScreen(
                         .fillMaxHeight()
                         .padding(start = 8.dp),
                     navController = navController,
+                    showSnackbar = showSnackbar,
                     listState = historyListState,
                     state = historyState,
                     onAction = onAction
@@ -136,6 +139,7 @@ fun EpisodeHistoryScreen(
                         .weight(1f)
                         .fillMaxWidth(),
                     navController = navController,
+                    showSnackbar = showSnackbar,
                     listState = historyListState,
                     state = historyState,
                     onAction = onAction

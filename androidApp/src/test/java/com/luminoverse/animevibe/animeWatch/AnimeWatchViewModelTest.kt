@@ -1,6 +1,7 @@
 package com.luminoverse.animevibe.animeWatch
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import com.luminoverse.animevibe.data.remote.api.NetworkDataSource
 import com.luminoverse.animevibe.models.*
 import com.luminoverse.animevibe.repository.AnimeEpisodeDetailRepository
 import com.luminoverse.animevibe.ui.animeWatch.AnimeWatchViewModel
@@ -10,7 +11,6 @@ import com.luminoverse.animevibe.utils.ComplementUtils
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
-import com.luminoverse.animevibe.utils.media.PositionState
 import com.luminoverse.animevibe.utils.resource.Resource
 import com.luminoverse.animevibe.utils.media.StreamingUtils
 import io.mockk.*
@@ -35,6 +35,7 @@ class AnimeWatchViewModelTest {
     private lateinit var animeEpisodeDetailRepository: AnimeEpisodeDetailRepository
     private lateinit var testDispatcher: TestDispatcher
     private lateinit var hlsPlayerUtils: HlsPlayerUtils
+    private lateinit var networkDataSource: NetworkDataSource
 
     private val mockAnimeDetail = animeDetailPlaceholder.copy(
         mal_id = 1,
@@ -101,13 +102,12 @@ class AnimeWatchViewModelTest {
         Dispatchers.setMain(testDispatcher)
         animeEpisodeDetailRepository = mockk(relaxed = true)
         hlsPlayerUtils = mockk(relaxed = true)
+        networkDataSource = mockk(relaxed = true)
         val initialPlayerCoreState = PlayerCoreState()
         val initialControlsState = ControlsState()
-        val initialPositionState = PositionState()
 
         every { hlsPlayerUtils.playerCoreState } returns MutableStateFlow(initialPlayerCoreState)
         every { hlsPlayerUtils.controlsState } returns MutableStateFlow(initialControlsState)
-        every { hlsPlayerUtils.positionState } returns MutableStateFlow(initialPositionState)
 
         coEvery { animeEpisodeDetailRepository.getCachedAnimeDetailById(1) } returns mockAnimeDetail
         coEvery { animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(1) } returns mockAnimeDetailComplement
@@ -137,7 +137,8 @@ class AnimeWatchViewModelTest {
             Resource.Success(mockEpisodeSources),
             mockEpisodeDetailComplement.sourcesQuery
         )
-        viewModel = AnimeWatchViewModel(animeEpisodeDetailRepository, hlsPlayerUtils)
+        viewModel =
+            AnimeWatchViewModel(animeEpisodeDetailRepository, hlsPlayerUtils, networkDataSource)
     }
 
     @After

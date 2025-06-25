@@ -255,6 +255,7 @@ fun MainScreen(
                 EpisodeHistoryScreen(
                     currentRoute = currentRoute,
                     navController = navController,
+                    showSnackbar = { mainAction.invoke(MainAction.ShowSnackbar(it)) },
                     mainState = mainState,
                     historyState = historyState,
                     onAction = viewModel::onAction

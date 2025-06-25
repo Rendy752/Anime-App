@@ -37,7 +37,7 @@ fun EpisodeHistoryItem(
     episode: EpisodeDetailComplement,
     onClick: () -> Unit,
     onFavoriteToggle: (Boolean) -> Unit,
-    onDelete: () -> Unit
+    onDelete: (String) -> Unit
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
 
@@ -46,7 +46,7 @@ fun EpisodeHistoryItem(
             title = "Delete Episode",
             message = "Are you sure you want to delete Episode ${episode.number}: ${episode.episodeTitle} from your watch history?",
             confirmText = "Delete",
-            onConfirm = { onDelete() },
+            onConfirm = { onDelete("Succefully deleted ${episode.number}: ${episode.episodeTitle} from your watch history") },
             cancelText = "Cancel",
             onCancel = { showDeleteDialog = false }
         )

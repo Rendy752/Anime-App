@@ -30,22 +30,29 @@ fun AnimeEpisodeAccordion(
     onEpisodeClick: (EpisodeDetailComplement) -> Unit = {},
     onAnimeFavoriteToggle: (Boolean) -> Unit = {},
     onEpisodeFavoriteToggle: (String, Boolean) -> Unit = { _, _ -> },
-    onAnimeDelete: (Int) -> Unit = {},
-    onEpisodeDelete: (String) -> Unit = {}
+    onAnimeDelete: (Int, String) -> Unit = { _, _ -> },
+    onEpisodeDelete: (String, String) -> Unit = { _, _ -> }
 ) {
     var isExpanded by remember { mutableStateOf(true) }
     var showDeleteDialog by remember { mutableStateOf(false) }
     val representativeEpisode = episodes.firstOrNull()
 
     if (showDeleteDialog) {
-        ConfirmationAlert(
-            title = "Delete Anime",
-            message = "Are you sure you want to delete ${representativeEpisode?.animeTitle} and all its episode history?",
-            confirmText = "Delete",
-            onConfirm = { onAnimeDelete(anime.malId) },
-            cancelText = "Cancel",
-            onCancel = { showDeleteDialog = false }
-        )
+        representativeEpisode?.let {
+            ConfirmationAlert(
+                title = "Delete Anime",
+                message = "Are you sure you want to delete ${it.animeTitle} and all its episode history?",
+                confirmText = "Delete",
+                onConfirm = {
+                    onAnimeDelete(
+                        anime.malId,
+                        "Successfully deleted ${it.animeTitle} and all its episode history"
+                    )
+                },
+                cancelText = "Cancel",
+                onCancel = { showDeleteDialog = false }
+            )
+        }
     }
 
     Card(
@@ -91,7 +98,7 @@ fun AnimeEpisodeAccordion(
                             onFavoriteToggle = { isFavorite ->
                                 onEpisodeFavoriteToggle(episode.id, isFavorite)
                             },
-                            onDelete = { onEpisodeDelete(episode.id) }
+                            onDelete = { message -> onEpisodeDelete(episode.id, message) }
                         )
                     }
                 }

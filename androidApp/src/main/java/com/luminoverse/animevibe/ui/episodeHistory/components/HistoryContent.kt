@@ -11,6 +11,8 @@ import androidx.navigation.NavHostController
 import com.luminoverse.animevibe.ui.common.SomethingWentWrongDisplay
 import com.luminoverse.animevibe.ui.episodeHistory.EpisodeHistoryAction
 import com.luminoverse.animevibe.ui.episodeHistory.EpisodeHistoryState
+import com.luminoverse.animevibe.ui.main.SnackbarMessage
+import com.luminoverse.animevibe.ui.main.SnackbarMessageType
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.main.navigation.navigateTo
 import com.luminoverse.animevibe.utils.resource.Resource
@@ -19,6 +21,7 @@ import com.luminoverse.animevibe.utils.resource.Resource
 fun HistoryContent(
     modifier: Modifier = Modifier,
     navController: NavHostController,
+    showSnackbar: (SnackbarMessage) -> Unit,
     listState: LazyListState,
     state: EpisodeHistoryState,
     onAction: (EpisodeHistoryAction) -> Unit
@@ -85,11 +88,21 @@ fun HistoryContent(
                                         )
                                     )
                                 },
-                                onAnimeDelete = { malId ->
+                                onAnimeDelete = { malId, message ->
                                     onAction(EpisodeHistoryAction.DeleteAnime(malId))
+                                    showSnackbar(
+                                        SnackbarMessage(
+                                            message = message, type = SnackbarMessageType.SUCCESS
+                                        )
+                                    )
                                 },
-                                onEpisodeDelete = { episodeId ->
+                                onEpisodeDelete = { episodeId, message ->
                                     onAction(EpisodeHistoryAction.DeleteEpisode(episodeId))
+                                    showSnackbar(
+                                        SnackbarMessage(
+                                            message = message, type = SnackbarMessageType.SUCCESS
+                                        )
+                                    )
                                 }
                             )
                         }

@@ -27,7 +27,7 @@ android {
         applicationId = "com.luminoverse.animevibe"
         minSdk = 27
         targetSdk = 35
-        versionCode = 8
+        versionCode = 9
         versionName = "1.0.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
@@ -74,6 +74,7 @@ android {
                 "proguard-rules.pro"
             )
             signingConfig = signingConfigs.getByName("release")
+            ndk.debugSymbolLevel = "FULL"
         }
     }
 
@@ -117,6 +118,9 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1,LICENSE.md,LICENSE-notice.md}"
+        }
+        jniLibs {
+            keepDebugSymbols += "**/lib*.so"
         }
     }
 

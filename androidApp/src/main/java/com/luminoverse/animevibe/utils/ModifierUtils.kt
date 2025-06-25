@@ -13,6 +13,25 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.unit.dp
 
+/**
+ * Applies a basic container styling to a Composable.
+ *
+ * This modifier provides a consistent look and feel for container elements,
+ * offering options for background color, border, padding, rounded corners,
+ * and click handling.
+ *
+ * @param isError If true, the background will use error colors.
+ * @param isTertiary If true, the background will use tertiary colors.
+ * @param isPrimary If true, the background will use primary colors.
+ * @param useBorder If true, a border will be applied.
+ * @param onItemClick A lambda to be executed when the container is clicked.
+ * @param backgroundBrush A custom [Brush] to use for the background. Overrides color-based backgrounds.
+ * @param roundedCornerShape The [RoundedCornerShape] to apply to the container.
+ * @param outerPadding The padding to apply outside the border.
+ * @param innerPadding The padding to apply inside the border (content padding).
+ * @param alpha The alpha transparency to apply to the background.
+ * @return A [Modifier] with the specified container styling applied.
+ */
 @Composable
 fun Modifier.basicContainer(
     isError: Boolean = false,

@@ -16,21 +16,30 @@ import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.android.R
 import java.util.Locale
 
+private val errorImages = listOf(
+    R.drawable.boy_1_sad,
+    R.drawable.boy_2_sad,
+    R.drawable.boy_3_mad,
+    R.drawable.boy_4_confuse,
+    R.drawable.girl_1_sad,
+    R.drawable.girl_2_sad,
+    R.drawable.girl_3_mad,
+    R.drawable.girl_4_confuse,
+)
+
 /**
- * A composable that displays an image, a main message, and an optional suggestion text.
+ * A composable that displays a random image, a main message, and an optional suggestion text.
  * Ideal for empty states or error messages.
  *
  * @param modifier The modifier to be applied to the Column.
  * @param message The main message to be displayed as a header.
  * @param suggestion An optional, smaller message to be displayed below the main message.
- * @param imageResId The resource ID of the drawable image to be displayed at the top.
  */
 @Composable
 fun SomethingWentWrongDisplay(
     modifier: Modifier = Modifier,
     message: String,
-    suggestion: String? = null,
-    imageResId: Int = R.drawable.something_went_wrong_image
+    suggestion: String? = null
 ) {
     val formattedMessage = remember(message) {
         message.split(" ").joinToString(" ") { word ->
@@ -40,13 +49,15 @@ fun SomethingWentWrongDisplay(
         }
     }
 
+    val randomImageResId = remember { errorImages.random() }
+
     Column(
         modifier = modifier,
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Image(
-            painter = painterResource(id = imageResId),
+            painter = painterResource(id = randomImageResId),
             contentDescription = message
         )
 
