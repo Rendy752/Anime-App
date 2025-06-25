@@ -24,6 +24,7 @@ import kotlin.math.ceil
 data class EpisodeHistoryState(
     val filteredEpisodeHistoryResults: Resource<Map<AnimeDetailComplement, List<EpisodeDetailComplement>>> = Resource.Loading(),
     val episodeHistoryResults: Resource<List<EpisodeDetailComplement>> = Resource.Loading(),
+    val isEpisodeHistoryEmpty: Boolean = true,
     val queryState: EpisodeHistoryQueryState = EpisodeHistoryQueryState(),
     val pagination: CompletePagination = defaultCompletePagination,
     val isRefreshing: Boolean = false
@@ -31,9 +32,14 @@ data class EpisodeHistoryState(
 
 sealed class EpisodeHistoryAction {
     object FetchHistory : EpisodeHistoryAction()
-    data class ApplyFilters(val updatedQueryState: EpisodeHistoryQueryState) : EpisodeHistoryAction()
+    object FetchAllHistory : EpisodeHistoryAction()
+    data class ApplyFilters(val updatedQueryState: EpisodeHistoryQueryState) :
+        EpisodeHistoryAction()
+
     data class ChangePage(val page: Int) : EpisodeHistoryAction()
-    data class ToggleEpisodeFavorite(val episodeId: String, val isFavorite: Boolean) : EpisodeHistoryAction()
+    data class ToggleEpisodeFavorite(val episodeId: String, val isFavorite: Boolean) :
+        EpisodeHistoryAction()
+
     data class ToggleAnimeFavorite(val malId: Int, val isFavorite: Boolean) : EpisodeHistoryAction()
     data class DeleteEpisode(val episodeId: String) : EpisodeHistoryAction()
     data class DeleteAnime(val malId: Int) : EpisodeHistoryAction()
@@ -55,12 +61,32 @@ class EpisodeHistoryViewModel @Inject constructor(
     fun onAction(action: EpisodeHistoryAction) {
         when (action) {
             EpisodeHistoryAction.FetchHistory -> fetchHistory()
+            is EpisodeHistoryAction.FetchAllHistory -> fetchAllEpisodeHistory()
             is EpisodeHistoryAction.ApplyFilters -> applyFilters(action.updatedQueryState)
             is EpisodeHistoryAction.ChangePage -> changePage(action.page)
-            is EpisodeHistoryAction.ToggleEpisodeFavorite -> toggleEpisodeFavorite(action.episodeId, action.isFavorite)
-            is EpisodeHistoryAction.ToggleAnimeFavorite -> toggleAnimeFavorite(action.malId, action.isFavorite)
+            is EpisodeHistoryAction.ToggleEpisodeFavorite -> toggleEpisodeFavorite(
+                action.episodeId,
+                action.isFavorite
+            )
+
+            is EpisodeHistoryAction.ToggleAnimeFavorite -> toggleAnimeFavorite(
+                action.malId,
+                action.isFavorite
+            )
+
             is EpisodeHistoryAction.DeleteEpisode -> deleteEpisode(action.episodeId)
             is EpisodeHistoryAction.DeleteAnime -> deleteAnime(action.malId)
+        }
+    }
+
+    private fun fetchAllEpisodeHistory() {
+        viewModelScope.launch {
+            val allEpisodeHistory = repository.getAllEpisodeHistory(EpisodeHistoryQueryState()).data
+            _historyState.update {
+                it.copy(
+                    isEpisodeHistoryEmpty = allEpisodeHistory?.isEmpty() == true
+                )
+            }
         }
     }
 
@@ -80,7 +106,10 @@ class EpisodeHistoryViewModel @Inject constructor(
             val allEpisodesResult = repository.getAllEpisodeHistory(queryState)
             when (allEpisodesResult) {
                 is Resource.Success -> {
-                    val (filteredMap, pagination) = computeFilteredAndPaginatedData(allEpisodesResult.data, queryState)
+                    val (filteredMap, pagination) = computeFilteredAndPaginatedData(
+                        allEpisodesResult.data,
+                        queryState
+                    )
                     _historyState.update {
                         it.copy(
                             isRefreshing = false,
@@ -91,6 +120,7 @@ class EpisodeHistoryViewModel @Inject constructor(
                         )
                     }
                 }
+
                 is Resource.Error -> _historyState.update {
                     it.copy(
                         isRefreshing = false,
@@ -99,6 +129,7 @@ class EpisodeHistoryViewModel @Inject constructor(
                         pagination = defaultCompletePagination
                     )
                 }
+
                 is Resource.Loading -> {}
             }
         }
@@ -106,6 +137,7 @@ class EpisodeHistoryViewModel @Inject constructor(
 
     private fun applyFilters(updatedQueryState: EpisodeHistoryQueryState) {
         _historyState.update { it.copy(queryState = updatedQueryState) }
+        if (_historyState.value.isEpisodeHistoryEmpty) return
         fetchHistory()
     }
 
@@ -114,7 +146,10 @@ class EpisodeHistoryViewModel @Inject constructor(
             val queryState = _historyState.value.queryState.copy(page = page)
             val currentResults = _historyState.value.episodeHistoryResults
             if (currentResults is Resource.Success) {
-                val (filteredMap, pagination) = computeFilteredAndPaginatedData(currentResults.data, queryState)
+                val (filteredMap, pagination) = computeFilteredAndPaginatedData(
+                    currentResults.data,
+                    queryState
+                )
                 _historyState.update {
                     it.copy(
                         filteredEpisodeHistoryResults = Resource.Success(filteredMap),
@@ -195,7 +230,10 @@ class EpisodeHistoryViewModel @Inject constructor(
 
         return filteredEpisodes.groupBy { it.malId }
             .mapNotNull { (malId, episodes) ->
-                ComplementUtils.getOrCreateAnimeDetailComplement(repository = repository, malId = malId)?.let { it to episodes }
+                ComplementUtils.getOrCreateAnimeDetailComplement(
+                    repository = repository,
+                    malId = malId
+                )?.let { it to episodes }
             }.toMap()
     }
 
@@ -209,10 +247,12 @@ class EpisodeHistoryViewModel @Inject constructor(
         }
 
         val totalEpisodes = filteredMap.values.sumOf { it.size }
-        val lastVisiblePage = ceil(totalEpisodes.toDouble() / queryState.limit).toInt().coerceAtLeast(1)
+        val lastVisiblePage =
+            ceil(totalEpisodes.toDouble() / queryState.limit).toInt().coerceAtLeast(1)
         val adjustedPage = queryState.page.coerceAtMost(lastVisiblePage)
         val offset = (adjustedPage - 1) * queryState.limit
-        val paginatedEpisodes = filteredMap.entries.flatMap { it.value }.drop(offset).take(queryState.limit)
+        val paginatedEpisodes =
+            filteredMap.entries.flatMap { it.value }.drop(offset).take(queryState.limit)
         val paginatedMap = paginatedEpisodes.groupBy { it.malId }
             .mapNotNull { (malId, episodes) ->
                 filteredMap.keys.find { it.malId == malId }?.let { it to episodes }

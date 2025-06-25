@@ -26,7 +26,17 @@ fun HistoryContent(
     state: EpisodeHistoryState,
     onAction: (EpisodeHistoryAction) -> Unit
 ) {
-    when (val results = state.filteredEpisodeHistoryResults) {
+    if (state.isEpisodeHistoryEmpty) {
+        Box(
+            modifier = modifier,
+            contentAlignment = Alignment.Center
+        ) {
+            SomethingWentWrongDisplay(
+                message = "No animes or episodes found",
+                suggestion = "Episodes you watch will appear here."
+            )
+        }
+    } else when (val results = state.filteredEpisodeHistoryResults) {
         is Resource.Loading -> {
             LazyColumn(
                 modifier = modifier,
@@ -43,8 +53,8 @@ fun HistoryContent(
                     contentAlignment = Alignment.Center
                 ) {
                     SomethingWentWrongDisplay(
-                        message = "No animes or episodes found",
-                        suggestion = "Episodes you watch will appear here."
+                        message = "No animes or episodes matched",
+                        suggestion = "Try searching for something else."
                     )
                 }
             } else {

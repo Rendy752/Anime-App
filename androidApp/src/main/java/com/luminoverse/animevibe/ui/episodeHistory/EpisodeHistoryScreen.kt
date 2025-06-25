@@ -41,12 +41,14 @@ fun EpisodeHistoryScreen(
 
     LaunchedEffect(currentRoute) {
         if (currentRoute == NavRoute.History.route) {
+            onAction(EpisodeHistoryAction.FetchAllHistory)
             onAction(EpisodeHistoryAction.FetchHistory)
         }
     }
 
     LaunchedEffect(mainState.isConnected, historyState.episodeHistoryResults) {
         if (mainState.isConnected && historyState.episodeHistoryResults is Resource.Error) {
+            onAction(EpisodeHistoryAction.FetchAllHistory)
             onAction(EpisodeHistoryAction.FetchHistory)
         }
     }
@@ -80,6 +82,7 @@ fun EpisodeHistoryScreen(
                 ) {
                     FilterContent(
                         modifier = Modifier.weight(1f),
+                        isfilteredEpisodeHistoryResultsEmpty = historyState.filteredEpisodeHistoryResults.data?.isEmpty() == true,
                         queryState = historyState.queryState,
                         onAction = onAction
                     )
@@ -131,6 +134,7 @@ fun EpisodeHistoryScreen(
             ) {
                 FilterContent(
                     queryState = historyState.queryState,
+                    isfilteredEpisodeHistoryResultsEmpty = historyState.filteredEpisodeHistoryResults.data?.isEmpty() == true,
                     onAction = onAction
                 )
                 HistoryContent(
