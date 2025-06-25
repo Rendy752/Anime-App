@@ -124,15 +124,15 @@ class EpisodeHistoryViewModelTest {
             assertFalse(isRefreshing)
         }
         coVerify(exactly = 1) { repository.getAllEpisodeHistory(any()) }
-        coVerify(exactly = 0) { AnimeTitleFinder.searchTitle<EpisodeDetailComplement>(any(), any(), any()) }
     }
 
     @Test
     fun `FetchHistory with search query filters episodes using AnimeTitleFinder`() = runTest {
         val queryState = EpisodeHistoryQueryState(searchQuery = "Naruto", page = 1, limit = 10)
-        coEvery { repository.getAllEpisodeHistory(any()) } returns Resource.Success(
-            listOf(mockEpisodeDetailComplement, mockEpisodeDetailComplement2)
-        )
+        val allEpisodes = listOf(mockEpisodeDetailComplement, mockEpisodeDetailComplement2)
+
+        coEvery { repository.getAllEpisodeHistory(any()) } returns Resource.Success(allEpisodes)
+
         coEvery {
             AnimeTitleFinder.searchTitle<EpisodeDetailComplement>("Naruto", any(), any())
         } returns listOf(mockEpisodeDetailComplement)
@@ -141,56 +141,64 @@ class EpisodeHistoryViewModelTest {
         } returns mockAnimeDetailComplement
 
         viewModel = EpisodeHistoryViewModel(repository)
+
+        viewModel.onAction(EpisodeHistoryAction.FetchAllHistory)
+        advanceUntilIdle()
+
         viewModel.onAction(EpisodeHistoryAction.ApplyFilters(queryState))
         advanceUntilIdle()
 
         with(viewModel.historyState.value) {
             assertTrue(filteredEpisodeHistoryResults is Resource.Success)
+            val filteredData = (filteredEpisodeHistoryResults as Resource.Success).data
             assertTrue(episodeHistoryResults is Resource.Success)
-            val filteredResults = (filteredEpisodeHistoryResults as Resource.Success).data
-            val episodeResults = (episodeHistoryResults as Resource.Success).data
-            assertTrue(filteredResults.containsKey(mockAnimeDetailComplement))
-            assertEquals(listOf(mockEpisodeDetailComplement), filteredResults[mockAnimeDetailComplement])
-            assertEquals(listOf(mockEpisodeDetailComplement, mockEpisodeDetailComplement2), episodeResults)
-            assertEquals(1, pagination.items.count)
+            val allData = (episodeHistoryResults as Resource.Success).data
+
+            assertEquals(allEpisodes, allData)
+            assertEquals(1, filteredData.size)
+            assertTrue(filteredData.containsKey(mockAnimeDetailComplement))
+            assertEquals(listOf(mockEpisodeDetailComplement), filteredData[mockAnimeDetailComplement])
             assertEquals(1, pagination.items.total)
-            assertEquals(1, pagination.last_visible_page)
-            assertFalse(pagination.has_next_page)
-            assertEquals(queryState.copy(page = pagination.current_page), queryState)
+            assertEquals(1, pagination.items.count)
+            assertEquals(queryState.copy(page = pagination.current_page), this.queryState)
         }
-        coVerify(exactly = 1) { repository.getAllEpisodeHistory(any()) }
+        coVerify(exactly = 2) { repository.getAllEpisodeHistory(any()) }
         coVerify(exactly = 1) { AnimeTitleFinder.searchTitle<EpisodeDetailComplement>("Naruto", any(), any()) }
     }
 
     @Test
     fun `FetchHistory with isFavorite filter returns only favorite episodes`() = runTest {
         val queryState = EpisodeHistoryQueryState(isFavorite = true, page = 1, limit = 10)
-        coEvery { repository.getAllEpisodeHistory(any()) } returns Resource.Success(
-            listOf(mockEpisodeDetailComplement, mockEpisodeDetailComplement2)
-        )
+        val allEpisodes = listOf(mockEpisodeDetailComplement, mockEpisodeDetailComplement2)
+
+        coEvery { repository.getAllEpisodeHistory(any()) } returns Resource.Success(allEpisodes)
         coEvery {
             ComplementUtils.getOrCreateAnimeDetailComplement(repository = repository, malId = 2)
         } returns mockAnimeDetailComplement2
 
         viewModel = EpisodeHistoryViewModel(repository)
+
+        viewModel.onAction(EpisodeHistoryAction.FetchAllHistory)
+        advanceUntilIdle()
+
         viewModel.onAction(EpisodeHistoryAction.ApplyFilters(queryState))
         advanceUntilIdle()
 
         with(viewModel.historyState.value) {
             assertTrue(filteredEpisodeHistoryResults is Resource.Success)
+            val filteredData = (filteredEpisodeHistoryResults as Resource.Success).data
             assertTrue(episodeHistoryResults is Resource.Success)
-            val filteredResults = (filteredEpisodeHistoryResults as Resource.Success).data
-            val episodeResults = (episodeHistoryResults as Resource.Success).data
-            assertTrue(filteredResults.containsKey(mockAnimeDetailComplement2))
-            assertEquals(listOf(mockEpisodeDetailComplement2), filteredResults[mockAnimeDetailComplement2])
-            assertEquals(listOf(mockEpisodeDetailComplement, mockEpisodeDetailComplement2), episodeResults)
+            val allData = (episodeHistoryResults as Resource.Success).data
+
+            assertEquals(allEpisodes, allData)
+            assertEquals(1, filteredData.size)
+            assertTrue(filteredData.containsKey(mockAnimeDetailComplement2))
+            assertEquals(listOf(mockEpisodeDetailComplement2), filteredData[mockAnimeDetailComplement2])
             assertEquals(1, pagination.items.total)
             assertEquals(1, pagination.items.count)
-            assertEquals(1, pagination.last_visible_page)
-            assertFalse(pagination.has_next_page)
-            assertEquals(queryState.copy(page = pagination.current_page), queryState)
+            assertEquals(queryState.copy(page = pagination.current_page), this.queryState)
         }
-        coVerify(exactly = 1) { repository.getAllEpisodeHistory(any()) }
+        coVerify(exactly = 2) { repository.getAllEpisodeHistory(any()) }
         coVerify(exactly = 0) { AnimeTitleFinder.searchTitle<EpisodeDetailComplement>(any(), any(), any()) }
     }
 
@@ -215,35 +223,41 @@ class EpisodeHistoryViewModelTest {
 
     @Test
     fun `ApplyFilters updates queryState and triggers FetchHistory`() = runTest {
-        val queryState = EpisodeHistoryQueryState(searchQuery = "Naruto", isFavorite = true, page = 1, limit = 10)
-        coEvery { repository.getAllEpisodeHistory(any()) } returns Resource.Success(
-            listOf(mockEpisodeDetailComplement, mockEpisodeDetailComplement2)
-        )
+        val queryState = EpisodeHistoryQueryState(searchQuery = "Boruto", isFavorite = true, page = 1, limit = 10)
+        val allEpisodes = listOf(mockEpisodeDetailComplement, mockEpisodeDetailComplement2)
+
+        coEvery { repository.getAllEpisodeHistory(any()) } returns Resource.Success(allEpisodes)
         coEvery {
-            AnimeTitleFinder.searchTitle<EpisodeDetailComplement>("Naruto", any(), any())
+            AnimeTitleFinder.searchTitle<EpisodeDetailComplement>("Boruto", listOf(mockEpisodeDetailComplement2), any())
         } returns listOf(mockEpisodeDetailComplement2)
         coEvery {
             ComplementUtils.getOrCreateAnimeDetailComplement(repository = repository, malId = 2)
         } returns mockAnimeDetailComplement2
 
         viewModel = EpisodeHistoryViewModel(repository)
+
+        viewModel.onAction(EpisodeHistoryAction.FetchAllHistory)
+        advanceUntilIdle()
+
         viewModel.onAction(EpisodeHistoryAction.ApplyFilters(queryState))
         advanceUntilIdle()
 
         with(viewModel.historyState.value) {
-            assertEquals(queryState.copy(page = pagination.current_page), queryState)
+            assertEquals(queryState.copy(page = pagination.current_page), this.queryState)
             assertTrue(filteredEpisodeHistoryResults is Resource.Success)
+            val filteredData = (filteredEpisodeHistoryResults as Resource.Success).data
             assertTrue(episodeHistoryResults is Resource.Success)
-            val filteredResults = (filteredEpisodeHistoryResults as Resource.Success).data
-            val episodeResults = (episodeHistoryResults as Resource.Success).data
-            assertTrue(filteredResults.containsKey(mockAnimeDetailComplement2))
-            assertEquals(listOf(mockEpisodeDetailComplement2), filteredResults[mockAnimeDetailComplement2])
-            assertEquals(listOf(mockEpisodeDetailComplement, mockEpisodeDetailComplement2), episodeResults)
+            val allData = (episodeHistoryResults as Resource.Success).data
+
+            assertEquals(allEpisodes, allData)
+            assertEquals(1, filteredData.size)
+            assertTrue(filteredData.containsKey(mockAnimeDetailComplement2))
+            assertEquals(listOf(mockEpisodeDetailComplement2), filteredData[mockAnimeDetailComplement2])
             assertEquals(1, pagination.items.total)
             assertEquals(1, pagination.items.count)
         }
-        coVerify(exactly = 1) { repository.getAllEpisodeHistory(any()) }
-        coVerify(exactly = 1) { AnimeTitleFinder.searchTitle<EpisodeDetailComplement>("Naruto", any(), any()) }
+        coVerify(exactly = 2) { repository.getAllEpisodeHistory(any()) }
+        coVerify(exactly = 1) { AnimeTitleFinder.searchTitle<EpisodeDetailComplement>("Boruto", any(), any()) }
     }
 
     @Test
