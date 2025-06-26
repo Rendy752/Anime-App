@@ -93,7 +93,7 @@ class AnimeRecommendationsScreenTest {
     @Test
     fun animeRecommendationsScreen_displaysErrorMessage_whenNotConnected() {
         val mainState: MainState = mockk {
-            every { isConnected } returns false
+            every { networkStatus.isConnected } returns false
         }
         val recommendationsState: RecommendationsState = mockk {
             every { animeRecommendations } returns Resource.Error("No internet connection")
@@ -122,7 +122,7 @@ class AnimeRecommendationsScreenTest {
     fun animeRecommendationsScreen_displaysErrorMessage_whenLoadingFailsAndConnected() {
         val errorState = Resource.Error<AnimeRecommendationResponse>("Failed to load")
         val mainState: MainState = mockk {
-            every { isConnected } returns true
+            every { networkStatus.isConnected } returns true
         }
         val recommendationsState: RecommendationsState = mockk {
             every { animeRecommendations } returns errorState

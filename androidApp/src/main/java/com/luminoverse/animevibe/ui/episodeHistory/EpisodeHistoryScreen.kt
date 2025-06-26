@@ -46,8 +46,8 @@ fun EpisodeHistoryScreen(
         }
     }
 
-    LaunchedEffect(mainState.isConnected, historyState.episodeHistoryResults) {
-        if (mainState.isConnected && historyState.episodeHistoryResults is Resource.Error) {
+    LaunchedEffect(mainState.networkStatus.isConnected, historyState.episodeHistoryResults) {
+        if (mainState.networkStatus.isConnected && historyState.episodeHistoryResults is Resource.Error) {
             onAction(EpisodeHistoryAction.FetchAllHistory)
             onAction(EpisodeHistoryAction.FetchHistory)
         }

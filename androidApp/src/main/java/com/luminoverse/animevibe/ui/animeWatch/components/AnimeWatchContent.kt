@@ -204,7 +204,7 @@ fun AnimeWatchContent(
                             InfoContentSection(
                                 animeDetail = watchState.animeDetail,
                                 navController = navController,
-                                isConnected = mainState.isConnected,
+                                isConnected = mainState.networkStatus.isConnected,
                                 isLandscape = mainState.isLandscape
                             )
                         }
@@ -251,7 +251,7 @@ fun AnimeWatchContent(
                 InfoContentSection(
                     animeDetail = watchState.animeDetail,
                     navController = navController,
-                    isConnected = mainState.isConnected,
+                    isConnected = mainState.networkStatus.isConnected,
                     isLandscape = mainState.isLandscape
                 )
             }

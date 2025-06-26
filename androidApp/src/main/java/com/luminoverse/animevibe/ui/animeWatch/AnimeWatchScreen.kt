@@ -147,7 +147,7 @@ fun AnimeWatchScreen(
         }
     }
 
-    LaunchedEffect(watchState.errorMessage, watchState.isRefreshing, mainState.isConnected) {
+    LaunchedEffect(watchState.errorMessage, watchState.isRefreshing, mainState.networkStatus.isConnected) {
         when {
             watchState.isRefreshing -> dismissSnackbar()
             watchState.errorMessage != null -> {
@@ -164,8 +164,8 @@ fun AnimeWatchScreen(
         }
     }
 
-    LaunchedEffect(mainState.isConnected) {
-        if (mainState.isConnected && watchState.episodeDetailComplement == null && watchState.episodeSourcesQuery != null) {
+    LaunchedEffect(mainState.networkStatus.isConnected) {
+        if (mainState.networkStatus.isConnected && watchState.episodeDetailComplement == null && watchState.episodeSourcesQuery != null) {
             onAction(
                 WatchAction.HandleSelectedEpisodeServer(
                     watchState.episodeSourcesQuery,

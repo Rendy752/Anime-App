@@ -107,8 +107,8 @@ fun AnimeHomeScreen(
         }
     }
 
-    LaunchedEffect(mainState.isConnected) {
-        if (!mainState.isConnected) return@LaunchedEffect
+    LaunchedEffect(mainState.networkStatus.isConnected) {
+        if (!mainState.networkStatus.isConnected) return@LaunchedEffect
         if (homeState.animeSchedules is Resource.Error) onAction(HomeAction.GetAnimeSchedules)
         if (homeState.top10Anime is Resource.Error) onAction(HomeAction.GetTop10Anime)
     }
@@ -208,8 +208,8 @@ fun AnimeHomeScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             SomethingWentWrongDisplay(
-                                message = if (mainState.isConnected) homeState.animeSchedules.message else "No internet connection",
-                                suggestion = if (mainState.isConnected) null else "Please check your internet connection and try again"
+                                message = if (mainState.networkStatus.isConnected) homeState.animeSchedules.message else "No internet connection",
+                                suggestion = if (mainState.networkStatus.isConnected) null else "Please check your internet connection and try again"
                             )
                         }
                     }

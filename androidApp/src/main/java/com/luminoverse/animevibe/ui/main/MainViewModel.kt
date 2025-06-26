@@ -55,7 +55,6 @@ data class MainState(
     val isNotificationEnabled: Boolean = false,
     val isAutoPlayVideo: Boolean = true,
     val isRtl: Boolean = false,
-    val isConnected: Boolean = true,
     val networkStatus: NetworkStatus = networkStatusPlaceholder,
     val isShowIdleDialog: Boolean = false,
     val isLandscape: Boolean = false,
@@ -69,7 +68,6 @@ sealed class MainAction {
     data class SetNotificationEnabled(val enabled: Boolean) : MainAction()
     data class SetAutoPlayVideo(val isAutoPlayVideo: Boolean) : MainAction()
     data class SetRtl(val isRtl: Boolean) : MainAction()
-    data class SetIsConnected(val connected: Boolean) : MainAction()
     data class SetNetworkStatus(val status: NetworkStatus) : MainAction()
     data class SetIsShowIdleDialog(val show: Boolean) : MainAction()
     data object CheckNotificationPermission : MainAction()
@@ -137,7 +135,6 @@ class MainViewModel @Inject constructor(
             is MainAction.SetNotificationEnabled -> setNotificationEnabled(action.enabled)
             is MainAction.SetAutoPlayVideo -> setAutoPlayVideo(action.isAutoPlayVideo)
             is MainAction.SetRtl -> setRtl(action.isRtl)
-            is MainAction.SetIsConnected -> setIsConnected(action.connected)
             is MainAction.SetNetworkStatus -> setNetworkStatus(action.status)
             is MainAction.SetIsShowIdleDialog -> setIsShowIdleDialog(action.show)
             is MainAction.CheckNotificationPermission -> checkNotificationPermission()
@@ -213,10 +210,6 @@ class MainViewModel @Inject constructor(
         settingsPrefs.edit { putBoolean("rtl", isRtl) }
     }
 
-    private fun setIsConnected(connected: Boolean) {
-        _state.update { it.copy(isConnected = connected) }
-    }
-
     private fun setNetworkStatus(status: NetworkStatus) {
         _state.update { it.copy(networkStatus = status) }
     }
@@ -244,13 +237,8 @@ class MainViewModel @Inject constructor(
 
     private fun startNetworkMonitoring() {
         networkStateMonitor.startMonitoring()
-        networkStateMonitor.isConnected.observeForever { isNetworkAvailable ->
-            viewModelScope.launch {
-                onAction(MainAction.SetIsConnected(isNetworkAvailable))
-            }
-        }
-        networkStateMonitor.networkStatus.observeForever { status ->
-            viewModelScope.launch {
+        viewModelScope.launch {
+            networkStateMonitor.networkStatus.collect { status ->
                 onAction(MainAction.SetNetworkStatus(status))
             }
         }

@@ -7,6 +7,7 @@ import kotlinx.coroutines.withContext
 import java.io.IOException
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.system.measureTimeMillis
 
 @Singleton
 class NetworkDataSource @Inject constructor(
@@ -32,6 +33,29 @@ class NetworkDataSource @Inject constructor(
             } catch (_: IOException) {
                 null
             }
+        }
+    }
+
+    /**
+     * Downloads the content of a URL and measures the time taken.
+     * @return A Pair containing the number of bytes downloaded and the time in milliseconds.
+     */
+    suspend fun downloadFileAndMeasureTime(url: String): Pair<Long, Long> {
+        return withContext(Dispatchers.IO) {
+            val request = Request.Builder().url(url).build()
+            var bytesRead = 0L
+            val durationMs = measureTimeMillis {
+                try {
+                    val response = okHttpClient.newCall(request).execute()
+                    if (response.isSuccessful) {
+                        bytesRead = response.body?.contentLength() ?: 0L
+                        response.body?.bytes()
+                    }
+                } catch (_: IOException) {
+                    bytesRead = 0L
+                }
+            }
+            Pair(bytesRead, durationMs)
         }
     }
 }

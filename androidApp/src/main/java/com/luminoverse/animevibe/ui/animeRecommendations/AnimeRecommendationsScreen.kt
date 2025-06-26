@@ -54,8 +54,8 @@ fun AnimeRecommendationsScreen(
         WindowInsets.systemBars.getTop(density).toDp()
     }
 
-    LaunchedEffect(mainState.isConnected, recommendationsState.animeRecommendations) {
-        if (mainState.isConnected && recommendationsState.animeRecommendations is Resource.Error) {
+    LaunchedEffect(mainState.networkStatus.isConnected, recommendationsState.animeRecommendations) {
+        if (mainState.networkStatus.isConnected && recommendationsState.animeRecommendations is Resource.Error) {
             onAction(RecommendationsAction.LoadRecommendations)
         }
     }
@@ -235,8 +235,8 @@ fun AnimeRecommendationsScreen(
                         contentAlignment = Alignment.Center
                     ) {
                         SomethingWentWrongDisplay(
-                            message = if (mainState.isConnected) recommendationsState.animeRecommendations.message else "No internet connection",
-                            suggestion = if (mainState.isConnected) null else "Please check your internet connection and try again"
+                            message = if (mainState.networkStatus.isConnected) recommendationsState.animeRecommendations.message else "No internet connection",
+                            suggestion = if (mainState.networkStatus.isConnected) null else "Please check your internet connection and try again"
                         )
                     }
                 }

@@ -82,8 +82,6 @@ fun MainScreen(
         derivedStateOf { NavRoute.bottomRoutes.any { it.route == currentRoute } }
     }
 
-    val isConnected by rememberUpdatedState(mainState.isConnected)
-    val isRtl by rememberUpdatedState(mainState.isRtl)
     val coroutineScope = rememberCoroutineScope()
     var isNavigating by remember { mutableStateOf(false) }
 
@@ -181,17 +179,17 @@ fun MainScreen(
                         if (abs(dragAmount) > 100f && !isNavigating) {
                             isNavigating = true
                             coroutineScope.launch(Dispatchers.Main) {
-                                val isNextLogical = if (isRtl) dragAmount > 0 else dragAmount < 0
+                                val isNextLogical = if (mainState.isRtl) dragAmount > 0 else dragAmount < 0
                                 navigateToAdjacentRoute(isNextLogical, currentRoute, navController)
                                 isNavigating = false
                             }
                         }
                     }
                 },
-            enterTransition = { getBottomBarEnterTransition(initialState, targetState, isRtl) },
-            exitTransition = { getBottomBarExitTransition(initialState, targetState, isRtl) },
-            popEnterTransition = { getBottomBarEnterTransition(initialState, targetState, isRtl) },
-            popExitTransition = { getBottomBarExitTransition(initialState, targetState, isRtl) }
+            enterTransition = { getBottomBarEnterTransition(initialState, targetState, mainState.isRtl) },
+            exitTransition = { getBottomBarExitTransition(initialState, targetState, mainState.isRtl) },
+            popEnterTransition = { getBottomBarEnterTransition(initialState, targetState, mainState.isRtl) },
+            popExitTransition = { getBottomBarExitTransition(initialState, targetState, mainState.isRtl) }
         ) {
             composable(NavRoute.Home.route) {
                 val viewModel: AnimeHomeViewModel = hiltViewModel()
@@ -389,7 +387,7 @@ fun MainScreen(
         }
         AnimatedVisibility(
             modifier = Modifier.fillMaxWidth(),
-            visible = !isConnected,
+            visible = !mainState.networkStatus.isConnected,
             enter = slideInVertically(
                 initialOffsetY = { it },
                 animationSpec = tween(durationMillis = 700, easing = EaseInOut)

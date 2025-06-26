@@ -60,8 +60,8 @@ fun AnimeSearchScreen(
     var isGenresBottomSheetShow by remember { mutableStateOf(false) }
     var isProducersBottomSheetShow by remember { mutableStateOf(false) }
 
-    LaunchedEffect(mainState.isConnected) {
-        if (!mainState.isConnected) return@LaunchedEffect
+    LaunchedEffect(mainState.networkStatus.isConnected) {
+        if (!mainState.networkStatus.isConnected) return@LaunchedEffect
 
         if (searchState.genres is Resource.Error) onAction(SearchAction.FetchGenres)
         if (searchState.producers is Resource.Error) onAction(SearchAction.FetchProducers)
@@ -180,7 +180,7 @@ fun AnimeSearchScreen(
 
                     ResultsSection(
                         modifier = Modifier.weight(0.5f),
-                        isConnected = mainState.isConnected,
+                        isConnected = mainState.networkStatus.isConnected,
                         resultsSectionScrollState = resultsSectionScrollState,
                         navController = navController,
                         query = searchState.queryState.query,
@@ -224,7 +224,7 @@ fun AnimeSearchScreen(
 
                     ResultsSection(
                         modifier = Modifier.weight(1f),
-                        isConnected = mainState.isConnected,
+                        isConnected = mainState.networkStatus.isConnected,
                         resultsSectionScrollState = resultsSectionScrollState,
                         navController = navController,
                         query = searchState.queryState.query,

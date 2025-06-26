@@ -63,8 +63,8 @@ fun AnimeDetailScreen(
     val currentAnimeIdState = rememberSaveable { mutableIntStateOf(id) }
     val currentAnimeId = currentAnimeIdState.intValue
 
-    LaunchedEffect(mainState.isConnected) {
-        if (!mainState.isConnected) return@LaunchedEffect
+    LaunchedEffect(mainState.networkStatus.isConnected) {
+        if (!mainState.networkStatus.isConnected) return@LaunchedEffect
         if (detailState.animeDetail is Resource.Error) {
             onAction(DetailAction.LoadAnimeDetail(currentAnimeId))
         }
@@ -113,7 +113,7 @@ fun AnimeDetailScreen(
                     navController = navController,
                     context = context,
                     isLandscape = mainState.isLandscape,
-                    isConnected = mainState.isConnected,
+                    isConnected = mainState.networkStatus.isConnected,
                     navigationBarBottomPadding = navigationBarBottomPadding,
                     portraitScrollState = portraitScrollState,
                     landscapeScrollState = landscapeScrollState,
@@ -128,8 +128,8 @@ fun AnimeDetailScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     SomethingWentWrongDisplay(
-                        message = if (mainState.isConnected) detailState.animeDetail.message else "No internet connection",
-                        suggestion = if (mainState.isConnected) null else "Please check your internet connection and try again"
+                        message = if (mainState.networkStatus.isConnected) detailState.animeDetail.message else "No internet connection",
+                        suggestion = if (mainState.networkStatus.isConnected) null else "Please check your internet connection and try again"
                     )
                 }
             }
