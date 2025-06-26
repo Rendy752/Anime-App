@@ -62,37 +62,39 @@ fun EpisodesDetailSection(
             .basicContainer(outerPadding = PaddingValues(0.dp))
             .fillMaxWidth()
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 4.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = "Episodes",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-            )
-            if (animeDetailComplement.data != null) {
-                animeDetailComplement.data?.let { data ->
-                    if (data.episodes?.isNotEmpty() == true) {
-                        EpisodeInfoRow(
-                            subCount = data.sub,
-                            dubCount = data.dub,
-                            epsCount = data.eps,
-                        )
+        if (animeDetail.type != "Music") {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Episodes",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+                if (animeDetailComplement.data != null) {
+                    animeDetailComplement.data?.let { data ->
+                        if (data.episodes?.isNotEmpty() == true) {
+                            EpisodeInfoRow(
+                                subCount = data.sub,
+                                dubCount = data.dub,
+                                epsCount = data.eps,
+                            )
+                        }
                     }
+                } else if (animeDetailComplement !is Resource.Error) {
+                    EpisodeInfoRowSkeleton()
                 }
-            } else if (animeDetailComplement !is Resource.Error) {
-                EpisodeInfoRowSkeleton()
             }
+            HorizontalDivider(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp)
+            )
         }
-        HorizontalDivider(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp)
-        )
 
         if (animeDetailComplement.data != null) {
             animeDetailComplement.data?.let { data ->

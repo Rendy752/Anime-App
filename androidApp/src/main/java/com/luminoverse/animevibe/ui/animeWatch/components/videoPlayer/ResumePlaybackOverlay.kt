@@ -52,7 +52,7 @@ fun ResumePlaybackOverlay(
             modifier = Modifier
                 .fillMaxSize()
                 .wrapContentSize(Alignment.Center)
-                .basicContainer(isPrimary = true, innerPadding = PaddingValues(8.dp))
+                .basicContainer(innerPadding = PaddingValues(8.dp))
                 .widthIn(min = 192.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
@@ -66,7 +66,7 @@ fun ResumePlaybackOverlay(
                     append(" ?")
                 },
                 textAlign = TextAlign.Center,
-                color = MaterialTheme.colorScheme.onPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(8.dp))
             Row(
@@ -75,7 +75,6 @@ fun ResumePlaybackOverlay(
             ) {
                 Row(
                     modifier = Modifier.basicContainer(
-                        isTertiary = true,
                         onItemClick = onRestart,
                         outerPadding = PaddingValues(0.dp),
                         innerPadding = PaddingValues(8.dp)
@@ -85,11 +84,11 @@ fun ResumePlaybackOverlay(
                     Icon(
                         Icons.Filled.RestartAlt,
                         contentDescription = "Restart",
-                        tint = MaterialTheme.colorScheme.onTertiary
+                        tint = MaterialTheme.colorScheme.onSurface
                     )
                     if (!isPipMode) Text(
                         text = "No, restart",
-                        color = MaterialTheme.colorScheme.onTertiary
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
 

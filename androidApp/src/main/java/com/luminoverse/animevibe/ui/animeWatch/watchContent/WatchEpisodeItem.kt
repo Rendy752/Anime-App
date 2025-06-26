@@ -1,5 +1,11 @@
 package com.luminoverse.animevibe.ui.animeWatch.watchContent
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -22,27 +28,32 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Popup
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
+import com.luminoverse.animevibe.models.animeDetailPlaceholder
 import com.luminoverse.animevibe.models.episodeDetailComplementPlaceholder
 import com.luminoverse.animevibe.models.episodePlaceholder
-import com.luminoverse.animevibe.utils.watch.WatchUtils.getEpisodeBackgroundColor
 import com.luminoverse.animevibe.utils.basicContainer
+import com.luminoverse.animevibe.utils.watch.WatchUtils.getEpisodeBackgroundColor
 
 @Preview
 @Composable
 fun WatchEpisodeItemPreview() {
     WatchEpisodeItem(
-        currentEpisode = episodeDetailComplementPlaceholder,
+        imageUrl = animeDetailPlaceholder.images.webp.large_image_url,
+        currentEpisode = episodeDetailComplementPlaceholder.copy(number = 2),
         episode = episodePlaceholder,
-        isNewEpisode = true,
+        isHighlighted = true,
+        isNew = true,
         episodeDetailComplement = episodeDetailComplementPlaceholder,
         onEpisodeClick = {},
         isSelected = false
@@ -51,9 +62,11 @@ fun WatchEpisodeItemPreview() {
 
 @Composable
 fun WatchEpisodeItem(
+    imageUrl: String?,
     currentEpisode: EpisodeDetailComplement?,
     episode: Episode,
-    isNewEpisode: Boolean,
+    isHighlighted: Boolean,
+    isNew: Boolean,
     episodeDetailComplement: EpisodeDetailComplement?,
     onEpisodeClick: (String) -> Unit,
     isSelected: Boolean
@@ -68,15 +81,44 @@ fun WatchEpisodeItem(
             if (isSelected) true else isCurrentEpisode,
         )
 
+    val infiniteTransition = rememberInfiniteTransition(label = "InfiniteGlow")
+
+    val animatedScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.07f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1500, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "PulsingScale"
+    )
+
+    val animatedGlowRadius by infiniteTransition.animateFloat(
+        initialValue = 10f,
+        targetValue = 25f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 1500, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "PulsingGlowRadius"
+    )
+
+    val scale = if (isHighlighted) animatedScale else 1f
+    val glowRadius = if (isHighlighted) animatedGlowRadius else 0f
+
     Surface(
         modifier = Modifier
             .widthIn(min = 48.dp, max = 100.dp)
+            .scale(scale)
             .clip(RoundedCornerShape(16.dp))
             .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                width = 1.5.dp,
+                color = if (isHighlighted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHighest,
                 shape = RoundedCornerShape(16.dp)
             ),
+        shadowElevation = 0.dp,
+        color = Color.Transparent,
+        shape = RoundedCornerShape(16.dp)
     ) {
         Box(
             modifier = Modifier
@@ -100,13 +142,27 @@ fun WatchEpisodeItem(
                 ),
             contentAlignment = Alignment.Center,
         ) {
+            val glowColor = MaterialTheme.colorScheme.primary
+
             Text(
                 text = episode.episode_no.toString(),
                 textAlign = TextAlign.Center,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                style = if (isHighlighted) {
+                    MaterialTheme.typography.bodyLarge.copy(
+                        shadow = Shadow(
+                            color = glowColor.copy(alpha = 0.9f),
+                            offset = Offset.Zero,
+                            blurRadius = glowRadius
+                        ),
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                } else {
+                    MaterialTheme.typography.bodyLarge
+                }
             )
 
-            if (isNewEpisode) {
+            if (isNew) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
@@ -120,22 +176,12 @@ fun WatchEpisodeItem(
         }
 
         if (showTooltip) {
-            Popup(
-                offset = IntOffset(0, -100),
-                alignment = Alignment.TopCenter,
-                onDismissRequest = { showTooltip = false }
-            ) {
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = MaterialTheme.colorScheme.surfaceVariant,
-                    modifier = Modifier.padding(8.dp)
-                ) {
-                    Text(
-                        text = episode.title,
-                        modifier = Modifier.padding(8.dp)
-                    )
-                }
-            }
+            WatchEpisodePopup(
+                onDismissRequest = { showTooltip = false },
+                imageUrl = imageUrl,
+                episode = episode,
+                episodeDetailComplement = episodeDetailComplement
+            )
         }
     }
 }

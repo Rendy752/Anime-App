@@ -25,16 +25,17 @@ import com.luminoverse.animevibe.models.TimeRange
 fun SkipButtonsContainer(
     modifier: Modifier = Modifier,
     currentPosition: Long,
+    duration: Long,
     intro: TimeRange,
     outro: TimeRange,
     isSkipVisible: Boolean,
     onSkip: (Long) -> Unit
 ) {
     val showIntroButton =
-        currentPosition >= intro.start * 1000L && currentPosition < intro.end * 1000L
+        currentPosition >= intro.start * 1000L && currentPosition < intro.end * 1000L && currentPosition in 0 until duration
 
     val showOutroButton =
-        currentPosition >= outro.start * 1000L && currentPosition < outro.end * 1000L
+        currentPosition >= outro.start * 1000L && currentPosition < outro.end * 1000L && currentPosition in 0 until duration
 
     SkipButton(
         label = "Skip Intro",

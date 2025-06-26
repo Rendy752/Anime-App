@@ -245,6 +245,8 @@ fun AnimeWatchContent(
                     episodes = watchState.animeDetailComplement.episodes,
                     newEpisodeIdList = watchState.newEpisodeIdList,
                     episodeSourcesQuery = watchState.episodeSourcesQuery,
+                    episodeJumpNumber = watchState.episodeJumpNumber,
+                    setEpisodeJumpNumber = { onAction(WatchAction.SetEpisodeJumpNumber(it)) },
                     serverScrollState = serverScrollState,
                     handleSelectedEpisodeServer = {
                         onAction(

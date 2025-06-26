@@ -40,6 +40,7 @@ data class WatchState(
     val episodeSourcesQuery: EpisodeSourcesQuery? = null,
     val isRefreshing: Boolean = false,
     val newEpisodeIdList: List<String> = emptyList(),
+    val episodeJumpNumber: Int? = null,
     val isSideSheetVisible: Boolean = false
 )
 
@@ -71,6 +72,7 @@ sealed class WatchAction {
     data class SetFullscreen(val isFullscreen: Boolean) : WatchAction()
     data class SetPipMode(val isPipMode: Boolean) : WatchAction()
     data class SetShowResume(val isShow: Boolean) : WatchAction()
+    data class SetEpisodeJumpNumber(val jumpNumber: Int) : WatchAction()
     data class SetSideSheetVisibility(val isVisible: Boolean) : WatchAction()
 
     data class ShowErrorMessage(val message: String) : WatchAction()
@@ -135,6 +137,7 @@ class AnimeWatchViewModel @Inject constructor(
                 it.copy(isShowResume = action.isShow)
             }
 
+            is WatchAction.SetEpisodeJumpNumber -> _watchState.update { it.copy(episodeJumpNumber = action.jumpNumber) }
             is WatchAction.SetSideSheetVisibility -> _watchState.update { it.copy(isSideSheetVisible = action.isVisible) }
             is WatchAction.ShowErrorMessage -> viewModelScope.launch {
                 _snackbarChannel.send(

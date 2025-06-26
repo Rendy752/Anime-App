@@ -9,6 +9,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,15 +31,21 @@ import kotlin.math.abs
 @Composable
 fun EpisodeJump(
     episodes: List<Episode>,
+    episodeJumpNumber: Int?,
+    setEpisodeJumpNumber: (Int) -> Unit,
     gridState: LazyGridState
 ) {
     val scope = rememberCoroutineScope()
-    var episodeNumberInput by remember { mutableStateOf("") }
     val totalEpisodes = episodes.size
+    var textValue by remember { mutableStateOf(episodeJumpNumber?.toString()?.takeIf { it != "0" } ?: "") }
+
+    LaunchedEffect(episodeJumpNumber) {
+        textValue = episodeJumpNumber?.toString()?.takeIf { it != "0" } ?: ""
+    }
 
     val debounce = remember {
-        Debounce(scope, 1000L) { filteredQuery ->
-            val intValue = filteredQuery.toIntOrNull()
+        Debounce(scope, 1000L) { query ->
+            val intValue = query.toIntOrNull()
             if (intValue != null && intValue >= 1 && intValue <= totalEpisodes) {
                 val index = episodes.indexOfFirst { it.episode_no == intValue }
                 if (index != -1) {
@@ -79,16 +86,23 @@ fun EpisodeJump(
         }
 
         SearchView(
-            query = episodeNumberInput,
+            query = textValue,
             onQueryChange = { newText ->
-                val filteredText = newText.filter { it.isDigit() && it != '0' }
-                val newIntValue = filteredText.toIntOrNull()
-                episodeNumberInput = if (newIntValue == null || newIntValue <= totalEpisodes) {
-                    filteredText
+                val filteredText = newText.filter { it.isDigit() }
+
+                val newIntValue = filteredText.toIntOrNull() ?: 0
+
+                if (newIntValue <= totalEpisodes) {
+                    textValue = filteredText
+                    setEpisodeJumpNumber(newIntValue)
+                    if (newIntValue > 0) {
+                        debounce.query(newIntValue.toString())
+                    }
                 } else {
-                    totalEpisodes.toString()
+                    textValue = totalEpisodes.toString()
+                    setEpisodeJumpNumber(totalEpisodes)
+                    debounce.query(totalEpisodes.toString())
                 }
-                debounce.query(episodeNumberInput)
             },
             keyboardType = KeyboardType.Number,
             placeholder = "Jump to Episode",

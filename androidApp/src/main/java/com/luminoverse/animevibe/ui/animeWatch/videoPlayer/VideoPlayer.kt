@@ -525,6 +525,7 @@ fun VideoPlayer(
         SkipButtonsContainer(
             modifier = Modifier.align(Alignment.BottomEnd),
             currentPosition = currentPosition,
+            duration = player.duration,
             intro = episodeDetailComplement.sources.intro,
             outro = episodeDetailComplement.sources.outro,
             isSkipVisible = isSkipVisible,

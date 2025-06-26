@@ -94,16 +94,6 @@ class VideoPlayerState(
         _currentPosition.value = position
     }
 
-    /**
-     * Loads thumbnail cues from a VTT file and caches the associated thumbnail images.
-     *
-     * This function fetches a VTT file from the provided `thumbnailUrl`, parses it to extract
-     * thumbnail cues (including image URLs and timecodes), and then enqueues image loading
-     * requests for each unique thumbnail image URL using Coil. The parsed cues are stored
-     * in the `thumbnailCues` map.
-     * @param context The Android [Context] used for image loading.
-     * @param thumbnailUrl The URL of the VTT file containing thumbnail information.
-     */
     fun loadAndCacheThumbnails(context: Context, thumbnailUrl: String) {
         scope.launch {
             if (thumbnailCues.containsKey(thumbnailUrl)) return@launch
@@ -131,7 +121,6 @@ class VideoPlayerState(
 
             } catch (e: Exception) {
                 Log.e("VideoPlayerState", "Failed to load or cache thumbnails: ${e.message}", e)
-                thumbnailCues = thumbnailCues + (thumbnailUrl to emptyList())
             }
         }
     }
@@ -150,7 +139,6 @@ class VideoPlayerState(
                 Log.d("VideoPlayerState", "Captions loaded and cached for $captionUrl")
             } catch (e: Exception) {
                 Log.e("VideoPlayerState", "Failed to load captions: ${e.message}", e)
-                captionCues = captionCues + (captionUrl to emptyList())
             }
         }
     }
