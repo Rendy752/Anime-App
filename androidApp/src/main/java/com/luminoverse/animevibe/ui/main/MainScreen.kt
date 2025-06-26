@@ -273,7 +273,9 @@ fun MainScreen(
                     id = backStackEntry.arguments?.getInt("id") ?: 0,
                     navController = navController,
                     mainState = mainState,
+                    showSnackbar = { mainAction.invoke(MainAction.ShowSnackbar(it)) },
                     detailState = detailState,
+                    snackbarFlow = viewModel.snackbarFlow,
                     episodeFilterState = episodeFilterState,
                     onAction = viewModel::onAction
                 )
@@ -347,6 +349,7 @@ fun MainScreen(
                     dismissSnackbar = { mainAction.invoke(MainAction.DismissSnackbar) },
                     watchState = watchState,
                     playerUiState = playerUiState,
+                    snackbarFlow = viewModel.snackbarFlow,
                     hlsPlayerCoreState = playerCoreState,
                     hlsControlsStateFlow = viewModel.controlsState,
                     onAction = viewModel::onAction,

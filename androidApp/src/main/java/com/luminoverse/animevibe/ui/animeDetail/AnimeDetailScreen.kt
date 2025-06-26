@@ -11,6 +11,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -24,7 +25,11 @@ import com.luminoverse.animevibe.ui.animeDetail.components.LoadingContent
 import com.luminoverse.animevibe.ui.animeDetail.components.SuccessContent
 import com.luminoverse.animevibe.ui.common.SomethingWentWrongDisplay
 import com.luminoverse.animevibe.ui.main.MainState
+import com.luminoverse.animevibe.ui.main.SnackbarMessage
 import com.luminoverse.animevibe.utils.resource.Resource
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -32,7 +37,9 @@ fun AnimeDetailScreen(
     id: Int,
     navController: NavHostController,
     mainState: MainState,
+    showSnackbar: (SnackbarMessage) -> Unit,
     detailState: DetailState,
+    snackbarFlow: Flow<SnackbarMessage>,
     episodeFilterState: EpisodeFilterState,
     onAction: (DetailAction) -> Unit
 ) {
@@ -59,9 +66,18 @@ fun AnimeDetailScreen(
     val context = LocalContext.current
     val portraitScrollState = rememberLazyListState()
     val landscapeScrollState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
 
     val currentAnimeIdState = rememberSaveable { mutableIntStateOf(id) }
     val currentAnimeId = currentAnimeIdState.intValue
+
+    LaunchedEffect(Unit) {
+        scope.launch {
+            snackbarFlow.collectLatest { snackbarMessage ->
+                showSnackbar(snackbarMessage)
+            }
+        }
+    }
 
     LaunchedEffect(mainState.networkStatus.isConnected) {
         if (!mainState.networkStatus.isConnected) return@LaunchedEffect

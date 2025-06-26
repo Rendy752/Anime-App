@@ -110,7 +110,7 @@ fun WatchEpisodeItem(
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
-                        .padding(top = 4.dp, end = 4.dp)
+                        .padding(top = 8.dp, end = 8.dp)
                         .size(8.dp)
                         .clip(CircleShape)
                         .background(MaterialTheme.colorScheme.primary),

@@ -41,12 +41,13 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.media3.common.PlaybackException
 import com.luminoverse.animevibe.models.TimeRange
 
 @Composable
 fun CustomSeekBar(
     modifier: Modifier,
-    errorMessage: String?,
+    playbackErrorMessage: PlaybackException?,
     currentPosition: Long,
     duration: Long,
     bufferedPosition: Long,
@@ -136,7 +137,7 @@ fun CustomSeekBar(
 
                     val dragStart = awaitDragOrCancellation(down.id)
 
-                    if (dragStart != null && errorMessage == null) {
+                    if (dragStart != null && playbackErrorMessage == null) {
                         isDragging = true
                         handlePause()
                         val initialThumbPosOnDrag = dragPosition

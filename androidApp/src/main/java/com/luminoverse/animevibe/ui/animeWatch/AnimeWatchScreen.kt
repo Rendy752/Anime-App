@@ -35,11 +35,12 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.media3.exoplayer.ExoPlayer
 import com.luminoverse.animevibe.data.remote.api.NetworkDataSource
 import com.luminoverse.animevibe.ui.main.SnackbarMessage
-import com.luminoverse.animevibe.ui.main.SnackbarMessageType
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -53,6 +54,7 @@ fun AnimeWatchScreen(
     dismissSnackbar: () -> Unit,
     watchState: WatchState,
     playerUiState: PlayerUiState,
+    snackbarFlow: Flow<SnackbarMessage>,
     hlsPlayerCoreState: PlayerCoreState,
     hlsControlsStateFlow: StateFlow<ControlsState>,
     onAction: (WatchAction) -> Unit,
@@ -122,6 +124,11 @@ fun AnimeWatchScreen(
         scope.launch {
             onAction(WatchAction.SetInitialState(malId, episodeId))
         }
+        scope.launch {
+            snackbarFlow.collectLatest { snackbarMessage ->
+                showSnackbar(snackbarMessage)
+            }
+        }
     }
 
     DisposableEffect(Unit) {
@@ -147,21 +154,8 @@ fun AnimeWatchScreen(
         }
     }
 
-    LaunchedEffect(watchState.errorMessage, watchState.isRefreshing, mainState.networkStatus.isConnected) {
-        when {
-            watchState.isRefreshing -> dismissSnackbar()
-            watchState.errorMessage != null -> {
-                showSnackbar(
-                    SnackbarMessage(
-                        message = watchState.errorMessage,
-                        type = SnackbarMessageType.ERROR,
-                        actionLabel = "RETRY",
-                        onAction = { refreshEpisodeSources() }
-                    )
-                )
-            }
-            else -> dismissSnackbar()
-        }
+    LaunchedEffect(watchState.isRefreshing) {
+        if (watchState.isRefreshing) dismissSnackbar()
     }
 
     LaunchedEffect(mainState.networkStatus.isConnected) {
@@ -201,6 +195,7 @@ fun AnimeWatchScreen(
                 navController = navController,
                 networkDataSource = networkDataSource,
                 watchState = watchState,
+                showSnackbar = showSnackbar,
                 isScreenOn = isScreenOn,
                 isAutoPlayVideo = mainState.isAutoPlayVideo,
                 playerUiState = playerUiState,

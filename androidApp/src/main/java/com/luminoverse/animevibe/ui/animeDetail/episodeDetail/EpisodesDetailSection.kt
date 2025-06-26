@@ -98,8 +98,9 @@ fun EpisodesDetailSection(
             animeDetailComplement.data?.let { data ->
                 if (animeDetail.type == "Music") {
                     SomethingWentWrongDisplay(
-                        message = "Anime is a music",
-                        suggestion = "No episodes available"
+                        modifier = Modifier.fillMaxWidth(),
+                        message = "This anime is a music video",
+                        suggestion = "Music videos typically do not have episodes."
                     )
                 } else if (data.episodes?.isNotEmpty() == true) {
                     Row(

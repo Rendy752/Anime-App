@@ -23,7 +23,7 @@ fun WatchEpisode(
     onLoadEpisodeDetailComplement: (String) -> Unit,
     episodeDetailComplement: EpisodeDetailComplement?,
     episodes: List<Episode>,
-    newEpisodeCount: Int,
+    newEpisodeIdList: List<String>,
     episodeSourcesQuery: EpisodeSourcesQuery?,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
 ) {
@@ -54,7 +54,7 @@ fun WatchEpisode(
 
         EpisodeSelectionGrid(
             episodes = episodes,
-            newEpisodeCount = newEpisodeCount,
+            newEpisodeIdList = newEpisodeIdList,
             episodeDetailComplements = episodeDetailComplements,
             onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,
             episodeDetailComplement = episodeDetailComplement,

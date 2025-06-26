@@ -26,7 +26,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 @Composable
 fun EpisodeSelectionGrid(
     episodes: List<Episode>,
-    newEpisodeCount: Int,
+    newEpisodeIdList: List<String>,
     episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
     onLoadEpisodeDetailComplement: (String) -> Unit,
     episodeDetailComplement: EpisodeDetailComplement?,
@@ -39,7 +39,7 @@ fun EpisodeSelectionGrid(
 
     val (hasScrolledInitially, setHasScrolledInitially) = remember { mutableStateOf(false) }
 
-    LaunchedEffect(episodeDetailComplement, episodes) {
+    LaunchedEffect(episodeDetailComplement, episodes, newEpisodeIdList) {
         val targetEpisodeId = episodeDetailComplement?.id
         val targetEpisodeNo = episodeDetailComplement?.number
 
@@ -48,7 +48,11 @@ fun EpisodeSelectionGrid(
         }
 
         if (targetEpisodeNo != null && !hasScrolledInitially) {
-            val targetIndex = episodes.indexOfFirst { it.episode_no == targetEpisodeNo }
+            val targetIndex = if (newEpisodeIdList.isNotEmpty() && episodes.isNotEmpty()) {
+                episodes.indexOfFirst { it.id == newEpisodeIdList[0] }
+            } else {
+                episodes.indexOfFirst { it.episode_no == targetEpisodeNo }
+            }
             if (targetIndex != -1) {
                 val currentFirstVisibleIndex = gridState.firstVisibleItemIndex
                 val scrollThreshold = 50
@@ -114,7 +118,7 @@ fun EpisodeSelectionGrid(
             WatchEpisodeItem(
                 currentEpisode = episodeDetailComplement,
                 episode = episode,
-                isNewEpisode = index >= (episodes.size - newEpisodeCount),
+                isNewEpisode = episode.id in newEpisodeIdList,
                 episodeDetailComplement = if (complementResource is Resource.Success) complementResource.data else null,
                 onEpisodeClick = { episodeId ->
                     setSelectedEpisodeId(episodeId)

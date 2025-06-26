@@ -3,7 +3,6 @@ package com.luminoverse.animevibe.ui.animeWatch
 import androidx.compose.runtime.Stable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
 import com.luminoverse.animevibe.data.remote.api.NetworkDataSource
 import com.luminoverse.animevibe.models.AnimeDetail
@@ -12,6 +11,8 @@ import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
 import com.luminoverse.animevibe.models.episodeSourcesQueryPlaceholder
 import com.luminoverse.animevibe.repository.AnimeEpisodeDetailRepository
+import com.luminoverse.animevibe.ui.main.SnackbarMessage
+import com.luminoverse.animevibe.ui.main.SnackbarMessageType
 import com.luminoverse.animevibe.utils.ComplementUtils
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
@@ -20,9 +21,11 @@ import com.luminoverse.animevibe.utils.media.PlayerCoreState
 import com.luminoverse.animevibe.utils.resource.Resource
 import com.luminoverse.animevibe.utils.media.StreamingUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.LocalDateTime
@@ -36,8 +39,7 @@ data class WatchState(
     val episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>> = emptyMap(),
     val episodeSourcesQuery: EpisodeSourcesQuery? = null,
     val isRefreshing: Boolean = false,
-    val errorMessage: String? = null,
-    val newEpisodeCount: Int = 0,
+    val newEpisodeIdList: List<String> = emptyList(),
     val isSideSheetVisible: Boolean = false
 )
 
@@ -46,8 +48,7 @@ data class PlayerUiState(
     val errorSourceQueryList: List<EpisodeSourcesQuery> = emptyList(),
     val isFullscreen: Boolean = false,
     val isPipMode: Boolean = false,
-    val isShowResume: Boolean = false,
-    val isShowNextEpisode: Boolean = false
+    val isShowResume: Boolean = false
 )
 
 sealed class WatchAction {
@@ -70,10 +71,9 @@ sealed class WatchAction {
     data class SetFullscreen(val isFullscreen: Boolean) : WatchAction()
     data class SetPipMode(val isPipMode: Boolean) : WatchAction()
     data class SetShowResume(val isShow: Boolean) : WatchAction()
-    data class SetShowNextEpisode(val isShow: Boolean) : WatchAction()
     data class SetSideSheetVisibility(val isVisible: Boolean) : WatchAction()
 
-    data class SetErrorMessage(val message: String?) : WatchAction()
+    data class ShowErrorMessage(val message: String) : WatchAction()
     data class SetFavorite(val isFavorite: Boolean, val updateComplement: Boolean = true) :
         WatchAction()
 }
@@ -91,43 +91,13 @@ class AnimeWatchViewModel @Inject constructor(
     private val _playerUiState = MutableStateFlow(PlayerUiState())
     val playerUiState: StateFlow<PlayerUiState> = _playerUiState.asStateFlow()
 
+    private val _snackbarChannel = Channel<SnackbarMessage>()
+    val snackbarFlow = _snackbarChannel.receiveAsFlow()
+
     val playerCoreState: StateFlow<PlayerCoreState> = hlsPlayerUtils.playerCoreState
     val controlsState: StateFlow<ControlsState> = hlsPlayerUtils.controlsState
 
     private val _defaultEpisodeDetailComplement = MutableStateFlow<EpisodeDetailComplement?>(null)
-
-    init {
-        viewModelScope.launch {
-            hlsPlayerUtils.playerCoreState.collect { coreState ->
-                if (coreState.error != null) {
-                    onAction(
-                        WatchAction.SetErrorMessage(
-                            coreState.error.message ?: "Unknown player error"
-                        )
-                    )
-                }
-
-                when (coreState.playbackState) {
-                    Player.STATE_ENDED -> {
-                        _playerUiState.update {
-                            it.copy(isShowNextEpisode = true)
-                        }
-                        onAction(WatchAction.SetErrorMessage(null))
-                    }
-
-                    Player.STATE_READY -> {
-                        onAction(WatchAction.SetErrorMessage(null))
-                    }
-
-                    Player.STATE_BUFFERING -> {
-                        if (coreState.error == null) {
-                            onAction(WatchAction.SetErrorMessage(null))
-                        }
-                    }
-                }
-            }
-        }
-    }
 
     fun getPlayer(): ExoPlayer? {
         return hlsPlayerUtils.getPlayer()
@@ -165,9 +135,15 @@ class AnimeWatchViewModel @Inject constructor(
                 it.copy(isShowResume = action.isShow)
             }
 
-            is WatchAction.SetShowNextEpisode -> _playerUiState.update { it.copy(isShowNextEpisode = action.isShow) }
             is WatchAction.SetSideSheetVisibility -> _watchState.update { it.copy(isSideSheetVisible = action.isVisible) }
-            is WatchAction.SetErrorMessage -> _watchState.update { it.copy(errorMessage = action.message) }
+            is WatchAction.ShowErrorMessage -> viewModelScope.launch {
+                _snackbarChannel.send(
+                    SnackbarMessage(
+                        message = action.message,
+                        type = SnackbarMessageType.ERROR
+                    )
+                )
+            }
 
             is WatchAction.SetFavorite -> {
                 if (action.updateComplement) {
@@ -211,6 +187,13 @@ class AnimeWatchViewModel @Inject constructor(
         isFirstInit: Boolean = false,
         isRefresh: Boolean = false
     ) = viewModelScope.launch {
+        val currentNewIdList = _watchState.value.newEpisodeIdList
+        if (episodeSourcesQuery.id in currentNewIdList) {
+            _watchState.update {
+                it.copy(newEpisodeIdList = currentNewIdList - episodeSourcesQuery.id)
+            }
+        }
+
         try {
             _watchState.update {
                 it.copy(
@@ -227,7 +210,6 @@ class AnimeWatchViewModel @Inject constructor(
                             it.copy(
                                 episodeSourcesQuery = cachedEpisodeDetailComplement.sourcesQuery,
                                 episodeDetailComplement = cachedEpisodeDetailComplement,
-                                errorMessage = null
                             )
                         }
                         return@launch
@@ -242,9 +224,7 @@ class AnimeWatchViewModel @Inject constructor(
                             episodeSourcesQuery = episodeSourcesQuery
                         )
                         if (episodeSourcesResource !is Resource.Success) {
-                            _watchState.update {
-                                it.copy(errorMessage = "Failed to fetch episode sources.")
-                            }
+                            onAction(WatchAction.ShowErrorMessage("Failed to fetch episode sources."))
                             return@launch
                         }
                         episodeServersResource.data.let { servers ->
@@ -264,7 +244,6 @@ class AnimeWatchViewModel @Inject constructor(
                                         episodeSourcesQuery = availableEpisodeSourcesQuery
                                             ?: episodeSourcesQuery,
                                         episodeDetailComplement = updatedEpisodeDetailComplement,
-                                        errorMessage = null
                                     )
                                 }
                                 return@launch
@@ -282,9 +261,7 @@ class AnimeWatchViewModel @Inject constructor(
                     val episodeServersResource =
                         animeEpisodeDetailRepository.getEpisodeServers(episodeSourcesQuery.id)
                     if (episodeServersResource !is Resource.Success) {
-                        _watchState.update {
-                            it.copy(errorMessage = "Failed to fetch episode servers.")
-                        }
+                        onAction(WatchAction.ShowErrorMessage("Failed to fetch episode servers."))
                         return@launch
                     }
 
@@ -339,27 +316,18 @@ class AnimeWatchViewModel @Inject constructor(
                                     }
                                 }
                                 _watchState.update {
-                                    it.copy(
-                                        episodeSourcesQuery = availableEpisodeSourcesQuery,
-                                        errorMessage = null
-                                    )
+                                    it.copy(episodeSourcesQuery = availableEpisodeSourcesQuery)
                                 }
                                 return@launch
                             }
                         }
                     }
-                    _watchState.update {
-                        it.copy(
-                            errorMessage = "Sorry, we couldn't find any working servers for this episode right now. Please try again later."
-                        )
-                    }
+                    onAction(WatchAction.ShowErrorMessage("Sorry, we couldn't find any working servers for this episode right now. Please try again later."))
                 }
             }
         } catch (e: Exception) {
             restoreDefaultValues()
-            _watchState.update {
-                it.copy(errorMessage = e.message ?: "An unexpected error occurred")
-            }
+            onAction(WatchAction.ShowErrorMessage(e.message ?: "An unexpected error occurred"))
         } finally {
             _watchState.update { it.copy(isRefreshing = false) }
         }
@@ -370,7 +338,7 @@ class AnimeWatchViewModel @Inject constructor(
             _watchState.value.animeDetail?.let { animeDetail ->
                 if (animeDetail.type == "Music") return@launch
                 _watchState.value.animeDetailComplement?.let { animeDetailComplement ->
-                    val currentEpisodeCount = animeDetailComplement.episodes?.size ?: 0
+                    val currentEpisodes = animeDetailComplement.episodes.orEmpty()
                     val cachedComplement =
                         animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(
                             animeDetail.mal_id
@@ -383,12 +351,34 @@ class AnimeWatchViewModel @Inject constructor(
                                 animeDetailComplement = it,
                                 isRefresh = true
                             )
-                        val newEpisodeCount = updatedComplement?.episodes?.size ?: 0
-                        _watchState.update {
-                            it.copy(
-                                animeDetailComplement = updatedComplement,
-                                newEpisodeCount = newEpisodeCount - currentEpisodeCount
+
+                        val updatedEpisodes = updatedComplement?.episodes.orEmpty()
+                        val currentEpisodeIds = currentEpisodes.map { ep -> ep.id }.toSet()
+                        val newEpisodeIds = updatedEpisodes
+                            .filter { ep -> ep.id !in currentEpisodeIds }.map { ep -> ep.id }
+
+                        if (newEpisodeIds.isNotEmpty()) {
+                            _watchState.update { state ->
+                                state.copy(
+                                    animeDetailComplement = updatedComplement,
+                                    newEpisodeIdList = (state.newEpisodeIdList + newEpisodeIds).distinct()
+                                )
+                            }
+                            val message = if (newEpisodeIds.size == 1) {
+                                "1 new episode is available!"
+                            } else {
+                                "${newEpisodeIds.size} new episodes are available!"
+                            }
+                            _snackbarChannel.send(
+                                SnackbarMessage(
+                                    message = message,
+                                    type = SnackbarMessageType.INFO
+                                )
                             )
+                        } else {
+                            _watchState.update {
+                                it.copy(animeDetailComplement = updatedComplement)
+                            }
                         }
                     }
                 }

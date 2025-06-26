@@ -50,7 +50,6 @@ fun VideoPlayerSection(
     episodeDetailComplement: EpisodeDetailComplement,
     episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
     networkDataSource: NetworkDataSource,
-    errorMessage: String?,
     playerUiState: PlayerUiState,
     coreState: PlayerCoreState,
     controlsStateFlow: StateFlow<ControlsState>,
@@ -70,8 +69,7 @@ fun VideoPlayerSection(
     setSideSheetVisibility: (Boolean) -> Unit,
     setFullscreenChange: (Boolean) -> Unit,
     setShowResume: (Boolean) -> Unit,
-    setShowNextEpisode: (Boolean) -> Unit,
-    setPlayerError: (String?) -> Unit,
+    setPlayerError: (String) -> Unit,
 ) {
     val context = LocalContext.current
 
@@ -132,7 +130,6 @@ fun VideoPlayerSection(
 
     fun initializePlayer() {
         Log.d("VideoPlayerSection", "Initializing player for episode: ${episodeSourcesQuery.id}")
-        setPlayerError(null)
 
         if (application.isMediaServiceBound()) {
             mediaPlaybackService = application.getMediaPlaybackService()
@@ -286,7 +283,6 @@ fun VideoPlayerSection(
         )
         setupPlayer()
         setShowResume(episodeDetailComplement.lastTimestamp != null)
-        setShowNextEpisode(false)
     }
 
     LaunchedEffect(isScreenOn) {
@@ -319,9 +315,7 @@ fun VideoPlayerSection(
             isAutoplayEnabled = isAutoPlayVideo,
             onFullscreenChange = setFullscreenChange,
             onShowResumeChange = setShowResume,
-            onShowNextEpisodeChange = setShowNextEpisode,
-            isLandscape = isLandscape,
-            errorMessage = errorMessage
+            isLandscape = isLandscape
         )
     }
 }

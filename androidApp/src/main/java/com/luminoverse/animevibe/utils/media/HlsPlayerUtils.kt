@@ -147,7 +147,10 @@ class HlsPlayerUtils @Inject constructor(
                     playerListener = createPlayerListener()
                     addListener(playerListener!!)
                     pause()
-                    Log.d("HlsPlayerUtils", "ExoPlayer initialized by Hilt with custom OkHttpClient")
+                    Log.d(
+                        "HlsPlayerUtils",
+                        "ExoPlayer initialized by Hilt with custom OkHttpClient"
+                    )
                 }
             _playerCoreState.update {
                 PlayerCoreState(isPlaying = false, playbackState = Player.STATE_IDLE)
@@ -229,8 +232,7 @@ class HlsPlayerUtils @Inject constructor(
                 _playerCoreState.update {
                     it.copy(
                         playbackState = playbackState,
-                        isLoading = playbackState == Player.STATE_BUFFERING,
-                        error = null
+                        isLoading = playbackState == Player.STATE_BUFFERING
                     )
                 }
                 if (playbackState == Player.STATE_READY) {

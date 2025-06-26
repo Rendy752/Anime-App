@@ -57,6 +57,7 @@ class VideoPlayerState(
     private val _currentPosition = MutableStateFlow(0L)
     val currentPosition: StateFlow<Long> = _currentPosition.asStateFlow()
 
+    var isShowNextEpisodeOverlay by mutableStateOf(false)
     var isShowSeekIndicator by mutableIntStateOf(0)
     var seekAmount by mutableLongStateOf(0L)
     var isSeeking by mutableStateOf(false)

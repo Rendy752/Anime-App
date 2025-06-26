@@ -63,6 +63,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
@@ -76,7 +77,7 @@ fun PlayerControls(
     duration: Long,
     bufferedPosition: Long,
     playbackState: Int,
-    errorMessage: String?,
+    playbackErrorMessage: PlaybackException?,
     onHandleBackPress: () -> Unit,
     episodeDetailComplement: EpisodeDetailComplement,
     hasPreviousEpisode: Boolean,
@@ -131,7 +132,7 @@ fun PlayerControls(
 
         MiddleSection(
             modifier = Modifier.align(Alignment.Center),
-            errorMessage = errorMessage,
+            playbackErrorMessage = playbackErrorMessage,
             shouldShowControls = shouldShowControls,
             hasPreviousEpisode = hasPreviousEpisode,
             playbackState = playbackState,
@@ -151,7 +152,7 @@ fun PlayerControls(
 
         BottomSection(
             modifier = Modifier.align(Alignment.BottomCenter),
-            errorMessage = errorMessage,
+            playbackErrorMessage = playbackErrorMessage,
             shouldShowControls = shouldShowControls,
             isShowSeekIndicator = isShowSeekIndicator,
             onFullscreenToggle = onFullscreenToggle,
@@ -309,7 +310,7 @@ private fun TopSection(
 
 @Composable
 fun PlayPauseLoadingButton(
-    errorMessage: String?,
+    playbackErrorMessage: PlaybackException?,
     playbackState: Int,
     isPlaying: Boolean,
     onSeekTo: (Long) -> Unit,
@@ -329,7 +330,7 @@ fun PlayPauseLoadingButton(
         label = "loading_border_angle"
     )
 
-    val borderModifier = if (isLoading && errorMessage == null) {
+    val borderModifier = if (isLoading && playbackErrorMessage == null) {
         Modifier.drawBehind {
             val strokeWidth = 3.dp.toPx()
             val brush = Brush.sweepGradient(
@@ -413,7 +414,7 @@ fun PlayPauseLoadingButton(
 @Composable
 private fun MiddleSection(
     modifier: Modifier,
-    errorMessage: String?,
+    playbackErrorMessage: PlaybackException?,
     shouldShowControls: Boolean,
     hasPreviousEpisode: Boolean,
     playbackState: Int,
@@ -464,7 +465,7 @@ private fun MiddleSection(
             }
 
             PlayPauseLoadingButton(
-                errorMessage = errorMessage,
+                playbackErrorMessage = playbackErrorMessage,
                 playbackState = playbackState,
                 isPlaying = isPlaying,
                 onSeekTo = onSeekTo,
@@ -531,7 +532,7 @@ private fun MiddleSection(
 @Composable
 private fun BottomSection(
     modifier: Modifier,
-    errorMessage: String?,
+    playbackErrorMessage: PlaybackException?,
     shouldShowControls: Boolean,
     isShowSeekIndicator: Int,
     onFullscreenToggle: () -> Unit,
@@ -611,7 +612,7 @@ private fun BottomSection(
                 val heightInPx = it.size.height.toFloat()
                 onBottomBarMeasured(heightInPx)
             },
-            errorMessage = errorMessage,
+            playbackErrorMessage = playbackErrorMessage,
             currentPosition = currentPosition,
             duration = duration,
             bufferedPosition = bufferedPosition,
