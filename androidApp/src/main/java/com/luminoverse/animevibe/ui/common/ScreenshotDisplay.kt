@@ -24,7 +24,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.animeDetailPlaceholder
@@ -37,9 +40,10 @@ fun ScreenshotDisplay(
     imageUrl: String? = animeDetailPlaceholder.images.webp.large_image_url,
     screenshot: String? = "",
     positionData: Pair<Long?, Long?>? = null,
+    onImagePreview: ((image: Any?, bounds: Rect) -> Unit)? = null,
     onClick: (() -> Unit)? = null,
 ) {
-    var showDialog by remember { mutableStateOf(false) }
+    var imageBounds by remember { mutableStateOf(Rect.Zero) }
 
     fun isBitmapMostlyBlack(bitmap: Bitmap): Boolean {
         if (bitmap.isRecycled || bitmap.width == 0 || bitmap.height == 0) return true
@@ -78,6 +82,9 @@ fun ScreenshotDisplay(
         modifier = modifier
             .aspectRatio(16f / 9f)
             .clip(RoundedCornerShape(8.dp))
+            .onGloballyPositioned { layoutCoordinates ->
+                imageBounds = layoutCoordinates.boundsInWindow()
+            }
     ) {
         when {
             screenshotBitmap != null -> {
@@ -87,10 +94,10 @@ fun ScreenshotDisplay(
                     modifier = Modifier
                         .fillMaxSize()
                         .clickable {
-                            if (onClick != null) {
-                                onClick()
+                            if (onImagePreview != null) {
+                                onImagePreview.invoke(screenshotBitmap.asImageBitmap(), imageBounds)
                             } else {
-                                showDialog = true
+                                onClick?.invoke()
                             }
                         }
                 )
@@ -100,14 +107,22 @@ fun ScreenshotDisplay(
                 AsyncImageWithPlaceholder(
                     model = imageUrl,
                     contentDescription = "Episode Image URL",
-                    modifier = modifier.fillMaxSize(),
-                    onClick = onClick,
+                    modifier = Modifier.fillMaxSize(),
+                    onClick = {
+                        if (onImagePreview != null) {
+                            onImagePreview.invoke(imageUrl, imageBounds)
+                        } else {
+                            onClick?.invoke()
+                        }
+                    },
                 )
             }
 
             else -> {
                 Icon(
-                    modifier = modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable { onClick?.invoke() },
                     imageVector = Icons.Filled.Image,
                     contentDescription = "Placeholder",
                     tint = MaterialTheme.colorScheme.surfaceVariant,
@@ -136,13 +151,5 @@ fun ScreenshotDisplay(
                 }
             }
         }
-    }
-
-    if (showDialog) {
-        ImagePreviewDialog(
-            image = screenshotBitmap?.asImageBitmap() ?: imageUrl,
-            contentDescription = "Episode Screenshot Preview",
-            onDismiss = { showDialog = false }
-        )
     }
 }

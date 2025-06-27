@@ -171,6 +171,17 @@ class AnimeDetailViewModel @Inject constructor(
                 val newEpisodeIds = cachedEpisodes
                     .filter { episode -> episode.id !in currentEpisodeIds }
                     .map { episode -> episode.id }
+
+                if (newEpisodeIds.isEmpty()) {
+                    _detailState.update { it.copy(newEpisodeIdList = emptyList()) }
+                    _snackbarChannel.send(
+                        SnackbarMessage(
+                            message = "No new episodes are available!",
+                            type = SnackbarMessageType.INFO
+                        )
+                    )
+                    return@let
+                }
                 val message = if (newEpisodeIds.size == 1) {
                     "1 new episode is available!"
                 } else {

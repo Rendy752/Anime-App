@@ -16,7 +16,7 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.luminoverse.animevibe.ui.animeRecommendations.components.RecommendationItem
@@ -32,6 +32,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun AnimeRecommendationsScreen(
     navController: NavHostController,
+    rememberedTopPadding: Dp,
     mainState: MainState,
     recommendationsState: RecommendationsState,
     onAction: (RecommendationsAction) -> Unit,
@@ -47,11 +48,6 @@ fun AnimeRecommendationsScreen(
     }
     val showScrollToTopLandscape by remember {
         derivedStateOf { landscapeScrollState.firstVisibleItemIndex > 10 }
-    }
-
-    val density = LocalDensity.current
-    val statusBarPadding = with(density) {
-        WindowInsets.systemBars.getTop(density).toDp()
     }
 
     LaunchedEffect(mainState.networkStatus.isConnected, recommendationsState.animeRecommendations) {
@@ -85,13 +81,14 @@ fun AnimeRecommendationsScreen(
                     if (!mainState.isLandscape) {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(
+                                top = rememberedTopPadding + 8.dp, bottom = 8.dp
+                            ),
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                             state = portraitScrollState
                         ) {
-                            itemsIndexed((0 until 3).toList()) { index, _ ->
-                                RecommendationItemSkeleton(
-                                    modifier = if (index == 0) Modifier.padding(top = statusBarPadding) else Modifier
-                                )
+                            itemsIndexed((0..2).toList()) { index, _ ->
+                                RecommendationItemSkeleton()
                             }
                         }
                     } else {
@@ -102,13 +99,14 @@ fun AnimeRecommendationsScreen(
                             repeat(2) { columnIndex ->
                                 LazyColumn(
                                     modifier = Modifier.weight(1f),
+                                    contentPadding = PaddingValues(
+                                        top = rememberedTopPadding + 8.dp, bottom = 8.dp
+                                    ),
                                     verticalArrangement = Arrangement.spacedBy(8.dp),
                                     state = if (columnIndex == 0) portraitScrollState else landscapeScrollState
                                 ) {
-                                    itemsIndexed((0 until 2).toList()) { index, _ ->
-                                        RecommendationItemSkeleton(
-                                            modifier = if (index == 0) Modifier.padding(top = statusBarPadding) else Modifier
-                                        )
+                                    itemsIndexed((0..1).toList()) { index, _ ->
+                                        RecommendationItemSkeleton()
                                     }
                                 }
                             }
@@ -121,6 +119,10 @@ fun AnimeRecommendationsScreen(
                         if (!mainState.isLandscape) {
                             LazyColumn(
                                 modifier = Modifier.fillMaxSize(),
+                                contentPadding = PaddingValues(
+                                    top = rememberedTopPadding + 8.dp,
+                                    bottom = 8.dp
+                                ),
                                 verticalArrangement = Arrangement.spacedBy(8.dp),
                                 state = portraitScrollState
                             ) {
@@ -133,8 +135,7 @@ fun AnimeRecommendationsScreen(
                                                     malId
                                                 )
                                             )
-                                        },
-                                        modifier = if (index == 0) Modifier.padding(top = statusBarPadding) else Modifier
+                                        }
                                     )
                                 }
                             }
@@ -180,6 +181,9 @@ fun AnimeRecommendationsScreen(
                                     ) {
                                         LazyColumn(
                                             modifier = Modifier.fillMaxSize(),
+                                            contentPadding = PaddingValues(
+                                                top = rememberedTopPadding + 8.dp, bottom = 8.dp
+                                            ),
                                             verticalArrangement = Arrangement.spacedBy(8.dp),
                                             state = if (columnIndex == 0) portraitScrollState else landscapeScrollState
                                         ) {
@@ -190,10 +194,7 @@ fun AnimeRecommendationsScreen(
                                                         navController.navigateTo(
                                                             NavRoute.AnimeDetail.fromId(malId)
                                                         )
-                                                    },
-                                                    modifier = if (index == 0) Modifier.padding(
-                                                        top = statusBarPadding
-                                                    ) else Modifier
+                                                    }
                                                 )
                                             }
                                         }

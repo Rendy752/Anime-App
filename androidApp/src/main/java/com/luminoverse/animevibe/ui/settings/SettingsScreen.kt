@@ -9,10 +9,9 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -21,8 +20,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.luminoverse.animevibe.ui.common.ToggleWithLabel
@@ -38,15 +37,11 @@ import com.luminoverse.animevibe.ui.theme.ColorStyle
 @Composable
 fun SettingsScreen(
     mainState: MainState = MainState(),
-    mainAction: (MainAction) -> Unit = {}
+    mainAction: (MainAction) -> Unit = {},
+    rememberedTopPadding: Dp = 0.dp
 ) {
     val colorStyleCardScrollState = rememberScrollState()
     val context = LocalContext.current
-
-    val density = LocalDensity.current
-    val statusBarPadding = with(density) {
-        WindowInsets.systemBars.getTop(density).toDp()
-    }
 
     val settingsLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -70,13 +65,13 @@ fun SettingsScreen(
         modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = 8.dp),
+        contentPadding = PaddingValues(top = rememberedTopPadding + 8.dp, bottom = 8.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
             ThemeModeChips(
                 selectedThemeMode = mainState.themeMode,
                 onThemeModeSelected = { mainAction(MainAction.SetThemeMode(it)) },
-                modifier = Modifier.padding(top = statusBarPadding)
             )
         }
         item {

@@ -24,6 +24,7 @@ import com.luminoverse.animevibe.ui.common.ConfirmationAlert
 import com.luminoverse.animevibe.ui.common.ScreenshotDisplay
 import com.luminoverse.animevibe.ui.common.highlightText
 import com.luminoverse.animevibe.ui.common.DebouncedIconButton
+import com.luminoverse.animevibe.ui.common.SharedImageState
 import com.luminoverse.animevibe.ui.common.SkeletonBox
 import com.luminoverse.animevibe.utils.TimeUtils
 import com.luminoverse.animevibe.utils.watch.WatchUtils.getEpisodeBackgroundColor
@@ -35,6 +36,7 @@ fun EpisodeHistoryItem(
     searchQuery: String,
     isFirstItem: Boolean,
     episode: EpisodeDetailComplement,
+    showImagePreview: (SharedImageState) -> Unit,
     onClick: () -> Unit,
     onFavoriteToggle: (Boolean) -> Unit,
     onDelete: (String) -> Unit
@@ -81,7 +83,10 @@ fun EpisodeHistoryItem(
                         .size(100.dp, 56.dp)
                         .clip(RoundedCornerShape(4.dp)),
                     imageUrl = episode.imageUrl,
-                    screenshot = episode.screenshot
+                    screenshot = episode.screenshot,
+                    onImagePreview = { image, bounds ->
+                        showImagePreview(SharedImageState(image, episode.episodeTitle, bounds))
+                    }
                 )
                 Text(
                     modifier = Modifier.weight(1f),

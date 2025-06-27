@@ -1,6 +1,5 @@
 package com.luminoverse.animevibe.ui.main.navigation
 
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.History
@@ -31,7 +30,6 @@ fun BottomNavigationBar(navController: NavHostController) {
         contentColor = MaterialTheme.colorScheme.onSurface,
         tonalElevation = 8.dp,
         modifier = Modifier
-            .padding(8.dp)
             .clip(MaterialTheme.shapes.large)
     ) {
         val navBackStackEntry by navController.currentBackStackEntryAsState()

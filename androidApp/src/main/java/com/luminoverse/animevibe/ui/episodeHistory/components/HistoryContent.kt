@@ -8,6 +8,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.luminoverse.animevibe.ui.common.SharedImageState
 import com.luminoverse.animevibe.ui.common.SomethingWentWrongDisplay
 import com.luminoverse.animevibe.ui.episodeHistory.EpisodeHistoryAction
 import com.luminoverse.animevibe.ui.episodeHistory.EpisodeHistoryState
@@ -22,6 +23,7 @@ fun HistoryContent(
     modifier: Modifier = Modifier,
     navController: NavHostController,
     showSnackbar: (SnackbarMessage) -> Unit,
+    showImagePreview: (SharedImageState) -> Unit,
     listState: LazyListState,
     state: EpisodeHistoryState,
     onAction: (EpisodeHistoryAction) -> Unit
@@ -40,9 +42,12 @@ fun HistoryContent(
         is Resource.Loading -> {
             LazyColumn(
                 modifier = modifier,
+                contentPadding = PaddingValues(vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically)
             ) {
-                items(2) { AnimeEpisodeAccordionSkeleton() }
+                items(3) { index ->
+                    AnimeEpisodeAccordionSkeleton()
+                }
             }
         }
 
@@ -61,6 +66,7 @@ fun HistoryContent(
                 LazyColumn(
                     state = listState,
                     modifier = modifier,
+                    contentPadding = PaddingValues(vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterVertically)
                 ) {
                     results.data.forEach { (anime, episodes) ->
@@ -69,6 +75,7 @@ fun HistoryContent(
                                 searchQuery = state.queryState.searchQuery,
                                 anime = anime,
                                 episodes = episodes,
+                                showImagePreview = showImagePreview,
                                 onAnimeTitleClick = {
                                     navController.navigateTo(
                                         NavRoute.AnimeDetail.fromId(anime.malId)

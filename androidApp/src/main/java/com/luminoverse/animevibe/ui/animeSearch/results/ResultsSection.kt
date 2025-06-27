@@ -33,17 +33,20 @@ fun ResultsSection(
     onGenreClick: (Genre) -> Unit
 ) {
     Column(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = 8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         when (animeSearchResults) {
             is Resource.Loading -> LazyColumn(
+                contentPadding = PaddingValues(vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 state = resultsSectionScrollState
             ) {
-                itemsIndexed((0 until 3).toList()) { index, _ ->
-                    AnimeSearchItemSkeleton(modifier = Modifier.padding(horizontal = 8.dp))
+                itemsIndexed((0..2).toList()) { index, _ ->
+                    AnimeSearchItemSkeleton()
                 }
             }
 
@@ -57,12 +60,12 @@ fun ResultsSection(
                     }
                 } else {
                     LazyColumn(
+                        contentPadding = PaddingValues(vertical = 8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                         state = resultsSectionScrollState
                     ) {
                         itemsIndexed(animeSearchResults.data.data) { index, animeDetail ->
                             AnimeSearchItem(
-                                modifier = Modifier.padding(horizontal = 8.dp),
                                 animeDetail = animeDetail,
                                 query = query,
                                 selectedGenres = selectedGenres,

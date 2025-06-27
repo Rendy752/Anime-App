@@ -1,6 +1,8 @@
 package com.luminoverse.animevibe.ui.common
 
+import android.app.Activity
 import android.graphics.Bitmap
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
@@ -14,6 +16,10 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -24,12 +30,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import coil.compose.AsyncImage
 
 @Composable
@@ -40,26 +52,48 @@ fun ImagePreviewDialog(
 ) {
     var isVisible by remember { mutableStateOf(false) }
 
+    val view = LocalView.current
+    DisposableEffect(Unit) {
+        val window = (view.context as Activity).window
+        val insetsController = WindowCompat.getInsetsController(window, view)
+
+        insetsController.apply {
+            hide(WindowInsetsCompat.Type.systemBars())
+            systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
+
+        onDispose {
+            insetsController.show(WindowInsetsCompat.Type.systemBars())
+        }
+    }
+
     LaunchedEffect(Unit) {
         isVisible = true
+    }
+
+    BackHandler {
+        isVisible = false
     }
 
     Dialog(
         onDismissRequest = onDismiss,
         properties = DialogProperties(
             usePlatformDefaultWidth = false,
-            dismissOnClickOutside = true
+            dismissOnBackPress = true,
+            dismissOnClickOutside = false
         )
     ) {
+        if (!isVisible) {
+            LaunchedEffect(Unit) {
+                kotlinx.coroutines.delay(300)
+                onDismiss()
+            }
+        }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f))
-                .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
-                    onClick = onDismiss
-                ),
+                .background(Color.Black.copy(alpha = 0.95f)),
             contentAlignment = Alignment.Center
         ) {
             AnimatedVisibility(
@@ -86,7 +120,8 @@ fun ImagePreviewDialog(
                             interactionSource = remember { MutableInteractionSource() },
                             indication = null,
                             onClick = {}
-                        )) {
+                        )
+                ) {
                     when (image) {
                         is Bitmap -> {
                             Image(
@@ -117,12 +152,21 @@ fun ImagePreviewDialog(
                     }
                 }
             }
-        }
-    }
 
-    DisposableEffect(Unit) {
-        onDispose {
-            isVisible = false
+            Icon(
+                imageVector = Icons.Default.Close,
+                contentDescription = "Close Preview",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(16.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .clickable {
+                        isVisible = false
+                    }
+                    .padding(8.dp)
+            )
         }
     }
 }

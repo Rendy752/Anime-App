@@ -27,7 +27,7 @@ import com.luminoverse.animevibe.ui.common.LimitAndPaginationSection
 import com.luminoverse.animevibe.ui.main.MainState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import com.luminoverse.animevibe.ui.common.CustomModalBottomSheet
 import com.luminoverse.animevibe.utils.resource.Resource
 
@@ -36,6 +36,8 @@ import com.luminoverse.animevibe.utils.resource.Resource
 @Composable
 fun AnimeSearchScreen(
     navController: NavHostController = rememberNavController(),
+    rememberedTopPadding: Dp = 0.dp,
+    rememberedBottomPadding: Dp = 0.dp,
     mainState: MainState = MainState(),
     genreId: Int? = null,
     producerId: Int? = null,
@@ -43,14 +45,6 @@ fun AnimeSearchScreen(
     filterSelectionState: FilterSelectionState = FilterSelectionState(),
     onAction: (SearchAction) -> Unit = {}
 ) {
-    val density = LocalDensity.current
-    val statusBarPadding = with(density) {
-        WindowInsets.systemBars.getTop(density).toDp()
-    }
-    val navigationBarPadding = with(density) {
-        WindowInsets.systemBars.getBottom(density).toDp()
-    }
-
     val isTopAppBarVisible = !mainState.isLandscape && (genreId != null || producerId != null)
 
     val state = rememberPullToRefreshState()
@@ -76,8 +70,8 @@ fun AnimeSearchScreen(
 
     PullToRefreshBox(
         modifier = Modifier.padding(
-            top = statusBarPadding,
-            bottom = if (isTopAppBarVisible) navigationBarPadding else 0.dp
+            top = rememberedTopPadding + 8.dp,
+            bottom = if (isTopAppBarVisible) rememberedBottomPadding else 0.dp
         ),
         isRefreshing = searchState.isRefreshing,
         onRefresh = { onAction(SearchAction.ApplyFilters(searchState.queryState)) },

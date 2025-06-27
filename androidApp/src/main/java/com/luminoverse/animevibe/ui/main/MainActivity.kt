@@ -11,14 +11,28 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.Lifecycle
@@ -26,6 +40,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.google.android.play.core.appupdate.AppUpdateManager
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory
@@ -36,7 +51,11 @@ import com.google.android.play.core.install.model.InstallStatus
 import com.google.android.play.core.install.model.UpdateAvailability
 import com.luminoverse.animevibe.AnimeApplication
 import com.luminoverse.animevibe.ui.common.ConfirmationAlert
+import com.luminoverse.animevibe.ui.common.SharedImagePreviewer
+import com.luminoverse.animevibe.ui.main.navigation.BottomNavigationBar
+import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.theme.AppTheme
+import com.luminoverse.animevibe.utils.basicContainer
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
 import com.luminoverse.animevibe.utils.media.MediaPlaybackAction
@@ -48,8 +67,6 @@ import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import android.content.pm.PackageManager
-import androidx.compose.foundation.layout.consumeWindowInsets
-import androidx.compose.runtime.getValue
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -120,6 +137,8 @@ class MainActivity : AppCompatActivity() {
             val snackbarHostState = remember { SnackbarHostState() }
 
             navController = rememberNavController()
+            val navBackStackEntry by navController.currentBackStackEntryAsState()
+            val currentRoute = navBackStackEntry?.destination?.route
 
             LaunchedEffect(state.snackbarMessage) {
                 state.snackbarMessage?.let { snackbarMessage ->
@@ -173,27 +192,74 @@ class MainActivity : AppCompatActivity() {
                 colorStyle = state.colorStyle,
                 isRtl = state.isRtl
             ) {
-                Scaffold(snackbarHost = { SnackbarHost(hostState = snackbarHostState) }) { paddingValues ->
-                    if (state.isShowIdleDialog) {
-                        ConfirmationAlert(
-                            title = "Are you still there ?",
-                            message = "It seems you haven't interacted with the app for a while. Would you like to quit the app ?",
-                            onConfirm = { finish() },
-                            onCancel = {
-                                mainViewModel.onAction(MainAction.SetIsShowIdleDialog(false))
-                                resetIdleTimer()
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Scaffold(
+                        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+                        bottomBar = {
+                            Column {
+                                AnimatedVisibility(
+                                    visible = NavRoute.bottomRoutes.any { it.route == currentRoute },
+                                    enter = slideInVertically(initialOffsetY = { it }),
+                                    exit = slideOutVertically(targetOffsetY = { it })
+                                ) {
+                                    BottomNavigationBar(navController = navController)
+                                }
+                                AnimatedVisibility(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    visible = !state.networkStatus.isConnected,
+                                    enter = slideInVertically(initialOffsetY = { it }),
+                                    exit = slideOutVertically(targetOffsetY = { it })
+                                ) {
+                                    Text(
+                                        text = "No Internet Connection",
+                                        modifier = Modifier
+                                            .basicContainer(
+                                                isError = true,
+                                                useBorder = false,
+                                                roundedCornerShape = RoundedCornerShape(0.dp),
+                                                outerPadding = PaddingValues(0.dp),
+                                                innerPadding = PaddingValues(8.dp)
+                                            ),
+                                        color = MaterialTheme.colorScheme.onError,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+                            }
+                        }
+                    ) { paddingValues ->
+                        MainScreen(
+                            contentPadding = paddingValues,
+                            navController = navController,
+                            currentRoute = currentRoute,
+                            intentChannel = intentChannel,
+                            resetIdleTimer = resetIdleTimer,
+                            mainState = state.copy(isLandscape = isLandscape),
+                            mainAction = mainViewModel::onAction
+                        )
+
+                        if (state.isShowIdleDialog) {
+                            ConfirmationAlert(
+                                title = "Are you still there ?",
+                                message = "It seems you haven't interacted with the app for a while. Would you like to quit the app ?",
+                                onConfirm = { finish() },
+                                onCancel = {
+                                    mainViewModel.onAction(MainAction.SetIsShowIdleDialog(false))
+                                    resetIdleTimer()
+                                }
+                            )
+                        }
+                    }
+
+                    state.sharedImageState?.let { imageState ->
+                        SharedImagePreviewer(
+                            sharedImageState = imageState,
+                            onDismiss = {
+                                mainViewModel.onAction(MainAction.DismissImagePreview)
                             }
                         )
                     }
-
-                    MainScreen(
-                        modifier = Modifier.consumeWindowInsets(paddingValues),
-                        navController = navController,
-                        intentChannel = intentChannel,
-                        resetIdleTimer = resetIdleTimer,
-                        mainState = state.copy(isLandscape = isLandscape),
-                        mainAction = mainViewModel::onAction,
-                    )
                 }
             }
         }

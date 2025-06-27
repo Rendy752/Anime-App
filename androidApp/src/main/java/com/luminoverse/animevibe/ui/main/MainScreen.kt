@@ -6,37 +6,32 @@ import android.util.Log
 import android.view.WindowManager
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.EaseInOut
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBars
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
 import com.luminoverse.animevibe.ui.animeDetail.AnimeDetailScreen
 import com.luminoverse.animevibe.ui.animeDetail.AnimeDetailViewModel
 import com.luminoverse.animevibe.ui.animeHome.AnimeHomeScreen
@@ -50,14 +45,12 @@ import com.luminoverse.animevibe.ui.animeWatch.AnimeWatchViewModel
 import com.luminoverse.animevibe.ui.animeWatch.WatchAction
 import com.luminoverse.animevibe.ui.episodeHistory.EpisodeHistoryScreen
 import com.luminoverse.animevibe.ui.episodeHistory.EpisodeHistoryViewModel
-import com.luminoverse.animevibe.ui.main.navigation.BottomNavigationBar
 import com.luminoverse.animevibe.ui.main.navigation.getBottomBarEnterTransition
 import com.luminoverse.animevibe.ui.main.navigation.getBottomBarExitTransition
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.main.navigation.navigateTo
 import com.luminoverse.animevibe.ui.main.navigation.navigateToAdjacentRoute
 import com.luminoverse.animevibe.ui.settings.SettingsScreen
-import com.luminoverse.animevibe.utils.basicContainer
 import com.luminoverse.animevibe.utils.media.PipUtil.buildPipActions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -69,28 +62,30 @@ import kotlin.math.abs
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
-    modifier: Modifier,
+    contentPadding: PaddingValues,
     navController: NavHostController,
+    currentRoute: String?,
     intentChannel: Channel<Intent>,
     resetIdleTimer: () -> Unit,
     mainState: MainState,
     mainAction: (MainAction) -> Unit,
 ) {
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute by rememberUpdatedState(navBackStackEntry?.destination?.route)
-    val isCurrentBottomScreen by remember(currentRoute) {
-        derivedStateOf { NavRoute.bottomRoutes.any { it.route == currentRoute } }
-    }
-
     val coroutineScope = rememberCoroutineScope()
     var isNavigating by remember { mutableStateOf(false) }
+    val layoutDirection = LocalLayoutDirection.current
 
-    val isBottomNavigationBarVisible = isCurrentBottomScreen && !mainState.isLandscape
-    val density = LocalDensity.current
-    val navBarPadding = with(density) {
-        WindowInsets.systemBars.getBottom(density).toDp()
+    var rememberedTopPadding by remember { mutableStateOf(0.dp) }
+    val currentTopPadding = contentPadding.calculateTopPadding()
+    if (currentTopPadding > 0.dp) {
+        rememberedTopPadding = currentTopPadding
     }
 
+    var rememberedBottomPadding by remember { mutableStateOf(0.dp) }
+    val currentBottomPadding = contentPadding.calculateBottomPadding()
+    if (currentBottomPadding > 0.dp) {
+        rememberedBottomPadding = currentBottomPadding
+    }
+    
     LaunchedEffect(currentRoute) {
         resetIdleTimer()
         mainAction(MainAction.DismissSnackbar)
@@ -163,33 +158,58 @@ fun MainScreen(
             }
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.surface)
-            .then(if (isBottomNavigationBarVisible) Modifier.padding(bottom = navBarPadding) else Modifier)
+    Box(
+        modifier = Modifier
+            .padding(
+                start = contentPadding.calculateStartPadding(layoutDirection),
+                end = contentPadding.calculateEndPadding(layoutDirection),
+                bottom = rememberedBottomPadding
+            )
+            .pointerInput(Unit) {
+                detectHorizontalDragGestures { _, dragAmount ->
+                    if (abs(dragAmount) > 100f && !isNavigating) {
+                        isNavigating = true
+                        coroutineScope.launch(Dispatchers.Main) {
+                            val isNextLogical =
+                                if (mainState.isRtl) dragAmount > 0 else dragAmount < 0
+                            navigateToAdjacentRoute(isNextLogical, currentRoute, navController)
+                            isNavigating = false
+                        }
+                    }
+                }
+            }
     ) {
         NavHost(
             navController = navController,
             startDestination = NavRoute.Home.route,
-            modifier = Modifier
-                .weight(1f)
-                .pointerInput(Unit) {
-                    detectHorizontalDragGestures { _, dragAmount ->
-                        if (abs(dragAmount) > 100f && !isNavigating) {
-                            isNavigating = true
-                            coroutineScope.launch(Dispatchers.Main) {
-                                val isNextLogical = if (mainState.isRtl) dragAmount > 0 else dragAmount < 0
-                                navigateToAdjacentRoute(isNextLogical, currentRoute, navController)
-                                isNavigating = false
-                            }
-                        }
-                    }
-                },
-            enterTransition = { getBottomBarEnterTransition(initialState, targetState, mainState.isRtl) },
-            exitTransition = { getBottomBarExitTransition(initialState, targetState, mainState.isRtl) },
-            popEnterTransition = { getBottomBarEnterTransition(initialState, targetState, mainState.isRtl) },
-            popExitTransition = { getBottomBarExitTransition(initialState, targetState, mainState.isRtl) }
+            enterTransition = {
+                getBottomBarEnterTransition(
+                    initialState,
+                    targetState,
+                    mainState.isRtl
+                )
+            },
+            exitTransition = {
+                getBottomBarExitTransition(
+                    initialState,
+                    targetState,
+                    mainState.isRtl
+                )
+            },
+            popEnterTransition = {
+                getBottomBarEnterTransition(
+                    initialState,
+                    targetState,
+                    mainState.isRtl
+                )
+            },
+            popExitTransition = {
+                getBottomBarExitTransition(
+                    initialState,
+                    targetState,
+                    mainState.isRtl
+                )
+            }
         ) {
             composable(NavRoute.Home.route) {
                 val viewModel: AnimeHomeViewModel = hiltViewModel()
@@ -211,6 +231,7 @@ fun MainScreen(
                 val recommendationsState by viewModel.recommendationsState.collectAsStateWithLifecycle()
                 AnimeRecommendationsScreen(
                     navController = navController,
+                    rememberedTopPadding = rememberedTopPadding,
                     mainState = mainState,
                     recommendationsState = recommendationsState,
                     onAction = viewModel::onAction
@@ -222,6 +243,8 @@ fun MainScreen(
                 val filterSelectionState by viewModel.filterSelectionState.collectAsStateWithLifecycle()
                 AnimeSearchScreen(
                     navController = navController,
+                    rememberedTopPadding = rememberedTopPadding,
+                    rememberedBottomPadding = rememberedBottomPadding,
                     mainState = mainState,
                     searchState = searchState,
                     filterSelectionState = filterSelectionState,
@@ -239,6 +262,8 @@ fun MainScreen(
                 val producerId = backStackEntry.arguments?.getString("producerId")?.toIntOrNull()
                 AnimeSearchScreen(
                     navController = navController,
+                    rememberedTopPadding = rememberedTopPadding,
+                    rememberedBottomPadding = rememberedBottomPadding,
                     mainState = mainState,
                     genreId = genreId,
                     producerId = producerId,
@@ -253,14 +278,20 @@ fun MainScreen(
                 EpisodeHistoryScreen(
                     currentRoute = currentRoute,
                     navController = navController,
+                    rememberedTopPadding = rememberedTopPadding,
                     showSnackbar = { mainAction.invoke(MainAction.ShowSnackbar(it)) },
                     mainState = mainState,
+                    showImagePreview = { mainAction.invoke(MainAction.ShowImagePreview(it)) },
                     historyState = historyState,
                     onAction = viewModel::onAction
                 )
             }
             composable(NavRoute.Settings.route) {
-                SettingsScreen(mainState = mainState, mainAction = mainAction)
+                SettingsScreen(
+                    mainState = mainState,
+                    mainAction = mainAction,
+                    rememberedTopPadding = rememberedTopPadding
+                )
             }
             composable(
                 route = NavRoute.AnimeDetail.ROUTE_PATTERN,
@@ -375,45 +406,18 @@ fun MainScreen(
                 )
             }
         }
+
         AnimatedVisibility(
-            visible = isBottomNavigationBarVisible,
-            enter = slideInVertically(
-                initialOffsetY = { it },
-                animationSpec = tween(durationMillis = 700, easing = EaseInOut)
-            ),
-            exit = slideOutVertically(
-                targetOffsetY = { it },
-                animationSpec = tween(durationMillis = 700, easing = EaseInOut)
-            )
+            visible = currentRoute != NavRoute.Home.route,
+            enter = slideInVertically(initialOffsetY = { -it }),
+            exit = slideOutVertically(targetOffsetY = { -it })
         ) {
-            BottomNavigationBar(navController = navController)
-        }
-        AnimatedVisibility(
-            modifier = Modifier.fillMaxWidth(),
-            visible = !mainState.networkStatus.isConnected,
-            enter = slideInVertically(
-                initialOffsetY = { it },
-                animationSpec = tween(durationMillis = 700, easing = EaseInOut)
-            ),
-            exit = slideOutVertically(
-                targetOffsetY = { it },
-                animationSpec = tween(durationMillis = 700, easing = EaseInOut)
-            )
-        ) {
-            Text(
-                text = "No Internet Connection",
-                modifier = modifier
-                    .basicContainer(
-                        isError = true,
-                        useBorder = false,
-                        roundedCornerShape = RoundedCornerShape(0.dp),
-                        outerPadding = PaddingValues(0.dp),
-                        innerPadding = PaddingValues(8.dp)
-                    ),
-                color = MaterialTheme.colorScheme.onError,
-                style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Bold,
-                textAlign = TextAlign.Center
+            Spacer(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .background(MaterialTheme.colorScheme.surfaceContainer.copy(alpha = 0.7f))
+                    .fillMaxWidth()
+                    .height(rememberedTopPadding)
             )
         }
     }

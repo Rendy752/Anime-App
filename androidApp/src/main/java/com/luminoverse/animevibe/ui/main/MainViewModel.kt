@@ -14,6 +14,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.luminoverse.animevibe.models.NetworkStatus
 import com.luminoverse.animevibe.models.networkStatusPlaceholder
+import com.luminoverse.animevibe.ui.common.SharedImageState
 import com.luminoverse.animevibe.ui.theme.ColorStyle
 import com.luminoverse.animevibe.ui.theme.ContrastMode
 import com.luminoverse.animevibe.ui.theme.ThemeMode
@@ -58,6 +59,7 @@ data class MainState(
     val networkStatus: NetworkStatus = networkStatusPlaceholder,
     val isShowIdleDialog: Boolean = false,
     val isLandscape: Boolean = false,
+    val sharedImageState: SharedImageState? = null,
     val snackbarMessage: SnackbarMessage? = null
 )
 
@@ -72,6 +74,8 @@ sealed class MainAction {
     data class SetIsShowIdleDialog(val show: Boolean) : MainAction()
     data object CheckNotificationPermission : MainAction()
     data object SyncSystemDarkMode : MainAction()
+    data class ShowImagePreview(val state: SharedImageState) : MainAction()
+    data object DismissImagePreview : MainAction()
     data class ShowSnackbar(val message: SnackbarMessage) : MainAction()
     data object DismissSnackbar : MainAction()
 }
@@ -138,6 +142,8 @@ class MainViewModel @Inject constructor(
             is MainAction.SetNetworkStatus -> setNetworkStatus(action.status)
             is MainAction.SetIsShowIdleDialog -> setIsShowIdleDialog(action.show)
             is MainAction.CheckNotificationPermission -> checkNotificationPermission()
+            is MainAction.ShowImagePreview -> _state.update { it.copy(sharedImageState = action.state) }
+            is MainAction.DismissImagePreview -> _state.update { it.copy(sharedImageState = null) }
             is MainAction.ShowSnackbar -> showSnackbar(action.message)
             is MainAction.DismissSnackbar -> dismissSnackbar()
         }
