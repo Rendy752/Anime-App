@@ -15,24 +15,15 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
-import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.dp
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.Lifecycle
@@ -55,7 +46,6 @@ import com.luminoverse.animevibe.ui.common.SharedImagePreviewer
 import com.luminoverse.animevibe.ui.main.navigation.BottomNavigationBar
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.theme.AppTheme
-import com.luminoverse.animevibe.utils.basicContainer
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
 import com.luminoverse.animevibe.utils.media.MediaPlaybackAction
@@ -196,37 +186,11 @@ class MainActivity : AppCompatActivity() {
                     Scaffold(
                         snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
                         bottomBar = {
-                            Column {
-                                AnimatedVisibility(
-                                    visible = NavRoute.bottomRoutes.any { it.route == currentRoute },
-                                    enter = slideInVertically(initialOffsetY = { it }),
-                                    exit = slideOutVertically(targetOffsetY = { it })
-                                ) {
-                                    BottomNavigationBar(navController = navController)
-                                }
-                                AnimatedVisibility(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    visible = !state.networkStatus.isConnected,
-                                    enter = slideInVertically(initialOffsetY = { it }),
-                                    exit = slideOutVertically(targetOffsetY = { it })
-                                ) {
-                                    Text(
-                                        text = "No Internet Connection",
-                                        modifier = Modifier
-                                            .basicContainer(
-                                                isError = true,
-                                                useBorder = false,
-                                                roundedCornerShape = RoundedCornerShape(0.dp),
-                                                outerPadding = PaddingValues(0.dp),
-                                                innerPadding = PaddingValues(8.dp)
-                                            ),
-                                        color = MaterialTheme.colorScheme.onError,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        fontWeight = FontWeight.Bold,
-                                        textAlign = TextAlign.Center
-                                    )
-                                }
-                            }
+                            AnimatedVisibility(
+                                visible = NavRoute.bottomRoutes.any { it.route == currentRoute },
+                                enter = slideInVertically(initialOffsetY = { it }),
+                                exit = slideOutVertically(targetOffsetY = { it })
+                            ) { BottomNavigationBar(navController = navController) }
                         }
                     ) { paddingValues ->
                         MainScreen(

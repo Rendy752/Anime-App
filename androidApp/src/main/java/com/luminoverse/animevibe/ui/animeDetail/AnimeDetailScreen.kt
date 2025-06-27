@@ -2,12 +2,12 @@ package com.luminoverse.animevibe.ui.animeDetail
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.mutableIntStateOf
@@ -16,8 +16,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.luminoverse.animevibe.ui.animeDetail.components.AnimeDetailTopBar
@@ -36,6 +35,7 @@ import kotlinx.coroutines.launch
 fun AnimeDetailScreen(
     id: Int,
     navController: NavHostController,
+    rememberedTopPadding: Dp,
     mainState: MainState,
     showSnackbar: (SnackbarMessage) -> Unit,
     detailState: DetailState,
@@ -43,26 +43,6 @@ fun AnimeDetailScreen(
     episodeFilterState: EpisodeFilterState,
     onAction: (DetailAction) -> Unit
 ) {
-    val density = LocalDensity.current
-    val statusBarPadding = with(density) {
-        WindowInsets.systemBars.getTop(density).toDp()
-    }
-    val navigationBarBottomPadding = with(density) {
-        WindowInsets.systemBars.getBottom(density).toDp()
-    }
-    val navigationBarLeftPadding = with(density) {
-        WindowInsets.systemBars.getLeft(
-            density,
-            if (mainState.isRtl) LayoutDirection.Rtl else LayoutDirection.Ltr
-        ).toDp()
-    }
-    val navigationBarRightPadding = with(density) {
-        WindowInsets.systemBars.getRight(
-            density,
-            if (mainState.isRtl) LayoutDirection.Rtl else LayoutDirection.Ltr
-        ).toDp()
-    }
-
     val context = LocalContext.current
     val portraitScrollState = rememberLazyListState()
     val landscapeScrollState = rememberLazyListState()
@@ -98,17 +78,17 @@ fun AnimeDetailScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = statusBarPadding)
+            .padding(top = rememberedTopPadding)
     ) {
         AnimeDetailTopBar(
             animeDetail = detailState.animeDetail,
             animeDetailComplement = detailState.animeDetailComplement,
             navController = navController,
-            isRtl = mainState.isRtl,
-            isLandscape = mainState.isLandscape,
-            navigationBarLeftPadding = navigationBarLeftPadding,
-            navigationBarRightPadding = navigationBarRightPadding,
             onFavoriteToggle = { onAction(DetailAction.ToggleFavorite(it)) }
+        )
+        HorizontalDivider(
+            color = MaterialTheme.colorScheme.surfaceContainer,
+            thickness = 2.dp
         )
         Box(
             modifier = Modifier
@@ -118,7 +98,6 @@ fun AnimeDetailScreen(
             when (detailState.animeDetail) {
                 is Resource.Loading -> LoadingContent(
                     isLandscape = mainState.isLandscape,
-                    navigationBarBottomPadding = navigationBarBottomPadding,
                     portraitScrollState = portraitScrollState,
                     landscapeScrollState = landscapeScrollState,
                 )
@@ -129,8 +108,6 @@ fun AnimeDetailScreen(
                     navController = navController,
                     context = context,
                     isLandscape = mainState.isLandscape,
-                    isConnected = mainState.networkStatus.isConnected,
-                    navigationBarBottomPadding = navigationBarBottomPadding,
                     portraitScrollState = portraitScrollState,
                     landscapeScrollState = landscapeScrollState,
                     onAction = onAction,

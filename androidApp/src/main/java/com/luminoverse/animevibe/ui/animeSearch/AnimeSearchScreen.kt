@@ -1,6 +1,7 @@
 package com.luminoverse.animevibe.ui.animeSearch
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -37,7 +38,6 @@ import com.luminoverse.animevibe.utils.resource.Resource
 fun AnimeSearchScreen(
     navController: NavHostController = rememberNavController(),
     rememberedTopPadding: Dp = 0.dp,
-    rememberedBottomPadding: Dp = 0.dp,
     mainState: MainState = MainState(),
     genreId: Int? = null,
     producerId: Int? = null,
@@ -69,10 +69,7 @@ fun AnimeSearchScreen(
     }
 
     PullToRefreshBox(
-        modifier = Modifier.padding(
-            top = rememberedTopPadding + 8.dp,
-            bottom = if (isTopAppBarVisible) rememberedBottomPadding else 0.dp
-        ),
+        modifier = Modifier.padding(top = if (isTopAppBarVisible) rememberedTopPadding else rememberedTopPadding + 8.dp),
         isRefreshing = searchState.isRefreshing,
         onRefresh = { onAction(SearchAction.ApplyFilters(searchState.queryState)) },
         state = state,
@@ -88,30 +85,27 @@ fun AnimeSearchScreen(
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             if (isTopAppBarVisible) {
-                Column {
-                    TopAppBar(
-                        title = {
-                            Text(
-                                text = "Search",
-                                modifier = Modifier.padding(end = 8.dp),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        },
-                        navigationIcon = {
-                            IconButton(onClick = { navController.popBackStack() }) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Back"
-                                )
-                            }
-                        }
-                    )
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.surfaceContainer,
-                        thickness = 2.dp
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Start
+                ) {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                    Text(
+                        text = "Search",
+                        style = MaterialTheme.typography.titleLarge,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.surfaceContainer,
+                    thickness = 2.dp
+                )
             }
             if (mainState.isLandscape) {
                 Row(modifier = Modifier.fillMaxSize()) {

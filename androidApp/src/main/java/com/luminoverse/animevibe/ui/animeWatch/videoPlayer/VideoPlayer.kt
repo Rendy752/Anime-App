@@ -331,6 +331,7 @@ fun VideoPlayer(
                 ScreenshotDisplay(
                     imageUrl = episodeDetailComplement.imageUrl,
                     screenshot = episodeDetailComplement.screenshot,
+                    isRounded = false,
                     modifier = Modifier.fillMaxSize(),
                     onClick = { videoPlayerState.handleSingleTap(updatedControlsState.value.isLocked) }
                 )

@@ -2,12 +2,9 @@ package com.luminoverse.animevibe.ui.animeWatch.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBars
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.luminoverse.animevibe.models.AnimeDetail
@@ -24,20 +21,9 @@ import com.luminoverse.animevibe.ui.common.YoutubePreviewSkeleton
 fun InfoContentSection(
     animeDetail: AnimeDetail?,
     navController: NavController,
-    isConnected: Boolean,
-    isLandscape: Boolean
 ) {
-    val density = LocalDensity.current
-    val navigationBarPadding = with(density) {
-        WindowInsets.systemBars.getBottom(density).toDp()
-    }
-
     Column(
-        modifier = Modifier.padding(
-            bottom = if (isConnected) {
-                if (isLandscape) 8.dp else navigationBarPadding
-            } else 8.dp
-        ),
+        modifier = Modifier.padding(bottom = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         if (animeDetail != null) {

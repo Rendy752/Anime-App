@@ -11,6 +11,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.calculateEndPadding
@@ -18,14 +19,18 @@ import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -51,6 +56,7 @@ import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.main.navigation.navigateTo
 import com.luminoverse.animevibe.ui.main.navigation.navigateToAdjacentRoute
 import com.luminoverse.animevibe.ui.settings.SettingsScreen
+import com.luminoverse.animevibe.utils.basicContainer
 import com.luminoverse.animevibe.utils.media.PipUtil.buildPipActions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -74,6 +80,10 @@ fun MainScreen(
     var isNavigating by remember { mutableStateOf(false) }
     val layoutDirection = LocalLayoutDirection.current
 
+    val isCurrentBottomScreen by remember(currentRoute) {
+        derivedStateOf { NavRoute.bottomRoutes.any { it.route == currentRoute } }
+    }
+
     var rememberedTopPadding by remember { mutableStateOf(0.dp) }
     val currentTopPadding = contentPadding.calculateTopPadding()
     if (currentTopPadding > 0.dp) {
@@ -85,7 +95,7 @@ fun MainScreen(
     if (currentBottomPadding > 0.dp) {
         rememberedBottomPadding = currentBottomPadding
     }
-    
+
     LaunchedEffect(currentRoute) {
         resetIdleTimer()
         mainAction(MainAction.DismissSnackbar)
@@ -161,9 +171,11 @@ fun MainScreen(
     Box(
         modifier = Modifier
             .padding(
-                start = contentPadding.calculateStartPadding(layoutDirection),
-                end = contentPadding.calculateEndPadding(layoutDirection),
-                bottom = rememberedBottomPadding
+                start = if (currentRoute?.startsWith("animeWatch/") == false)
+                    contentPadding.calculateStartPadding(layoutDirection) else 0.dp,
+                end = if (currentRoute?.startsWith("animeWatch/") == false)
+                    contentPadding.calculateEndPadding(layoutDirection) else 0.dp,
+                bottom = if (isCurrentBottomScreen || !mainState.isLandscape) rememberedBottomPadding else 0.dp
             )
             .pointerInput(Unit) {
                 detectHorizontalDragGestures { _, dragAmount ->
@@ -179,236 +191,264 @@ fun MainScreen(
                 }
             }
     ) {
-        NavHost(
-            navController = navController,
-            startDestination = NavRoute.Home.route,
-            enterTransition = {
-                getBottomBarEnterTransition(
-                    initialState,
-                    targetState,
-                    mainState.isRtl
-                )
-            },
-            exitTransition = {
-                getBottomBarExitTransition(
-                    initialState,
-                    targetState,
-                    mainState.isRtl
-                )
-            },
-            popEnterTransition = {
-                getBottomBarEnterTransition(
-                    initialState,
-                    targetState,
-                    mainState.isRtl
-                )
-            },
-            popExitTransition = {
-                getBottomBarExitTransition(
-                    initialState,
-                    targetState,
-                    mainState.isRtl
-                )
-            }
-        ) {
-            composable(NavRoute.Home.route) {
-                val viewModel: AnimeHomeViewModel = hiltViewModel()
-                val homeState by viewModel.homeState.collectAsStateWithLifecycle()
-                val carouselState by viewModel.carouselState.collectAsStateWithLifecycle()
-                val remainingTimes by viewModel.remainingTimes.collectAsStateWithLifecycle()
-                AnimeHomeScreen(
-                    homeState = homeState,
-                    carouselState = carouselState,
-                    remainingTimes = remainingTimes,
-                    onAction = viewModel::onAction,
-                    mainState = mainState,
-                    currentRoute = currentRoute,
-                    navController = navController
-                )
-            }
-            composable(NavRoute.Recommendations.route) {
-                val viewModel: AnimeRecommendationsViewModel = hiltViewModel()
-                val recommendationsState by viewModel.recommendationsState.collectAsStateWithLifecycle()
-                AnimeRecommendationsScreen(
-                    navController = navController,
-                    rememberedTopPadding = rememberedTopPadding,
-                    mainState = mainState,
-                    recommendationsState = recommendationsState,
-                    onAction = viewModel::onAction
-                )
-            }
-            composable(NavRoute.Search.route) {
-                val viewModel: AnimeSearchViewModel = hiltViewModel()
-                val searchState by viewModel.searchState.collectAsStateWithLifecycle()
-                val filterSelectionState by viewModel.filterSelectionState.collectAsStateWithLifecycle()
-                AnimeSearchScreen(
-                    navController = navController,
-                    rememberedTopPadding = rememberedTopPadding,
-                    rememberedBottomPadding = rememberedBottomPadding,
-                    mainState = mainState,
-                    searchState = searchState,
-                    filterSelectionState = filterSelectionState,
-                    onAction = viewModel::onAction
-                )
-            }
-            composable(
-                route = NavRoute.SearchWithFilter.ROUTE_PATTERN,
-                arguments = NavRoute.SearchWithFilter().arguments
-            ) { backStackEntry ->
-                val viewModel: AnimeSearchViewModel = hiltViewModel()
-                val searchState by viewModel.searchState.collectAsStateWithLifecycle()
-                val filterSelectionState by viewModel.filterSelectionState.collectAsStateWithLifecycle()
-                val genreId = backStackEntry.arguments?.getString("genreId")?.toIntOrNull()
-                val producerId = backStackEntry.arguments?.getString("producerId")?.toIntOrNull()
-                AnimeSearchScreen(
-                    navController = navController,
-                    rememberedTopPadding = rememberedTopPadding,
-                    rememberedBottomPadding = rememberedBottomPadding,
-                    mainState = mainState,
-                    genreId = genreId,
-                    producerId = producerId,
-                    searchState = searchState,
-                    filterSelectionState = filterSelectionState,
-                    onAction = viewModel::onAction
-                )
-            }
-            composable(NavRoute.History.route) {
-                val viewModel: EpisodeHistoryViewModel = hiltViewModel()
-                val historyState by viewModel.historyState.collectAsStateWithLifecycle()
-                EpisodeHistoryScreen(
-                    currentRoute = currentRoute,
-                    navController = navController,
-                    rememberedTopPadding = rememberedTopPadding,
-                    showSnackbar = { mainAction.invoke(MainAction.ShowSnackbar(it)) },
-                    mainState = mainState,
-                    showImagePreview = { mainAction.invoke(MainAction.ShowImagePreview(it)) },
-                    historyState = historyState,
-                    onAction = viewModel::onAction
-                )
-            }
-            composable(NavRoute.Settings.route) {
-                SettingsScreen(
-                    mainState = mainState,
-                    mainAction = mainAction,
-                    rememberedTopPadding = rememberedTopPadding
-                )
-            }
-            composable(
-                route = NavRoute.AnimeDetail.ROUTE_PATTERN,
-                arguments = NavRoute.AnimeDetail(0).arguments
-            ) { backStackEntry ->
-                val viewModel: AnimeDetailViewModel = hiltViewModel()
-                val detailState by viewModel.detailState.collectAsStateWithLifecycle()
-                val episodeFilterState by viewModel.episodeFilterState.collectAsStateWithLifecycle()
-                AnimeDetailScreen(
-                    id = backStackEntry.arguments?.getInt("id") ?: 0,
-                    navController = navController,
-                    mainState = mainState,
-                    showSnackbar = { mainAction.invoke(MainAction.ShowSnackbar(it)) },
-                    detailState = detailState,
-                    snackbarFlow = viewModel.snackbarFlow,
-                    episodeFilterState = episodeFilterState,
-                    onAction = viewModel::onAction
-                )
-            }
-            composable(
-                route = NavRoute.AnimeWatch.ROUTE_PATTERN,
-                arguments = NavRoute.AnimeWatch(0, "").arguments
-            ) { backStackEntry ->
-                val viewModel: AnimeWatchViewModel = hiltViewModel()
-                val watchState by viewModel.watchState.collectAsStateWithLifecycle()
-                val playerUiState by viewModel.playerUiState.collectAsStateWithLifecycle()
-                val playerCoreState by viewModel.playerCoreState.collectAsStateWithLifecycle()
-
-                val activity = LocalActivity.current as? MainActivity
-
-                DisposableEffect(activity) {
-                    val onPictureInPictureModeChangedCallback: (Boolean) -> Unit = { isInPipMode ->
-                        viewModel.onAction(WatchAction.SetPipMode(isInPipMode))
-                        Log.d("MainScreen", "PiP mode changed: isInPipMode=$isInPipMode")
-                        Unit
-                    }
-                    activity?.addOnPictureInPictureModeChangedListener(
-                        onPictureInPictureModeChangedCallback
+        Column {
+            NavHost(
+                modifier = Modifier.weight(1f),
+                navController = navController,
+                startDestination = NavRoute.Home.route,
+                enterTransition = {
+                    getBottomBarEnterTransition(
+                        initialState,
+                        targetState,
+                        mainState.isRtl
                     )
-                    onDispose {
-                        activity?.removeOnPictureInPictureModeChangedListener(
+                },
+                exitTransition = {
+                    getBottomBarExitTransition(
+                        initialState,
+                        targetState,
+                        mainState.isRtl
+                    )
+                },
+                popEnterTransition = {
+                    getBottomBarEnterTransition(
+                        initialState,
+                        targetState,
+                        mainState.isRtl
+                    )
+                },
+                popExitTransition = {
+                    getBottomBarExitTransition(
+                        initialState,
+                        targetState,
+                        mainState.isRtl
+                    )
+                }
+            ) {
+                composable(NavRoute.Home.route) {
+                    val viewModel: AnimeHomeViewModel = hiltViewModel()
+                    val homeState by viewModel.homeState.collectAsStateWithLifecycle()
+                    val carouselState by viewModel.carouselState.collectAsStateWithLifecycle()
+                    val remainingTimes by viewModel.remainingTimes.collectAsStateWithLifecycle()
+                    AnimeHomeScreen(
+                        homeState = homeState,
+                        carouselState = carouselState,
+                        remainingTimes = remainingTimes,
+                        onAction = viewModel::onAction,
+                        mainState = mainState,
+                        currentRoute = currentRoute,
+                        navController = navController,
+                        rememberedTopPadding = rememberedTopPadding
+                    )
+                }
+                composable(NavRoute.Recommendations.route) {
+                    val viewModel: AnimeRecommendationsViewModel = hiltViewModel()
+                    val recommendationsState by viewModel.recommendationsState.collectAsStateWithLifecycle()
+                    AnimeRecommendationsScreen(
+                        navController = navController,
+                        rememberedTopPadding = rememberedTopPadding,
+                        mainState = mainState,
+                        recommendationsState = recommendationsState,
+                        onAction = viewModel::onAction
+                    )
+                }
+                composable(NavRoute.Search.route) {
+                    val viewModel: AnimeSearchViewModel = hiltViewModel()
+                    val searchState by viewModel.searchState.collectAsStateWithLifecycle()
+                    val filterSelectionState by viewModel.filterSelectionState.collectAsStateWithLifecycle()
+                    AnimeSearchScreen(
+                        navController = navController,
+                        rememberedTopPadding = rememberedTopPadding,
+                        mainState = mainState,
+                        searchState = searchState,
+                        filterSelectionState = filterSelectionState,
+                        onAction = viewModel::onAction
+                    )
+                }
+                composable(
+                    route = NavRoute.SearchWithFilter.ROUTE_PATTERN,
+                    arguments = NavRoute.SearchWithFilter().arguments
+                ) { backStackEntry ->
+                    val viewModel: AnimeSearchViewModel = hiltViewModel()
+                    val searchState by viewModel.searchState.collectAsStateWithLifecycle()
+                    val filterSelectionState by viewModel.filterSelectionState.collectAsStateWithLifecycle()
+                    val genreId = backStackEntry.arguments?.getString("genreId")?.toIntOrNull()
+                    val producerId =
+                        backStackEntry.arguments?.getString("producerId")?.toIntOrNull()
+                    AnimeSearchScreen(
+                        navController = navController,
+                        rememberedTopPadding = rememberedTopPadding,
+                        mainState = mainState,
+                        genreId = genreId,
+                        producerId = producerId,
+                        searchState = searchState,
+                        filterSelectionState = filterSelectionState,
+                        onAction = viewModel::onAction
+                    )
+                }
+                composable(NavRoute.History.route) {
+                    val viewModel: EpisodeHistoryViewModel = hiltViewModel()
+                    val historyState by viewModel.historyState.collectAsStateWithLifecycle()
+                    EpisodeHistoryScreen(
+                        currentRoute = currentRoute,
+                        navController = navController,
+                        rememberedTopPadding = rememberedTopPadding,
+                        showSnackbar = { mainAction.invoke(MainAction.ShowSnackbar(it)) },
+                        mainState = mainState,
+                        showImagePreview = { mainAction.invoke(MainAction.ShowImagePreview(it)) },
+                        historyState = historyState,
+                        onAction = viewModel::onAction
+                    )
+                }
+                composable(NavRoute.Settings.route) {
+                    SettingsScreen(
+                        mainState = mainState,
+                        mainAction = mainAction,
+                        rememberedTopPadding = rememberedTopPadding
+                    )
+                }
+                composable(
+                    route = NavRoute.AnimeDetail.ROUTE_PATTERN,
+                    arguments = NavRoute.AnimeDetail(0).arguments
+                ) { backStackEntry ->
+                    val viewModel: AnimeDetailViewModel = hiltViewModel()
+                    val detailState by viewModel.detailState.collectAsStateWithLifecycle()
+                    val episodeFilterState by viewModel.episodeFilterState.collectAsStateWithLifecycle()
+                    AnimeDetailScreen(
+                        id = backStackEntry.arguments?.getInt("id") ?: 0,
+                        navController = navController,
+                        rememberedTopPadding = rememberedTopPadding,
+                        mainState = mainState,
+                        showSnackbar = { mainAction.invoke(MainAction.ShowSnackbar(it)) },
+                        detailState = detailState,
+                        snackbarFlow = viewModel.snackbarFlow,
+                        episodeFilterState = episodeFilterState,
+                        onAction = viewModel::onAction
+                    )
+                }
+                composable(
+                    route = NavRoute.AnimeWatch.ROUTE_PATTERN,
+                    arguments = NavRoute.AnimeWatch(0, "").arguments
+                ) { backStackEntry ->
+                    val viewModel: AnimeWatchViewModel = hiltViewModel()
+                    val watchState by viewModel.watchState.collectAsStateWithLifecycle()
+                    val playerUiState by viewModel.playerUiState.collectAsStateWithLifecycle()
+                    val playerCoreState by viewModel.playerCoreState.collectAsStateWithLifecycle()
+
+                    val activity = LocalActivity.current as? MainActivity
+
+                    DisposableEffect(activity) {
+                        val onPictureInPictureModeChangedCallback: (Boolean) -> Unit =
+                            { isInPipMode ->
+                                viewModel.onAction(WatchAction.SetPipMode(isInPipMode))
+                                Log.d("MainScreen", "PiP mode changed: isInPipMode=$isInPipMode")
+                                Unit
+                            }
+                        activity?.addOnPictureInPictureModeChangedListener(
                             onPictureInPictureModeChangedCallback
                         )
-                    }
-                }
-
-                val isPlaying by remember { derivedStateOf { playerCoreState.isPlaying } }
-                LaunchedEffect(isPlaying) {
-                    activity?.window?.let { window ->
-                        if (isPlaying && !playerUiState.isPipMode) {
-                            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                        } else {
-                            window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                        onDispose {
+                            activity?.removeOnPictureInPictureModeChangedListener(
+                                onPictureInPictureModeChangedCallback
+                            )
                         }
                     }
-                    if (playerUiState.isPipMode && activity != null) {
-                        Log.d(
-                            "MainScreen",
-                            "Updating PiP params: isPlaying=${playerCoreState.isPlaying}"
-                        )
-                        val actions = buildPipActions(activity, playerCoreState.isPlaying)
-                        activity.setPictureInPictureParams(
-                            PictureInPictureParams.Builder()
-                                .setActions(actions)
-                                .build()
-                        )
-                    }
-                }
 
-                DisposableEffect(Unit) {
-                    onDispose {
-                        activity?.setPictureInPictureParams(
-                            PictureInPictureParams.Builder().build()
-                        )
-                        activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                    }
-                }
-
-                AnimeWatchScreen(
-                    malId = backStackEntry.arguments?.getInt("malId") ?: 0,
-                    episodeId = backStackEntry.arguments?.getString("episodeId") ?: "",
-                    navController = navController,
-                    networkDataSource = viewModel.networkDataSource,
-                    mainState = mainState,
-                    showSnackbar = { mainAction.invoke(MainAction.ShowSnackbar(it)) },
-                    dismissSnackbar = { mainAction.invoke(MainAction.DismissSnackbar) },
-                    watchState = watchState,
-                    playerUiState = playerUiState,
-                    snackbarFlow = viewModel.snackbarFlow,
-                    hlsPlayerCoreState = playerCoreState,
-                    hlsControlsStateFlow = viewModel.controlsState,
-                    onAction = viewModel::onAction,
-                    dispatchPlayerAction = viewModel::dispatchPlayerAction,
-                    getPlayer = viewModel::getPlayer,
-                    captureScreenshot = { viewModel.captureScreenshot() },
-                    onEnterPipMode = {
-                        if (activity != null) {
+                    val isPlaying by remember { derivedStateOf { playerCoreState.isPlaying } }
+                    LaunchedEffect(isPlaying) {
+                        activity?.window?.let { window ->
+                            if (isPlaying && !playerUiState.isPipMode) {
+                                window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                            } else {
+                                window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                            }
+                        }
+                        if (playerUiState.isPipMode && activity != null) {
                             Log.d(
                                 "MainScreen",
-                                "Entering PiP: isPlaying=${playerCoreState.isPlaying}"
+                                "Updating PiP params: isPlaying=${playerCoreState.isPlaying}"
                             )
-                            val actions =
-                                buildPipActions(activity, playerCoreState.isPlaying)
-                            activity.enterPictureInPictureMode(
+                            val actions = buildPipActions(activity, playerCoreState.isPlaying)
+                            activity.setPictureInPictureParams(
                                 PictureInPictureParams.Builder()
                                     .setActions(actions)
                                     .build()
                             )
-                            viewModel.onAction(WatchAction.SetPipMode(true))
                         }
                     }
+
+                    DisposableEffect(Unit) {
+                        onDispose {
+                            activity?.setPictureInPictureParams(
+                                PictureInPictureParams.Builder().build()
+                            )
+                            activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                        }
+                    }
+
+                    AnimeWatchScreen(
+                        malId = backStackEntry.arguments?.getInt("malId") ?: 0,
+                        episodeId = backStackEntry.arguments?.getString("episodeId") ?: "",
+                        navController = navController,
+                        rememberTopPadding = rememberedTopPadding,
+                        networkDataSource = viewModel.networkDataSource,
+                        mainState = mainState,
+                        showSnackbar = { mainAction.invoke(MainAction.ShowSnackbar(it)) },
+                        dismissSnackbar = { mainAction.invoke(MainAction.DismissSnackbar) },
+                        watchState = watchState,
+                        playerUiState = playerUiState,
+                        snackbarFlow = viewModel.snackbarFlow,
+                        hlsPlayerCoreState = playerCoreState,
+                        hlsControlsStateFlow = viewModel.controlsState,
+                        onAction = viewModel::onAction,
+                        dispatchPlayerAction = viewModel::dispatchPlayerAction,
+                        getPlayer = viewModel::getPlayer,
+                        captureScreenshot = { viewModel.captureScreenshot() },
+                        onEnterPipMode = {
+                            if (activity != null) {
+                                Log.d(
+                                    "MainScreen",
+                                    "Entering PiP: isPlaying=${playerCoreState.isPlaying}"
+                                )
+                                val actions =
+                                    buildPipActions(activity, playerCoreState.isPlaying)
+                                activity.enterPictureInPictureMode(
+                                    PictureInPictureParams.Builder()
+                                        .setActions(actions)
+                                        .build()
+                                )
+                                viewModel.onAction(WatchAction.SetPipMode(true))
+                            }
+                        }
+                    )
+                }
+            }
+            AnimatedVisibility(
+                modifier = Modifier.fillMaxWidth(),
+                visible = !mainState.networkStatus.isConnected,
+                enter = slideInVertically(initialOffsetY = { it }),
+                exit = slideOutVertically(targetOffsetY = { it })
+            ) {
+                Text(
+                    text = "No Internet Connection",
+                    modifier = Modifier
+                        .basicContainer(
+                            isError = true,
+                            useBorder = false,
+                            roundedCornerShape = RoundedCornerShape(0.dp),
+                            outerPadding = PaddingValues(0.dp),
+                            innerPadding = PaddingValues(8.dp)
+                        ),
+                    color = MaterialTheme.colorScheme.onError,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
                 )
             }
         }
 
         AnimatedVisibility(
-            visible = currentRoute != NavRoute.Home.route,
+            visible = isCurrentBottomScreen && currentRoute != NavRoute.Home.route,
             enter = slideInVertically(initialOffsetY = { -it }),
             exit = slideOutVertically(targetOffsetY = { -it })
         ) {

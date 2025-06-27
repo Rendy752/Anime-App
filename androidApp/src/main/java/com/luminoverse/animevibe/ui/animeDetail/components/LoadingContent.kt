@@ -2,15 +2,14 @@ package com.luminoverse.animevibe.ui.animeDetail.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.ui.animeDetail.detailBody.DetailBodySectionSkeleton
 import com.luminoverse.animevibe.ui.common.NumericDetailSectionSkeleton
@@ -21,7 +20,6 @@ import com.luminoverse.animevibe.ui.common.YoutubePreviewSkeleton
 @Composable
 fun LoadingContent(
     isLandscape: Boolean,
-    navigationBarBottomPadding: Dp,
     portraitScrollState: LazyListState,
     landscapeScrollState: LazyListState,
 ) {
@@ -30,32 +28,42 @@ fun LoadingContent(
             modifier = Modifier.fillMaxSize(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            LazyColumn(modifier = Modifier.weight(1f), state = portraitScrollState) {
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(vertical = 8.dp),
+                state = portraitScrollState
+            ) {
                 item {
                     LeftColumnContentSkeleton()
                 }
             }
-            LazyColumn(modifier = Modifier.weight(1f), state = landscapeScrollState) {
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(vertical = 8.dp),
+                state = landscapeScrollState
+            ) {
                 item {
                     RightColumnContentSkeleton()
                 }
             }
         }
     } else {
-        LazyColumn(modifier = Modifier.fillMaxSize(), state = portraitScrollState) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(vertical = 8.dp),
+            state = portraitScrollState
+        ) {
             item {
-                VerticalColumnContentSkeleton(navigationBarBottomPadding)
+                VerticalColumnContentSkeleton()
             }
         }
     }
 }
 
 @Composable
-private fun VerticalColumnContentSkeleton(navigationBarBottomPadding: Dp) {
+private fun VerticalColumnContentSkeleton() {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(bottom = navigationBarBottomPadding),
+        modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -67,7 +75,7 @@ private fun VerticalColumnContentSkeleton(navigationBarBottomPadding: Dp) {
 @Composable
 private fun LeftColumnContentSkeleton() {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        AnimeHeaderSkeleton(modifier = Modifier.padding(top = 8.dp))
+        AnimeHeaderSkeleton()
         NumericDetailSectionSkeleton()
         YoutubePreviewSkeleton()
         DetailBodySectionSkeleton()
@@ -80,7 +88,7 @@ private fun RightColumnContentSkeleton() {
         listOf<String>(
             "Background",
             "Synopsis"
-        ).forEach { DetailCommonBodySkeleton(modifier = Modifier.padding(top = 8.dp), title = it) }
+        ).forEach { DetailCommonBodySkeleton(title = it) }
         listOf<String>(
             "Openings",
             "Endings",

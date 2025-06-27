@@ -39,6 +39,7 @@ fun ScreenshotDisplay(
     modifier: Modifier = Modifier,
     imageUrl: String? = animeDetailPlaceholder.images.webp.large_image_url,
     screenshot: String? = "",
+    isRounded: Boolean = true,
     positionData: Pair<Long?, Long?>? = null,
     onImagePreview: ((image: Any?, bounds: Rect) -> Unit)? = null,
     onClick: (() -> Unit)? = null,
@@ -81,7 +82,7 @@ fun ScreenshotDisplay(
     Box(
         modifier = modifier
             .aspectRatio(16f / 9f)
-            .clip(RoundedCornerShape(8.dp))
+            .clip(RoundedCornerShape(if (isRounded) 8.dp else 0.dp))
             .onGloballyPositioned { layoutCoordinates ->
                 imageBounds = layoutCoordinates.boundsInWindow()
             }
@@ -108,6 +109,7 @@ fun ScreenshotDisplay(
                     model = imageUrl,
                     contentDescription = "Episode Image URL",
                     modifier = Modifier.fillMaxSize(),
+                    roundedCorners = ImageRoundedCorner.NONE,
                     onClick = {
                         if (onImagePreview != null) {
                             onImagePreview.invoke(imageUrl, imageBounds)
