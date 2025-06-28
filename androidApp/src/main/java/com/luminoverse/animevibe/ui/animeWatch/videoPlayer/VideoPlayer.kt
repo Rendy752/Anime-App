@@ -377,16 +377,16 @@ fun VideoPlayer(
             }
         }
 
-        val animatedTopPadding by animateDpAsState(
+        val animatedSubtitleTopPadding by animateDpAsState(
             targetValue = if (isCommonPartVisible && isPlayerControlsVisible && isLandscape && !isSideSheetVisible) {
-                videoPlayerState.bottomBarHeight.dp - 16.dp
+                (videoPlayerState.bottomBarHeight.dp - 16.dp).coerceAtLeast(0.dp)
             } else {
                 if (isSideSheetVisible) 16.dp else 8.dp
             },
             label = "SubtitleTopPadding"
         )
 
-        val animatedBottomPadding by animateDpAsState(
+        val animatedSubtitleBottomPadding by animateDpAsState(
             targetValue = if (isCommonPartVisible && isPlayerControlsVisible && isLandscape) {
                 videoPlayerState.bottomBarHeight.dp
             } else {
@@ -398,7 +398,7 @@ fun VideoPlayer(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(
-                    top = animatedTopPadding, bottom = animatedBottomPadding,
+                    top = animatedSubtitleTopPadding, bottom = animatedSubtitleBottomPadding,
                     start = 8.dp, end = 8.dp
                 ),
             cues = activeCaptionCue,

@@ -1,6 +1,7 @@
 package com.luminoverse.animevibe.ui.animeWatch.watchContent
 
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
@@ -111,10 +112,14 @@ fun WatchEpisodeItem(
             .widthIn(min = 48.dp, max = 100.dp)
             .scale(scale)
             .clip(RoundedCornerShape(16.dp))
-            .border(
-                width = 1.5.dp,
-                color = if (isHighlighted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHighest,
-                shape = RoundedCornerShape(16.dp)
+            .then(
+                Modifier.border(
+                    BorderStroke(
+                        width = 1.5.dp,
+                        color = if (isHighlighted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHighest
+                    ),
+                    shape = RoundedCornerShape(12.dp)
+                )
             ),
         shadowElevation = 0.dp,
         color = Color.Transparent,
