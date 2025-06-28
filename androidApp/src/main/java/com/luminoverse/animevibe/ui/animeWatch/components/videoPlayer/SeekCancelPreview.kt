@@ -14,7 +14,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.luminoverse.animevibe.ui.common.ScreenshotDisplay
+import com.luminoverse.animevibe.ui.common.ImageDisplay
 
 @Composable
 fun SeekCancelPreview(
@@ -36,7 +36,7 @@ fun SeekCancelPreview(
         LaunchedEffect(Unit) {
             screenshot = captureScreenshot()
         }
-        ScreenshotDisplay(
+        ImageDisplay(
             imageUrl = imageUrl,
             screenshot = screenshot,
             modifier = Modifier.fillMaxSize(),

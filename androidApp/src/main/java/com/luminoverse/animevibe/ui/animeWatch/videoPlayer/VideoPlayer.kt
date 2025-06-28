@@ -56,7 +56,7 @@ import com.luminoverse.animevibe.ui.animeWatch.components.videoPlayer.ThumbnailP
 import com.luminoverse.animevibe.ui.animeWatch.components.videoPlayer.ZoomIndicator
 import com.luminoverse.animevibe.ui.common.BottomSheetConfig
 import com.luminoverse.animevibe.ui.common.CustomModalBottomSheet
-import com.luminoverse.animevibe.ui.common.ScreenshotDisplay
+import com.luminoverse.animevibe.ui.common.ImageDisplay
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
@@ -328,7 +328,7 @@ fun VideoPlayer(
                 else Modifier
 
             if (videoPlayerState.isFirstLoad) {
-                ScreenshotDisplay(
+                ImageDisplay(
                     imageUrl = episodeDetailComplement.imageUrl,
                     screenshot = episodeDetailComplement.screenshot,
                     isRounded = false,

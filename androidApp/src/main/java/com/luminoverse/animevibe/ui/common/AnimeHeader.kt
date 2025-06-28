@@ -47,7 +47,7 @@ fun AnimeHeader(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if (showImage) AsyncImageWithPlaceholder(
+        if (showImage) AsyncImage(
             model = animeDetail.images.webp.large_image_url,
             contentDescription = animeDetail.title,
             isAiring = animeDetail.airing,

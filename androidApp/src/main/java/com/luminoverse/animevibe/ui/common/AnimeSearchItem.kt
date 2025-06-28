@@ -54,7 +54,7 @@ fun AnimeSearchItem(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             if (errorTitle.isNullOrEmpty()) {
-                AsyncImageWithPlaceholder(
+                AsyncImage(
                     model = animeDetail?.images?.webp?.large_image_url,
                     contentDescription = animeDetail?.title,
                     isAiring = animeDetail?.airing

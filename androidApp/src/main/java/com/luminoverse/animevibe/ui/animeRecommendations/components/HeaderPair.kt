@@ -16,7 +16,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.luminoverse.animevibe.models.AnimeHeader
-import com.luminoverse.animevibe.ui.common.AsyncImageWithPlaceholder
+import com.luminoverse.animevibe.ui.common.AsyncImage
 
 @Composable
 fun HeaderPair(
@@ -41,7 +41,7 @@ fun HeaderPair(
             modifier = Modifier.padding(bottom = 4.dp)
         )
 
-        AsyncImageWithPlaceholder(
+        AsyncImage(
             model = anime.images.webp.large_image_url,
             contentDescription = anime.title,
         )

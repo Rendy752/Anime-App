@@ -21,7 +21,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.ui.common.ConfirmationAlert
-import com.luminoverse.animevibe.ui.common.ScreenshotDisplay
+import com.luminoverse.animevibe.ui.common.ImageDisplay
 import com.luminoverse.animevibe.ui.common.highlightText
 import com.luminoverse.animevibe.ui.common.DebouncedIconButton
 import com.luminoverse.animevibe.ui.common.SharedImageState
@@ -78,14 +78,21 @@ fun EpisodeHistoryItem(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                ScreenshotDisplay(
+                ImageDisplay(
                     modifier = Modifier
                         .size(100.dp, 56.dp)
                         .clip(RoundedCornerShape(4.dp)),
                     imageUrl = episode.imageUrl,
                     screenshot = episode.screenshot,
-                    onImagePreview = { image, bounds ->
-                        showImagePreview(SharedImageState(image, episode.episodeTitle, bounds))
+                    onImagePreview = { image, bounds, size ->
+                        showImagePreview(
+                            SharedImageState(
+                                image = image,
+                                contentDescription = episode.episodeTitle,
+                                initialBounds = bounds,
+                                initialSize = size
+                            )
+                        )
                     }
                 )
                 Text(

@@ -33,15 +33,14 @@ fun ImageCardWithContent(
             .height(height)
             .clickable { onItemClick() }
     ) {
-        AsyncImageWithPlaceholder(
+        AsyncImage(
             model = imageUrl ?: "",
             contentDescription = contentDescription,
             modifier = Modifier
                 .fillMaxHeight()
                 .fillMaxWidth(0.75f)
                 .align(Alignment.CenterEnd),
-            roundedCorners = ImageRoundedCorner.NONE,
-            onClick = onItemClick
+            roundedCorners = ImageRoundedCorner.NONE
         )
 
         Box(

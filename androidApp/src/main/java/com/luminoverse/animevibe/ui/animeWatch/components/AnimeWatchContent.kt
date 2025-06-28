@@ -40,7 +40,7 @@ import com.luminoverse.animevibe.ui.animeWatch.PlayerUiState
 import com.luminoverse.animevibe.ui.animeWatch.WatchAction
 import com.luminoverse.animevibe.ui.animeWatch.videoPlayer.VideoPlayerSection
 import com.luminoverse.animevibe.ui.animeWatch.watchContent.WatchContentSection
-import com.luminoverse.animevibe.ui.common.ScreenshotDisplay
+import com.luminoverse.animevibe.ui.common.ImageDisplay
 import com.luminoverse.animevibe.ui.main.MainState
 import com.luminoverse.animevibe.ui.main.SnackbarMessage
 import com.luminoverse.animevibe.ui.main.SnackbarMessageType
@@ -83,7 +83,7 @@ fun AnimeWatchContent(
                     .background(MaterialTheme.colorScheme.surfaceContainer)
             ) {
                 if (watchState.episodeDetailComplement == null || watchState.episodeDetailComplement.sources.link.file.isEmpty() == true || watchState.animeDetailComplement?.episodes == null || watchState.episodeSourcesQuery == null) {
-                    if (playerCoreState.error != null && !watchState.isRefreshing && !playerCoreState.isPlaying) ScreenshotDisplay(
+                    if (playerCoreState.error != null && !watchState.isRefreshing && !playerCoreState.isPlaying) ImageDisplay(
                         imageUrl = watchState.animeDetail?.images?.webp?.large_image_url,
                         modifier = modifier,
                     ) else Box(

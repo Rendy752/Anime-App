@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
-import com.luminoverse.animevibe.ui.common.ScreenshotDisplay
+import com.luminoverse.animevibe.ui.common.ImageDisplay
 import com.luminoverse.animevibe.utils.basicContainer
 
 @Composable
@@ -64,7 +64,7 @@ fun WatchEpisodePopup(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                ScreenshotDisplay(
+                ImageDisplay(
                     modifier = Modifier.weight(1f),
                     imageUrl = imageUrl,
                     screenshot = episodeDetailComplement?.screenshot,

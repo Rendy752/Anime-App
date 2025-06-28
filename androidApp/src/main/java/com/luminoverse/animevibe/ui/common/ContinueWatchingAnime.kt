@@ -58,7 +58,7 @@ fun ContinueWatchingAnime(
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (!isMinimized) {
-            AsyncImageWithPlaceholder(
+            AsyncImage(
                 model = episodeDetailComplement.imageUrl
                     ?: "default_anime_placeholder_${episodeDetailComplement.animeTitle}",
                 contentDescription = episodeDetailComplement.animeTitle,

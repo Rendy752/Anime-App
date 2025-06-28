@@ -90,7 +90,7 @@ fun EpisodeDetailItem(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            ScreenshotDisplay(
+            ImageDisplay(
                 modifier = Modifier
                     .fillMaxHeight()
                     .weight(if (isSameWidthContent) 0.5f else 0.4f),

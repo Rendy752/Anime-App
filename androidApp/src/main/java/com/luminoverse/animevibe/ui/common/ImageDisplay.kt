@@ -25,6 +25,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -32,26 +33,28 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.animeDetailPlaceholder
 import androidx.core.graphics.get
+import kotlin.math.min
 
 @Preview
 @Composable
-fun ScreenshotDisplay(
+fun ImageDisplay(
     modifier: Modifier = Modifier,
     imageUrl: String? = animeDetailPlaceholder.images.webp.large_image_url,
     screenshot: String? = "",
     isRounded: Boolean = true,
     positionData: Pair<Long?, Long?>? = null,
-    onImagePreview: ((image: Any?, bounds: Rect) -> Unit)? = null,
+    onImagePreview: ((image: Any?, bounds: Rect, imageSize: Size?) -> Unit)? = null,
     onClick: (() -> Unit)? = null,
 ) {
     var imageBounds by remember { mutableStateOf(Rect.Zero) }
+    var asyncImageSize by remember { mutableStateOf<Size?>(null) }
 
     fun isBitmapMostlyBlack(bitmap: Bitmap): Boolean {
         if (bitmap.isRecycled || bitmap.width == 0 || bitmap.height == 0) return true
         val threshold = 5
         val sampleSize = 100
         var blackPixelCount = 0
-        val totalPixelsToSample = minOf(bitmap.width * bitmap.height, sampleSize)
+        val totalPixelsToSample = min(bitmap.width * bitmap.height, sampleSize)
 
         repeat(totalPixelsToSample) {
             val x = (Math.random() * bitmap.width).toInt()
@@ -96,7 +99,15 @@ fun ScreenshotDisplay(
                         .fillMaxSize()
                         .clickable {
                             if (onImagePreview != null) {
-                                onImagePreview.invoke(screenshotBitmap.asImageBitmap(), imageBounds)
+                                val imageSize = Size(
+                                    width = screenshotBitmap.width.toFloat(),
+                                    height = screenshotBitmap.height.toFloat()
+                                )
+                                onImagePreview.invoke(
+                                    screenshotBitmap.asImageBitmap(),
+                                    imageBounds,
+                                    imageSize
+                                )
                             } else {
                                 onClick?.invoke()
                             }
@@ -105,14 +116,15 @@ fun ScreenshotDisplay(
             }
 
             imageUrl != null -> {
-                AsyncImageWithPlaceholder(
+                AsyncImage(
                     model = imageUrl,
                     contentDescription = "Episode Image URL",
                     modifier = Modifier.fillMaxSize(),
                     roundedCorners = ImageRoundedCorner.NONE,
+                    onSizeLoaded = { size -> asyncImageSize = size },
                     onClick = {
                         if (onImagePreview != null) {
-                            onImagePreview.invoke(imageUrl, imageBounds)
+                            onImagePreview.invoke(imageUrl, imageBounds, asyncImageSize)
                         } else {
                             onClick?.invoke()
                         }

@@ -1,6 +1,9 @@
 package com.luminoverse.animevibe.ui.common
 
+import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -8,33 +11,27 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -50,16 +47,27 @@ import coil.compose.AsyncImage
 data class SharedImageState(
     val image: Any?,
     val contentDescription: String?,
-    val initialBounds: Rect
+    val initialBounds: Rect,
+    val initialSize: Size?
 )
 
 /**
+ * A helper function to safely find the host Activity from a Context.
+ */
+private fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
+
+/**
  * A full-screen overlay that displays an image, animating it from its initial position
- * and size to a centered, full-screen preview.
+ * and size to a centered, full-screen preview with uniform scaling.
  *
  * @param sharedImageState The state containing the image and its initial bounds.
  * @param onDismiss Request to dismiss the previewer, triggering the exit animation.
  */
+@SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
 fun SharedImagePreviewer(
     sharedImageState: SharedImageState,
@@ -83,6 +91,17 @@ fun SharedImagePreviewer(
         }
     }
 
+    LaunchedEffect(Unit) {
+        isAnimatingIn = true
+    }
+
+    fun close() {
+        isAnimatingIn = false
+        isAnimatingOut = true
+    }
+
+    BackHandler { close() }
+
     if (isAnimatingOut) {
         LaunchedEffect(Unit) {
             kotlinx.coroutines.delay(300)
@@ -90,84 +109,89 @@ fun SharedImagePreviewer(
         }
     }
 
-    LaunchedEffect(Unit) {
-        isAnimatingIn = true
-    }
-
-    BackHandler {
-        isAnimatingIn = false
-        isAnimatingOut = true
-    }
-
     Dialog(
-        onDismissRequest = {
-            isAnimatingIn = false
-            isAnimatingOut = true
-        },
+        onDismissRequest = { close() },
         properties = DialogProperties(
             usePlatformDefaultWidth = false,
             decorFitsSystemWindows = false
         )
     ) {
         val density = LocalDensity.current
-        val screenWidthPx = with(density) { LocalConfiguration.current.screenWidthDp.dp.toPx() }
-        val screenHeightPx = with(density) { LocalConfiguration.current.screenHeightDp.dp.toPx() }
+        val config = LocalConfiguration.current
+        val screenWidthPx = with(density) { config.screenWidthDp.dp.toPx() }
+        val screenHeightPx = with(density) { config.screenHeightDp.dp.toPx() }
 
-        val initialWidth = sharedImageState.initialBounds.width
-        val initialHeight = sharedImageState.initialBounds.height
-        val aspectRatio = if (initialHeight > 0) initialWidth / initialHeight else 1f
+        val initialBounds = sharedImageState.initialBounds
+        val initialSize = sharedImageState.initialSize ?: Size(1f, 1f)
 
-        val finalWidth: Float
-        val finalHeight: Float
+        val imageAspectRatio =
+            if (initialSize.height > 0f) initialSize.width / initialSize.height else 1f
+        val screenAspectRatio = screenWidthPx / screenHeightPx
 
-        if (aspectRatio > (screenWidthPx / screenHeightPx)) {
-            finalWidth = screenWidthPx
-            finalHeight = screenWidthPx / aspectRatio
+        val (fittedWidth, fittedHeight) = if (imageAspectRatio > screenAspectRatio) {
+            Pair(config.screenWidthDp.dp, config.screenWidthDp.dp / imageAspectRatio)
         } else {
-            finalHeight = screenHeightPx
-            finalWidth = screenHeightPx * aspectRatio
+            Pair(config.screenHeightDp.dp * imageAspectRatio, config.screenHeightDp.dp)
         }
 
-        val targetScaleX = if (isAnimatingIn) 1f else initialWidth / finalWidth
-        val targetScaleY = if (isAnimatingIn) 1f else initialHeight / finalHeight
-        val targetAlpha = if (isAnimatingIn) 0.95f else 0f
+        val targetWidth = with(density) { initialBounds.width.toDp() }
+        val targetHeight = with(density) { initialBounds.height.toDp() }
 
-        val screenCenterX = screenWidthPx / 2
-        val screenCenterY = screenHeightPx / 2
-
-        val initialCenterX = sharedImageState.initialBounds.left + initialWidth / 2
-        val initialCenterY = sharedImageState.initialBounds.top + initialHeight / 2
-
-        val targetTranslationX = if (isAnimatingIn) 0f else initialCenterX - screenCenterX
-        val targetTranslationY = if (isAnimatingIn) 0f else initialCenterY - screenCenterY
-
-        val scaleX by animateFloatAsState(targetScaleX, spring(dampingRatio = 0.8f), label = "")
-        val scaleY by animateFloatAsState(targetScaleY, spring(dampingRatio = 0.8f), label = "")
-        val alpha by animateFloatAsState(targetAlpha, spring(), label = "")
-        val translationX by animateFloatAsState(targetTranslationX, spring(dampingRatio = 0.8f), label = "")
-        val translationY by animateFloatAsState(targetTranslationY, spring(dampingRatio = 0.8f), label = "")
-
-        val animatedCornerRadius by animateDpAsState(
-            targetValue = if (isAnimatingIn) 16.dp else 8.dp,
+        val animatedWidth by animateDpAsState(
+            targetValue = if (isAnimatingIn) fittedWidth else targetWidth,
             animationSpec = spring(dampingRatio = 0.8f),
-            label = "CornerRadiusAnimation"
+            label = "width"
+        )
+        val animatedHeight by animateDpAsState(
+            targetValue = if (isAnimatingIn) fittedHeight else targetHeight,
+            animationSpec = spring(dampingRatio = 0.8f),
+            label = "height"
+        )
+        val animatedCornerRadius by animateDpAsState(
+            targetValue = if (isAnimatingIn) 0.dp else 8.dp,
+            animationSpec = spring(dampingRatio = 0.8f),
+            label = "cornerRadius"
+        )
+
+        val initialCenterX = initialBounds.left + initialBounds.width / 2
+        val screenCenterX = screenWidthPx / 2
+        val translationX = initialCenterX - screenCenterX
+
+        val initialCenterY = initialBounds.top + initialBounds.height / 2
+        val screenCenterY = screenHeightPx / 2
+        val translationY = initialCenterY - screenCenterY
+
+        val animatedTranslationX by animateFloatAsState(
+            if (isAnimatingIn) 0f else translationX,
+            spring(dampingRatio = 0.8f),
+            label = "translateX"
+        )
+        val animatedTranslationY by animateFloatAsState(
+            if (isAnimatingIn) 0f else translationY,
+            spring(dampingRatio = 0.8f),
+            label = "translateY"
+        )
+        val animatedAlpha by animateFloatAsState(
+            if (isAnimatingIn) 1f else 0f,
+            spring(),
+            label = "alpha"
         )
 
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black.copy(alpha = alpha)),
+                .background(Color.Black.copy(alpha = animatedAlpha)),
             contentAlignment = Alignment.Center
         ) {
             val imageModifier = Modifier
-                .fillMaxSize()
+                .width(animatedWidth.coerceAtLeast(0.dp))
+                .height(animatedHeight.coerceAtLeast(0.dp))
                 .graphicsLayer {
-                    this.scaleX = scaleX
-                    this.scaleY = scaleY
-                    this.translationX = translationX
-                    this.translationY = translationY
+                    this.translationX = animatedTranslationX
+                    this.translationY = animatedTranslationY
+                    this.shape = RoundedCornerShape(animatedCornerRadius.coerceAtLeast(0.dp))
+                    this.clip = true
                 }
-                .clip(RoundedCornerShape(animatedCornerRadius))
 
             when (val image = sharedImageState.image) {
                 is ImageBitmap -> {
@@ -175,15 +199,18 @@ fun SharedImagePreviewer(
                         bitmap = image,
                         contentDescription = sharedImageState.contentDescription,
                         modifier = imageModifier,
-                        contentScale = ContentScale.Fit
+                        contentScale = ContentScale.Crop,
+                        alignment = Alignment.TopCenter,
                     )
                 }
+
                 else -> {
                     AsyncImage(
                         model = image,
                         contentDescription = sharedImageState.contentDescription,
                         modifier = imageModifier,
-                        contentScale = ContentScale.Fit
+                        contentScale = ContentScale.Crop,
+                        alignment = Alignment.TopCenter
                     )
                 }
             }
@@ -194,13 +221,11 @@ fun SharedImagePreviewer(
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier
                     .align(Alignment.TopEnd)
+                    .padding(WindowInsets.systemBars.asPaddingValues())
                     .padding(16.dp)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .clickable {
-                        isAnimatingIn = false
-                        isAnimatingOut = true
-                    }
+                    .clickable { close() }
                     .padding(8.dp)
             )
         }

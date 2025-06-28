@@ -11,7 +11,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.NotificationsActive
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -22,26 +21,27 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
+import coil.compose.AsyncImagePainter
 
 enum class ImageRoundedCorner { NONE, START, END, TOP, BOTTOM, ALL }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AsyncImageWithPlaceholder(
+fun AsyncImage(
     model: Any?,
     modifier: Modifier = Modifier,
     contentDescription: String?,
     isAiring: Boolean? = null,
     roundedCorners: ImageRoundedCorner = ImageRoundedCorner.ALL,
     onClick: (() -> Unit)? = null,
+    onSizeLoaded: ((Size) -> Unit)? = null
 ) {
     var isImageLoading by remember { mutableStateOf(true) }
-    var showDialog by remember { mutableStateOf(false) }
 
     val cornerRadius = 8.dp
     val shape: Shape = when (roundedCorners) {
@@ -69,13 +69,7 @@ fun AsyncImageWithPlaceholder(
         modifier = modifier
             .size(100.dp, 150.dp)
             .clip(shape)
-            .then(
-                if (onClick != null) {
-                    Modifier.clickable { onClick() }
-                } else {
-                    Modifier.clickable { showDialog = true }
-                }
-            ),
+            .then(onClick?.let { Modifier.clickable { it() } } ?: Modifier),
         contentAlignment = Alignment.Center
     ) {
         AsyncImage(
@@ -84,8 +78,12 @@ fun AsyncImageWithPlaceholder(
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
             alignment = Alignment.TopCenter,
-            onSuccess = { isImageLoading = false },
-            onError = { isImageLoading = false }
+            onState = { state ->
+                isImageLoading = state is AsyncImagePainter.State.Loading
+                if (state is AsyncImagePainter.State.Success) {
+                    onSizeLoaded?.invoke(state.painter.intrinsicSize)
+                }
+            }
         )
 
         if (isImageLoading) {
@@ -122,13 +120,5 @@ fun AsyncImageWithPlaceholder(
                 }
             }
         }
-    }
-
-    if (showDialog && model != null) {
-        ImagePreviewDialog(
-            image = model,
-            contentDescription = contentDescription,
-            onDismiss = { showDialog = false }
-        )
     }
 }
