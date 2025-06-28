@@ -77,7 +77,6 @@ class NotificationHandler @Inject constructor() {
             .setStyle(NotificationCompat.BigTextStyle().bigText(notification.contentText))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(createOpenIntent(context, notification.type, notification.accessId))
-            .setAutoCancel(true)
             .setShowWhen(true)
             .setOnlyAlertOnce(true)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
@@ -152,11 +151,11 @@ class NotificationHandler @Inject constructor() {
         actions: List<NotificationAction>
     ): NotificationCompat.Builder = apply {
         actions.forEach { action ->
-            val intent = Intent(context, NotificationReceiver::class.java).apply {
+            val broadcastIntent = Intent(context, NotificationReceiver::class.java).apply {
                 this.action = action.action
-                putExtra(action.extraKey, action.extraValue)
             }
-            val pendingIntent = when (action.action) {
+
+            val pendingIntent: PendingIntent? = when (action.action) {
                 "ACTION_OPEN_DETAIL" -> {
                     val detailIntent = Intent(
                         Intent.ACTION_VIEW,
@@ -188,18 +187,15 @@ class NotificationHandler @Inject constructor() {
                 }
 
                 "ACTION_CLOSE_NOTIFICATION" -> {
-                    val requestCode =
-                        action.extraValue.toIntOrNull() ?: action.extraValue.hashCode()
+                    val notificationId = action.extraValue.toIntOrNull() ?: 0
+                    broadcastIntent.putExtra(action.extraKey, notificationId)
                     PendingIntent.getBroadcast(
-                        context, requestCode, intent,
+                        context, notificationId, broadcastIntent,
                         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
                     )
                 }
 
-                else -> PendingIntent.getActivity(
-                    context, action.extraValue.hashCode(), intent,
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                )
+                else -> null
             }
             if (pendingIntent != null) {
                 addAction(action.icon, action.title, pendingIntent)

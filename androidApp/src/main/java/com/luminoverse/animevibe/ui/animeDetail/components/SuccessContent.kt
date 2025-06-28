@@ -68,7 +68,7 @@ fun SuccessContent(
                 LazyColumn(
                     modifier = Modifier.weight(1f),
                     state = landscapeScrollState,
-                    contentPadding = PaddingValues(bottom = 8.dp),
+                    contentPadding = PaddingValues(vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     rightColumnContent(
