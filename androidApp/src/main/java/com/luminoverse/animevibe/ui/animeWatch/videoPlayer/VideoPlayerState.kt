@@ -8,6 +8,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.runtime.*
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntSize
@@ -18,6 +19,7 @@ import coil.ImageLoader
 import coil.imageLoader
 import coil.request.ImageRequest
 import com.luminoverse.animevibe.data.remote.api.NetworkDataSource
+import com.luminoverse.animevibe.utils.media.BoundsUtils.calculateOffsetBounds
 import com.luminoverse.animevibe.utils.media.CaptionCue
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
@@ -357,7 +359,7 @@ suspend fun AwaitPointerEventScope.handleGestures(
             break
         }
 
-        if (event.changes.size > 1 && !updatedControlsState.value.isLocked) {
+        if (event.changes.size > 1 && !updatedControlsState.value.isLocked && !state.isFirstLoad) {
             if (!isMultiTouch) {
                 isMultiTouch = true
                 state.isZooming = true
@@ -373,13 +375,16 @@ suspend fun AwaitPointerEventScope.handleGestures(
 
             val (maxOffsetX, maxOffsetY) = calculateOffsetBounds(
                 size,
-                state.videoSize,
+                Size(
+                    width = state.videoSize.width.toFloat(),
+                    height = state.videoSize.height.toFloat()
+                ),
                 state.zoomScaleProgress
             )
             state.offsetX = state.offsetX.coerceIn(-maxOffsetX, maxOffsetX)
             state.offsetY = state.offsetY.coerceIn(-maxOffsetY, maxOffsetY)
             event.changes.forEach { it.consume() }
-        } else if (event.changes.size == 1 && !isMultiTouch && updatedControlsState.value.zoom > 1f && !updatedControlsState.value.isLocked) {
+        } else if (event.changes.size == 1 && !isMultiTouch && updatedControlsState.value.zoom > 1f && !updatedControlsState.value.isLocked && !state.isFirstLoad) {
             val pan = event.calculatePan()
             if (pan.x != 0f || pan.y != 0f) {
                 if (!isDragging) {
@@ -392,7 +397,10 @@ suspend fun AwaitPointerEventScope.handleGestures(
                 }
                 val (maxOffsetX, maxOffsetY) = calculateOffsetBounds(
                     size,
-                    state.videoSize,
+                    Size(
+                        width = state.videoSize.width.toFloat(),
+                        height = state.videoSize.height.toFloat()
+                    ),
                     state.zoomScaleProgress
                 )
                 state.offsetX =
@@ -441,38 +449,4 @@ suspend fun AwaitPointerEventScope.handleGestures(
             state.lastTapX = tapX
         }
     }
-}
-
-/**
- * A helper function to calculate the maximum allowed pan offsets based on the container size,
- * the video's intrinsic size, and the current zoom scale. This prevents panning into blank areas.
- */
-fun calculateOffsetBounds(
-    containerSize: IntSize,
-    videoSize: VideoSize,
-    scale: Float
-): Pair<Float, Float> {
-    if (containerSize.width == 0 || containerSize.height == 0 || videoSize.width == 0 || videoSize.height == 0 || scale <= 1f) {
-        return 0f to 0f
-    }
-
-    val containerWidth = containerSize.width.toFloat()
-    val containerHeight = containerSize.height.toFloat()
-
-    val vWidth = videoSize.width.toFloat() * videoSize.pixelWidthHeightRatio
-    val vHeight = videoSize.height.toFloat()
-
-    val containerAspect = containerWidth / containerHeight
-    val videoAspect = vWidth / vHeight
-
-    val (fittedWidth, fittedHeight) = if (videoAspect > containerAspect) {
-        containerWidth to (containerWidth / videoAspect)
-    } else {
-        (containerHeight * videoAspect) to containerHeight
-    }
-
-    val overflowX = (fittedWidth * scale - containerWidth).coerceAtLeast(0f)
-    val overflowY = (fittedHeight * scale - containerHeight).coerceAtLeast(0f)
-
-    return (overflowX / 2f) to (overflowY / 2f)
 }
