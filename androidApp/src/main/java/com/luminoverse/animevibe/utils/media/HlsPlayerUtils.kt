@@ -23,6 +23,10 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionParameters
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.database.StandaloneDatabaseProvider
+import androidx.media3.datasource.cache.CacheDataSource
+import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
+import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -34,7 +38,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -47,6 +50,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -83,7 +87,6 @@ sealed class HlsPlayerAction {
     data object FastForward : HlsPlayerAction()
     data object Rewind : HlsPlayerAction()
     data class SetPlaybackSpeed(val speed: Float) : HlsPlayerAction()
-    data object Release : HlsPlayerAction()
     data class SetVideoSurface(val surface: Any?) : HlsPlayerAction()
     data class SetSubtitle(val track: Track?) : HlsPlayerAction()
     data class RequestToggleControlsVisibility(val isVisible: Boolean? = null) : HlsPlayerAction()
@@ -105,6 +108,8 @@ class HlsPlayerUtils @Inject constructor(
     private var audioFocusRequest: AudioFocusRequest? = null
     private var audioFocusRequested: Boolean = false
     private var videoSurface: Any? = null
+    private var cache: SimpleCache? = null
+    private val cacheDirectory = File(applicationContext.cacheDir, "exoplayer_cache")
 
     private var currentVideoData: EpisodeSources? = null
 
@@ -134,10 +139,19 @@ class HlsPlayerUtils @Inject constructor(
             audioManager =
                 applicationContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
             val trackSelector = DefaultTrackSelector(applicationContext)
+
+            val cacheEvictor = LeastRecentlyUsedCacheEvictor(500 * 1024 * 1024)
+            val databaseProvider = StandaloneDatabaseProvider(applicationContext)
+            cache = SimpleCache(cacheDirectory, cacheEvictor, databaseProvider)
+
             val dataSourceFactory = OkHttpDataSource.Factory(okHttpClient)
+            val cacheDataSourceFactory = CacheDataSource.Factory()
+                .setCache(cache!!)
+                .setUpstreamDataSourceFactory(dataSourceFactory)
+                .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
 
             val mediaSourceFactory = DefaultMediaSourceFactory(applicationContext)
-                .setDataSourceFactory(dataSourceFactory)
+                .setDataSourceFactory(cacheDataSourceFactory)
 
             exoPlayer = ExoPlayer.Builder(applicationContext)
                 .setTrackSelector(trackSelector)
@@ -149,7 +163,7 @@ class HlsPlayerUtils @Inject constructor(
                     pause()
                     Log.d(
                         "HlsPlayerUtils",
-                        "ExoPlayer initialized by Hilt with custom OkHttpClient"
+                        "ExoPlayer initialized by Hilt with custom OkHttpClient and caching"
                     )
                 }
             _playerCoreState.update {
@@ -175,7 +189,6 @@ class HlsPlayerUtils @Inject constructor(
             is HlsPlayerAction.FastForward -> fastForward()
             is HlsPlayerAction.Rewind -> rewind()
             is HlsPlayerAction.SetPlaybackSpeed -> setPlaybackSpeed(action.speed)
-            is HlsPlayerAction.Release -> release()
             is HlsPlayerAction.SetVideoSurface -> setVideoSurface(action.surface)
             is HlsPlayerAction.SetSubtitle -> setSubtitle(action.track)
             is HlsPlayerAction.RequestToggleControlsVisibility -> {
@@ -510,8 +523,12 @@ class HlsPlayerUtils @Inject constructor(
         }
     }
 
-    private fun release() {
-        try {
+    fun getCacheSize(): Long {
+        return cache?.cacheSpace ?: 0L
+    }
+
+    suspend fun release() {
+        withContext(Dispatchers.Main) {
             exoPlayer?.let { player ->
                 playerListener?.let { player.removeListener(it) }
                 player.stop()
@@ -528,12 +545,17 @@ class HlsPlayerUtils @Inject constructor(
             controlsHideJob?.cancel()
             controlsHideJob = null
 
-            playerCoroutineScope.cancel()
             _playerCoreState.update { PlayerCoreState() }
             _controlsState.update { ControlsState() }
-            Log.d("HlsPlayerUtils", "HlsPlayerUtils completely released and state reset")
+            Log.d("HlsPlayerUtils", "Player components released on Main thread.")
+        }
+
+        try {
+            cache?.release()
+            cache = null
+            Log.d("HlsPlayerUtils", "Cache released on background thread.")
         } catch (e: Exception) {
-            Log.e("HlsPlayerUtils", "Failed to release HlsPlayerUtils", e)
+            Log.e("HlsPlayerUtils", "Failed to release cache", e)
         }
     }
 }

@@ -18,6 +18,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
@@ -29,16 +30,19 @@ import com.luminoverse.animevibe.ui.main.MainAction
 import com.luminoverse.animevibe.ui.main.MainState
 import com.luminoverse.animevibe.ui.settings.components.ColorStyleCard
 import com.luminoverse.animevibe.ui.settings.components.ContrastModeChips
+import com.luminoverse.animevibe.ui.settings.components.HeaderText
+import com.luminoverse.animevibe.ui.settings.components.SettingItem
 import com.luminoverse.animevibe.ui.settings.components.ThemeModeChips
 import com.luminoverse.animevibe.ui.theme.ColorStyle
 
 @OptIn(ExperimentalMaterial3Api::class)
-@Preview
 @Composable
 fun SettingsScreen(
-    mainState: MainState = MainState(),
-    mainAction: (MainAction) -> Unit = {},
-    rememberedTopPadding: Dp = 0.dp
+    mainState: MainState,
+    mainAction: (MainAction) -> Unit,
+    settingsState: SettingsState,
+    onSettingsAction: (SettingsAction) -> Unit,
+    rememberedTopPadding: Dp
 ) {
     val colorStyleCardScrollState = rememberScrollState()
     val context = LocalContext.current
@@ -61,6 +65,10 @@ fun SettingsScreen(
         mainAction(MainAction.CheckNotificationPermission)
     }
 
+    LaunchedEffect(Unit) {
+        onSettingsAction(SettingsAction.UpdateCacheSize)
+    }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -69,26 +77,49 @@ fun SettingsScreen(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         item {
+            HeaderText("Appearance")
+        }
+        item {
             ThemeModeChips(
                 selectedThemeMode = mainState.themeMode,
                 onThemeModeSelected = { mainAction(MainAction.SetThemeMode(it)) },
             )
+            ContrastModeChips(
+                selectedContrastMode = mainState.contrastMode,
+                onContrastModeChanged = { mainAction(MainAction.SetContrastMode(it)) }
+            )
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    text = "Color Style",
+                    style = MaterialTheme.typography.titleMedium,
+                )
+                ColorStyle.entries.forEach { style ->
+                    ColorStyleCard(
+                        state = colorStyleCardScrollState,
+                        colorStyle = style,
+                        isSelected = style == mainState.colorStyle,
+                        themeMode = mainState.themeMode,
+                        isRtl = mainState.isRtl,
+                        contrastMode = mainState.contrastMode,
+                        onColorStyleSelected = { mainAction(MainAction.SetColorStyle(style)) },
+                    )
+                }
+            }
+        }
+
+        item {
+            HeaderText("Behavior & Data")
         }
         item {
-            ToggleWithLabel(
-                isActive = mainState.isAutoPlayVideo,
-                label = "Auto Play Video",
-                description = "Enable auto play video",
-                onToggle = { mainAction(MainAction.SetAutoPlayVideo(it)) }
+            SettingItem(
+                title = "Clear Video Cache",
+                description = "Current size: ${settingsState.cacheSize}",
+                onClick = { onSettingsAction(SettingsAction.ClearCache) }
             )
         }
+
         item {
-            ToggleWithLabel(
-                isActive = mainState.isRtl,
-                label = "Right-to-Left Layout",
-                description = "Enable right-to-left layout for text and UI",
-                onToggle = { mainAction(MainAction.SetRtl(it)) }
-            )
+            HeaderText("Notifications")
         }
         item {
             ToggleWithLabel(
@@ -137,30 +168,35 @@ fun SettingsScreen(
                 }
             )
         }
+
         item {
-            ContrastModeChips(
-                selectedContrastMode = mainState.contrastMode,
-                onContrastModeChanged = { mainAction(MainAction.SetContrastMode(it)) }
+            HeaderText("Others")
+        }
+        item {
+            ToggleWithLabel(
+                isActive = mainState.isAutoPlayVideo,
+                label = "Auto Play Video",
+                description = "Enable auto play video",
+                onToggle = { mainAction(MainAction.SetAutoPlayVideo(it)) }
+            )
+            ToggleWithLabel(
+                isActive = mainState.isRtl,
+                label = "Right-to-Left Layout",
+                description = "Enable right-to-left layout for text and UI",
+                onToggle = { mainAction(MainAction.SetRtl(it)) }
             )
         }
-        item {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = "Color Style",
-                    style = MaterialTheme.typography.titleMedium
-                )
-                ColorStyle.entries.forEach { style ->
-                    ColorStyleCard(
-                        state = colorStyleCardScrollState,
-                        colorStyle = style,
-                        isSelected = style == mainState.colorStyle,
-                        themeMode = mainState.themeMode,
-                        isRtl = mainState.isRtl,
-                        contrastMode = mainState.contrastMode,
-                        onColorStyleSelected = { mainAction(MainAction.SetColorStyle(style)) },
-                    )
-                }
-            }
-        }
     }
+}
+
+@Preview
+@Composable
+fun SettingsScreenPreview() {
+    SettingsScreen(
+        mainState = MainState(),
+        mainAction = {},
+        settingsState = SettingsState(cacheSize = "123.4 MB"),
+        onSettingsAction = {},
+        rememberedTopPadding = 0.dp
+    )
 }

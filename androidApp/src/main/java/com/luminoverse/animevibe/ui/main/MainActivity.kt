@@ -318,9 +318,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPictureInPictureModeChanged(
         isInPictureInPictureMode: Boolean,
-        configuration: Configuration
+        newConfig: Configuration
     ) {
-        super.onPictureInPictureModeChanged(isInPictureInPictureMode, configuration)
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
         onPictureInPictureModeChangedListeners.forEach {
             if (!isInPictureInPictureMode && !lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
                 hlsPlayerUtils.dispatch(HlsPlayerAction.Pause)
@@ -358,7 +358,9 @@ class MainActivity : AppCompatActivity() {
         installStateUpdatedListener?.let {
             appUpdateManager.unregisterListener(it)
         }
-        (applicationContext as AnimeApplication).cleanupService()
+        lifecycleScope.launch {
+            (applicationContext as AnimeApplication).cleanupService()
+        }
     }
 
     fun exitPipModeIfActive() {

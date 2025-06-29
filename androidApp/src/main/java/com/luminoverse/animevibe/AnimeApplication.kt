@@ -19,14 +19,12 @@ import com.luminoverse.animevibe.utils.media.MediaPlaybackAction
 import com.luminoverse.animevibe.utils.media.MediaPlaybackService
 import com.luminoverse.animevibe.utils.debug.NotificationDebugUtil
 import com.luminoverse.animevibe.utils.handlers.NotificationHandler
-import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
 import com.luminoverse.animevibe.utils.shake.ShakeDetector
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Provider
@@ -65,29 +63,18 @@ class AnimeApplication : Application(), Configuration.Provider, ImageLoaderFacto
 
     override fun onCreate() {
         super.onCreate()
-        Log.d(TAG, "onCreate called")
+
         notificationHandler.createNotificationChannel(this)
 
         if (BuildConfig.DEBUG) {
             setupSensor()
         }
 
-        Log.d(TAG, "HlsPlayerUtils instance: $hlsPlayerUtils")
         manageMediaService(true)
     }
 
-    override fun onTerminate() {
-        super.onTerminate()
-        manageMediaService(false)
-        if (BuildConfig.DEBUG) {
-            sensorManager.unregisterListener(shakeDetector)
-        }
-        hlsPlayerUtils.dispatch(HlsPlayerAction.Release)
-        coroutineScope.cancel()
-    }
-
-    fun cleanupService() {
-        hlsPlayerUtils.dispatch(HlsPlayerAction.Release)
+    suspend fun cleanupService() {
+        hlsPlayerUtils.release()
         stopMediaPlaybackService()
     }
 
