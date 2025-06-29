@@ -50,12 +50,9 @@ class SettingsViewModel @Inject constructor(
     }
 
     private fun clearCache() {
-        viewModelScope.launch(Dispatchers.IO) {
-            hlsPlayerUtils.release()
-
-            val sizeInBytes = hlsPlayerUtils.getCacheSize()
-            val formattedSize = formatSize(sizeInBytes)
-            _state.update { it.copy(cacheSize = formattedSize) }
+        viewModelScope.launch {
+            hlsPlayerUtils.clearCache()
+            updateCacheSize()
         }
     }
 

@@ -23,7 +23,6 @@ import com.luminoverse.animevibe.utils.media.BoundsUtils.calculateOffsetBounds
 import com.luminoverse.animevibe.utils.media.CaptionCue
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
-import com.luminoverse.animevibe.utils.media.PlayerCoreState
 import com.luminoverse.animevibe.utils.media.ThumbnailCue
 import com.luminoverse.animevibe.utils.media.parseCaptionCues
 import com.luminoverse.animevibe.utils.media.parseThumbnailCues
@@ -229,10 +228,9 @@ class VideoPlayerState(
     fun handleDoubleTap(
         x: Float,
         screenWidth: Float,
-        coreState: PlayerCoreState,
         isLocked: Boolean
     ) {
-        if (!isLocked && coreState.playbackState != Player.STATE_IDLE && !isFirstLoad) {
+        if (!isLocked) {
             Log.d("PlayerView", "Double tap at x=$x")
             val newSeekDirection = when {
                 x < screenWidth * 0.4 -> -1
@@ -336,7 +334,6 @@ fun rememberVideoPlayerState(
 suspend fun AwaitPointerEventScope.handleGestures(
     state: VideoPlayerState,
     updatedControlsState: State<ControlsState>,
-    updatedCoreState: State<PlayerCoreState>
 ) {
     val down = awaitFirstDown()
 
@@ -439,7 +436,6 @@ suspend fun AwaitPointerEventScope.handleGestures(
                 state.handleDoubleTap(
                     tapX,
                     size.width.toFloat(),
-                    updatedCoreState.value,
                     updatedControlsState.value.isLocked
                 )
             } else {

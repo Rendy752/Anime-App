@@ -84,7 +84,10 @@ class NetworkStateMonitor @Inject constructor(
             return
         }
 
-        if (capabilities == null || !capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)) {
+        if (activeNetwork == null || capabilities == null || !capabilities.hasCapability(
+                NetworkCapabilities.NET_CAPABILITY_INTERNET
+            )
+        ) {
             _networkStatus.value = NetworkStatus(
                 icon = Icons.Filled.SignalWifiConnectedNoInternet4,
                 label = "No Internet",
@@ -119,30 +122,45 @@ class NetworkStateMonitor @Inject constructor(
         speed: Int
     ) {
         val isWifi = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
-        val (icon: ImageVector, color: Color) = when (speed) {
-            in 0..100 -> {
+        val (icon: ImageVector, color: Color) = when {
+            speed <= 0 && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) -> {
+                (if (isWifi) Icons.Filled.Wifi else Icons.Filled.SignalCellularAlt) to Color.Green
+            }
+
+            speed in 1..100 -> {
                 (if (isWifi) Icons.Filled.Wifi1Bar else Icons.Filled.SignalCellularAlt1Bar) to Color.Red
             }
 
-            in 101..1500 -> {
+            speed in 101..1500 -> {
                 (if (isWifi) Icons.Filled.Wifi2Bar else Icons.Filled.SignalCellularAlt2Bar) to Color.Yellow
             }
 
-            else -> {
+            speed > 1500 -> {
                 (if (isWifi) Icons.Filled.Wifi else Icons.Filled.SignalCellularAlt) to Color.Green
+            }
+
+            else -> {
+                (Icons.Filled.SignalWifiConnectedNoInternet4) to Color.Red
             }
         }
 
+        val isConnected =
+            speed > 0 || capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+
         _networkStatus.value = NetworkStatus(
             icon = icon,
-            label = if (speed > 0) "$speed Kbps" else "Connected",
+            label = if (speed > 0) "$speed Kbps" else if (isConnected) "Connected" else "No Internet",
             iconColor = color,
-            isConnected = true
+            isConnected = isConnected
         )
     }
 
     fun startMonitoring() {
         if (monitoringJob?.isActive == true) return
+        monitorScope.launch {
+            checkAndUpdateNetworkStatus()
+        }
+
         try {
             val request = NetworkRequest.Builder()
                 .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)

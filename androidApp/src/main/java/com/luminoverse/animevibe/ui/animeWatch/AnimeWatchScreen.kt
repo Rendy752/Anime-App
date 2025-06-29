@@ -152,16 +152,17 @@ fun AnimeWatchScreen(
         }
     }
 
-    LaunchedEffect(watchState.isRefreshing) {
-        if (watchState.isRefreshing) dismissSnackbar()
+    LaunchedEffect(watchState.isRefreshing, hlsPlayerCoreState.error) {
+        if (watchState.isRefreshing || hlsPlayerCoreState.error == null) dismissSnackbar()
     }
 
     LaunchedEffect(mainState.networkStatus.isConnected) {
-        if (mainState.networkStatus.isConnected && watchState.episodeDetailComplement == null && watchState.episodeSourcesQuery != null) {
+        if (!mainState.networkStatus.isConnected) return@LaunchedEffect
+        if (getPlayer()?.isPlaying == false) dispatchPlayerAction(HlsPlayerAction.Play)
+        if (watchState.episodeDetailComplement == null && watchState.episodeSourcesQuery != null) {
             onAction(
                 WatchAction.HandleSelectedEpisodeServer(
-                    watchState.episodeSourcesQuery,
-                    isRefresh = true
+                    watchState.episodeSourcesQuery, isRefresh = true
                 )
             )
         }
@@ -188,8 +189,13 @@ fun AnimeWatchScreen(
         val screenWidth = configuration.screenWidthDp.dp
         val videoHeight = screenWidth * 9 / 16
         Column(modifier = Modifier.fillMaxSize()) {
-            val videoPlayerModifier = Modifier.fillMaxWidth()
-                .then(if (mainState.isLandscape) Modifier.fillMaxSize() else Modifier.height(videoHeight))
+            val videoPlayerModifier = Modifier
+                .fillMaxWidth()
+                .then(
+                    if (mainState.isLandscape) Modifier.fillMaxSize() else Modifier.height(
+                        videoHeight
+                    )
+                )
             AnimeWatchContent(
                 malId = malId,
                 navController = navController,

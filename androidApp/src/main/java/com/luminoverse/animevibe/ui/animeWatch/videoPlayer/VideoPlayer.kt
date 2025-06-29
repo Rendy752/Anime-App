@@ -317,8 +317,7 @@ fun VideoPlayer(
                     awaitEachGesture {
                         handleGestures(
                             state = videoPlayerState,
-                            updatedControlsState = updatedControlsState,
-                            updatedCoreState = updatedCoreState
+                            updatedControlsState = updatedControlsState
                         )
                     }
                 }

@@ -23,9 +23,7 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionParameters
 import androidx.media3.common.util.UnstableApi
-import androidx.media3.database.StandaloneDatabaseProvider
 import androidx.media3.datasource.cache.CacheDataSource
-import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
@@ -50,7 +48,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import java.io.ByteArrayOutputStream
-import java.io.File
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -100,7 +97,8 @@ private const val CONTROLS_AUTO_HIDE_DELAY_MS = 3_000L
 @OptIn(UnstableApi::class)
 class HlsPlayerUtils @Inject constructor(
     @ApplicationContext private val applicationContext: Context,
-    private val okHttpClient: OkHttpClient
+    private val okHttpClient: OkHttpClient,
+    private val exoPlayerCache: SimpleCache
 ) {
     private var exoPlayer: ExoPlayer? = null
     private var playerListener: Player.Listener? = null
@@ -108,8 +106,6 @@ class HlsPlayerUtils @Inject constructor(
     private var audioFocusRequest: AudioFocusRequest? = null
     private var audioFocusRequested: Boolean = false
     private var videoSurface: Any? = null
-    private var cache: SimpleCache? = null
-    private val cacheDirectory = File(applicationContext.cacheDir, "exoplayer_cache")
 
     private var currentVideoData: EpisodeSources? = null
 
@@ -140,13 +136,9 @@ class HlsPlayerUtils @Inject constructor(
                 applicationContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
             val trackSelector = DefaultTrackSelector(applicationContext)
 
-            val cacheEvictor = LeastRecentlyUsedCacheEvictor(500 * 1024 * 1024)
-            val databaseProvider = StandaloneDatabaseProvider(applicationContext)
-            cache = SimpleCache(cacheDirectory, cacheEvictor, databaseProvider)
-
             val dataSourceFactory = OkHttpDataSource.Factory(okHttpClient)
             val cacheDataSourceFactory = CacheDataSource.Factory()
-                .setCache(cache!!)
+                .setCache(exoPlayerCache)
                 .setUpstreamDataSourceFactory(dataSourceFactory)
                 .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
 
@@ -243,13 +235,13 @@ class HlsPlayerUtils @Inject constructor(
             override fun onPlaybackStateChanged(playbackState: Int) {
                 Log.d("HlsPlayerUtils", "onPlaybackStateChanged: $playbackState")
                 _playerCoreState.update {
-                    it.copy(
-                        playbackState = playbackState,
-                        isLoading = playbackState == Player.STATE_BUFFERING
-                    )
+                    it.copy(playbackState = playbackState)
                 }
                 if (playbackState == Player.STATE_READY) {
                     _playerCoreState.update { it.copy(isLoading = false, error = null) }
+                }
+                if (playbackState == Player.STATE_BUFFERING) {
+                    _playerCoreState.update { it.copy(isLoading = true, error = null) }
                 }
                 if (playbackState == Player.STATE_ENDED) {
                     dispatch(HlsPlayerAction.ToggleLock(false))
@@ -385,8 +377,11 @@ class HlsPlayerUtils @Inject constructor(
 
 
     private fun play() {
-        exoPlayer?.let {
-            it.play()
+        exoPlayer?.let { player ->
+            if (player.playerError != null) {
+                player.prepare()
+            }
+            player.play()
             requestAudioFocus()
             Log.d("HlsPlayerUtils", "play: called")
         }
@@ -400,11 +395,14 @@ class HlsPlayerUtils @Inject constructor(
     }
 
     private fun seekTo(positionMs: Long) {
-        exoPlayer?.let {
-            val duration = it.duration
+        exoPlayer?.let { player ->
+            val duration = player.duration
             val clampedPos = positionMs.coerceAtLeast(0)
                 .coerceAtMost(if (duration > 0) duration else Long.MAX_VALUE)
-            it.seekTo(clampedPos)
+            if (player.playerError != null) {
+                player.prepare()
+            }
+            player.seekTo(clampedPos)
         }
     }
 
@@ -524,7 +522,26 @@ class HlsPlayerUtils @Inject constructor(
     }
 
     fun getCacheSize(): Long {
-        return cache?.cacheSpace ?: 0L
+        return exoPlayerCache.cacheSpace
+    }
+
+    /**
+     * Destructive action to clear all cached files.
+     * This will release the underlying cache singleton, which may require an app restart
+     * for caching to function again. This is an unavoidable consequence of using release()
+     * to clear the files.
+     */
+    suspend fun clearCache() {
+        withContext(Dispatchers.IO) {
+            try {
+                for (key in exoPlayerCache.keys) {
+                    exoPlayerCache.removeResource(key)
+                }
+                Log.d("HlsPlayerUtils", "All resources removed from cache successfully.")
+            } catch (e: Exception) {
+                Log.e("HlsPlayerUtils", "Failed to clear cache resources", e)
+            }
+        }
     }
 
     suspend fun release() {
@@ -548,14 +565,6 @@ class HlsPlayerUtils @Inject constructor(
             _playerCoreState.update { PlayerCoreState() }
             _controlsState.update { ControlsState() }
             Log.d("HlsPlayerUtils", "Player components released on Main thread.")
-        }
-
-        try {
-            cache?.release()
-            cache = null
-            Log.d("HlsPlayerUtils", "Cache released on background thread.")
-        } catch (e: Exception) {
-            Log.e("HlsPlayerUtils", "Failed to release cache", e)
         }
     }
 }

@@ -84,7 +84,7 @@ fun AnimeWatchContent(
                     .weight(1f)
                     .background(MaterialTheme.colorScheme.surfaceContainer)
             ) {
-                if (watchState.episodeDetailComplement == null || watchState.episodeDetailComplement.sources.link.file.isEmpty() == true || watchState.animeDetailComplement?.episodes == null || watchState.episodeSourcesQuery == null) {
+                if (watchState.episodeDetailComplement == null || watchState.episodeDetailComplement.sources.link.file.isEmpty() || watchState.animeDetailComplement?.episodes == null || watchState.episodeSourcesQuery == null) {
                     if (playerCoreState.error != null && !watchState.isRefreshing && !playerCoreState.isPlaying) ImageDisplay(
                         modifier = modifier,
                         image = watchState.animeDetail?.images?.webp?.large_image_url,
@@ -147,19 +147,6 @@ fun AnimeWatchContent(
                                     }
                                 ))
                         },
-                    )
-                }
-                watchState.episodeSourcesQuery?.let { episodeSourcesQuery ->
-                    RetryButton(
-                        modifier = Modifier.align(Alignment.Center),
-                        isVisible = playerCoreState.error != null && !watchState.isRefreshing && !playerCoreState.isPlaying,
-                        onRetry = {
-                            onAction(
-                                WatchAction.HandleSelectedEpisodeServer(
-                                    episodeSourcesQuery = episodeSourcesQuery, isRefresh = true
-                                )
-                            )
-                        }
                     )
                 }
             }

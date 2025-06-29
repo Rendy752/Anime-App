@@ -45,7 +45,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -152,7 +156,6 @@ fun PlayerControls(
 
         BottomSection(
             modifier = Modifier.align(Alignment.BottomCenter),
-            playbackErrorMessage = playbackErrorMessage,
             shouldShowControls = shouldShowControls,
             isShowSeekIndicator = isShowSeekIndicator,
             onFullscreenToggle = onFullscreenToggle,
@@ -318,8 +321,7 @@ fun PlayPauseLoadingButton(
     handlePlay: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isLoading = playbackState == Player.STATE_BUFFERING || playbackState == Player.STATE_IDLE
-
+    var mutableIsPlaying by remember { mutableStateOf(isPlaying) }
     val infiniteTransition = rememberInfiniteTransition(label = "loading_border_transition")
     val angle by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -330,7 +332,11 @@ fun PlayPauseLoadingButton(
         label = "loading_border_angle"
     )
 
-    val borderModifier = if (isLoading && playbackErrorMessage == null) {
+    LaunchedEffect(isPlaying) {
+        mutableIsPlaying = isPlaying
+    }
+
+    val borderModifier = if (playbackState == Player.STATE_BUFFERING && playbackErrorMessage == null) {
         Modifier.drawBehind {
             val strokeWidth = 3.dp.toPx()
             val brush = Brush.sweepGradient(
@@ -357,15 +363,19 @@ fun PlayPauseLoadingButton(
             .then(borderModifier)
             .clip(CircleShape)
             .clickable(
-                enabled = !isLoading,
                 onClick = {
                     when (playbackState) {
                         Player.STATE_ENDED -> {
                             onSeekTo(0)
                             handlePlay()
+                            mutableIsPlaying = true
                         }
 
-                        else -> if (isPlaying) handlePause() else handlePlay()
+                        else -> if (mutableIsPlaying) {
+                            handlePause(); mutableIsPlaying = false
+                        } else {
+                            handlePlay(); mutableIsPlaying = true
+                        }
                     }
                 }
             )
@@ -379,7 +389,7 @@ fun PlayPauseLoadingButton(
             modifier = Modifier.size(40.dp),
             targetState = when {
                 playbackState == Player.STATE_ENDED -> "ended"
-                isPlaying -> "playing"
+                mutableIsPlaying -> "playing"
                 else -> "paused"
             },
             transitionSpec = {
@@ -532,7 +542,6 @@ private fun MiddleSection(
 @Composable
 private fun BottomSection(
     modifier: Modifier,
-    playbackErrorMessage: PlaybackException?,
     shouldShowControls: Boolean,
     isShowSeekIndicator: Int,
     onFullscreenToggle: () -> Unit,
@@ -612,7 +621,6 @@ private fun BottomSection(
                 val heightInPx = it.size.height.toFloat()
                 onBottomBarMeasured(heightInPx)
             },
-            playbackErrorMessage = playbackErrorMessage,
             currentPosition = currentPosition,
             duration = duration,
             bufferedPosition = bufferedPosition,
