@@ -8,6 +8,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
@@ -19,8 +20,10 @@ import androidx.compose.ui.graphics.BlurEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.luminoverse.animevibe.models.AnimeDetail
+import com.luminoverse.animevibe.ui.animeHome.INITIAL_CAROUSEL_HEIGHT
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.main.navigation.navigateTo
 import kotlinx.coroutines.delay
@@ -28,7 +31,6 @@ import java.util.Date
 
 @Composable
 fun TopAnimeCarousel(
-    modifier: Modifier = Modifier,
     topAnimeList: List<AnimeDetail>,
     currentCarouselPage: Int,
     autoScrollEnabled: Boolean,
@@ -82,7 +84,8 @@ fun TopAnimeCarousel(
         }
 
         Box(
-            modifier = modifier
+            modifier = Modifier
+                .height(INITIAL_CAROUSEL_HEIGHT.dp)
                 .fillMaxWidth()
                 .graphicsLayer {
                     renderEffect = BlurEffect(
@@ -121,12 +124,10 @@ fun TopAnimeCarousel(
 
 @Preview
 @Composable
-fun TopAnimeCarouselSkeleton(
-    modifier: Modifier = Modifier,
-    isError: Boolean = false
-) {
+fun TopAnimeCarouselSkeleton(isError: Boolean = false) {
     Box(
-        modifier = modifier
+        modifier = Modifier
+            .height(INITIAL_CAROUSEL_HEIGHT.dp)
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.5f))
     ) {

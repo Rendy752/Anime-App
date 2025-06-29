@@ -215,7 +215,7 @@ fun SharedImagePreviewer(
                 }
             }
 
-            Icon(
+            if (animatedCornerRadius == 0.dp) Icon(
                 imageVector = Icons.Default.Close,
                 contentDescription = "Close Preview",
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
