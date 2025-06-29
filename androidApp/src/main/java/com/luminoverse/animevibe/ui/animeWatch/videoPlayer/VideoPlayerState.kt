@@ -26,6 +26,7 @@ import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.ThumbnailCue
 import com.luminoverse.animevibe.utils.media.parseCaptionCues
 import com.luminoverse.animevibe.utils.media.parseThumbnailCues
+import com.luminoverse.animevibe.utils.media.toSha256
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -35,6 +36,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.io.IOException
 import java.util.*
 import kotlin.math.abs
@@ -48,6 +50,7 @@ private const val MAX_ZOOM_RATIO = 8f
 
 @Stable
 class VideoPlayerState(
+    private val context: Context,
     val player: ExoPlayer,
     val playerAction: (HlsPlayerAction) -> Unit,
     val scope: CoroutineScope,
@@ -126,20 +129,60 @@ class VideoPlayerState(
         }
     }
 
+    private fun getSubtitlesCacheDir(): File {
+        return File(context.cacheDir, "subtitles").also {
+            if (!it.exists()) {
+                it.mkdirs()
+            }
+        }
+    }
+
+    private fun getSubtitleFile(url: String): File {
+        val fileName = "${url.toSha256()}.vtt"
+        return File(getSubtitlesCacheDir(), fileName)
+    }
+
+
     fun loadAndCacheCaptions(captionUrl: String) {
         scope.launch {
             if (captionCues.containsKey(captionUrl)) return@launch
-            try {
-                val vttContent = networkDataSource.fetchText(captionUrl)
-                if (vttContent.isNullOrEmpty()) {
-                    throw IOException("Failed to fetch caption VTT content or content is empty.")
-                }
 
+            val subtitleFile = getSubtitleFile(captionUrl)
+            var vttContent: String? = null
+
+            if (subtitleFile.exists()) {
+                try {
+                    vttContent = withContext(Dispatchers.IO) {
+                        subtitleFile.readText()
+                    }
+                    Log.d("VideoPlayerState", "Loaded captions from local cache for $captionUrl")
+                } catch (e: Exception) {
+                    Log.e("VideoPlayerState", "Failed to read local caption file: ${e.message}", e)
+                }
+            }
+
+            if (vttContent == null) {
+                try {
+                    vttContent = networkDataSource.fetchText(captionUrl)
+                    if (!vttContent.isNullOrEmpty()) {
+                        withContext(Dispatchers.IO) {
+                            subtitleFile.writeText(vttContent)
+                        }
+                        Log.d("VideoPlayerState", "Fetched captions from network and cached locally for $captionUrl")
+                    } else {
+                        throw IOException("Fetched caption content is null or empty.")
+                    }
+                } catch (e: Exception) {
+                    Log.e("VideoPlayerState", "Failed to fetch captions from network: ${e.message}", e)
+                    return@launch
+                }
+            }
+
+            try {
                 val cues = parseCaptionCues(vttContent)
                 captionCues = captionCues + (captionUrl to cues)
-                Log.d("VideoPlayerState", "Captions loaded and cached for $captionUrl")
             } catch (e: Exception) {
-                Log.e("VideoPlayerState", "Failed to load captions: ${e.message}", e)
+                Log.e("VideoPlayerState", "Failed to parse caption VTT content: ${e.message}", e)
             }
         }
     }
@@ -297,8 +340,11 @@ fun rememberVideoPlayerState(
     scope: CoroutineScope = rememberCoroutineScope()
 ): VideoPlayerState {
     val imageLoader = LocalContext.current.imageLoader
+    val context = LocalContext.current
+
     val state = remember(key) {
         VideoPlayerState(
+            context = context,
             player = player,
             playerAction = playerAction,
             scope = scope,

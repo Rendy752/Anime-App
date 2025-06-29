@@ -48,6 +48,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -525,21 +526,25 @@ class HlsPlayerUtils @Inject constructor(
         return exoPlayerCache.cacheSpace
     }
 
-    /**
-     * Destructive action to clear all cached files.
-     * This will release the underlying cache singleton, which may require an app restart
-     * for caching to function again. This is an unavoidable consequence of using release()
-     * to clear the files.
-     */
     suspend fun clearCache() {
         withContext(Dispatchers.IO) {
             try {
                 for (key in exoPlayerCache.keys) {
                     exoPlayerCache.removeResource(key)
                 }
-                Log.d("HlsPlayerUtils", "All resources removed from cache successfully.")
+                Log.d("HlsPlayerUtils", "All resources removed from ExoPlayer cache successfully.")
             } catch (e: Exception) {
-                Log.e("HlsPlayerUtils", "Failed to clear cache resources", e)
+                Log.e("HlsPlayerUtils", "Failed to clear ExoPlayer cache resources", e)
+            }
+
+            try {
+                val subtitlesDir = File(applicationContext.cacheDir, "subtitles")
+                if (subtitlesDir.exists()) {
+                    subtitlesDir.deleteRecursively()
+                    Log.d("HlsPlayerUtils", "Subtitles cache directory deleted successfully.")
+                }
+            } catch (e: Exception) {
+                Log.e("HlsPlayerUtils", "Failed to delete subtitles cache directory", e)
             }
         }
     }
