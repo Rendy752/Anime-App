@@ -129,6 +129,7 @@ fun WatchEpisodeItem(
             modifier = Modifier
                 .aspectRatio(1f)
                 .basicContainer(
+                    useBorder = !isHighlighted,
                     backgroundBrush = backgroundColor,
                     outerPadding = PaddingValues(0.dp),
                     innerPadding = PaddingValues(0.dp),

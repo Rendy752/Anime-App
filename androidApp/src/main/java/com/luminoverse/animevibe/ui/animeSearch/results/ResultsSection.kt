@@ -15,6 +15,7 @@ import com.luminoverse.animevibe.models.Genre
 import com.luminoverse.animevibe.models.GenresResponse
 import com.luminoverse.animevibe.ui.common.AnimeSearchItem
 import com.luminoverse.animevibe.ui.common.AnimeSearchItemSkeleton
+import com.luminoverse.animevibe.ui.common.SharedImageState
 import com.luminoverse.animevibe.ui.common.SomethingWentWrongDisplay
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.main.navigation.navigateTo
@@ -30,7 +31,8 @@ fun ResultsSection(
     animeSearchResults: Resource<AnimeSearchResponse>,
     selectedGenres: List<Genre>,
     genres: Resource<GenresResponse>,
-    onGenreClick: (Genre) -> Unit
+    onGenreClick: (Genre) -> Unit,
+    showImagePreview: (SharedImageState) -> Unit
 ) {
     Column(
         modifier = modifier
@@ -76,7 +78,8 @@ fun ResultsSection(
                                 },
                                 onItemClick = {
                                     navController.navigateTo(NavRoute.AnimeDetail.fromId(animeDetail.mal_id))
-                                }
+                                },
+                                showImagePreview = showImagePreview
                             )
                         }
                     }

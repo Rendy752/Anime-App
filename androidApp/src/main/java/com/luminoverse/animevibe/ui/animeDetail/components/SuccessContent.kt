@@ -30,6 +30,7 @@ import com.luminoverse.animevibe.ui.common.NumericDetailSection
 import com.luminoverse.animevibe.ui.animeDetail.relation.RelationSection
 import com.luminoverse.animevibe.ui.common.AnimeHeader
 import com.luminoverse.animevibe.ui.common.DetailCommonBody
+import com.luminoverse.animevibe.ui.common.SharedImageState
 import com.luminoverse.animevibe.ui.common.YoutubePreview
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.main.navigation.navigateTo
@@ -46,7 +47,8 @@ fun SuccessContent(
     portraitScrollState: LazyListState,
     landscapeScrollState: LazyListState,
     onAction: (DetailAction) -> Unit,
-    onAnimeIdChange: (Int) -> Unit
+    onAnimeIdChange: (Int) -> Unit,
+    showImagePreview: (SharedImageState) -> Unit
 ) {
     detailState.animeDetail.data?.data?.let { animeDetail ->
         if (isLandscape) {
@@ -78,6 +80,7 @@ fun SuccessContent(
                         navController = navController,
                         context = context,
                         onAction = onAction,
+                        showImagePreview = showImagePreview,
                         onAnimeIdChange = onAnimeIdChange
                     )
                 }
@@ -101,6 +104,7 @@ fun SuccessContent(
                     navController = navController,
                     context = context,
                     onAction = onAction,
+                    showImagePreview = showImagePreview,
                     onAnimeIdChange = onAnimeIdChange
                 )
             }
@@ -138,6 +142,7 @@ private fun LazyListScope.rightColumnContent(
     navController: NavController,
     context: Context,
     onAction: (DetailAction) -> Unit,
+    showImagePreview: (SharedImageState) -> Unit,
     onAnimeIdChange: (Int) -> Unit
 ) {
     val commonBodyItems = listOf(
@@ -156,6 +161,7 @@ private fun LazyListScope.rightColumnContent(
             relations = animeDetail.relations,
             relationAnimeDetails = detailState.relationAnimeDetails,
             onAction = onAction,
+            showImagePreview = showImagePreview,
             onItemClickListener = onAnimeIdChange
         )
     }
@@ -177,6 +183,7 @@ private fun LazyListScope.rightColumnContent(
                     )
                 }
             },
+            showImagePreview = showImagePreview,
             onAction = onAction
         )
     }

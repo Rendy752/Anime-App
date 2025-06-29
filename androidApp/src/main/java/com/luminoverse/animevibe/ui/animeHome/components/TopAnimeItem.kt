@@ -34,7 +34,7 @@ import com.luminoverse.animevibe.ui.common.ImageCardWithContent
 fun TopAnimeItem(animeDetail: AnimeDetail, onItemClick: () -> Unit) {
     ImageCardWithContent(
         imageUrl = animeDetail.images.webp.large_image_url,
-        contentDescription = animeDetail.title,
+        contentDescription = "${animeDetail.title} image cover",
         onItemClick = onItemClick,
         leftContent = {
             Column(
@@ -73,7 +73,8 @@ fun TopAnimeItem(animeDetail: AnimeDetail, onItemClick: () -> Unit) {
                     )
                 }
             }
-        }
+        },
+        height = 200.dp
     )
 }
 
@@ -88,7 +89,7 @@ fun TopAnimeItemSkeleton() {
         SkeletonBox(
             modifier = Modifier
                 .fillMaxHeight()
-                .fillMaxWidth(0.75f)
+                .fillMaxWidth(0.85f)
                 .align(Alignment.CenterEnd),
             height = 200.dp
         )
@@ -96,7 +97,7 @@ fun TopAnimeItemSkeleton() {
         SkeletonBox(
             modifier = Modifier
                 .fillMaxHeight()
-                .fillMaxWidth(0.75f)
+                .fillMaxWidth(0.85f)
                 .align(Alignment.CenterEnd),
             height = 200.dp,
             width = 0.dp

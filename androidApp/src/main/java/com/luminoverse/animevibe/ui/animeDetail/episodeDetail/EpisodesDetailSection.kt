@@ -40,6 +40,7 @@ import com.luminoverse.animevibe.ui.common.EpisodeInfoRowSkeleton
 import com.luminoverse.animevibe.ui.common.SomethingWentWrongDisplay
 import com.luminoverse.animevibe.ui.common.SearchView
 import com.luminoverse.animevibe.ui.common.SearchViewSkeleton
+import com.luminoverse.animevibe.ui.common.SharedImageState
 import com.luminoverse.animevibe.ui.common.SkeletonBox
 import com.luminoverse.animevibe.utils.FilterUtils
 import com.luminoverse.animevibe.utils.resource.Resource
@@ -55,6 +56,7 @@ fun EpisodesDetailSection(
     episodeFilterState: EpisodeFilterState,
     navBackStackEntry: NavBackStackEntry?,
     onEpisodeClick: (String) -> Unit,
+    showImagePreview: (SharedImageState) -> Unit,
     onAction: (DetailAction) -> Unit
 ) {
     Column(
@@ -194,6 +196,7 @@ fun EpisodesDetailSection(
                                         onAction(DetailAction.LoadEpisodeDetail(it))
                                     },
                                     onClick = { onEpisodeClick(episode.id) },
+                                    showImagePreview = showImagePreview,
                                     navBackStackEntry = navBackStackEntry
                                 )
                             }

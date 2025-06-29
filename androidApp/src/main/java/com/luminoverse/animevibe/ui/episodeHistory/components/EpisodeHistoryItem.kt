@@ -24,6 +24,7 @@ import com.luminoverse.animevibe.ui.common.ConfirmationAlert
 import com.luminoverse.animevibe.ui.common.ImageDisplay
 import com.luminoverse.animevibe.ui.common.highlightText
 import com.luminoverse.animevibe.ui.common.DebouncedIconButton
+import com.luminoverse.animevibe.ui.common.ImageAspectRatio
 import com.luminoverse.animevibe.ui.common.SharedImageState
 import com.luminoverse.animevibe.ui.common.SkeletonBox
 import com.luminoverse.animevibe.utils.TimeUtils
@@ -79,12 +80,12 @@ fun EpisodeHistoryItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 ImageDisplay(
-                    modifier = Modifier
-                        .size(100.dp, 56.dp)
-                        .clip(RoundedCornerShape(4.dp)),
-                    imageUrl = episode.imageUrl,
-                    screenshot = episode.screenshot,
-                    onImagePreview = { image, bounds, size ->
+                    modifier = Modifier.size(100.dp, 56.dp),
+                    image = episode.screenshot,
+                    imagePlaceholder = episode.imageUrl,
+                    ratio = ImageAspectRatio.WIDESCREEN.ratio,
+                    contentDescription = "Preview thumbnail of episode ${episode.episodeTitle}",
+                    onClick = { image, bounds, size ->
                         showImagePreview(
                             SharedImageState(
                                 image = image,

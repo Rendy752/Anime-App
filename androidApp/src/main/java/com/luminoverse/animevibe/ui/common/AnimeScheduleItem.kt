@@ -24,25 +24,22 @@ fun AnimeScheduleItem(
     modifier: Modifier = Modifier,
     animeDetail: AnimeDetail = animeDetailPlaceholder,
     remainingTime: String = "23h 59m",
-    onItemClick: ((AnimeDetail) -> Unit)? = null
+    onItemClick: ((AnimeDetail) -> Unit) = {}
 ) {
     Column(
         modifier = modifier
             .basicContainer(
                 outerPadding = PaddingValues(0.dp),
                 innerPadding = PaddingValues(0.dp),
-                onItemClick = onItemClick?.let { { it(animeDetail) } }
+                onItemClick = { onItemClick(animeDetail) }
             )
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
-            AsyncImage(
-                model = animeDetail.images.webp.large_image_url,
+            ImageDisplay(
+                image = animeDetail.images.webp.large_image_url,
                 contentDescription = animeDetail.title,
                 roundedCorners = ImageRoundedCorner.TOP,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(2f / 3f),
-                onClick = onItemClick?.let { { it(animeDetail) } }
+                onClick = { _, _, _ -> onItemClick(animeDetail) }
             )
             animeDetail.type?.let {
                 Text(

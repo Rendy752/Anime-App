@@ -7,6 +7,7 @@ import com.luminoverse.animevibe.models.AnimeDetail
 import com.luminoverse.animevibe.ui.animeDetail.DetailAction
 import com.luminoverse.animevibe.ui.common.AnimeSearchItem
 import com.luminoverse.animevibe.ui.common.AnimeSearchItemSkeleton
+import com.luminoverse.animevibe.ui.common.SharedImageState
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.main.navigation.navigateTo
 import com.luminoverse.animevibe.utils.resource.Resource
@@ -18,6 +19,7 @@ fun RelationEntryItem(
     relationDetail: Resource<AnimeDetail>?,
     navController: NavController,
     onAction: (DetailAction) -> Unit,
+    showImagePreview: (SharedImageState) -> Unit,
     onItemClickListener: (Int) -> Unit
 ) {
     LaunchedEffect(entryId) {
@@ -40,7 +42,8 @@ fun RelationEntryItem(
                     )
                 )
             },
-            onItemClick = { onItemClickListener(entryId) }
+            onItemClick = { onItemClickListener(entryId) },
+            showImagePreview = showImagePreview
         )
 
         null -> AnimeSearchItemSkeleton()

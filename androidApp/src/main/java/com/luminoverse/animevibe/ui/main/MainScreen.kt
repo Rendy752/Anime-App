@@ -260,6 +260,7 @@ fun MainScreen(
                         navController = navController,
                         rememberedTopPadding = rememberedTopPadding,
                         mainState = mainState,
+                        showImagePreview = { mainAction.invoke(MainAction.ShowImagePreview(it)) },
                         searchState = searchState,
                         filterSelectionState = filterSelectionState,
                         onAction = viewModel::onAction
@@ -279,6 +280,7 @@ fun MainScreen(
                         navController = navController,
                         rememberedTopPadding = rememberedTopPadding,
                         mainState = mainState,
+                        showImagePreview = { mainAction.invoke(MainAction.ShowImagePreview(it)) },
                         genreId = genreId,
                         producerId = producerId,
                         searchState = searchState,
@@ -320,6 +322,7 @@ fun MainScreen(
                         rememberedTopPadding = rememberedTopPadding,
                         mainState = mainState,
                         showSnackbar = { mainAction.invoke(MainAction.ShowSnackbar(it)) },
+                        showImagePreview = { mainAction.invoke(MainAction.ShowImagePreview(it)) },
                         detailState = detailState,
                         snackbarFlow = viewModel.snackbarFlow,
                         episodeFilterState = episodeFilterState,

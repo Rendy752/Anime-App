@@ -22,6 +22,7 @@ import androidx.navigation.NavHostController
 import com.luminoverse.animevibe.ui.animeDetail.components.AnimeDetailTopBar
 import com.luminoverse.animevibe.ui.animeDetail.components.LoadingContent
 import com.luminoverse.animevibe.ui.animeDetail.components.SuccessContent
+import com.luminoverse.animevibe.ui.common.SharedImageState
 import com.luminoverse.animevibe.ui.common.SomethingWentWrongDisplay
 import com.luminoverse.animevibe.ui.main.MainState
 import com.luminoverse.animevibe.ui.main.SnackbarMessage
@@ -38,6 +39,7 @@ fun AnimeDetailScreen(
     rememberedTopPadding: Dp,
     mainState: MainState,
     showSnackbar: (SnackbarMessage) -> Unit,
+    showImagePreview: (SharedImageState) -> Unit,
     detailState: DetailState,
     snackbarFlow: Flow<SnackbarMessage>,
     episodeFilterState: EpisodeFilterState,
@@ -113,7 +115,8 @@ fun AnimeDetailScreen(
                     onAction = onAction,
                     onAnimeIdChange = { newAnimeId ->
                         currentAnimeIdState.intValue = newAnimeId
-                    }
+                    },
+                    showImagePreview = showImagePreview
                 )
 
                 is Resource.Error -> Box(

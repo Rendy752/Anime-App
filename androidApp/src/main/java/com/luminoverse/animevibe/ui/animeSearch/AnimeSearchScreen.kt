@@ -30,6 +30,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.ui.unit.Dp
 import com.luminoverse.animevibe.ui.common.CustomModalBottomSheet
+import com.luminoverse.animevibe.ui.common.SharedImageState
 import com.luminoverse.animevibe.utils.resource.Resource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -39,6 +40,7 @@ fun AnimeSearchScreen(
     navController: NavHostController = rememberNavController(),
     rememberedTopPadding: Dp = 0.dp,
     mainState: MainState = MainState(),
+    showImagePreview: (SharedImageState) -> Unit = {},
     genreId: Int? = null,
     producerId: Int? = null,
     searchState: SearchState = SearchState(),
@@ -178,7 +180,8 @@ fun AnimeSearchScreen(
                         onGenreClick = { genre ->
                             onAction(SearchAction.SetSelectedGenre(genre))
                             onAction(SearchAction.ApplyGenreFilters)
-                        }
+                        },
+                        showImagePreview = showImagePreview
                     )
                 }
             } else {
@@ -222,7 +225,8 @@ fun AnimeSearchScreen(
                         onGenreClick = { genre ->
                             onAction(SearchAction.SetSelectedGenre(genre))
                             onAction(SearchAction.ApplyGenreFilters)
-                        }
+                        },
+                        showImagePreview = showImagePreview
                     )
 
                     LimitAndPaginationSection(

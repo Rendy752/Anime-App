@@ -49,6 +49,7 @@ fun EpisodeDetailItem(
     query: String = "",
     loadEpisodeDetailComplement: (String) -> Unit = {},
     onClick: () -> Unit = {},
+    showImagePreview: ((SharedImageState) -> Unit)? = null,
     navBackStackEntry: NavBackStackEntry? = null,
     titleMaxLines: Int? = null,
     isSameWidthContent: Boolean = false
@@ -62,12 +63,14 @@ fun EpisodeDetailItem(
     }
 
     val progress = episodeDetailComplement?.let { complement ->
-        if (complement.lastTimestamp != null && complement.duration != null && complement.lastTimestamp < complement.duration) {
+        if (complement.lastTimestamp != null && complement.duration != null) {
             (complement.lastTimestamp.toFloat() / complement.duration).coerceIn(0f, 1f)
         } else {
             null
         }
     }
+
+    val contentDescription = if (episodeDetailComplement?.screenshot != null) "Last screenshot of episode ${episode.title}" else "Anime image poster"
 
     Box(
         modifier = modifier
@@ -94,8 +97,22 @@ fun EpisodeDetailItem(
                 modifier = Modifier
                     .fillMaxHeight()
                     .weight(if (isSameWidthContent) 0.5f else 0.4f),
-                imageUrl = animeImage,
-                screenshot = episodeDetailComplement?.screenshot
+                image = episodeDetailComplement?.screenshot,
+                imagePlaceholder = animeImage,
+                ratio = ImageAspectRatio.WIDESCREEN.ratio,
+                contentDescription = contentDescription,
+                onClick = showImagePreview?.let {
+                    { image, bounds, size ->
+                        it(
+                            SharedImageState(
+                                image = image,
+                                contentDescription = contentDescription,
+                                initialBounds = bounds,
+                                initialSize = size
+                            )
+                        )
+                    }
+                }
             )
 
             Column(

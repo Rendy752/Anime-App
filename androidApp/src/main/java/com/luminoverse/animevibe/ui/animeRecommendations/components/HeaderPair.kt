@@ -2,7 +2,9 @@ package com.luminoverse.animevibe.ui.animeRecommendations.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -16,7 +18,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.luminoverse.animevibe.models.AnimeHeader
-import com.luminoverse.animevibe.ui.common.AsyncImage
+import com.luminoverse.animevibe.ui.common.ImageDisplay
+import com.luminoverse.animevibe.ui.common.SkeletonBox
 
 @Composable
 fun HeaderPair(
@@ -41,8 +44,9 @@ fun HeaderPair(
             modifier = Modifier.padding(bottom = 4.dp)
         )
 
-        AsyncImage(
-            model = anime.images.webp.large_image_url,
+        ImageDisplay(
+            modifier = Modifier.padding(horizontal = 24.dp),
+            image = anime.images.webp.large_image_url,
             contentDescription = anime.title,
         )
 
@@ -55,5 +59,30 @@ fun HeaderPair(
             fontSize = 12.sp,
             modifier = Modifier.padding(top = 4.dp)
         )
+    }
+}
+
+@Composable
+fun HeaderPairSkeleton(isFirst: Boolean, modifier: Modifier) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = if (isFirst) "If you like" else "Then you might like",
+            style = MaterialTheme.typography.titleLarge,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            fontSize = 12.sp,
+            modifier = Modifier.padding(bottom = 4.dp)
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        SkeletonBox(
+            modifier = Modifier.align(Alignment.CenterHorizontally),
+            width = 120.dp,
+            height = 180.dp
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        SkeletonBox(width = 140.dp, height = 20.dp)
     }
 }

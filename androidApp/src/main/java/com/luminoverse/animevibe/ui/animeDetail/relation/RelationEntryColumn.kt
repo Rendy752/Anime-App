@@ -16,6 +16,7 @@ import androidx.navigation.NavController
 import com.luminoverse.animevibe.models.AnimeDetail
 import com.luminoverse.animevibe.models.Relation
 import com.luminoverse.animevibe.ui.animeDetail.DetailAction
+import com.luminoverse.animevibe.ui.common.SharedImageState
 import com.luminoverse.animevibe.utils.resource.Resource
 
 @Composable
@@ -24,6 +25,7 @@ fun RelationEntryColumn(
     relationAnimeDetails: Map<Int, Resource<AnimeDetail>>,
     navController: NavController,
     onAction: (DetailAction) -> Unit,
+    showImagePreview: (SharedImageState) -> Unit,
     onItemClickListener: (Int) -> Unit
 ) {
     Column {
@@ -46,6 +48,7 @@ fun RelationEntryColumn(
                     relationDetail = relationAnimeDetails[entry.mal_id],
                     navController = navController,
                     onAction = onAction,
+                    showImagePreview = showImagePreview,
                     onItemClickListener = onItemClickListener
                 )
             }

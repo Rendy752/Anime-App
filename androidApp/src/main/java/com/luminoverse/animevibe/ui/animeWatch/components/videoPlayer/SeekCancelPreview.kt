@@ -3,7 +3,6 @@ package com.luminoverse.animevibe.ui.animeWatch.components.videoPlayer
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -14,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.luminoverse.animevibe.ui.common.ImageAspectRatio
 import com.luminoverse.animevibe.ui.common.ImageDisplay
 
 @Composable
@@ -37,10 +37,10 @@ fun SeekCancelPreview(
             screenshot = captureScreenshot()
         }
         ImageDisplay(
-            imageUrl = imageUrl,
-            screenshot = screenshot,
-            modifier = Modifier.fillMaxSize(),
-            onClick = onCancelSeekBarDrag,
+            image = screenshot ?: imageUrl,
+            ratio = ImageAspectRatio.WIDESCREEN.ratio,
+            contentDescription = "Click this preview to cancel",
+            onClick = { _, _, _ -> onCancelSeekBarDrag() },
         )
     }
 }

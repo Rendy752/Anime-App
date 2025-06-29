@@ -40,7 +40,9 @@ import com.luminoverse.animevibe.ui.animeWatch.PlayerUiState
 import com.luminoverse.animevibe.ui.animeWatch.WatchAction
 import com.luminoverse.animevibe.ui.animeWatch.videoPlayer.VideoPlayerSection
 import com.luminoverse.animevibe.ui.animeWatch.watchContent.WatchContentSection
+import com.luminoverse.animevibe.ui.common.ImageAspectRatio
 import com.luminoverse.animevibe.ui.common.ImageDisplay
+import com.luminoverse.animevibe.ui.common.ImageRoundedCorner
 import com.luminoverse.animevibe.ui.main.MainState
 import com.luminoverse.animevibe.ui.main.SnackbarMessage
 import com.luminoverse.animevibe.ui.main.SnackbarMessageType
@@ -84,8 +86,11 @@ fun AnimeWatchContent(
             ) {
                 if (watchState.episodeDetailComplement == null || watchState.episodeDetailComplement.sources.link.file.isEmpty() == true || watchState.animeDetailComplement?.episodes == null || watchState.episodeSourcesQuery == null) {
                     if (playerCoreState.error != null && !watchState.isRefreshing && !playerCoreState.isPlaying) ImageDisplay(
-                        imageUrl = watchState.animeDetail?.images?.webp?.large_image_url,
                         modifier = modifier,
+                        image = watchState.animeDetail?.images?.webp?.large_image_url,
+                        ratio = ImageAspectRatio.WIDESCREEN.ratio,
+                        contentDescription = "Anime cover",
+                        roundedCorners = ImageRoundedCorner.NONE
                     ) else Box(
                         modifier = modifier.background(Color(0xFF14161A))
                     )

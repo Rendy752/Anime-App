@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
+import com.luminoverse.animevibe.ui.common.ImageAspectRatio
 import com.luminoverse.animevibe.ui.common.ImageDisplay
 import com.luminoverse.animevibe.utils.basicContainer
 
@@ -66,8 +67,10 @@ fun WatchEpisodePopup(
             ) {
                 ImageDisplay(
                     modifier = Modifier.weight(1f),
-                    imageUrl = imageUrl,
-                    screenshot = episodeDetailComplement?.screenshot,
+                    image = episodeDetailComplement?.screenshot,
+                    imagePlaceholder = imageUrl,
+                    ratio = ImageAspectRatio.WIDESCREEN.ratio,
+                    contentDescription = "Episode Image",
                     positionData = Pair(
                         episodeDetailComplement?.lastTimestamp, episodeDetailComplement?.duration
                     )

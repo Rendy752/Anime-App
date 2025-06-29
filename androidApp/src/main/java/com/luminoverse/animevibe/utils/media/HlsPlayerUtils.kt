@@ -336,6 +336,7 @@ class HlsPlayerUtils @Inject constructor(
             setPlaybackSpeed(1f)
 
             exoPlayer?.let { player ->
+                pause()
                 player.stop()
                 player.clearMediaItems()
                 _playerCoreState.update {

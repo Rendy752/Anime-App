@@ -39,7 +39,9 @@ fun AnimeSearchItem(
     errorTitle: String? = null,
     onGenreClick: ((Int) -> Unit)? = null,
     onItemClick: (() -> Unit)? = null,
+    showImagePreview: ((SharedImageState) -> Unit)? = null,
 ) {
+    val contentDescription = "Image cover of ${animeDetail?.title ?: "Anime Image"}"
     Column(
         modifier = modifier
             .basicContainer(
@@ -54,23 +56,36 @@ fun AnimeSearchItem(
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
             if (errorTitle.isNullOrEmpty()) {
-                AsyncImage(
-                    model = animeDetail?.images?.webp?.large_image_url,
-                    contentDescription = animeDetail?.title,
-                    isAiring = animeDetail?.airing
+                ImageDisplay(
+                    modifier.weight(0.3f),
+                    image = animeDetail?.images?.webp?.large_image_url,
+                    contentDescription = contentDescription,
+                    isAiring = animeDetail?.airing,
+                    onClick = showImagePreview?.let {
+                        { image, bounds, size ->
+                            it(
+                                SharedImageState(
+                                    image = image,
+                                    contentDescription = contentDescription,
+                                    initialBounds = bounds,
+                                    initialSize = size
+                                )
+                            )
+                        }
+                    }
                 )
             } else {
                 Icon(
                     imageVector = Icons.Filled.Image,
                     contentDescription = "No Image",
                     modifier = Modifier
-                        .size(width = 100.dp, height = 100.dp),
-
-                    )
+                        .size(width = 100.dp, height = 100.dp)
+                        .weight(0.3f),
+                )
             }
             Column(
                 modifier = Modifier
-                    .weight(1f)
+                    .weight(0.7f)
                     .padding(end = 16.dp),
             ) {
                 val title = if (errorTitle.isNullOrEmpty()) animeDetail?.title
@@ -171,14 +186,12 @@ fun AnimeSearchItem(
 @Preview
 @Composable
 fun AnimeSearchItemSkeleton(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier.basicContainer(outerPadding = PaddingValues(0.dp))
-    ) {
+    Column(modifier = modifier.basicContainer(outerPadding = PaddingValues(0.dp))) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            SkeletonBox(width = 80.dp, height = 120.dp)
+            SkeletonBox(width = 100.dp, height = 150.dp)
             Column(
                 modifier = Modifier
                     .weight(1f)

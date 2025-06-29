@@ -17,36 +17,42 @@ import androidx.compose.ui.unit.dp
 fun ImageCardWithContent(
     imageUrl: String?,
     contentBackgroundColor: Color = MaterialTheme.colorScheme.surface,
-    contentDescription: String?,
+    contentDescription: String,
     onItemClick: () -> Unit,
     leftContent: @Composable () -> Unit,
     rightContent: (@Composable () -> Unit)? = null,
-    modifier: Modifier = Modifier,
-    height: Dp = 200.dp
+    height: Dp = Dp.Unspecified,
+    modifier: Modifier = Modifier
 ) {
     val layoutDirection = LocalLayoutDirection.current
     val isRtl = layoutDirection == androidx.compose.ui.unit.LayoutDirection.Rtl
 
+    val boxModifier = if (height != Dp.Unspecified) {
+        modifier.height(height)
+    } else {
+        modifier.height(IntrinsicSize.Min)
+    }
+
     Box(
-        modifier = modifier
+        modifier = boxModifier
             .fillMaxWidth()
-            .height(height)
             .clickable { onItemClick() }
     ) {
-        AsyncImage(
-            model = imageUrl ?: "",
-            contentDescription = contentDescription,
+        ImageDisplay(
             modifier = Modifier
                 .fillMaxHeight()
-                .fillMaxWidth(0.75f)
+                .fillMaxWidth(0.85f)
                 .align(Alignment.CenterEnd),
+            image = imageUrl,
+            ratio = ImageAspectRatio.WIDESCREEN.ratio,
+            contentDescription = contentDescription,
             roundedCorners = ImageRoundedCorner.NONE
         )
 
         Box(
             modifier = Modifier
                 .fillMaxHeight()
-                .fillMaxWidth(0.75f)
+                .fillMaxWidth(0.85f)
                 .align(Alignment.CenterEnd)
                 .background(
                     brush = Brush.horizontalGradient(
