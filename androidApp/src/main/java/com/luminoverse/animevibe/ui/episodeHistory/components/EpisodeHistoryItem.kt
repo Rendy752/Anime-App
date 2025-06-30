@@ -21,9 +21,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.ui.common.ConfirmationAlert
-import com.luminoverse.animevibe.ui.common.ScreenshotDisplay
+import com.luminoverse.animevibe.ui.common.ImageDisplay
 import com.luminoverse.animevibe.ui.common.highlightText
 import com.luminoverse.animevibe.ui.common.DebouncedIconButton
+import com.luminoverse.animevibe.ui.common.ImageAspectRatio
+import com.luminoverse.animevibe.ui.common.SharedImageState
 import com.luminoverse.animevibe.ui.common.SkeletonBox
 import com.luminoverse.animevibe.utils.TimeUtils
 import com.luminoverse.animevibe.utils.watch.WatchUtils.getEpisodeBackgroundColor
@@ -35,6 +37,7 @@ fun EpisodeHistoryItem(
     searchQuery: String,
     isFirstItem: Boolean,
     episode: EpisodeDetailComplement,
+    showImagePreview: (SharedImageState) -> Unit,
     onClick: () -> Unit,
     onFavoriteToggle: (Boolean) -> Unit,
     onDelete: (String) -> Unit
@@ -76,12 +79,22 @@ fun EpisodeHistoryItem(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                ScreenshotDisplay(
-                    modifier = Modifier
-                        .size(100.dp, 56.dp)
-                        .clip(RoundedCornerShape(4.dp)),
-                    imageUrl = episode.imageUrl,
-                    screenshot = episode.screenshot
+                ImageDisplay(
+                    modifier = Modifier.size(100.dp, 56.dp),
+                    image = episode.screenshot,
+                    imagePlaceholder = episode.imageUrl,
+                    ratio = ImageAspectRatio.WIDESCREEN.ratio,
+                    contentDescription = "Preview thumbnail of episode ${episode.episodeTitle}",
+                    onClick = { image, bounds, size ->
+                        showImagePreview(
+                            SharedImageState(
+                                image = image,
+                                contentDescription = episode.episodeTitle,
+                                initialBounds = bounds,
+                                initialSize = size
+                            )
+                        )
+                    }
                 )
                 Text(
                     modifier = Modifier.weight(1f),

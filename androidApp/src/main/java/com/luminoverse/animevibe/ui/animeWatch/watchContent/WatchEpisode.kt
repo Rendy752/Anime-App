@@ -19,12 +19,15 @@ import com.luminoverse.animevibe.utils.basicContainer
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WatchEpisode(
+    imageUrl: String?,
     episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
     onLoadEpisodeDetailComplement: (String) -> Unit,
     episodeDetailComplement: EpisodeDetailComplement?,
     episodes: List<Episode>,
-    newEpisodeCount: Int,
+    newEpisodeIdList: List<String>,
     episodeSourcesQuery: EpisodeSourcesQuery?,
+    episodeJumpNumber: Int?,
+    setEpisodeJumpNumber: (Int) -> Unit,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
 ) {
     val gridState = rememberLazyGridState()
@@ -32,12 +35,17 @@ fun WatchEpisode(
         modifier = Modifier
             .basicContainer(
                 outerPadding = PaddingValues(0.dp),
-                innerPadding = PaddingValues(8.dp)
+                innerPadding = PaddingValues(top = 8.dp, start = 8.dp, end = 8.dp)
             )
             .fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        EpisodeJump(episodes = episodes, gridState = gridState)
+        EpisodeJump(
+            episodes = episodes,
+            episodeJumpNumber = episodeJumpNumber,
+            setEpisodeJumpNumber = setEpisodeJumpNumber,
+            gridState = gridState
+        )
 
         if (episodeDetailComplement != null) {
             EpisodeNavigation(
@@ -50,17 +58,20 @@ fun WatchEpisode(
             )
         } else EpisodeNavigationSkeleton()
 
-        HorizontalDivider(modifier = Modifier.fillMaxWidth())
-
-        EpisodeSelectionGrid(
-            episodes = episodes,
-            newEpisodeCount = newEpisodeCount,
-            episodeDetailComplements = episodeDetailComplements,
-            onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,
-            episodeDetailComplement = episodeDetailComplement,
-            episodeSourcesQuery = episodeSourcesQuery,
-            handleSelectedEpisodeServer = handleSelectedEpisodeServer,
-            gridState = gridState
-        )
+        Column {
+            HorizontalDivider(modifier = Modifier.fillMaxWidth())
+            EpisodeSelectionGrid(
+                imageUrl = imageUrl,
+                episodes = episodes,
+                episodeJumpNumber = episodeJumpNumber,
+                newEpisodeIdList = newEpisodeIdList,
+                episodeDetailComplements = episodeDetailComplements,
+                onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,
+                episodeDetailComplement = episodeDetailComplement,
+                episodeSourcesQuery = episodeSourcesQuery,
+                handleSelectedEpisodeServer = handleSelectedEpisodeServer,
+                gridState = gridState
+            )
+        }
     }
 }

@@ -38,7 +38,7 @@ fun AccordionItem(
     ImageCardWithContent(
         imageUrl = representativeEpisode?.imageUrl,
         contentBackgroundColor = MaterialTheme.colorScheme.surfaceContainer,
-        contentDescription = representativeEpisode?.animeTitle ?: "Anime Image",
+        contentDescription = "${representativeEpisode?.animeTitle} image cover",
         onItemClick = onItemClick,
         leftContent = {
             Column(
@@ -99,8 +99,7 @@ fun AccordionItem(
                     )
                 }
             }
-        },
-        height = 160.dp
+        }
     )
 }
 
@@ -115,7 +114,7 @@ fun AccordionItemSkeleton(modifier: Modifier = Modifier) {
         SkeletonBox(
             modifier = Modifier
                 .fillMaxHeight()
-                .fillMaxWidth(0.75f)
+                .fillMaxWidth(0.85f)
                 .align(Alignment.CenterEnd),
             height = 160.dp
         )
@@ -123,7 +122,7 @@ fun AccordionItemSkeleton(modifier: Modifier = Modifier) {
         SkeletonBox(
             modifier = Modifier
                 .fillMaxHeight()
-                .fillMaxWidth(0.75f)
+                .fillMaxWidth(0.85f)
                 .align(Alignment.CenterEnd),
             height = 160.dp,
             width = 0.dp

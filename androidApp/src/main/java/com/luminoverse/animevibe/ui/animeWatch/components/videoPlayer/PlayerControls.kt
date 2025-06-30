@@ -45,7 +45,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -73,10 +77,10 @@ import com.luminoverse.animevibe.utils.TimeUtils.formatTimestamp
 fun PlayerControls(
     isPlaying: Boolean,
     currentPosition: Long,
-    duration: Long,
     bufferedPosition: Long,
+    duration: Long,
     playbackState: Int,
-    errorMessage: String?,
+    playbackErrorMessage: String?,
     onHandleBackPress: () -> Unit,
     episodeDetailComplement: EpisodeDetailComplement,
     hasPreviousEpisode: Boolean,
@@ -131,7 +135,7 @@ fun PlayerControls(
 
         MiddleSection(
             modifier = Modifier.align(Alignment.Center),
-            errorMessage = errorMessage,
+            playbackErrorMessage = playbackErrorMessage,
             shouldShowControls = shouldShowControls,
             hasPreviousEpisode = hasPreviousEpisode,
             playbackState = playbackState,
@@ -151,7 +155,6 @@ fun PlayerControls(
 
         BottomSection(
             modifier = Modifier.align(Alignment.BottomCenter),
-            errorMessage = errorMessage,
             shouldShowControls = shouldShowControls,
             isShowSeekIndicator = isShowSeekIndicator,
             onFullscreenToggle = onFullscreenToggle,
@@ -309,7 +312,7 @@ private fun TopSection(
 
 @Composable
 fun PlayPauseLoadingButton(
-    errorMessage: String?,
+    playbackErrorMessage: String?,
     playbackState: Int,
     isPlaying: Boolean,
     onSeekTo: (Long) -> Unit,
@@ -317,8 +320,7 @@ fun PlayPauseLoadingButton(
     handlePlay: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val isLoading = playbackState == Player.STATE_BUFFERING || playbackState == Player.STATE_IDLE
-
+    var mutableIsPlaying by remember { mutableStateOf(isPlaying) }
     val infiniteTransition = rememberInfiniteTransition(label = "loading_border_transition")
     val angle by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -329,7 +331,11 @@ fun PlayPauseLoadingButton(
         label = "loading_border_angle"
     )
 
-    val borderModifier = if (isLoading && errorMessage == null) {
+    LaunchedEffect(isPlaying) {
+        mutableIsPlaying = isPlaying
+    }
+
+    val borderModifier = if (playbackState == Player.STATE_BUFFERING && playbackErrorMessage == null) {
         Modifier.drawBehind {
             val strokeWidth = 3.dp.toPx()
             val brush = Brush.sweepGradient(
@@ -356,15 +362,19 @@ fun PlayPauseLoadingButton(
             .then(borderModifier)
             .clip(CircleShape)
             .clickable(
-                enabled = !isLoading,
                 onClick = {
                     when (playbackState) {
                         Player.STATE_ENDED -> {
                             onSeekTo(0)
                             handlePlay()
+                            mutableIsPlaying = true
                         }
 
-                        else -> if (isPlaying) handlePause() else handlePlay()
+                        else -> if (mutableIsPlaying) {
+                            handlePause(); mutableIsPlaying = false
+                        } else {
+                            handlePlay(); mutableIsPlaying = true
+                        }
                     }
                 }
             )
@@ -378,7 +388,7 @@ fun PlayPauseLoadingButton(
             modifier = Modifier.size(40.dp),
             targetState = when {
                 playbackState == Player.STATE_ENDED -> "ended"
-                isPlaying -> "playing"
+                mutableIsPlaying -> "playing"
                 else -> "paused"
             },
             transitionSpec = {
@@ -413,7 +423,7 @@ fun PlayPauseLoadingButton(
 @Composable
 private fun MiddleSection(
     modifier: Modifier,
-    errorMessage: String?,
+    playbackErrorMessage: String?,
     shouldShowControls: Boolean,
     hasPreviousEpisode: Boolean,
     playbackState: Int,
@@ -464,7 +474,7 @@ private fun MiddleSection(
             }
 
             PlayPauseLoadingButton(
-                errorMessage = errorMessage,
+                playbackErrorMessage = playbackErrorMessage,
                 playbackState = playbackState,
                 isPlaying = isPlaying,
                 onSeekTo = onSeekTo,
@@ -531,7 +541,6 @@ private fun MiddleSection(
 @Composable
 private fun BottomSection(
     modifier: Modifier,
-    errorMessage: String?,
     shouldShowControls: Boolean,
     isShowSeekIndicator: Int,
     onFullscreenToggle: () -> Unit,
@@ -611,10 +620,9 @@ private fun BottomSection(
                 val heightInPx = it.size.height.toFloat()
                 onBottomBarMeasured(heightInPx)
             },
-            errorMessage = errorMessage,
             currentPosition = currentPosition,
-            duration = duration,
             bufferedPosition = bufferedPosition,
+            duration = duration,
             intro = episodeDetailComplement.sources.intro,
             outro = episodeDetailComplement.sources.outro,
             handlePlay = handlePlay,

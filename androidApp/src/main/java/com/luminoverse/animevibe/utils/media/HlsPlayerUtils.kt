@@ -11,6 +11,7 @@ import android.os.Looper
 import android.util.Base64
 import android.util.Log
 import android.view.PixelCopy
+import android.view.Surface
 import android.view.SurfaceView
 import android.view.TextureView
 import androidx.annotation.OptIn
@@ -23,6 +24,9 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionParameters
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.HttpDataSource
+import androidx.media3.datasource.cache.CacheDataSource
+import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -34,7 +38,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -47,6 +50,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import java.io.ByteArrayOutputStream
+import java.io.File
+import java.net.UnknownHostException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -57,7 +62,7 @@ data class PlayerCoreState(
     val isPlaying: Boolean = false,
     val playbackState: Int = Player.STATE_IDLE,
     val isLoading: Boolean = false,
-    val error: PlaybackException? = null
+    val error: String? = null
 )
 
 data class ControlsState(
@@ -77,13 +82,13 @@ sealed class HlsPlayerAction {
         val onError: (String) -> Unit
     ) : HlsPlayerAction()
 
+    data object Reset : HlsPlayerAction()
     data object Play : HlsPlayerAction()
     data object Pause : HlsPlayerAction()
     data class SeekTo(val positionMs: Long) : HlsPlayerAction()
     data object FastForward : HlsPlayerAction()
     data object Rewind : HlsPlayerAction()
     data class SetPlaybackSpeed(val speed: Float) : HlsPlayerAction()
-    data object Release : HlsPlayerAction()
     data class SetVideoSurface(val surface: Any?) : HlsPlayerAction()
     data class SetSubtitle(val track: Track?) : HlsPlayerAction()
     data class RequestToggleControlsVisibility(val isVisible: Boolean? = null) : HlsPlayerAction()
@@ -97,7 +102,8 @@ private const val CONTROLS_AUTO_HIDE_DELAY_MS = 3_000L
 @OptIn(UnstableApi::class)
 class HlsPlayerUtils @Inject constructor(
     @ApplicationContext private val applicationContext: Context,
-    private val okHttpClient: OkHttpClient
+    private val okHttpClient: OkHttpClient,
+    private val exoPlayerCache: SimpleCache
 ) {
     private var exoPlayer: ExoPlayer? = null
     private var playerListener: Player.Listener? = null
@@ -109,7 +115,6 @@ class HlsPlayerUtils @Inject constructor(
     private var currentVideoData: EpisodeSources? = null
 
     private val playerCoroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-
     private var controlsHideJob: Job? = null
 
     private val _playerCoreState = MutableStateFlow(PlayerCoreState())
@@ -135,10 +140,11 @@ class HlsPlayerUtils @Inject constructor(
                 applicationContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
             val trackSelector = DefaultTrackSelector(applicationContext)
             val dataSourceFactory = OkHttpDataSource.Factory(okHttpClient)
-
+            val cacheDataSourceFactory = CacheDataSource.Factory()
+                .setCache(exoPlayerCache)
+                .setUpstreamDataSourceFactory(dataSourceFactory)
             val mediaSourceFactory = DefaultMediaSourceFactory(applicationContext)
-                .setDataSourceFactory(dataSourceFactory)
-
+                .setDataSourceFactory(cacheDataSourceFactory)
             exoPlayer = ExoPlayer.Builder(applicationContext)
                 .setTrackSelector(trackSelector)
                 .setMediaSourceFactory(mediaSourceFactory)
@@ -147,7 +153,6 @@ class HlsPlayerUtils @Inject constructor(
                     playerListener = createPlayerListener()
                     addListener(playerListener!!)
                     pause()
-                    Log.d("HlsPlayerUtils", "ExoPlayer initialized by Hilt with custom OkHttpClient")
                 }
             _playerCoreState.update {
                 PlayerCoreState(isPlaying = false, playbackState = Player.STATE_IDLE)
@@ -166,13 +171,13 @@ class HlsPlayerUtils @Inject constructor(
                 action.onError
             )
 
+            is HlsPlayerAction.Reset -> reset()
             is HlsPlayerAction.Play -> play()
             is HlsPlayerAction.Pause -> pause()
             is HlsPlayerAction.SeekTo -> seekTo(action.positionMs)
             is HlsPlayerAction.FastForward -> fastForward()
             is HlsPlayerAction.Rewind -> rewind()
             is HlsPlayerAction.SetPlaybackSpeed -> setPlaybackSpeed(action.speed)
-            is HlsPlayerAction.Release -> release()
             is HlsPlayerAction.SetVideoSurface -> setVideoSurface(action.surface)
             is HlsPlayerAction.SetSubtitle -> setSubtitle(action.track)
             is HlsPlayerAction.RequestToggleControlsVisibility -> {
@@ -205,36 +210,61 @@ class HlsPlayerUtils @Inject constructor(
             controlsHideJob = playerCoroutineScope.launch {
                 delay(CONTROLS_AUTO_HIDE_DELAY_MS)
                 _controlsState.update { it.copy(isControlsVisible = false) }
-                Log.d("HlsPlayerUtils", "Controls auto-hidden")
             }
-            Log.d("HlsPlayerUtils", "Auto-hide timer started/reset")
-        } else {
-            Log.d(
-                "HlsPlayerUtils",
-                "Auto-hide timer stopped (conditions not met: isVisible=$isControlsVisible, isPlaying=$isPlaying, isLocked=$isLocked)"
-            )
+        }
+    }
+
+    private fun getReadableErrorMessage(error: PlaybackException): String {
+        var cause: Throwable? = error
+        while (cause != null) {
+            if (cause is HttpDataSource.InvalidResponseCodeException) {
+                val code = cause.responseCode
+                return when (code) {
+                    403, 410 -> "This video link may have expired. Try another server or refresh."
+                    404 -> "Video not found. It might be an issue with the server."
+                    in 500..599 -> "The video server is having issues. Please try again later."
+                    else -> "A network error occurred (Code: $code). Check connection or try another server."
+                }
+            }
+            if (cause is UnknownHostException) {
+                return "Cannot connect to the video server. Please check your internet connection."
+            }
+            cause = cause.cause
+        }
+        return when (error.errorCode) {
+            PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED,
+            PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT ->
+                "Network connection failed. Please check your internet connection."
+
+            PlaybackException.ERROR_CODE_DECODING_FAILED,
+            PlaybackException.ERROR_CODE_DECODER_INIT_FAILED,
+            PlaybackException.ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED ->
+                "Failed to play video. The format may not be supported on this device."
+
+            PlaybackException.ERROR_CODE_DRM_UNSPECIFIED,
+            PlaybackException.ERROR_CODE_DRM_LICENSE_ACQUISITION_FAILED ->
+                "This video is protected and cannot be played."
+
+            else -> "An unexpected error occurred during playback."
         }
     }
 
     private fun createPlayerListener(): Player.Listener {
         return object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
-                Log.d("HlsPlayerUtils", "onIsPlayingChanged: $isPlaying")
                 _playerCoreState.update { it.copy(isPlaying = isPlaying) }
-                if (!isPlaying) dispatch(HlsPlayerAction.RequestToggleControlsVisibility(isVisible = true))
+                if (!isPlaying) {
+                    dispatch(HlsPlayerAction.RequestToggleControlsVisibility(isVisible = true))
+                }
             }
 
             override fun onPlaybackStateChanged(playbackState: Int) {
-                Log.d("HlsPlayerUtils", "onPlaybackStateChanged: $playbackState")
-                _playerCoreState.update {
-                    it.copy(
-                        playbackState = playbackState,
-                        isLoading = playbackState == Player.STATE_BUFFERING,
-                        error = null
-                    )
+                _playerCoreState.update { it.copy(playbackState = playbackState) }
+                if (playbackState == Player.STATE_BUFFERING) _playerCoreState.update {
+                    it.copy(isLoading = true, error = null)
                 }
-                if (playbackState == Player.STATE_READY) {
-                    _playerCoreState.update { it.copy(isLoading = false, error = null) }
+                if (playbackState == Player.STATE_READY) _playerCoreState.update {
+                    it.copy(isLoading = false, error = null)
                 }
                 if (playbackState == Player.STATE_ENDED) {
                     dispatch(HlsPlayerAction.ToggleLock(false))
@@ -245,14 +275,15 @@ class HlsPlayerUtils @Inject constructor(
             }
 
             override fun onPlayerError(error: PlaybackException) {
+                val errorMessage = getReadableErrorMessage(error)
                 _playerCoreState.update {
                     it.copy(
                         isPlaying = false,
                         isLoading = false,
-                        error = error
+                        error = errorMessage
                     )
                 }
-                Log.e("HlsPlayerUtils", "PlayerError: ${error.message}", error)
+                Log.e("HlsPlayerUtils", "PlayerError: $errorMessage", error)
             }
         }
     }
@@ -283,13 +314,20 @@ class HlsPlayerUtils @Inject constructor(
 
             is SurfaceView -> {
                 try {
+                    val surfaceToCopy: Surface? = surface.holder.surface
+                    if (surfaceToCopy == null || !surfaceToCopy.isValid) {
+                        Log.w("HlsPlayerUtils", "SurfaceView's surface is not valid for capture.")
+                        return null
+                    }
+
                     val bitmap = createBitmap(512, 288)
                     val latch = CountDownLatch(1)
-                    PixelCopy.request(surface.holder.surface, bitmap, { result ->
+                    PixelCopy.request(surfaceToCopy, bitmap, { result ->
                         if (result == PixelCopy.SUCCESS) {
                             latch.countDown()
                         } else {
-                            Log.e("HlsPlayerUtils", "PixelCopy failed: $result")
+                            Log.e("HlsPlayerUtils", "PixelCopy failed with result: $result")
+                            latch.countDown()
                         }
                     }, Handler(Looper.getMainLooper()))
                     latch.await(1, TimeUnit.SECONDS)
@@ -332,14 +370,13 @@ class HlsPlayerUtils @Inject constructor(
             _controlsState.update { ControlsState() }
             currentVideoData = videoData
             setPlaybackSpeed(1f)
-
             exoPlayer?.let { player ->
+                pause()
                 player.stop()
                 player.clearMediaItems()
                 _playerCoreState.update {
                     it.copy(isPlaying = false, playbackState = Player.STATE_IDLE)
                 }
-
                 if (videoData.link.file.isNotEmpty() && videoData.link.type == "hls") {
                     val mediaItemUri = videoData.link.file.toUri()
                     val mediaItemBuilder = MediaItem.Builder().setUri(mediaItemUri)
@@ -347,7 +384,6 @@ class HlsPlayerUtils @Inject constructor(
                     player.prepare()
                     player.trackSelectionParameters = TrackSelectionParameters.Builder().build()
                     setSubtitle(videoData.tracks.firstOrNull { it.kind == "captions" && it.default == true })
-
                     if (isAutoPlayVideo) {
                         if (currentPosition == duration) seekTo(0)
                         else if (currentPosition < duration) seekTo(currentPosition)
@@ -367,12 +403,14 @@ class HlsPlayerUtils @Inject constructor(
         }
     }
 
-
     private fun play() {
-        exoPlayer?.let {
-            it.play()
+        exoPlayer?.let { player ->
+            if (player.playerError != null) {
+                _playerCoreState.update { it.copy(error = null) }
+                player.prepare()
+            }
+            player.play()
             requestAudioFocus()
-            Log.d("HlsPlayerUtils", "play: called")
         }
     }
 
@@ -384,11 +422,14 @@ class HlsPlayerUtils @Inject constructor(
     }
 
     private fun seekTo(positionMs: Long) {
-        exoPlayer?.let {
-            val duration = it.duration
+        exoPlayer?.let { player ->
+            val duration = player.duration
             val clampedPos = positionMs.coerceAtLeast(0)
                 .coerceAtMost(if (duration > 0) duration else Long.MAX_VALUE)
-            it.seekTo(clampedPos)
+            if (player.playerError != null) {
+                player.prepare()
+            }
+            player.seekTo(clampedPos)
         }
     }
 
@@ -507,30 +548,41 @@ class HlsPlayerUtils @Inject constructor(
         }
     }
 
-    private fun release() {
-        try {
-            exoPlayer?.let { player ->
-                playerListener?.let { player.removeListener(it) }
-                player.stop()
-                player.release()
+    fun getCacheSize(): Long {
+        return exoPlayerCache.cacheSpace
+    }
+
+    suspend fun clearCache() {
+        withContext(Dispatchers.IO) {
+            try {
+                for (key in exoPlayerCache.keys) {
+                    exoPlayerCache.removeResource(key)
+                }
+                Log.d("HlsPlayerUtils", "All resources removed from ExoPlayer cache successfully.")
+            } catch (e: Exception) {
+                Log.e("HlsPlayerUtils", "Failed to clear ExoPlayer cache resources", e)
             }
-            exoPlayer = null
-            playerListener = null
-            audioManager = null
-            audioFocusRequest = null
-            audioFocusRequested = false
-            videoSurface = null
-            currentVideoData = null
 
-            controlsHideJob?.cancel()
-            controlsHideJob = null
-
-            playerCoroutineScope.cancel()
-            _playerCoreState.update { PlayerCoreState() }
-            _controlsState.update { ControlsState() }
-            Log.d("HlsPlayerUtils", "HlsPlayerUtils completely released and state reset")
-        } catch (e: Exception) {
-            Log.e("HlsPlayerUtils", "Failed to release HlsPlayerUtils", e)
+            try {
+                val subtitlesDir = File(applicationContext.cacheDir, "subtitles")
+                if (subtitlesDir.exists()) {
+                    subtitlesDir.deleteRecursively()
+                    Log.d("HlsPlayerUtils", "Subtitles cache directory deleted successfully.")
+                }
+            } catch (e: Exception) {
+                Log.e("HlsPlayerUtils", "Failed to delete subtitles cache directory", e)
+            }
         }
+    }
+
+    private fun reset() {
+        exoPlayer?.let { player ->
+            player.stop()
+            player.clearMediaItems()
+        }
+        currentVideoData = null
+        _playerCoreState.update { PlayerCoreState() }
+        _controlsState.update { ControlsState() }
+        abandonAudioFocus()
     }
 }

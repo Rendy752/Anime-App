@@ -1,16 +1,17 @@
 package com.luminoverse.animevibe.ui.animeWatch
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ActivityInfo
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
@@ -18,6 +19,7 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -29,30 +31,33 @@ import com.luminoverse.animevibe.ui.animeWatch.components.AnimeWatchContent
 import kotlinx.coroutines.launch
 import com.luminoverse.animevibe.ui.main.MainActivity
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBars
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.media3.exoplayer.ExoPlayer
 import com.luminoverse.animevibe.data.remote.api.NetworkDataSource
 import com.luminoverse.animevibe.ui.main.SnackbarMessage
-import com.luminoverse.animevibe.ui.main.SnackbarMessageType
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 
+@SuppressLint("ConfigurationScreenWidthHeight")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnimeWatchScreen(
     malId: Int,
     episodeId: String,
     navController: NavHostController,
+    rememberTopPadding: Dp,
     networkDataSource: NetworkDataSource,
     mainState: MainState,
     showSnackbar: (SnackbarMessage) -> Unit,
     dismissSnackbar: () -> Unit,
     watchState: WatchState,
     playerUiState: PlayerUiState,
+    snackbarFlow: Flow<SnackbarMessage>,
     hlsPlayerCoreState: PlayerCoreState,
     hlsControlsStateFlow: StateFlow<ControlsState>,
     onAction: (WatchAction) -> Unit,
@@ -61,11 +66,6 @@ fun AnimeWatchScreen(
     captureScreenshot: suspend () -> String?,
     onEnterPipMode: () -> Unit
 ) {
-    val density = LocalDensity.current
-    val statusBarPadding = with(density) {
-        WindowInsets.systemBars.getTop(density).toDp()
-    }
-
     val scope = rememberCoroutineScope()
     val scrollState = rememberLazyListState()
     val pullToRefreshState = rememberPullToRefreshState()
@@ -122,6 +122,11 @@ fun AnimeWatchScreen(
         scope.launch {
             onAction(WatchAction.SetInitialState(malId, episodeId))
         }
+        scope.launch {
+            snackbarFlow.collectLatest { snackbarMessage ->
+                showSnackbar(snackbarMessage)
+            }
+        }
     }
 
     DisposableEffect(Unit) {
@@ -147,29 +152,17 @@ fun AnimeWatchScreen(
         }
     }
 
-    LaunchedEffect(watchState.errorMessage, watchState.isRefreshing, mainState.isConnected) {
-        when {
-            watchState.isRefreshing -> dismissSnackbar()
-            watchState.errorMessage != null -> {
-                showSnackbar(
-                    SnackbarMessage(
-                        message = watchState.errorMessage,
-                        type = SnackbarMessageType.ERROR,
-                        actionLabel = "RETRY",
-                        onAction = { refreshEpisodeSources() }
-                    )
-                )
-            }
-            else -> dismissSnackbar()
-        }
+    LaunchedEffect(watchState.isRefreshing, hlsPlayerCoreState.error) {
+        if (watchState.isRefreshing || hlsPlayerCoreState.error == null) dismissSnackbar()
     }
 
-    LaunchedEffect(mainState.isConnected) {
-        if (mainState.isConnected && watchState.episodeDetailComplement == null && watchState.episodeSourcesQuery != null) {
+    LaunchedEffect(mainState.networkStatus.isConnected) {
+        if (!mainState.networkStatus.isConnected) return@LaunchedEffect
+        if (getPlayer()?.isPlaying == false) dispatchPlayerAction(HlsPlayerAction.Play)
+        if (watchState.episodeDetailComplement == null && watchState.episodeSourcesQuery != null) {
             onAction(
                 WatchAction.HandleSelectedEpisodeServer(
-                    watchState.episodeSourcesQuery,
-                    isRefresh = true
+                    watchState.episodeSourcesQuery, isRefresh = true
                 )
             )
         }
@@ -180,7 +173,7 @@ fun AnimeWatchScreen(
         onRefresh = { refreshEpisodeSources() },
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = if (mainState.isLandscape) 0.dp else statusBarPadding),
+            .padding(top = if (mainState.isLandscape) 0.dp else rememberTopPadding),
         state = pullToRefreshState,
         indicator = {
             PullToRefreshDefaults.Indicator(
@@ -192,15 +185,23 @@ fun AnimeWatchScreen(
             )
         }
     ) {
+        val configuration = LocalConfiguration.current
+        val screenWidth = configuration.screenWidthDp.dp
+        val videoHeight = screenWidth * 9 / 16
         Column(modifier = Modifier.fillMaxSize()) {
             val videoPlayerModifier = Modifier
                 .fillMaxWidth()
-                .then(if (mainState.isLandscape) Modifier.fillMaxSize() else Modifier.height(250.dp))
+                .then(
+                    if (mainState.isLandscape) Modifier.fillMaxSize() else Modifier.height(
+                        videoHeight
+                    )
+                )
             AnimeWatchContent(
                 malId = malId,
                 navController = navController,
                 networkDataSource = networkDataSource,
                 watchState = watchState,
+                showSnackbar = showSnackbar,
                 isScreenOn = isScreenOn,
                 isAutoPlayVideo = mainState.isAutoPlayVideo,
                 playerUiState = playerUiState,

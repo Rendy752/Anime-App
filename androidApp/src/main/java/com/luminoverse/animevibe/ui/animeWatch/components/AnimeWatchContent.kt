@@ -1,6 +1,5 @@
 package com.luminoverse.animevibe.ui.animeWatch.components
 
-import android.util.Log
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -25,7 +24,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,8 +40,12 @@ import com.luminoverse.animevibe.ui.animeWatch.PlayerUiState
 import com.luminoverse.animevibe.ui.animeWatch.WatchAction
 import com.luminoverse.animevibe.ui.animeWatch.videoPlayer.VideoPlayerSection
 import com.luminoverse.animevibe.ui.animeWatch.watchContent.WatchContentSection
-import com.luminoverse.animevibe.ui.common.ScreenshotDisplay
+import com.luminoverse.animevibe.ui.common.ImageAspectRatio
+import com.luminoverse.animevibe.ui.common.ImageDisplay
+import com.luminoverse.animevibe.ui.common.ImageRoundedCorner
 import com.luminoverse.animevibe.ui.main.MainState
+import com.luminoverse.animevibe.ui.main.SnackbarMessage
+import com.luminoverse.animevibe.ui.main.SnackbarMessageType
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
@@ -55,6 +57,7 @@ fun AnimeWatchContent(
     navController: NavController,
     networkDataSource: NetworkDataSource,
     watchState: WatchState,
+    showSnackbar: (SnackbarMessage) -> Unit,
     isScreenOn: Boolean,
     isAutoPlayVideo: Boolean,
     playerUiState: PlayerUiState,
@@ -71,13 +74,6 @@ fun AnimeWatchContent(
     modifier: Modifier
 ) {
     val serverScrollState = rememberScrollState()
-    LaunchedEffect(watchState.errorMessage) {
-        if (watchState.errorMessage != null) {
-            onAction(WatchAction.SetErrorMessage(watchState.errorMessage))
-            Log.d("VideoPlayerSection", "Error from watchState: ${watchState.errorMessage}")
-        }
-    }
-
     val isSideSheetVisible = mainState.isLandscape && watchState.isSideSheetVisible
 
     BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
@@ -88,10 +84,13 @@ fun AnimeWatchContent(
                     .weight(1f)
                     .background(MaterialTheme.colorScheme.surfaceContainer)
             ) {
-                if (watchState.episodeDetailComplement == null || watchState.episodeDetailComplement.sources.link.file.isEmpty() == true || watchState.animeDetailComplement?.episodes == null || watchState.episodeSourcesQuery == null) {
-                    if (watchState.errorMessage != null && !watchState.isRefreshing && !playerCoreState.isPlaying) ScreenshotDisplay(
-                        imageUrl = watchState.animeDetail?.images?.webp?.large_image_url,
+                if (watchState.episodeDetailComplement == null || watchState.episodeDetailComplement.sources.link.file.isEmpty() || watchState.animeDetailComplement?.episodes == null || watchState.episodeSourcesQuery == null) {
+                    if (playerCoreState.error != null && !watchState.isRefreshing && !playerCoreState.isPlaying) ImageDisplay(
                         modifier = modifier,
+                        image = watchState.animeDetail?.images?.webp?.large_image_url,
+                        ratio = ImageAspectRatio.WIDESCREEN.ratio,
+                        contentDescription = "Anime cover",
+                        roundedCorners = ImageRoundedCorner.NONE
                     ) else Box(
                         modifier = modifier.background(Color(0xFF14161A))
                     )
@@ -100,7 +99,6 @@ fun AnimeWatchContent(
                         episodeDetailComplement = watchState.episodeDetailComplement,
                         episodeDetailComplements = watchState.episodeDetailComplements,
                         networkDataSource = networkDataSource,
-                        errorMessage = watchState.errorMessage,
                         playerUiState = playerUiState,
                         coreState = playerCoreState,
                         controlsStateFlow = controlsStateFlow,
@@ -133,21 +131,22 @@ fun AnimeWatchContent(
                         setSideSheetVisibility = { onAction(WatchAction.SetSideSheetVisibility(it)) },
                         setFullscreenChange = { onAction(WatchAction.SetFullscreen(it)) },
                         setShowResume = { onAction(WatchAction.SetShowResume(it)) },
-                        setShowNextEpisode = { onAction(WatchAction.SetShowNextEpisode(it)) },
-                        setPlayerError = { onAction(WatchAction.SetErrorMessage(it)) },
-                    )
-                }
-                watchState.episodeSourcesQuery?.let { episodeSourcesQuery ->
-                    RetryButton(
-                        modifier = Modifier.align(Alignment.Center),
-                        isVisible = watchState.errorMessage != null && !watchState.isRefreshing && !playerCoreState.isPlaying,
-                        onRetry = {
-                            onAction(
-                                WatchAction.HandleSelectedEpisodeServer(
-                                    episodeSourcesQuery = episodeSourcesQuery, isRefresh = true
-                                )
-                            )
-                        }
+                        setPlayerError = {
+                            showSnackbar(
+                                SnackbarMessage(
+                                    message = it,
+                                    type = SnackbarMessageType.ERROR,
+                                    actionLabel = "RETRY",
+                                    onAction = {
+                                        onAction(
+                                            WatchAction.HandleSelectedEpisodeServer(
+                                                episodeSourcesQuery = watchState.episodeSourcesQuery,
+                                                isRefresh = true
+                                            )
+                                        )
+                                    }
+                                ))
+                        },
                     )
                 }
             }
@@ -204,8 +203,6 @@ fun AnimeWatchContent(
                             InfoContentSection(
                                 animeDetail = watchState.animeDetail,
                                 navController = navController,
-                                isConnected = mainState.isConnected,
-                                isLandscape = mainState.isLandscape
                             )
                         }
                     }
@@ -236,8 +233,10 @@ fun AnimeWatchContent(
                     },
                     episodeDetailComplements = watchState.episodeDetailComplements,
                     episodes = watchState.animeDetailComplement.episodes,
-                    newEpisodeCount = watchState.newEpisodeCount,
+                    newEpisodeIdList = watchState.newEpisodeIdList,
                     episodeSourcesQuery = watchState.episodeSourcesQuery,
+                    episodeJumpNumber = watchState.episodeJumpNumber,
+                    setEpisodeJumpNumber = { onAction(WatchAction.SetEpisodeJumpNumber(it)) },
                     serverScrollState = serverScrollState,
                     handleSelectedEpisodeServer = {
                         onAction(
@@ -251,8 +250,6 @@ fun AnimeWatchContent(
                 InfoContentSection(
                     animeDetail = watchState.animeDetail,
                     navController = navController,
-                    isConnected = mainState.isConnected,
-                    isLandscape = mainState.isLandscape
                 )
             }
         }

@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -58,18 +57,13 @@ fun ContinueWatchingAnime(
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (!isMinimized) {
-            AsyncImageWithPlaceholder(
-                model = episodeDetailComplement.imageUrl
-                    ?: "default_anime_placeholder_${episodeDetailComplement.animeTitle}",
-                contentDescription = episodeDetailComplement.animeTitle,
-                roundedCorners = ImageRoundedCorner.START,
+            ImageDisplay(
                 modifier = Modifier
                     .width(75.dp)
-                    .height(100.dp)
-                    .aspectRatio(3f / 4f),
-                onClick = if (episodeDetailComplement.imageUrl != null) null else {
-                    {}
-                }
+                    .height(100.dp),
+                image = episodeDetailComplement.imageUrl,
+                contentDescription = "${episodeDetailComplement.animeTitle} image cover",
+                roundedCorners = ImageRoundedCorner.START
             )
             Column(
                 modifier = Modifier

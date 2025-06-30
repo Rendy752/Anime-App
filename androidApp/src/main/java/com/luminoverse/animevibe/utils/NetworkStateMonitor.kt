@@ -1,310 +1,178 @@
 package com.luminoverse.animevibe.utils
 
-import android.Manifest
 import android.content.Context
-import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
-import android.os.Handler
-import android.os.Looper
 import android.provider.Settings
 import android.util.Log
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.core.content.ContextCompat
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
+import com.luminoverse.animevibe.data.remote.api.NetworkDataSource
 import com.luminoverse.animevibe.models.NetworkStatus
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.URL
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class NetworkStateMonitor(context: Context) {
-
-    private val appContext: Context = context.applicationContext
+@Singleton
+class NetworkStateMonitor @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val networkDataSource: NetworkDataSource
+) {
     private val connectivityManager =
-        appContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
-    private val _isConnected = MutableLiveData<Boolean>()
-    val isConnected: LiveData<Boolean> = _isConnected
+    private val _networkStatus = MutableStateFlow(
+        NetworkStatus(
+            icon = Icons.Filled.Wifi,
+            label = "Connected",
+            iconColor = Color.Green,
+            isConnected = true
+        )
+    )
+    val networkStatus = _networkStatus.asStateFlow()
 
-    private val _downstreamSpeed = MutableLiveData<Int>()
-
-    private val _networkStatus = MutableLiveData<NetworkStatus>()
-    val networkStatus: LiveData<NetworkStatus> = _networkStatus
-
-    private val handler = Handler(Looper.getMainLooper())
-    private val connectivityCheckDelay = 1000L
-    private val coroutineScope = CoroutineScope(Dispatchers.Main)
+    private val monitorScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private var monitoringJob: Job? = null
 
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
-            Log.d(TAG, "Network available: $network")
-            postDelayedConnectivityCheck()
+            triggerStatusUpdate()
         }
 
         override fun onLost(network: Network) {
-            Log.d(TAG, "Network lost: $network")
-            postDelayedConnectivityCheck()
+            triggerStatusUpdate()
         }
 
         override fun onCapabilitiesChanged(
             network: Network,
             networkCapabilities: NetworkCapabilities
         ) {
-            Log.d(TAG, "Network capabilities changed: $networkCapabilities")
-            _downstreamSpeed.postValue(networkCapabilities.linkDownstreamBandwidthKbps)
-            postDelayedConnectivityCheck()
+            triggerStatusUpdate()
         }
     }
 
-    private fun postDelayedConnectivityCheck() {
-        handler.removeCallbacks(connectivityCheckRunnable)
-        handler.postDelayed(connectivityCheckRunnable, connectivityCheckDelay)
-    }
-
-    private val connectivityCheckRunnable = Runnable {
-        checkConnectivityInternal()
-    }
-
-    private fun checkConnectivityInternal() {
-        if (ContextCompat.checkSelfPermission(
-                appContext,
-                Manifest.permission.ACCESS_NETWORK_STATE
-            ) != PackageManager.PERMISSION_GRANTED
-        ) {
-            Log.w(TAG, "Missing ACCESS_NETWORK_STATE permission")
-            _isConnected.postValue(false)
-            _downstreamSpeed.postValue(0)
-            _networkStatus.postValue(
-                NetworkStatus(
-                    icon = Icons.Filled.Error,
-                    label = "Permission Denied",
-                    iconColor = Color.Red
-                )
-            )
-            return
+    private fun triggerStatusUpdate() {
+        monitoringJob?.cancel()
+        monitoringJob = monitorScope.launch {
+            delay(500)
+            checkAndUpdateNetworkStatus()
         }
+    }
 
+    private suspend fun checkAndUpdateNetworkStatus() {
         val activeNetwork = connectivityManager.activeNetwork
         val capabilities = activeNetwork?.let { connectivityManager.getNetworkCapabilities(it) }
 
-        val hasNetwork = capabilities != null
-        val hasInternetCapability =
-            capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
-
-        coroutineScope.launch {
-            val isInternetAvailable = if (hasNetwork && hasInternetCapability) {
-                withContext(Dispatchers.IO) { checkInternetAccess() }
-            } else {
-                false
-            }
-
-            Log.d(
-                TAG,
-                "Internet available: $isInternetAvailable, hasNetwork: $hasNetwork, hasInternetCapability: $hasInternetCapability"
-            )
-            _isConnected.postValue(isInternetAvailable)
-            _downstreamSpeed.postValue(capabilities?.linkDownstreamBandwidthKbps ?: 0)
-            updateNetworkStatus(capabilities, isInternetAvailable)
-        }
-    }
-
-    /**
-     * Checks actual internet connectivity by attempting HTTP connections to reliable endpoints.
-     * Must be called on a background thread.
-     * Returns true only if an HTTP connection is successful and not redirected to a carrier page.
-     */
-    private fun checkInternetAccess(): Boolean {
-        try {
-            val url = URL("https://www.google.com")
-            val connection = url.openConnection() as HttpURLConnection
-            connection.connectTimeout = 3000
-            connection.readTimeout = 3000
-            connection.requestMethod = "HEAD"
-            connection.connect()
-            val responseCode = connection.responseCode
-            val finalUrl = connection.url.toString()
-            val locationHeader = connection.getHeaderField("Location") ?: ""
-            connection.disconnect()
-            if (responseCode in 200..299 && finalUrl.contains("google.com") && !locationHeader.contains(
-                    "login"
-                )
-            ) {
-                Log.d(
-                    TAG,
-                    "HTTP check to google.com successful: code=$responseCode, finalUrl=$finalUrl"
-                )
-                return true
-            } else {
-                Log.w(
-                    TAG,
-                    "HTTP check to google.com failed: code=$responseCode, finalUrl=$finalUrl, location=$locationHeader"
-                )
-            }
-        } catch (e: IOException) {
-            Log.w(TAG, "HTTP check to google.com failed: ${e.message}")
-        }
-
-        try {
-            val url = URL("https://example.com")
-            val connection = url.openConnection() as HttpURLConnection
-            connection.connectTimeout = 3000
-            connection.readTimeout = 3000
-            connection.requestMethod = "HEAD"
-            connection.connect()
-            val responseCode = connection.responseCode
-            val finalUrl = connection.url.toString()
-            val locationHeader = connection.getHeaderField("Location") ?: ""
-            connection.disconnect()
-            if (responseCode in 200..299 && finalUrl.contains("example.com") && !locationHeader.contains(
-                    "login"
-                )
-            ) {
-                Log.d(
-                    TAG,
-                    "HTTP check to example.com successful: code=$responseCode, finalUrl=$finalUrl"
-                )
-                return true
-            } else {
-                Log.w(
-                    TAG,
-                    "HTTP check to example.com failed: code=$responseCode, finalUrl=$finalUrl, location=$locationHeader"
-                )
-            }
-        } catch (e: IOException) {
-            Log.w(TAG, "HTTP check to example.com failed: ${e.message}")
-        }
-
-        Log.w(TAG, "All internet checks failed")
-        return false
-    }
-
-    private fun updateNetworkStatus(
-        capabilities: NetworkCapabilities?,
-        isInternetAvailable: Boolean
-    ) {
-        var icon: ImageVector = Icons.Filled.WifiOff
-        var iconColor: Color = Color.Gray
-        var label = "Offline"
-        val speed = capabilities?.linkDownstreamBandwidthKbps ?: 0
-
         val isAirplaneModeOn = Settings.Global.getInt(
-            appContext.contentResolver,
-            Settings.Global.AIRPLANE_MODE_ON,
-            0
+            context.contentResolver, Settings.Global.AIRPLANE_MODE_ON, 0
         ) != 0
 
         if (isAirplaneModeOn) {
-            icon = Icons.Filled.AirplanemodeActive
-            iconColor = Color.Gray
-            label = "Airplane Mode"
-            _isConnected.postValue(false)
-            _networkStatus.postValue(NetworkStatus(icon, label, iconColor))
-            Log.d(TAG, "Network status: Airplane Mode, isConnected: false")
+            _networkStatus.value = NetworkStatus(
+                icon = Icons.Filled.AirplanemodeActive,
+                label = "Airplane Mode",
+                iconColor = Color.Gray,
+                isConnected = false
+            )
             return
         }
 
-        when {
-            capabilities == null -> {
-                icon = Icons.Filled.WifiOff
-                iconColor = Color.Red
-                label = "No Network"
-                _isConnected.postValue(false)
+        if (activeNetwork == null || capabilities == null || !capabilities.hasCapability(
+                NetworkCapabilities.NET_CAPABILITY_INTERNET
+            )
+        ) {
+            _networkStatus.value = NetworkStatus(
+                icon = Icons.Filled.SignalWifiConnectedNoInternet4,
+                label = "No Internet",
+                iconColor = Color.Red,
+                isConnected = false
+            )
+            return
+        }
+
+        val measuredSpeedKbps = measureDownloadSpeed()
+        updateStatusWithMeasuredSpeed(capabilities, measuredSpeedKbps)
+    }
+
+    private suspend fun measureDownloadSpeed(): Int {
+        val testUrl =
+            "https://www.google.com/images/branding/googlelogo/1x/googlelogo_color_74x24dp.png"
+        var speedKbps = 0
+        try {
+            val (bytes, durationMs) = networkDataSource.downloadFileAndMeasureTime(testUrl)
+            if (durationMs > 0 && bytes > 0) {
+                speedKbps = ((bytes * 8L * 1000L) / (durationMs * 1024L)).toInt()
+                Log.d(TAG, "Speed test success: $speedKbps Kbps")
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "Speed test failed", e)
+        }
+        return speedKbps
+    }
+
+    private fun updateStatusWithMeasuredSpeed(
+        capabilities: NetworkCapabilities,
+        speed: Int
+    ) {
+        val isWifi = capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+        val (icon: ImageVector, color: Color) = when {
+            speed <= 0 && capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) -> {
+                (if (isWifi) Icons.Filled.Wifi else Icons.Filled.SignalCellularAlt) to Color.Green
             }
 
-            !capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) -> {
-                icon = Icons.Filled.WifiOff
-                iconColor = Color.Red
-                label = "No Internet"
-                _isConnected.postValue(false)
+            speed in 1..100 -> {
+                (if (isWifi) Icons.Filled.Wifi1Bar else Icons.Filled.SignalCellularAlt1Bar) to Color.Red
             }
 
-            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) && !isInternetAvailable -> {
-                icon = Icons.Filled.SignalCellularConnectedNoInternet4Bar
-                iconColor = Color.Yellow
-                label = "No Data Quota"
-                _isConnected.postValue(false)
+            speed in 101..1500 -> {
+                (if (isWifi) Icons.Filled.Wifi2Bar else Icons.Filled.SignalCellularAlt2Bar) to Color.Yellow
+            }
+
+            speed > 1500 -> {
+                (if (isWifi) Icons.Filled.Wifi else Icons.Filled.SignalCellularAlt) to Color.Green
             }
 
             else -> {
-                if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
-                    when (speed) {
-                        in 1..5000 -> {
-                            icon = Icons.Filled.Wifi1Bar
-                            iconColor = Color.Red
-                            label = "$speed Kbps"
-                        }
-
-                        in 5001..10000 -> {
-                            icon = Icons.Filled.Wifi2Bar
-                            iconColor = Color.Yellow
-                            label = "$speed Kbps"
-                        }
-
-                        else -> {
-                            icon = Icons.Filled.Wifi
-                            iconColor = Color.Green
-                            label = "$speed Kbps"
-                        }
-                    }
-                } else if (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)) {
-                    when (speed) {
-                        in 1..5000 -> {
-                            icon = Icons.Filled.SignalCellularAlt1Bar
-                            iconColor = Color.Red
-                            label = "$speed Kbps"
-                        }
-
-                        in 5001..10000 -> {
-                            icon = Icons.Filled.SignalCellularAlt2Bar
-                            iconColor = Color.Yellow
-                            label = "$speed Kbps"
-                        }
-
-                        else -> {
-                            icon = Icons.Filled.SignalCellularAlt
-                            iconColor = Color.Green
-                            label = "$speed Kbps"
-                        }
-                    }
-                } else {
-                    icon = Icons.Filled.Wifi
-                    iconColor = Color.Green
-                    label = "Connected"
-                }
-                _isConnected.postValue(true)
+                (Icons.Filled.SignalWifiConnectedNoInternet4) to Color.Red
             }
         }
-        _networkStatus.postValue(NetworkStatus(icon, label, iconColor))
-        Log.d(TAG, "Network status: $label, isConnected: ${_isConnected.value}")
+
+        val isConnected =
+            speed > 0 || capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+
+        _networkStatus.value = NetworkStatus(
+            icon = icon,
+            label = if (speed > 0) "$speed Kbps" else if (isConnected) "Connected" else "No Internet",
+            iconColor = color,
+            isConnected = isConnected
+        )
     }
 
     fun startMonitoring() {
+        if (monitoringJob?.isActive == true) return
+        monitorScope.launch {
+            checkAndUpdateNetworkStatus()
+        }
+
         try {
-            val builder = NetworkRequest.Builder()
-                .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
-                .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
-                .addTransportType(NetworkCapabilities.TRANSPORT_ETHERNET)
-            connectivityManager.registerNetworkCallback(builder.build(), networkCallback)
-            checkConnectivityInternal()
-            Log.d(TAG, "Started network monitoring")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to start monitoring: ${e.message}")
-            _networkStatus.postValue(
-                NetworkStatus(
-                    icon = Icons.Filled.Error,
-                    label = "Monitoring Error",
-                    iconColor = Color.Red
-                )
+            val request = NetworkRequest.Builder()
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .build()
+            connectivityManager.registerNetworkCallback(request, networkCallback)
+        } catch (e: SecurityException) {
+            Log.e(TAG, "Missing network permissions to start monitoring", e)
+            _networkStatus.value = NetworkStatus(
+                icon = Icons.Filled.Error,
+                label = "Permission Denied",
+                iconColor = Color.Red,
+                isConnected = false
             )
         }
     }
@@ -312,10 +180,9 @@ class NetworkStateMonitor(context: Context) {
     fun stopMonitoring() {
         try {
             connectivityManager.unregisterNetworkCallback(networkCallback)
-            handler.removeCallbacks(connectivityCheckRunnable)
-            Log.d(TAG, "Stopped network monitoring")
+            monitoringJob?.cancel()
         } catch (e: Exception) {
-            Log.w(TAG, "Error stopping monitoring: ${e.message}")
+            Log.w(TAG, "Error stopping monitoring", e)
         }
     }
 

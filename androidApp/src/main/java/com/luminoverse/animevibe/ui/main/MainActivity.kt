@@ -11,6 +11,11 @@ import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -26,6 +31,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.google.android.play.core.appupdate.AppUpdateManager
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory
@@ -34,12 +40,13 @@ import com.google.android.play.core.install.InstallStateUpdatedListener
 import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.InstallStatus
 import com.google.android.play.core.install.model.UpdateAvailability
-import com.luminoverse.animevibe.AnimeApplication
 import com.luminoverse.animevibe.ui.common.ConfirmationAlert
+import com.luminoverse.animevibe.ui.common.SharedImagePreviewer
+import com.luminoverse.animevibe.ui.main.navigation.BottomNavigationBar
+import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.theme.AppTheme
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
-import com.luminoverse.animevibe.utils.media.MediaPlaybackAction
 import com.luminoverse.animevibe.utils.media.PipUtil.buildPipActions
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.channels.Channel
@@ -48,8 +55,6 @@ import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import android.content.pm.PackageManager
-import androidx.compose.foundation.layout.consumeWindowInsets
-import androidx.compose.runtime.getValue
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -120,6 +125,8 @@ class MainActivity : AppCompatActivity() {
             val snackbarHostState = remember { SnackbarHostState() }
 
             navController = rememberNavController()
+            val navBackStackEntry by navController.currentBackStackEntryAsState()
+            val currentRoute = navBackStackEntry?.destination?.route
 
             LaunchedEffect(state.snackbarMessage) {
                 state.snackbarMessage?.let { snackbarMessage ->
@@ -173,27 +180,48 @@ class MainActivity : AppCompatActivity() {
                 colorStyle = state.colorStyle,
                 isRtl = state.isRtl
             ) {
-                Scaffold(snackbarHost = { SnackbarHost(hostState = snackbarHostState) }) { paddingValues ->
-                    if (state.isShowIdleDialog) {
-                        ConfirmationAlert(
-                            title = "Are you still there ?",
-                            message = "It seems you haven't interacted with the app for a while. Would you like to quit the app ?",
-                            onConfirm = { finish() },
-                            onCancel = {
-                                mainViewModel.onAction(MainAction.SetIsShowIdleDialog(false))
-                                resetIdleTimer()
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Scaffold(
+                        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+                        bottomBar = {
+                            AnimatedVisibility(
+                                visible = NavRoute.bottomRoutes.any { it.route == currentRoute },
+                                enter = slideInVertically(initialOffsetY = { it }),
+                                exit = slideOutVertically(targetOffsetY = { it })
+                            ) { BottomNavigationBar(navController = navController) }
+                        }
+                    ) { paddingValues ->
+                        MainScreen(
+                            contentPadding = paddingValues,
+                            navController = navController,
+                            currentRoute = currentRoute,
+                            intentChannel = intentChannel,
+                            resetIdleTimer = resetIdleTimer,
+                            mainState = state.copy(isLandscape = isLandscape),
+                            mainAction = mainViewModel::onAction
+                        )
+
+                        if (state.isShowIdleDialog) {
+                            ConfirmationAlert(
+                                title = "Are you still there ?",
+                                message = "It seems you haven't interacted with the app for a while. Would you like to quit the app ?",
+                                onConfirm = { finish() },
+                                onCancel = {
+                                    mainViewModel.onAction(MainAction.SetIsShowIdleDialog(false))
+                                    resetIdleTimer()
+                                }
+                            )
+                        }
+                    }
+
+                    state.sharedImageState?.let { imageState ->
+                        SharedImagePreviewer(
+                            sharedImageState = imageState,
+                            onDismiss = {
+                                mainViewModel.onAction(MainAction.DismissImagePreview)
                             }
                         )
                     }
-
-                    MainScreen(
-                        modifier = Modifier.consumeWindowInsets(paddingValues),
-                        navController = navController,
-                        intentChannel = intentChannel,
-                        resetIdleTimer = resetIdleTimer,
-                        mainState = state.copy(isLandscape = isLandscape),
-                        mainAction = mainViewModel::onAction,
-                    )
                 }
             }
         }
@@ -288,9 +316,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onPictureInPictureModeChanged(
         isInPictureInPictureMode: Boolean,
-        configuration: Configuration
+        newConfig: Configuration
     ) {
-        super.onPictureInPictureModeChanged(isInPictureInPictureMode, configuration)
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
         onPictureInPictureModeChangedListeners.forEach {
             if (!isInPictureInPictureMode && !lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
                 hlsPlayerUtils.dispatch(HlsPlayerAction.Pause)
@@ -316,9 +344,6 @@ class MainActivity : AppCompatActivity() {
             if (currentRoute?.startsWith("animeWatch/") == true && isPlaying) {
                 pipParamsBuilder.setActions(buildPipActions(this@MainActivity, true))
                 enterPictureInPictureMode(pipParamsBuilder.build())
-            } else {
-                (applicationContext as AnimeApplication).getMediaPlaybackService()
-                    ?.dispatch(MediaPlaybackAction.StopService)
             }
         }
     }
@@ -328,7 +353,6 @@ class MainActivity : AppCompatActivity() {
         installStateUpdatedListener?.let {
             appUpdateManager.unregisterListener(it)
         }
-        (applicationContext as AnimeApplication).cleanupService()
     }
 
     fun exitPipModeIfActive() {

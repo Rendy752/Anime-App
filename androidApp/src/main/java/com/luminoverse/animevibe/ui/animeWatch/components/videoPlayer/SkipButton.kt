@@ -25,16 +25,17 @@ import com.luminoverse.animevibe.models.TimeRange
 fun SkipButtonsContainer(
     modifier: Modifier = Modifier,
     currentPosition: Long,
+    duration: Long,
     intro: TimeRange,
     outro: TimeRange,
     isSkipVisible: Boolean,
     onSkip: (Long) -> Unit
 ) {
     val showIntroButton =
-        currentPosition >= intro.start * 1000L && currentPosition < intro.end * 1000L
+        currentPosition >= intro.start * 1000L && currentPosition < intro.end * 1000L && currentPosition in 0 until duration
 
     val showOutroButton =
-        currentPosition >= outro.start * 1000L && currentPosition < outro.end * 1000L
+        currentPosition >= outro.start * 1000L && currentPosition < outro.end * 1000L && currentPosition in 0 until duration
 
     SkipButton(
         label = "Skip Intro",
@@ -60,7 +61,7 @@ private fun SkipButton(
     AnimatedVisibility(
         visible = isVisible,
         modifier
-            .padding(end = 64.dp, bottom = 64.dp)
+            .padding(end = 56.dp, bottom = 56.dp)
             .clip(RoundedCornerShape(16.dp))
             .border(2.dp, Color.White, RoundedCornerShape(16.dp))
             .clickable { onSkip() }

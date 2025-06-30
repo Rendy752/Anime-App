@@ -74,17 +74,7 @@ fun RecommendationItemSkeleton(modifier: Modifier = Modifier) {
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             repeat(2) {
-                Column {
-                    SkeletonBox(width = 120.dp, height = 20.dp)
-                    Spacer(modifier = Modifier.height(4.dp))
-                    SkeletonBox(
-                        modifier = Modifier.align(Alignment.CenterHorizontally),
-                        width = 100.dp,
-                        height = 150.dp
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    SkeletonBox(width = 120.dp, height = 20.dp)
-                }
+                HeaderPairSkeleton(isFirst = it == 0, modifier = Modifier.weight(0.5f))
             }
         }
         Spacer(modifier = Modifier.height(8.dp))

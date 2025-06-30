@@ -8,6 +8,7 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.calculatePan
 import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.runtime.*
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntSize
@@ -18,13 +19,14 @@ import coil.ImageLoader
 import coil.imageLoader
 import coil.request.ImageRequest
 import com.luminoverse.animevibe.data.remote.api.NetworkDataSource
+import com.luminoverse.animevibe.utils.media.BoundsUtils.calculateOffsetBounds
 import com.luminoverse.animevibe.utils.media.CaptionCue
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
-import com.luminoverse.animevibe.utils.media.PlayerCoreState
 import com.luminoverse.animevibe.utils.media.ThumbnailCue
 import com.luminoverse.animevibe.utils.media.parseCaptionCues
 import com.luminoverse.animevibe.utils.media.parseThumbnailCues
+import com.luminoverse.animevibe.utils.media.toSha256
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -34,6 +36,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import java.io.File
 import java.io.IOException
 import java.util.*
 import kotlin.math.abs
@@ -47,6 +50,7 @@ private const val MAX_ZOOM_RATIO = 8f
 
 @Stable
 class VideoPlayerState(
+    private val context: Context,
     val player: ExoPlayer,
     val playerAction: (HlsPlayerAction) -> Unit,
     val scope: CoroutineScope,
@@ -57,6 +61,7 @@ class VideoPlayerState(
     private val _currentPosition = MutableStateFlow(0L)
     val currentPosition: StateFlow<Long> = _currentPosition.asStateFlow()
 
+    var isShowNextEpisodeOverlay by mutableStateOf(false)
     var isShowSeekIndicator by mutableIntStateOf(0)
     var seekAmount by mutableLongStateOf(0L)
     var isSeeking by mutableStateOf(false)
@@ -93,16 +98,6 @@ class VideoPlayerState(
         _currentPosition.value = position
     }
 
-    /**
-     * Loads thumbnail cues from a VTT file and caches the associated thumbnail images.
-     *
-     * This function fetches a VTT file from the provided `thumbnailUrl`, parses it to extract
-     * thumbnail cues (including image URLs and timecodes), and then enqueues image loading
-     * requests for each unique thumbnail image URL using Coil. The parsed cues are stored
-     * in the `thumbnailCues` map.
-     * @param context The Android [Context] used for image loading.
-     * @param thumbnailUrl The URL of the VTT file containing thumbnail information.
-     */
     fun loadAndCacheThumbnails(context: Context, thumbnailUrl: String) {
         scope.launch {
             if (thumbnailCues.containsKey(thumbnailUrl)) return@launch
@@ -130,26 +125,63 @@ class VideoPlayerState(
 
             } catch (e: Exception) {
                 Log.e("VideoPlayerState", "Failed to load or cache thumbnails: ${e.message}", e)
-                thumbnailCues = thumbnailCues + (thumbnailUrl to emptyList())
             }
         }
+    }
+
+    private fun getSubtitlesCacheDir(): File {
+        return File(context.cacheDir, "subtitles").also {
+            if (!it.exists()) {
+                it.mkdirs()
+            }
+        }
+    }
+
+    private fun getSubtitleFile(url: String): File {
+        val fileName = "${url.toSha256()}.vtt"
+        return File(getSubtitlesCacheDir(), fileName)
     }
 
     fun loadAndCacheCaptions(captionUrl: String) {
         scope.launch {
             if (captionCues.containsKey(captionUrl)) return@launch
-            try {
-                val vttContent = networkDataSource.fetchText(captionUrl)
-                if (vttContent.isNullOrEmpty()) {
-                    throw IOException("Failed to fetch caption VTT content or content is empty.")
-                }
 
+            val subtitleFile = getSubtitleFile(captionUrl)
+            var vttContent: String? = null
+
+            if (subtitleFile.exists()) {
+                try {
+                    vttContent = withContext(Dispatchers.IO) {
+                        subtitleFile.readText()
+                    }
+                    Log.d("VideoPlayerState", "Loaded captions from local cache for $captionUrl")
+                } catch (e: Exception) {
+                    Log.e("VideoPlayerState", "Failed to read local caption file: ${e.message}", e)
+                }
+            }
+
+            if (vttContent == null) {
+                try {
+                    vttContent = networkDataSource.fetchText(captionUrl)
+                    if (!vttContent.isNullOrEmpty()) {
+                        withContext(Dispatchers.IO) {
+                            subtitleFile.writeText(vttContent)
+                        }
+                        Log.d("VideoPlayerState", "Fetched captions from network and cached locally for $captionUrl")
+                    } else {
+                        throw IOException("Fetched caption content is null or empty.")
+                    }
+                } catch (e: Exception) {
+                    Log.e("VideoPlayerState", "Failed to fetch captions from network: ${e.message}", e)
+                    return@launch
+                }
+            }
+
+            try {
                 val cues = parseCaptionCues(vttContent)
                 captionCues = captionCues + (captionUrl to cues)
-                Log.d("VideoPlayerState", "Captions loaded and cached for $captionUrl")
             } catch (e: Exception) {
-                Log.e("VideoPlayerState", "Failed to load captions: ${e.message}", e)
-                captionCues = captionCues + (captionUrl to emptyList())
+                Log.e("VideoPlayerState", "Failed to parse caption VTT content: ${e.message}", e)
             }
         }
     }
@@ -238,10 +270,9 @@ class VideoPlayerState(
     fun handleDoubleTap(
         x: Float,
         screenWidth: Float,
-        coreState: PlayerCoreState,
         isLocked: Boolean
     ) {
-        if (!isLocked && coreState.playbackState != Player.STATE_IDLE && !isFirstLoad) {
+        if (!isLocked) {
             Log.d("PlayerView", "Double tap at x=$x")
             val newSeekDirection = when {
                 x < screenWidth * 0.4 -> -1
@@ -308,8 +339,11 @@ fun rememberVideoPlayerState(
     scope: CoroutineScope = rememberCoroutineScope()
 ): VideoPlayerState {
     val imageLoader = LocalContext.current.imageLoader
+    val context = LocalContext.current
+
     val state = remember(key) {
         VideoPlayerState(
+            context = context,
             player = player,
             playerAction = playerAction,
             scope = scope,
@@ -345,7 +379,6 @@ fun rememberVideoPlayerState(
 suspend fun AwaitPointerEventScope.handleGestures(
     state: VideoPlayerState,
     updatedControlsState: State<ControlsState>,
-    updatedCoreState: State<PlayerCoreState>
 ) {
     val down = awaitFirstDown()
 
@@ -368,7 +401,7 @@ suspend fun AwaitPointerEventScope.handleGestures(
             break
         }
 
-        if (event.changes.size > 1 && !updatedControlsState.value.isLocked) {
+        if (event.changes.size > 1 && !updatedControlsState.value.isLocked && !state.isFirstLoad) {
             if (!isMultiTouch) {
                 isMultiTouch = true
                 state.isZooming = true
@@ -384,13 +417,16 @@ suspend fun AwaitPointerEventScope.handleGestures(
 
             val (maxOffsetX, maxOffsetY) = calculateOffsetBounds(
                 size,
-                state.videoSize,
+                Size(
+                    width = state.videoSize.width.toFloat(),
+                    height = state.videoSize.height.toFloat()
+                ),
                 state.zoomScaleProgress
             )
             state.offsetX = state.offsetX.coerceIn(-maxOffsetX, maxOffsetX)
             state.offsetY = state.offsetY.coerceIn(-maxOffsetY, maxOffsetY)
             event.changes.forEach { it.consume() }
-        } else if (event.changes.size == 1 && !isMultiTouch && updatedControlsState.value.zoom > 1f && !updatedControlsState.value.isLocked) {
+        } else if (event.changes.size == 1 && !isMultiTouch && updatedControlsState.value.zoom > 1f && !updatedControlsState.value.isLocked && !state.isFirstLoad) {
             val pan = event.calculatePan()
             if (pan.x != 0f || pan.y != 0f) {
                 if (!isDragging) {
@@ -403,7 +439,10 @@ suspend fun AwaitPointerEventScope.handleGestures(
                 }
                 val (maxOffsetX, maxOffsetY) = calculateOffsetBounds(
                     size,
-                    state.videoSize,
+                    Size(
+                        width = state.videoSize.width.toFloat(),
+                        height = state.videoSize.height.toFloat()
+                    ),
                     state.zoomScaleProgress
                 )
                 state.offsetX =
@@ -442,7 +481,6 @@ suspend fun AwaitPointerEventScope.handleGestures(
                 state.handleDoubleTap(
                     tapX,
                     size.width.toFloat(),
-                    updatedCoreState.value,
                     updatedControlsState.value.isLocked
                 )
             } else {
@@ -452,38 +490,4 @@ suspend fun AwaitPointerEventScope.handleGestures(
             state.lastTapX = tapX
         }
     }
-}
-
-/**
- * A helper function to calculate the maximum allowed pan offsets based on the container size,
- * the video's intrinsic size, and the current zoom scale. This prevents panning into blank areas.
- */
-fun calculateOffsetBounds(
-    containerSize: IntSize,
-    videoSize: VideoSize,
-    scale: Float
-): Pair<Float, Float> {
-    if (containerSize.width == 0 || containerSize.height == 0 || videoSize.width == 0 || videoSize.height == 0 || scale <= 1f) {
-        return 0f to 0f
-    }
-
-    val containerWidth = containerSize.width.toFloat()
-    val containerHeight = containerSize.height.toFloat()
-
-    val vWidth = videoSize.width.toFloat() * videoSize.pixelWidthHeightRatio
-    val vHeight = videoSize.height.toFloat()
-
-    val containerAspect = containerWidth / containerHeight
-    val videoAspect = vWidth / vHeight
-
-    val (fittedWidth, fittedHeight) = if (videoAspect > containerAspect) {
-        containerWidth to (containerWidth / videoAspect)
-    } else {
-        (containerHeight * videoAspect) to containerHeight
-    }
-
-    val overflowX = (fittedWidth * scale - containerWidth).coerceAtLeast(0f)
-    val overflowY = (fittedHeight * scale - containerHeight).coerceAtLeast(0f)
-
-    return (overflowX / 2f) to (overflowY / 2f)
 }

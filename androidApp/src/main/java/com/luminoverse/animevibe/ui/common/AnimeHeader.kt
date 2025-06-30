@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -47,13 +46,11 @@ fun AnimeHeader(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if (showImage) AsyncImageWithPlaceholder(
-            model = animeDetail.images.webp.large_image_url,
+        if (showImage) ImageDisplay(
+            modifier = Modifier.weight(0.5f),
+            image = animeDetail.images.webp.large_image_url,
             contentDescription = animeDetail.title,
-            isAiring = animeDetail.airing,
-            modifier = Modifier
-                .weight(0.5f)
-                .aspectRatio(2f / 3f)
+            isAiring = animeDetail.airing
         )
 
         Column(

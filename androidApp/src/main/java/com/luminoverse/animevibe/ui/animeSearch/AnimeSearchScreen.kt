@@ -1,6 +1,7 @@
 package com.luminoverse.animevibe.ui.animeSearch
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -27,8 +28,9 @@ import com.luminoverse.animevibe.ui.common.LimitAndPaginationSection
 import com.luminoverse.animevibe.ui.main.MainState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import com.luminoverse.animevibe.ui.common.CustomModalBottomSheet
+import com.luminoverse.animevibe.ui.common.SharedImageState
 import com.luminoverse.animevibe.utils.resource.Resource
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,21 +38,15 @@ import com.luminoverse.animevibe.utils.resource.Resource
 @Composable
 fun AnimeSearchScreen(
     navController: NavHostController = rememberNavController(),
+    rememberedTopPadding: Dp = 0.dp,
     mainState: MainState = MainState(),
+    showImagePreview: (SharedImageState) -> Unit = {},
     genreId: Int? = null,
     producerId: Int? = null,
     searchState: SearchState = SearchState(),
     filterSelectionState: FilterSelectionState = FilterSelectionState(),
     onAction: (SearchAction) -> Unit = {}
 ) {
-    val density = LocalDensity.current
-    val statusBarPadding = with(density) {
-        WindowInsets.systemBars.getTop(density).toDp()
-    }
-    val navigationBarPadding = with(density) {
-        WindowInsets.systemBars.getBottom(density).toDp()
-    }
-
     val isTopAppBarVisible = !mainState.isLandscape && (genreId != null || producerId != null)
 
     val state = rememberPullToRefreshState()
@@ -60,8 +56,8 @@ fun AnimeSearchScreen(
     var isGenresBottomSheetShow by remember { mutableStateOf(false) }
     var isProducersBottomSheetShow by remember { mutableStateOf(false) }
 
-    LaunchedEffect(mainState.isConnected) {
-        if (!mainState.isConnected) return@LaunchedEffect
+    LaunchedEffect(mainState.networkStatus.isConnected) {
+        if (!mainState.networkStatus.isConnected) return@LaunchedEffect
 
         if (searchState.genres is Resource.Error) onAction(SearchAction.FetchGenres)
         if (searchState.producers is Resource.Error) onAction(SearchAction.FetchProducers)
@@ -75,10 +71,7 @@ fun AnimeSearchScreen(
     }
 
     PullToRefreshBox(
-        modifier = Modifier.padding(
-            top = statusBarPadding,
-            bottom = if (isTopAppBarVisible) navigationBarPadding else 0.dp
-        ),
+        modifier = Modifier.padding(top = if (isTopAppBarVisible) rememberedTopPadding else rememberedTopPadding + 8.dp),
         isRefreshing = searchState.isRefreshing,
         onRefresh = { onAction(SearchAction.ApplyFilters(searchState.queryState)) },
         state = state,
@@ -94,30 +87,27 @@ fun AnimeSearchScreen(
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
             if (isTopAppBarVisible) {
-                Column {
-                    TopAppBar(
-                        title = {
-                            Text(
-                                text = "Search",
-                                modifier = Modifier.padding(end = 8.dp),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                        },
-                        navigationIcon = {
-                            IconButton(onClick = { navController.popBackStack() }) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = "Back"
-                                )
-                            }
-                        }
-                    )
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.surfaceContainer,
-                        thickness = 2.dp
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Start
+                ) {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                    Text(
+                        text = "Search",
+                        style = MaterialTheme.typography.titleLarge,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
                 }
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.surfaceContainer,
+                    thickness = 2.dp
+                )
             }
             if (mainState.isLandscape) {
                 Row(modifier = Modifier.fillMaxSize()) {
@@ -180,7 +170,7 @@ fun AnimeSearchScreen(
 
                     ResultsSection(
                         modifier = Modifier.weight(0.5f),
-                        isConnected = mainState.isConnected,
+                        isConnected = mainState.networkStatus.isConnected,
                         resultsSectionScrollState = resultsSectionScrollState,
                         navController = navController,
                         query = searchState.queryState.query,
@@ -190,7 +180,8 @@ fun AnimeSearchScreen(
                         onGenreClick = { genre ->
                             onAction(SearchAction.SetSelectedGenre(genre))
                             onAction(SearchAction.ApplyGenreFilters)
-                        }
+                        },
+                        showImagePreview = showImagePreview
                     )
                 }
             } else {
@@ -224,7 +215,7 @@ fun AnimeSearchScreen(
 
                     ResultsSection(
                         modifier = Modifier.weight(1f),
-                        isConnected = mainState.isConnected,
+                        isConnected = mainState.networkStatus.isConnected,
                         resultsSectionScrollState = resultsSectionScrollState,
                         navController = navController,
                         query = searchState.queryState.query,
@@ -234,7 +225,8 @@ fun AnimeSearchScreen(
                         onGenreClick = { genre ->
                             onAction(SearchAction.SetSelectedGenre(genre))
                             onAction(SearchAction.ApplyGenreFilters)
-                        }
+                        },
+                        showImagePreview = showImagePreview
                     )
 
                     LimitAndPaginationSection(

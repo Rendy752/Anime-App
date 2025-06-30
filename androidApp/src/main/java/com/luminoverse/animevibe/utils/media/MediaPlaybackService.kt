@@ -46,7 +46,6 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.net.URLEncoder
-import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
 import androidx.core.graphics.scale
 import kotlinx.coroutines.isActive
@@ -56,7 +55,6 @@ private const val CHANNEL_ID = "anime_playback_channel"
 private const val NOTIFICATION_UPDATE_INTERVAL_MS = 1_000L
 
 data class MediaPlaybackState(
-    val isForeground: Boolean = false,
     val playbackState: Int = PlaybackStateCompat.STATE_STOPPED,
     val errorMessage: String? = null,
     val isPlayerReady: Boolean = false,
@@ -75,8 +73,8 @@ sealed class MediaPlaybackAction {
         val handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit
     ) : MediaPlaybackAction()
 
+    data object ClearMediaData : MediaPlaybackAction()
     data object StopService : MediaPlaybackAction()
-    data object QueryForegroundStatus : MediaPlaybackAction()
 }
 
 @AndroidEntryPoint
@@ -87,7 +85,6 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
     private var mediaSession: MediaSessionCompat? = null
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private val handler = Handler(Looper.getMainLooper())
-    private val isForeground = AtomicBoolean(false)
     private var notificationUpdateJob: Job? = null
     private var handleSelectedEpisodeServer: ((EpisodeSourcesQuery) -> Unit)? = null
     private var playerListener: Player.Listener? = null
@@ -125,8 +122,8 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                 action.handleSelectedEpisodeServer
             )
 
+            is MediaPlaybackAction.ClearMediaData -> clearMediaData()
             is MediaPlaybackAction.StopService -> stopService()
-            is MediaPlaybackAction.QueryForegroundStatus -> queryForegroundStatus()
         }
     }
 
@@ -334,12 +331,6 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
             }
             try {
                 startForeground(NOTIFICATION_ID, builder.build())
-                isForeground.set(true)
-                _state.update { it.copy(isForeground = true) }
-                Log.d(
-                    "MediaPlaybackService",
-                    "Foreground service started, isForeground=${isForeground.get()}"
-                )
             } catch (e: Exception) {
                 Log.e("MediaPlaybackService", "Failed to start foreground service", e)
             }
@@ -365,7 +356,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         notificationUpdateJob?.cancel()
         notificationUpdateJob = coroutineScope.launch {
             while (true) {
-                if (_state.value.isPlayerReady && _state.value.isForeground && _state.value.playbackState == PlaybackStateCompat.STATE_PLAYING) {
+                if (_state.value.isPlayerReady && _state.value.playbackState == PlaybackStateCompat.STATE_PLAYING) {
                     updateNotification()
                     Log.d("MediaPlaybackService", "Periodic notification update triggered")
                 }
@@ -380,7 +371,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         Log.d("MediaPlaybackService", "Stopped periodic notification updates")
     }
 
-    private fun updatePlaybackState(state: Int, errorMessage: String? = null) {
+    private fun updatePlaybackState(playbackState: Int, errorMessage: String? = null) {
         val position = hlsPlayerUtils.getPlayer()?.currentPosition?.takeIf { it >= 0 } ?: 0
         val builder = PlaybackStateCompat.Builder()
             .setActions(
@@ -393,14 +384,14 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                         PlaybackStateCompat.ACTION_STOP or
                         PlaybackStateCompat.ACTION_SEEK_TO
             )
-        if (state == PlaybackStateCompat.STATE_ERROR && errorMessage != null) {
+        if (playbackState == PlaybackStateCompat.STATE_ERROR && errorMessage != null) {
             builder.setErrorMessage(PlaybackStateCompat.ERROR_CODE_UNKNOWN_ERROR, errorMessage)
         }
-        builder.setState(state, position, 1.0f)
+        builder.setState(playbackState, position, 1.0f)
         mediaSession?.setPlaybackState(builder.build())
-        _state.update {
-            it.copy(
-                playbackState = state,
+        _state.update { state ->
+            state.copy(
+                playbackState = playbackState,
                 errorMessage = errorMessage,
                 currentPosition = position,
                 duration = hlsPlayerUtils.getPlayer()?.duration?.takeIf { it > 0 } ?: 0
@@ -422,7 +413,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                     Player.STATE_ENDED -> PlaybackStateCompat.STATE_STOPPED
                     else -> PlaybackStateCompat.STATE_NONE
                 }
-                updatePlaybackState(playbackStateCompat, coreState.error?.message)
+                updatePlaybackState(playbackStateCompat, coreState.error)
 
                 if (coreState.isPlaying && coreState.playbackState == Player.STATE_READY) {
                     if (positionUpdateJob?.isActive != true) {
@@ -481,33 +472,25 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         }
     }
 
+    private fun clearMediaData() {
+        _state.update {
+            it.copy(
+                episodeComplement = null,
+                episodes = emptyList(),
+                episodeQuery = null
+            )
+        }
+        mediaSession?.setMetadata(null)
+        Log.d("MediaPlaybackService", "Media data cleared.")
+    }
+
     private fun stopService() {
-        Log.d("MediaPlaybackService", "stopService called")
+        Log.d("MediaPlaybackService", "stopService() called. Stopping foreground and self.")
         hlsPlayerUtils.dispatch(HlsPlayerAction.Pause)
         updatePlaybackState(PlaybackStateCompat.STATE_STOPPED)
         stopForeground(STOP_FOREGROUND_REMOVE)
-        isForeground.set(false)
-        _state.update { it.copy(isForeground = false) }
         stopPeriodicNotificationUpdates()
-        Log.d(
-            "MediaPlaybackService",
-            "Foreground stopped in stopService, isForeground=${isForeground.get()}"
-        )
         stopSelf()
-    }
-
-    fun getNotificationId(): Int = NOTIFICATION_ID
-    fun isForeground(): Boolean =
-        isForeground.get() && (hlsPlayerUtils.getPlayer()?.playbackState == Player.STATE_READY)
-
-    private fun queryForegroundStatus() {
-        val isForegroundValue =
-            isForeground.get() && (hlsPlayerUtils.getPlayer()?.playbackState == Player.STATE_READY)
-        _state.update { it.copy(isForeground = isForegroundValue) }
-        Log.d(
-            "MediaPlaybackService",
-            "queryForegroundStatus called, isForeground=$isForegroundValue"
-        )
     }
 
     override fun onTaskRemoved(rootIntent: Intent?) {
@@ -518,7 +501,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
 
     override fun onDestroy() {
         super.onDestroy()
-        Log.d("MediaPlaybackService", "Service destroyed")
+        Log.d("MediaPlaybackService", "Service is being destroyed. Releasing all resources.")
         playerListener?.let { hlsPlayerUtils.getPlayer()?.removeListener(it) }
         playerListener = null
         mediaSession?.release()
@@ -526,16 +509,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         handler.removeCallbacksAndMessages(null)
         stopPeriodicNotificationUpdates()
         coroutineScope.cancel()
-        stopForeground(STOP_FOREGROUND_REMOVE)
-        isForeground.set(false)
-        handleSelectedEpisodeServer = null
-        _state.update {
-            it.copy(
-                isForeground = false,
-                playbackState = PlaybackStateCompat.STATE_STOPPED
-            )
-        }
-        Log.d("MediaPlaybackService", "Resources released, isForeground=${isForeground.get()}")
+        Log.d("MediaPlaybackService", "All resources released.")
     }
 
     override fun onGetRoot(

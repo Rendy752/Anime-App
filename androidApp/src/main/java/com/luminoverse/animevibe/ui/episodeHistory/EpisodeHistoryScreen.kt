@@ -18,7 +18,8 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
+import com.luminoverse.animevibe.ui.common.SharedImageState
 import com.luminoverse.animevibe.ui.main.SnackbarMessage
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -26,16 +27,13 @@ import com.luminoverse.animevibe.ui.main.SnackbarMessage
 fun EpisodeHistoryScreen(
     currentRoute: String?,
     navController: NavHostController,
+    rememberedTopPadding: Dp,
     showSnackbar: (SnackbarMessage) -> Unit,
     mainState: MainState,
+    showImagePreview: (SharedImageState) -> Unit,
     historyState: EpisodeHistoryState,
     onAction: (EpisodeHistoryAction) -> Unit
 ) {
-    val density = LocalDensity.current
-    val statusBarPadding = with(density) {
-        WindowInsets.systemBars.getTop(density).toDp()
-    }
-
     val pullToRefreshState = rememberPullToRefreshState()
     val historyListState = rememberLazyListState()
 
@@ -46,15 +44,15 @@ fun EpisodeHistoryScreen(
         }
     }
 
-    LaunchedEffect(mainState.isConnected, historyState.episodeHistoryResults) {
-        if (mainState.isConnected && historyState.episodeHistoryResults is Resource.Error) {
+    LaunchedEffect(mainState.networkStatus.isConnected, historyState.episodeHistoryResults) {
+        if (mainState.networkStatus.isConnected && historyState.episodeHistoryResults is Resource.Error) {
             onAction(EpisodeHistoryAction.FetchAllHistory)
             onAction(EpisodeHistoryAction.FetchHistory)
         }
     }
 
     PullToRefreshBox(
-        modifier = Modifier.padding(top = statusBarPadding),
+        modifier = Modifier.padding(top = rememberedTopPadding + 8.dp),
         isRefreshing = historyState.isRefreshing,
         onRefresh = { onAction(EpisodeHistoryAction.ApplyFilters(historyState.queryState)) },
         state = pullToRefreshState,
@@ -121,6 +119,7 @@ fun EpisodeHistoryScreen(
                         .padding(start = 8.dp),
                     navController = navController,
                     showSnackbar = showSnackbar,
+                    showImagePreview = showImagePreview,
                     listState = historyListState,
                     state = historyState,
                     onAction = onAction
@@ -144,6 +143,7 @@ fun EpisodeHistoryScreen(
                         .fillMaxWidth(),
                     navController = navController,
                     showSnackbar = showSnackbar,
+                    showImagePreview = showImagePreview,
                     listState = historyListState,
                     state = historyState,
                     onAction = onAction

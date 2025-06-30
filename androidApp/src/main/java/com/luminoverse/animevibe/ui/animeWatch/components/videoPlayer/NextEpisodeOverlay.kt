@@ -88,10 +88,11 @@ fun NextEpisodeOverlay(
                 Text(
                     text = "Next Episode",
                     textAlign = TextAlign.Start,
-                    style = MaterialTheme.typography.bodyMedium,
+                    style = MaterialTheme.typography.bodyLarge,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
                     modifier = Modifier.weight(1f)
                 )

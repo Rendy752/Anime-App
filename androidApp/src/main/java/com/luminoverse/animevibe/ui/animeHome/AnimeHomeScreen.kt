@@ -7,10 +7,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -26,8 +25,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
@@ -50,6 +51,8 @@ import com.luminoverse.animevibe.ui.main.navigation.navigateTo
 import com.luminoverse.animevibe.utils.resource.Resource
 import kotlinx.coroutines.delay
 
+const val INITIAL_CAROUSEL_HEIGHT = 200
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview
 @Composable
@@ -64,17 +67,14 @@ fun AnimeHomeScreen(
     onAction: (HomeAction) -> Unit = {},
     mainState: MainState = MainState(),
     currentRoute: String? = NavRoute.Home.route,
-    navController: NavHostController = rememberNavController()
+    navController: NavHostController = rememberNavController(),
+    rememberedTopPadding: Dp = 0.dp
 ) {
     val pullToRefreshState = rememberPullToRefreshState()
     val gridState = rememberLazyGridState()
-    val density = LocalDensity.current
 
-    val statusBarHeight = with(density) {
-        val topInsetPx = WindowInsets.systemBars.getTop(density)
-        if (topInsetPx > 0) topInsetPx.toDp() else 50.dp
-    }
-    val maxScrollHeightPx = with(density) { statusBarHeight.toPx() }
+    val density = LocalDensity.current
+    val maxScrollHeightPx = with(density) { rememberedTopPadding.toPx() }
 
     val scrollOffsetPx by remember {
         derivedStateOf {
@@ -88,8 +88,9 @@ fun AnimeHomeScreen(
             else 0f
         }
     }
+
     val carouselHeight by animateDpAsState(
-        targetValue = 200.dp - (maxScrollHeightPx.dp * scrollProgress),
+        targetValue = INITIAL_CAROUSEL_HEIGHT.dp - ((INITIAL_CAROUSEL_HEIGHT / 2).dp * scrollProgress),
         animationSpec = tween(durationMillis = 300, easing = EaseInOut),
         label = "carousel_height"
     )
@@ -107,8 +108,8 @@ fun AnimeHomeScreen(
         }
     }
 
-    LaunchedEffect(mainState.isConnected) {
-        if (!mainState.isConnected) return@LaunchedEffect
+    LaunchedEffect(mainState.networkStatus.isConnected) {
+        if (!mainState.networkStatus.isConnected) return@LaunchedEffect
         if (homeState.animeSchedules is Resource.Error) onAction(HomeAction.GetAnimeSchedules)
         if (homeState.top10Anime is Resource.Error) onAction(HomeAction.GetTop10Anime)
     }
@@ -132,37 +133,39 @@ fun AnimeHomeScreen(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy((-16).dp)
         ) {
-            when (homeState.top10Anime) {
-                is Resource.Success -> {
-                    TopAnimeCarousel(
-                        modifier = Modifier.height(carouselHeight),
-                        topAnimeList = homeState.top10Anime.data.data,
-                        currentCarouselPage = carouselState.currentCarouselPage,
-                        autoScrollEnabled = carouselState.autoScrollEnabled,
-                        carouselLastInteractionTime = carouselState.carouselLastInteractionTime,
-                        onPageChanged = { onAction(HomeAction.SetCurrentCarouselPage(it)) },
-                        onAutoScrollEnabledChanged = {
-                            onAction(HomeAction.SetAutoScrollEnabled(it))
-                        },
-                        onCarouselInteraction = { onAction(HomeAction.UpdateCarouselLastInteractionTime) },
-                        navController = navController,
-                        scrollProgress = scrollProgress
-                    )
-                }
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(carouselHeight)
+                    .clip(RectangleShape)
+            ) {
+                when (homeState.top10Anime) {
+                    is Resource.Success -> {
+                        TopAnimeCarousel(
+                            topAnimeList = homeState.top10Anime.data.data,
+                            currentCarouselPage = carouselState.currentCarouselPage,
+                            autoScrollEnabled = carouselState.autoScrollEnabled,
+                            carouselLastInteractionTime = carouselState.carouselLastInteractionTime,
+                            onPageChanged = { onAction(HomeAction.SetCurrentCarouselPage(it)) },
+                            onAutoScrollEnabledChanged = {
+                                onAction(HomeAction.SetAutoScrollEnabled(it))
+                            },
+                            onCarouselInteraction = { onAction(HomeAction.UpdateCarouselLastInteractionTime) },
+                            navController = navController,
+                            scrollProgress = scrollProgress
+                        )
+                    }
 
-                is Resource.Loading -> {
-                    TopAnimeCarouselSkeleton(
-                        modifier = Modifier.height(carouselHeight)
-                    )
-                }
+                    is Resource.Loading -> {
+                        TopAnimeCarouselSkeleton()
+                    }
 
-                is Resource.Error -> {
-                    TopAnimeCarouselSkeleton(
-                        modifier = Modifier.height(carouselHeight),
-                        isError = true
-                    )
+                    is Resource.Error -> {
+                        TopAnimeCarouselSkeleton(isError = true)
+                    }
                 }
             }
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -208,8 +211,8 @@ fun AnimeHomeScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             SomethingWentWrongDisplay(
-                                message = if (mainState.isConnected) homeState.animeSchedules.message else "No internet connection",
-                                suggestion = if (mainState.isConnected) null else "Please check your internet connection and try again"
+                                message = if (mainState.networkStatus.isConnected) homeState.animeSchedules.message else "No internet connection",
+                                suggestion = if (mainState.networkStatus.isConnected) null else "Please check your internet connection and try again"
                             )
                         }
                     }

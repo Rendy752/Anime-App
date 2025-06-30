@@ -19,6 +19,7 @@ import androidx.navigation.NavController
 import com.luminoverse.animevibe.models.AnimeDetail
 import com.luminoverse.animevibe.models.Relation
 import com.luminoverse.animevibe.ui.animeDetail.DetailAction
+import com.luminoverse.animevibe.ui.common.SharedImageState
 import com.luminoverse.animevibe.utils.basicContainer
 import com.luminoverse.animevibe.utils.resource.Resource
 
@@ -28,6 +29,7 @@ fun RelationSection(
     relations: List<Relation>?,
     relationAnimeDetails: Map<Int, Resource<AnimeDetail>>,
     onAction: (DetailAction) -> Unit,
+    showImagePreview: (SharedImageState) -> Unit,
     onItemClickListener: (Int) -> Unit
 ) {
     if (relations.isNullOrEmpty()) return
@@ -58,6 +60,7 @@ fun RelationSection(
                     relationAnimeDetails = relationAnimeDetails,
                     navController = navController,
                     onAction = onAction,
+                    showImagePreview = showImagePreview,
                     onItemClickListener = onItemClickListener
                 )
             }

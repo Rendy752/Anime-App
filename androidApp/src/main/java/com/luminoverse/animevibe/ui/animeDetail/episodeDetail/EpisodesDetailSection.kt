@@ -40,6 +40,7 @@ import com.luminoverse.animevibe.ui.common.EpisodeInfoRowSkeleton
 import com.luminoverse.animevibe.ui.common.SomethingWentWrongDisplay
 import com.luminoverse.animevibe.ui.common.SearchView
 import com.luminoverse.animevibe.ui.common.SearchViewSkeleton
+import com.luminoverse.animevibe.ui.common.SharedImageState
 import com.luminoverse.animevibe.ui.common.SkeletonBox
 import com.luminoverse.animevibe.utils.FilterUtils
 import com.luminoverse.animevibe.utils.resource.Resource
@@ -55,6 +56,7 @@ fun EpisodesDetailSection(
     episodeFilterState: EpisodeFilterState,
     navBackStackEntry: NavBackStackEntry?,
     onEpisodeClick: (String) -> Unit,
+    showImagePreview: (SharedImageState) -> Unit,
     onAction: (DetailAction) -> Unit
 ) {
     Column(
@@ -62,44 +64,47 @@ fun EpisodesDetailSection(
             .basicContainer(outerPadding = PaddingValues(0.dp))
             .fillMaxWidth()
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 4.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = "Episodes",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-            )
-            if (animeDetailComplement.data != null) {
-                animeDetailComplement.data?.let { data ->
-                    if (data.episodes?.isNotEmpty() == true) {
-                        EpisodeInfoRow(
-                            subCount = data.sub,
-                            dubCount = data.dub,
-                            epsCount = data.eps,
-                        )
+        if (animeDetail.type != "Music") {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Episodes",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+                if (animeDetailComplement.data != null) {
+                    animeDetailComplement.data?.let { data ->
+                        if (data.episodes?.isNotEmpty() == true) {
+                            EpisodeInfoRow(
+                                subCount = data.sub,
+                                dubCount = data.dub,
+                                epsCount = data.eps,
+                            )
+                        }
                     }
+                } else if (animeDetailComplement !is Resource.Error) {
+                    EpisodeInfoRowSkeleton()
                 }
-            } else if (animeDetailComplement !is Resource.Error) {
-                EpisodeInfoRowSkeleton()
             }
+            HorizontalDivider(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp)
+            )
         }
-        HorizontalDivider(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 8.dp)
-        )
 
         if (animeDetailComplement.data != null) {
             animeDetailComplement.data?.let { data ->
                 if (animeDetail.type == "Music") {
                     SomethingWentWrongDisplay(
-                        message = "Anime is a music",
-                        suggestion = "No episodes available"
+                        modifier = Modifier.fillMaxWidth(),
+                        message = "This anime is a music video",
+                        suggestion = "Music videos typically do not have episodes."
                     )
                 } else if (data.episodes?.isNotEmpty() == true) {
                     Row(
@@ -191,6 +196,7 @@ fun EpisodesDetailSection(
                                         onAction(DetailAction.LoadEpisodeDetail(it))
                                     },
                                     onClick = { onEpisodeClick(episode.id) },
+                                    showImagePreview = showImagePreview,
                                     navBackStackEntry = navBackStackEntry
                                 )
                             }

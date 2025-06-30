@@ -6,14 +6,10 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.IntentFilter
 import android.content.SharedPreferences
-import android.content.res.Configuration
-import android.content.res.Resources
-import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Wifi
+import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.ui.graphics.Color
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.Observer
 import com.luminoverse.animevibe.models.NetworkStatus
 import com.luminoverse.animevibe.ui.main.MainAction
 import com.luminoverse.animevibe.ui.main.MainViewModel
@@ -24,58 +20,49 @@ import com.luminoverse.animevibe.utils.NetworkStateMonitor
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
-import org.junit.Before
-import org.junit.Rule
-import org.junit.Test
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
 
 @ExperimentalCoroutinesApi
 class MainViewModelTest {
 
-    @get:Rule
-    val instantExecutorRule = InstantTaskExecutorRule()
+    private val testDispatcher = StandardTestDispatcher()
 
     private lateinit var viewModel: MainViewModel
     private lateinit var application: Application
     private lateinit var themePrefs: SharedPreferences
     private lateinit var settingsPrefs: SharedPreferences
     private lateinit var networkStateMonitor: NetworkStateMonitor
-    private lateinit var testDispatcher: TestDispatcher
-    private lateinit var mockResources: Resources
-    private lateinit var mockConfiguration: Configuration
 
-    private lateinit var isConnectedLiveData: MutableLiveData<Boolean>
-    private lateinit var networkStatusLiveData: MutableLiveData<NetworkStatus>
+    private lateinit var networkStatusFlow: MutableStateFlow<NetworkStatus>
 
-    private val mockNetworkStatus = NetworkStatus(
+    private val mockNetworkStatusConnected = NetworkStatus(
         icon = Icons.Filled.Wifi,
         label = "10000 Kbps",
-        iconColor = Color.Green
+        iconColor = Color.Green,
+        isConnected = true
     )
 
     @Before
     fun setUp() {
-        testDispatcher = StandardTestDispatcher()
         Dispatchers.setMain(testDispatcher)
 
         application = mockk(relaxed = true)
         themePrefs = mockk(relaxed = true)
         settingsPrefs = mockk(relaxed = true)
-        mockResources = mockk(relaxed = true)
-        mockConfiguration = mockk(relaxed = true)
-
         networkStateMonitor = mockk(relaxed = true)
-        isConnectedLiveData = MutableLiveData(true)
-        networkStatusLiveData = MutableLiveData(mockNetworkStatus)
+
+        networkStatusFlow = MutableStateFlow(mockNetworkStatusConnected)
 
         every {
             application.getSharedPreferences(
@@ -90,8 +77,12 @@ class MainViewModelTest {
             )
         } returns settingsPrefs
 
-        every { themePrefs.getString("theme_mode", ThemeMode.System.name) } returns ThemeMode.System.name
-        every { themePrefs.getBoolean("is_dark_mode", false) } returns false
+        every {
+            themePrefs.getString(
+                "theme_mode",
+                ThemeMode.System.name
+            )
+        } returns ThemeMode.System.name
         every {
             themePrefs.getString(
                 "contrast_mode",
@@ -108,16 +99,10 @@ class MainViewModelTest {
         every { settingsPrefs.getBoolean("auto_play_video", true) } returns true
         every { settingsPrefs.getBoolean("rtl", false) } returns false
 
-        val isConnectedObserver = slot<Observer<Boolean>>()
-        val networkStatusObserver = slot<Observer<NetworkStatus>>()
-        every { networkStateMonitor.isConnected.observeForever(capture(isConnectedObserver)) } answers {
-            isConnectedObserver.captured.onChanged(true)
-        }
-        every { networkStateMonitor.networkStatus.observeForever(capture(networkStatusObserver)) } answers {
-            networkStatusObserver.captured.onChanged(mockNetworkStatus)
-        }
+        every { networkStateMonitor.networkStatus } returns networkStatusFlow
 
         viewModel = MainViewModel(application, networkStateMonitor)
+
         runTest { advanceUntilIdle() }
     }
 
@@ -133,16 +118,16 @@ class MainViewModelTest {
         val state = viewModel.state.value
 
         assertEquals(ThemeMode.System, state.themeMode)
-        assertFalse("isDarkMode should be false when system is in light mode", state.isDarkMode)
-        assertTrue(state.isConnected)
-        assertEquals(mockNetworkStatus, state.networkStatus)
+        assertFalse("isDarkMode should be false for initial state", state.isDarkMode)
+        assertTrue("isConnected should be true on init", state.networkStatus.isConnected)
+        assertEquals(mockNetworkStatusConnected, state.networkStatus)
 
         verify { networkStateMonitor.startMonitoring() }
         verify { application.registerReceiver(any(), any<IntentFilter>()) }
     }
 
     @Test
-    fun `SetThemeMode should update themeMode, isDarkMode, and persist to SharedPreferences`() = runTest {
+    fun `SetThemeMode should update themeMode and isDarkMode correctly`() = runTest {
         val editor = mockk<SharedPreferences.Editor>(relaxed = true)
         every { themePrefs.edit() } returns editor
 
@@ -151,7 +136,7 @@ class MainViewModelTest {
 
         var state = viewModel.state.value
         assertEquals(ThemeMode.Dark, state.themeMode)
-        assertTrue(state.isDarkMode)
+        assertTrue("isDarkMode should be true for Dark theme", state.isDarkMode)
         verify { editor.putString("theme_mode", ThemeMode.Dark.name) }
         verify { editor.apply() }
 
@@ -160,9 +145,30 @@ class MainViewModelTest {
 
         state = viewModel.state.value
         assertEquals(ThemeMode.Light, state.themeMode)
-        assertFalse(state.isDarkMode)
+        assertFalse("isDarkMode should be false for Light theme", state.isDarkMode)
         verify { editor.putString("theme_mode", ThemeMode.Light.name) }
         verify { editor.apply() }
+    }
+
+    @Test
+    fun `network status update should reflect in viewModel state`() = runTest {
+        val disconnectedStatus = NetworkStatus(
+            icon = Icons.Filled.WifiOff,
+            label = "No Internet",
+            iconColor = Color.Red,
+            isConnected = false
+        )
+
+        networkStatusFlow.value = disconnectedStatus
+        advanceUntilIdle()
+
+        val state = viewModel.state.value
+        assertEquals(
+            "NetworkStatus object should be updated",
+            disconnectedStatus,
+            state.networkStatus
+        )
+        assertFalse("isConnected boolean should be false", state.networkStatus.isConnected)
     }
 
     @Test

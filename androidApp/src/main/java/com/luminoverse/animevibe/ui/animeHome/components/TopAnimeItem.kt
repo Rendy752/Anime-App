@@ -26,6 +26,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.AnimeDetail
+import com.luminoverse.animevibe.ui.animeHome.INITIAL_CAROUSEL_HEIGHT
 import com.luminoverse.animevibe.ui.common.DataTextWithIcon
 import com.luminoverse.animevibe.ui.common.SkeletonBox
 import com.luminoverse.animevibe.ui.common.ImageCardWithContent
@@ -34,7 +35,7 @@ import com.luminoverse.animevibe.ui.common.ImageCardWithContent
 fun TopAnimeItem(animeDetail: AnimeDetail, onItemClick: () -> Unit) {
     ImageCardWithContent(
         imageUrl = animeDetail.images.webp.large_image_url,
-        contentDescription = animeDetail.title,
+        contentDescription = "${animeDetail.title} image cover",
         onItemClick = onItemClick,
         leftContent = {
             Column(
@@ -73,7 +74,8 @@ fun TopAnimeItem(animeDetail: AnimeDetail, onItemClick: () -> Unit) {
                     )
                 }
             }
-        }
+        },
+        height = INITIAL_CAROUSEL_HEIGHT.dp
     )
 }
 
@@ -83,22 +85,22 @@ fun TopAnimeItemSkeleton() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(200.dp)
+            .height(INITIAL_CAROUSEL_HEIGHT.dp)
     ) {
         SkeletonBox(
             modifier = Modifier
                 .fillMaxHeight()
-                .fillMaxWidth(0.75f)
+                .fillMaxWidth(0.85f)
                 .align(Alignment.CenterEnd),
-            height = 200.dp
+            height = INITIAL_CAROUSEL_HEIGHT.dp
         )
 
         SkeletonBox(
             modifier = Modifier
                 .fillMaxHeight()
-                .fillMaxWidth(0.75f)
+                .fillMaxWidth(0.85f)
                 .align(Alignment.CenterEnd),
-            height = 200.dp,
+            height = INITIAL_CAROUSEL_HEIGHT.dp,
             width = 0.dp
         )
 
@@ -112,8 +114,8 @@ fun TopAnimeItemSkeleton() {
             horizontalAlignment = Alignment.Start
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SkeletonBox(width = 200.dp * 0.8f, height = 20.dp)
-                SkeletonBox(width = 200.dp * 0.9f, height = 20.dp)
+                SkeletonBox(width = INITIAL_CAROUSEL_HEIGHT.dp * 0.8f, height = 20.dp)
+                SkeletonBox(width = INITIAL_CAROUSEL_HEIGHT.dp * 0.9f, height = 20.dp)
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -129,8 +131,8 @@ fun TopAnimeItemSkeleton() {
             Spacer(modifier = Modifier.height(16.dp))
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                SkeletonBox(width = 200.dp * 0.8f, height = 16.dp)
-                SkeletonBox(width = 200.dp * 1f, height = 16.dp)
+                SkeletonBox(width = INITIAL_CAROUSEL_HEIGHT.dp * 0.8f, height = 16.dp)
+                SkeletonBox(width = INITIAL_CAROUSEL_HEIGHT.dp * 1f, height = 16.dp)
             }
         }
     }
@@ -142,7 +144,7 @@ fun TopAnimeItemError() {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(200.dp)
+            .height(INITIAL_CAROUSEL_HEIGHT.dp)
             .padding(start = 16.dp, top = 16.dp, end = 16.dp, bottom = 32.dp),
         contentAlignment = Alignment.Center
     ) {

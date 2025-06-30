@@ -19,13 +19,16 @@ import com.luminoverse.animevibe.models.AnimeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.animeDetailComplementPlaceholder
 import com.luminoverse.animevibe.ui.common.ConfirmationAlert
+import com.luminoverse.animevibe.ui.common.SharedImageState
 
 @Preview
 @Composable
 fun AnimeEpisodeAccordion(
+    modifier: Modifier = Modifier,
     searchQuery: String = "",
     anime: AnimeDetailComplement = animeDetailComplementPlaceholder,
     episodes: List<EpisodeDetailComplement> = emptyList(),
+    showImagePreview: (SharedImageState) -> Unit = {},
     onAnimeTitleClick: () -> Unit = {},
     onEpisodeClick: (EpisodeDetailComplement) -> Unit = {},
     onAnimeFavoriteToggle: (Boolean) -> Unit = {},
@@ -56,7 +59,7 @@ fun AnimeEpisodeAccordion(
     }
 
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
             .semantics { stateDescription = if (isExpanded) "Expanded" else "Collapsed" },
@@ -94,6 +97,7 @@ fun AnimeEpisodeAccordion(
                             searchQuery = searchQuery,
                             isFirstItem = index == 0,
                             episode = episode,
+                            showImagePreview = showImagePreview,
                             onClick = { onEpisodeClick(episode) },
                             onFavoriteToggle = { isFavorite ->
                                 onEpisodeFavoriteToggle(episode.id, isFavorite)
@@ -109,9 +113,9 @@ fun AnimeEpisodeAccordion(
 
 @Preview
 @Composable
-fun AnimeEpisodeAccordionSkeleton() {
+fun AnimeEpisodeAccordionSkeleton(modifier: Modifier = Modifier) {
     Card(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp)),
         colors = CardDefaults.cardColors(

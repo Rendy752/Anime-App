@@ -56,7 +56,9 @@ import com.luminoverse.animevibe.ui.animeWatch.components.videoPlayer.ThumbnailP
 import com.luminoverse.animevibe.ui.animeWatch.components.videoPlayer.ZoomIndicator
 import com.luminoverse.animevibe.ui.common.BottomSheetConfig
 import com.luminoverse.animevibe.ui.common.CustomModalBottomSheet
-import com.luminoverse.animevibe.ui.common.ScreenshotDisplay
+import com.luminoverse.animevibe.ui.common.ImageAspectRatio
+import com.luminoverse.animevibe.ui.common.ImageDisplay
+import com.luminoverse.animevibe.ui.common.ImageRoundedCorner
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
@@ -97,14 +99,11 @@ fun VideoPlayer(
     isAutoplayEnabled: Boolean,
     onFullscreenChange: (Boolean) -> Unit,
     onShowResumeChange: (Boolean) -> Unit,
-    onShowNextEpisodeChange: (Boolean) -> Unit,
-    isLandscape: Boolean,
-    errorMessage: String?
+    isLandscape: Boolean
 ) {
     val context = LocalContext.current
     val activity = context as? Activity
 
-    val controlsState by controlsStateFlow.collectAsStateWithLifecycle()
     val videoPlayerState =
         rememberVideoPlayerState(
             key = episodeDetailComplement.sources.link.file,
@@ -112,6 +111,7 @@ fun VideoPlayer(
             playerAction = playerAction,
             networkDataSource = networkDataSource
         )
+    val controlsState by controlsStateFlow.collectAsStateWithLifecycle()
     val currentPosition by videoPlayerState.currentPosition.collectAsStateWithLifecycle()
 
     val thumbnailTrackUrl =
@@ -123,7 +123,7 @@ fun VideoPlayer(
     }
 
     val selectedSubtitle = controlsState.selectedSubtitle
-    LaunchedEffect(selectedSubtitle) {
+    LaunchedEffect(episodeDetailComplement.sources.link.file, selectedSubtitle) {
         if (selectedSubtitle != null) {
             videoPlayerState.loadAndCacheCaptions(selectedSubtitle.file)
         }
@@ -136,7 +136,6 @@ fun VideoPlayer(
 
     val updatedControlsState = rememberUpdatedState(controlsState)
     val updatedCoreState = rememberUpdatedState(coreState)
-
 
     val animatedZoom by animateFloatAsState(
         targetValue = videoPlayerState.zoomScaleProgress,
@@ -166,8 +165,8 @@ fun VideoPlayer(
                 val currentPosition = player.currentPosition
                 videoPlayerState.updatePosition(currentPosition)
                 if (player.duration > 0 && currentPosition >= 10_000) {
-                    val position = currentPosition
-                    val duration = player.duration
+                    val position = currentPosition.coerceAtLeast(0L)
+                    val duration = player.duration.coerceAtLeast(0L)
                     val screenshot = captureScreenshot()
                     updateStoredWatchState(position, duration, screenshot)
                 }
@@ -287,8 +286,10 @@ fun VideoPlayer(
 
     LaunchedEffect(updatedCoreState.value.playbackState, videoPlayerState.isDraggingSeekBar) {
         if (updatedCoreState.value.playbackState == Player.STATE_ENDED) {
+            videoPlayerState.isShowNextEpisodeOverlay = true
+            val duration = player.duration.coerceAtLeast(0L)
             val screenshot = captureScreenshot()
-            updateStoredWatchState(player.duration, player.duration, screenshot)
+            updateStoredWatchState(duration, duration, screenshot)
         }
 
         isBufferingFromSeeking =
@@ -315,8 +316,7 @@ fun VideoPlayer(
                     awaitEachGesture {
                         handleGestures(
                             state = videoPlayerState,
-                            updatedControlsState = updatedControlsState,
-                            updatedCoreState = updatedCoreState
+                            updatedControlsState = updatedControlsState
                         )
                     }
                 }
@@ -329,11 +329,13 @@ fun VideoPlayer(
                 else Modifier
 
             if (videoPlayerState.isFirstLoad) {
-                ScreenshotDisplay(
-                    imageUrl = episodeDetailComplement.imageUrl,
-                    screenshot = episodeDetailComplement.screenshot,
+                ImageDisplay(
                     modifier = Modifier.fillMaxSize(),
-                    onClick = { videoPlayerState.handleSingleTap(updatedControlsState.value.isLocked) }
+                    image = episodeDetailComplement.screenshot,
+                    imagePlaceholder = episodeDetailComplement.imageUrl,
+                    ratio = ImageAspectRatio.WIDESCREEN.ratio,
+                    contentDescription = "Thumbnail Image",
+                    roundedCorners = ImageRoundedCorner.NONE
                 )
             } else {
                 AndroidView(
@@ -377,16 +379,16 @@ fun VideoPlayer(
             }
         }
 
-        val animatedTopPadding by animateDpAsState(
+        val animatedSubtitleTopPadding by animateDpAsState(
             targetValue = if (isCommonPartVisible && isPlayerControlsVisible && isLandscape && !isSideSheetVisible) {
-                videoPlayerState.bottomBarHeight.dp - 16.dp
+                (videoPlayerState.bottomBarHeight.dp - 16.dp).coerceAtLeast(0.dp)
             } else {
                 if (isSideSheetVisible) 16.dp else 8.dp
             },
             label = "SubtitleTopPadding"
         )
 
-        val animatedBottomPadding by animateDpAsState(
+        val animatedSubtitleBottomPadding by animateDpAsState(
             targetValue = if (isCommonPartVisible && isPlayerControlsVisible && isLandscape) {
                 videoPlayerState.bottomBarHeight.dp
             } else {
@@ -398,7 +400,7 @@ fun VideoPlayer(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(
-                    top = animatedTopPadding, bottom = animatedBottomPadding,
+                    top = animatedSubtitleTopPadding, bottom = animatedSubtitleBottomPadding,
                     start = 8.dp, end = 8.dp
                 ),
             cues = activeCaptionCue,
@@ -410,11 +412,11 @@ fun VideoPlayer(
             PlayerControls(
                 isPlaying = player.isPlaying,
                 currentPosition = currentPosition,
+                bufferedPosition = player.bufferedPosition,
                 duration = player.duration.takeIf { it > 0 }
                     ?: episodeDetailComplement.duration ?: 0,
-                bufferedPosition = player.bufferedPosition,
                 playbackState = updatedCoreState.value.playbackState,
-                errorMessage = errorMessage,
+                playbackErrorMessage = updatedCoreState.value.error,
                 onHandleBackPress = onHandleBackPress,
                 episodeDetailComplement = episodeDetailComplement,
                 hasPreviousEpisode = prevEpisode != null,
@@ -436,7 +438,6 @@ fun VideoPlayer(
                 onNextEpisode = {
                     nextEpisode?.let {
                         handleSelectedEpisodeServer(episodeSourcesQuery.copy(id = it.id), false)
-                        onShowNextEpisodeChange(false)
                     }
                 },
                 onSeekTo = { position -> playerAction(HlsPlayerAction.SeekTo(position)) },
@@ -461,7 +462,8 @@ fun VideoPlayer(
 
         LoadingIndicator(
             modifier = Modifier.align(Alignment.Center),
-            isVisible = (updatedCoreState.value.playbackState == Player.STATE_BUFFERING || updatedCoreState.value.playbackState == Player.STATE_IDLE) && !isPlayerControlsVisible && errorMessage == null
+            isVisible = (updatedCoreState.value.playbackState == Player.STATE_BUFFERING || updatedCoreState.value.playbackState == Player.STATE_IDLE)
+                    && !isPlayerControlsVisible && updatedCoreState.value.error == null
         )
 
         SeekIndicator(
@@ -472,60 +474,13 @@ fun VideoPlayer(
             isFullscreen = playerUiState.isFullscreen
         )
 
-        episodeDetailComplement.lastTimestamp?.let { lastTimestamp ->
-            ResumePlaybackOverlay(
-                modifier = Modifier.align(Alignment.Center),
-                isVisible = shouldShowResumeOverlay,
-                isPipMode = playerUiState.isPipMode,
-                lastTimestamp = lastTimestamp,
-                onDismiss = {
-                    onShowResumeChange(false)
-                    playerAction(HlsPlayerAction.RequestToggleControlsVisibility(true))
-                },
-                onRestart = {
-                    playerAction(HlsPlayerAction.SeekTo(0))
-                    playerAction(HlsPlayerAction.Play)
-                    onShowResumeChange(false)
-                },
-                onResume = {
-                    playerAction(HlsPlayerAction.SeekTo(it))
-                    playerAction(HlsPlayerAction.Play)
-                    onShowResumeChange(false)
-                }
-            )
-        }
-
-        nextEpisode?.let {
-            NextEpisodeOverlay(
-                modifier = Modifier.align(Alignment.Center),
-                isVisible = playerUiState.isShowNextEpisode,
-                isLandscape = isLandscape,
-                isPipMode = playerUiState.isPipMode,
-                animeImage = episodeDetailComplement.imageUrl,
-                nextEpisode = it,
-                nextEpisodeDetailComplement = episodeDetailComplements[it.id]?.data,
-                onDismiss = {
-                    onShowNextEpisodeChange(false)
-                    playerAction(HlsPlayerAction.RequestToggleControlsVisibility(true))
-                },
-                onRestart = {
-                    playerAction(HlsPlayerAction.SeekTo(0))
-                    playerAction(HlsPlayerAction.Play)
-                    onShowNextEpisodeChange(false)
-                },
-                onPlayNext = {
-                    handleSelectedEpisodeServer(episodeSourcesQuery.copy(id = it.id), false)
-                    onShowNextEpisodeChange(false)
-                }
-            )
-        }
-
         val isSkipVisible =
-            isCommonPartVisible && !videoPlayerState.isHolding && !videoPlayerState.isDraggingSeekBar && updatedCoreState.value.playbackState != Player.STATE_ENDED && updatedCoreState.value.playbackState != Player.STATE_IDLE && !shouldShowResumeOverlay && !playerUiState.isShowNextEpisode && !videoPlayerState.isFirstLoad
+            isCommonPartVisible && !videoPlayerState.isHolding && !videoPlayerState.isDraggingSeekBar && updatedCoreState.value.playbackState != Player.STATE_ENDED && updatedCoreState.value.playbackState != Player.STATE_IDLE && !shouldShowResumeOverlay && !videoPlayerState.isFirstLoad
 
         SkipButtonsContainer(
             modifier = Modifier.align(Alignment.BottomEnd),
-            currentPosition = player.currentPosition,
+            currentPosition = currentPosition,
+            duration = player.duration,
             intro = episodeDetailComplement.sources.intro,
             outro = episodeDetailComplement.sources.outro,
             isSkipVisible = isSkipVisible,
@@ -576,6 +531,54 @@ fun VideoPlayer(
             },
             modifier = Modifier.align(Alignment.TopEnd)
         )
+
+        episodeDetailComplement.lastTimestamp?.let { lastTimestamp ->
+            ResumePlaybackOverlay(
+                modifier = Modifier.align(Alignment.Center),
+                isVisible = shouldShowResumeOverlay,
+                isPipMode = playerUiState.isPipMode,
+                lastTimestamp = lastTimestamp,
+                onDismiss = {
+                    onShowResumeChange(false)
+                    playerAction(HlsPlayerAction.RequestToggleControlsVisibility(true))
+                },
+                onRestart = {
+                    playerAction(HlsPlayerAction.SeekTo(0))
+                    playerAction(HlsPlayerAction.Play)
+                    onShowResumeChange(false)
+                },
+                onResume = {
+                    playerAction(HlsPlayerAction.SeekTo(it))
+                    playerAction(HlsPlayerAction.Play)
+                    onShowResumeChange(false)
+                }
+            )
+        }
+
+        nextEpisode?.let {
+            NextEpisodeOverlay(
+                modifier = Modifier.align(Alignment.Center),
+                isVisible = updatedCoreState.value.playbackState == Player.STATE_ENDED && videoPlayerState.isShowNextEpisodeOverlay,
+                isLandscape = isLandscape,
+                isPipMode = playerUiState.isPipMode,
+                animeImage = episodeDetailComplement.imageUrl,
+                nextEpisode = it,
+                nextEpisodeDetailComplement = episodeDetailComplements[it.id]?.data,
+                onDismiss = {
+                    videoPlayerState.isShowNextEpisodeOverlay = false
+                    playerAction(HlsPlayerAction.RequestToggleControlsVisibility(true))
+                },
+                onRestart = {
+                    playerAction(HlsPlayerAction.SeekTo(0))
+                    playerAction(HlsPlayerAction.Play)
+                    videoPlayerState.isShowNextEpisodeOverlay = false
+                },
+                onPlayNext = {
+                    handleSelectedEpisodeServer(episodeSourcesQuery.copy(id = it.id), false)
+                    videoPlayerState.isShowNextEpisodeOverlay = false
+                }
+            )
+        }
 
         val settingsSheetConfig = BottomSheetConfig(
             landscapeWidthFraction = 0.4f,

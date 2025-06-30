@@ -23,8 +23,10 @@ fun WatchContentSection(
     onLoadEpisodeDetailComplement: (String) -> Unit,
     episodeDetailComplement: EpisodeDetailComplement?,
     episodes: List<Episode>,
-    newEpisodeCount: Int,
+    newEpisodeIdList: List<String>,
     episodeSourcesQuery: EpisodeSourcesQuery?,
+    episodeJumpNumber: Int?,
+    setEpisodeJumpNumber: (Int) -> Unit,
     serverScrollState: ScrollState,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
 ) {
@@ -48,12 +50,15 @@ fun WatchContentSection(
                 }
         }
         if (episodes.size > 1) WatchEpisode(
+            imageUrl = animeDetail?.images?.webp?.large_image_url,
             episodeDetailComplements = episodeDetailComplements,
             onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,
             episodeDetailComplement = episodeDetailComplement,
             episodes = episodes,
-            newEpisodeCount = newEpisodeCount,
+            newEpisodeIdList = newEpisodeIdList,
             episodeSourcesQuery = episodeSourcesQuery,
+            episodeJumpNumber = episodeJumpNumber,
+            setEpisodeJumpNumber = setEpisodeJumpNumber,
             handleSelectedEpisodeServer = handleSelectedEpisodeServer
         )
     }

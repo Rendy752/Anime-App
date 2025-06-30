@@ -4,14 +4,18 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.luminoverse.animevibe.models.*
 import com.luminoverse.animevibe.repository.AnimeEpisodeDetailRepository
+import com.luminoverse.animevibe.ui.main.SnackbarMessage
+import com.luminoverse.animevibe.ui.main.SnackbarMessageType
 import com.luminoverse.animevibe.utils.watch.AnimeTitleFinder.normalizeTitle
 import com.luminoverse.animevibe.utils.ComplementUtils
 import com.luminoverse.animevibe.utils.FilterUtils
 import com.luminoverse.animevibe.utils.resource.Resource
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -48,6 +52,9 @@ class AnimeDetailViewModel @Inject constructor(
 
     private val _episodeFilterState = MutableStateFlow(EpisodeFilterState())
     val episodeFilterState: StateFlow<EpisodeFilterState> = _episodeFilterState.asStateFlow()
+
+    private val _snackbarChannel = Channel<SnackbarMessage>()
+    val snackbarFlow = _snackbarChannel.receiveAsFlow()
 
     private var isLoadingEpisodeDetail = false
 
@@ -164,6 +171,28 @@ class AnimeDetailViewModel @Inject constructor(
                 val newEpisodeIds = cachedEpisodes
                     .filter { episode -> episode.id !in currentEpisodeIds }
                     .map { episode -> episode.id }
+
+                if (newEpisodeIds.isEmpty()) {
+                    _detailState.update { it.copy(newEpisodeIdList = emptyList()) }
+                    _snackbarChannel.send(
+                        SnackbarMessage(
+                            message = "No new episodes are available!",
+                            type = SnackbarMessageType.INFO
+                        )
+                    )
+                    return@let
+                }
+                val message = if (newEpisodeIds.size == 1) {
+                    "1 new episode is available!"
+                } else {
+                    "${newEpisodeIds.size} new episodes are available!"
+                }
+                _snackbarChannel.send(
+                    SnackbarMessage(
+                        message = message,
+                        type = SnackbarMessageType.INFO
+                    )
+                )
                 _detailState.update { it.copy(newEpisodeIdList = newEpisodeIds) }
             }
         }

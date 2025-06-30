@@ -46,10 +46,9 @@ import com.luminoverse.animevibe.models.TimeRange
 @Composable
 fun CustomSeekBar(
     modifier: Modifier,
-    errorMessage: String?,
     currentPosition: Long,
-    duration: Long,
     bufferedPosition: Long,
+    duration: Long,
     intro: TimeRange,
     outro: TimeRange,
     handlePlay: () -> Unit,
@@ -69,10 +68,8 @@ fun CustomSeekBar(
     var isHolding by remember { mutableStateOf(false) }
     var dragPosition by remember { mutableFloatStateOf(currentPosition.toFloat()) }
     var trackWidthPx by remember { mutableFloatStateOf(0f) }
-    val progress =
-        if (duration > 0) currentPosition.toFloat() / duration else 0f
-    val bufferedProgressRatio =
-        if (duration > 0) bufferedPosition.toFloat() / duration else 0f
+    val progress = if (duration > 0) currentPosition.toFloat() / duration else 0f
+    val bufferedProgressRatio = if (duration > 0) bufferedPosition.toFloat() / duration else 0f
     val density = LocalDensity.current
 
     val touchTargetHeight: Dp = 24.dp
@@ -136,7 +133,7 @@ fun CustomSeekBar(
 
                     val dragStart = awaitDragOrCancellation(down.id)
 
-                    if (dragStart != null && errorMessage == null) {
+                    if (dragStart != null) {
                         isDragging = true
                         handlePause()
                         val initialThumbPosOnDrag = dragPosition

@@ -50,7 +50,7 @@ object ComplementUtils {
         isRefresh: Boolean
     ): AnimeDetailComplement? = withContext(Dispatchers.IO) {
         val isDataNeedUpdate = repository.isDataNeedUpdate(animeDetail, animeDetailComplement)
-        if (!isDataNeedUpdate || !isRefresh) return@withContext animeDetailComplement
+        if (!isDataNeedUpdate && !isRefresh) return@withContext animeDetailComplement
 
         val episodesResponse = repository.getEpisodes(animeDetailComplement.id)
         if (episodesResponse is Resource.Success) {

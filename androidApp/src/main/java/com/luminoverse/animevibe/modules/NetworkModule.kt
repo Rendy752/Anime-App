@@ -1,6 +1,5 @@
 package com.luminoverse.animevibe.modules
 
-import android.app.Application
 import android.content.Context
 import coil.ImageLoader
 import com.luminoverse.animevibe.android.BuildConfig.DEBUG
@@ -12,7 +11,6 @@ import com.luminoverse.animevibe.data.remote.api.EpisodeSourcesCacheInterceptor
 import com.luminoverse.animevibe.data.remote.api.RetrofitInstance
 import com.luminoverse.animevibe.di.AnimeRunwayApi
 import com.luminoverse.animevibe.di.JikanApi
-import com.luminoverse.animevibe.utils.NetworkStateMonitor
 import com.luminoverse.animevibe.utils.PrioritizeIPv4Dns
 import dagger.Module
 import dagger.Provides
@@ -91,11 +89,5 @@ object NetworkModule {
     @AnimeRunwayApi
     fun provideAnimeRunwayAPI(retrofitInstance: RetrofitInstance): AnimeAPI {
         return retrofitInstance.animeRunwayApi
-    }
-
-    @Provides
-    @Singleton
-    fun provideNetworkStateMonitor(application: Application): NetworkStateMonitor {
-        return NetworkStateMonitor(application)
     }
 }
