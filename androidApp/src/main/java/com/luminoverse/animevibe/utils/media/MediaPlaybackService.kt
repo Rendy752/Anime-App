@@ -413,7 +413,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                     Player.STATE_ENDED -> PlaybackStateCompat.STATE_STOPPED
                     else -> PlaybackStateCompat.STATE_NONE
                 }
-                updatePlaybackState(playbackStateCompat, coreState.error?.message)
+                updatePlaybackState(playbackStateCompat, coreState.error)
 
                 if (coreState.isPlaying && coreState.playbackState == Player.STATE_READY) {
                     if (positionUpdateJob?.isActive != true) {

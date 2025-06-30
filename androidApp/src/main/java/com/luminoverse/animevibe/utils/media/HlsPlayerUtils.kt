@@ -24,6 +24,7 @@ import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.TrackSelectionParameters
 import androidx.media3.common.util.UnstableApi
+import androidx.media3.datasource.HttpDataSource
 import androidx.media3.datasource.cache.CacheDataSource
 import androidx.media3.datasource.cache.SimpleCache
 import androidx.media3.datasource.okhttp.OkHttpDataSource
@@ -50,6 +51,7 @@ import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.net.UnknownHostException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -60,7 +62,7 @@ data class PlayerCoreState(
     val isPlaying: Boolean = false,
     val playbackState: Int = Player.STATE_IDLE,
     val isLoading: Boolean = false,
-    val error: PlaybackException? = null
+    val error: String? = null
 )
 
 data class ControlsState(
@@ -233,6 +235,42 @@ class HlsPlayerUtils @Inject constructor(
         }
     }
 
+    private fun getReadableErrorMessage(error: PlaybackException): String {
+        var cause: Throwable? = error
+        while (cause != null) {
+            if (cause is HttpDataSource.InvalidResponseCodeException) {
+                val code = cause.responseCode
+                return when (code) {
+                    403, 410 -> "This video link may have expired. Try another server or refresh."
+                    404 -> "Video not found. It might be an issue with the server."
+                    in 500..599 -> "The video server is having issues. Please try again later."
+                    else -> "A network error occurred (Code: $code). Check connection or try another server."
+                }
+            }
+            if (cause is UnknownHostException) {
+                return "Cannot connect to the video server. Please check your internet connection."
+            }
+            cause = cause.cause
+        }
+
+        return when (error.errorCode) {
+            PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED,
+            PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT ->
+                "Network connection failed. Please check your internet connection."
+
+            PlaybackException.ERROR_CODE_DECODING_FAILED,
+            PlaybackException.ERROR_CODE_DECODER_INIT_FAILED,
+            PlaybackException.ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED ->
+                "Failed to play video. The format may not be supported on this device."
+
+            PlaybackException.ERROR_CODE_DRM_UNSPECIFIED,
+            PlaybackException.ERROR_CODE_DRM_LICENSE_ACQUISITION_FAILED ->
+                "This video is protected and cannot be played."
+
+            else -> "An unexpected error occurred during playback."
+        }
+    }
+
     private fun createPlayerListener(): Player.Listener {
         return object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
@@ -268,14 +306,15 @@ class HlsPlayerUtils @Inject constructor(
             }
 
             override fun onPlayerError(error: PlaybackException) {
+                val errorMessage = getReadableErrorMessage(error)
                 _playerCoreState.update {
                     it.copy(
                         isPlaying = false,
                         isLoading = false,
-                        error = error
+                        error = errorMessage
                     )
                 }
-                Log.e("HlsPlayerUtils", "PlayerError: ${error.message}", error)
+                Log.e("HlsPlayerUtils", "PlayerError: $errorMessage", error)
             }
         }
     }

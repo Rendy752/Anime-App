@@ -20,7 +20,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.platform.LocalContext
-import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
@@ -80,10 +79,6 @@ fun VideoPlayerSection(
             playerView.player = player
             val videoSurface = playerView.videoSurfaceView
             playerAction(HlsPlayerAction.SetVideoSurface(videoSurface))
-            Log.d(
-                "VideoPlayerSection",
-                "Player bound to PlayerView, video surface set: ${videoSurface?.javaClass?.simpleName}"
-            )
         } else {
             Log.w("VideoPlayerSection", "Player is null")
             setPlayerError("Player not initialized")
@@ -124,18 +119,19 @@ fun VideoPlayerSection(
         }
     }
 
+    LaunchedEffect(coreState.error) {
+        coreState.error?.let { errorMessage ->
+            setPlayerError(errorMessage)
+        }
+    }
+
     val mediaControllerCallback = remember {
         object : MediaControllerCompat.Callback() {
             override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
                 state?.let {
-                    val isPlaying = state.state == PlaybackStateCompat.STATE_PLAYING
-                    if (isPlaying) {
+                    if (it.state == PlaybackStateCompat.STATE_PLAYING) {
                         setShowResume(false)
                     }
-                    Log.d(
-                        "VideoPlayerSection",
-                        "Playback state changed: ${state.state}"
-                    )
                 }
             }
         }
@@ -151,20 +147,12 @@ fun VideoPlayerSection(
             setPlayerError("Failed to bind service")
         }
 
-        val playerListener = object : Player.Listener {
-            override fun onPlayerError(error: PlaybackException) {
-                setPlayerError("Playback failed: ${error.message}, try a different server.")
-            }
-        }
-        player?.addListener(playerListener)
-
         onDispose {
             Log.d(
                 "VideoPlayerSection",
                 "Disposing VideoPlayerSection. Resetting player state FIRST."
             )
             playerAction(HlsPlayerAction.Reset)
-            player?.removeListener(playerListener)
 
             mediaPlaybackService?.dispatch(MediaPlaybackAction.ClearMediaData)
             mediaPlaybackService?.dispatch(MediaPlaybackAction.StopService)

@@ -125,7 +125,7 @@ fun VideoPlayer(
     }
 
     val selectedSubtitle = controlsState.selectedSubtitle
-    LaunchedEffect(selectedSubtitle) {
+    LaunchedEffect(episodeDetailComplement.sources.link.file, selectedSubtitle) {
         if (selectedSubtitle != null) {
             videoPlayerState.loadAndCacheCaptions(selectedSubtitle.file)
         }

@@ -67,7 +67,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
@@ -82,7 +81,7 @@ fun PlayerControls(
     duration: Long,
     bufferedPosition: Long,
     playbackState: Int,
-    playbackErrorMessage: PlaybackException?,
+    playbackErrorMessage: String?,
     onHandleBackPress: () -> Unit,
     episodeDetailComplement: EpisodeDetailComplement,
     hasPreviousEpisode: Boolean,
@@ -315,7 +314,7 @@ private fun TopSection(
 
 @Composable
 fun PlayPauseLoadingButton(
-    playbackErrorMessage: PlaybackException?,
+    playbackErrorMessage: String?,
     playbackState: Int,
     isPlaying: Boolean,
     onSeekTo: (Long) -> Unit,
@@ -426,7 +425,7 @@ fun PlayPauseLoadingButton(
 @Composable
 private fun MiddleSection(
     modifier: Modifier,
-    playbackErrorMessage: PlaybackException?,
+    playbackErrorMessage: String?,
     shouldShowControls: Boolean,
     hasPreviousEpisode: Boolean,
     playbackState: Int,
