@@ -143,7 +143,6 @@ class HlsPlayerUtils @Inject constructor(
             val cacheDataSourceFactory = CacheDataSource.Factory()
                 .setCache(exoPlayerCache)
                 .setUpstreamDataSourceFactory(dataSourceFactory)
-                .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
             val mediaSourceFactory = DefaultMediaSourceFactory(applicationContext)
                 .setDataSourceFactory(cacheDataSourceFactory)
             exoPlayer = ExoPlayer.Builder(applicationContext)
