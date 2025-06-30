@@ -409,6 +409,7 @@ fun MainScreen(
                         snackbarFlow = viewModel.snackbarFlow,
                         hlsPlayerCoreState = playerCoreState,
                         hlsControlsStateFlow = viewModel.controlsState,
+                        hlsCachedPositionStateFlow = viewModel.cachedPositionState,
                         onAction = viewModel::onAction,
                         dispatchPlayerAction = viewModel::dispatchPlayerAction,
                         getPlayer = viewModel::getPlayer,

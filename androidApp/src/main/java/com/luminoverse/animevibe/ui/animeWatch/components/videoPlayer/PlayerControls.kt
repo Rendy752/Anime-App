@@ -78,6 +78,7 @@ import com.luminoverse.animevibe.utils.TimeUtils.formatTimestamp
 fun PlayerControls(
     isPlaying: Boolean,
     currentPosition: Long,
+    cachedPosition: Long,
     duration: Long,
     bufferedPosition: Long,
     playbackState: Int,
@@ -169,6 +170,7 @@ fun PlayerControls(
             showRemainingTime = showRemainingTime,
             setShowRemainingTime = setShowRemainingTime,
             currentPosition = currentPosition,
+            cachedPosition = cachedPosition,
             duration = duration,
             bufferedPosition = bufferedPosition,
             episodeDetailComplement = episodeDetailComplement,
@@ -555,6 +557,7 @@ private fun BottomSection(
     showRemainingTime: Boolean,
     setShowRemainingTime: (Boolean) -> Unit,
     currentPosition: Long,
+    cachedPosition: Long,
     duration: Long,
     bufferedPosition: Long,
     episodeDetailComplement: EpisodeDetailComplement,
@@ -622,6 +625,7 @@ private fun BottomSection(
                 onBottomBarMeasured(heightInPx)
             },
             currentPosition = currentPosition,
+            cachedPosition = cachedPosition,
             duration = duration,
             bufferedPosition = bufferedPosition,
             intro = episodeDetailComplement.sources.intro,

@@ -40,7 +40,6 @@ import com.google.android.play.core.install.InstallStateUpdatedListener
 import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.InstallStatus
 import com.google.android.play.core.install.model.UpdateAvailability
-import com.luminoverse.animevibe.AnimeApplication
 import com.luminoverse.animevibe.ui.common.ConfirmationAlert
 import com.luminoverse.animevibe.ui.common.SharedImagePreviewer
 import com.luminoverse.animevibe.ui.main.navigation.BottomNavigationBar
@@ -48,7 +47,6 @@ import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.theme.AppTheme
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
-import com.luminoverse.animevibe.utils.media.MediaPlaybackAction
 import com.luminoverse.animevibe.utils.media.PipUtil.buildPipActions
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.channels.Channel
@@ -346,9 +344,6 @@ class MainActivity : AppCompatActivity() {
             if (currentRoute?.startsWith("animeWatch/") == true && isPlaying) {
                 pipParamsBuilder.setActions(buildPipActions(this@MainActivity, true))
                 enterPictureInPictureMode(pipParamsBuilder.build())
-            } else {
-                (applicationContext as AnimeApplication).getMediaPlaybackService()
-                    ?.dispatch(MediaPlaybackAction.StopService)
             }
         }
     }
@@ -357,9 +352,6 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         installStateUpdatedListener?.let {
             appUpdateManager.unregisterListener(it)
-        }
-        lifecycleScope.launch {
-            (applicationContext as AnimeApplication).cleanupService()
         }
     }
 

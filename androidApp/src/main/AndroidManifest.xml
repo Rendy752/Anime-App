@@ -71,13 +71,6 @@
             </intent-filter>
         </receiver>
 
-        <receiver android:name="com.luminoverse.animevibe.utils.receivers.ServiceRestartReceiver"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.luminoverse.animevibe.RESTART_MEDIA_SERVICE" />
-            </intent-filter>
-        </receiver>
-
         <receiver
             android:name="com.luminoverse.animevibe.utils.receivers.ScreenOffReceiver"
             android:exported="true">

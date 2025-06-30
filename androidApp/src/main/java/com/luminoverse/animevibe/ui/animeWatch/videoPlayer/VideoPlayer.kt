@@ -86,6 +86,7 @@ fun VideoPlayer(
     coreState: PlayerCoreState,
     playerUiState: PlayerUiState,
     controlsStateFlow: StateFlow<ControlsState>,
+    cachedPositionStateFlow: StateFlow<Long>,
     playerAction: (HlsPlayerAction) -> Unit,
     onHandleBackPress: () -> Unit,
     episodeDetailComplement: EpisodeDetailComplement,
@@ -104,7 +105,6 @@ fun VideoPlayer(
     val context = LocalContext.current
     val activity = context as? Activity
 
-    val controlsState by controlsStateFlow.collectAsStateWithLifecycle()
     val videoPlayerState =
         rememberVideoPlayerState(
             key = episodeDetailComplement.sources.link.file,
@@ -112,7 +112,9 @@ fun VideoPlayer(
             playerAction = playerAction,
             networkDataSource = networkDataSource
         )
+    val controlsState by controlsStateFlow.collectAsStateWithLifecycle()
     val currentPosition by videoPlayerState.currentPosition.collectAsStateWithLifecycle()
+    val cachedPosition by cachedPositionStateFlow.collectAsStateWithLifecycle()
 
     val thumbnailTrackUrl =
         episodeDetailComplement.sources.tracks.find { it.kind == "thumbnails" }?.file
@@ -136,7 +138,6 @@ fun VideoPlayer(
 
     val updatedControlsState = rememberUpdatedState(controlsState)
     val updatedCoreState = rememberUpdatedState(coreState)
-
 
     val animatedZoom by animateFloatAsState(
         targetValue = videoPlayerState.zoomScaleProgress,
@@ -413,6 +414,7 @@ fun VideoPlayer(
             PlayerControls(
                 isPlaying = player.isPlaying,
                 currentPosition = currentPosition,
+                cachedPosition = cachedPosition,
                 duration = player.duration.takeIf { it > 0 }
                     ?: episodeDetailComplement.duration ?: 0,
                 bufferedPosition = player.bufferedPosition,

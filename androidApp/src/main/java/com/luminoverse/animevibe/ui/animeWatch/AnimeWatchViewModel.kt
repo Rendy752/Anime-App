@@ -98,6 +98,7 @@ class AnimeWatchViewModel @Inject constructor(
 
     val playerCoreState: StateFlow<PlayerCoreState> = hlsPlayerUtils.playerCoreState
     val controlsState: StateFlow<ControlsState> = hlsPlayerUtils.controlsState
+    val cachedPositionState: StateFlow<Long> = hlsPlayerUtils.cachedPosition
 
     private val _defaultEpisodeDetailComplement = MutableStateFlow<EpisodeDetailComplement?>(null)
 
@@ -346,12 +347,12 @@ class AnimeWatchViewModel @Inject constructor(
                         animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(
                             animeDetail.mal_id
                         )
-                    cachedComplement?.let {
+                    cachedComplement?.let { cachedComplement ->
                         val updatedComplement =
                             ComplementUtils.updateAnimeDetailComplementWithEpisodes(
                                 repository = animeEpisodeDetailRepository,
                                 animeDetail = animeDetail,
-                                animeDetailComplement = it,
+                                animeDetailComplement = cachedComplement,
                                 isRefresh = true
                             )
 

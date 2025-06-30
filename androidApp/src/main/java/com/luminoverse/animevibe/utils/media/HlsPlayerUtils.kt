@@ -11,6 +11,7 @@ import android.os.Looper
 import android.util.Base64
 import android.util.Log
 import android.view.PixelCopy
+import android.view.Surface
 import android.view.SurfaceView
 import android.view.TextureView
 import androidx.annotation.OptIn
@@ -79,6 +80,8 @@ sealed class HlsPlayerAction {
         val onError: (String) -> Unit
     ) : HlsPlayerAction()
 
+    data object Reset : HlsPlayerAction()
+
     data object Play : HlsPlayerAction()
     data object Pause : HlsPlayerAction()
     data class SeekTo(val positionMs: Long) : HlsPlayerAction()
@@ -111,14 +114,17 @@ class HlsPlayerUtils @Inject constructor(
     private var currentVideoData: EpisodeSources? = null
 
     private val playerCoroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-
     private var controlsHideJob: Job? = null
+    private var cachePollingJob: Job? = null
 
     private val _playerCoreState = MutableStateFlow(PlayerCoreState())
     val playerCoreState: StateFlow<PlayerCoreState> = _playerCoreState.asStateFlow()
 
     private val _controlsState = MutableStateFlow(ControlsState())
     val controlsState: StateFlow<ControlsState> = _controlsState.asStateFlow()
+
+    private val _cachedPosition = MutableStateFlow(0L)
+    val cachedPosition: StateFlow<Long> = _cachedPosition.asStateFlow()
 
     init {
         initializePlayerInternal()
@@ -176,6 +182,8 @@ class HlsPlayerUtils @Inject constructor(
                 action.onError
             )
 
+            is HlsPlayerAction.Reset -> reset()
+
             is HlsPlayerAction.Play -> play()
             is HlsPlayerAction.Pause -> pause()
             is HlsPlayerAction.SeekTo -> seekTo(action.positionMs)
@@ -230,21 +238,28 @@ class HlsPlayerUtils @Inject constructor(
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 Log.d("HlsPlayerUtils", "onIsPlayingChanged: $isPlaying")
                 _playerCoreState.update { it.copy(isPlaying = isPlaying) }
-                if (!isPlaying) dispatch(HlsPlayerAction.RequestToggleControlsVisibility(isVisible = true))
+                if (isPlaying) {
+                    startCachePolling()
+                } else {
+                    dispatch(HlsPlayerAction.RequestToggleControlsVisibility(isVisible = true))
+                    stopCachePolling()
+                }
             }
 
             override fun onPlaybackStateChanged(playbackState: Int) {
                 Log.d("HlsPlayerUtils", "onPlaybackStateChanged: $playbackState")
-                _playerCoreState.update {
-                    it.copy(playbackState = playbackState)
-                }
-                if (playbackState == Player.STATE_READY) {
-                    _playerCoreState.update { it.copy(isLoading = false, error = null) }
+                _playerCoreState.update { it.copy(playbackState = playbackState) }
+                if (playbackState == Player.STATE_IDLE) {
+                    stopCachePolling()
                 }
                 if (playbackState == Player.STATE_BUFFERING) {
                     _playerCoreState.update { it.copy(isLoading = true, error = null) }
                 }
+                if (playbackState == Player.STATE_READY) {
+                    _playerCoreState.update { it.copy(isLoading = false, error = null) }
+                }
                 if (playbackState == Player.STATE_ENDED) {
+                    stopCachePolling()
                     dispatch(HlsPlayerAction.ToggleLock(false))
                     _playerCoreState.update {
                         it.copy(isPlaying = false, isLoading = false, error = null)
@@ -291,13 +306,20 @@ class HlsPlayerUtils @Inject constructor(
 
             is SurfaceView -> {
                 try {
+                    val surfaceToCopy: Surface? = surface.holder.surface
+                    if (surfaceToCopy == null || !surfaceToCopy.isValid) {
+                        Log.w("HlsPlayerUtils", "SurfaceView's surface is not valid for capture.")
+                        return null
+                    }
+
                     val bitmap = createBitmap(512, 288)
                     val latch = CountDownLatch(1)
-                    PixelCopy.request(surface.holder.surface, bitmap, { result ->
+                    PixelCopy.request(surfaceToCopy, bitmap, { result ->
                         if (result == PixelCopy.SUCCESS) {
                             latch.countDown()
                         } else {
-                            Log.e("HlsPlayerUtils", "PixelCopy failed: $result")
+                            Log.e("HlsPlayerUtils", "PixelCopy failed with result: $result")
+                            latch.countDown()
                         }
                     }, Handler(Looper.getMainLooper()))
                     latch.await(1, TimeUnit.SECONDS)
@@ -470,6 +492,53 @@ class HlsPlayerUtils @Inject constructor(
         }
     }
 
+    private fun startCachePolling() {
+        if (cachePollingJob?.isActive == true) return
+
+        cachePollingJob = playerCoroutineScope.launch(Dispatchers.IO) {
+            Log.d("HlsPlayerUtils", "Starting cache polling.")
+            while (true) {
+                updateCachedPosition()
+                delay(1000)
+            }
+        }
+    }
+
+    private fun stopCachePolling() {
+        cachePollingJob?.cancel()
+        cachePollingJob = null
+        Log.d("HlsPlayerUtils", "Cache polling stopped.")
+    }
+
+    private fun updateCachedPosition() {
+        val player = exoPlayer ?: return
+        val mediaKey = currentVideoData?.link?.file ?: return
+
+        playerCoroutineScope.launch {
+            val videoFormat = withContext(Dispatchers.Main) {
+                player.videoFormat
+            }
+
+            val bitrate = videoFormat?.bitrate?.toLong() ?: return@launch
+            if (bitrate <= 0) return@launch
+
+            val cachedLengthBytes = withContext(Dispatchers.IO) {
+                exoPlayerCache.getCachedLength(mediaKey, 0, Long.MAX_VALUE)
+            }
+
+            if (cachedLengthBytes > 0) {
+                val bitrateInBytesPerSecond = bitrate / 8
+                if (bitrateInBytesPerSecond > 0) {
+                    val estimatedCachedDurationMs =
+                        (cachedLengthBytes.toDouble() / bitrateInBytesPerSecond * 1000).toLong()
+                    _cachedPosition.update { estimatedCachedDurationMs }
+                }
+            } else {
+                _cachedPosition.update { 0L }
+            }
+        }
+    }
+
     private fun requestAudioFocus() {
         try {
             if (!audioFocusRequested) {
@@ -549,27 +618,15 @@ class HlsPlayerUtils @Inject constructor(
         }
     }
 
-    suspend fun release() {
-        withContext(Dispatchers.Main) {
-            exoPlayer?.let { player ->
-                playerListener?.let { player.removeListener(it) }
-                player.stop()
-                player.release()
-            }
-            exoPlayer = null
-            playerListener = null
-            audioManager = null
-            audioFocusRequest = null
-            audioFocusRequested = false
-            videoSurface = null
-            currentVideoData = null
-
-            controlsHideJob?.cancel()
-            controlsHideJob = null
-
-            _playerCoreState.update { PlayerCoreState() }
-            _controlsState.update { ControlsState() }
-            Log.d("HlsPlayerUtils", "Player components released on Main thread.")
+    private fun reset() {
+        exoPlayer?.let { player ->
+            player.stop()
+            player.clearMediaItems()
         }
+        currentVideoData = null
+        _playerCoreState.update { PlayerCoreState() }
+        _controlsState.update { ControlsState() }
+        abandonAudioFocus()
+        Log.d("HlsPlayerUtils", "HlsPlayerUtils has been reset.")
     }
 }

@@ -47,6 +47,7 @@ import com.luminoverse.animevibe.models.TimeRange
 fun CustomSeekBar(
     modifier: Modifier,
     currentPosition: Long,
+    cachedPosition: Long,
     duration: Long,
     bufferedPosition: Long,
     intro: TimeRange,
@@ -72,6 +73,7 @@ fun CustomSeekBar(
         if (duration > 0) currentPosition.toFloat() / duration else 0f
     val bufferedProgressRatio =
         if (duration > 0) bufferedPosition.toFloat() / duration else 0f
+    val cachedProgressRatio = if (duration > 0) cachedPosition.toFloat() / duration else 0f
     val density = LocalDensity.current
 
     val touchTargetHeight: Dp = 24.dp
@@ -171,6 +173,17 @@ fun CustomSeekBar(
                 .align(Alignment.Center)
         )
 
+        if (duration > 0 && cachedProgressRatio > 0) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(cachedProgressRatio.coerceIn(0f, 1f))
+                    .height(trackHeight)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(MaterialTheme.colorScheme.onSurface.copy(alpha = 0.25f))
+                    .align(Alignment.CenterStart)
+            )
+        }
+
         if (duration > 0 && bufferedProgressRatio > progress) {
             val bufferedSegmentStartPx = progress * trackWidthPx
             val bufferedSegmentWidthPx = (bufferedProgressRatio - progress) * trackWidthPx
@@ -266,6 +279,17 @@ fun CustomSeekBar(
         } else {
             SolidColor(Color.White)
         }
+
+//        if (duration > 0 && cachedProgressRatio > 0) {
+//            Box(
+//                modifier = Modifier
+//                    .fillMaxWidth(cachedProgressRatio.coerceIn(0f, 1f))
+//                    .height(trackHeight)
+//                    .clip(RoundedCornerShape(4.dp))
+//                    .background(MaterialTheme.colorScheme.tertiary)
+//                    .align(Alignment.CenterStart)
+//            )
+//        }
 
         Box(
             modifier = Modifier

@@ -1,14 +1,11 @@
 package com.luminoverse.animevibe.utils.workers
 
 import android.app.NotificationManager
-import android.content.ComponentName
 import android.content.Context
-import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import androidx.core.content.getSystemService
 import androidx.work.*
-import com.luminoverse.animevibe.AnimeApplication
 import com.luminoverse.animevibe.models.AnimeDetail
 import com.luminoverse.animevibe.models.AnimeSchedulesSearchQueryState
 import com.luminoverse.animevibe.models.Notification
@@ -17,7 +14,6 @@ import com.luminoverse.animevibe.repository.NotificationRepository
 import com.luminoverse.animevibe.utils.TimeUtils
 import com.luminoverse.animevibe.utils.factories.ChildWorkerFactory
 import com.luminoverse.animevibe.utils.handlers.NotificationHandler
-import com.luminoverse.animevibe.utils.receivers.ServiceRestartReceiver
 import com.luminoverse.animevibe.utils.resource.Resource
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
@@ -47,7 +43,6 @@ class BroadcastNotificationWorker @AssistedInject constructor(
         private const val WORK_NAME = "anime_broadcast_notification_work"
         private const val NOTIFICATION_WINDOW_MINUTES = 5L
         private const val MAX_RETRIES = 3
-        const val ACTION_RESTART_SERVICE = "com.luminoverse.animevibe.RESTART_MEDIA_SERVICE"
 
         private fun log(message: String) {
             println("BroadcastNotificationWorker: $message")
@@ -121,24 +116,12 @@ class BroadcastNotificationWorker @AssistedInject constructor(
                 return@withContext Result.success()
             }
 
-            val app = context.applicationContext as? AnimeApplication
-            val wasServiceRunning = app?.stopMediaServiceForWorker() == true
-            log("Stopped MediaPlaybackService: $wasServiceRunning")
-
             notificationRepository.cleanOldNotifications()
             log("Cleaned old notifications")
 
             val schedules = fetchSchedules()
             log("Fetched ${schedules.size} anime schedules")
             processBroadcastNotifications(currentTime, schedules)
-
-            if (wasServiceRunning) {
-                log("Requesting to restart MediaPlaybackService")
-                val intent = Intent(ACTION_RESTART_SERVICE).apply {
-                    component = ComponentName(context, ServiceRestartReceiver::class.java)
-                }
-                context.sendBroadcast(intent)
-            }
 
             log("Completed successfully at $currentTime")
             Result.success()

@@ -142,7 +142,6 @@ class VideoPlayerState(
         return File(getSubtitlesCacheDir(), fileName)
     }
 
-
     fun loadAndCacheCaptions(captionUrl: String) {
         scope.launch {
             if (captionCues.containsKey(captionUrl)) return@launch
