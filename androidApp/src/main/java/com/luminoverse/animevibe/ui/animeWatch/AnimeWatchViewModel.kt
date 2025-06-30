@@ -98,7 +98,6 @@ class AnimeWatchViewModel @Inject constructor(
 
     val playerCoreState: StateFlow<PlayerCoreState> = hlsPlayerUtils.playerCoreState
     val controlsState: StateFlow<ControlsState> = hlsPlayerUtils.controlsState
-    val cachedPositionState: StateFlow<Long> = hlsPlayerUtils.cachedPosition
 
     private val _defaultEpisodeDetailComplement = MutableStateFlow<EpisodeDetailComplement?>(null)
 

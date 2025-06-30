@@ -83,7 +83,6 @@ sealed class HlsPlayerAction {
     ) : HlsPlayerAction()
 
     data object Reset : HlsPlayerAction()
-
     data object Play : HlsPlayerAction()
     data object Pause : HlsPlayerAction()
     data class SeekTo(val positionMs: Long) : HlsPlayerAction()
@@ -117,16 +116,12 @@ class HlsPlayerUtils @Inject constructor(
 
     private val playerCoroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private var controlsHideJob: Job? = null
-    private var cachePollingJob: Job? = null
 
     private val _playerCoreState = MutableStateFlow(PlayerCoreState())
     val playerCoreState: StateFlow<PlayerCoreState> = _playerCoreState.asStateFlow()
 
     private val _controlsState = MutableStateFlow(ControlsState())
     val controlsState: StateFlow<ControlsState> = _controlsState.asStateFlow()
-
-    private val _cachedPosition = MutableStateFlow(0L)
-    val cachedPosition: StateFlow<Long> = _cachedPosition.asStateFlow()
 
     init {
         initializePlayerInternal()
@@ -144,16 +139,13 @@ class HlsPlayerUtils @Inject constructor(
             audioManager =
                 applicationContext.getSystemService(Context.AUDIO_SERVICE) as AudioManager
             val trackSelector = DefaultTrackSelector(applicationContext)
-
             val dataSourceFactory = OkHttpDataSource.Factory(okHttpClient)
             val cacheDataSourceFactory = CacheDataSource.Factory()
                 .setCache(exoPlayerCache)
                 .setUpstreamDataSourceFactory(dataSourceFactory)
                 .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR)
-
             val mediaSourceFactory = DefaultMediaSourceFactory(applicationContext)
                 .setDataSourceFactory(cacheDataSourceFactory)
-
             exoPlayer = ExoPlayer.Builder(applicationContext)
                 .setTrackSelector(trackSelector)
                 .setMediaSourceFactory(mediaSourceFactory)
@@ -162,10 +154,6 @@ class HlsPlayerUtils @Inject constructor(
                     playerListener = createPlayerListener()
                     addListener(playerListener!!)
                     pause()
-                    Log.d(
-                        "HlsPlayerUtils",
-                        "ExoPlayer initialized by Hilt with custom OkHttpClient and caching"
-                    )
                 }
             _playerCoreState.update {
                 PlayerCoreState(isPlaying = false, playbackState = Player.STATE_IDLE)
@@ -185,7 +173,6 @@ class HlsPlayerUtils @Inject constructor(
             )
 
             is HlsPlayerAction.Reset -> reset()
-
             is HlsPlayerAction.Play -> play()
             is HlsPlayerAction.Pause -> pause()
             is HlsPlayerAction.SeekTo -> seekTo(action.positionMs)
@@ -224,14 +211,7 @@ class HlsPlayerUtils @Inject constructor(
             controlsHideJob = playerCoroutineScope.launch {
                 delay(CONTROLS_AUTO_HIDE_DELAY_MS)
                 _controlsState.update { it.copy(isControlsVisible = false) }
-                Log.d("HlsPlayerUtils", "Controls auto-hidden")
             }
-            Log.d("HlsPlayerUtils", "Auto-hide timer started/reset")
-        } else {
-            Log.d(
-                "HlsPlayerUtils",
-                "Auto-hide timer stopped (conditions not met: isVisible=$isControlsVisible, isPlaying=$isPlaying, isLocked=$isLocked)"
-            )
         }
     }
 
@@ -252,7 +232,6 @@ class HlsPlayerUtils @Inject constructor(
             }
             cause = cause.cause
         }
-
         return when (error.errorCode) {
             PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED,
             PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT ->
@@ -274,30 +253,21 @@ class HlsPlayerUtils @Inject constructor(
     private fun createPlayerListener(): Player.Listener {
         return object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
-                Log.d("HlsPlayerUtils", "onIsPlayingChanged: $isPlaying")
                 _playerCoreState.update { it.copy(isPlaying = isPlaying) }
-                if (isPlaying) {
-                    startCachePolling()
-                } else {
+                if (!isPlaying) {
                     dispatch(HlsPlayerAction.RequestToggleControlsVisibility(isVisible = true))
-                    stopCachePolling()
                 }
             }
 
             override fun onPlaybackStateChanged(playbackState: Int) {
-                Log.d("HlsPlayerUtils", "onPlaybackStateChanged: $playbackState")
                 _playerCoreState.update { it.copy(playbackState = playbackState) }
-                if (playbackState == Player.STATE_IDLE) {
-                    stopCachePolling()
+                if (playbackState == Player.STATE_BUFFERING) _playerCoreState.update {
+                    it.copy(isLoading = true, error = null)
                 }
-                if (playbackState == Player.STATE_BUFFERING) {
-                    _playerCoreState.update { it.copy(isLoading = true, error = null) }
-                }
-                if (playbackState == Player.STATE_READY) {
-                    _playerCoreState.update { it.copy(isLoading = false, error = null) }
+                if (playbackState == Player.STATE_READY) _playerCoreState.update {
+                    it.copy(isLoading = false, error = null)
                 }
                 if (playbackState == Player.STATE_ENDED) {
-                    stopCachePolling()
                     dispatch(HlsPlayerAction.ToggleLock(false))
                     _playerCoreState.update {
                         it.copy(isPlaying = false, isLoading = false, error = null)
@@ -401,7 +371,6 @@ class HlsPlayerUtils @Inject constructor(
             _controlsState.update { ControlsState() }
             currentVideoData = videoData
             setPlaybackSpeed(1f)
-
             exoPlayer?.let { player ->
                 pause()
                 player.stop()
@@ -409,7 +378,6 @@ class HlsPlayerUtils @Inject constructor(
                 _playerCoreState.update {
                     it.copy(isPlaying = false, playbackState = Player.STATE_IDLE)
                 }
-
                 if (videoData.link.file.isNotEmpty() && videoData.link.type == "hls") {
                     val mediaItemUri = videoData.link.file.toUri()
                     val mediaItemBuilder = MediaItem.Builder().setUri(mediaItemUri)
@@ -417,7 +385,6 @@ class HlsPlayerUtils @Inject constructor(
                     player.prepare()
                     player.trackSelectionParameters = TrackSelectionParameters.Builder().build()
                     setSubtitle(videoData.tracks.firstOrNull { it.kind == "captions" && it.default == true })
-
                     if (isAutoPlayVideo) {
                         if (currentPosition == duration) seekTo(0)
                         else if (currentPosition < duration) seekTo(currentPosition)
@@ -437,15 +404,14 @@ class HlsPlayerUtils @Inject constructor(
         }
     }
 
-
     private fun play() {
         exoPlayer?.let { player ->
             if (player.playerError != null) {
+                _playerCoreState.update { it.copy(error = null) }
                 player.prepare()
             }
             player.play()
             requestAudioFocus()
-            Log.d("HlsPlayerUtils", "play: called")
         }
     }
 
@@ -528,53 +494,6 @@ class HlsPlayerUtils @Inject constructor(
             }
         } catch (e: Exception) {
             Log.e("HlsPlayerUtils", "Failed to set subtitle", e)
-        }
-    }
-
-    private fun startCachePolling() {
-        if (cachePollingJob?.isActive == true) return
-
-        cachePollingJob = playerCoroutineScope.launch(Dispatchers.IO) {
-            Log.d("HlsPlayerUtils", "Starting cache polling.")
-            while (true) {
-                updateCachedPosition()
-                delay(1000)
-            }
-        }
-    }
-
-    private fun stopCachePolling() {
-        cachePollingJob?.cancel()
-        cachePollingJob = null
-        Log.d("HlsPlayerUtils", "Cache polling stopped.")
-    }
-
-    private fun updateCachedPosition() {
-        val player = exoPlayer ?: return
-        val mediaKey = currentVideoData?.link?.file ?: return
-
-        playerCoroutineScope.launch {
-            val videoFormat = withContext(Dispatchers.Main) {
-                player.videoFormat
-            }
-
-            val bitrate = videoFormat?.bitrate?.toLong() ?: return@launch
-            if (bitrate <= 0) return@launch
-
-            val cachedLengthBytes = withContext(Dispatchers.IO) {
-                exoPlayerCache.getCachedLength(mediaKey, 0, Long.MAX_VALUE)
-            }
-
-            if (cachedLengthBytes > 0) {
-                val bitrateInBytesPerSecond = bitrate / 8
-                if (bitrateInBytesPerSecond > 0) {
-                    val estimatedCachedDurationMs =
-                        (cachedLengthBytes.toDouble() / bitrateInBytesPerSecond * 1000).toLong()
-                    _cachedPosition.update { estimatedCachedDurationMs }
-                }
-            } else {
-                _cachedPosition.update { 0L }
-            }
         }
     }
 
@@ -666,6 +585,5 @@ class HlsPlayerUtils @Inject constructor(
         _playerCoreState.update { PlayerCoreState() }
         _controlsState.update { ControlsState() }
         abandonAudioFocus()
-        Log.d("HlsPlayerUtils", "HlsPlayerUtils has been reset.")
     }
 }

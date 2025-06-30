@@ -86,7 +86,6 @@ fun VideoPlayer(
     coreState: PlayerCoreState,
     playerUiState: PlayerUiState,
     controlsStateFlow: StateFlow<ControlsState>,
-    cachedPositionStateFlow: StateFlow<Long>,
     playerAction: (HlsPlayerAction) -> Unit,
     onHandleBackPress: () -> Unit,
     episodeDetailComplement: EpisodeDetailComplement,
@@ -114,7 +113,6 @@ fun VideoPlayer(
         )
     val controlsState by controlsStateFlow.collectAsStateWithLifecycle()
     val currentPosition by videoPlayerState.currentPosition.collectAsStateWithLifecycle()
-    val cachedPosition by cachedPositionStateFlow.collectAsStateWithLifecycle()
 
     val thumbnailTrackUrl =
         episodeDetailComplement.sources.tracks.find { it.kind == "thumbnails" }?.file
@@ -414,10 +412,9 @@ fun VideoPlayer(
             PlayerControls(
                 isPlaying = player.isPlaying,
                 currentPosition = currentPosition,
-                cachedPosition = cachedPosition,
+                bufferedPosition = player.bufferedPosition,
                 duration = player.duration.takeIf { it > 0 }
                     ?: episodeDetailComplement.duration ?: 0,
-                bufferedPosition = player.bufferedPosition,
                 playbackState = updatedCoreState.value.playbackState,
                 playbackErrorMessage = updatedCoreState.value.error,
                 onHandleBackPress = onHandleBackPress,
