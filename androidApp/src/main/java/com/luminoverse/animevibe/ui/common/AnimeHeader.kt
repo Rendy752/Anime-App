@@ -92,7 +92,7 @@ fun AnimeHeader(
                         )
                 )
 
-                if (animeDetail.approved == true) {
+                if (animeDetail.approved) {
                     Icon(
                         imageVector = Icons.Default.ThumbUp,
                         contentDescription = "Approved",
@@ -104,12 +104,14 @@ fun AnimeHeader(
             Text(
                 text = animeDetail.title_japanese ?: "",
                 style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(top = 4.dp)
             )
 
             Text(
                 text = animeDetail.title_english ?: "",
                 style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(top = 4.dp)
             )
 

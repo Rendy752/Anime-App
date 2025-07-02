@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -29,9 +30,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Popup
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.luminoverse.animevibe.models.episodeDetailComplementPlaceholder
@@ -68,6 +67,7 @@ fun AnimeHomeScreen(
     mainState: MainState = MainState(),
     currentRoute: String? = NavRoute.Home.route,
     navController: NavHostController = rememberNavController(),
+    playEpisode: (Int, String) -> Unit = { _, _ -> },
     rememberedTopPadding: Dp = 0.dp
 ) {
     val pullToRefreshState = rememberPullToRefreshState()
@@ -166,92 +166,93 @@ fun AnimeHomeScreen(
                 }
             }
 
-            Column(
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
                     .background(MaterialTheme.colorScheme.surface)
             ) {
-                FilterChipBar(
-                    queryState = homeState.queryState,
-                    onApplyFilters = { onAction(HomeAction.ApplyFilters(it)) }
-                )
-                when (homeState.animeSchedules) {
-                    is Resource.Loading -> {
-                        AnimeSchedulesGridSkeleton(
-                            gridState = gridState,
-                            isLandscape = mainState.isLandscape
-                        )
-                    }
+                Column {
+                    FilterChipBar(
+                        queryState = homeState.queryState,
+                        onApplyFilters = { onAction(HomeAction.ApplyFilters(it)) }
+                    )
+                    when (homeState.animeSchedules) {
+                        is Resource.Loading -> {
+                            AnimeSchedulesGridSkeleton(
+                                gridState = gridState,
+                                isLandscape = mainState.isLandscape
+                            )
+                        }
 
-                    is Resource.Success -> {
-                        homeState.animeSchedules.data.let { animeSchedules ->
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                verticalArrangement = Arrangement.Center
+                        is Resource.Success -> {
+                            homeState.animeSchedules.data.let { animeSchedules ->
+                                Column(
+                                    modifier = Modifier.weight(1f),
+                                    verticalArrangement = Arrangement.Center
+                                ) {
+                                    AnimeSchedulesGrid(
+                                        animeSchedules = animeSchedules.data,
+                                        remainingTimes = remainingTimes,
+                                        isLandscape = mainState.isLandscape,
+                                        onItemClick = { anime ->
+                                            navController.navigateTo(
+                                                NavRoute.AnimeDetail.fromId(anime.mal_id)
+                                            )
+                                        },
+                                        gridState = gridState
+                                    )
+                                }
+                            }
+                        }
+
+                        is Resource.Error -> {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
                             ) {
-                                AnimeSchedulesGrid(
-                                    animeSchedules = animeSchedules.data,
-                                    remainingTimes = remainingTimes,
-                                    isLandscape = mainState.isLandscape,
-                                    onItemClick = { anime ->
-                                        navController.navigateTo(
-                                            NavRoute.AnimeDetail.fromId(anime.mal_id)
-                                        )
-                                    },
-                                    gridState = gridState
+                                SomethingWentWrongDisplay(
+                                    message = if (mainState.networkStatus.isConnected) homeState.animeSchedules.message else "No internet connection",
+                                    suggestion = if (mainState.networkStatus.isConnected) null else "Please check your internet connection and try again"
                                 )
                             }
                         }
                     }
-
-                    is Resource.Error -> {
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            SomethingWentWrongDisplay(
-                                message = if (mainState.networkStatus.isConnected) homeState.animeSchedules.message else "No internet connection",
-                                suggestion = if (mainState.networkStatus.isConnected) null else "Please check your internet connection and try again"
-                            )
-                        }
-                    }
-                }
-                LimitAndPaginationSection(
-                    isVisible = homeState.animeSchedules is Resource.Success && !mainState.isLandscape,
-                    pagination = homeState.animeSchedules.data?.pagination,
-                    query = LimitAndPaginationQueryState(
-                        homeState.queryState.page,
-                        homeState.queryState.limit
-                    ),
-                    onQueryChanged = {
-                        onAction(
-                            HomeAction.ApplyFilters(
-                                homeState.queryState.copy(page = it.page, limit = it.limit)
-                            )
-                        )
-                    }
-                )
-            }
-
-            homeState.continueWatchingEpisode?.let { continueWatchingEpisode ->
-                if (homeState.isShowPopup && currentRoute == NavRoute.Home.route) Popup(
-                    alignment = Alignment.BottomEnd,
-                    offset = IntOffset(0, (-200).dp.value.toInt())
-                ) {
-                    ContinueWatchingAnime(
-                        episodeDetailComplement = continueWatchingEpisode,
-                        isMinimized = homeState.isMinimized,
-                        onSetMinimize = { onAction(HomeAction.SetMinimized(it)) },
-                        onTitleClick = { navController.navigateTo(NavRoute.AnimeDetail.fromId(it)) },
-                        onEpisodeClick = { malId, episodeId ->
-                            navController.navigateTo(
-                                NavRoute.AnimeWatch.fromParams(
-                                    malId = malId, episodeId = episodeId
+                    LimitAndPaginationSection(
+                        isVisible = homeState.animeSchedules is Resource.Success && !mainState.isLandscape,
+                        pagination = homeState.animeSchedules.data?.pagination,
+                        query = LimitAndPaginationQueryState(
+                            homeState.queryState.page,
+                            homeState.queryState.limit
+                        ),
+                        onQueryChanged = {
+                            onAction(
+                                HomeAction.ApplyFilters(
+                                    homeState.queryState.copy(page = it.page, limit = it.limit)
                                 )
                             )
                         }
                     )
+                }
+
+                homeState.continueWatchingEpisode?.let { continueWatchingEpisode ->
+                    if (homeState.isShowPopup && currentRoute == NavRoute.Home.route) {
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(bottom = 80.dp)
+                        ) {
+                            ContinueWatchingAnime(
+                                episodeDetailComplement = continueWatchingEpisode,
+                                isMinimized = homeState.isMinimized,
+                                onSetMinimize = { onAction(HomeAction.SetMinimized(it)) },
+                                onTitleClick = { navController.navigateTo(NavRoute.AnimeDetail.fromId(it)) },
+                                onEpisodeClick = { malId, episodeId ->
+                                    playEpisode(malId, episodeId)
+                                }
+                            )
+                        }
+                    }
                 }
             }
         }

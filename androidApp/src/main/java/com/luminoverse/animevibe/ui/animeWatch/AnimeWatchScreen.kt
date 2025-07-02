@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ActivityInfo
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -32,9 +33,9 @@ import kotlinx.coroutines.launch
 import com.luminoverse.animevibe.ui.main.MainActivity
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.unit.Dp
 import androidx.media3.exoplayer.ExoPlayer
 import com.luminoverse.animevibe.data.remote.api.NetworkDataSource
+import com.luminoverse.animevibe.ui.main.PlayerDisplayMode
 import com.luminoverse.animevibe.ui.main.SnackbarMessage
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
@@ -50,7 +51,6 @@ fun AnimeWatchScreen(
     malId: Int,
     episodeId: String,
     navController: NavHostController,
-    rememberTopPadding: Dp,
     networkDataSource: NetworkDataSource,
     mainState: MainState,
     showSnackbar: (SnackbarMessage) -> Unit,
@@ -64,7 +64,9 @@ fun AnimeWatchScreen(
     dispatchPlayerAction: (HlsPlayerAction) -> Unit,
     getPlayer: () -> ExoPlayer?,
     captureScreenshot: suspend () -> String?,
-    onEnterPipMode: () -> Unit
+    displayMode: PlayerDisplayMode,
+    onEnterPipMode: () -> Unit,
+    onEnterSystemPipMode: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
     val scrollState = rememberLazyListState()
@@ -110,11 +112,15 @@ fun AnimeWatchScreen(
                 )
             }
         } else {
-            navController.popBackStack()
+            watchState.animeDetail?.mal_id?.let { malId ->
+                watchState.episodeDetailComplement?.id?.let { episodeId ->
+                    onEnterPipMode()
+                }
+            }
         }
     }
 
-    BackHandler {
+    BackHandler(enabled = displayMode == PlayerDisplayMode.FULLSCREEN) {
         onBackPress()
     }
 
@@ -171,9 +177,7 @@ fun AnimeWatchScreen(
     PullToRefreshBox(
         isRefreshing = watchState.isRefreshing,
         onRefresh = { refreshEpisodeSources() },
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(top = if (mainState.isLandscape) 0.dp else rememberTopPadding),
+        modifier = Modifier.fillMaxSize().padding(0.dp),
         state = pullToRefreshState,
         indicator = {
             PullToRefreshDefaults.Indicator(
@@ -188,13 +192,17 @@ fun AnimeWatchScreen(
         val configuration = LocalConfiguration.current
         val screenWidth = configuration.screenWidthDp.dp
         val videoHeight = screenWidth * 9 / 16
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+        ) {
             val videoPlayerModifier = Modifier
                 .fillMaxWidth()
                 .then(
-                    if (mainState.isLandscape) Modifier.fillMaxSize() else Modifier.height(
-                        videoHeight
-                    )
+                    if (displayMode == PlayerDisplayMode.PIP) Modifier.fillMaxSize()
+                    else if (mainState.isLandscape) Modifier.fillMaxSize()
+                    else Modifier.height(videoHeight)
                 )
             AnimeWatchContent(
                 malId = malId,
@@ -203,7 +211,6 @@ fun AnimeWatchScreen(
                 watchState = watchState,
                 showSnackbar = showSnackbar,
                 isScreenOn = isScreenOn,
-                isAutoPlayVideo = mainState.isAutoPlayVideo,
                 playerUiState = playerUiState,
                 mainState = mainState,
                 playerCoreState = hlsPlayerCoreState,
@@ -214,7 +221,8 @@ fun AnimeWatchScreen(
                 onHandleBackPress = onBackPress,
                 onAction = onAction,
                 scrollState = scrollState,
-                onEnterPipMode = onEnterPipMode,
+                displayMode = displayMode,
+                onEnterSystemPipMode = onEnterSystemPipMode,
                 modifier = videoPlayerModifier,
             )
         }

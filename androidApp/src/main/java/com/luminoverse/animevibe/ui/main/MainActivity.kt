@@ -14,15 +14,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
@@ -41,7 +38,6 @@ import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.InstallStatus
 import com.google.android.play.core.install.model.UpdateAvailability
 import com.luminoverse.animevibe.ui.common.ConfirmationAlert
-import com.luminoverse.animevibe.ui.common.SharedImagePreviewer
 import com.luminoverse.animevibe.ui.main.navigation.BottomNavigationBar
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.theme.AppTheme
@@ -180,45 +176,35 @@ class MainActivity : AppCompatActivity() {
                 colorStyle = state.colorStyle,
                 isRtl = state.isRtl
             ) {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    Scaffold(
-                        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-                        bottomBar = {
-                            AnimatedVisibility(
-                                visible = NavRoute.bottomRoutes.any { it.route == currentRoute },
-                                enter = slideInVertically(initialOffsetY = { it }),
-                                exit = slideOutVertically(targetOffsetY = { it })
-                            ) { BottomNavigationBar(navController = navController) }
-                        }
-                    ) { paddingValues ->
-                        MainScreen(
-                            contentPadding = paddingValues,
-                            navController = navController,
-                            currentRoute = currentRoute,
-                            intentChannel = intentChannel,
-                            resetIdleTimer = resetIdleTimer,
-                            mainState = state.copy(isLandscape = isLandscape),
-                            mainAction = mainViewModel::onAction
-                        )
-
-                        if (state.isShowIdleDialog) {
-                            ConfirmationAlert(
-                                title = "Are you still there ?",
-                                message = "It seems you haven't interacted with the app for a while. Would you like to quit the app ?",
-                                onConfirm = { finish() },
-                                onCancel = {
-                                    mainViewModel.onAction(MainAction.SetIsShowIdleDialog(false))
-                                    resetIdleTimer()
-                                }
-                            )
-                        }
+                Scaffold(
+                    snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+                    bottomBar = {
+                        AnimatedVisibility(
+                            visible = NavRoute.bottomRoutes.any { it.route == currentRoute } && state.playerState?.displayMode != PlayerDisplayMode.FULLSCREEN,
+                            enter = slideInVertically(initialOffsetY = { it }),
+                            exit = slideOutVertically(targetOffsetY = { it })
+                        ) { BottomNavigationBar(navController = navController) }
                     }
+                ) { paddingValues ->
+                    MainScreen(
+                        contentPadding = paddingValues,
+                        navController = navController,
+                        currentRoute = currentRoute,
+                        intentChannel = intentChannel,
+                        resetIdleTimer = resetIdleTimer,
+                        mainState = state.copy(isLandscape = isLandscape),
+                        mainAction = mainViewModel::onAction,
+                        hlsPlayerUtils = hlsPlayerUtils
+                    )
 
-                    state.sharedImageState?.let { imageState ->
-                        SharedImagePreviewer(
-                            sharedImageState = imageState,
-                            onDismiss = {
-                                mainViewModel.onAction(MainAction.DismissImagePreview)
+                    if (state.isShowIdleDialog) {
+                        ConfirmationAlert(
+                            title = "Are you still there ?",
+                            message = "It seems you haven't interacted with the app for a while. Would you like to quit the app ?",
+                            onConfirm = { finish() },
+                            onCancel = {
+                                mainViewModel.onAction(MainAction.SetIsShowIdleDialog(false))
+                                resetIdleTimer()
                             }
                         )
                     }
@@ -243,9 +229,7 @@ class MainActivity : AppCompatActivity() {
                 if (appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED) {
                     popupSnackbarForCompleteUpdate()
                 }
-                if (appUpdateInfo.updateAvailability()
-                    == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS
-                ) {
+                if (appUpdateInfo.updateAvailability() == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS) {
                     appUpdateManager.startUpdateFlowForResult(
                         appUpdateInfo,
                         updateActivityResultLauncher,
@@ -368,9 +352,8 @@ class MainActivity : AppCompatActivity() {
                     delay(1000)
                     val currentTime = System.currentTimeMillis()
                     val isIdle = currentTime - lastInteractionTime > idleTimeoutMillis
-                    val currentRoute = navController.currentDestination?.route
 
-                    if (isIdle && currentRoute?.startsWith("animeWatch/") != true) {
+                    if (isIdle && hlsPlayerUtils.getPlayer()?.isPlaying != true) {
                         if (!isShowIdleDialog) {
                             action(true)
                         }

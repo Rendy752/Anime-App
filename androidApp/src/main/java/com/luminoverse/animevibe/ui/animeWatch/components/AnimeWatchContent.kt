@@ -44,6 +44,7 @@ import com.luminoverse.animevibe.ui.common.ImageAspectRatio
 import com.luminoverse.animevibe.ui.common.ImageDisplay
 import com.luminoverse.animevibe.ui.common.ImageRoundedCorner
 import com.luminoverse.animevibe.ui.main.MainState
+import com.luminoverse.animevibe.ui.main.PlayerDisplayMode
 import com.luminoverse.animevibe.ui.main.SnackbarMessage
 import com.luminoverse.animevibe.ui.main.SnackbarMessageType
 import com.luminoverse.animevibe.utils.media.ControlsState
@@ -59,7 +60,6 @@ fun AnimeWatchContent(
     watchState: WatchState,
     showSnackbar: (SnackbarMessage) -> Unit,
     isScreenOn: Boolean,
-    isAutoPlayVideo: Boolean,
     playerUiState: PlayerUiState,
     mainState: MainState,
     playerCoreState: PlayerCoreState,
@@ -70,7 +70,8 @@ fun AnimeWatchContent(
     onHandleBackPress: () -> Unit,
     onAction: (WatchAction) -> Unit,
     scrollState: LazyListState,
-    onEnterPipMode: () -> Unit,
+    displayMode: PlayerDisplayMode,
+    onEnterSystemPipMode: () -> Unit,
     modifier: Modifier
 ) {
     val serverScrollState = rememberScrollState()
@@ -116,7 +117,7 @@ fun AnimeWatchContent(
                         },
                         onHandleBackPress = onHandleBackPress,
                         isScreenOn = isScreenOn,
-                        isAutoPlayVideo = isAutoPlayVideo,
+                        isAutoPlayVideo = mainState.isAutoPlayVideo,
                         episodes = watchState.animeDetailComplement.episodes,
                         episodeSourcesQuery = watchState.episodeSourcesQuery,
                         handleSelectedEpisodeServer = { episodeSourcesQuery, isRefresh ->
@@ -126,7 +127,8 @@ fun AnimeWatchContent(
                                 )
                             )
                         },
-                        onEnterPipMode = onEnterPipMode,
+                        displayMode = displayMode,
+                        onEnterSystemPipMode = onEnterSystemPipMode,
                         isSideSheetVisible = watchState.isSideSheetVisible,
                         setSideSheetVisibility = { onAction(WatchAction.SetSideSheetVisibility(it)) },
                         setFullscreenChange = { onAction(WatchAction.SetFullscreen(it)) },
@@ -211,7 +213,7 @@ fun AnimeWatchContent(
         }
     }
 
-    if (!mainState.isLandscape && !playerUiState.isPipMode && watchState.animeDetailComplement?.episodes != null && watchState.animeDetail?.mal_id == malId) {
+    if (displayMode == PlayerDisplayMode.FULLSCREEN && !mainState.isLandscape && !playerUiState.isPipMode && watchState.animeDetailComplement?.episodes != null && watchState.animeDetail?.mal_id == malId) {
         LazyColumn(
             modifier = Modifier
                 .padding(horizontal = 8.dp)

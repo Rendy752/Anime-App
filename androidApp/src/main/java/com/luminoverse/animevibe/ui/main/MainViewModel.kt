@@ -8,6 +8,7 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Build
+import androidx.compose.ui.unit.IntOffset
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
@@ -48,6 +49,18 @@ data class SnackbarMessage(
     val id: Long = System.currentTimeMillis()
 )
 
+enum class PlayerDisplayMode {
+    FULLSCREEN,
+    PIP
+}
+
+data class PlayerState(
+    val malId: Int,
+    val episodeId: String,
+    val displayMode: PlayerDisplayMode = PlayerDisplayMode.FULLSCREEN,
+    val pipOffset: IntOffset = IntOffset.Zero
+)
+
 data class MainState(
     val themeMode: ThemeMode = ThemeMode.System,
     val isDarkMode: Boolean = false,
@@ -60,7 +73,8 @@ data class MainState(
     val isShowIdleDialog: Boolean = false,
     val isLandscape: Boolean = false,
     val sharedImageState: SharedImageState? = null,
-    val snackbarMessage: SnackbarMessage? = null
+    val snackbarMessage: SnackbarMessage? = null,
+    val playerState: PlayerState? = null
 )
 
 sealed class MainAction {
@@ -78,6 +92,10 @@ sealed class MainAction {
     data object DismissImagePreview : MainAction()
     data class ShowSnackbar(val message: SnackbarMessage) : MainAction()
     data object DismissSnackbar : MainAction()
+    data class PlayEpisode(val malId: Int, val episodeId: String) : MainAction()
+    data class UpdatePlayerPipOffset(val offset: IntOffset) : MainAction()
+    data class SetPlayerDisplayMode(val mode: PlayerDisplayMode) : MainAction()
+    object ClosePlayer : MainAction()
 }
 
 @HiltViewModel
@@ -146,6 +164,10 @@ class MainViewModel @Inject constructor(
             is MainAction.DismissImagePreview -> _state.update { it.copy(sharedImageState = null) }
             is MainAction.ShowSnackbar -> showSnackbar(action.message)
             is MainAction.DismissSnackbar -> dismissSnackbar()
+            is MainAction.PlayEpisode -> playEpisode(action.malId, action.episodeId)
+            is MainAction.UpdatePlayerPipOffset -> updatePlayerPipOffset(action.offset)
+            is MainAction.SetPlayerDisplayMode -> setPlayerDisplayMode(action.mode)
+            is MainAction.ClosePlayer -> closePlayer()
         }
     }
 
@@ -155,6 +177,38 @@ class MainViewModel @Inject constructor(
 
     private fun dismissSnackbar() {
         _state.update { it.copy(snackbarMessage = null) }
+    }
+
+    private fun playEpisode(malId: Int, episodeId: String) {
+        _state.update {
+            it.copy(
+                playerState = PlayerState(
+                    malId = malId,
+                    episodeId = episodeId,
+                    displayMode = PlayerDisplayMode.FULLSCREEN
+                )
+            )
+        }
+    }
+
+    private fun updatePlayerPipOffset(offset: IntOffset) {
+        _state.value.playerState?.let { current ->
+            _state.update {
+                it.copy(playerState = current.copy(pipOffset = offset))
+            }
+        }
+    }
+
+    private fun setPlayerDisplayMode(mode: PlayerDisplayMode) {
+        _state.value.playerState?.let { current ->
+            _state.update {
+                it.copy(playerState = current.copy(displayMode = mode))
+            }
+        }
+    }
+
+    private fun closePlayer() {
+        _state.update { it.copy(playerState = null) }
     }
 
     private fun isDarkMode(themeMode: ThemeMode): Boolean {

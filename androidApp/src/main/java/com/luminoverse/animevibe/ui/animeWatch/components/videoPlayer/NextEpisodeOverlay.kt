@@ -44,7 +44,7 @@ import com.luminoverse.animevibe.utils.basicContainer
 fun NextEpisodeOverlay(
     modifier: Modifier = Modifier,
     isVisible: Boolean,
-    isPipMode: Boolean,
+    isOnlyShowEpisodeDetail: Boolean,
     isLandscape: Boolean,
     animeImage: String?,
     nextEpisode: Episode,
@@ -80,7 +80,7 @@ fun NextEpisodeOverlay(
             verticalArrangement = if (isLandscape) Arrangement.SpaceBetween else Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (!isPipMode) Row(
+            if (!isOnlyShowEpisodeDetail) Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -112,7 +112,7 @@ fun NextEpisodeOverlay(
                 )
             }
 
-            if (!isPipMode) Spacer(modifier = Modifier.height(8.dp))
+            if (!isOnlyShowEpisodeDetail) Spacer(modifier = Modifier.height(8.dp))
 
             Column(
                 modifier = Modifier
@@ -121,12 +121,13 @@ fun NextEpisodeOverlay(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(
                     4.dp,
-                    if (isPipMode) Alignment.CenterVertically else Alignment.Bottom
+                    if (isOnlyShowEpisodeDetail) Alignment.CenterVertically else Alignment.Bottom
                 )
             ) {
                 EpisodeDetailItem(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .weight(1f)
                         .aspectRatio(3.25f),
                     animeImage = animeImage,
                     episode = nextEpisode,
@@ -136,7 +137,7 @@ fun NextEpisodeOverlay(
                     isSameWidthContent = true
                 )
 
-                if (!isPipMode) Row(
+                if (!isOnlyShowEpisodeDetail) Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically

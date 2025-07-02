@@ -19,6 +19,7 @@ import coil.ImageLoader
 import coil.imageLoader
 import coil.request.ImageRequest
 import com.luminoverse.animevibe.data.remote.api.NetworkDataSource
+import com.luminoverse.animevibe.ui.main.PlayerDisplayMode
 import com.luminoverse.animevibe.utils.media.BoundsUtils.calculateOffsetBounds
 import com.luminoverse.animevibe.utils.media.CaptionCue
 import com.luminoverse.animevibe.utils.media.ControlsState
@@ -167,12 +168,19 @@ class VideoPlayerState(
                         withContext(Dispatchers.IO) {
                             subtitleFile.writeText(vttContent)
                         }
-                        Log.d("VideoPlayerState", "Fetched captions from network and cached locally for $captionUrl")
+                        Log.d(
+                            "VideoPlayerState",
+                            "Fetched captions from network and cached locally for $captionUrl"
+                        )
                     } else {
                         throw IOException("Fetched caption content is null or empty.")
                     }
                 } catch (e: Exception) {
-                    Log.e("VideoPlayerState", "Failed to fetch captions from network: ${e.message}", e)
+                    Log.e(
+                        "VideoPlayerState",
+                        "Failed to fetch captions from network: ${e.message}",
+                        e
+                    )
                     return@launch
                 }
             }
@@ -378,6 +386,7 @@ fun rememberVideoPlayerState(
 
 suspend fun AwaitPointerEventScope.handleGestures(
     state: VideoPlayerState,
+    displayMode: PlayerDisplayMode,
     updatedControlsState: State<ControlsState>,
 ) {
     val down = awaitFirstDown()
@@ -385,7 +394,7 @@ suspend fun AwaitPointerEventScope.handleGestures(
     state.longPressJob?.cancel()
     state.longPressJob = state.scope.launch {
         delay(LONG_PRESS_THRESHOLD_MILLIS)
-        if (state.player.isPlaying && !updatedControlsState.value.isLocked) {
+        if (state.player.isPlaying && !updatedControlsState.value.isLocked && displayMode == PlayerDisplayMode.FULLSCREEN) {
             state.handleLongPressStart(updatedControlsState.value.playbackSpeed)
             down.consume()
         }

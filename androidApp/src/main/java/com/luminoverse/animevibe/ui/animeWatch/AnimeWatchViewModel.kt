@@ -1,6 +1,7 @@
 package com.luminoverse.animevibe.ui.animeWatch
 
 import androidx.compose.runtime.Stable
+import androidx.compose.ui.unit.IntOffset
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.exoplayer.ExoPlayer
@@ -49,6 +50,8 @@ data class PlayerUiState(
     val errorSourceQueryList: List<EpisodeSourcesQuery> = emptyList(),
     val isFullscreen: Boolean = false,
     val isPipMode: Boolean = false,
+    val isCustomPipMode: Boolean = false,
+    val customPipOffset: IntOffset = IntOffset.Zero,
     val isShowResume: Boolean = false
 )
 
@@ -71,6 +74,8 @@ sealed class WatchAction {
 
     data class SetFullscreen(val isFullscreen: Boolean) : WatchAction()
     data class SetPipMode(val isPipMode: Boolean) : WatchAction()
+    data object ToggleCustomPipMode : WatchAction()
+    data class UpdateCustomPipOffset(val offset: IntOffset) : WatchAction()
     data class SetShowResume(val isShow: Boolean) : WatchAction()
     data class SetEpisodeJumpNumber(val jumpNumber: Int) : WatchAction()
     data class SetSideSheetVisibility(val isVisible: Boolean) : WatchAction()
@@ -133,6 +138,12 @@ class AnimeWatchViewModel @Inject constructor(
 
             is WatchAction.SetFullscreen -> _playerUiState.update { it.copy(isFullscreen = action.isFullscreen) }
             is WatchAction.SetPipMode -> _playerUiState.update { it.copy(isPipMode = action.isPipMode) }
+            is WatchAction.ToggleCustomPipMode -> {
+                _playerUiState.update { it.copy(isCustomPipMode = !it.isCustomPipMode) }
+            }
+            is WatchAction.UpdateCustomPipOffset -> {
+                _playerUiState.update { it.copy(customPipOffset = action.offset) }
+            }
             is WatchAction.SetShowResume -> _playerUiState.update {
                 it.copy(isShowResume = action.isShow)
             }

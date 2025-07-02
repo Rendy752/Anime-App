@@ -29,6 +29,7 @@ import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
 import com.luminoverse.animevibe.ui.animeWatch.PlayerUiState
+import com.luminoverse.animevibe.ui.main.PlayerDisplayMode
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.MediaPlaybackAction
@@ -58,7 +59,8 @@ fun VideoPlayerSection(
     episodes: List<Episode>,
     episodeSourcesQuery: EpisodeSourcesQuery,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery, Boolean) -> Unit,
-    onEnterPipMode: () -> Unit,
+    displayMode: PlayerDisplayMode,
+    onEnterSystemPipMode: () -> Unit,
     isSideSheetVisible: Boolean,
     setSideSheetVisibility: (Boolean) -> Unit,
     setFullscreenChange: (Boolean) -> Unit,
@@ -147,12 +149,12 @@ fun VideoPlayerSection(
         }
 
         onDispose {
-            Log.d(
-                "VideoPlayerSection",
-                "Disposing VideoPlayerSection. Resetting player state FIRST."
-            )
-            playerAction(HlsPlayerAction.Reset)
+            mediaController?.unregisterCallback(mediaControllerCallback)
+            mediaBrowser?.disconnect()
 
+
+            Log.d("VideoPlayerSection", "Disposing completely. Resetting player state and service.")
+            playerAction(HlsPlayerAction.Reset)
             mediaPlaybackService?.dispatch(MediaPlaybackAction.ClearMediaData)
             mediaPlaybackService?.dispatch(MediaPlaybackAction.StopService)
 
@@ -162,9 +164,6 @@ fun VideoPlayerSection(
             } catch (e: IllegalArgumentException) {
                 Log.w("VideoPlayerSection", "Service was not registered or already unbound.", e)
             }
-
-            mediaController?.unregisterCallback(mediaControllerCallback)
-            mediaBrowser?.disconnect()
             mediaPlaybackService = null
         }
     }
@@ -208,7 +207,8 @@ fun VideoPlayerSection(
             episodes = episodes,
             episodeSourcesQuery = episodeSourcesQuery,
             handleSelectedEpisodeServer = handleSelectedEpisodeServer,
-            onEnterPipMode = onEnterPipMode,
+            displayMode = displayMode,
+            onEnterSystemPipMode = onEnterSystemPipMode,
             isSideSheetVisible = isSideSheetVisible,
             setSideSheetVisibility = setSideSheetVisibility,
             isAutoplayEnabled = isAutoPlayVideo,

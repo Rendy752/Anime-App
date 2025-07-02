@@ -59,6 +59,7 @@ import com.luminoverse.animevibe.ui.common.CustomModalBottomSheet
 import com.luminoverse.animevibe.ui.common.ImageAspectRatio
 import com.luminoverse.animevibe.ui.common.ImageDisplay
 import com.luminoverse.animevibe.ui.common.ImageRoundedCorner
+import com.luminoverse.animevibe.ui.main.PlayerDisplayMode
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
@@ -93,7 +94,8 @@ fun VideoPlayer(
     episodes: List<Episode>,
     episodeSourcesQuery: EpisodeSourcesQuery,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery, Boolean) -> Unit,
-    onEnterPipMode: () -> Unit,
+    displayMode: PlayerDisplayMode,
+    onEnterSystemPipMode: () -> Unit,
     isSideSheetVisible: Boolean,
     setSideSheetVisibility: (Boolean) -> Unit,
     isAutoplayEnabled: Boolean,
@@ -316,6 +318,7 @@ fun VideoPlayer(
                     awaitEachGesture {
                         handleGestures(
                             state = videoPlayerState,
+                            displayMode = displayMode,
                             updatedControlsState = updatedControlsState
                         )
                     }
@@ -362,7 +365,7 @@ fun VideoPlayer(
         }
 
         val isPlayerControlsVisible =
-            (updatedControlsState.value.isControlsVisible || videoPlayerState.isDraggingSeekBar) && !shouldShowResumeOverlay && isCommonPartVisible
+            (updatedControlsState.value.isControlsVisible || videoPlayerState.isDraggingSeekBar) && !shouldShowResumeOverlay && isCommonPartVisible && displayMode == PlayerDisplayMode.FULLSCREEN
 
         thumbnailTrackUrl?.let { url ->
             val showThumbnail =
@@ -478,7 +481,12 @@ fun VideoPlayer(
             isCommonPartVisible && !videoPlayerState.isHolding && !videoPlayerState.isDraggingSeekBar && updatedCoreState.value.playbackState != Player.STATE_ENDED && updatedCoreState.value.playbackState != Player.STATE_IDLE && !shouldShowResumeOverlay && !videoPlayerState.isFirstLoad
 
         SkipButtonsContainer(
-            modifier = Modifier.align(Alignment.BottomEnd),
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(
+                    end = if (displayMode == PlayerDisplayMode.FULLSCREEN) 56.dp else 8.dp,
+                    bottom = if (displayMode == PlayerDisplayMode.FULLSCREEN) 56.dp else 8.dp
+                ),
             currentPosition = currentPosition,
             duration = player.duration,
             intro = episodeDetailComplement.sources.intro,
@@ -559,8 +567,8 @@ fun VideoPlayer(
             NextEpisodeOverlay(
                 modifier = Modifier.align(Alignment.Center),
                 isVisible = updatedCoreState.value.playbackState == Player.STATE_ENDED && videoPlayerState.isShowNextEpisodeOverlay,
+                isOnlyShowEpisodeDetail = displayMode == PlayerDisplayMode.PIP || playerUiState.isPipMode,
                 isLandscape = isLandscape,
-                isPipMode = playerUiState.isPipMode,
                 animeImage = episodeDetailComplement.imageUrl,
                 nextEpisode = it,
                 nextEpisodeDetailComplement = episodeDetailComplements[it.id]?.data,
@@ -603,7 +611,7 @@ fun VideoPlayer(
                     playerAction(HlsPlayerAction.Play)
                     playerAction(HlsPlayerAction.ToggleLock(true))
                 },
-                onPipClick = { onEnterPipMode() },
+                onPipClick = { onEnterSystemPipMode() },
                 selectedPlaybackSpeed = updatedControlsState.value.playbackSpeed,
                 onPlaybackSpeedClick = { videoPlayerState.showPlaybackSpeedSheet = true },
                 isSubtitleAvailable = episodeDetailComplement.sources.tracks.any { it.kind == "captions" },

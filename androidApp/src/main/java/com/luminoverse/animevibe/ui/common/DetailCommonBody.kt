@@ -29,6 +29,7 @@ fun DetailCommonBody(modifier: Modifier = Modifier, title: String, body: String?
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold,
             )
             HorizontalDivider(
@@ -39,6 +40,7 @@ fun DetailCommonBody(modifier: Modifier = Modifier, title: String, body: String?
             Text(
                 text = body,
                 style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Justify
             )
         }

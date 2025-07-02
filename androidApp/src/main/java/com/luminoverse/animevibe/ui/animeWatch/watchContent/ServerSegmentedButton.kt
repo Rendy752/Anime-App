@@ -65,7 +65,7 @@ fun ServerSegmentedButton(
                 label = {
                     Text(server.serverName)
                 },
-                icon = { getServerCategoryIcon(type)?.invoke() }
+                icon = { getServerCategoryIcon(type, if (index == selectedIndex.value) MaterialTheme.colorScheme.onPrimary else null)?.invoke() }
             )
         }
     }
