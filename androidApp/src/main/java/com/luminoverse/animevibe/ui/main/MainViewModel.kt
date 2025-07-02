@@ -8,7 +8,7 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.content.res.Configuration
 import android.os.Build
-import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.geometry.Offset
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
@@ -58,7 +58,7 @@ data class PlayerState(
     val malId: Int,
     val episodeId: String,
     val displayMode: PlayerDisplayMode = PlayerDisplayMode.FULLSCREEN,
-    val pipOffset: IntOffset = IntOffset.Zero
+    val pipRelativeOffset: Offset = Offset(1f, 1f)
 )
 
 data class MainState(
@@ -93,7 +93,7 @@ sealed class MainAction {
     data class ShowSnackbar(val message: SnackbarMessage) : MainAction()
     data object DismissSnackbar : MainAction()
     data class PlayEpisode(val malId: Int, val episodeId: String) : MainAction()
-    data class UpdatePlayerPipOffset(val offset: IntOffset) : MainAction()
+    data class UpdatePlayerPipRelativeOffset(val relativeOffset: Offset) : MainAction()
     data class SetPlayerDisplayMode(val mode: PlayerDisplayMode) : MainAction()
     object ClosePlayer : MainAction()
 }
@@ -165,7 +165,7 @@ class MainViewModel @Inject constructor(
             is MainAction.ShowSnackbar -> showSnackbar(action.message)
             is MainAction.DismissSnackbar -> dismissSnackbar()
             is MainAction.PlayEpisode -> playEpisode(action.malId, action.episodeId)
-            is MainAction.UpdatePlayerPipOffset -> updatePlayerPipOffset(action.offset)
+            is MainAction.UpdatePlayerPipRelativeOffset -> updatePlayerPipRelativeOffset(action.relativeOffset)
             is MainAction.SetPlayerDisplayMode -> setPlayerDisplayMode(action.mode)
             is MainAction.ClosePlayer -> closePlayer()
         }
@@ -191,10 +191,10 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    private fun updatePlayerPipOffset(offset: IntOffset) {
+    private fun updatePlayerPipRelativeOffset(relativeOffset: Offset) {
         _state.value.playerState?.let { current ->
             _state.update {
-                it.copy(playerState = current.copy(pipOffset = offset))
+                it.copy(playerState = current.copy(pipRelativeOffset = relativeOffset))
             }
         }
     }

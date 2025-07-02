@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -42,7 +43,6 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -55,7 +55,6 @@ import com.luminoverse.animevibe.ui.animeWatch.components.videoPlayer.PlayPauseL
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
 import com.luminoverse.animevibe.utils.media.PipUtil.buildPipActions
-import kotlin.math.roundToInt
 
 
 @SuppressLint("ConfigurationScreenWidthHeight")
@@ -76,85 +75,42 @@ fun PlayerHost(
         val configuration = LocalConfiguration.current
         val density = LocalDensity.current
         var pipContainerSize by remember { mutableStateOf(IntSize.Zero) }
-        var localPipOffset by remember { mutableStateOf(playerState.pipOffset) }
+
+        var localRelativeOffset by remember { mutableStateOf(playerState.pipRelativeOffset) }
+
+        LaunchedEffect(playerState.pipRelativeOffset) {
+            localRelativeOffset = playerState.pipRelativeOffset
+        }
 
         val topPaddingPx = with(density) { rememberedTopPadding.toPx() }
         val bottomPaddingPx = with(density) { rememberedBottomPadding.toPx() }
         val startPaddingPx = with(density) { startPadding.toPx() }
         val endPaddingPx = with(density) { endPadding.toPx() }
 
-        LaunchedEffect(playerState.pipOffset) {
-            localPipOffset = playerState.pipOffset
-        }
+        val screenWidthPx = with(density) { configuration.screenWidthDp.dp.toPx() }
+        val screenHeightPx = with(density) { configuration.screenHeightDp.dp.toPx() }
 
-        LaunchedEffect(mainState.isLandscape, pipContainerSize, isCurrentBottomScreen) {
-            if (pipContainerSize.width == 0 || pipContainerSize.height == 0) return@LaunchedEffect
+        val minX = startPaddingPx
+        val maxX = (screenWidthPx - pipContainerSize.width - endPaddingPx).coerceAtLeast(minX)
+        val draggableWidth = (maxX - minX).coerceAtLeast(1f)
 
-            val screenWidthPx = with(density) { configuration.screenWidthDp.dp.toPx() }
-            val screenHeightPx = with(density) { configuration.screenHeightDp.dp.toPx() }
-            val currentX = localPipOffset.x.toFloat()
-            val currentY = localPipOffset.y.toFloat()
-
-            val minX = startPaddingPx
-            val calculatedMaxX = screenWidthPx - pipContainerSize.width - endPaddingPx
-            val maxX = calculatedMaxX.coerceAtLeast(minX)
-
-            val minY = topPaddingPx
-            val calculatedMaxY = if (!mainState.isLandscape) {
-                screenHeightPx - pipContainerSize.height - bottomPaddingPx
+        val minY = topPaddingPx
+        val maxY = if (!mainState.isLandscape) {
+            (screenHeightPx - pipContainerSize.height - bottomPaddingPx).coerceAtLeast(minY)
+        } else {
+            if (isCurrentBottomScreen) {
+                (screenHeightPx - pipContainerSize.height - bottomPaddingPx).coerceAtLeast(minY)
             } else {
-                if (isCurrentBottomScreen) {
-                    screenHeightPx - pipContainerSize.height - bottomPaddingPx
-                } else {
-                    screenHeightPx - pipContainerSize.height
-                }
-            }
-            val maxY = calculatedMaxY.coerceAtLeast(minY)
-
-            val constrainedX = currentX.coerceIn(minX, maxX)
-            val constrainedY = currentY.coerceIn(minY, maxY)
-
-            if (constrainedX != currentX || constrainedY != currentY) {
-                val newConstrainedOffset =
-                    IntOffset(constrainedX.roundToInt(), constrainedY.roundToInt())
-                localPipOffset = newConstrainedOffset
-                onAction(MainAction.UpdatePlayerPipOffset(newConstrainedOffset))
+                (screenHeightPx - pipContainerSize.height).coerceAtLeast(minY)
             }
         }
-
-        LaunchedEffect(pipContainerSize, isCurrentBottomScreen) {
-            if (pipContainerSize.width == 0 || playerState.pipOffset != IntOffset.Zero) return@LaunchedEffect
-
-            val screenWidthPx = with(density) { configuration.screenWidthDp.dp.toPx() }
-            val screenHeightPx = with(density) { configuration.screenHeightDp.dp.toPx() }
-
-            val minX = startPaddingPx
-            val calculatedInitialX = screenWidthPx - pipContainerSize.width - endPaddingPx
-            val initialX = calculatedInitialX.coerceAtLeast(minX)
-
-            val minY = topPaddingPx
-            val calculatedInitialY = if (!mainState.isLandscape) {
-                screenHeightPx - pipContainerSize.height - bottomPaddingPx
-            } else {
-                if (isCurrentBottomScreen) {
-                    screenHeightPx - pipContainerSize.height - bottomPaddingPx
-                } else {
-                    screenHeightPx - pipContainerSize.height
-                }
-            }
-            val initialY = calculatedInitialY.coerceAtLeast(minY)
-
-            val initialOffset = IntOffset(initialX.roundToInt(), initialY.roundToInt())
-
-            localPipOffset = initialOffset
-            onAction(MainAction.UpdatePlayerPipOffset(initialOffset))
-        }
+        val draggableHeight = (maxY - minY).coerceAtLeast(1f)
 
         val pipModifier = Modifier
             .align(Alignment.TopStart)
             .graphicsLayer {
-                translationX = localPipOffset.x.toFloat()
-                translationY = localPipOffset.y.toFloat()
+                translationX = minX + (localRelativeOffset.x * draggableWidth)
+                translationY = minY + (localRelativeOffset.y * draggableHeight)
             }
             .width(250.dp)
             .aspectRatio(16f / 9f)
@@ -164,41 +120,22 @@ fun PlayerHost(
             .clickable {
                 onAction(MainAction.SetPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN))
             }
-            .pointerInput(configuration, isCurrentBottomScreen) {
+            .pointerInput(draggableWidth, draggableHeight) {
                 detectDragGestures(
                     onDragEnd = {
-                        onAction(MainAction.UpdatePlayerPipOffset(localPipOffset))
+                        onAction(MainAction.UpdatePlayerPipRelativeOffset(localRelativeOffset))
                     }
-                ) { change, dragAmount ->
-                    change.consume()
-                    val newOffset = IntOffset(
-                        (localPipOffset.x + dragAmount.x).roundToInt(),
-                        (localPipOffset.y + dragAmount.y).roundToInt()
-                    )
+                ) { _, dragAmount ->
+                    val currentAbsoluteX = minX + (localRelativeOffset.x * draggableWidth)
+                    val currentAbsoluteY = minY + (localRelativeOffset.y * draggableHeight)
 
-                    val screenWidthPx = with(density) { configuration.screenWidthDp.dp.toPx() }
-                    val screenHeightPx = with(density) { configuration.screenHeightDp.dp.toPx() }
+                    val newAbsoluteX = currentAbsoluteX + dragAmount.x
+                    val newAbsoluteY = currentAbsoluteY + dragAmount.y
 
-                    val minX = startPaddingPx
-                    val calculatedMaxX = screenWidthPx - pipContainerSize.width - endPaddingPx
-                    val maxX = calculatedMaxX.coerceAtLeast(minX)
+                    val newRelativeX = ((newAbsoluteX - minX) / draggableWidth).coerceIn(0f, 1f)
+                    val newRelativeY = ((newAbsoluteY - minY) / draggableHeight).coerceIn(0f, 1f)
 
-                    val minY = topPaddingPx
-                    val calculatedMaxY = if (!mainState.isLandscape) {
-                        screenHeightPx - pipContainerSize.height - bottomPaddingPx
-                    } else {
-                        if (isCurrentBottomScreen) {
-                            screenHeightPx - pipContainerSize.height - bottomPaddingPx
-                        } else {
-                            screenHeightPx - pipContainerSize.height
-                        }
-                    }
-                    val maxY = calculatedMaxY.coerceAtLeast(minY)
-
-                    val constrainedX = newOffset.x.toFloat().coerceIn(minX, maxX)
-                    val constrainedY = newOffset.y.toFloat().coerceIn(minY, maxY)
-
-                    localPipOffset = IntOffset(constrainedX.roundToInt(), constrainedY.roundToInt())
+                    localRelativeOffset = Offset(newRelativeX, newRelativeY)
                 }
             }
 
