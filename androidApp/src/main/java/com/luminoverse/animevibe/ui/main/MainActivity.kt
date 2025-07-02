@@ -56,6 +56,7 @@ import android.content.pm.PackageManager
 class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var hlsPlayerUtils: HlsPlayerUtils
+    private var isInAnimeWatchScreenFullMode: Boolean = false
 
     private val mainViewModel: MainViewModel by viewModels()
 
@@ -124,6 +125,10 @@ class MainActivity : AppCompatActivity() {
             val navBackStackEntry by navController.currentBackStackEntryAsState()
             val currentRoute = navBackStackEntry?.destination?.route
 
+            LaunchedEffect(state.playerState?.displayMode) {
+                isInAnimeWatchScreenFullMode =
+                    state.playerState?.displayMode == PlayerDisplayMode.FULLSCREEN
+            }
             LaunchedEffect(state.snackbarMessage) {
                 state.snackbarMessage?.let { snackbarMessage ->
                     val messageText = when (snackbarMessage.type) {
@@ -323,11 +328,12 @@ class MainActivity : AppCompatActivity() {
         super.onUserLeaveHint()
         resetIdleTimer()
         if (::navController.isInitialized) {
-            val currentRoute = navController.currentDestination?.route
             val isPlaying = hlsPlayerUtils.getPlayer()?.isPlaying == true
-            if (currentRoute?.startsWith("animeWatch/") == true && isPlaying) {
+            if (isInAnimeWatchScreenFullMode && isPlaying) {
                 pipParamsBuilder.setActions(buildPipActions(this@MainActivity, true))
                 enterPictureInPictureMode(pipParamsBuilder.build())
+            } else {
+                hlsPlayerUtils.dispatch(HlsPlayerAction.Pause)
             }
         }
     }

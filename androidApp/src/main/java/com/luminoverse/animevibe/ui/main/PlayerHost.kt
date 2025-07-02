@@ -96,13 +96,20 @@ fun PlayerHost(
             val currentY = localPipOffset.y.toFloat()
 
             val minX = startPaddingPx
-            val maxX = screenWidthPx - pipContainerSize.width - endPaddingPx
+            val calculatedMaxX = screenWidthPx - pipContainerSize.width - endPaddingPx
+            val maxX = calculatedMaxX.coerceAtLeast(minX)
+
             val minY = topPaddingPx
-            val maxY = if (isCurrentBottomScreen) {
+            val calculatedMaxY = if (!mainState.isLandscape) {
                 screenHeightPx - pipContainerSize.height - bottomPaddingPx
             } else {
-                screenHeightPx - pipContainerSize.height
+                if (isCurrentBottomScreen) {
+                    screenHeightPx - pipContainerSize.height - bottomPaddingPx
+                } else {
+                    screenHeightPx - pipContainerSize.height
+                }
             }
+            val maxY = calculatedMaxY.coerceAtLeast(minY)
 
             val constrainedX = currentX.coerceIn(minX, maxX)
             val constrainedY = currentY.coerceIn(minY, maxY)
@@ -121,12 +128,22 @@ fun PlayerHost(
             val screenWidthPx = with(density) { configuration.screenWidthDp.dp.toPx() }
             val screenHeightPx = with(density) { configuration.screenHeightDp.dp.toPx() }
 
-            val initialX = screenWidthPx - pipContainerSize.width - endPaddingPx
-            val initialY = if (isCurrentBottomScreen) {
+            val minX = startPaddingPx
+            val calculatedInitialX = screenWidthPx - pipContainerSize.width - endPaddingPx
+            val initialX = calculatedInitialX.coerceAtLeast(minX)
+
+            val minY = topPaddingPx
+            val calculatedInitialY = if (!mainState.isLandscape) {
                 screenHeightPx - pipContainerSize.height - bottomPaddingPx
             } else {
-                screenHeightPx - pipContainerSize.height
+                if (isCurrentBottomScreen) {
+                    screenHeightPx - pipContainerSize.height - bottomPaddingPx
+                } else {
+                    screenHeightPx - pipContainerSize.height
+                }
             }
+            val initialY = calculatedInitialY.coerceAtLeast(minY)
+
             val initialOffset = IntOffset(initialX.roundToInt(), initialY.roundToInt())
 
             localPipOffset = initialOffset
@@ -163,13 +180,20 @@ fun PlayerHost(
                     val screenHeightPx = with(density) { configuration.screenHeightDp.dp.toPx() }
 
                     val minX = startPaddingPx
-                    val maxX = screenWidthPx - pipContainerSize.width - endPaddingPx
+                    val calculatedMaxX = screenWidthPx - pipContainerSize.width - endPaddingPx
+                    val maxX = calculatedMaxX.coerceAtLeast(minX)
+
                     val minY = topPaddingPx
-                    val maxY = if (isCurrentBottomScreen) {
+                    val calculatedMaxY = if (!mainState.isLandscape) {
                         screenHeightPx - pipContainerSize.height - bottomPaddingPx
                     } else {
-                        screenHeightPx - pipContainerSize.height
+                        if (isCurrentBottomScreen) {
+                            screenHeightPx - pipContainerSize.height - bottomPaddingPx
+                        } else {
+                            screenHeightPx - pipContainerSize.height
+                        }
                     }
+                    val maxY = calculatedMaxY.coerceAtLeast(minY)
 
                     val constrainedX = newOffset.x.toFloat().coerceIn(minX, maxX)
                     val constrainedY = newOffset.y.toFloat().coerceIn(minY, maxY)
