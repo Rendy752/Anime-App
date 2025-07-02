@@ -1,10 +1,6 @@
 package com.luminoverse.animevibe.ui.main
 
-import android.app.PictureInPictureParams
 import android.content.Intent
-import android.util.Log
-import android.view.WindowManager
-import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
@@ -45,8 +41,6 @@ import com.luminoverse.animevibe.ui.animeRecommendations.AnimeRecommendationsScr
 import com.luminoverse.animevibe.ui.animeRecommendations.AnimeRecommendationsViewModel
 import com.luminoverse.animevibe.ui.animeSearch.AnimeSearchScreen
 import com.luminoverse.animevibe.ui.animeSearch.AnimeSearchViewModel
-import com.luminoverse.animevibe.ui.animeWatch.AnimeWatchViewModel
-import com.luminoverse.animevibe.ui.animeWatch.WatchAction
 import com.luminoverse.animevibe.ui.common.SharedImagePreviewer
 import com.luminoverse.animevibe.ui.episodeHistory.EpisodeHistoryScreen
 import com.luminoverse.animevibe.ui.episodeHistory.EpisodeHistoryViewModel
@@ -59,7 +53,6 @@ import com.luminoverse.animevibe.ui.settings.SettingsScreen
 import com.luminoverse.animevibe.ui.settings.SettingsViewModel
 import com.luminoverse.animevibe.utils.basicContainer
 import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
-import com.luminoverse.animevibe.utils.media.PipUtil.buildPipActions
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -137,12 +130,7 @@ fun MainScreen(
                                         navController.graph.startDestinationId,
                                         inclusive = false
                                     )
-                                    navController.navigateTo(
-                                        NavRoute.AnimeWatch.fromParams(
-                                            malId,
-                                            episodeId
-                                        )
-                                    )
+                                    mainAction.invoke(MainAction.PlayEpisode(malId, episodeId))
                                 } else {
                                     mainAction(
                                         MainAction.ShowSnackbar(
@@ -299,6 +287,9 @@ fun MainScreen(
                         EpisodeHistoryScreen(
                             currentRoute = currentRoute,
                             navController = navController,
+                            playEpisode = { malId, episodeId ->
+                                mainAction.invoke(MainAction.PlayEpisode(malId, episodeId))
+                            },
                             rememberedTopPadding = rememberedTopPadding,
                             showSnackbar = { mainAction.invoke(MainAction.ShowSnackbar(it)) },
                             mainState = mainState,
@@ -329,6 +320,9 @@ fun MainScreen(
                         AnimeDetailScreen(
                             id = backStackEntry.arguments?.getInt("id") ?: 0,
                             navController = navController,
+                            playEpisode = { malId, episodeId ->
+                                mainAction.invoke(MainAction.PlayEpisode(malId, episodeId))
+                            },
                             rememberedTopPadding = rememberedTopPadding,
                             mainState = mainState,
                             showSnackbar = { mainAction.invoke(MainAction.ShowSnackbar(it)) },
@@ -338,108 +332,6 @@ fun MainScreen(
                             episodeFilterState = episodeFilterState,
                             onAction = viewModel::onAction
                         )
-                    }
-                    composable(
-                        route = NavRoute.AnimeWatch.ROUTE_PATTERN,
-                        arguments = NavRoute.AnimeWatch(0, "").arguments
-                    ) { backStackEntry ->
-                        val viewModel: AnimeWatchViewModel = hiltViewModel()
-                        val watchState by viewModel.watchState.collectAsStateWithLifecycle()
-                        val playerUiState by viewModel.playerUiState.collectAsStateWithLifecycle()
-                        val playerCoreState by viewModel.playerCoreState.collectAsStateWithLifecycle()
-
-                        val activity = LocalActivity.current as? MainActivity
-
-                        DisposableEffect(activity) {
-                            val onPictureInPictureModeChangedCallback: (Boolean) -> Unit =
-                                { isInPipMode ->
-                                    viewModel.onAction(WatchAction.SetPipMode(isInPipMode))
-                                    Log.d(
-                                        "MainScreen",
-                                        "PiP mode changed: isInPipMode=$isInPipMode"
-                                    )
-                                    Unit
-                                }
-                            activity?.addOnPictureInPictureModeChangedListener(
-                                onPictureInPictureModeChangedCallback
-                            )
-                            onDispose {
-                                activity?.removeOnPictureInPictureModeChangedListener(
-                                    onPictureInPictureModeChangedCallback
-                                )
-                            }
-                        }
-
-                        val isPlaying by remember { derivedStateOf { playerCoreState.isPlaying } }
-                        LaunchedEffect(isPlaying) {
-                            activity?.window?.let { window ->
-                                if (isPlaying && !playerUiState.isPipMode) {
-                                    window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                                } else {
-                                    window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                                }
-                            }
-                            if (playerUiState.isPipMode && activity != null) {
-                                Log.d(
-                                    "MainScreen",
-                                    "Updating PiP params: isPlaying=${playerCoreState.isPlaying}"
-                                )
-                                val actions = buildPipActions(activity, playerCoreState.isPlaying)
-                                activity.setPictureInPictureParams(
-                                    PictureInPictureParams.Builder()
-                                        .setActions(actions)
-                                        .build()
-                                )
-                            }
-                        }
-
-                        DisposableEffect(Unit) {
-                            onDispose {
-                                activity?.setPictureInPictureParams(
-                                    PictureInPictureParams.Builder().build()
-                                )
-                                activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-                            }
-                        }
-
-//                    AnimeWatchScreen(
-//                        malId = backStackEntry.arguments?.getInt("malId") ?: 0,
-//                        episodeId = backStackEntry.arguments?.getString("episodeId") ?: "",
-//                        navController = navController,
-//                        rememberTopPadding = rememberedTopPadding,
-//                        networkDataSource = viewModel.networkDataSource,
-//                        mainState = mainState,
-//                        showSnackbar = { mainAction.invoke(MainAction.ShowSnackbar(it)) },
-//                        enterCustomPipMode = { malId, episodeId ->
-//                            mainAction(MainAction.EnterCustomPipMode(malId, episodeId))
-//                        },
-//                        dismissSnackbar = { mainAction.invoke(MainAction.DismissSnackbar) },
-//                        watchState = watchState,
-//                        playerUiState = playerUiState,
-//                        snackbarFlow = viewModel.snackbarFlow,
-//                        hlsPlayerCoreState = playerCoreState,
-//                        hlsControlsStateFlow = viewModel.controlsState,
-//                        onAction = viewModel::onAction,
-//                        dispatchPlayerAction = viewModel::dispatchPlayerAction,
-//                        getPlayer = viewModel::getPlayer,
-//                        captureScreenshot = { viewModel.captureScreenshot() },
-//                        onEnterPipMode = {
-//                            if (activity != null) {
-//                                Log.d(
-//                                    "MainScreen",
-//                                    "Entering PiP: isPlaying=${playerCoreState.isPlaying}"
-//                                )
-//                                val actions =
-//                                    buildPipActions(activity, playerCoreState.isPlaying)
-//                                activity.enterPictureInPictureMode(
-//                                    PictureInPictureParams.Builder()
-//                                        .setActions(actions)
-//                                        .build()
-//                                )
-//                                viewModel.onAction(WatchAction.SetPipMode(true))
-//                            }
-//                        }
-//                    )
                     }
                 }
                 AnimatedVisibility(
@@ -488,16 +380,18 @@ fun MainScreen(
                     }
                 )
             }
-
         }
-        mainState.playerState?.let { pState ->
+        mainState.playerState?.let { playerState ->
             PlayerHost(
-                playerState = pState,
+                playerState = playerState,
                 mainState = mainState,
                 onAction = mainAction,
                 hlsPlayerUtils = hlsPlayerUtils,
+                isCurrentBottomScreen = isCurrentBottomScreen,
                 rememberedTopPadding = rememberedTopPadding,
                 rememberedBottomPadding = rememberedBottomPadding,
+                startPadding = contentPadding.calculateStartPadding(layoutDirection),
+                endPadding = contentPadding.calculateEndPadding(layoutDirection),
                 navController = navController
             )
         }

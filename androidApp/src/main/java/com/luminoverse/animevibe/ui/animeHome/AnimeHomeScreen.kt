@@ -240,7 +240,7 @@ fun AnimeHomeScreen(
                         Box(
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)
-                                .padding(bottom = 80.dp)
+                                .padding(bottom = 40.dp)
                         ) {
                             ContinueWatchingAnime(
                                 episodeDetailComplement = continueWatchingEpisode,

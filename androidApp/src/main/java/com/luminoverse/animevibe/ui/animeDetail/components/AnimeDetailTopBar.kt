@@ -28,8 +28,6 @@ import com.luminoverse.animevibe.models.AnimeDetailComplement
 import com.luminoverse.animevibe.models.AnimeDetailResponse
 import com.luminoverse.animevibe.ui.common.DebouncedIconButton
 import com.luminoverse.animevibe.ui.common.SkeletonBox
-import com.luminoverse.animevibe.ui.main.navigation.NavRoute
-import com.luminoverse.animevibe.ui.main.navigation.navigateTo
 import com.luminoverse.animevibe.utils.resource.Resource
 import com.luminoverse.animevibe.utils.ShareUtils
 
@@ -39,6 +37,7 @@ fun AnimeDetailTopBar(
     animeDetail: Resource<AnimeDetailResponse>?,
     animeDetailComplement: Resource<AnimeDetailComplement?>?,
     navController: NavController,
+    playEpisode: (Int, String) -> Unit,
     onFavoriteToggle: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
@@ -117,12 +116,10 @@ fun AnimeDetailTopBar(
                     animeDetailComplement.data.let { animeDetailComplement ->
                         animeDetailComplement?.episodes?.let { episodes ->
                             IconButton(onClick = {
-                                navController.navigateTo(
-                                    NavRoute.AnimeWatch.fromParams(
-                                        malId = animeDetailData.mal_id,
-                                        episodeId = animeDetailComplement.lastEpisodeWatchedId
-                                            ?: episodes.first().id
-                                    )
+                                playEpisode(
+                                    animeDetailData.mal_id,
+                                    animeDetailComplement.lastEpisodeWatchedId
+                                        ?: episodes.first().id
                                 )
                             }) {
                                 Icon(

@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.luminoverse.animevibe.ui.main.PlayerDisplayMode
 import com.luminoverse.animevibe.utils.media.CaptionCue
 import java.util.regex.Pattern
 
@@ -38,6 +39,7 @@ fun CustomSubtitleView(
     modifier: Modifier = Modifier,
     cues: List<CaptionCue>?,
     isLandscape: Boolean,
+    displayMode: PlayerDisplayMode,
     isPipMode: Boolean
 ) {
     if (cues.isNullOrEmpty()) return
@@ -56,6 +58,7 @@ fun CustomSubtitleView(
                 SubtitleText(
                     text = topCue.text,
                     isLandscape = isLandscape,
+                    displayMode = displayMode,
                     isPipMode = isPipMode
                 )
             }
@@ -71,6 +74,7 @@ fun CustomSubtitleView(
                     SubtitleText(
                         text = cue.text,
                         isLandscape = isLandscape,
+                        displayMode = displayMode,
                         isPipMode = isPipMode
                     )
                 }
@@ -91,12 +95,13 @@ fun CustomSubtitleView(
 private fun SubtitleText(
     text: String,
     isLandscape: Boolean,
+    displayMode: PlayerDisplayMode,
     isPipMode: Boolean
 ) {
     val annotatedString = rememberVttAnnotatedString(text = text)
 
     val fontSize = when {
-        isPipMode -> 10.sp
+        isPipMode || displayMode == PlayerDisplayMode.PIP-> 10.sp
         isLandscape -> 16.sp
         else -> 12.sp
     }

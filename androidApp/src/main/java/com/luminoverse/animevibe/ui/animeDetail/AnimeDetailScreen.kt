@@ -36,6 +36,7 @@ import kotlinx.coroutines.launch
 fun AnimeDetailScreen(
     id: Int,
     navController: NavHostController,
+    playEpisode: (Int, String) -> Unit,
     rememberedTopPadding: Dp,
     mainState: MainState,
     showSnackbar: (SnackbarMessage) -> Unit,
@@ -86,6 +87,7 @@ fun AnimeDetailScreen(
             animeDetail = detailState.animeDetail,
             animeDetailComplement = detailState.animeDetailComplement,
             navController = navController,
+            playEpisode = playEpisode,
             onFavoriteToggle = { onAction(DetailAction.ToggleFavorite(it)) }
         )
         HorizontalDivider(
@@ -108,6 +110,7 @@ fun AnimeDetailScreen(
                     detailState = detailState,
                     episodeFilterState = episodeFilterState,
                     navController = navController,
+                    playEpisode = playEpisode,
                     context = context,
                     isLandscape = mainState.isLandscape,
                     portraitScrollState = portraitScrollState,

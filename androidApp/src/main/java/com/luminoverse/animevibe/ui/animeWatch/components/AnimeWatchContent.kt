@@ -71,6 +71,7 @@ fun AnimeWatchContent(
     onAction: (WatchAction) -> Unit,
     scrollState: LazyListState,
     displayMode: PlayerDisplayMode,
+    onEnterPipMode: () -> Unit,
     onEnterSystemPipMode: () -> Unit,
     modifier: Modifier
 ) {
@@ -205,6 +206,7 @@ fun AnimeWatchContent(
                             InfoContentSection(
                                 animeDetail = watchState.animeDetail,
                                 navController = navController,
+                                onEnterPipMode = onEnterPipMode
                             )
                         }
                     }
@@ -252,6 +254,7 @@ fun AnimeWatchContent(
                 InfoContentSection(
                     animeDetail = watchState.animeDetail,
                     navController = navController,
+                    onEnterPipMode = onEnterPipMode
                 )
             }
         }

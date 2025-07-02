@@ -314,7 +314,7 @@ fun VideoPlayer(
             modifier = Modifier
                 .fillMaxSize()
                 .clipToBounds()
-                .pointerInput(episodeDetailComplement.sources.link.file) {
+                .pointerInput(episodeDetailComplement.sources.link.file, displayMode) {
                     awaitEachGesture {
                         handleGestures(
                             state = videoPlayerState,
@@ -408,6 +408,7 @@ fun VideoPlayer(
                 ),
             cues = activeCaptionCue,
             isLandscape = isLandscape,
+            displayMode = displayMode,
             isPipMode = playerUiState.isPipMode
         )
 
@@ -466,7 +467,7 @@ fun VideoPlayer(
         LoadingIndicator(
             modifier = Modifier.align(Alignment.Center),
             isVisible = (updatedCoreState.value.playbackState == Player.STATE_BUFFERING || updatedCoreState.value.playbackState == Player.STATE_IDLE)
-                    && !isPlayerControlsVisible && updatedCoreState.value.error == null
+                    && !isPlayerControlsVisible && updatedCoreState.value.error == null && displayMode == PlayerDisplayMode.FULLSCREEN
         )
 
         SeekIndicator(

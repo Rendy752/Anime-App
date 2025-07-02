@@ -83,8 +83,9 @@ fun AnimeWatchScreen(
     }
     val screenOnReceiver = remember { ScreenOnReceiver { isScreenOn = true } }
 
-    LaunchedEffect(mainState.isLandscape) {
+    LaunchedEffect(mainState.isLandscape, displayMode) {
         onAction(WatchAction.SetSideSheetVisibility(false))
+        if (displayMode == PlayerDisplayMode.PIP) return@LaunchedEffect
         activity?.window?.let { window ->
             if (mainState.isLandscape) {
                 FullscreenUtils.handleFullscreenToggle(
@@ -222,6 +223,7 @@ fun AnimeWatchScreen(
                 onAction = onAction,
                 scrollState = scrollState,
                 displayMode = displayMode,
+                onEnterPipMode = onEnterPipMode,
                 onEnterSystemPipMode = onEnterSystemPipMode,
                 modifier = videoPlayerModifier,
             )
