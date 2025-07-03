@@ -6,12 +6,16 @@ import android.util.Log
 import android.view.WindowManager
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.VectorConverter
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
@@ -30,9 +34,8 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -58,6 +61,9 @@ import com.luminoverse.animevibe.ui.animeWatch.components.videoPlayer.PlayPauseL
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
 import com.luminoverse.animevibe.utils.media.PipUtil.buildPipActions
+import kotlinx.coroutines.launch
+import kotlin.math.abs
+import androidx.compose.foundation.gestures.awaitEachGesture
 
 
 @SuppressLint("ConfigurationScreenWidthHeight")
@@ -78,11 +84,14 @@ fun PlayerHost(
         Box(modifier = Modifier.fillMaxSize()) {
             val configuration = LocalConfiguration.current
             val density = LocalDensity.current
+            val scope = rememberCoroutineScope()
 
-            var localRelativeOffset by remember { mutableStateOf(playerState.pipRelativeOffset) }
+            val animatableRelativeOffset = remember { Animatable(playerState.pipRelativeOffset, Offset.VectorConverter) }
 
             LaunchedEffect(playerState.pipRelativeOffset) {
-                localRelativeOffset = playerState.pipRelativeOffset
+                if (animatableRelativeOffset.value != playerState.pipRelativeOffset) {
+                    animatableRelativeOffset.snapTo(playerState.pipRelativeOffset)
+                }
             }
 
             val topPaddingPx = with(density) { rememberedTopPadding.toPx() }
@@ -120,10 +129,10 @@ fun PlayerHost(
             val pipModifier = Modifier
                 .align(Alignment.TopStart)
                 .graphicsLayer {
-                    translationX = minX + (localRelativeOffset.x * draggableWidth)
-                    translationY = minY + (localRelativeOffset.y * draggableHeight)
+                    translationX = minX + (animatableRelativeOffset.value.x * draggableWidth)
+                    translationY = minY + (animatableRelativeOffset.value.y * draggableHeight)
                 }
-                .width(pipWidthDp) // Use the Dp value
+                .width(pipWidthDp)
                 .aspectRatio(pipAspectRatio)
                 .clip(RoundedCornerShape(8.dp))
                 .shadow(8.dp, RoundedCornerShape(8.dp))
@@ -132,22 +141,45 @@ fun PlayerHost(
                     indication = null
                 ) { onAction(MainAction.SetPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN)) }
                 .pointerInput(draggableWidth, draggableHeight) {
-                    detectDragGestures(
-                        onDragEnd = {
-                            onAction(MainAction.UpdatePlayerPipRelativeOffset(localRelativeOffset))
+                    awaitEachGesture {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        var lastVelocity = Offset.Zero
+
+                        drag(down.id) { change ->
+                            val dt = change.uptimeMillis - change.previousUptimeMillis
+                            val dp = change.position - change.previousPosition
+                            if (dt > 0) {
+                                lastVelocity = dp / dt.toFloat()
+                            }
+
+                            val dragAmount = change.position - change.previousPosition
+                            change.consume()
+
+                            scope.launch {
+                                val currentVal = animatableRelativeOffset.value
+                                val newRelativeX = (currentVal.x + (dragAmount.x / draggableWidth)).coerceIn(0f, 1f)
+                                val newRelativeY = (currentVal.y + (dragAmount.y / draggableHeight)).coerceIn(0f, 1f)
+                                animatableRelativeOffset.snapTo(Offset(newRelativeX, newRelativeY))
+                            }
                         }
-                    ) { _, dragAmount ->
-                        val currentAbsoluteX = minX + (localRelativeOffset.x * draggableWidth)
-                        val currentAbsoluteY = minY + (localRelativeOffset.y * draggableHeight)
 
-                        val newAbsoluteX = currentAbsoluteX + dragAmount.x
-                        val newAbsoluteY = currentAbsoluteY + dragAmount.y
+                        val flingVelocityThreshold = 1.5f
+                        val currentOffset = animatableRelativeOffset.value
+                        var targetOffset = currentOffset
 
-                        val newRelativeX = ((newAbsoluteX - minX) / draggableWidth).coerceIn(0f, 1f)
-                        val newRelativeY =
-                            ((newAbsoluteY - minY) / draggableHeight).coerceIn(0f, 1f)
+                        val isFlingX = abs(lastVelocity.x) > flingVelocityThreshold
+                        val isFlingY = abs(lastVelocity.y) > flingVelocityThreshold
 
-                        localRelativeOffset = Offset(newRelativeX, newRelativeY)
+                        if (isFlingX || isFlingY) {
+                            val targetX = if (isFlingX) (if (lastVelocity.x > 0) 1f else 0f) else currentOffset.x
+                            val targetY = if (isFlingY) (if (lastVelocity.y > 0) 1f else 0f) else currentOffset.y
+                            targetOffset = Offset(targetX, targetY)
+                        }
+
+                        scope.launch {
+                            animatableRelativeOffset.animateTo(targetOffset, spring())
+                            onAction(MainAction.UpdatePlayerPipRelativeOffset(animatableRelativeOffset.value))
+                        }
                     }
                 }
 

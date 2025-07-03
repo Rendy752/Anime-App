@@ -70,7 +70,7 @@ fun VideoPlayerSection(
     setPlayerError: (String) -> Unit,
     verticalDragOffset: Float,
     onVerticalDrag: (Float) -> Unit,
-    onDragEnd: () -> Unit,
+    onDragEnd: (flingVelocity: Float) -> Unit,
     pipEndDestinationPx: Offset,
     pipEndSizePx: IntSize,
     onMaxDragAmountCalculated: (Float) -> Unit

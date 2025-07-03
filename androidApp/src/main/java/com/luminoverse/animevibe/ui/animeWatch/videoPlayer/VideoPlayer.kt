@@ -116,7 +116,7 @@ fun VideoPlayer(
     isLandscape: Boolean,
     verticalDragOffset: Float,
     onVerticalDrag: (Float) -> Unit,
-    onDragEnd: () -> Unit,
+    onDragEnd: (flingVelocity: Float) -> Unit,
     pipEndDestinationPx: Offset,
     pipEndSizePx: IntSize,
     onMaxDragAmountCalculated: (Float) -> Unit
@@ -462,7 +462,7 @@ fun VideoPlayer(
                         .background(Color(0xFF14161A))
                         .then(borderModifier)
                         .then(
-                            if (!playerUiState.isPipMode) {
+                            if (!playerUiState.isPipMode && displayMode == PlayerDisplayMode.FULLSCREEN) {
                                 Modifier.graphicsLayer(
                                     scaleX = animatedZoom,
                                     scaleY = animatedZoom,

@@ -41,6 +41,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
@@ -100,14 +101,13 @@ fun AnimeWatchContent(
     val isSideSheetVisible = mainState.isLandscape && watchState.isSideSheetVisible
 
     val scope = rememberCoroutineScope()
-    val screenHeightDp = LocalConfiguration.current.screenHeightDp.dp
     val verticalDragOffset = remember { Animatable(0f) }
     var maxVerticalDrag by remember { mutableFloatStateOf(Float.POSITIVE_INFINITY) }
 
-    // This is the threshold for switching to PiP mode
-    val pipDragThreshold = screenHeightDp.value * 0.5f
-
-    val dragProgress = (verticalDragOffset.value / pipDragThreshold).coerceIn(0f, 1f)
+    val screenHeightPx =
+        with(LocalDensity.current) { LocalConfiguration.current.screenHeightDp.dp.toPx() }
+    val dismissDragThreshold = if (maxVerticalDrag.isFinite()) maxVerticalDrag else screenHeightPx
+    val dragProgress = (verticalDragOffset.value / dismissDragThreshold).coerceIn(0f, 1f)
 
     val animatedBackgroundColor by animateColorAsState(
         targetValue = MaterialTheme.colorScheme.background.copy(alpha = 1f - dragProgress),
@@ -205,19 +205,34 @@ fun AnimeWatchContent(
                         verticalDragOffset = verticalDragOffset.value,
                         onVerticalDrag = { delta ->
                             scope.launch {
-                                val newOffset = (verticalDragOffset.value + delta).coerceIn(0f, maxVerticalDrag)
+                                val newOffset =
+                                    (verticalDragOffset.value + delta).coerceIn(0f, maxVerticalDrag)
                                 verticalDragOffset.snapTo(newOffset)
                             }
                         },
-                        onDragEnd = {
+                        onDragEnd = { flingVelocity ->
                             scope.launch {
-                                val threshold = maxVerticalDrag * 0.5f
+                                val flingVelocityThreshold = 1.8f
+                                val positionThreshold = maxVerticalDrag * 0.5f
 
-                                if (maxVerticalDrag.isFinite() && verticalDragOffset.value > threshold) {
+                                if (flingVelocity > flingVelocityThreshold) {
                                     setPlayerDisplayMode(PlayerDisplayMode.PIP)
                                     verticalDragOffset.snapTo(0f)
+                                } else if (flingVelocity < -flingVelocityThreshold) {
+                                    verticalDragOffset.animateTo(
+                                        0f,
+                                        animationSpec = tween(durationMillis = 300)
+                                    )
                                 } else {
-                                    verticalDragOffset.animateTo(0f, animationSpec = tween(durationMillis = 300))
+                                    if (maxVerticalDrag.isFinite() && verticalDragOffset.value > positionThreshold) {
+                                        setPlayerDisplayMode(PlayerDisplayMode.PIP)
+                                        verticalDragOffset.snapTo(0f)
+                                    } else {
+                                        verticalDragOffset.animateTo(
+                                            0f,
+                                            animationSpec = tween(durationMillis = 300)
+                                        )
+                                    }
                                 }
                             }
                         },

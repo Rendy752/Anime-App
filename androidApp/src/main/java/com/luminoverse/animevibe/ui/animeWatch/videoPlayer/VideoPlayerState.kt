@@ -391,7 +391,7 @@ suspend fun AwaitPointerEventScope.handleGestures(
     displayMode: PlayerDisplayMode,
     updatedControlsState: State<ControlsState>,
     onVerticalDrag: (Float) -> Unit,
-    onDragEnd: () -> Unit
+    onDragEnd: (flingVelocity: Float) -> Unit
 ) {
     val down: PointerInputChange = awaitFirstDown()
 
@@ -407,6 +407,7 @@ suspend fun AwaitPointerEventScope.handleGestures(
     var isMultiTouch = false
     var isPanning = false
     var verticalDragConsumed = false
+    var lastVelocityY = 0f
 
     while (true) {
         val event = awaitPointerEvent()
@@ -502,6 +503,12 @@ suspend fun AwaitPointerEventScope.handleGestures(
                 if (abs(dy) > abs(dx) && abs(dy) > 1f) {
                     state.longPressJob?.cancel()
                     state.handleLongPressEnd()
+
+                    val dt = change.uptimeMillis - change.previousUptimeMillis
+                    if (dt > 0) {
+                        lastVelocityY = dy / dt
+                    }
+
                     onVerticalDrag(dy)
                     verticalDragConsumed = true
                     change.consume()
@@ -511,7 +518,7 @@ suspend fun AwaitPointerEventScope.handleGestures(
     }
 
     if (verticalDragConsumed) {
-        onDragEnd()
+        onDragEnd(lastVelocityY)
     } else if (isMultiTouch) {
         val halfWayRatio = (1f + state.zoomToFillRatio) / 2
         val finalZoom = if (state.zoomScaleProgress < halfWayRatio) 1f
