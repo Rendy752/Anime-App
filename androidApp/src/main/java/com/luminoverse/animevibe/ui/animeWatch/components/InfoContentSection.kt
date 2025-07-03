@@ -16,6 +16,7 @@ import com.luminoverse.animevibe.ui.common.DetailCommonBody
 import com.luminoverse.animevibe.ui.common.DetailCommonBodySkeleton
 import com.luminoverse.animevibe.ui.common.YoutubePreview
 import com.luminoverse.animevibe.ui.common.YoutubePreviewSkeleton
+import com.luminoverse.animevibe.ui.main.PlayerDisplayMode
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.main.navigation.navigateTo
 
@@ -23,7 +24,7 @@ import com.luminoverse.animevibe.ui.main.navigation.navigateTo
 fun InfoContentSection(
     animeDetail: AnimeDetail?,
     navController: NavController,
-    onEnterPipMode: () -> Unit
+    setPlayerDisplayMode: (PlayerDisplayMode) -> Unit,
 ) {
     Column(
         modifier = Modifier.padding(bottom = 8.dp),
@@ -36,7 +37,7 @@ fun InfoContentSection(
                     navController.navigateTo(
                         NavRoute.AnimeDetail.fromId(animeDetail.mal_id)
                     )
-                    onEnterPipMode()
+                    setPlayerDisplayMode(PlayerDisplayMode.PIP)
                 }
             )
             NumericDetailSection(

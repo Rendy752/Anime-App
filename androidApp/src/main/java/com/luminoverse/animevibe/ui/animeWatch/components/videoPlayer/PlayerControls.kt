@@ -22,11 +22,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
@@ -196,7 +195,7 @@ private fun TopSection(
                         .clip(CircleShape)
                         .clickable { onHandleBackPress() }
                         .padding(8.dp),
-                    imageVector = if (isLandscape) Icons.Default.Close else Icons.AutoMirrored.Filled.ArrowBack,
+                    imageVector = Icons.Default.KeyboardArrowDown,
                     contentDescription = "Return back",
                     tint = Color.White
                 )

@@ -11,6 +11,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
@@ -117,9 +118,10 @@ fun PlayerHost(
             .onSizeChanged { pipContainerSize = it }
             .clip(RoundedCornerShape(12.dp))
             .shadow(8.dp, RoundedCornerShape(12.dp))
-            .clickable {
-                onAction(MainAction.SetPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN))
-            }
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ) { onAction(MainAction.SetPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN)) }
             .pointerInput(draggableWidth, draggableHeight) {
                 detectDragGestures(
                     onDragEnd = {
@@ -221,6 +223,7 @@ fun PlayerHost(
                 malId = playerState.malId,
                 episodeId = playerState.episodeId,
                 displayMode = playerState.displayMode,
+                setPlayerDisplayMode = { onAction(MainAction.SetPlayerDisplayMode(it)) },
                 navController = navController,
                 networkDataSource = watchViewModel.networkDataSource,
                 mainState = mainState,
@@ -235,9 +238,6 @@ fun PlayerHost(
                 dispatchPlayerAction = watchViewModel::dispatchPlayerAction,
                 getPlayer = watchViewModel::getPlayer,
                 captureScreenshot = { watchViewModel.captureScreenshot() },
-                onEnterPipMode = {
-                    onAction(MainAction.SetPlayerDisplayMode(PlayerDisplayMode.PIP))
-                },
                 onEnterSystemPipMode = {
                     if (activity != null) {
                         Log.d(

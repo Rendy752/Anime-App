@@ -265,7 +265,8 @@ class VideoPlayerState(
         Log.d("PlayerView", "VideoPlayerState disposed, cleaning up resources.")
     }
 
-    fun handleSingleTap(isLocked: Boolean) {
+    fun handleSingleTap(displayMode: PlayerDisplayMode, isLocked: Boolean) {
+        if (displayMode == PlayerDisplayMode.PIP) return
         if (!isLocked && !isHolding) {
             playerAction(HlsPlayerAction.RequestToggleControlsVisibility())
             Log.d("PlayerView", "Single tap: Toggled controls visibility")
@@ -410,7 +411,7 @@ suspend fun AwaitPointerEventScope.handleGestures(
             break
         }
 
-        if (event.changes.size > 1 && !updatedControlsState.value.isLocked && !state.isFirstLoad) {
+        if (event.changes.size > 1 && !updatedControlsState.value.isLocked && !state.isFirstLoad && displayMode == PlayerDisplayMode.FULLSCREEN) {
             if (!isMultiTouch) {
                 isMultiTouch = true
                 state.isZooming = true
@@ -435,7 +436,7 @@ suspend fun AwaitPointerEventScope.handleGestures(
             state.offsetX = state.offsetX.coerceIn(-maxOffsetX, maxOffsetX)
             state.offsetY = state.offsetY.coerceIn(-maxOffsetY, maxOffsetY)
             event.changes.forEach { it.consume() }
-        } else if (event.changes.size == 1 && !isMultiTouch && updatedControlsState.value.zoom > 1f && !updatedControlsState.value.isLocked && !state.isFirstLoad) {
+        } else if (event.changes.size == 1 && !isMultiTouch && updatedControlsState.value.zoom > 1f && !updatedControlsState.value.isLocked && !state.isFirstLoad && displayMode == PlayerDisplayMode.FULLSCREEN) {
             val pan = event.calculatePan()
             if (pan.x != 0f || pan.y != 0f) {
                 if (!isDragging) {
@@ -493,7 +494,7 @@ suspend fun AwaitPointerEventScope.handleGestures(
                     updatedControlsState.value.isLocked
                 )
             } else {
-                state.handleSingleTap(updatedControlsState.value.isLocked)
+                state.handleSingleTap(displayMode, updatedControlsState.value.isLocked)
             }
             state.lastTapTime = currentTime
             state.lastTapX = tapX

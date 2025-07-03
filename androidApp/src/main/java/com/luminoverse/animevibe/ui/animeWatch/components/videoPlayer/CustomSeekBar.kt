@@ -45,19 +45,21 @@ import com.luminoverse.animevibe.models.TimeRange
 
 @Composable
 fun CustomSeekBar(
-    modifier: Modifier,
+    modifier: Modifier = Modifier,
     currentPosition: Long,
     bufferedPosition: Long,
     duration: Long,
     intro: TimeRange,
     outro: TimeRange,
-    handlePlay: () -> Unit,
-    handlePause: () -> Unit,
-    onSeekTo: (Long) -> Unit,
+    handlePlay: (() -> Unit)? = null,
+    handlePause: (() -> Unit)? = null,
+    onSeekTo: ((Long) -> Unit)? = null,
     dragCancelTrigger: Int,
-    onDraggingSeekBarChange: (Boolean, Long) -> Unit,
+    onDraggingSeekBarChange: ((Boolean, Long) -> Unit)? = null,
     seekAmount: Long,
-    isShowSeekIndicator: Int
+    isShowSeekIndicator: Int,
+    touchTargetHeight: Dp = 24.dp,
+    trackHeight: Dp = 4.dp
 ) {
     val introStart = intro.start.times(1000L)
     val introEnd = intro.end.times(1000L)
@@ -72,9 +74,7 @@ fun CustomSeekBar(
     val bufferedProgressRatio = if (duration > 0) bufferedPosition.toFloat() / duration else 0f
     val density = LocalDensity.current
 
-    val touchTargetHeight: Dp = 24.dp
     val thumbSize: Dp = 10.dp
-    val trackHeight: Dp = 4.dp
 
     val animatedThumbSize by animateDpAsState(
         targetValue = if (isDragging || isHolding) thumbSize * 1.8f else thumbSize,
@@ -97,8 +97,7 @@ fun CustomSeekBar(
             if (isShowSeekIndicator != 0) {
                 val targetPosition =
                     (currentPosition + (seekAmount * isShowSeekIndicator)).coerceIn(
-                        0L,
-                        duration
+                        0L, duration
                     )
                 dragPosition = targetPosition.toFloat()
             } else {
@@ -109,7 +108,7 @@ fun CustomSeekBar(
 
     LaunchedEffect(isDragging, dragPosition, isShowSeekIndicator) {
         val isSeeking = isDragging || isShowSeekIndicator != 0
-        onDraggingSeekBarChange(isSeeking, dragPosition.toLong())
+        onDraggingSeekBarChange?.invoke(isSeeking, dragPosition.toLong())
     }
 
     LaunchedEffect(dragCancelTrigger) {
@@ -126,39 +125,43 @@ fun CustomSeekBar(
             .onSizeChanged { size ->
                 trackWidthPx = size.width.toFloat()
             }
-            .pointerInput(dragCancelTrigger) {
-                awaitEachGesture {
-                    val down = awaitFirstDown()
-                    isHolding = true
+            .then(
+                if (onDraggingSeekBarChange == null) Modifier
+                else Modifier
+                    .pointerInput(dragCancelTrigger) {
+                        awaitEachGesture {
+                            val down = awaitFirstDown()
+                            isHolding = true
 
-                    val dragStart = awaitDragOrCancellation(down.id)
+                            val dragStart = awaitDragOrCancellation(down.id)
 
-                    if (dragStart != null) {
-                        isDragging = true
-                        handlePause()
-                        val initialThumbPosOnDrag = dragPosition
+                            if (dragStart != null) {
+                                isDragging = true
+                                handlePause?.invoke()
+                                val initialThumbPosOnDrag = dragPosition
 
-                        drag(dragStart.id) { change: PointerInputChange ->
-                            isHolding = false
-                            if (duration > 0 && trackWidthPx > 0) {
-                                val dragAmount = change.position.x - dragStart.position.x
-                                val timeDelta = (dragAmount / trackWidthPx) * duration
-                                val newPosition = (initialThumbPosOnDrag + timeDelta)
-                                    .coerceIn(0f, duration.toFloat())
-                                dragPosition = newPosition
+                                drag(dragStart.id) { change: PointerInputChange ->
+                                    isHolding = false
+                                    if (duration > 0 && trackWidthPx > 0) {
+                                        val dragAmount = change.position.x - dragStart.position.x
+                                        val timeDelta = (dragAmount / trackWidthPx) * duration
+                                        val newPosition = (initialThumbPosOnDrag + timeDelta)
+                                            .coerceIn(0f, duration.toFloat())
+                                        dragPosition = newPosition
+                                    }
+                                    change.consume()
+                                }
+
+                                isDragging = false
+                                val finalSeekPosition = dragPosition.toLong().coerceIn(0, duration)
+                                if (!isHolding) onSeekTo?.invoke(finalSeekPosition)
+                                handlePlay?.invoke()
                             }
-                            change.consume()
+
+                            isHolding = false
                         }
-
-                        isDragging = false
-                        val finalSeekPosition = dragPosition.toLong().coerceIn(0, duration)
-                        if (!isHolding) onSeekTo(finalSeekPosition)
-                        handlePlay()
                     }
-
-                    isHolding = false
-                }
-            }
+            )
     ) {
         Box(
             modifier = Modifier
@@ -248,30 +251,32 @@ fun CustomSeekBar(
                 .align(Alignment.CenterStart)
         )
 
-        val thumbOffset = with(density) {
-            val currentThumbPositionPx = progressWidth * trackWidthPx
-            (currentThumbPositionPx - (animatedThumbSize.toPx() / 2f)).toDp()
-        }
-
-        val thumbBrush = if (isDragging || isHolding) {
-            with(density) {
-                Brush.radialGradient(
-                    colors = listOf(Color.White, Color.White.copy(alpha = 0f)),
-                    center = Offset.Unspecified,
-                    radius = animatedThumbSize.toPx() / 2
-                )
+        if (onDraggingSeekBarChange != null) {
+            val thumbOffset = with(density) {
+                val currentThumbPositionPx = progressWidth * trackWidthPx
+                (currentThumbPositionPx - (animatedThumbSize.toPx() / 2f)).toDp()
             }
-        } else {
-            SolidColor(Color.White)
-        }
 
-        Box(
-            modifier = Modifier
-                .offset(x = thumbOffset)
-                .size(animatedThumbSize)
-                .clip(CircleShape)
-                .background(brush = thumbBrush)
-                .align(Alignment.CenterStart)
-        )
+            val thumbBrush = if (isDragging || isHolding) {
+                with(density) {
+                    Brush.radialGradient(
+                        colors = listOf(Color.White, Color.White.copy(alpha = 0f)),
+                        center = Offset.Unspecified,
+                        radius = animatedThumbSize.toPx() / 2
+                    )
+                }
+            } else {
+                SolidColor(Color.White)
+            }
+
+            Box(
+                modifier = Modifier
+                    .offset(x = thumbOffset)
+                    .size(animatedThumbSize)
+                    .clip(CircleShape)
+                    .background(brush = thumbBrush)
+                    .align(Alignment.CenterStart)
+            )
+        }
     }
 }

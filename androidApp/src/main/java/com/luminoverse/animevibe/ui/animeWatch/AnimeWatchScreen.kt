@@ -50,6 +50,8 @@ import kotlinx.coroutines.flow.collectLatest
 fun AnimeWatchScreen(
     malId: Int,
     episodeId: String,
+    displayMode: PlayerDisplayMode,
+    setPlayerDisplayMode: (PlayerDisplayMode) -> Unit,
     navController: NavHostController,
     networkDataSource: NetworkDataSource,
     mainState: MainState,
@@ -64,8 +66,6 @@ fun AnimeWatchScreen(
     dispatchPlayerAction: (HlsPlayerAction) -> Unit,
     getPlayer: () -> ExoPlayer?,
     captureScreenshot: suspend () -> String?,
-    displayMode: PlayerDisplayMode,
-    onEnterPipMode: () -> Unit,
     onEnterSystemPipMode: () -> Unit
 ) {
     val scope = rememberCoroutineScope()
@@ -115,7 +115,7 @@ fun AnimeWatchScreen(
         } else {
             watchState.animeDetail?.mal_id?.let { malId ->
                 watchState.episodeDetailComplement?.id?.let { episodeId ->
-                    onEnterPipMode()
+                    setPlayerDisplayMode(PlayerDisplayMode.PIP)
                 }
             }
         }
@@ -223,7 +223,7 @@ fun AnimeWatchScreen(
                 onAction = onAction,
                 scrollState = scrollState,
                 displayMode = displayMode,
-                onEnterPipMode = onEnterPipMode,
+                setPlayerDisplayMode = setPlayerDisplayMode,
                 onEnterSystemPipMode = onEnterSystemPipMode,
                 modifier = videoPlayerModifier,
             )

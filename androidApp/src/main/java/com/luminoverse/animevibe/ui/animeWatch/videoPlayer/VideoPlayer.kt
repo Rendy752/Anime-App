@@ -39,6 +39,7 @@ import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
 import com.luminoverse.animevibe.ui.animeWatch.PlayerUiState
+import com.luminoverse.animevibe.ui.animeWatch.components.videoPlayer.CustomSeekBar
 import com.luminoverse.animevibe.ui.animeWatch.components.videoPlayer.CustomSubtitleView
 import com.luminoverse.animevibe.ui.animeWatch.components.videoPlayer.LoadingIndicator
 import com.luminoverse.animevibe.ui.animeWatch.components.videoPlayer.LockButton
@@ -316,11 +317,20 @@ fun VideoPlayer(
                 .clipToBounds()
                 .pointerInput(episodeDetailComplement.sources.link.file, displayMode) {
                     awaitEachGesture {
-                        handleGestures(
-                            state = videoPlayerState,
-                            displayMode = displayMode,
-                            updatedControlsState = updatedControlsState
-                        )
+                        try {
+                            handleGestures(
+                                state = videoPlayerState,
+                                displayMode = displayMode,
+                                updatedControlsState = updatedControlsState
+                            )
+                        } finally {
+                            if (videoPlayerState.isHolding) {
+                                videoPlayerState.handleLongPressEnd()
+                            }
+                            if (videoPlayerState.isZooming) {
+                                videoPlayerState.isZooming = false
+                            }
+                        }
                     }
                 }
         ) {
@@ -362,6 +372,25 @@ fun VideoPlayer(
                     }
                 )
             }
+        }
+
+        AnimatedVisibility(
+            modifier = Modifier.align(Alignment.BottomCenter),
+            visible = displayMode == PlayerDisplayMode.PIP, enter = fadeIn(), exit = fadeOut()
+        ) {
+            CustomSeekBar(
+                currentPosition = currentPosition,
+                bufferedPosition = player.bufferedPosition,
+                duration = player.duration.takeIf { it > 0 }
+                    ?: episodeDetailComplement.duration ?: 0,
+                intro = episodeDetailComplement.sources.intro,
+                outro = episodeDetailComplement.sources.outro,
+                seekAmount = videoPlayerState.seekAmount * 1000L,
+                dragCancelTrigger = videoPlayerState.dragCancelTrigger,
+                isShowSeekIndicator = videoPlayerState.isShowSeekIndicator,
+                touchTargetHeight = 2.dp,
+                trackHeight = 2.dp
+            )
         }
 
         val isPlayerControlsVisible =
