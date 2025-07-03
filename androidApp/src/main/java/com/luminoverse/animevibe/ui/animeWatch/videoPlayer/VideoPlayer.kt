@@ -157,7 +157,7 @@ fun VideoPlayer(
 
     val shouldShowResumeOverlay = !isAutoplayEnabled && playerUiState.isShowResume &&
             episodeDetailComplement.lastTimestamp != null &&
-            updatedCoreState.value.playbackState == Player.STATE_READY && !player.isPlaying
+            updatedCoreState.value.playbackState == Player.STATE_READY && !updatedCoreState.value.isPlaying
 
     LaunchedEffect(updatedCoreState.value.isPlaying) {
         if (updatedCoreState.value.isPlaying) {
@@ -398,7 +398,7 @@ fun VideoPlayer(
 
         thumbnailTrackUrl?.let { url ->
             val showThumbnail =
-                isBufferingFromSeeking || (!player.isPlaying && videoPlayerState.isDraggingSeekBar && !videoPlayerState.isFirstLoad)
+                isBufferingFromSeeking || (!updatedCoreState.value.isPlaying && videoPlayerState.isDraggingSeekBar && !videoPlayerState.isFirstLoad)
             val thumbnailSeekPositionKey =
                 remember(videoPlayerState.dragSeekPosition) { (videoPlayerState.dragSeekPosition / 10000L) * 10000L }
 
@@ -443,7 +443,7 @@ fun VideoPlayer(
 
         AnimatedVisibility(visible = isPlayerControlsVisible, enter = fadeIn(), exit = fadeOut()) {
             PlayerControls(
-                isPlaying = player.isPlaying,
+                isPlaying = updatedCoreState.value.isPlaying,
                 currentPosition = currentPosition,
                 bufferedPosition = player.bufferedPosition,
                 duration = player.duration.takeIf { it > 0 }
