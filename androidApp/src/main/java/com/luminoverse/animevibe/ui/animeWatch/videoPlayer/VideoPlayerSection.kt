@@ -19,7 +19,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.IntSize
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
@@ -68,7 +70,10 @@ fun VideoPlayerSection(
     setPlayerError: (String) -> Unit,
     verticalDragOffset: Float,
     onVerticalDrag: (Float) -> Unit,
-    onDragEnd: () -> Unit
+    onDragEnd: () -> Unit,
+    pipEndDestinationPx: Offset,
+    pipEndSizePx: IntSize,
+    onMaxDragAmountCalculated: (Float) -> Unit
 ) {
     val context = LocalContext.current
 
@@ -220,7 +225,10 @@ fun VideoPlayerSection(
             isLandscape = isLandscape,
             verticalDragOffset = verticalDragOffset,
             onVerticalDrag = onVerticalDrag,
-            onDragEnd = onDragEnd
+            onDragEnd = onDragEnd,
+            pipEndDestinationPx = pipEndDestinationPx,
+            pipEndSizePx = pipEndSizePx,
+            onMaxDragAmountCalculated = onMaxDragAmountCalculated
         )
     }
 }

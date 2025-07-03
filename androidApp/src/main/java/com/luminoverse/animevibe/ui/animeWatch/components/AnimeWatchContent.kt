@@ -29,17 +29,21 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.times
@@ -88,16 +92,22 @@ fun AnimeWatchContent(
     onEnterSystemPipMode: () -> Unit,
     rememberedTopPadding: Dp,
     rememberedBottomPadding: Dp,
-    modifier: Modifier
+    pipEndDestinationPx: Offset,
+    pipEndSizePx: IntSize,
+    modifier: Modifier,
 ) {
     val serverScrollState = rememberScrollState()
     val isSideSheetVisible = mainState.isLandscape && watchState.isSideSheetVisible
 
     val scope = rememberCoroutineScope()
-    val screenHeight = LocalConfiguration.current.screenHeightDp.dp
+    val screenHeightDp = LocalConfiguration.current.screenHeightDp.dp
     val verticalDragOffset = remember { Animatable(0f) }
+    var maxVerticalDrag by remember { mutableFloatStateOf(Float.POSITIVE_INFINITY) }
 
-    val dragProgress = (verticalDragOffset.value / (screenHeight.value * 0.5f)).coerceIn(0f, 1f)
+    // This is the threshold for switching to PiP mode
+    val pipDragThreshold = screenHeightDp.value * 0.5f
+
+    val dragProgress = (verticalDragOffset.value / pipDragThreshold).coerceIn(0f, 1f)
 
     val animatedBackgroundColor by animateColorAsState(
         targetValue = MaterialTheme.colorScheme.background.copy(alpha = 1f - dragProgress),
@@ -195,22 +205,25 @@ fun AnimeWatchContent(
                         verticalDragOffset = verticalDragOffset.value,
                         onVerticalDrag = { delta ->
                             scope.launch {
-                                verticalDragOffset.snapTo(verticalDragOffset.value + delta)
+                                val newOffset = (verticalDragOffset.value + delta).coerceIn(0f, maxVerticalDrag)
+                                verticalDragOffset.snapTo(newOffset)
                             }
                         },
                         onDragEnd = {
                             scope.launch {
-                                if (verticalDragOffset.value > screenHeight.value * 0.5f) {
+                                val threshold = maxVerticalDrag * 0.5f
+
+                                if (maxVerticalDrag.isFinite() && verticalDragOffset.value > threshold) {
                                     setPlayerDisplayMode(PlayerDisplayMode.PIP)
                                     verticalDragOffset.snapTo(0f)
                                 } else {
-                                    verticalDragOffset.animateTo(
-                                        0f,
-                                        animationSpec = tween(durationMillis = 300)
-                                    )
+                                    verticalDragOffset.animateTo(0f, animationSpec = tween(durationMillis = 300))
                                 }
                             }
-                        }
+                        },
+                        pipEndDestinationPx = pipEndDestinationPx,
+                        pipEndSizePx = pipEndSizePx,
+                        onMaxDragAmountCalculated = { maxVerticalDrag = it }
                     )
                 }
             }

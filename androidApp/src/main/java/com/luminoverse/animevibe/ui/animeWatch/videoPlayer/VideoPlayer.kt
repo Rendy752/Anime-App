@@ -24,13 +24,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.lerp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -71,6 +74,8 @@ import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
 import com.luminoverse.animevibe.utils.media.findActiveCaptionCues
 import com.luminoverse.animevibe.utils.resource.Resource
+import com.luminoverse.animevibe.utils.media.BoundsUtils.calculateOffsetBounds
+import kotlin.math.min
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
 
@@ -111,7 +116,10 @@ fun VideoPlayer(
     isLandscape: Boolean,
     verticalDragOffset: Float,
     onVerticalDrag: (Float) -> Unit,
-    onDragEnd: () -> Unit
+    onDragEnd: () -> Unit,
+    pipEndDestinationPx: Offset,
+    pipEndSizePx: IntSize,
+    onMaxDragAmountCalculated: (Float) -> Unit
 ) {
     val context = LocalContext.current
     val activity = context as? Activity
@@ -125,6 +133,50 @@ fun VideoPlayer(
         )
     val controlsState by controlsStateFlow.collectAsStateWithLifecycle()
     val currentPosition by videoPlayerState.currentPosition.collectAsStateWithLifecycle()
+
+    val playerHeight = videoPlayerState.playerSize.height.toFloat()
+
+    val finalTranslationY = remember(playerHeight, pipEndDestinationPx, pipEndSizePx) {
+        if (playerHeight > 0f) {
+            (pipEndDestinationPx.y + pipEndSizePx.height / 2f) - (playerHeight / 2f)
+        } else {
+            Float.POSITIVE_INFINITY
+        }
+    }
+
+    LaunchedEffect(finalTranslationY) {
+        if (finalTranslationY != Float.POSITIVE_INFINITY) {
+            onMaxDragAmountCalculated(finalTranslationY)
+        }
+    }
+
+    LaunchedEffect(isLandscape, videoPlayerState.playerSize, videoPlayerState.zoomScaleProgress) {
+        val playerSize = videoPlayerState.playerSize
+        val videoSize = videoPlayerState.videoSize
+        val scale = videoPlayerState.zoomScaleProgress
+
+        if (playerSize.width > 0 && playerSize.height > 0 && videoSize.width > 0 && videoSize.height > 0 && scale > 1f) {
+            val containerWidth = playerSize.width.toFloat()
+            val containerHeight = playerSize.height.toFloat()
+            val containerAspect = containerWidth / containerHeight
+            val videoAspect = videoSize.width.toFloat() / videoSize.height.toFloat()
+
+            val fittedVideoSize = if (videoAspect > containerAspect) {
+                Size(width = containerWidth, height = containerWidth / videoAspect)
+            } else {
+                Size(width = containerHeight * videoAspect, height = containerHeight)
+            }
+
+            val (maxOffsetX, maxOffsetY) = calculateOffsetBounds(
+                containerSize = playerSize,
+                imageSize = fittedVideoSize,
+                scale = scale
+            )
+
+            videoPlayerState.offsetX = videoPlayerState.offsetX.coerceIn(-maxOffsetX, maxOffsetY)
+            videoPlayerState.offsetY = videoPlayerState.offsetY.coerceIn(-maxOffsetY, maxOffsetY)
+        }
+    }
 
     val thumbnailTrackUrl =
         episodeDetailComplement.sources.tracks.find { it.kind == "thumbnails" }?.file
@@ -316,9 +368,6 @@ fun VideoPlayer(
 
     val isCommonPartVisible = !playerUiState.isPipMode && !updatedControlsState.value.isLocked
 
-    val screenHeight = LocalConfiguration.current.screenHeightDp.dp
-    val animatedScale = (1f - (verticalDragOffset / screenHeight.value * 0.5f)).coerceIn(0.5f, 1f)
-
     val animatedCornerRadius by animateDpAsState(
         targetValue = if (verticalDragOffset > 0) 8.dp else 0.dp,
         animationSpec = tween(durationMillis = 300),
@@ -330,9 +379,32 @@ fun VideoPlayer(
             .onSizeChanged { videoPlayerState.playerSize = it }
             .graphicsLayer {
                 if (displayMode == PlayerDisplayMode.FULLSCREEN) {
-                    translationY = verticalDragOffset
-                    scaleX = animatedScale
-                    scaleY = animatedScale
+                    val playerWidth = videoPlayerState.playerSize.width.toFloat()
+                    val pHeight = videoPlayerState.playerSize.height.toFloat()
+
+                    if (playerWidth > 0f && pHeight > 0f) {
+                        val targetScale = min(
+                            pipEndSizePx.width / playerWidth,
+                            pipEndSizePx.height / pHeight
+                        )
+
+                        val finalTranslationX =
+                            (pipEndDestinationPx.x + pipEndSizePx.width / 2f) - (playerWidth / 2f)
+
+                        val progress = if (finalTranslationY > 0f) {
+                            (verticalDragOffset / finalTranslationY).coerceIn(0f, 1f)
+                        } else {
+                            0f
+                        }
+
+                        val currentScale = lerp(1f, targetScale, progress)
+                        val currentTranslationX = lerp(0f, finalTranslationX, progress)
+
+                        translationY = verticalDragOffset
+                        translationX = currentTranslationX
+                        scaleX = currentScale
+                        scaleY = currentScale
+                    }
                 }
             }
     ) {
@@ -341,7 +413,11 @@ fun VideoPlayer(
                 .fillMaxSize()
                 .clip(RoundedCornerShape(animatedCornerRadius))
                 .clipToBounds()
-                .pointerInput(episodeDetailComplement.sources.link.file, displayMode) {
+                .pointerInput(
+                    episodeDetailComplement.sources.link.file,
+                    displayMode,
+                    updatedControlsState.value.zoom
+                ) {
                     awaitEachGesture {
                         try {
                             handleGestures(

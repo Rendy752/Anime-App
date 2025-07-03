@@ -6,6 +6,7 @@ import android.util.Log
 import android.view.WindowManager
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
@@ -40,7 +41,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -78,7 +78,6 @@ fun PlayerHost(
         Box(modifier = Modifier.fillMaxSize()) {
             val configuration = LocalConfiguration.current
             val density = LocalDensity.current
-            var pipContainerSize by remember { mutableStateOf(IntSize.Zero) }
 
             var localRelativeOffset by remember { mutableStateOf(playerState.pipRelativeOffset) }
 
@@ -94,21 +93,29 @@ fun PlayerHost(
             val screenWidthPx = with(density) { configuration.screenWidthDp.dp.toPx() }
             val screenHeightPx = with(density) { configuration.screenHeightDp.dp.toPx() }
 
+            val pipWidthDp = 250.dp
+            val pipAspectRatio = 16f / 9f
+            val pipWidthPx = with(density) { pipWidthDp.toPx() }
+            val pipHeightPx = with(density) { (pipWidthDp / pipAspectRatio).toPx() }
+
             val minX = startPaddingPx
-            val maxX = (screenWidthPx - pipContainerSize.width - endPaddingPx).coerceAtLeast(minX)
+            val maxX = (screenWidthPx - pipWidthPx - endPaddingPx).coerceAtLeast(minX)
             val draggableWidth = (maxX - minX).coerceAtLeast(1f)
 
             val minY = topPaddingPx
             val maxY = if (!mainState.isLandscape) {
-                (screenHeightPx - pipContainerSize.height - bottomPaddingPx).coerceAtLeast(minY)
+                (screenHeightPx - pipHeightPx - bottomPaddingPx).coerceAtLeast(minY)
             } else {
                 if (isCurrentBottomScreen) {
-                    (screenHeightPx - pipContainerSize.height - bottomPaddingPx).coerceAtLeast(minY)
+                    (screenHeightPx - pipHeightPx - bottomPaddingPx).coerceAtLeast(minY)
                 } else {
-                    (screenHeightPx - pipContainerSize.height).coerceAtLeast(minY)
+                    (screenHeightPx - pipHeightPx).coerceAtLeast(minY)
                 }
             }
             val draggableHeight = (maxY - minY).coerceAtLeast(1f)
+
+            val pipEndDestinationPx = Offset(maxX, maxY)
+            val pipEndSizePx = IntSize(pipWidthPx.toInt(), pipHeightPx.toInt())
 
             val pipModifier = Modifier
                 .align(Alignment.TopStart)
@@ -116,9 +123,8 @@ fun PlayerHost(
                     translationX = minX + (localRelativeOffset.x * draggableWidth)
                     translationY = minY + (localRelativeOffset.y * draggableHeight)
                 }
-                .width(250.dp)
-                .aspectRatio(16f / 9f)
-                .onSizeChanged { pipContainerSize = it }
+                .width(pipWidthDp) // Use the Dp value
+                .aspectRatio(pipAspectRatio)
                 .clip(RoundedCornerShape(8.dp))
                 .shadow(8.dp, RoundedCornerShape(8.dp))
                 .clickable(
@@ -253,6 +259,8 @@ fun PlayerHost(
                     },
                     rememberedTopPadding = rememberedTopPadding,
                     rememberedBottomPadding = rememberedBottomPadding,
+                    pipEndDestinationPx = pipEndDestinationPx,
+                    pipEndSizePx = pipEndSizePx
                 )
 
                 AnimatedVisibility(
@@ -261,7 +269,7 @@ fun PlayerHost(
                         .padding(4.dp),
                     visible = playerState.displayMode == PlayerDisplayMode.PIP,
                     enter = fadeIn(),
-                    exit = fadeOut()
+                    exit = fadeOut(animationSpec = tween(durationMillis = 0))
                 ) {
                     PlayPauseLoadingButton(
                         playbackErrorMessage = playerCoreState.error,
@@ -280,7 +288,7 @@ fun PlayerHost(
                         .padding(4.dp),
                     visible = playerState.displayMode == PlayerDisplayMode.PIP,
                     enter = fadeIn(),
-                    exit = fadeOut()
+                    exit = fadeOut(animationSpec = tween(durationMillis = 0))
                 ) {
                     Box(
                         modifier = Modifier

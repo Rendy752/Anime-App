@@ -4,15 +4,16 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.offset
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -105,55 +106,26 @@ private fun SubtitleText(
         isLandscape -> 16.sp
         else -> 12.sp
     }
+
     val lineHeight = fontSize * 1.3f
 
-    Box(contentAlignment = Alignment.Center) {
-        Text(
-            text = annotatedString,
-            color = Color.Black,
-            textAlign = TextAlign.Center,
-            fontSize = fontSize,
-            lineHeight = lineHeight,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.offset(x = 1.dp, y = 1.dp)
-        )
-        Text(
-            text = annotatedString,
-            color = Color.Black,
-            textAlign = TextAlign.Center,
-            fontSize = fontSize,
-            lineHeight = lineHeight,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.offset(x = (-1).dp, y = 1.dp)
-        )
-        Text(
-            text = annotatedString,
-            color = Color.Black,
-            textAlign = TextAlign.Center,
-            fontSize = fontSize,
-            lineHeight = lineHeight,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.offset(x = 1.dp, y = (-1).dp)
-        )
-        Text(
-            text = annotatedString,
-            color = Color.Black,
-            textAlign = TextAlign.Center,
-            fontSize = fontSize,
-            lineHeight = lineHeight,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.offset(x = (-1).dp, y = (-1).dp)
-        )
+    val dropShadow = Shadow(
+        color = Color.Black.copy(alpha = 0.75f),
+        offset = androidx.compose.ui.geometry.Offset(x = 2f, y = 2f),
+        blurRadius = 4f
+    )
 
-        Text(
-            text = annotatedString,
+    Text(
+        text = annotatedString,
+        textAlign = TextAlign.Center,
+        style = TextStyle(
             color = Color.White,
-            textAlign = TextAlign.Center,
             fontSize = fontSize,
             lineHeight = lineHeight,
             fontWeight = FontWeight.Bold,
+            shadow = dropShadow
         )
-    }
+    )
 }
 
 /**

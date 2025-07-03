@@ -32,7 +32,9 @@ import kotlinx.coroutines.launch
 import com.luminoverse.animevibe.ui.main.MainActivity
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.media3.exoplayer.ExoPlayer
 import com.luminoverse.animevibe.data.remote.api.NetworkDataSource
 import com.luminoverse.animevibe.ui.main.PlayerDisplayMode
@@ -69,6 +71,8 @@ fun AnimeWatchScreen(
     onEnterSystemPipMode: () -> Unit,
     rememberedTopPadding: Dp,
     rememberedBottomPadding: Dp,
+    pipEndDestinationPx: Offset,
+    pipEndSizePx: IntSize
 ) {
     val scope = rememberCoroutineScope()
     val scrollState = rememberLazyListState()
@@ -87,9 +91,10 @@ fun AnimeWatchScreen(
 
     LaunchedEffect(mainState.isLandscape, displayMode) {
         onAction(WatchAction.SetSideSheetVisibility(false))
-        if (displayMode == PlayerDisplayMode.PIP) return@LaunchedEffect
         activity?.window?.let { window ->
-            if (mainState.isLandscape) {
+            if (displayMode == PlayerDisplayMode.PIP) {
+                FullscreenUtils.handleFullscreenToggle(window = window, isFullscreen = true)
+            } else if (mainState.isLandscape) {
                 FullscreenUtils.handleFullscreenToggle(
                     window = window,
                     isFullscreen = false,
@@ -180,7 +185,9 @@ fun AnimeWatchScreen(
     PullToRefreshBox(
         isRefreshing = watchState.isRefreshing,
         onRefresh = { refreshEpisodeSources() },
-        modifier = Modifier.fillMaxSize().padding(0.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(0.dp),
         state = pullToRefreshState,
         indicator = {
             PullToRefreshDefaults.Indicator(
@@ -225,6 +232,8 @@ fun AnimeWatchScreen(
                 onEnterSystemPipMode = onEnterSystemPipMode,
                 rememberedTopPadding = rememberedTopPadding,
                 rememberedBottomPadding = rememberedBottomPadding,
+                pipEndDestinationPx = pipEndDestinationPx,
+                pipEndSizePx = pipEndSizePx,
                 modifier = videoPlayerModifier,
             )
         }

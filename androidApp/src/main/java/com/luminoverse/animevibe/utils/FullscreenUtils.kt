@@ -13,7 +13,7 @@ object FullscreenUtils {
     fun handleFullscreenToggle(
         window: Window,
         isFullscreen: Boolean,
-        setFullscreenChange: (Boolean) -> Unit
+        setFullscreenChange: ((Boolean) -> Unit)? = null
     ) {
         val newFullscreenState = !isFullscreen
         val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
@@ -29,6 +29,6 @@ object FullscreenUtils {
             }
         }
 
-        setFullscreenChange(newFullscreenState)
+        setFullscreenChange?.invoke(newFullscreenState)
     }
 }
