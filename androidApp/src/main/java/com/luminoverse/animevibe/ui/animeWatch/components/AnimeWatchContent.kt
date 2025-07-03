@@ -1,6 +1,10 @@
 package com.luminoverse.animevibe.ui.animeWatch.components
 
+import android.annotation.SuppressLint
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -25,13 +29,20 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.times
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.navigation.NavController
 import com.luminoverse.animevibe.data.remote.api.NetworkDataSource
@@ -51,7 +62,9 @@ import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 
+@SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
 fun AnimeWatchContent(
     malId: Int,
@@ -73,18 +86,46 @@ fun AnimeWatchContent(
     displayMode: PlayerDisplayMode,
     setPlayerDisplayMode: (PlayerDisplayMode) -> Unit,
     onEnterSystemPipMode: () -> Unit,
+    rememberedTopPadding: Dp,
+    rememberedBottomPadding: Dp,
     modifier: Modifier
 ) {
     val serverScrollState = rememberScrollState()
     val isSideSheetVisible = mainState.isLandscape && watchState.isSideSheetVisible
 
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+    val scope = rememberCoroutineScope()
+    val screenHeight = LocalConfiguration.current.screenHeightDp.dp
+    val verticalDragOffset = remember { Animatable(0f) }
+
+    val dragProgress = (verticalDragOffset.value / (screenHeight.value * 0.5f)).coerceIn(0f, 1f)
+
+    val animatedBackgroundColor by animateColorAsState(
+        targetValue = MaterialTheme.colorScheme.background.copy(alpha = 1f - dragProgress),
+        animationSpec = tween(durationMillis = 150),
+        label = "backgroundAlpha"
+    )
+
+    val contentModifier = Modifier
+        .graphicsLayer {
+            translationY = verticalDragOffset.value
+            alpha = 1f - (dragProgress * 1.5f).coerceIn(0f, 1f)
+        }
+        .background(animatedBackgroundColor)
+        .padding(bottom = if (!mainState.isLandscape) rememberedBottomPadding else 0.dp)
+        .padding(horizontal = 8.dp)
+        .fillMaxSize()
+        .blur(radius = (dragProgress * 10.dp).coerceAtMost(10.dp))
+
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(animatedBackgroundColor)
+            .padding(top = if (!mainState.isLandscape && displayMode == PlayerDisplayMode.FULLSCREEN) rememberedTopPadding else 0.dp)
+    ) {
         val containerWidth = this.maxWidth
         Row(modifier = Modifier.fillMaxWidth()) {
             Box(
-                modifier = modifier
-                    .weight(1f)
-                    .background(MaterialTheme.colorScheme.surfaceContainer)
+                modifier = modifier.weight(1f)
             ) {
                 if (watchState.episodeDetailComplement == null || watchState.episodeDetailComplement.sources.link.file.isEmpty() || watchState.animeDetailComplement?.episodes == null || watchState.episodeSourcesQuery == null) {
                     if (playerCoreState.error != null && !watchState.isRefreshing && !playerCoreState.isPlaying) ImageDisplay(
@@ -148,8 +189,28 @@ fun AnimeWatchContent(
                                             )
                                         )
                                     }
-                                ))
+                                )
+                            )
                         },
+                        verticalDragOffset = verticalDragOffset.value,
+                        onVerticalDrag = { delta ->
+                            scope.launch {
+                                verticalDragOffset.snapTo(verticalDragOffset.value + delta)
+                            }
+                        },
+                        onDragEnd = {
+                            scope.launch {
+                                if (verticalDragOffset.value > screenHeight.value * 0.5f) {
+                                    setPlayerDisplayMode(PlayerDisplayMode.PIP)
+                                    verticalDragOffset.snapTo(0f)
+                                } else {
+                                    verticalDragOffset.animateTo(
+                                        0f,
+                                        animationSpec = tween(durationMillis = 300)
+                                    )
+                                }
+                            }
+                        }
                     )
                 }
             }
@@ -217,9 +278,7 @@ fun AnimeWatchContent(
 
     if (displayMode == PlayerDisplayMode.FULLSCREEN && !mainState.isLandscape && !playerUiState.isPipMode && watchState.animeDetailComplement?.episodes != null && watchState.animeDetail?.mal_id == malId) {
         LazyColumn(
-            modifier = Modifier
-                .padding(horizontal = 8.dp)
-                .fillMaxSize(),
+            modifier = contentModifier,
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
             state = scrollState

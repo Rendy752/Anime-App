@@ -1,5 +1,6 @@
 package com.luminoverse.animevibe.ui.animeWatch.videoPlayer
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.pm.ActivityInfo
 import android.provider.Settings
@@ -9,21 +10,25 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -77,6 +82,7 @@ private enum class PhysicalOrientation {
     }
 }
 
+@SuppressLint("ConfigurationScreenWidthHeight")
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable
 fun VideoPlayer(
@@ -102,7 +108,10 @@ fun VideoPlayer(
     isAutoplayEnabled: Boolean,
     onFullscreenChange: (Boolean) -> Unit,
     onShowResumeChange: (Boolean) -> Unit,
-    isLandscape: Boolean
+    isLandscape: Boolean,
+    verticalDragOffset: Float,
+    onVerticalDrag: (Float) -> Unit,
+    onDragEnd: () -> Unit
 ) {
     val context = LocalContext.current
     val activity = context as? Activity
@@ -306,14 +315,31 @@ fun VideoPlayer(
     }
 
     val isCommonPartVisible = !playerUiState.isPipMode && !updatedControlsState.value.isLocked
+
+    val screenHeight = LocalConfiguration.current.screenHeightDp.dp
+    val animatedScale = (1f - (verticalDragOffset / screenHeight.value * 0.5f)).coerceIn(0.5f, 1f)
+
+    val animatedCornerRadius by animateDpAsState(
+        targetValue = if (verticalDragOffset > 0) 8.dp else 0.dp,
+        animationSpec = tween(durationMillis = 300),
+        label = "cornerRadiusAnimation"
+    )
     Box(
         modifier = Modifier
             .fillMaxSize()
             .onSizeChanged { videoPlayerState.playerSize = it }
+            .graphicsLayer {
+                if (displayMode == PlayerDisplayMode.FULLSCREEN) {
+                    translationY = verticalDragOffset
+                    scaleX = animatedScale
+                    scaleY = animatedScale
+                }
+            }
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .clip(RoundedCornerShape(animatedCornerRadius))
                 .clipToBounds()
                 .pointerInput(episodeDetailComplement.sources.link.file, displayMode) {
                     awaitEachGesture {
@@ -321,7 +347,9 @@ fun VideoPlayer(
                             handleGestures(
                                 state = videoPlayerState,
                                 displayMode = displayMode,
-                                updatedControlsState = updatedControlsState
+                                updatedControlsState = updatedControlsState,
+                                onVerticalDrag = onVerticalDrag,
+                                onDragEnd = onDragEnd
                             )
                         } finally {
                             if (videoPlayerState.isHolding) {

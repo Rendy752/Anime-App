@@ -66,6 +66,9 @@ fun VideoPlayerSection(
     setFullscreenChange: (Boolean) -> Unit,
     setShowResume: (Boolean) -> Unit,
     setPlayerError: (String) -> Unit,
+    verticalDragOffset: Float,
+    onVerticalDrag: (Float) -> Unit,
+    onDragEnd: () -> Unit
 ) {
     val context = LocalContext.current
 
@@ -214,7 +217,10 @@ fun VideoPlayerSection(
             isAutoplayEnabled = isAutoPlayVideo,
             onFullscreenChange = setFullscreenChange,
             onShowResumeChange = setShowResume,
-            isLandscape = isLandscape
+            isLandscape = isLandscape,
+            verticalDragOffset = verticalDragOffset,
+            onVerticalDrag = onVerticalDrag,
+            onDragEnd = onDragEnd
         )
     }
 }

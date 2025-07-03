@@ -23,7 +23,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -139,21 +138,15 @@ fun PlayerHost(
                         val newAbsoluteY = currentAbsoluteY + dragAmount.y
 
                         val newRelativeX = ((newAbsoluteX - minX) / draggableWidth).coerceIn(0f, 1f)
-                        val newRelativeY = ((newAbsoluteY - minY) / draggableHeight).coerceIn(0f, 1f)
+                        val newRelativeY =
+                            ((newAbsoluteY - minY) / draggableHeight).coerceIn(0f, 1f)
 
                         localRelativeOffset = Offset(newRelativeX, newRelativeY)
                     }
                 }
 
             val containerModifier = when (playerState.displayMode) {
-                PlayerDisplayMode.FULLSCREEN -> Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background)
-                    .padding(
-                        top = if (!mainState.isLandscape) rememberedTopPadding else 0.dp,
-                        bottom = if (!mainState.isLandscape) rememberedBottomPadding else 0.dp
-                    )
-
+                PlayerDisplayMode.FULLSCREEN -> Modifier.fillMaxSize()
                 PlayerDisplayMode.PIP -> pipModifier
             }
 
@@ -257,12 +250,14 @@ fun PlayerHost(
                             )
                             watchViewModel.onAction(WatchAction.SetPipMode(true))
                         }
-                    }
+                    },
+                    rememberedTopPadding = rememberedTopPadding,
+                    rememberedBottomPadding = rememberedBottomPadding,
                 )
 
                 AnimatedVisibility(
                     modifier = Modifier
-                        .align(Alignment.TopStart) // This is now always TopLeft
+                        .align(Alignment.TopStart)
                         .padding(4.dp),
                     visible = playerState.displayMode == PlayerDisplayMode.PIP,
                     enter = fadeIn(),
@@ -281,7 +276,7 @@ fun PlayerHost(
 
                 AnimatedVisibility(
                     modifier = Modifier
-                        .align(Alignment.TopEnd) // This is now always TopRight
+                        .align(Alignment.TopEnd)
                         .padding(4.dp),
                     visible = playerState.displayMode == PlayerDisplayMode.PIP,
                     enter = fadeIn(),

@@ -201,8 +201,13 @@ class MainViewModel @Inject constructor(
 
     private fun setPlayerDisplayMode(mode: PlayerDisplayMode) {
         _state.value.playerState?.let { current ->
+            val newPlayerState = if (mode == PlayerDisplayMode.PIP) {
+                current.copy(displayMode = mode, pipRelativeOffset = Offset(1f, 1f))
+            } else {
+                current.copy(displayMode = mode)
+            }
             _state.update {
-                it.copy(playerState = current.copy(displayMode = mode))
+                it.copy(playerState = newPlayerState)
             }
         }
     }

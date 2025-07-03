@@ -6,7 +6,6 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ActivityInfo
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -33,6 +32,7 @@ import kotlinx.coroutines.launch
 import com.luminoverse.animevibe.ui.main.MainActivity
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.unit.Dp
 import androidx.media3.exoplayer.ExoPlayer
 import com.luminoverse.animevibe.data.remote.api.NetworkDataSource
 import com.luminoverse.animevibe.ui.main.PlayerDisplayMode
@@ -66,7 +66,9 @@ fun AnimeWatchScreen(
     dispatchPlayerAction: (HlsPlayerAction) -> Unit,
     getPlayer: () -> ExoPlayer?,
     captureScreenshot: suspend () -> String?,
-    onEnterSystemPipMode: () -> Unit
+    onEnterSystemPipMode: () -> Unit,
+    rememberedTopPadding: Dp,
+    rememberedBottomPadding: Dp,
 ) {
     val scope = rememberCoroutineScope()
     val scrollState = rememberLazyListState()
@@ -193,11 +195,7 @@ fun AnimeWatchScreen(
         val configuration = LocalConfiguration.current
         val screenWidth = configuration.screenWidthDp.dp
         val videoHeight = screenWidth * 9 / 16
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background)
-        ) {
+        Column(modifier = Modifier.fillMaxSize()) {
             val videoPlayerModifier = Modifier
                 .fillMaxWidth()
                 .then(
@@ -225,6 +223,8 @@ fun AnimeWatchScreen(
                 displayMode = displayMode,
                 setPlayerDisplayMode = setPlayerDisplayMode,
                 onEnterSystemPipMode = onEnterSystemPipMode,
+                rememberedTopPadding = rememberedTopPadding,
+                rememberedBottomPadding = rememberedBottomPadding,
                 modifier = videoPlayerModifier,
             )
         }

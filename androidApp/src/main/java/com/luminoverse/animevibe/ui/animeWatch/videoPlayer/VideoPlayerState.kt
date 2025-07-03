@@ -389,6 +389,8 @@ suspend fun AwaitPointerEventScope.handleGestures(
     state: VideoPlayerState,
     displayMode: PlayerDisplayMode,
     updatedControlsState: State<ControlsState>,
+    onVerticalDrag: (Float) -> Unit,
+    onDragEnd: () -> Unit
 ) {
     val down = awaitFirstDown()
 
@@ -403,6 +405,7 @@ suspend fun AwaitPointerEventScope.handleGestures(
 
     var isMultiTouch = false
     var isDragging = false
+    var verticalDragConsumed = false
 
     while (true) {
         val event = awaitPointerEvent()
@@ -410,6 +413,23 @@ suspend fun AwaitPointerEventScope.handleGestures(
             state.longPressJob?.cancel()
             break
         }
+
+        if (displayMode == PlayerDisplayMode.FULLSCREEN && !isMultiTouch && updatedControlsState.value.zoom <= 1f) {
+            val change = event.changes.first()
+
+            val positionChangeOffset = change.position - change.previousPosition
+            val dy = positionChangeOffset.y
+            val dx = positionChangeOffset.x
+
+            if (abs(dy) > abs(dx) && abs(dy) > 1f) {
+                state.longPressJob?.cancel()
+                state.handleLongPressEnd()
+                onVerticalDrag(dy)
+                verticalDragConsumed = true
+                change.consume()
+            }
+        }
+        if (verticalDragConsumed) continue
 
         if (event.changes.size > 1 && !updatedControlsState.value.isLocked && !state.isFirstLoad && displayMode == PlayerDisplayMode.FULLSCREEN) {
             if (!isMultiTouch) {
@@ -433,7 +453,7 @@ suspend fun AwaitPointerEventScope.handleGestures(
                 ),
                 state.zoomScaleProgress
             )
-            state.offsetX = state.offsetX.coerceIn(-maxOffsetX, maxOffsetX)
+            state.offsetX = state.offsetX.coerceIn(-maxOffsetX, maxOffsetY)
             state.offsetY = state.offsetY.coerceIn(-maxOffsetY, maxOffsetY)
             event.changes.forEach { it.consume() }
         } else if (event.changes.size == 1 && !isMultiTouch && updatedControlsState.value.zoom > 1f && !updatedControlsState.value.isLocked && !state.isFirstLoad && displayMode == PlayerDisplayMode.FULLSCREEN) {
@@ -456,7 +476,7 @@ suspend fun AwaitPointerEventScope.handleGestures(
                     state.zoomScaleProgress
                 )
                 state.offsetX =
-                    (state.offsetX + pan.x).coerceIn(-maxOffsetX, maxOffsetX)
+                    (state.offsetX + pan.x).coerceIn(-maxOffsetX, maxOffsetY)
                 state.offsetY =
                     (state.offsetY + pan.y).coerceIn(-maxOffsetY, maxOffsetY)
                 event.changes.forEach { it.consume() }
@@ -464,7 +484,9 @@ suspend fun AwaitPointerEventScope.handleGestures(
         }
     }
 
-    if (isMultiTouch) {
+    if (verticalDragConsumed) {
+        onDragEnd()
+    } else if (isMultiTouch) {
         val halfWayRatio = (1f + state.zoomToFillRatio) / 2
         val finalZoom = if (state.zoomScaleProgress < halfWayRatio) 1f
         else if (state.zoomScaleProgress in halfWayRatio..state.zoomToFillRatio) state.zoomToFillRatio
