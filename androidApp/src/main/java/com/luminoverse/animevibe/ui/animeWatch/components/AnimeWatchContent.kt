@@ -145,7 +145,7 @@ fun AnimeWatchContent(
                         contentDescription = "Anime cover",
                         roundedCorners = ImageRoundedCorner.NONE
                     ) else Box(
-                        modifier = modifier.background(Color(0xFF14161A))
+                        modifier = modifier.background(Color.Black)
                     )
                 } else {
                     VideoPlayerSection(
@@ -202,6 +202,7 @@ fun AnimeWatchContent(
                                 )
                             )
                         },
+                        rememberedTopPadding = rememberedTopPadding,
                         verticalDragOffset = verticalDragOffset.value,
                         onVerticalDrag = { delta ->
                             scope.launch {

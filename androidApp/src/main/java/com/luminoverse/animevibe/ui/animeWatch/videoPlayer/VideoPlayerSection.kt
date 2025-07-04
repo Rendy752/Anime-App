@@ -21,6 +21,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -68,6 +69,7 @@ fun VideoPlayerSection(
     setFullscreenChange: (Boolean) -> Unit,
     setShowResume: (Boolean) -> Unit,
     setPlayerError: (String) -> Unit,
+    rememberedTopPadding: Dp,
     verticalDragOffset: Float,
     onVerticalDrag: (Float) -> Unit,
     onDragEnd: (flingVelocity: Float) -> Unit,
@@ -223,6 +225,7 @@ fun VideoPlayerSection(
             onFullscreenChange = setFullscreenChange,
             onShowResumeChange = setShowResume,
             isLandscape = isLandscape,
+            rememberedTopPadding = rememberedTopPadding,
             verticalDragOffset = verticalDragOffset,
             onVerticalDrag = onVerticalDrag,
             onDragEnd = onDragEnd,

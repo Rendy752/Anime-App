@@ -34,6 +34,8 @@ import com.luminoverse.animevibe.ui.settings.components.HeaderText
 import com.luminoverse.animevibe.ui.settings.components.SettingItem
 import com.luminoverse.animevibe.ui.settings.components.ThemeModeChips
 import com.luminoverse.animevibe.ui.theme.ColorStyle
+import com.luminoverse.animevibe.utils.onDisableNotifications
+import com.luminoverse.animevibe.utils.onEnableNotifications
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -128,41 +130,16 @@ fun SettingsScreen(
                 description = "Enable notifications",
                 onToggle = { enable ->
                     if (enable) {
-                        if (SDK_INT >= 33) {
-                            val permissionStatus = ContextCompat.checkSelfPermission(
-                                context,
-                                "android.permission.POST_NOTIFICATIONS"
-                            )
-                            val isGranted =
-                                permissionStatus == PackageManager.PERMISSION_GRANTED
-                            if (isGranted) {
-                                mainAction(MainAction.SetNotificationEnabled(true))
-                            } else {
-                                val shouldShowRequest =
-                                    (context as? ComponentActivity)?.shouldShowRequestPermissionRationale(
-                                        "android.permission.POST_NOTIFICATIONS"
-                                    )
-                                if (shouldShowRequest == true) {
-                                    permissionLauncher.launch("android.permission.POST_NOTIFICATIONS")
-                                } else {
-                                    settingsLauncher.launch(
-                                        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                                            putExtra(
-                                                Settings.EXTRA_APP_PACKAGE,
-                                                context.packageName
-                                            )
-                                        }
-                                    )
-                                }
-                            }
-                        } else {
-                            mainAction(MainAction.SetNotificationEnabled(true))
-                        }
+                        onEnableNotifications(
+                            context = context,
+                            onPermissionGranted = { mainAction(MainAction.SetNotificationEnabled(true)) },
+                            permissionLauncher = permissionLauncher,
+                            settingsLauncher = settingsLauncher
+                        )
                     } else {
-                        settingsLauncher.launch(
-                            Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                                putExtra(Settings.EXTRA_APP_PACKAGE, context.packageName)
-                            }
+                        onDisableNotifications(
+                            context = context,
+                            settingsLauncher = settingsLauncher
                         )
                     }
                 }

@@ -92,7 +92,7 @@ fun MainScreen(
         rememberedBottomPadding = currentBottomPadding
     }
 
-    LaunchedEffect(currentRoute) {
+    LaunchedEffect(currentRoute, mainState.playerState?.displayMode) {
         resetIdleTimer()
         mainAction(MainAction.DismissSnackbar)
     }
@@ -325,7 +325,10 @@ fun MainScreen(
                             },
                             rememberedTopPadding = rememberedTopPadding,
                             mainState = mainState,
+                            checkNotificationPermission = { mainAction.invoke(MainAction.CheckNotificationPermission) },
+                            setNotificationEnabled = { mainAction.invoke(MainAction.SetNotificationEnabled(it)) },
                             showSnackbar = { mainAction.invoke(MainAction.ShowSnackbar(it)) },
+                            dismissSnackbar = { mainAction.invoke(MainAction.DismissSnackbar) },
                             showImagePreview = { mainAction.invoke(MainAction.ShowImagePreview(it)) },
                             detailState = detailState,
                             snackbarFlow = viewModel.snackbarFlow,

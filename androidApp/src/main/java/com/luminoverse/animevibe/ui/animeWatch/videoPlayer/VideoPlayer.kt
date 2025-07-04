@@ -31,6 +31,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
@@ -114,6 +116,7 @@ fun VideoPlayer(
     onFullscreenChange: (Boolean) -> Unit,
     onShowResumeChange: (Boolean) -> Unit,
     isLandscape: Boolean,
+    rememberedTopPadding: Dp,
     verticalDragOffset: Float,
     onVerticalDrag: (Float) -> Unit,
     onDragEnd: (flingVelocity: Float) -> Unit,
@@ -122,6 +125,7 @@ fun VideoPlayer(
     onMaxDragAmountCalculated: (Float) -> Unit
 ) {
     val context = LocalContext.current
+    val topPaddingPx = with(LocalDensity.current) { rememberedTopPadding.toPx() }
     val activity = context as? Activity
 
     val videoPlayerState =
@@ -416,7 +420,8 @@ fun VideoPlayer(
                 .pointerInput(
                     episodeDetailComplement.sources.link.file,
                     displayMode,
-                    updatedControlsState.value.zoom
+                    updatedControlsState.value.zoom,
+                    isLandscape
                 ) {
                     awaitEachGesture {
                         try {
@@ -424,6 +429,8 @@ fun VideoPlayer(
                                 state = videoPlayerState,
                                 displayMode = displayMode,
                                 updatedControlsState = updatedControlsState,
+                                isLandscape = isLandscape,
+                                topPaddingPx = topPaddingPx,
                                 onVerticalDrag = onVerticalDrag,
                                 onDragEnd = onDragEnd
                             )
@@ -459,7 +466,7 @@ fun VideoPlayer(
                     factory = { playerView },
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color(0xFF14161A))
+                        .background(Color.Black)
                         .then(borderModifier)
                         .then(
                             if (!playerUiState.isPipMode && displayMode == PlayerDisplayMode.FULLSCREEN) {

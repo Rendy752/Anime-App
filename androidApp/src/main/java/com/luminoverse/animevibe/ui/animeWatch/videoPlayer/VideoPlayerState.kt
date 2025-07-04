@@ -390,10 +390,13 @@ suspend fun AwaitPointerEventScope.handleGestures(
     state: VideoPlayerState,
     displayMode: PlayerDisplayMode,
     updatedControlsState: State<ControlsState>,
+    isLandscape: Boolean,
+    topPaddingPx: Float,
     onVerticalDrag: (Float) -> Unit,
     onDragEnd: (flingVelocity: Float) -> Unit
 ) {
     val down: PointerInputChange = awaitFirstDown()
+    val isDragInBarrier = isLandscape && down.position.y < topPaddingPx
 
     state.longPressJob?.cancel()
     state.longPressJob = state.scope.launch {
@@ -500,7 +503,7 @@ suspend fun AwaitPointerEventScope.handleGestures(
                 val dy = positionChangeOffset.y
                 val dx = positionChangeOffset.x
 
-                if (abs(dy) > abs(dx) && abs(dy) > 1f) {
+                if (abs(dy) > abs(dx) && abs(dy) > 1f && !isDragInBarrier) {
                     state.longPressJob?.cancel()
                     state.handleLongPressEnd()
 

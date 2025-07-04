@@ -28,8 +28,10 @@ import com.luminoverse.animevibe.models.AnimeDetailComplement
 import com.luminoverse.animevibe.models.AnimeDetailResponse
 import com.luminoverse.animevibe.ui.common.DebouncedIconButton
 import com.luminoverse.animevibe.ui.common.SkeletonBox
-import com.luminoverse.animevibe.utils.resource.Resource
+import com.luminoverse.animevibe.ui.main.SnackbarMessage
+import com.luminoverse.animevibe.ui.main.SnackbarMessageType
 import com.luminoverse.animevibe.utils.ShareUtils
+import com.luminoverse.animevibe.utils.resource.Resource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,7 +40,10 @@ fun AnimeDetailTopBar(
     animeDetailComplement: Resource<AnimeDetailComplement?>?,
     navController: NavController,
     playEpisode: (Int, String) -> Unit,
-    onFavoriteToggle: (Boolean) -> Unit
+    onFavoriteToggle: (Boolean) -> Unit,
+    isNotificationEnabled: Boolean,
+    showSnackbar: (SnackbarMessage) -> Unit,
+    onEnableNotificationClick: () -> Unit
 ) {
     val context = LocalContext.current
     val isFavorite = remember { mutableStateOf(false) }
@@ -94,9 +99,27 @@ fun AnimeDetailTopBar(
                 if (animeDetailComplement is Resource.Success) {
                     DebouncedIconButton(
                         onClick = {
-                            isFavorite.value = !isFavorite.value
-                            animeDetailComplement.data?.let {
-                                onFavoriteToggle(isFavorite.value)
+                            val newFavoriteState = !isFavorite.value
+                            isFavorite.value = newFavoriteState
+                            onFavoriteToggle(newFavoriteState)
+
+                            if (newFavoriteState && animeDetailData.airing) {
+                                if (isNotificationEnabled) {
+                                    showSnackbar(
+                                        SnackbarMessage(
+                                            message = "You'll be notified when ${animeDetailData.title} is about to air.",
+                                            type = SnackbarMessageType.SUCCESS
+                                        )
+                                    )
+                                } else {
+                                    showSnackbar(
+                                        SnackbarMessage(
+                                            message = "Enable notifications to get airing alerts.",
+                                            actionLabel = "ENABLE",
+                                            onAction = onEnableNotificationClick
+                                        )
+                                    )
+                                }
                             }
                         },
                         modifier = Modifier.semantics {

@@ -15,7 +15,7 @@ plugins {
 
 android {
     namespace = "com.luminoverse.animevibe.android"
-    compileSdk = 35
+    compileSdk = 36
 
     val localProperties = Properties()
     val localPropertiesFile = project.rootProject.file("local.properties")
@@ -26,7 +26,7 @@ android {
     defaultConfig {
         applicationId = "com.luminoverse.animevibe"
         minSdk = 27
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 9
         versionName = "1.0.3"
 
