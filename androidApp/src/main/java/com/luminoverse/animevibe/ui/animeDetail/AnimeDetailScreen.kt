@@ -43,7 +43,7 @@ fun AnimeDetailScreen(
     rememberedTopPadding: Dp,
     mainState: MainState,
     checkNotificationPermission: () -> Unit,
-    setNotificationEnabled: (Boolean) -> Unit,
+    setPostNotificationsPermission: (Boolean) -> Unit,
     showSnackbar: (SnackbarMessage) -> Unit,
     dismissSnackbar: () -> Unit,
     showImagePreview: (SharedImageState) -> Unit,
@@ -67,7 +67,7 @@ fun AnimeDetailScreen(
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        setNotificationEnabled(isGranted)
+        setPostNotificationsPermission(isGranted)
         if (isGranted) dismissSnackbar()
     }
 
@@ -106,12 +106,12 @@ fun AnimeDetailScreen(
             navController = navController,
             playEpisode = playEpisode,
             onFavoriteToggle = { onAction(DetailAction.ToggleFavorite(it)) },
-            isNotificationEnabled = mainState.isNotificationEnabled,
+            isPostNotificationsPermissionGranted = mainState.isPostNotificationsPermissionGranted,
             showSnackbar = showSnackbar,
             onEnableNotificationClick = {
                 onEnableNotifications(
                     context = context,
-                    onPermissionGranted = { setNotificationEnabled(true) },
+                    onPermissionGranted = { setPostNotificationsPermission(true) },
                     permissionLauncher = permissionLauncher,
                     settingsLauncher = settingsLauncher
                 )

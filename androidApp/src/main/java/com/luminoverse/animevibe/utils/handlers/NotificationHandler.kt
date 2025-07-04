@@ -20,24 +20,33 @@ import javax.inject.Inject
 class NotificationHandler @Inject constructor() {
 
     companion object {
-        private const val CHANNEL_ID = "anime_notifications"
-        private const val CHANNEL_NAME = "Anime Notifications"
-        private const val CHANNEL_DESCRIPTION = "Notifications for anime events"
+        const val BROADCAST_CHANNEL_ID = "anime_broadcast_reminders"
+        const val UNFINISHED_CHANNEL_ID = "anime_unfinished_reminders"
     }
 
-    fun createNotificationChannel(context: Context) {
-        val channel = NotificationChannel(
-            CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH
+    fun createNotificationChannels(context: Context) {
+        val notificationManager = context.getSystemService(NotificationManager::class.java)
+
+        val broadcastChannel = NotificationChannel(
+            BROADCAST_CHANNEL_ID,
+            "Airing Reminders",
+            NotificationManager.IMPORTANCE_HIGH
         ).apply {
-            description = CHANNEL_DESCRIPTION
+            description = "Notifications for when your favorite anime is about to air."
             enableLights(true)
             enableVibration(true)
-            setShowBadge(true)
-            setBypassDnd(true)
-            lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
         }
-        val notificationManager = context.getSystemService(NotificationManager::class.java)
-        notificationManager.createNotificationChannel(channel)
+
+        val unfinishedChannel = NotificationChannel(
+            UNFINISHED_CHANNEL_ID,
+            "Continue Watching",
+            NotificationManager.IMPORTANCE_DEFAULT
+        ).apply {
+            description = "Reminders to continue watching episodes you haven't finished."
+        }
+
+        notificationManager.createNotificationChannels(listOf(broadcastChannel, unfinishedChannel))
+        Log.d("NotificationHandler", "Application notification channels created.")
     }
 
     suspend fun sendNotification(
@@ -45,7 +54,15 @@ class NotificationHandler @Inject constructor() {
         notification: Notification,
         notificationId: Int
     ) = withContext(Dispatchers.IO) {
-        createNotificationChannel(context)
+        val channelId = when (notification.type) {
+            "Broadcast" -> BROADCAST_CHANNEL_ID
+            "UnfinishedWatch" -> UNFINISHED_CHANNEL_ID
+            else -> {
+                log("Cannot send notification for unknown type: ${notification.type}")
+                return@withContext
+            }
+        }
+
         val actions = when (notification.type) {
             "Broadcast" -> listOf(
                 actionDetail(notification.accessId, notificationId),
@@ -58,18 +75,22 @@ class NotificationHandler @Inject constructor() {
                 actionClose(notificationId)
             )
 
-            else -> {
-                log("Invalid notification type: ${notification.type} for accessId: ${notification.accessId}")
-                emptyList()
-            }
+            else -> emptyList()
         }
 
-        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.drawable.ic_notifications_active_black_24dp)
             .setContentText(notification.contentText)
             .setStyle(NotificationCompat.BigTextStyle().bigText(notification.contentText))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setContentIntent(createOpenIntent(context, notification.type, notification.accessId, notificationId))
+            .setPriority(if (notification.type == "Broadcast") NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(
+                createOpenIntent(
+                    context,
+                    notification.type,
+                    notification.accessId,
+                    notificationId
+                )
+            )
             .setAutoCancel(true)
             .setShowWhen(true)
             .setOnlyAlertOnce(true)
@@ -81,27 +102,29 @@ class NotificationHandler @Inject constructor() {
         when (notification.type) {
             "Broadcast" -> builder.setContentTitle("Anime Airing Soon")
             "UnfinishedWatch" -> builder.setContentTitle("Unfinished Anime")
-            else -> log("Skipping image handling for invalid type: ${notification.type}")
         }
 
         try {
             val notificationManager = context.getSystemService(NotificationManager::class.java)
             notificationManager.notify(notificationId, builder.build())
-            log("Notification sent for ${notification.contentText} (accessId: ${notification.accessId}, id: $notificationId, type: ${notification.type})")
+            log("Notification sent on channel $channelId for ${notification.contentText}")
         } catch (e: Exception) {
             log("Failed to send notification: ${e.message}")
         }
     }
 
-    private fun createOpenIntent(context: Context, type: String, accessId: String, notificationId: Int): PendingIntent {
+    private fun createOpenIntent(
+        context: Context,
+        type: String,
+        accessId: String,
+        notificationId: Int
+    ): PendingIntent {
         val action = if (type == "UnfinishedWatch") "ACTION_OPEN_EPISODE" else "ACTION_OPEN_DETAIL"
-
         val intent = Intent(context, NotificationReceiver::class.java).apply {
             this.action = action
             putExtra("access_id", accessId)
             putExtra("notification_id", notificationId.toString())
         }
-
         val requestCode = (action + accessId + notificationId).hashCode()
         return PendingIntent.getBroadcast(
             context, requestCode, intent,

@@ -41,7 +41,7 @@ fun AnimeDetailTopBar(
     navController: NavController,
     playEpisode: (Int, String) -> Unit,
     onFavoriteToggle: (Boolean) -> Unit,
-    isNotificationEnabled: Boolean,
+    isPostNotificationsPermissionGranted: Boolean,
     showSnackbar: (SnackbarMessage) -> Unit,
     onEnableNotificationClick: () -> Unit
 ) {
@@ -104,7 +104,7 @@ fun AnimeDetailTopBar(
                             onFavoriteToggle(newFavoriteState)
 
                             if (newFavoriteState && animeDetailData.airing) {
-                                if (isNotificationEnabled) {
+                                if (isPostNotificationsPermissionGranted) {
                                     showSnackbar(
                                         SnackbarMessage(
                                             message = "You'll be notified when ${animeDetailData.title} is about to air.",

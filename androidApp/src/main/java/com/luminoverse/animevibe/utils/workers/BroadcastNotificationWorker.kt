@@ -40,7 +40,14 @@ class BroadcastNotificationWorker @AssistedInject constructor(
 
         val notificationManager = applicationContext.getSystemService<NotificationManager>()
         if (notificationManager?.areNotificationsEnabled() != true) {
-            log("Notifications disabled, finishing work.")
+            log("Notifications disabled at system level, finishing work.")
+            return@withContext Result.success()
+        }
+
+        val settingsPrefs = applicationContext.getSharedPreferences("settings_prefs", Context.MODE_PRIVATE)
+        val broadcastEnabled = settingsPrefs.getBoolean("notifications_broadcast_enabled", true)
+        if (!broadcastEnabled) {
+            log("Airing Reminders are disabled by the user in app settings. Skipping work.")
             return@withContext Result.success()
         }
 

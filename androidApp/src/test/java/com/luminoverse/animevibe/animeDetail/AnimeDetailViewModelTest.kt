@@ -11,6 +11,7 @@ import com.luminoverse.animevibe.utils.ComplementUtils
 import com.luminoverse.animevibe.utils.FilterUtils
 import com.luminoverse.animevibe.utils.resource.Resource
 import com.luminoverse.animevibe.utils.media.StreamingUtils
+import com.luminoverse.animevibe.utils.workers.WorkerScheduler
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -30,6 +31,7 @@ class AnimeDetailViewModelTest {
 
     private lateinit var viewModel: AnimeDetailViewModel
     private lateinit var animeEpisodeDetailRepository: AnimeEpisodeDetailRepository
+    private val workerScheduler: WorkerScheduler = mockk()
     private lateinit var testDispatcher: TestDispatcher
 
     @Before
@@ -73,7 +75,7 @@ class AnimeDetailViewModelTest {
             )
         )
         coEvery {
-            AnimeTitleFinder.findClosestMatches<AnimeAniwatch>(
+            AnimeTitleFinder.findClosestMatches(
                 any(), listOf(animeAniwatchPlaceholder), any(), any()
             )
         } returns listOf(animeAniwatchPlaceholder)
@@ -197,7 +199,7 @@ class AnimeDetailViewModelTest {
     @Test
     fun `loadAnimeDetail should update state with anime details and trigger loadEpisodes`() =
         runTest {
-            viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository)
+            viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository, workerScheduler)
             val animeId = 1735
 
             viewModel.onAction(DetailAction.LoadAnimeDetail(animeId))
@@ -216,7 +218,7 @@ class AnimeDetailViewModelTest {
 
     @Test
     fun `loadAnimeDetail should handle error and not trigger loadEpisodes`() = runTest {
-        viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository)
+        viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository, workerScheduler)
         val animeId = 1735
         coEvery { animeEpisodeDetailRepository.getAnimeDetail(animeId) } returns Resource.Error("Network error")
 
@@ -236,7 +238,7 @@ class AnimeDetailViewModelTest {
 
     @Test
     fun `loadAnimeDetail should handle null episode sources query`() = runTest {
-        viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository)
+        viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository, workerScheduler)
         val animeId = 1735
         coEvery { StreamingUtils.getEpisodeSourcesResult(any(), any(), any()) } returns Pair(
             Resource.Error("All servers failed"),
@@ -260,7 +262,7 @@ class AnimeDetailViewModelTest {
 
     @Test
     fun `loadAnimeDetail should handle episode sources failure`() = runTest {
-        viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository)
+        viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository, workerScheduler)
         val animeId = 1735
         coEvery { StreamingUtils.getEpisodeSourcesResult(any(), any(), any()) } returns Pair(
             Resource.Error("Server error"),
@@ -284,7 +286,7 @@ class AnimeDetailViewModelTest {
 
     @Test
     fun `loadRelationAnimeDetail should update relationAnimeDetails with anime detail`() = runTest {
-        viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository)
+        viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository, workerScheduler)
         val relationId = 2
         coEvery { animeEpisodeDetailRepository.getAnimeDetail(relationId) } returns Resource.Success(
             AnimeDetailResponse(
@@ -312,7 +314,7 @@ class AnimeDetailViewModelTest {
 
     @Test
     fun `loadEpisodeDetailComplement should use cached complement if available`() = runTest {
-        viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository)
+        viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository, workerScheduler)
         val episodeId = episodeDetailComplementPlaceholder.id
         coEvery { animeEpisodeDetailRepository.getCachedEpisodeDetailComplement(episodeId) } returns episodeDetailComplementPlaceholder
         coEvery { animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(1735) } returns animeDetailComplementPlaceholder
@@ -341,7 +343,7 @@ class AnimeDetailViewModelTest {
 
     @Test
     fun `loadEpisodeDetailComplement should fetch servers and sources if no cache`() = runTest {
-        viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository)
+        viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository, workerScheduler)
         val episodeId = episodeDetailComplementPlaceholder.id
         val animeId = 1735
         coEvery { animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(1735) } returns animeDetailComplementPlaceholder
@@ -379,7 +381,7 @@ class AnimeDetailViewModelTest {
 
     @Test
     fun `loadEpisodes should use cached complement if available`() = runTest {
-        viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository)
+        viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository, workerScheduler)
         val animeId = 1735
         coEvery { animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(animeId) } returns animeDetailComplementPlaceholder
         coEvery { animeEpisodeDetailRepository.getCachedEpisodeDetailComplement("lorem-ipsum-123?ep=123") } returns episodeDetailComplementPlaceholder
@@ -407,7 +409,7 @@ class AnimeDetailViewModelTest {
 
     @Test
     fun `loadEpisodes should handle music type anime correctly`() = runTest {
-        viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository)
+        viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository, workerScheduler)
         val animeId = 1735
         coEvery { animeEpisodeDetailRepository.getAnimeDetail(animeId) } returns Resource.Success(
             AnimeDetailResponse(data = animeDetailPlaceholder.copy(mal_id = 1735, type = "Music"))
@@ -434,7 +436,7 @@ class AnimeDetailViewModelTest {
 
     @Test
     fun `updateEpisodeQueryState should filter episodes based on query`() = runTest {
-        viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository)
+        viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository, workerScheduler)
         val animeId = 1735
         val query = FilterUtils.EpisodeQueryState(title = "Title of Episode")
         coEvery { animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(1735) } returns animeDetailComplementPlaceholder
@@ -473,7 +475,7 @@ class AnimeDetailViewModelTest {
 
     @Test
     fun `toggleFavorite should update favorite status and cache`() = runTest {
-        viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository)
+        viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository, workerScheduler)
         val animeId = 1735
         coEvery { animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(1735) } returns animeDetailComplementPlaceholder
         coEvery { animeEpisodeDetailRepository.updateCachedAnimeDetailComplement(any()) } just Runs

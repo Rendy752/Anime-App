@@ -52,7 +52,7 @@ class AnimeApplication : Application(), Configuration.Provider, ImageLoaderFacto
     override fun onCreate() {
         super.onCreate()
 
-        notificationHandler.createNotificationChannel(this)
+        notificationHandler.createNotificationChannels(this)
         scheduleBackgroundWorkers()
 
         if (BuildConfig.DEBUG) {

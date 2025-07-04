@@ -1,12 +1,10 @@
 package com.luminoverse.animevibe.ui.settings
 
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.os.Build.VERSION.SDK_INT
 import android.provider.Settings
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -24,7 +22,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
 import com.luminoverse.animevibe.ui.common.ToggleWithLabel
 import com.luminoverse.animevibe.ui.main.MainAction
 import com.luminoverse.animevibe.ui.main.MainState
@@ -56,7 +53,7 @@ fun SettingsScreen(
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
-        mainAction(MainAction.SetNotificationEnabled(isGranted))
+        mainAction(MainAction.SetPostNotificationsPermission(isGranted))
         if (!isGranted) {
             settingsLauncher.launch(
                 Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
@@ -124,26 +121,59 @@ fun SettingsScreen(
             HeaderText("Notifications")
         }
         item {
-            ToggleWithLabel(
-                isActive = mainState.isNotificationEnabled,
-                label = "Notifications",
-                description = "Enable notifications",
-                onToggle = { enable ->
-                    if (enable) {
-                        onEnableNotifications(
-                            context = context,
-                            onPermissionGranted = { mainAction(MainAction.SetNotificationEnabled(true)) },
-                            permissionLauncher = permissionLauncher,
-                            settingsLauncher = settingsLauncher
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                ToggleWithLabel(
+                    isActive = mainState.isPostNotificationsPermissionGranted,
+                    label = "All Notifications",
+                    description = "Master control for all app notifications (Requires system permission)",
+                    onToggle = { enable ->
+                        if (enable) {
+                            onEnableNotifications(
+                                context = context,
+                                onPermissionGranted = {
+                                    mainAction(
+                                        MainAction.SetPostNotificationsPermission(true)
+                                    )
+                                },
+                                permissionLauncher = permissionLauncher,
+                                settingsLauncher = settingsLauncher
+                            )
+                        } else {
+                            onDisableNotifications(
+                                context = context,
+                                settingsLauncher = settingsLauncher
+                            )
+                        }
+                    }
+                )
+
+
+                AnimatedVisibility(visible = mainState.isPostNotificationsPermissionGranted) {
+                    Column(
+                        modifier = Modifier.padding(start = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        ToggleWithLabel(
+                            isActive = mainState.notificationSettings.broadcastEnabled,
+                            label = "Airing Reminders",
+                            description = "Get notified minutes before your favorite airing anime begins",
+                            onToggle = { mainAction(MainAction.SetBroadcastNotifications(it)) }
                         )
-                    } else {
-                        onDisableNotifications(
-                            context = context,
-                            settingsLauncher = settingsLauncher
+                        ToggleWithLabel(
+                            isActive = mainState.notificationSettings.unfinishedEnabled,
+                            label = "Continue Watching Reminders",
+                            description = "Receive periodic reminders for episodes you haven't finished",
+                            onToggle = { mainAction(MainAction.SetUnfinishedNotifications(it)) }
+                        )
+                        ToggleWithLabel(
+                            isActive = mainState.notificationSettings.playbackEnabled,
+                            label = "Playback Controls",
+                            description = "Show media controls in the notification shade while playing a video",
+                            onToggle = { mainAction(MainAction.SetPlaybackNotifications(it)) }
                         )
                     }
                 }
-            )
+            }
         }
 
         item {

@@ -1,6 +1,7 @@
 package com.luminoverse.animevibe.utils.workers
 
 import android.content.Context
+import androidx.core.app.NotificationManagerCompat
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
@@ -40,6 +41,19 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
 
     override suspend fun doWork(): Result = withContext(Dispatchers.IO) {
         log("doWork started. Run attempt: ${params.runAttemptCount}")
+
+        if (!NotificationManagerCompat.from(applicationContext).areNotificationsEnabled()) {
+            log("Notifications disabled at system level, finishing work.")
+            return@withContext Result.success()
+        }
+
+        val settingsPrefs = applicationContext.getSharedPreferences("settings_prefs", Context.MODE_PRIVATE)
+        val unfinishedEnabled = settingsPrefs.getBoolean("notifications_unfinished_enabled", true)
+        if (!unfinishedEnabled) {
+            log("Continue Watching reminders are disabled by the user in app settings. Skipping work.")
+            return@withContext Result.success()
+        }
+
         try {
             val (episode, remainingEpisodes) = animeEpisodeDetailRepository.getRandomCachedUnfinishedEpisode()
 

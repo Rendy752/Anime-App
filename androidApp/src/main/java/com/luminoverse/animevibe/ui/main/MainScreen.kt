@@ -326,7 +326,7 @@ fun MainScreen(
                             rememberedTopPadding = rememberedTopPadding,
                             mainState = mainState,
                             checkNotificationPermission = { mainAction.invoke(MainAction.CheckNotificationPermission) },
-                            setNotificationEnabled = { mainAction.invoke(MainAction.SetNotificationEnabled(it)) },
+                            setPostNotificationsPermission = { mainAction.invoke(MainAction.SetPostNotificationsPermission(it)) },
                             showSnackbar = { mainAction.invoke(MainAction.ShowSnackbar(it)) },
                             dismissSnackbar = { mainAction.invoke(MainAction.DismissSnackbar) },
                             showImagePreview = { mainAction.invoke(MainAction.ShowImagePreview(it)) },

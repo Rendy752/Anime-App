@@ -184,8 +184,8 @@ fun PlayerHost(
                 }
 
             val containerModifier = when (playerState.displayMode) {
-                PlayerDisplayMode.FULLSCREEN -> Modifier.fillMaxSize()
                 PlayerDisplayMode.PIP -> pipModifier
+                else -> Modifier.fillMaxSize()
             }
 
             Box(modifier = containerModifier) {

@@ -56,7 +56,7 @@ import android.content.pm.PackageManager
 class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var hlsPlayerUtils: HlsPlayerUtils
-    private var isInAnimeWatchScreenFullMode: Boolean = false
+    private var playerDisplayMode: PlayerDisplayMode? = null
 
     private val mainViewModel: MainViewModel by viewModels()
 
@@ -126,8 +126,7 @@ class MainActivity : AppCompatActivity() {
             val currentRoute = navBackStackEntry?.destination?.route
 
             LaunchedEffect(state.playerState?.displayMode) {
-                isInAnimeWatchScreenFullMode =
-                    state.playerState?.displayMode == PlayerDisplayMode.FULLSCREEN
+                playerDisplayMode = state.playerState?.displayMode
             }
             LaunchedEffect(state.snackbarMessage) {
                 state.snackbarMessage?.let { snackbarMessage ->
@@ -329,7 +328,7 @@ class MainActivity : AppCompatActivity() {
         resetIdleTimer()
         if (::navController.isInitialized) {
             val isPlaying = hlsPlayerUtils.getPlayer()?.isPlaying == true
-            if (isInAnimeWatchScreenFullMode && isPlaying) {
+            if (playerDisplayMode == PlayerDisplayMode.FULLSCREEN && isPlaying) {
                 pipParamsBuilder.setActions(buildPipActions(this@MainActivity, true))
                 enterPictureInPictureMode(pipParamsBuilder.build())
             } else {
@@ -359,7 +358,7 @@ class MainActivity : AppCompatActivity() {
                     val currentTime = System.currentTimeMillis()
                     val isIdle = currentTime - lastInteractionTime > idleTimeoutMillis
 
-                    if (isIdle && hlsPlayerUtils.getPlayer()?.isPlaying != true) {
+                    if (isIdle && hlsPlayerUtils.getPlayer()?.isPlaying == false && playerDisplayMode != PlayerDisplayMode.SYSTEM_PIP) {
                         if (!isShowIdleDialog) {
                             action(true)
                         }

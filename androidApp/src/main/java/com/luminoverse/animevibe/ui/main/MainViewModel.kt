@@ -5,11 +5,9 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.pm.PackageManager
 import android.content.res.Configuration
-import android.os.Build
 import androidx.compose.ui.geometry.Offset
-import androidx.core.content.ContextCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -51,7 +49,8 @@ data class SnackbarMessage(
 
 enum class PlayerDisplayMode {
     FULLSCREEN,
-    PIP
+    PIP,
+    SYSTEM_PIP
 }
 
 data class PlayerState(
@@ -61,12 +60,19 @@ data class PlayerState(
     val pipRelativeOffset: Offset = Offset(1f, 1f)
 )
 
+data class NotificationSettings(
+    val broadcastEnabled: Boolean = true,
+    val unfinishedEnabled: Boolean = true,
+    val playbackEnabled: Boolean = true
+)
+
 data class MainState(
     val themeMode: ThemeMode = ThemeMode.System,
     val isDarkMode: Boolean = false,
     val contrastMode: ContrastMode = ContrastMode.Normal,
     val colorStyle: ColorStyle = ColorStyle.Default,
-    val isNotificationEnabled: Boolean = false,
+    val isPostNotificationsPermissionGranted: Boolean = false,
+    val notificationSettings: NotificationSettings = NotificationSettings(),
     val isAutoPlayVideo: Boolean = true,
     val isRtl: Boolean = false,
     val networkStatus: NetworkStatus = networkStatusPlaceholder,
@@ -81,11 +87,14 @@ sealed class MainAction {
     data class SetThemeMode(val themeMode: ThemeMode) : MainAction()
     data class SetContrastMode(val contrastMode: ContrastMode) : MainAction()
     data class SetColorStyle(val colorStyle: ColorStyle) : MainAction()
-    data class SetNotificationEnabled(val enabled: Boolean) : MainAction()
     data class SetAutoPlayVideo(val isAutoPlayVideo: Boolean) : MainAction()
     data class SetRtl(val isRtl: Boolean) : MainAction()
     data class SetNetworkStatus(val status: NetworkStatus) : MainAction()
     data class SetIsShowIdleDialog(val show: Boolean) : MainAction()
+    data class SetPostNotificationsPermission(val isGranted: Boolean) : MainAction()
+    data class SetBroadcastNotifications(val enabled: Boolean) : MainAction()
+    data class SetUnfinishedNotifications(val enabled: Boolean) : MainAction()
+    data class SetPlaybackNotifications(val enabled: Boolean) : MainAction()
     data object CheckNotificationPermission : MainAction()
     data object SyncSystemDarkMode : MainAction()
     data class ShowImagePreview(val state: SharedImageState) : MainAction()
@@ -132,7 +141,17 @@ class MainViewModel @Inject constructor(
                     ?.let { ContrastMode.valueOf(it) } ?: ContrastMode.Normal,
                 colorStyle = themePrefs.getString("color_style", ColorStyle.Default.name)
                     ?.let { ColorStyle.valueOf(it) } ?: ColorStyle.Default,
-                isNotificationEnabled = settingsPrefs.getBoolean("notifications_enabled", false),
+                notificationSettings = NotificationSettings(
+                    broadcastEnabled = settingsPrefs.getBoolean(
+                        "notifications_broadcast_enabled", true
+                    ),
+                    unfinishedEnabled = settingsPrefs.getBoolean(
+                        "notifications_unfinished_enabled", true
+                    ),
+                    playbackEnabled = settingsPrefs.getBoolean(
+                        "notifications_playback_enabled", true
+                    )
+                ),
                 isAutoPlayVideo = settingsPrefs.getBoolean("auto_play_video", true),
                 isRtl = settingsPrefs.getBoolean("rtl", false)
             )
@@ -154,11 +173,14 @@ class MainViewModel @Inject constructor(
             is MainAction.SyncSystemDarkMode -> syncSystemDarkMode()
             is MainAction.SetContrastMode -> setContrastMode(action.contrastMode)
             is MainAction.SetColorStyle -> setColorStyle(action.colorStyle)
-            is MainAction.SetNotificationEnabled -> setNotificationEnabled(action.enabled)
             is MainAction.SetAutoPlayVideo -> setAutoPlayVideo(action.isAutoPlayVideo)
             is MainAction.SetRtl -> setRtl(action.isRtl)
             is MainAction.SetNetworkStatus -> setNetworkStatus(action.status)
             is MainAction.SetIsShowIdleDialog -> setIsShowIdleDialog(action.show)
+            is MainAction.SetPostNotificationsPermission -> setPostNotificationsPermission(action.isGranted)
+            is MainAction.SetBroadcastNotifications -> setBroadcastNotifications(action.enabled)
+            is MainAction.SetUnfinishedNotifications -> setUnfinishedNotifications(action.enabled)
+            is MainAction.SetPlaybackNotifications -> setPlaybackNotifications(action.enabled)
             is MainAction.CheckNotificationPermission -> checkNotificationPermission()
             is MainAction.ShowImagePreview -> _state.update { it.copy(sharedImageState = action.state) }
             is MainAction.DismissImagePreview -> _state.update { it.copy(sharedImageState = null) }
@@ -260,11 +282,6 @@ class MainViewModel @Inject constructor(
         themePrefs.edit { putString("color_style", colorStyle.name) }
     }
 
-    private fun setNotificationEnabled(enabled: Boolean) {
-        _state.update { it.copy(isNotificationEnabled = enabled) }
-        settingsPrefs.edit { putBoolean("notifications_enabled", enabled) }
-    }
-
     private fun setAutoPlayVideo(isAutoPlayVideo: Boolean) {
         _state.update { it.copy(isAutoPlayVideo = isAutoPlayVideo) }
         settingsPrefs.edit { putBoolean("auto_play_video", isAutoPlayVideo) }
@@ -283,20 +300,36 @@ class MainViewModel @Inject constructor(
         _state.update { it.copy(isShowIdleDialog = show) }
     }
 
+    private fun setPostNotificationsPermission(isGranted: Boolean) {
+        _state.update { it.copy(isPostNotificationsPermissionGranted = isGranted) }
+    }
+
+    private fun setBroadcastNotifications(enabled: Boolean) {
+        _state.update {
+            it.copy(notificationSettings = it.notificationSettings.copy(broadcastEnabled = enabled))
+        }
+        settingsPrefs.edit { putBoolean("notifications_broadcast_enabled", enabled) }
+    }
+
+    private fun setUnfinishedNotifications(enabled: Boolean) {
+        _state.update {
+            it.copy(notificationSettings = it.notificationSettings.copy(unfinishedEnabled = enabled))
+        }
+        settingsPrefs.edit { putBoolean("notifications_unfinished_enabled", enabled) }
+    }
+
+    private fun setPlaybackNotifications(enabled: Boolean) {
+        _state.update {
+            it.copy(notificationSettings = it.notificationSettings.copy(playbackEnabled = enabled))
+        }
+        settingsPrefs.edit { putBoolean("notifications_playback_enabled", enabled) }
+    }
+
     fun checkNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            val permissionStatus = ContextCompat.checkSelfPermission(
-                getApplication(),
-                "android.permission.POST_NOTIFICATIONS"
-            )
-            val isGranted = permissionStatus == PackageManager.PERMISSION_GRANTED
-            if (isGranted != _state.value.isNotificationEnabled) {
-                setNotificationEnabled(isGranted)
-            }
-        } else {
-            if (!_state.value.isNotificationEnabled) {
-                setNotificationEnabled(true)
-            }
+        val areNotificationsEnabledBySystem =
+            NotificationManagerCompat.from(getApplication()).areNotificationsEnabled()
+        if (areNotificationsEnabledBySystem != _state.value.isPostNotificationsPermissionGranted) {
+            _state.update { it.copy(isPostNotificationsPermissionGranted = areNotificationsEnabledBySystem) }
         }
     }
 

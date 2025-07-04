@@ -2,6 +2,8 @@ package com.luminoverse.animevibe.main
 
 import android.annotation.SuppressLint
 import android.app.Application
+import android.app.AppOpsManager
+import android.app.NotificationManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.IntentFilter
@@ -62,6 +64,13 @@ class MainViewModelTest {
         settingsPrefs = mockk(relaxed = true)
         networkStateMonitor = mockk(relaxed = true)
 
+        val notificationManager = mockk<NotificationManager>(relaxed = true)
+        every { application.getSystemService(Context.NOTIFICATION_SERVICE) } returns notificationManager
+        every { notificationManager.areNotificationsEnabled() } returns true
+
+        val appOpsManager = mockk<AppOpsManager>(relaxed = true)
+        every { application.getSystemService(Context.APP_OPS_SERVICE) } returns appOpsManager
+
         networkStatusFlow = MutableStateFlow(mockNetworkStatusConnected)
 
         every {
@@ -95,9 +104,13 @@ class MainViewModelTest {
                 ColorStyle.Default.name
             )
         } returns ColorStyle.Default.name
-        every { settingsPrefs.getBoolean("notifications_enabled", false) } returns false
         every { settingsPrefs.getBoolean("auto_play_video", true) } returns true
         every { settingsPrefs.getBoolean("rtl", false) } returns false
+
+        every { settingsPrefs.getBoolean("notifications_broadcast_enabled", true) } returns true
+        every { settingsPrefs.getBoolean("notifications_unfinished_enabled", true) } returns true
+        every { settingsPrefs.getBoolean("notifications_playback_enabled", true) } returns true
+
 
         every { networkStateMonitor.networkStatus } returns networkStatusFlow
 
@@ -171,13 +184,19 @@ class MainViewModelTest {
         assertFalse("isConnected boolean should be false", state.networkStatus.isConnected)
     }
 
+    @SuppressLint("UnspecifiedRegisterReceiverFlag")
     @Test
     fun `onCleared should stop network monitoring and unregister receiver`() = runTest {
+        val receiverSlot = slot<BroadcastReceiver>()
+        every { application.registerReceiver(capture(receiverSlot), any()) } returns mockk()
+
+        viewModel = MainViewModel(application, networkStateMonitor)
+
         viewModel.onCleared()
         advanceUntilIdle()
 
         verify { networkStateMonitor.stopMonitoring() }
-        verify { application.unregisterReceiver(any<BroadcastReceiver>()) }
+        verify { application.unregisterReceiver(receiverSlot.captured) }
     }
 
     @Test

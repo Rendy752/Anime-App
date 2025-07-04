@@ -1,8 +1,6 @@
 package com.luminoverse.animevibe.animeHome
 
-import android.app.NotificationManager
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
-import android.app.Application
 import com.luminoverse.animevibe.models.AnimeSchedulesSearchQueryState
 import com.luminoverse.animevibe.models.ListAnimeDetailResponse
 import com.luminoverse.animevibe.models.animeDetailPlaceholder
@@ -17,7 +15,6 @@ import com.luminoverse.animevibe.ui.animeHome.CarouselState
 import com.luminoverse.animevibe.utils.resource.Resource
 import io.mockk.clearMocks
 import io.mockk.coEvery
-import io.mockk.every
 import io.mockk.coVerify
 import io.mockk.mockk
 import kotlinx.coroutines.Dispatchers
@@ -43,7 +40,6 @@ class AnimeHomeViewModelTest {
 
     private val animeHomeRepository: AnimeHomeRepository = mockk()
     private val animeEpisodeDetailRepository: AnimeEpisodeDetailRepository = mockk()
-    private val application: Application = mockk(relaxed = true)
     private lateinit var viewModel: AnimeHomeViewModel
 
     @Before
@@ -57,11 +53,7 @@ class AnimeHomeViewModelTest {
             animeHomeRepository.getTop10Anime()
         } returns Resource.Loading()
 
-        val notificationManager = mockk<NotificationManager>(relaxed = true)
-        every { application.getSystemService(Application.NOTIFICATION_SERVICE) } returns notificationManager
-
-
-        viewModel = AnimeHomeViewModel(application, animeHomeRepository, animeEpisodeDetailRepository)
+        viewModel = AnimeHomeViewModel(animeHomeRepository, animeEpisodeDetailRepository)
     }
 
     @After
@@ -71,7 +63,7 @@ class AnimeHomeViewModelTest {
 
     @Test
     fun `Initial state and GetAnimeSchedules onAction`() = runTest {
-        val viewModel = AnimeHomeViewModel(application, animeHomeRepository, animeEpisodeDetailRepository)
+        val viewModel = AnimeHomeViewModel(animeHomeRepository, animeEpisodeDetailRepository)
 
         val initialState = HomeState()
         val carouselState = CarouselState()
