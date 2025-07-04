@@ -65,6 +65,9 @@ class AnimeEpisodeDetailRepository(
     suspend fun getCachedAnimeDetailComplementByMalId(malId: Int): AnimeDetailComplement? =
         animeDetailComplementDao.getAnimeDetailComplementByMalId(malId)
 
+    suspend fun getAllFavoriteAnimeComplements(): List<AnimeDetailComplement> =
+        animeDetailComplementDao.getAllFavoriteAnimeComplements()
+
     suspend fun insertCachedAnimeDetailComplement(animeDetailComplement: AnimeDetailComplement) =
         animeDetailComplementDao.insertAnimeDetailComplement(animeDetailComplement)
 

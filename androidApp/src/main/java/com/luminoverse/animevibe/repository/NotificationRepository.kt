@@ -53,6 +53,10 @@ class NotificationRepository @Inject constructor(
         }
     }
 
+    suspend fun deleteNotificationByAccessId(accessId: String, type: String) {
+        notificationDao.deleteByAccessIdAndType(accessId, type)
+    }
+
     suspend fun cleanOldNotifications() {
         val cutoff = Instant.now().minusSeconds(NOTIFICATION_CLEANUP_DAYS * 24 * 60 * 60).epochSecond
         val deleted = notificationDao.deleteOldNotifications(cutoff)

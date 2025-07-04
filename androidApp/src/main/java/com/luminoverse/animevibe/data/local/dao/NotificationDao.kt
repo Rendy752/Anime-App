@@ -16,6 +16,9 @@ interface NotificationDao {
     @Query("UPDATE notifications SET sentAt = :sentAt WHERE id = :id")
     suspend fun updateNotificationSentTime(id: Long, sentAt: Long)
 
+    @Query("DELETE FROM notifications WHERE accessId = :accessId AND type = :type")
+    suspend fun deleteByAccessIdAndType(accessId: String, type: String)
+
     @Query("DELETE FROM notifications WHERE createdAt < :cutoff")
     suspend fun deleteOldNotifications(cutoff: Long): Int
 

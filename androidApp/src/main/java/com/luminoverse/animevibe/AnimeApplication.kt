@@ -14,6 +14,7 @@ import com.luminoverse.animevibe.utils.debug.NotificationDebugUtil
 import com.luminoverse.animevibe.utils.handlers.NotificationHandler
 import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
 import com.luminoverse.animevibe.utils.shake.ShakeDetector
+import com.luminoverse.animevibe.utils.workers.WorkerScheduler
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 import javax.inject.Provider
@@ -23,6 +24,9 @@ class AnimeApplication : Application(), Configuration.Provider, ImageLoaderFacto
 
     @Inject
     lateinit var workerFactory: AnimeWorkerFactory
+
+    @Inject
+    lateinit var workerScheduler: WorkerScheduler
 
     @Inject
     lateinit var notificationDebugUtil: NotificationDebugUtil
@@ -49,6 +53,7 @@ class AnimeApplication : Application(), Configuration.Provider, ImageLoaderFacto
         super.onCreate()
 
         notificationHandler.createNotificationChannel(this)
+        scheduleBackgroundWorkers()
 
         if (BuildConfig.DEBUG) {
             setupSensor()
@@ -57,6 +62,11 @@ class AnimeApplication : Application(), Configuration.Provider, ImageLoaderFacto
 
     override fun newImageLoader(): ImageLoader {
         return imageLoaderProvider.get()
+    }
+
+    private fun scheduleBackgroundWorkers() {
+        workerScheduler.scheduleBroadcastNotifications()
+        workerScheduler.scheduleUnfinishedWatchNotifications()
     }
 
     private fun setupSensor() {

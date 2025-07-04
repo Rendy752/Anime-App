@@ -106,6 +106,7 @@
             android:exported="true"
             android:foregroundServiceType="mediaPlayback"
             android:permission="com.luminoverse.animevibe.permission.ACCESS_MEDIA_SERVICE">
+            <property android:name="android.media.PROPERTY_PLAYBACK_TYPE" android:value="local"/>
             <intent-filter>
                 <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>
