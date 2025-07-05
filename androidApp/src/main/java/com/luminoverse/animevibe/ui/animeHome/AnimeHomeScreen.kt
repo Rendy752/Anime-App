@@ -40,7 +40,7 @@ import com.luminoverse.animevibe.ui.animeHome.components.AnimeSchedulesGridSkele
 import com.luminoverse.animevibe.ui.animeHome.components.FilterChipBar
 import com.luminoverse.animevibe.ui.animeHome.components.TopAnimeCarousel
 import com.luminoverse.animevibe.ui.animeHome.components.TopAnimeCarouselSkeleton
-import com.luminoverse.animevibe.ui.common.ContinueWatchingAnime
+import com.luminoverse.animevibe.ui.common.ContinueWatchingEpisode
 import com.luminoverse.animevibe.ui.common.LimitAndPaginationQueryState
 import com.luminoverse.animevibe.ui.common.LimitAndPaginationSection
 import com.luminoverse.animevibe.ui.common.SomethingWentWrongDisplay
@@ -242,7 +242,7 @@ fun AnimeHomeScreen(
                                 .align(Alignment.BottomEnd)
                                 .padding(bottom = 40.dp)
                         ) {
-                            ContinueWatchingAnime(
+                            ContinueWatchingEpisode(
                                 episodeDetailComplement = continueWatchingEpisode,
                                 isMinimized = homeState.isMinimized,
                                 onSetMinimize = { onAction(HomeAction.SetMinimized(it)) },
