@@ -2,12 +2,13 @@ package com.luminoverse.animevibe.data.local.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.luminoverse.animevibe.models.Notification
 
 @Dao
 interface NotificationDao {
-    @Insert
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertNotification(notification: Notification): Long
 
     @Query("SELECT * FROM notifications WHERE accessId = :accessId AND type = :type")

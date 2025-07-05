@@ -80,10 +80,11 @@ class AnimeEpisodeDetailRepositoryTest {
             TimeUtils.isEpisodeAreUpToDate("12:00", "Asia/Tokyo", "Monday", lastEpisodeUpdatedAt)
         } returns true
 
-        val result = repository.getAnimeDetail(animeId)
+        val (result, isCached) = repository.getAnimeDetail(animeId)
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertTrue(result is Resource.Success)
+        assertTrue(isCached)
         assertEquals(animeDetailResponse, (result as Resource.Success).data)
         coVerify { animeDetailDao.getAnimeDetailById(animeId) }
         coVerify { animeDetailComplementDao.getAnimeDetailComplementByMalId(animeId) }
@@ -104,10 +105,11 @@ class AnimeEpisodeDetailRepositoryTest {
         )
         coEvery { animeDetailDao.insertAnimeDetail(animeDetail) } returns Unit
 
-        val result = repository.getAnimeDetail(animeId)
+        val (result, isCached) = repository.getAnimeDetail(animeId)
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertTrue(result is Resource.Success)
+        assertFalse(isCached)
         assertEquals(animeDetailResponse, (result as Resource.Success).data)
         coVerify { animeDetailDao.getAnimeDetailById(animeId) }
         coVerify { jikanAPI.getAnimeDetail(animeId) }
@@ -147,10 +149,11 @@ class AnimeEpisodeDetailRepositoryTest {
         )
         coEvery { animeDetailDao.insertAnimeDetail(newAnimeDetail) } returns Unit
 
-        val result = repository.getAnimeDetail(animeId)
+        val (result, isCached) = repository.getAnimeDetail(animeId)
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertTrue(result is Resource.Success)
+        assertFalse(isCached)
         assertEquals(animeDetailResponse.data.mal_id, (result as Resource.Success).data.data.mal_id)
         coVerify { animeDetailDao.getAnimeDetailById(animeId) }
         coVerify { animeDetailComplementDao.getAnimeDetailComplementByMalId(animeId) }
@@ -170,10 +173,11 @@ class AnimeEpisodeDetailRepositoryTest {
             "Server error"
         )
 
-        val result = repository.getAnimeDetail(animeId)
+        val (result, isCached) = repository.getAnimeDetail(animeId)
         testDispatcher.scheduler.advanceUntilIdle()
 
         assertTrue(result is Resource.Error)
+        assertFalse(isCached)
         assertEquals("Server error", (result as Resource.Error).message)
         coVerify { animeDetailDao.getAnimeDetailById(animeId) }
         coVerify { jikanAPI.getAnimeDetail(animeId) }
@@ -222,7 +226,7 @@ class AnimeEpisodeDetailRepositoryTest {
         val updatedComplement = mockk<AnimeDetailComplement>()
         val capturedComplement = slot<AnimeDetailComplement>()
         coEvery { animeDetailComplement.copy(updatedAt = any()) } returns updatedComplement
-        coEvery { animeDetailComplementDao.updateAnimeDetailComplement(capture(capturedComplement)) } returns Unit
+        coEvery { animeDetailComplementDao.replaceByMalId(capture(capturedComplement)) } returns Unit
         every { updatedComplement.updatedAt } returns Instant.now().epochSecond
 
         repository.updateCachedAnimeDetailComplement(animeDetailComplement)
@@ -230,7 +234,7 @@ class AnimeEpisodeDetailRepositoryTest {
 
         assertTrue(capturedComplement.captured.updatedAt > 0)
         assertEquals(updatedComplement, capturedComplement.captured)
-        coVerify { animeDetailComplementDao.updateAnimeDetailComplement(updatedComplement) }
+        coVerify { animeDetailComplementDao.replaceByMalId(updatedComplement) }
     }
 
     @Test

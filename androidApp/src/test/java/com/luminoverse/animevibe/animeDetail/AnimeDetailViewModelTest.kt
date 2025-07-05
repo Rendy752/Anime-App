@@ -48,9 +48,9 @@ class AnimeDetailViewModelTest {
         mockkObject(FilterUtils)
         mockkObject(ComplementUtils)
 
-        coEvery { animeEpisodeDetailRepository.getAnimeDetail(1735) } returns Resource.Success(
+        coEvery { animeEpisodeDetailRepository.getAnimeDetail(1735) } returns Pair(Resource.Success(
             AnimeDetailResponse(data = animeDetailPlaceholder.copy(mal_id = 1735))
-        )
+        ), false)
         coEvery { animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(1735) } returns null
         coEvery { animeEpisodeDetailRepository.insertCachedAnimeDetailComplement(any()) } just Runs
         coEvery { animeEpisodeDetailRepository.insertCachedEpisodeDetailComplement(any()) } just Runs
@@ -220,7 +220,7 @@ class AnimeDetailViewModelTest {
     fun `loadAnimeDetail should handle error and not trigger loadEpisodes`() = runTest {
         viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository, workerScheduler)
         val animeId = 1735
-        coEvery { animeEpisodeDetailRepository.getAnimeDetail(animeId) } returns Resource.Error("Network error")
+        coEvery { animeEpisodeDetailRepository.getAnimeDetail(animeId) } returns Pair(Resource.Error("Network error"), false)
 
         viewModel.onAction(DetailAction.LoadAnimeDetail(animeId))
         advanceUntilIdle()
@@ -288,14 +288,14 @@ class AnimeDetailViewModelTest {
     fun `loadRelationAnimeDetail should update relationAnimeDetails with anime detail`() = runTest {
         viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository, workerScheduler)
         val relationId = 2
-        coEvery { animeEpisodeDetailRepository.getAnimeDetail(relationId) } returns Resource.Success(
+        coEvery { animeEpisodeDetailRepository.getAnimeDetail(relationId) } returns Pair(Resource.Success(
             AnimeDetailResponse(
                 data = animeDetailPlaceholder.copy(
                     mal_id = 2,
                     title = "Related Anime"
                 )
             )
-        )
+        ), false)
 
         viewModel.onAction(DetailAction.LoadRelationAnimeDetail(relationId))
         advanceUntilIdle()
@@ -404,16 +404,16 @@ class AnimeDetailViewModelTest {
                 animeId
             )
         }
-        coVerify(exactly = 0) { animeEpisodeDetailRepository.getAnimeAniwatchSearch(any()) }
+        coVerify(exactly = 1) { animeEpisodeDetailRepository.getAnimeAniwatchSearch(any()) }
     }
 
     @Test
     fun `loadEpisodes should handle music type anime correctly`() = runTest {
         viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository, workerScheduler)
         val animeId = 1735
-        coEvery { animeEpisodeDetailRepository.getAnimeDetail(animeId) } returns Resource.Success(
+        coEvery { animeEpisodeDetailRepository.getAnimeDetail(animeId) } returns Pair(Resource.Success(
             AnimeDetailResponse(data = animeDetailPlaceholder.copy(mal_id = 1735, type = "Music"))
-        )
+        ), false)
         coEvery { animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(animeId) } returns null
 
         viewModel.onAction(DetailAction.LoadAnimeDetail(animeId))

@@ -25,7 +25,7 @@ object ComplementUtils {
     ): AnimeDetailComplement? = withContext(Dispatchers.IO) {
         repository.getCachedAnimeDetailComplementByMalId(malId)?.let { return@withContext it }
 
-        val animeDetailResult = repository.getAnimeDetail(malId)
+        val (animeDetailResult, _) = repository.getAnimeDetail(malId)
         if (animeDetailResult is Resource.Success) {
             val animeDetail = animeDetailResult.data.data
             val animeComplement = AnimeDetailComplement(
@@ -50,7 +50,7 @@ object ComplementUtils {
         isRefresh: Boolean
     ): AnimeDetailComplement? = withContext(Dispatchers.IO) {
         val isDataNeedUpdate = repository.isDataNeedUpdate(animeDetail, animeDetailComplement)
-        if (!isDataNeedUpdate && !isRefresh) return@withContext animeDetailComplement
+        if (!isDataNeedUpdate && !isRefresh || animeDetailComplement.id.all { it.isDigit() }) return@withContext animeDetailComplement
 
         val episodesResponse = repository.getEpisodes(animeDetailComplement.id)
         if (episodesResponse is Resource.Success) {
@@ -78,7 +78,7 @@ object ComplementUtils {
         animeDetailComplement: AnimeDetailComplement,
         episode: Episode,
         servers: List<EpisodeServer>,
-        sources:  EpisodeSources,
+        sources: EpisodeSources,
         sourcesQuery: EpisodeSourcesQuery
     ): EpisodeDetailComplement = withContext(Dispatchers.IO) {
         val complement = EpisodeDetailComplement(

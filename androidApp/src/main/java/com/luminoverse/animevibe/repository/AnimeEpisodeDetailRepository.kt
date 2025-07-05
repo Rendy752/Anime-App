@@ -26,22 +26,30 @@ class AnimeEpisodeDetailRepository(
     private val jikanAPI: AnimeAPI,
     private val runwayAPI: AnimeAPI
 ) {
-    suspend fun getAnimeDetail(id: Int): Resource<AnimeDetailResponse> {
+    suspend fun getAnimeDetail(id: Int): Pair<Resource<AnimeDetailResponse>, Boolean> {
         val cached = getCachedAnimeDetailById(id)
         if (cached != null && !isDataNeedUpdate(cached)) {
-            return Resource.Success(AnimeDetailResponse(cached))
+            return Pair(Resource.Success(AnimeDetailResponse(cached)), true)
         }
 
-        val response = safeApiCall { jikanAPI.getAnimeDetail(id) }
-        val resource = ResponseHandler.handleCommonResponse(response)
+        val resource = getUpdatedAnimeDetailById(id)
+        if (resource is Resource.Success) {
+            animeDetailDao.insertAnimeDetail(resource.data.data)
+        }
+        return Pair(resource, false)
+    }
+
+    suspend fun getCachedAnimeDetailById(id: Int): AnimeDetail? =
+        animeDetailDao.getAnimeDetailById(id)
+
+    suspend fun getUpdatedAnimeDetailById(id: Int): Resource<AnimeDetailResponse> {
+        val resource =
+            ResponseHandler.handleCommonResponse(safeApiCall { jikanAPI.getAnimeDetail(id) })
         if (resource is Resource.Success) {
             animeDetailDao.insertAnimeDetail(resource.data.data)
         }
         return resource
     }
-
-    suspend fun getCachedAnimeDetailById(id: Int): AnimeDetail? =
-        animeDetailDao.getAnimeDetailById(id)
 
     suspend fun deleteAnimeDetailById(id: Int) {
         animeDetailDao.deleteAnimeDetailById(id)
@@ -71,10 +79,11 @@ class AnimeEpisodeDetailRepository(
     suspend fun insertCachedAnimeDetailComplement(animeDetailComplement: AnimeDetailComplement) =
         animeDetailComplementDao.insertAnimeDetailComplement(animeDetailComplement)
 
-    suspend fun updateCachedAnimeDetailComplement(updatedAnimeDetailComplement: AnimeDetailComplement) =
-        animeDetailComplementDao.updateAnimeDetailComplement(
+    suspend fun updateCachedAnimeDetailComplement(updatedAnimeDetailComplement: AnimeDetailComplement) {
+        val complementToReplace =
             updatedAnimeDetailComplement.copy(updatedAt = Instant.now().epochSecond)
-        )
+        animeDetailComplementDao.replaceByMalId(complementToReplace)
+    }
 
     suspend fun deleteAnimeDetailComplement(malId: Int): Boolean {
         val anime = getCachedAnimeDetailComplementByMalId(malId) ?: return false
@@ -109,7 +118,12 @@ class AnimeEpisodeDetailRepository(
     suspend fun getEpisodeServers(id: String): Resource<AnimeAniwatchCommonResponse<List<EpisodeServer>>> {
         val animeId = id.split("?ep=").first()
         val episodeId = id.split("?ep=").last()
-        return ResponseHandler.handleCommonResponse(safeApiCall { runwayAPI.getEpisodeServers(animeId,episodeId) })
+        return ResponseHandler.handleCommonResponse(safeApiCall {
+            runwayAPI.getEpisodeServers(
+                animeId,
+                episodeId
+            )
+        })
     }
 
     suspend fun getEpisodeSources(

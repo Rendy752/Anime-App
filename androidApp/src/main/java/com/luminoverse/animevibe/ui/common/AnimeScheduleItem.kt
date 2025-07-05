@@ -94,7 +94,7 @@ fun AnimeScheduleItem(
                     text = animeDetail.title,
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.titleSmall,
-                    maxLines = 2,
+                    maxLines = 3,
                     overflow = TextOverflow.Ellipsis
                 )
             }
