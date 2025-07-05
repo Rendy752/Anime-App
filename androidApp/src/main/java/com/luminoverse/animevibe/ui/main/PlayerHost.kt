@@ -86,7 +86,8 @@ fun PlayerHost(
             val density = LocalDensity.current
             val scope = rememberCoroutineScope()
 
-            val animatableRelativeOffset = remember { Animatable(playerState.pipRelativeOffset, Offset.VectorConverter) }
+            val animatableRelativeOffset =
+                remember { Animatable(playerState.pipRelativeOffset, Offset.VectorConverter) }
 
             LaunchedEffect(playerState.pipRelativeOffset) {
                 if (animatableRelativeOffset.value != playerState.pipRelativeOffset) {
@@ -139,7 +140,14 @@ fun PlayerHost(
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
-                ) { onAction(MainAction.SetPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN)) }
+                ) {
+                    onAction(
+                        MainAction.SetPlayerDisplayMode(
+                            if (mainState.isLandscape) PlayerDisplayMode.FULLSCREEN_LANDSCAPE
+                            else PlayerDisplayMode.FULLSCREEN_PORTRAIT
+                        )
+                    )
+                }
                 .pointerInput(draggableWidth, draggableHeight) {
                     awaitEachGesture {
                         val down = awaitFirstDown(requireUnconsumed = false)
@@ -157,8 +165,16 @@ fun PlayerHost(
 
                             scope.launch {
                                 val currentVal = animatableRelativeOffset.value
-                                val newRelativeX = (currentVal.x + (dragAmount.x / draggableWidth)).coerceIn(0f, 1f)
-                                val newRelativeY = (currentVal.y + (dragAmount.y / draggableHeight)).coerceIn(0f, 1f)
+                                val newRelativeX =
+                                    (currentVal.x + (dragAmount.x / draggableWidth)).coerceIn(
+                                        0f,
+                                        1f
+                                    )
+                                val newRelativeY =
+                                    (currentVal.y + (dragAmount.y / draggableHeight)).coerceIn(
+                                        0f,
+                                        1f
+                                    )
                                 animatableRelativeOffset.snapTo(Offset(newRelativeX, newRelativeY))
                             }
                         }
@@ -171,14 +187,20 @@ fun PlayerHost(
                         val isFlingY = abs(lastVelocity.y) > flingVelocityThreshold
 
                         if (isFlingX || isFlingY) {
-                            val targetX = if (isFlingX) (if (lastVelocity.x > 0) 1f else 0f) else currentOffset.x
-                            val targetY = if (isFlingY) (if (lastVelocity.y > 0) 1f else 0f) else currentOffset.y
+                            val targetX =
+                                if (isFlingX) (if (lastVelocity.x > 0) 1f else 0f) else currentOffset.x
+                            val targetY =
+                                if (isFlingY) (if (lastVelocity.y > 0) 1f else 0f) else currentOffset.y
                             targetOffset = Offset(targetX, targetY)
                         }
 
                         scope.launch {
                             animatableRelativeOffset.animateTo(targetOffset, spring())
-                            onAction(MainAction.UpdatePlayerPipRelativeOffset(animatableRelativeOffset.value))
+                            onAction(
+                                MainAction.UpdatePlayerPipRelativeOffset(
+                                    animatableRelativeOffset.value
+                                )
+                            )
                         }
                     }
                 }
@@ -191,7 +213,6 @@ fun PlayerHost(
             Box(modifier = containerModifier) {
                 val watchViewModel: AnimeWatchViewModel = hiltViewModel()
                 val watchState by watchViewModel.watchState.collectAsStateWithLifecycle()
-                val playerUiState by watchViewModel.playerUiState.collectAsStateWithLifecycle()
                 val playerCoreState by watchViewModel.playerCoreState.collectAsStateWithLifecycle()
 
                 LaunchedEffect(playerState.malId, playerState.episodeId) {
@@ -208,7 +229,9 @@ fun PlayerHost(
                 DisposableEffect(activity) {
                     val onPictureInPictureModeChangedCallback: (Boolean) -> Unit =
                         { isInPipMode ->
-                            watchViewModel.onAction(WatchAction.SetPipMode(isInPipMode))
+                            val updatedPlayerDisplayMode =
+                                if (isInPipMode) PlayerDisplayMode.SYSTEM_PIP else PlayerDisplayMode.FULLSCREEN_PORTRAIT
+                            onAction(MainAction.SetPlayerDisplayMode(updatedPlayerDisplayMode))
                             Log.d("MainScreen", "PiP mode changed: isInPipMode=$isInPipMode")
                             Unit
                         }
@@ -225,13 +248,13 @@ fun PlayerHost(
                 val isPlaying by remember { derivedStateOf { playerCoreState.isPlaying } }
                 LaunchedEffect(isPlaying) {
                     activity?.window?.let { window ->
-                        if (isPlaying && !playerUiState.isPipMode) {
+                        if (isPlaying && mainState.playerState?.displayMode != PlayerDisplayMode.SYSTEM_PIP) {
                             window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                         } else {
                             window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                         }
                     }
-                    if (playerUiState.isPipMode && activity != null) {
+                    if (mainState.playerState?.displayMode == PlayerDisplayMode.SYSTEM_PIP && activity != null) {
                         Log.d(
                             "MainScreen",
                             "Updating PiP params: isPlaying=${playerCoreState.isPlaying}"
@@ -257,7 +280,7 @@ fun PlayerHost(
                 AnimeWatchScreen(
                     malId = playerState.malId,
                     episodeId = playerState.episodeId,
-                    displayMode = playerState.displayMode,
+                    playerDisplayMode = playerState.displayMode,
                     setPlayerDisplayMode = { onAction(MainAction.SetPlayerDisplayMode(it)) },
                     navController = navController,
                     networkDataSource = watchViewModel.networkDataSource,
@@ -265,7 +288,6 @@ fun PlayerHost(
                     showSnackbar = { onAction(MainAction.ShowSnackbar(it)) },
                     dismissSnackbar = { onAction(MainAction.DismissSnackbar) },
                     watchState = watchState,
-                    playerUiState = playerUiState,
                     snackbarFlow = watchViewModel.snackbarFlow,
                     hlsPlayerCoreState = playerCoreState,
                     hlsControlsStateFlow = watchViewModel.controlsState,
@@ -286,7 +308,7 @@ fun PlayerHost(
                                     .setActions(actions)
                                     .build()
                             )
-                            watchViewModel.onAction(WatchAction.SetPipMode(true))
+                            onAction(MainAction.SetPlayerDisplayMode(PlayerDisplayMode.SYSTEM_PIP))
                         }
                     },
                     rememberedTopPadding = rememberedTopPadding,

@@ -313,13 +313,4 @@ class AnimeWatchViewModelTest {
                 animeEpisodeDetailRepository.getEpisodeSources(any(), any(), any())
             }
         }
-
-    @Test
-    fun `SetFullscreen should update playerUiState isFullscreen`() = runTest {
-        viewModel.onAction(WatchAction.SetFullscreen(isFullscreen = true))
-        advanceUntilIdle()
-
-        val playerUiState = viewModel.playerUiState.value
-        assertTrue(playerUiState.isFullscreen)
-    }
 }

@@ -184,7 +184,11 @@ class MainActivity : AppCompatActivity() {
                     snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
                     bottomBar = {
                         AnimatedVisibility(
-                            visible = NavRoute.bottomRoutes.any { it.route == currentRoute } && state.playerState?.displayMode != PlayerDisplayMode.FULLSCREEN,
+                            visible = NavRoute.bottomRoutes.any { it.route == currentRoute }
+                                    && state.playerState?.displayMode in listOf(
+                                PlayerDisplayMode.PIP,
+                                null
+                            ),
                             enter = slideInVertically(initialOffsetY = { it }),
                             exit = slideOutVertically(targetOffsetY = { it })
                         ) { BottomNavigationBar(navController = navController) }
@@ -328,7 +332,11 @@ class MainActivity : AppCompatActivity() {
         resetIdleTimer()
         if (::navController.isInitialized) {
             val isPlaying = hlsPlayerUtils.getPlayer()?.isPlaying == true
-            if (playerDisplayMode == PlayerDisplayMode.FULLSCREEN && isPlaying) {
+            if (playerDisplayMode in listOf(
+                    PlayerDisplayMode.FULLSCREEN_PORTRAIT,
+                    PlayerDisplayMode.FULLSCREEN_LANDSCAPE
+                ) && isPlaying
+            ) {
                 pipParamsBuilder.setActions(buildPipActions(this@MainActivity, true))
                 enterPictureInPictureMode(pipParamsBuilder.build())
             } else {

@@ -48,7 +48,8 @@ data class SnackbarMessage(
 )
 
 enum class PlayerDisplayMode {
-    FULLSCREEN,
+    FULLSCREEN_PORTRAIT,
+    FULLSCREEN_LANDSCAPE,
     PIP,
     SYSTEM_PIP
 }
@@ -56,7 +57,7 @@ enum class PlayerDisplayMode {
 data class PlayerState(
     val malId: Int,
     val episodeId: String,
-    val displayMode: PlayerDisplayMode = PlayerDisplayMode.FULLSCREEN,
+    val displayMode: PlayerDisplayMode = PlayerDisplayMode.FULLSCREEN_PORTRAIT,
     val pipRelativeOffset: Offset = Offset(1f, 1f)
 )
 
@@ -207,7 +208,7 @@ class MainViewModel @Inject constructor(
                 playerState = PlayerState(
                     malId = malId,
                     episodeId = episodeId,
-                    displayMode = PlayerDisplayMode.FULLSCREEN
+                    displayMode = if (it.isLandscape) PlayerDisplayMode.FULLSCREEN_LANDSCAPE else PlayerDisplayMode.FULLSCREEN_PORTRAIT
                 )
             )
         }

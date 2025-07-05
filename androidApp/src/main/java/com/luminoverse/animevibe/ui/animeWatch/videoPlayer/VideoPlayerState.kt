@@ -20,7 +20,6 @@ import coil.ImageLoader
 import coil.imageLoader
 import coil.request.ImageRequest
 import com.luminoverse.animevibe.data.remote.api.NetworkDataSource
-import com.luminoverse.animevibe.ui.main.PlayerDisplayMode
 import com.luminoverse.animevibe.utils.media.BoundsUtils.calculateOffsetBounds
 import com.luminoverse.animevibe.utils.media.CaptionCue
 import com.luminoverse.animevibe.utils.media.ControlsState
@@ -63,6 +62,7 @@ class VideoPlayerState(
     private val _currentPosition = MutableStateFlow(0L)
     val currentPosition: StateFlow<Long> = _currentPosition.asStateFlow()
 
+    var isShowResume by mutableStateOf(false)
     var isShowNextEpisodeOverlay by mutableStateOf(false)
     var isShowSeekIndicator by mutableIntStateOf(0)
     var seekAmount by mutableLongStateOf(0L)
@@ -266,8 +266,8 @@ class VideoPlayerState(
         Log.d("PlayerView", "VideoPlayerState disposed, cleaning up resources.")
     }
 
-    fun handleSingleTap(displayMode: PlayerDisplayMode, isLocked: Boolean) {
-        if (displayMode == PlayerDisplayMode.PIP) return
+    fun handleSingleTap(isPlayerDisplayFullscreen: Boolean, isLocked: Boolean) {
+        if (!isPlayerDisplayFullscreen) return
         if (!isLocked && !isHolding) {
             playerAction(HlsPlayerAction.RequestToggleControlsVisibility())
             Log.d("PlayerView", "Single tap: Toggled controls visibility")
@@ -388,7 +388,7 @@ fun rememberVideoPlayerState(
 
 suspend fun AwaitPointerEventScope.handleGestures(
     state: VideoPlayerState,
-    displayMode: PlayerDisplayMode,
+    isPlayerDisplayFullscreen: Boolean,
     updatedControlsState: State<ControlsState>,
     isLandscape: Boolean,
     topPaddingPx: Float,
@@ -401,7 +401,7 @@ suspend fun AwaitPointerEventScope.handleGestures(
     state.longPressJob?.cancel()
     state.longPressJob = state.scope.launch {
         delay(LONG_PRESS_THRESHOLD_MILLIS)
-        if (state.player.isPlaying && !updatedControlsState.value.isLocked && displayMode == PlayerDisplayMode.FULLSCREEN) {
+        if (state.player.isPlaying && !updatedControlsState.value.isLocked && isPlayerDisplayFullscreen) {
             state.handleLongPressStart(updatedControlsState.value.playbackSpeed)
             down.consume()
         }
@@ -425,7 +425,7 @@ suspend fun AwaitPointerEventScope.handleGestures(
             continue
         }
 
-        if (pointers.size > 1 && displayMode == PlayerDisplayMode.FULLSCREEN) {
+        if (pointers.size > 1 && isPlayerDisplayFullscreen) {
             if (!isMultiTouch) {
                 isMultiTouch = true
                 state.isZooming = true
@@ -463,7 +463,7 @@ suspend fun AwaitPointerEventScope.handleGestures(
             continue
         }
 
-        if (pointers.size == 1 && !isMultiTouch && displayMode == PlayerDisplayMode.FULLSCREEN) {
+        if (pointers.size == 1 && !isMultiTouch && isPlayerDisplayFullscreen) {
             val change = pointers.first()
 
             if (updatedControlsState.value.zoom > 1f) {
@@ -552,7 +552,7 @@ suspend fun AwaitPointerEventScope.handleGestures(
                     updatedControlsState.value.isLocked
                 )
             } else {
-                state.handleSingleTap(displayMode, updatedControlsState.value.isLocked)
+                state.handleSingleTap(isPlayerDisplayFullscreen, updatedControlsState.value.isLocked)
             }
             state.lastTapTime = currentTime
             state.lastTapX = tapX

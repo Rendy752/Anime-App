@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.*
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,7 +36,6 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import androidx.compose.ui.viewinterop.AndroidView
-import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
@@ -48,7 +46,6 @@ import com.luminoverse.animevibe.data.remote.api.NetworkDataSource
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
-import com.luminoverse.animevibe.ui.animeWatch.PlayerUiState
 import com.luminoverse.animevibe.ui.animeWatch.components.videoPlayer.CustomSeekBar
 import com.luminoverse.animevibe.ui.animeWatch.components.videoPlayer.CustomSubtitleView
 import com.luminoverse.animevibe.ui.animeWatch.components.videoPlayer.LoadingIndicator
@@ -71,12 +68,13 @@ import com.luminoverse.animevibe.ui.common.ImageAspectRatio
 import com.luminoverse.animevibe.ui.common.ImageDisplay
 import com.luminoverse.animevibe.ui.common.ImageRoundedCorner
 import com.luminoverse.animevibe.ui.main.PlayerDisplayMode
+import com.luminoverse.animevibe.utils.FullscreenUtils
+import com.luminoverse.animevibe.utils.media.BoundsUtils.calculateOffsetBounds
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
 import com.luminoverse.animevibe.utils.media.findActiveCaptionCues
 import com.luminoverse.animevibe.utils.resource.Resource
-import com.luminoverse.animevibe.utils.media.BoundsUtils.calculateOffsetBounds
 import kotlin.math.min
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
@@ -99,7 +97,6 @@ fun VideoPlayer(
     updateStoredWatchState: (Long?, Long?, String?) -> Unit,
     captureScreenshot: suspend () -> String?,
     coreState: PlayerCoreState,
-    playerUiState: PlayerUiState,
     controlsStateFlow: StateFlow<ControlsState>,
     playerAction: (HlsPlayerAction) -> Unit,
     onHandleBackPress: () -> Unit,
@@ -109,12 +106,11 @@ fun VideoPlayer(
     episodeSourcesQuery: EpisodeSourcesQuery,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery, Boolean) -> Unit,
     displayMode: PlayerDisplayMode,
+    setPlayerDisplayMode: (PlayerDisplayMode) -> Unit,
     onEnterSystemPipMode: () -> Unit,
     isSideSheetVisible: Boolean,
     setSideSheetVisibility: (Boolean) -> Unit,
     isAutoplayEnabled: Boolean,
-    onFullscreenChange: (Boolean) -> Unit,
-    onShowResumeChange: (Boolean) -> Unit,
     isLandscape: Boolean,
     rememberedTopPadding: Dp,
     verticalDragOffset: Float,
@@ -190,6 +186,9 @@ fun VideoPlayer(
         }
     }
 
+    LaunchedEffect(episodeDetailComplement.sources.link.file) {
+        videoPlayerState.isShowResume = episodeDetailComplement.lastTimestamp != null
+    }
     val selectedSubtitle = controlsState.selectedSubtitle
     LaunchedEffect(episodeDetailComplement.sources.link.file, selectedSubtitle) {
         if (selectedSubtitle != null) {
@@ -220,12 +219,13 @@ fun VideoPlayer(
 
     var isBufferingFromSeeking by remember { mutableStateOf(false) }
 
-    val shouldShowResumeOverlay = !isAutoplayEnabled && playerUiState.isShowResume &&
+    val shouldShowResumeOverlay = !isAutoplayEnabled && videoPlayerState.isShowResume &&
             episodeDetailComplement.lastTimestamp != null &&
             updatedCoreState.value.playbackState == Player.STATE_READY && !updatedCoreState.value.isPlaying
 
     LaunchedEffect(updatedCoreState.value.isPlaying) {
         if (updatedCoreState.value.isPlaying) {
+            videoPlayerState.isShowResume = false
             if (videoPlayerState.isFirstLoad && updatedCoreState.value.playbackState == Player.STATE_READY) {
                 videoPlayerState.isFirstLoad = false
             }
@@ -250,33 +250,37 @@ fun VideoPlayer(
         }
     }
 
-    LaunchedEffect(isLandscape, playerUiState.isFullscreen) {
-        playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
-        playerView.postDelayed({
-            playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
-        }, 1)
-    }
+    val isPlayerDisplayFullscreen = displayMode in listOf(
+        PlayerDisplayMode.FULLSCREEN_PORTRAIT,
+        PlayerDisplayMode.FULLSCREEN_LANDSCAPE
+    )
+    val isPlayerDisplayPip = displayMode in listOf(
+        PlayerDisplayMode.PIP,
+        PlayerDisplayMode.SYSTEM_PIP
+    )
 
     var physicalOrientation by remember { mutableStateOf(PhysicalOrientation.UNKNOWN) }
-    var isOrientationLocked by remember { mutableStateOf(false) }
+    val isSystemAutoRotateEnabled by remember {
+        derivedStateOf {
+            Settings.System.getInt(
+                context.contentResolver,
+                Settings.System.ACCELEROMETER_ROTATION,
+                0
+            ) == 1
+        }
+    }
 
     DisposableEffect(Unit) {
         val orientationEventListener = object : OrientationEventListener(context) {
             override fun onOrientationChanged(orientation: Int) {
                 if (orientation == ORIENTATION_UNKNOWN) {
-                    physicalOrientation = PhysicalOrientation.UNKNOWN
                     return
                 }
-
-                val newOrientation = when (orientation) {
+                physicalOrientation = when (orientation) {
                     in 345..359, in 0..15 -> PhysicalOrientation.PORTRAIT
                     in 75..105 -> PhysicalOrientation.REVERSE_LANDSCAPE
                     in 255..285 -> PhysicalOrientation.LANDSCAPE
-                    else -> PhysicalOrientation.UNKNOWN
-                }
-
-                if (newOrientation != physicalOrientation) {
-                    physicalOrientation = newOrientation
+                    else -> physicalOrientation
                 }
             }
         }
@@ -286,69 +290,67 @@ fun VideoPlayer(
         }
     }
 
-    LaunchedEffect(playerUiState.isFullscreen) {
-        isOrientationLocked = true
-    }
-
-    LaunchedEffect(
-        controlsState.isLocked,
-        playerUiState.isFullscreen,
-        physicalOrientation,
-        isOrientationLocked
-    ) {
-        if (activity == null) return@LaunchedEffect
-
-        val isSystemAutoRotateEnabled = Settings.System.getInt(
-            context.contentResolver, Settings.System.ACCELEROMETER_ROTATION, 0
-        ) == 1
-
-        if (controlsState.isLocked) {
-            val lockedOrientation = if (isSystemAutoRotateEnabled) {
-                ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-            } else {
-                ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-            }
-            if (activity.requestedOrientation != lockedOrientation) {
-                activity.requestedOrientation = lockedOrientation
-            }
-            return@LaunchedEffect
-        }
-
-        val isTargetingLandscape = playerUiState.isFullscreen
-
-        if (isOrientationLocked) {
-            val targetActivityInfo = if (isTargetingLandscape) {
-                when (physicalOrientation) {
-                    PhysicalOrientation.REVERSE_LANDSCAPE -> ActivityInfo.SCREEN_ORIENTATION_REVERSE_LANDSCAPE
-                    else -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+    LaunchedEffect(displayMode, controlsState.isLocked, isSystemAutoRotateEnabled) {
+        setSideSheetVisibility(false)
+        activity ?: return@LaunchedEffect
+        val newOrientation = when (displayMode) {
+            PlayerDisplayMode.FULLSCREEN_LANDSCAPE -> {
+                if (controlsState.isLocked) {
+                    ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                } else if (isSystemAutoRotateEnabled) {
+                    ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                } else {
+                    ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
                 }
-            } else {
+            }
+
+            PlayerDisplayMode.FULLSCREEN_PORTRAIT -> {
                 ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
             }
 
-            if (activity.requestedOrientation != targetActivityInfo) {
-                activity.requestedOrientation = targetActivityInfo
+            else -> {
+                if (isSystemAutoRotateEnabled) {
+                    ActivityInfo.SCREEN_ORIENTATION_SENSOR
+                } else {
+                    ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+                }
             }
+        }
 
-            val transitionComplete = if (isTargetingLandscape) {
-                physicalOrientation.isLandscape()
-            } else {
-                physicalOrientation == PhysicalOrientation.PORTRAIT
-            }
+        if (activity.requestedOrientation != newOrientation) {
+            activity.requestedOrientation = newOrientation
+        }
+    }
 
-            if (transitionComplete) {
-                isOrientationLocked = false
-            }
+    LaunchedEffect(physicalOrientation, controlsState.isLocked, isSystemAutoRotateEnabled) {
+        if (controlsState.isLocked || !isSystemAutoRotateEnabled) {
+            return@LaunchedEffect
+        }
+
+        if (physicalOrientation.isLandscape() && displayMode == PlayerDisplayMode.FULLSCREEN_PORTRAIT) {
+            setPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN_LANDSCAPE)
+        } else if (physicalOrientation == PhysicalOrientation.PORTRAIT && displayMode == PlayerDisplayMode.FULLSCREEN_LANDSCAPE) {
+            setPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN_PORTRAIT)
+        }
+    }
+
+
+    LaunchedEffect(isLandscape, displayMode) {
+        playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
+        playerView.postDelayed({
+            playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+        }, 1)
+
+        val window = activity?.window ?: return@LaunchedEffect
+        if (displayMode in listOf(PlayerDisplayMode.PIP, PlayerDisplayMode.SYSTEM_PIP)) {
+            FullscreenUtils.setFullscreen(window, false)
+            return@LaunchedEffect
+        }
+
+        if (isLandscape) {
+            FullscreenUtils.setFullscreen(window, true)
         } else {
-            val defaultOrientation = if (isSystemAutoRotateEnabled) {
-                ActivityInfo.SCREEN_ORIENTATION_SENSOR
-            } else {
-                ActivityInfo.SCREEN_ORIENTATION_LOCKED
-            }
-
-            if (activity.requestedOrientation != defaultOrientation) {
-                activity.requestedOrientation = defaultOrientation
-            }
+            FullscreenUtils.setFullscreen(window, false)
         }
     }
 
@@ -370,7 +372,8 @@ fun VideoPlayer(
             }
     }
 
-    val isCommonPartVisible = !playerUiState.isPipMode && !updatedControlsState.value.isLocked
+    val isCommonPartVisible =
+        !isPlayerDisplayPip && !updatedControlsState.value.isLocked && verticalDragOffset == 0f
 
     val animatedCornerRadius by animateDpAsState(
         targetValue = if (verticalDragOffset > 0) 8.dp else 0.dp,
@@ -382,7 +385,7 @@ fun VideoPlayer(
             .fillMaxSize()
             .onSizeChanged { videoPlayerState.playerSize = it }
             .graphicsLayer {
-                if (displayMode == PlayerDisplayMode.FULLSCREEN) {
+                if (isPlayerDisplayFullscreen) {
                     val playerWidth = videoPlayerState.playerSize.width.toFloat()
                     val pHeight = videoPlayerState.playerSize.height.toFloat()
 
@@ -427,7 +430,7 @@ fun VideoPlayer(
                         try {
                             handleGestures(
                                 state = videoPlayerState,
-                                displayMode = displayMode,
+                                isPlayerDisplayFullscreen = isPlayerDisplayFullscreen,
                                 updatedControlsState = updatedControlsState,
                                 isLandscape = isLandscape,
                                 topPaddingPx = topPaddingPx,
@@ -469,7 +472,7 @@ fun VideoPlayer(
                         .background(Color.Black)
                         .then(borderModifier)
                         .then(
-                            if (!playerUiState.isPipMode && displayMode == PlayerDisplayMode.FULLSCREEN) {
+                            if (isPlayerDisplayFullscreen) {
                                 Modifier.graphicsLayer(
                                     scaleX = animatedZoom,
                                     scaleY = animatedZoom,
@@ -505,7 +508,7 @@ fun VideoPlayer(
         }
 
         val isPlayerControlsVisible =
-            (updatedControlsState.value.isControlsVisible || videoPlayerState.isDraggingSeekBar) && !shouldShowResumeOverlay && isCommonPartVisible && displayMode == PlayerDisplayMode.FULLSCREEN
+            (updatedControlsState.value.isControlsVisible || videoPlayerState.isDraggingSeekBar) && !shouldShowResumeOverlay && isCommonPartVisible && isPlayerDisplayFullscreen
 
         thumbnailTrackUrl?.let { url ->
             val showThumbnail =
@@ -548,8 +551,7 @@ fun VideoPlayer(
                 ),
             cues = activeCaptionCue,
             isLandscape = isLandscape,
-            displayMode = displayMode,
-            isPipMode = playerUiState.isPipMode
+            isPipMode = isPlayerDisplayPip
         )
 
         AnimatedVisibility(visible = isPlayerControlsVisible, enter = fadeIn(), exit = fadeOut()) {
@@ -598,7 +600,13 @@ fun VideoPlayer(
                 setShowRemainingTime = { videoPlayerState.showRemainingTime = it },
                 onSettingsClick = { videoPlayerState.showSettingsSheet = true },
                 onFullscreenToggle = {
-                    if (!updatedControlsState.value.isLocked) onFullscreenChange(!playerUiState.isFullscreen)
+                    setPlayerDisplayMode(
+                        if (displayMode == PlayerDisplayMode.FULLSCREEN_LANDSCAPE) {
+                            PlayerDisplayMode.FULLSCREEN_PORTRAIT
+                        } else {
+                            PlayerDisplayMode.FULLSCREEN_LANDSCAPE
+                        }
+                    )
                 },
                 onBottomBarMeasured = { height -> videoPlayerState.bottomBarHeight = height }
             )
@@ -607,7 +615,7 @@ fun VideoPlayer(
         LoadingIndicator(
             modifier = Modifier.align(Alignment.Center),
             isVisible = (updatedCoreState.value.playbackState == Player.STATE_BUFFERING || updatedCoreState.value.playbackState == Player.STATE_IDLE)
-                    && !isPlayerControlsVisible && updatedCoreState.value.error == null && displayMode == PlayerDisplayMode.FULLSCREEN
+                    && !isPlayerControlsVisible && updatedCoreState.value.error == null && isPlayerDisplayFullscreen
         )
 
         SeekIndicator(
@@ -615,18 +623,18 @@ fun VideoPlayer(
             seekDirection = videoPlayerState.isShowSeekIndicator,
             seekAmount = videoPlayerState.seekAmount,
             isLandscape = isLandscape,
-            isFullscreen = playerUiState.isFullscreen
+            isFullscreen = isPlayerDisplayFullscreen
         )
 
         val isSkipVisible =
-            isCommonPartVisible && !videoPlayerState.isHolding && !videoPlayerState.isDraggingSeekBar && updatedCoreState.value.playbackState != Player.STATE_ENDED && updatedCoreState.value.playbackState != Player.STATE_IDLE && !shouldShowResumeOverlay && !videoPlayerState.isFirstLoad
+            displayMode != PlayerDisplayMode.SYSTEM_PIP && !updatedControlsState.value.isLocked && verticalDragOffset == 0f && !videoPlayerState.isHolding && !videoPlayerState.isDraggingSeekBar && updatedCoreState.value.playbackState != Player.STATE_ENDED && updatedCoreState.value.playbackState != Player.STATE_IDLE && !shouldShowResumeOverlay && !videoPlayerState.isFirstLoad
 
         SkipButtonsContainer(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .padding(
-                    end = if (displayMode == PlayerDisplayMode.FULLSCREEN) 56.dp else 8.dp,
-                    bottom = if (displayMode == PlayerDisplayMode.FULLSCREEN) 56.dp else 8.dp
+                    end = if (isPlayerDisplayFullscreen) 56.dp else 8.dp,
+                    bottom = if (isPlayerDisplayFullscreen) 56.dp else 8.dp
                 ),
             currentPosition = currentPosition,
             duration = player.duration,
@@ -668,14 +676,8 @@ fun VideoPlayer(
         )
 
         LockButton(
-            visible = updatedControlsState.value.isLocked && !playerUiState.isPipMode && videoPlayerState.showLockReminder,
+            visible = updatedControlsState.value.isLocked && !isPlayerDisplayPip && videoPlayerState.showLockReminder,
             onClick = {
-                val isSystemAutoRotateEnabled = Settings.System.getInt(
-                    context.contentResolver, Settings.System.ACCELEROMETER_ROTATION, 0
-                ) == 1
-                (context as? FragmentActivity)?.requestedOrientation =
-                    if (isSystemAutoRotateEnabled) ActivityInfo.SCREEN_ORIENTATION_SENSOR
-                    else ActivityInfo.SCREEN_ORIENTATION_LOCKED
                 playerAction(HlsPlayerAction.ToggleLock(false))
             },
             modifier = Modifier.align(Alignment.TopEnd)
@@ -685,21 +687,21 @@ fun VideoPlayer(
             ResumePlaybackOverlay(
                 modifier = Modifier.align(Alignment.Center),
                 isVisible = shouldShowResumeOverlay,
-                isPipMode = playerUiState.isPipMode,
+                isPipMode = isPlayerDisplayPip,
                 lastTimestamp = lastTimestamp,
                 onDismiss = {
-                    onShowResumeChange(false)
+                    videoPlayerState.isShowResume = false
                     playerAction(HlsPlayerAction.RequestToggleControlsVisibility(true))
                 },
                 onRestart = {
                     playerAction(HlsPlayerAction.SeekTo(0))
                     playerAction(HlsPlayerAction.Play)
-                    onShowResumeChange(false)
+                    videoPlayerState.isShowResume = false
                 },
                 onResume = {
                     playerAction(HlsPlayerAction.SeekTo(it))
                     playerAction(HlsPlayerAction.Play)
-                    onShowResumeChange(false)
+                    videoPlayerState.isShowResume = false
                 }
             )
         }
@@ -708,7 +710,7 @@ fun VideoPlayer(
             NextEpisodeOverlay(
                 modifier = Modifier.align(Alignment.Center),
                 isVisible = updatedCoreState.value.playbackState == Player.STATE_ENDED && videoPlayerState.isShowNextEpisodeOverlay,
-                isOnlyShowEpisodeDetail = displayMode == PlayerDisplayMode.PIP || playerUiState.isPipMode,
+                isOnlyShowEpisodeDetail = isPlayerDisplayPip,
                 isLandscape = isLandscape,
                 animeImage = episodeDetailComplement.imageUrl,
                 nextEpisode = it,
@@ -736,7 +738,6 @@ fun VideoPlayer(
         CustomModalBottomSheet(
             modifier = Modifier.align(Alignment.BottomCenter),
             isVisible = videoPlayerState.showSettingsSheet && isCommonPartVisible,
-            isFullscreen = playerUiState.isFullscreen,
             isLandscape = isLandscape,
             config = settingsSheetConfig,
             onDismiss = { videoPlayerState.showSettingsSheet = false }
@@ -745,7 +746,7 @@ fun VideoPlayer(
                 onDismiss = { videoPlayerState.showSettingsSheet = false },
                 onLockClick = {
                     videoPlayerState.showLockReminder = true
-                    onFullscreenChange(true)
+                    setPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN_LANDSCAPE)
                     if (updatedCoreState.value.playbackState == Player.STATE_ENDED) playerAction(
                         HlsPlayerAction.SeekTo(0)
                     )
@@ -764,7 +765,6 @@ fun VideoPlayer(
         CustomModalBottomSheet(
             modifier = Modifier.align(Alignment.BottomCenter),
             isVisible = videoPlayerState.showSubtitleSheet && isCommonPartVisible,
-            isFullscreen = playerUiState.isFullscreen,
             isLandscape = isLandscape,
             config = settingsSheetConfig,
             onDismiss = { videoPlayerState.showSubtitleSheet = false }
@@ -782,7 +782,6 @@ fun VideoPlayer(
         CustomModalBottomSheet(
             modifier = Modifier.align(Alignment.BottomCenter),
             isVisible = videoPlayerState.showPlaybackSpeedSheet && isCommonPartVisible,
-            isFullscreen = playerUiState.isFullscreen,
             isLandscape = isLandscape,
             config = settingsSheetConfig,
             onDismiss = { videoPlayerState.showPlaybackSpeedSheet = false }

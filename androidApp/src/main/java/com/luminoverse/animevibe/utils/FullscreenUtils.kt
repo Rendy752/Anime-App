@@ -7,28 +7,20 @@ import androidx.core.view.WindowInsetsControllerCompat
 
 object FullscreenUtils {
     /**
-     * Handles showing or hiding the system bars (status and navigation).
-     * The actual orientation change is handled as a side effect in the Composable.
+     * Sets the system UI visibility for fullscreen mode.
+     *
+     * @param window The activity's window. This is used to control the system UI visibility.
+     * @param requestHideSystemBars True to hide system bars for fullscreen, false to show them.
      */
-    fun handleFullscreenToggle(
-        window: Window,
-        isFullscreen: Boolean,
-        setFullscreenChange: ((Boolean) -> Unit)? = null
-    ) {
-        val newFullscreenState = !isFullscreen
+    fun setFullscreen(window: Window, requestHideSystemBars: Boolean) {
         val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
+        windowInsetsController.systemBarsBehavior =
+            WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 
-        windowInsetsController.let { controller ->
-            controller.systemBarsBehavior =
-                WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-
-            if (newFullscreenState) {
-                controller.hide(WindowInsetsCompat.Type.statusBars() or WindowInsetsCompat.Type.navigationBars())
-            } else {
-                controller.show(WindowInsetsCompat.Type.statusBars() or WindowInsetsCompat.Type.navigationBars())
-            }
+        if (requestHideSystemBars) {
+            windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
+        } else {
+            windowInsetsController.show(WindowInsetsCompat.Type.systemBars())
         }
-
-        setFullscreenChange?.invoke(newFullscreenState)
     }
 }

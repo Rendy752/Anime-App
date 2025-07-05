@@ -1,17 +1,17 @@
 package com.luminoverse.animevibe.ui.animeWatch
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ActivityInfo
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.Column
+import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
@@ -19,40 +19,38 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
-import com.luminoverse.animevibe.ui.main.MainState
-import com.luminoverse.animevibe.utils.FullscreenUtils
-import com.luminoverse.animevibe.utils.receivers.ScreenOffReceiver
-import com.luminoverse.animevibe.utils.receivers.ScreenOnReceiver
-import com.luminoverse.animevibe.ui.animeWatch.components.AnimeWatchContent
-import kotlinx.coroutines.launch
-import com.luminoverse.animevibe.ui.main.MainActivity
-import androidx.compose.foundation.layout.padding
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.navigation.NavHostController
 import com.luminoverse.animevibe.data.remote.api.NetworkDataSource
+import com.luminoverse.animevibe.ui.animeWatch.components.AnimeWatchContent
+import com.luminoverse.animevibe.ui.main.MainActivity
+import com.luminoverse.animevibe.ui.main.MainState
 import com.luminoverse.animevibe.ui.main.PlayerDisplayMode
 import com.luminoverse.animevibe.ui.main.SnackbarMessage
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
+import com.luminoverse.animevibe.utils.receivers.ScreenOffReceiver
+import com.luminoverse.animevibe.utils.receivers.ScreenOnReceiver
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 
-@SuppressLint("ConfigurationScreenWidthHeight")
+@SuppressLint("SourceLockedOrientationActivity", "ConfigurationScreenWidthHeight")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnimeWatchScreen(
     malId: Int,
     episodeId: String,
-    displayMode: PlayerDisplayMode,
+    playerDisplayMode: PlayerDisplayMode,
     setPlayerDisplayMode: (PlayerDisplayMode) -> Unit,
     navController: NavHostController,
     networkDataSource: NetworkDataSource,
@@ -60,7 +58,6 @@ fun AnimeWatchScreen(
     showSnackbar: (SnackbarMessage) -> Unit,
     dismissSnackbar: () -> Unit,
     watchState: WatchState,
-    playerUiState: PlayerUiState,
     snackbarFlow: Flow<SnackbarMessage>,
     hlsPlayerCoreState: PlayerCoreState,
     hlsControlsStateFlow: StateFlow<ControlsState>,
@@ -89,46 +86,15 @@ fun AnimeWatchScreen(
     }
     val screenOnReceiver = remember { ScreenOnReceiver { isScreenOn = true } }
 
-    LaunchedEffect(mainState.isLandscape, displayMode) {
-        onAction(WatchAction.SetSideSheetVisibility(false))
-        activity?.window?.let { window ->
-            if (displayMode == PlayerDisplayMode.PIP) {
-                FullscreenUtils.handleFullscreenToggle(window = window, isFullscreen = true)
-            } else if (mainState.isLandscape) {
-                FullscreenUtils.handleFullscreenToggle(
-                    window = window,
-                    isFullscreen = false,
-                    setFullscreenChange = { onAction(WatchAction.SetFullscreen(it)) }
-                )
-            } else {
-                FullscreenUtils.handleFullscreenToggle(
-                    window = window,
-                    isFullscreen = true,
-                    setFullscreenChange = { onAction(WatchAction.SetFullscreen(it)) }
-                )
-            }
-        }
-    }
-
     val onBackPress: () -> Unit = {
-        if (playerUiState.isFullscreen) {
-            activity?.window?.let { window ->
-                FullscreenUtils.handleFullscreenToggle(
-                    window = window,
-                    isFullscreen = true,
-                    setFullscreenChange = { onAction(WatchAction.SetFullscreen(it)) }
-                )
-            }
+        if (playerDisplayMode == PlayerDisplayMode.FULLSCREEN_LANDSCAPE) {
+            setPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN_PORTRAIT)
         } else {
-            watchState.animeDetail?.mal_id?.let { malId ->
-                watchState.episodeDetailComplement?.id?.let { episodeId ->
-                    setPlayerDisplayMode(PlayerDisplayMode.PIP)
-                }
-            }
+            setPlayerDisplayMode(PlayerDisplayMode.PIP)
         }
     }
 
-    BackHandler(enabled = displayMode == PlayerDisplayMode.FULLSCREEN) {
+    BackHandler(enabled = playerDisplayMode == PlayerDisplayMode.FULLSCREEN_LANDSCAPE || playerDisplayMode == PlayerDisplayMode.FULLSCREEN_PORTRAIT) {
         onBackPress()
     }
 
@@ -148,8 +114,7 @@ fun AnimeWatchScreen(
         context.registerReceiver(screenOnReceiver, IntentFilter(Intent.ACTION_SCREEN_ON))
 
         onDispose {
-            (context as? Activity)?.requestedOrientation =
-                ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
             context.unregisterReceiver(screenOffReceiver)
             context.unregisterReceiver(screenOnReceiver)
         }
@@ -182,6 +147,13 @@ fun AnimeWatchScreen(
         }
     }
 
+    val verticalDragOffset = remember { Animatable(0f) }
+    var maxVerticalDrag by remember { mutableFloatStateOf(Float.POSITIVE_INFINITY) }
+    val screenHeightPx =
+        with(LocalDensity.current) { LocalConfiguration.current.screenHeightDp.dp.toPx() }
+    val dismissDragThreshold = if (maxVerticalDrag.isFinite()) maxVerticalDrag else screenHeightPx
+    val dragProgress = (verticalDragOffset.value / dismissDragThreshold).coerceIn(0f, 1f)
+
     PullToRefreshBox(
         isRefreshing = watchState.isRefreshing,
         onRefresh = { refreshEpisodeSources() },
@@ -199,17 +171,7 @@ fun AnimeWatchScreen(
             )
         }
     ) {
-        val configuration = LocalConfiguration.current
-        val screenWidth = configuration.screenWidthDp.dp
-        val videoHeight = screenWidth * 9 / 16
-        Column(modifier = Modifier.fillMaxSize()) {
-            val videoPlayerModifier = Modifier
-                .fillMaxWidth()
-                .then(
-                    if (displayMode == PlayerDisplayMode.PIP) Modifier.fillMaxSize()
-                    else if (mainState.isLandscape) Modifier.fillMaxSize()
-                    else Modifier.height(videoHeight)
-                )
+        Box(modifier = Modifier.fillMaxSize()) {
             AnimeWatchContent(
                 malId = malId,
                 navController = navController,
@@ -217,7 +179,6 @@ fun AnimeWatchScreen(
                 watchState = watchState,
                 showSnackbar = showSnackbar,
                 isScreenOn = isScreenOn,
-                playerUiState = playerUiState,
                 mainState = mainState,
                 playerCoreState = hlsPlayerCoreState,
                 controlsStateFlow = hlsControlsStateFlow,
@@ -227,15 +188,30 @@ fun AnimeWatchScreen(
                 onHandleBackPress = onBackPress,
                 onAction = onAction,
                 scrollState = scrollState,
-                displayMode = displayMode,
+                playerDisplayMode = playerDisplayMode,
                 setPlayerDisplayMode = setPlayerDisplayMode,
                 onEnterSystemPipMode = onEnterSystemPipMode,
+                dragProgress = dragProgress,
+                maxVerticalDrag = maxVerticalDrag,
+                setMaxVerticalDrag = { maxVerticalDrag = it },
+                verticalDragOffset = verticalDragOffset,
                 rememberedTopPadding = rememberedTopPadding,
                 rememberedBottomPadding = rememberedBottomPadding,
                 pipEndDestinationPx = pipEndDestinationPx,
-                pipEndSizePx = pipEndSizePx,
-                modifier = videoPlayerModifier,
+                pipEndSizePx = pipEndSizePx
             )
+
+            if (dragProgress > 0f) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = { }
+                        )
+                )
+            }
         }
     }
 }

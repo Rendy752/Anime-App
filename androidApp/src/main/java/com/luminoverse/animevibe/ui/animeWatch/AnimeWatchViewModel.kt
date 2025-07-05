@@ -1,7 +1,5 @@
 package com.luminoverse.animevibe.ui.animeWatch
 
-import androidx.compose.runtime.Stable
-import androidx.compose.ui.unit.IntOffset
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.exoplayer.ExoPlayer
@@ -42,16 +40,8 @@ data class WatchState(
     val isRefreshing: Boolean = false,
     val newEpisodeIdList: List<String> = emptyList(),
     val episodeJumpNumber: Int? = null,
-    val isSideSheetVisible: Boolean = false
-)
-
-@Stable
-data class PlayerUiState(
+    val isSideSheetVisible: Boolean = false,
     val errorSourceQueryList: List<EpisodeSourcesQuery> = emptyList(),
-    val isFullscreen: Boolean = false,
-    val isPipMode: Boolean = false,
-    val customPipOffset: IntOffset = IntOffset.Zero,
-    val isShowResume: Boolean = false
 )
 
 sealed class WatchAction {
@@ -71,10 +61,6 @@ sealed class WatchAction {
     data class AddErrorSourceQueryList(val errorSourceQueryList: EpisodeSourcesQuery) :
         WatchAction()
 
-    data class SetFullscreen(val isFullscreen: Boolean) : WatchAction()
-    data class SetPipMode(val isPipMode: Boolean) : WatchAction()
-    data class UpdateCustomPipOffset(val offset: IntOffset) : WatchAction()
-    data class SetShowResume(val isShow: Boolean) : WatchAction()
     data class SetEpisodeJumpNumber(val jumpNumber: Int) : WatchAction()
     data class SetSideSheetVisibility(val isVisible: Boolean) : WatchAction()
 
@@ -92,9 +78,6 @@ class AnimeWatchViewModel @Inject constructor(
 
     private val _watchState = MutableStateFlow(WatchState())
     val watchState: StateFlow<WatchState> = _watchState.asStateFlow()
-
-    private val _playerUiState = MutableStateFlow(PlayerUiState())
-    val playerUiState: StateFlow<PlayerUiState> = _playerUiState.asStateFlow()
 
     private val _snackbarChannel = Channel<SnackbarMessage>()
     val snackbarFlow = _snackbarChannel.receiveAsFlow()
@@ -130,17 +113,8 @@ class AnimeWatchViewModel @Inject constructor(
 
             is WatchAction.LoadEpisodeDetailComplement -> loadEpisodeDetailComplement(action.episodeId)
 
-            is WatchAction.AddErrorSourceQueryList -> _playerUiState.update {
+            is WatchAction.AddErrorSourceQueryList -> _watchState.update {
                 it.copy(errorSourceQueryList = it.errorSourceQueryList + action.errorSourceQueryList)
-            }
-
-            is WatchAction.SetFullscreen -> _playerUiState.update { it.copy(isFullscreen = action.isFullscreen) }
-            is WatchAction.SetPipMode -> _playerUiState.update { it.copy(isPipMode = action.isPipMode) }
-            is WatchAction.UpdateCustomPipOffset -> {
-                _playerUiState.update { it.copy(customPipOffset = action.offset) }
-            }
-            is WatchAction.SetShowResume -> _playerUiState.update {
-                it.copy(isShowResume = action.isShow)
             }
 
             is WatchAction.SetEpisodeJumpNumber -> _watchState.update { it.copy(episodeJumpNumber = action.jumpNumber) }
@@ -229,7 +203,7 @@ class AnimeWatchViewModel @Inject constructor(
                             episodeId = episodeSourcesQuery.id,
                             episodeServers = episodeServersResource.data,
                             getEpisodeSources = animeEpisodeDetailRepository::getEpisodeSources,
-                            errorSourceQueryList = _playerUiState.value.errorSourceQueryList,
+                            errorSourceQueryList = _watchState.value.errorSourceQueryList,
                             episodeSourcesQuery = episodeSourcesQuery
                         )
                         if (episodeSourcesResource !is Resource.Success) {
@@ -278,7 +252,7 @@ class AnimeWatchViewModel @Inject constructor(
                         episodeId = episodeSourcesQuery.id,
                         episodeServers = episodeServersResource.data.results,
                         getEpisodeSources = animeEpisodeDetailRepository::getEpisodeSources,
-                        errorSourceQueryList = _playerUiState.value.errorSourceQueryList,
+                        errorSourceQueryList = _watchState.value.errorSourceQueryList,
                         episodeSourcesQuery = episodeSourcesQuery
                     )
                     if (episodeSourcesResource is Resource.Success && availableEpisodeSourcesQuery != null) {

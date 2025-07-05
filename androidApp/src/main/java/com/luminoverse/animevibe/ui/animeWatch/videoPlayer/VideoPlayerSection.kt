@@ -7,8 +7,6 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
 import android.support.v4.media.MediaBrowserCompat
-import android.support.v4.media.session.MediaControllerCompat
-import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import androidx.annotation.OptIn
 import androidx.compose.runtime.Composable
@@ -31,7 +29,6 @@ import com.luminoverse.animevibe.data.remote.api.NetworkDataSource
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
-import com.luminoverse.animevibe.ui.animeWatch.PlayerUiState
 import com.luminoverse.animevibe.ui.main.PlayerDisplayMode
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
@@ -48,7 +45,6 @@ fun VideoPlayerSection(
     episodeDetailComplement: EpisodeDetailComplement,
     episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
     networkDataSource: NetworkDataSource,
-    playerUiState: PlayerUiState,
     coreState: PlayerCoreState,
     controlsStateFlow: StateFlow<ControlsState>,
     playerAction: (HlsPlayerAction) -> Unit,
@@ -63,11 +59,10 @@ fun VideoPlayerSection(
     episodeSourcesQuery: EpisodeSourcesQuery,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery, Boolean) -> Unit,
     displayMode: PlayerDisplayMode,
+    setPlayerDisplayMode: (PlayerDisplayMode) -> Unit,
     onEnterSystemPipMode: () -> Unit,
     isSideSheetVisible: Boolean,
     setSideSheetVisibility: (Boolean) -> Unit,
-    setFullscreenChange: (Boolean) -> Unit,
-    setShowResume: (Boolean) -> Unit,
     setPlayerError: (String) -> Unit,
     rememberedTopPadding: Dp,
     verticalDragOffset: Float,
@@ -82,7 +77,6 @@ fun VideoPlayerSection(
     val playerView = remember { PlayerView(context).apply { useController = false } }
     val player by remember { mutableStateOf(getPlayer()) }
     var mediaBrowser by remember { mutableStateOf<MediaBrowserCompat?>(null) }
-    var mediaController by remember { mutableStateOf<MediaControllerCompat?>(null) }
     var mediaPlaybackService by remember { mutableStateOf<MediaPlaybackService?>(null) }
 
     fun setupPlayer() {
@@ -136,18 +130,6 @@ fun VideoPlayerSection(
         }
     }
 
-    val mediaControllerCallback = remember {
-        object : MediaControllerCompat.Callback() {
-            override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
-                state?.let {
-                    if (it.state == PlaybackStateCompat.STATE_PLAYING) {
-                        setShowResume(false)
-                    }
-                }
-            }
-        }
-    }
-
     DisposableEffect(Unit) {
         val intent = Intent(context, MediaPlaybackService::class.java)
         try {
@@ -159,7 +141,6 @@ fun VideoPlayerSection(
         }
 
         onDispose {
-            mediaController?.unregisterCallback(mediaControllerCallback)
             mediaBrowser?.disconnect()
 
 
@@ -190,7 +171,6 @@ fun VideoPlayerSection(
             )
         )
         setupPlayer()
-        setShowResume(episodeDetailComplement.lastTimestamp != null)
     }
 
     LaunchedEffect(isScreenOn) {
@@ -208,7 +188,6 @@ fun VideoPlayerSection(
             updateStoredWatchState = updateStoredWatchState,
             captureScreenshot = captureScreenshot,
             coreState = coreState,
-            playerUiState = playerUiState,
             controlsStateFlow = controlsStateFlow,
             playerAction = playerAction,
             onHandleBackPress = onHandleBackPress,
@@ -218,12 +197,11 @@ fun VideoPlayerSection(
             episodeSourcesQuery = episodeSourcesQuery,
             handleSelectedEpisodeServer = handleSelectedEpisodeServer,
             displayMode = displayMode,
+            setPlayerDisplayMode = setPlayerDisplayMode,
             onEnterSystemPipMode = onEnterSystemPipMode,
             isSideSheetVisible = isSideSheetVisible,
             setSideSheetVisibility = setSideSheetVisibility,
             isAutoplayEnabled = isAutoPlayVideo,
-            onFullscreenChange = setFullscreenChange,
-            onShowResumeChange = setShowResume,
             isLandscape = isLandscape,
             rememberedTopPadding = rememberedTopPadding,
             verticalDragOffset = verticalDragOffset,
