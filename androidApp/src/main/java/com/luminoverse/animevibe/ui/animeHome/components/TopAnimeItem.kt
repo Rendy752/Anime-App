@@ -40,30 +40,32 @@ fun TopAnimeItem(animeDetail: AnimeDetail, onItemClick: () -> Unit) {
         leftContent = {
             Column(
                 modifier = Modifier.padding(bottom = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Text(
-                    text = animeDetail.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    DataTextWithIcon(
-                        value = animeDetail.score.toString(),
-                        icon = Icons.Filled.Score
+                Column {
+                    Text(
+                        text = animeDetail.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
                     )
-                    DataTextWithIcon(
-                        value = animeDetail.type ?: "Unknown",
-                        icon = Icons.Default.PlayCircle
-                    )
-                    DataTextWithIcon(
-                        value = animeDetail.duration.substringBefore("per").trim(),
-                        icon = Icons.Default.AccessTime
-                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        DataTextWithIcon(
+                            value = animeDetail.score.toString(),
+                            icon = Icons.Filled.Score
+                        )
+                        DataTextWithIcon(
+                            value = animeDetail.type ?: "Unknown",
+                            icon = Icons.Default.PlayCircle
+                        )
+                        DataTextWithIcon(
+                            value = animeDetail.duration.substringBefore("per").trim(),
+                            icon = Icons.Default.AccessTime
+                        )
+                    }
                 }
                 animeDetail.synopsis?.let { synopsis ->
                     Text(

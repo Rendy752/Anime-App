@@ -50,7 +50,7 @@ import com.luminoverse.animevibe.ui.main.navigation.navigateTo
 import com.luminoverse.animevibe.utils.resource.Resource
 import kotlinx.coroutines.delay
 
-const val INITIAL_CAROUSEL_HEIGHT = 180
+const val INITIAL_CAROUSEL_HEIGHT = 172
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview
@@ -168,21 +168,18 @@ fun AnimeHomeScreen(
 
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
+                    .weight(1f)
                     .clip(RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp))
                     .background(MaterialTheme.colorScheme.surface)
             ) {
-                Column {
+                Column(modifier = Modifier.fillMaxSize()) {
                     FilterChipBar(
                         queryState = homeState.queryState,
                         onApplyFilters = { onAction(HomeAction.ApplyFilters(it)) }
                     )
                     when (homeState.animeSchedules) {
                         is Resource.Loading -> {
-                            AnimeSchedulesGridSkeleton(
-                                gridState = gridState,
-                                isLandscape = mainState.isLandscape
-                            )
+                            AnimeSchedulesGridSkeleton(gridState = gridState)
                         }
 
                         is Resource.Success -> {
@@ -194,7 +191,6 @@ fun AnimeHomeScreen(
                                     AnimeSchedulesGrid(
                                         animeSchedules = animeSchedules.data,
                                         remainingTimes = remainingTimes,
-                                        isLandscape = mainState.isLandscape,
                                         onItemClick = { anime ->
                                             navController.navigateTo(
                                                 NavRoute.AnimeDetail.fromId(anime.mal_id)
@@ -246,7 +242,9 @@ fun AnimeHomeScreen(
                                 episodeDetailComplement = continueWatchingEpisode,
                                 isMinimized = homeState.isMinimized,
                                 onSetMinimize = { onAction(HomeAction.SetMinimized(it)) },
-                                onTitleClick = { navController.navigateTo(NavRoute.AnimeDetail.fromId(it)) },
+                                onTitleClick = {
+                                    navController.navigateTo(NavRoute.AnimeDetail.fromId(it))
+                                },
                                 onEpisodeClick = { malId, episodeId ->
                                     playEpisode(malId, episodeId)
                                 }

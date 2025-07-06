@@ -211,7 +211,12 @@ fun EpisodesDetailSection(
                             modifier = Modifier.fillMaxWidth(),
                             message = "Failed to load episodes",
                             suggestion = "Please try again later"
-                        ) else SomethingWentWrongDisplay(
+                        ) else if (animeDetail.status == "Not yet aired") SomethingWentWrongDisplay(
+                            modifier = Modifier.fillMaxWidth(),
+                            message = "This anime has not yet aired",
+                            suggestion = "Please wait for the anime to be released"
+                        )
+                        else SomethingWentWrongDisplay(
                             modifier = Modifier.fillMaxWidth(),
                             message = "No episodes found",
                             suggestion = "It seems like there are no episodes for this anime."

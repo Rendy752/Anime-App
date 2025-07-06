@@ -147,7 +147,8 @@ fun AnimeWatchContent(
                     if (player == null || watchState.episodeDetailComplement == null || watchState.episodeDetailComplement.sources.link.file.isEmpty() || watchState.animeDetailComplement?.episodes == null || watchState.episodeSourcesQuery == null) {
                         ImageDisplay(
                             image = watchState.episodeDetailComplement?.screenshot,
-                            imagePlaceholder = watchState.episodeDetailComplement?.imageUrl ?: watchState.animeDetail?.images?.webp?.large_image_url,
+                            imagePlaceholder = watchState.episodeDetailComplement?.imageUrl
+                                ?: watchState.animeDetail?.images?.webp?.large_image_url,
                             ratio = ImageAspectRatio.WIDESCREEN.ratio,
                             contentDescription = "Anime cover",
                             roundedCorners = ImageRoundedCorner.NONE
@@ -317,37 +318,38 @@ fun AnimeWatchContent(
             }
         }
 
-        if (isPortrait && watchState.animeDetailComplement?.episodes != null && watchState.animeDetail?.mal_id == malId) Column(
+        Column(
             modifier = contentModifier.verticalScroll(columnScrollState),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            WatchContentSection(
-                animeDetail = watchState.animeDetail,
-                networkStatus = mainState.networkStatus,
-                onFavoriteToggle = { isFavorite ->
-                    onAction(WatchAction.SetFavorite(isFavorite))
-                },
-                episodeDetailComplement = watchState.episodeDetailComplement,
-                onLoadEpisodeDetailComplement = {
-                    onAction(WatchAction.LoadEpisodeDetailComplement(it))
-                },
-                episodeDetailComplements = watchState.episodeDetailComplements,
-                episodes = watchState.animeDetailComplement.episodes,
-                newEpisodeIdList = watchState.newEpisodeIdList,
-                episodeSourcesQuery = watchState.episodeSourcesQuery,
-                episodeJumpNumber = watchState.episodeJumpNumber,
-                setEpisodeJumpNumber = { onAction(WatchAction.SetEpisodeJumpNumber(it)) },
-                serverScrollState = serverScrollState,
-                handleSelectedEpisodeServer = {
-                    onAction(
-                        WatchAction.HandleSelectedEpisodeServer(
-                            episodeSourcesQuery = it, isRefresh = false
+            if (isPortrait && watchState.animeDetailComplement?.episodes != null && watchState.animeDetail?.mal_id == malId) {
+                WatchContentSection(
+                    animeDetail = watchState.animeDetail,
+                    networkStatus = mainState.networkStatus,
+                    onFavoriteToggle = { isFavorite ->
+                        onAction(WatchAction.SetFavorite(isFavorite))
+                    },
+                    episodeDetailComplement = watchState.episodeDetailComplement,
+                    onLoadEpisodeDetailComplement = {
+                        onAction(WatchAction.LoadEpisodeDetailComplement(it))
+                    },
+                    episodeDetailComplements = watchState.episodeDetailComplements,
+                    episodes = watchState.animeDetailComplement.episodes,
+                    newEpisodeIdList = watchState.newEpisodeIdList,
+                    episodeSourcesQuery = watchState.episodeSourcesQuery,
+                    episodeJumpNumber = watchState.episodeJumpNumber,
+                    setEpisodeJumpNumber = { onAction(WatchAction.SetEpisodeJumpNumber(it)) },
+                    serverScrollState = serverScrollState,
+                    handleSelectedEpisodeServer = {
+                        onAction(
+                            WatchAction.HandleSelectedEpisodeServer(
+                                episodeSourcesQuery = it, isRefresh = false
+                            )
                         )
-                    )
-                },
-            )
-
+                    },
+                )
+            }
             InfoContentSection(
                 animeDetail = watchState.animeDetail,
                 navController = navController,

@@ -64,7 +64,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var navController: NavHostController
     private var lastInteractionTime = System.currentTimeMillis()
     val resetIdleTimer = { lastInteractionTime = System.currentTimeMillis() }
-    private val idleTimeoutMillis = TimeUnit.MINUTES.toMillis(1)
+    private val idleTimeoutMillis = TimeUnit.MINUTES.toMillis(3)
     private val intentChannel = Channel<Intent>(Channel.CONFLATED)
     private lateinit var pipParamsBuilder: PictureInPictureParams.Builder
     private var lastBackPressTime = 0L

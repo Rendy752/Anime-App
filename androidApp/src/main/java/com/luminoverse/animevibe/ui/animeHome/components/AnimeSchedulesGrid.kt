@@ -17,12 +17,11 @@ import com.luminoverse.animevibe.ui.common.AnimeScheduleItemSkeleton
 fun AnimeSchedulesGrid(
     animeSchedules: List<AnimeDetail>,
     remainingTimes: Map<String, String>,
-    isLandscape: Boolean,
     onItemClick: (AnimeDetail) -> Unit,
     gridState: LazyGridState
 ) {
     LazyVerticalGrid(
-        columns = GridCells.Fixed(if (isLandscape) 6 else 3),
+        columns = GridCells.Adaptive(minSize = 120.dp),
         contentPadding = PaddingValues(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -40,21 +39,16 @@ fun AnimeSchedulesGrid(
 
 @Preview
 @Composable
-fun AnimeSchedulesGridSkeleton(
-    gridState: LazyGridState = LazyGridState(),
-    isLandscape: Boolean = false
-) {
-    val itemCount = if (isLandscape) 12 else 9
+fun AnimeSchedulesGridSkeleton(gridState: LazyGridState = LazyGridState()) {
+    val itemCount = 12
 
     LazyVerticalGrid(
-        columns = GridCells.Fixed(if (isLandscape) 6 else 3),
+        columns = GridCells.Adaptive(minSize = 120.dp),
         contentPadding = PaddingValues(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         state = gridState
     ) {
-        items(itemCount) {
-            AnimeScheduleItemSkeleton()
-        }
+        items(itemCount) { AnimeScheduleItemSkeleton() }
     }
 }

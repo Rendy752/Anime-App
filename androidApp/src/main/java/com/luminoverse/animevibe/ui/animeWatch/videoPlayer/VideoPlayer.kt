@@ -235,7 +235,6 @@ fun VideoPlayer(
 
     LaunchedEffect(updatedCoreState.value.isPlaying) {
         val duration = player.duration.coerceAtLeast(0L)
-        val screenshot = captureScreenshot()
         if (updatedCoreState.value.isPlaying) {
             videoPlayerState.isShowResume = false
             videoPlayerState.isShowNextEpisodeOverlay = false
@@ -247,7 +246,7 @@ fun VideoPlayer(
                 videoPlayerState.updatePosition(currentPosition)
                 if (player.duration > 0 && currentPosition >= 10_000) {
                     val position = currentPosition.coerceAtLeast(0L)
-                    updateStoredWatchState(position, duration, screenshot)
+                    updateStoredWatchState(position, duration, captureScreenshot())
                 }
                 delay(500)
             }
@@ -256,7 +255,7 @@ fun VideoPlayer(
                 videoPlayerState.isShowResume = false
                 videoPlayerState.isShowNextEpisodeOverlay = true
                 videoPlayerState.updatePosition(duration)
-                updateStoredWatchState(duration, duration, screenshot)
+                updateStoredWatchState(duration, duration, captureScreenshot())
             }
         }
     }
