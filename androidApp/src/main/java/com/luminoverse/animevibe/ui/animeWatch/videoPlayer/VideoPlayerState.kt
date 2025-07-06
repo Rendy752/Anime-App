@@ -72,8 +72,11 @@ class VideoPlayerState(
     var zoomScaleProgress by mutableFloatStateOf(1f)
     var isZooming by mutableStateOf(false)
     var speedUpText by mutableStateOf("")
+    var autoplayNextEpisodeStatusText by mutableStateOf<String?>(null)
+    var autoplayNextEpisodeStatusTrigger by mutableIntStateOf(0)
     var isHolding by mutableStateOf(false)
     var showLockReminder by mutableStateOf(false)
+    var isBufferingFromSeeking by mutableStateOf(false)
     var isDraggingSeekBar by mutableStateOf(false)
     var dragCancelTrigger by mutableIntStateOf(0)
         private set

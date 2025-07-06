@@ -85,6 +85,8 @@ fun PlayerControls(
     showRemainingTime: Boolean,
     setShowRemainingTime: (Boolean) -> Unit,
     onSettingsClick: () -> Unit,
+    isAutoplayPlayNextEpisode: Boolean,
+    onAutoplayNextEpisodeToggle: (Boolean) -> Unit,
     onFullscreenToggle: () -> Unit,
     onBottomBarMeasured: (Float) -> Unit
 ) {
@@ -136,6 +138,8 @@ fun PlayerControls(
             modifier = Modifier.align(Alignment.BottomCenter),
             shouldShowControls = shouldShowControls,
             isShowSeekIndicator = isShowSeekIndicator,
+            isAutoplayPlayNextEpisode = isAutoplayPlayNextEpisode,
+            onAutoplayNextEpisodeToggle = onAutoplayNextEpisodeToggle,
             onFullscreenToggle = onFullscreenToggle,
             isLandscape = isLandscape,
             handlePlay = handlePlay,
@@ -412,6 +416,8 @@ private fun BottomSection(
     modifier: Modifier,
     shouldShowControls: Boolean,
     isShowSeekIndicator: Int,
+    isAutoplayPlayNextEpisode: Boolean,
+    onAutoplayNextEpisodeToggle: (Boolean) -> Unit,
     onFullscreenToggle: () -> Unit,
     isLandscape: Boolean,
     handlePlay: () -> Unit,
@@ -473,15 +479,24 @@ private fun BottomSection(
                     },
                     fontSize = 14.sp
                 )
-                Icon(
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .clickable { onFullscreenToggle() }
-                        .padding(8.dp),
-                    imageVector = if (isLandscape) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
-                    contentDescription = if (isLandscape) "Exit Fullscreen" else "Enter Fullscreen",
-                    tint = Color.White
-                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    AutoplayNextEpisodeToggle(
+                        isAutoplayPlayNextEpisode = isAutoplayPlayNextEpisode,
+                        onToggle = { onAutoplayNextEpisodeToggle(!isAutoplayPlayNextEpisode) }
+                    )
+                    Icon(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .clickable { onFullscreenToggle() }
+                            .padding(8.dp),
+                        imageVector = if (isLandscape) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
+                        contentDescription = if (isLandscape) "Exit Fullscreen" else "Enter Fullscreen",
+                        tint = Color.White
+                    )
+                }
             }
         }
         CustomSeekBar(

@@ -49,6 +49,7 @@ import com.luminoverse.animevibe.data.remote.api.NetworkDataSource
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
+import com.luminoverse.animevibe.ui.animeWatch.components.videoPlayer.AutoplayNextEpisodeStatusIndicator
 import com.luminoverse.animevibe.ui.animeWatch.components.videoPlayer.CustomSeekBar
 import com.luminoverse.animevibe.ui.animeWatch.components.videoPlayer.CustomSubtitleView
 import com.luminoverse.animevibe.ui.animeWatch.components.videoPlayer.LoadingIndicator
@@ -206,6 +207,14 @@ fun VideoPlayer(
 
     val updatedControlsState = rememberUpdatedState(controlsState)
     val updatedCoreState = rememberUpdatedState(coreState)
+    var isAutoplayNextEpisode by remember { mutableStateOf(false) }
+
+    LaunchedEffect(videoPlayerState.autoplayNextEpisodeStatusTrigger) {
+        if (videoPlayerState.autoplayNextEpisodeStatusTrigger > 0) {
+            delay(3000)
+            videoPlayerState.autoplayNextEpisodeStatusText = null
+        }
+    }
 
     val animatedZoom by animateFloatAsState(
         targetValue = videoPlayerState.zoomScaleProgress,
@@ -220,15 +229,16 @@ fun VideoPlayer(
     val prevEpisode = episodes.find { it.episode_no == currentEpisode - 1 }
     val nextEpisode = episodes.find { it.episode_no == currentEpisode + 1 }
 
-    var isBufferingFromSeeking by remember { mutableStateOf(false) }
-
     val shouldShowResumeOverlay = !isAutoplayEnabled && videoPlayerState.isShowResume &&
             episodeDetailComplement.lastTimestamp != null &&
             updatedCoreState.value.playbackState == Player.STATE_READY && !updatedCoreState.value.isPlaying
 
     LaunchedEffect(updatedCoreState.value.isPlaying) {
+        val duration = player.duration.coerceAtLeast(0L)
+        val screenshot = captureScreenshot()
         if (updatedCoreState.value.isPlaying) {
             videoPlayerState.isShowResume = false
+            videoPlayerState.isShowNextEpisodeOverlay = false
             if (videoPlayerState.isFirstLoad && updatedCoreState.value.playbackState == Player.STATE_READY) {
                 videoPlayerState.isFirstLoad = false
             }
@@ -237,11 +247,16 @@ fun VideoPlayer(
                 videoPlayerState.updatePosition(currentPosition)
                 if (player.duration > 0 && currentPosition >= 10_000) {
                     val position = currentPosition.coerceAtLeast(0L)
-                    val duration = player.duration.coerceAtLeast(0L)
-                    val screenshot = captureScreenshot()
                     updateStoredWatchState(position, duration, screenshot)
                 }
                 delay(500)
+            }
+        } else {
+            if (updatedCoreState.value.playbackState == Player.STATE_ENDED) {
+                videoPlayerState.isShowResume = false
+                videoPlayerState.isShowNextEpisodeOverlay = true
+                videoPlayerState.updatePosition(duration)
+                updateStoredWatchState(duration, duration, screenshot)
             }
         }
     }
@@ -376,20 +391,13 @@ fun VideoPlayer(
     }
 
     LaunchedEffect(updatedCoreState.value.playbackState, videoPlayerState.isDraggingSeekBar) {
-        if (updatedCoreState.value.playbackState == Player.STATE_ENDED) {
-            videoPlayerState.isShowNextEpisodeOverlay = true
-            val duration = player.duration.coerceAtLeast(0L)
-            val screenshot = captureScreenshot()
-            updateStoredWatchState(duration, duration, screenshot)
-        }
-
-        isBufferingFromSeeking =
+        videoPlayerState.isBufferingFromSeeking =
             if (videoPlayerState.isDraggingSeekBar && (updatedCoreState.value.playbackState == Player.STATE_READY || updatedCoreState.value.playbackState == Player.STATE_BUFFERING)) {
                 true
             } else if (updatedCoreState.value.playbackState != Player.STATE_BUFFERING) {
                 false
             } else {
-                isBufferingFromSeeking
+                videoPlayerState.isBufferingFromSeeking
             }
     }
 
@@ -533,7 +541,7 @@ fun VideoPlayer(
 
         thumbnailTrackUrl?.let { url ->
             val showThumbnail =
-                isBufferingFromSeeking || (!updatedCoreState.value.isPlaying && videoPlayerState.isDraggingSeekBar && !videoPlayerState.isFirstLoad)
+                videoPlayerState.isBufferingFromSeeking || (!updatedCoreState.value.isPlaying && videoPlayerState.isDraggingSeekBar && !videoPlayerState.isFirstLoad)
             val thumbnailSeekPositionKey =
                 remember(videoPlayerState.dragSeekPosition) { (videoPlayerState.dragSeekPosition / 10000L) * 10000L }
 
@@ -620,6 +628,13 @@ fun VideoPlayer(
                 showRemainingTime = videoPlayerState.showRemainingTime,
                 setShowRemainingTime = { videoPlayerState.showRemainingTime = it },
                 onSettingsClick = { videoPlayerState.showSettingsSheet = true },
+                isAutoplayPlayNextEpisode = isAutoplayNextEpisode,
+                onAutoplayNextEpisodeToggle = { enabled ->
+                    isAutoplayNextEpisode = enabled
+                    videoPlayerState.autoplayNextEpisodeStatusText =
+                        if (enabled) "Autoplay is ON" else "Autoplay is OFF"
+                    videoPlayerState.autoplayNextEpisodeStatusTrigger++
+                },
                 onFullscreenToggle = {
                     setPlayerDisplayMode(
                         if (displayMode == PlayerDisplayMode.FULLSCREEN_LANDSCAPE) {
@@ -648,15 +663,17 @@ fun VideoPlayer(
         )
 
         val isSkipVisible =
-            displayMode != PlayerDisplayMode.SYSTEM_PIP && !updatedControlsState.value.isLocked && verticalDragOffset == 0f && !videoPlayerState.isHolding && !videoPlayerState.isDraggingSeekBar && updatedCoreState.value.playbackState != Player.STATE_ENDED && updatedCoreState.value.playbackState != Player.STATE_IDLE && !shouldShowResumeOverlay && !videoPlayerState.isFirstLoad
-
+            displayMode != PlayerDisplayMode.SYSTEM_PIP && !updatedControlsState.value.isLocked &&
+                    verticalDragOffset == 0f && !videoPlayerState.isHolding && !videoPlayerState.isDraggingSeekBar &&
+                    updatedCoreState.value.playbackState != Player.STATE_ENDED &&
+                    updatedCoreState.value.playbackState != Player.STATE_IDLE &&
+                    !shouldShowResumeOverlay && !videoPlayerState.isFirstLoad
+        val skipButtonPadding = if (displayMode == PlayerDisplayMode.PIP) 8.dp
+        else if (!isLandscape) 60.dp else 120.dp
         SkipButtonsContainer(
             modifier = Modifier
                 .align(Alignment.BottomEnd)
-                .padding(
-                    end = if (isPlayerDisplayFullscreen) 56.dp else 8.dp,
-                    bottom = if (isPlayerDisplayFullscreen) 56.dp else 8.dp
-                ),
+                .padding(end = skipButtonPadding, bottom = skipButtonPadding),
             currentPosition = currentPosition,
             duration = player.duration,
             intro = episodeDetailComplement.sources.intro,
@@ -668,7 +685,7 @@ fun VideoPlayer(
         SpeedUpIndicator(
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .padding(top = 32.dp),
+                .padding(top = if (isLandscape) 32.dp else 0.dp),
             isVisible = videoPlayerState.isHolding && isCommonPartVisible,
             speedText = videoPlayerState.speedUpText
         )
@@ -676,12 +693,19 @@ fun VideoPlayer(
         ZoomIndicator(
             modifier = Modifier
                 .align(Alignment.TopCenter)
-                .padding(top = 32.dp),
+                .padding(top = if (isLandscape) 32.dp else 0.dp),
             visible = videoPlayerState.isZooming && isCommonPartVisible,
             isShowSpeedUp = videoPlayerState.isHolding,
             zoomText = videoPlayerState.getZoomRatioText(),
             isClickable = videoPlayerState.zoomScaleProgress > 1f,
             onClick = { videoPlayerState.resetZoom() }
+        )
+
+        AutoplayNextEpisodeStatusIndicator(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = if (isLandscape) 100.dp else 68.dp),
+            statusText = videoPlayerState.autoplayNextEpisodeStatusText
         )
 
         SeekCancelPreview(
@@ -730,12 +754,13 @@ fun VideoPlayer(
         nextEpisode?.let {
             NextEpisodeOverlay(
                 modifier = Modifier.align(Alignment.Center),
-                isVisible = updatedCoreState.value.playbackState == Player.STATE_ENDED && videoPlayerState.isShowNextEpisodeOverlay,
+                isVisible = videoPlayerState.isShowNextEpisodeOverlay,
                 isOnlyShowEpisodeDetail = isPlayerDisplayPip,
                 isLandscape = isLandscape,
                 animeImage = episodeDetailComplement.imageUrl,
                 nextEpisode = it,
                 nextEpisodeDetailComplement = episodeDetailComplements[it.id]?.data,
+                isAutoplayNextEpisode = isAutoplayNextEpisode,
                 onDismiss = {
                     videoPlayerState.isShowNextEpisodeOverlay = false
                     playerAction(HlsPlayerAction.RequestToggleControlsVisibility(true))
