@@ -131,7 +131,7 @@ class WorkerScheduler @Inject constructor(
         }
     }
 
-    private suspend fun sendBroadcastNotification(anime: AnimeDetail) {
+    suspend fun sendBroadcastNotification(anime: AnimeDetail) {
         val accessId = anime.mal_id.toString()
         if (notificationRepository.checkDuplicateNotification(accessId, "Broadcast")) return
 

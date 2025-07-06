@@ -5,6 +5,7 @@ import com.luminoverse.animevibe.utils.workers.UnfinishedWatchNotificationWorker
 import com.luminoverse.animevibe.utils.workers.NotificationDeliveryWorker
 import com.luminoverse.animevibe.utils.workers.WidgetUpdateWorker
 import com.luminoverse.animevibe.utils.factories.ChildWorkerFactory
+import com.luminoverse.animevibe.utils.workers.DebugNotificationWorker
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -39,6 +40,14 @@ abstract class WorkerModule {
     @Singleton
     abstract fun bindNotificationDeliveryWorkerFactory(
         factory: NotificationDeliveryWorker.Factory
+    ): ChildWorkerFactory
+
+    @Binds
+    @IntoMap
+    @StringKey("com.luminoverse.animevibe.utils.workers.DebugNotificationWorker")
+    @Singleton
+    abstract fun bindDebugNotificationWorkerFactory(
+        factory: DebugNotificationWorker.Factory
     ): ChildWorkerFactory
 
     @Binds

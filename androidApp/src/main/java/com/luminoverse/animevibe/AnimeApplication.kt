@@ -1,21 +1,25 @@
 package com.luminoverse.animevibe
 
 import android.app.Application
+import android.content.Context
 import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.util.Log
 import androidx.work.Configuration
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
 import coil.ImageLoader
 import coil.ImageLoaderFactory
 import com.chuckerteam.chucker.api.Chucker
 import com.luminoverse.animevibe.android.BuildConfig
 import com.luminoverse.animevibe.utils.factories.AnimeWorkerFactory
-import com.luminoverse.animevibe.utils.debug.NotificationDebugUtil
 import com.luminoverse.animevibe.utils.handlers.NotificationHandler
 import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
 import com.luminoverse.animevibe.utils.shake.ShakeDetector
+import com.luminoverse.animevibe.utils.workers.DebugNotificationWorker
 import com.luminoverse.animevibe.utils.workers.WorkerScheduler
 import dagger.hilt.android.HiltAndroidApp
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Provider
 
@@ -27,9 +31,6 @@ class AnimeApplication : Application(), Configuration.Provider, ImageLoaderFacto
 
     @Inject
     lateinit var workerScheduler: WorkerScheduler
-
-    @Inject
-    lateinit var notificationDebugUtil: NotificationDebugUtil
 
     @Inject
     lateinit var notificationHandler: NotificationHandler
@@ -57,6 +58,7 @@ class AnimeApplication : Application(), Configuration.Provider, ImageLoaderFacto
 
         if (BuildConfig.DEBUG) {
             setupSensor()
+            scheduleDebugNotification(this)
         }
     }
 
@@ -77,6 +79,24 @@ class AnimeApplication : Application(), Configuration.Provider, ImageLoaderFacto
             sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER),
             SensorManager.SENSOR_DELAY_NORMAL
         )
+    }
+
+    private fun scheduleDebugNotification(context: Context) {
+        val workInfos =
+            WorkManager.getInstance(context).getWorkInfosByTag("debug_notification_work").get()
+        if (workInfos.any { !it.state.isFinished }) {
+            Log.d(TAG, "Debug worker already scheduled. Skipping.")
+            return
+        }
+
+        Log.d(TAG, "Scheduling a debug notification to be sent in 2 minutes.")
+
+        val debugWorkRequest = OneTimeWorkRequestBuilder<DebugNotificationWorker>()
+            .setInitialDelay(2, TimeUnit.MINUTES)
+            .addTag("debug_notification_work")
+            .build()
+
+        WorkManager.getInstance(context).enqueue(debugWorkRequest)
     }
 
     companion object {

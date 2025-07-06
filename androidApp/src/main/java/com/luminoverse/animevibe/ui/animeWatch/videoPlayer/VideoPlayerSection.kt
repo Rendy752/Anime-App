@@ -52,7 +52,6 @@ fun VideoPlayerSection(
     player: ExoPlayer,
     captureScreenshot: suspend () -> String?,
     updateStoredWatchState: (Long?, Long?, String?) -> Unit,
-    onHandleBackPress: () -> Unit,
     isScreenOn: Boolean,
     isAutoPlayVideo: Boolean,
     episodes: List<Episode>,
@@ -68,6 +67,7 @@ fun VideoPlayerSection(
     verticalDragOffset: Float,
     onVerticalDrag: (Float) -> Unit,
     onDragEnd: (flingVelocity: Float) -> Unit,
+    pipWidth: Dp,
     pipEndDestinationPx: Offset,
     pipEndSizePx: IntSize,
     onMaxDragAmountCalculated: (Float) -> Unit
@@ -182,7 +182,6 @@ fun VideoPlayerSection(
         coreState = coreState,
         controlsStateFlow = controlsStateFlow,
         playerAction = playerAction,
-        onHandleBackPress = onHandleBackPress,
         episodeDetailComplement = episodeDetailComplement,
         episodeDetailComplements = episodeDetailComplements,
         episodes = episodes,
@@ -199,6 +198,7 @@ fun VideoPlayerSection(
         verticalDragOffset = verticalDragOffset,
         onVerticalDrag = onVerticalDrag,
         onDragEnd = onDragEnd,
+        pipWidth = pipWidth,
         pipEndDestinationPx = pipEndDestinationPx,
         pipEndSizePx = pipEndSizePx,
         onMaxDragAmountCalculated = onMaxDragAmountCalculated

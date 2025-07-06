@@ -67,6 +67,7 @@ fun AnimeWatchScreen(
     onEnterSystemPipMode: () -> Unit,
     rememberedTopPadding: Dp,
     rememberedBottomPadding: Dp,
+    pipWidth: Dp,
     pipEndDestinationPx: Offset,
     pipEndSizePx: IntSize
 ) {
@@ -183,7 +184,6 @@ fun AnimeWatchScreen(
                 dispatchPlayerAction = dispatchPlayerAction,
                 getPlayer = getPlayer,
                 captureScreenshot = captureScreenshot,
-                onHandleBackPress = onBackPress,
                 onAction = onAction,
                 playerDisplayMode = playerDisplayMode,
                 setPlayerDisplayMode = setPlayerDisplayMode,
@@ -194,6 +194,7 @@ fun AnimeWatchScreen(
                 verticalDragOffset = verticalDragOffset,
                 rememberedTopPadding = rememberedTopPadding,
                 rememberedBottomPadding = rememberedBottomPadding,
+                pipWidth = pipWidth,
                 pipEndDestinationPx = pipEndDestinationPx,
                 pipEndSizePx = pipEndSizePx
             )

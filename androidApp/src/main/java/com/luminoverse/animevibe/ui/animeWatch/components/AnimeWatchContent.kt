@@ -80,7 +80,6 @@ fun AnimeWatchContent(
     dispatchPlayerAction: (HlsPlayerAction) -> Unit,
     getPlayer: () -> ExoPlayer?,
     captureScreenshot: suspend () -> String?,
-    onHandleBackPress: () -> Unit,
     onAction: (WatchAction) -> Unit,
     playerDisplayMode: PlayerDisplayMode,
     setPlayerDisplayMode: (PlayerDisplayMode) -> Unit,
@@ -91,6 +90,7 @@ fun AnimeWatchContent(
     verticalDragOffset: Animatable<Float, *>,
     rememberedTopPadding: Dp,
     rememberedBottomPadding: Dp,
+    pipWidth: Dp,
     pipEndDestinationPx: Offset,
     pipEndSizePx: IntSize
 ) {
@@ -172,7 +172,6 @@ fun AnimeWatchContent(
                                         )
                                     )
                                 },
-                                onHandleBackPress = onHandleBackPress,
                                 isScreenOn = isScreenOn,
                                 isAutoPlayVideo = mainState.isAutoPlayVideo,
                                 episodes = watchState.animeDetailComplement.episodes,
@@ -250,6 +249,7 @@ fun AnimeWatchContent(
                                         }
                                     }
                                 },
+                                pipWidth = pipWidth,
                                 pipEndDestinationPx = pipEndDestinationPx,
                                 pipEndSizePx = pipEndSizePx,
                                 onMaxDragAmountCalculated = { setMaxVerticalDrag(it) }

@@ -161,8 +161,8 @@ fun PlayerHost(
                     translationY = minY + (animatableRelativeOffset.value.y * draggableHeight)
                 }
                 .width(animatedPipWidth)
-                .aspectRatio(pipAspectRatio)
                 .padding(8.dp)
+                .aspectRatio(pipAspectRatio)
                 .clip(RoundedCornerShape(8.dp))
                 .shadow(8.dp, RoundedCornerShape(8.dp))
                 .combinedClickable(
@@ -245,15 +245,6 @@ fun PlayerHost(
                 val watchViewModel: AnimeWatchViewModel = hiltViewModel()
                 val watchState by watchViewModel.watchState.collectAsStateWithLifecycle()
                 val playerCoreState by watchViewModel.playerCoreState.collectAsStateWithLifecycle()
-
-                LaunchedEffect(playerState.malId, playerState.episodeId) {
-                    watchViewModel.onAction(
-                        WatchAction.SetInitialState(
-                            playerState.malId,
-                            playerState.episodeId
-                        )
-                    )
-                }
 
                 val activity = LocalActivity.current as? MainActivity
 
@@ -344,6 +335,7 @@ fun PlayerHost(
                     },
                     rememberedTopPadding = rememberedTopPadding,
                     rememberedBottomPadding = rememberedBottomPadding,
+                    pipWidth = animatedPipWidth,
                     pipEndDestinationPx = pipEndDestinationPx,
                     pipEndSizePx = pipEndSizePx
                 )

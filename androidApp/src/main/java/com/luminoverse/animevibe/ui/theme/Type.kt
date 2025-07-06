@@ -28,6 +28,19 @@ val displayFontFamily = FontFamily(
     )
 )
 
+val SubtitleFontFamily = FontFamily(
+    Font(
+        googleFont = GoogleFont("Inter"),
+        fontProvider = provider,
+        weight = FontWeight.Normal
+    ),
+    Font(
+        googleFont = GoogleFont("Inter"),
+        fontProvider = provider,
+        weight = FontWeight.Bold
+    )
+)
+
 val baseline = Typography()
 
 val AppTypography = Typography(

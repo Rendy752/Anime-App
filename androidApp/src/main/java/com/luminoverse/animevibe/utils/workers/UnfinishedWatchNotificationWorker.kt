@@ -115,7 +115,7 @@ class UnfinishedWatchNotificationWorker @AssistedInject constructor(
         try {
             val savedId = notificationRepository.saveNotification(notification)
             log("Saved notification: ${episode.animeTitle} (accessId=$accessId, notificationId=$savedId)")
-            notificationHandler.sendNotification(context, notification, accessId.hashCode())
+            notificationHandler.sendNotification(context, notification, savedId.toInt())
             notificationRepository.markNotificationAsSent(savedId)
             log("Sent notification for ${episode.animeTitle} (accessId=$accessId)")
             return true

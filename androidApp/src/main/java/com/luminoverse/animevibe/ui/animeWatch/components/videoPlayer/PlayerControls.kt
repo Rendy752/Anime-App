@@ -50,6 +50,7 @@ import androidx.media3.common.Player
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.ui.common.EpisodeDetailItem
+import com.luminoverse.animevibe.ui.main.PlayerDisplayMode
 import com.luminoverse.animevibe.utils.TimeUtils.formatTimestamp
 
 @Composable
@@ -60,7 +61,7 @@ fun PlayerControls(
     duration: Long,
     playbackState: Int,
     playbackErrorMessage: String?,
-    onHandleBackPress: () -> Unit,
+    setPlayerDisplayMode: (PlayerDisplayMode) -> Unit,
     episodeDetailComplement: EpisodeDetailComplement,
     hasPreviousEpisode: Boolean,
     nextEpisode: Episode?,
@@ -100,7 +101,7 @@ fun PlayerControls(
         TopSection(
             modifier = Modifier.align(Alignment.TopCenter),
             shouldShowControls = shouldShowControls,
-            onHandleBackPress = onHandleBackPress,
+            setPlayerDisplayMode = setPlayerDisplayMode,
             isLandscape = isLandscape,
             playbackState = playbackState,
             episodeDetailComplement = episodeDetailComplement,
@@ -163,7 +164,7 @@ fun PlayerControls(
 private fun TopSection(
     modifier: Modifier,
     shouldShowControls: Boolean,
-    onHandleBackPress: () -> Unit,
+    setPlayerDisplayMode: (PlayerDisplayMode) -> Unit,
     isLandscape: Boolean,
     playbackState: Int,
     episodeDetailComplement: EpisodeDetailComplement,
@@ -197,7 +198,7 @@ private fun TopSection(
                 Icon(
                     modifier = Modifier
                         .clip(CircleShape)
-                        .clickable { onHandleBackPress() }
+                        .clickable { setPlayerDisplayMode(PlayerDisplayMode.PIP) }
                         .padding(8.dp),
                     imageVector = Icons.Default.KeyboardArrowDown,
                     contentDescription = "Return back",

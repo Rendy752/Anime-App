@@ -103,7 +103,6 @@ fun VideoPlayer(
     coreState: PlayerCoreState,
     controlsStateFlow: StateFlow<ControlsState>,
     playerAction: (HlsPlayerAction) -> Unit,
-    onHandleBackPress: () -> Unit,
     episodeDetailComplement: EpisodeDetailComplement,
     episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
     episodes: List<Episode>,
@@ -120,6 +119,7 @@ fun VideoPlayer(
     verticalDragOffset: Float,
     onVerticalDrag: (Float) -> Unit,
     onDragEnd: (flingVelocity: Float) -> Unit,
+    pipWidth: Dp,
     pipEndDestinationPx: Offset,
     pipEndSizePx: IntSize,
     onMaxDragAmountCalculated: (Float) -> Unit
@@ -372,11 +372,6 @@ fun VideoPlayer(
 
 
     LaunchedEffect(isLandscape, displayMode) {
-        playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FILL
-        playerView.postDelayed({
-            playerView.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
-        }, 1)
-
         val window = activity?.window ?: return@LaunchedEffect
         if (displayMode in listOf(PlayerDisplayMode.PIP, PlayerDisplayMode.SYSTEM_PIP)) {
             FullscreenUtils.setFullscreen(window, false)
@@ -587,7 +582,8 @@ fun VideoPlayer(
                 ),
             cues = activeCaptionCue,
             isLandscape = isLandscape,
-            isPipMode = isPlayerDisplayPip
+            isPipMode = isPlayerDisplayPip,
+            pipWidth = pipWidth
         )
 
         AnimatedVisibility(visible = isPlayerControlsVisible, enter = fadeIn(), exit = fadeOut()) {
@@ -599,7 +595,7 @@ fun VideoPlayer(
                     ?: episodeDetailComplement.duration ?: 0,
                 playbackState = updatedCoreState.value.playbackState,
                 playbackErrorMessage = updatedCoreState.value.error,
-                onHandleBackPress = onHandleBackPress,
+                setPlayerDisplayMode = setPlayerDisplayMode,
                 episodeDetailComplement = episodeDetailComplement,
                 hasPreviousEpisode = prevEpisode != null,
                 nextEpisode = nextEpisode,

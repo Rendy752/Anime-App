@@ -10,7 +10,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
@@ -18,8 +19,10 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.luminoverse.animevibe.ui.theme.SubtitleFontFamily
 import com.luminoverse.animevibe.utils.media.CaptionCue
 import java.util.regex.Pattern
 
@@ -39,7 +42,8 @@ fun CustomSubtitleView(
     modifier: Modifier = Modifier,
     cues: List<CaptionCue>?,
     isLandscape: Boolean,
-    isPipMode: Boolean
+    isPipMode: Boolean,
+    pipWidth: Dp
 ) {
     if (cues.isNullOrEmpty()) return
 
@@ -57,7 +61,8 @@ fun CustomSubtitleView(
                 SubtitleText(
                     text = topCue.text,
                     isLandscape = isLandscape,
-                    isPipMode = isPipMode
+                    isPipMode = isPipMode,
+                    pipWidth = pipWidth
                 )
             }
         }
@@ -72,7 +77,8 @@ fun CustomSubtitleView(
                     SubtitleText(
                         text = cue.text,
                         isLandscape = isLandscape,
-                        isPipMode = isPipMode
+                        isPipMode = isPipMode,
+                        pipWidth = pipWidth
                     )
                 }
             }
@@ -92,35 +98,50 @@ fun CustomSubtitleView(
 private fun SubtitleText(
     text: String,
     isLandscape: Boolean,
-    isPipMode: Boolean
+    isPipMode: Boolean,
+    pipWidth: Dp
 ) {
     val annotatedString = rememberVttAnnotatedString(text = text)
 
     val fontSize = when {
-        isPipMode -> 10.sp
+        isPipMode && pipWidth <= 250.dp -> 10.sp
+        isPipMode && pipWidth > 250.dp -> 12.sp
         isLandscape -> 16.sp
         else -> 12.sp
     }
 
     val lineHeight = fontSize * 1.3f
-
-    val dropShadow = Shadow(
-        color = Color.Black.copy(alpha = 0.75f),
-        offset = androidx.compose.ui.geometry.Offset(x = 2f, y = 2f),
-        blurRadius = 4f
-    )
-
-    Text(
-        text = annotatedString,
-        textAlign = TextAlign.Center,
-        style = TextStyle(
-            color = Color.White,
-            fontSize = fontSize,
-            lineHeight = lineHeight,
-            fontWeight = FontWeight.Bold,
-            shadow = dropShadow
+    val outlineStyle = TextStyle(
+        fontFamily = SubtitleFontFamily,
+        color = Color.Black,
+        fontSize = fontSize,
+        lineHeight = lineHeight,
+        drawStyle = Stroke(
+            miter = 10f,
+            width = 2.5f,
+            join = StrokeJoin.Round
         )
     )
+
+    val textStyle = TextStyle(
+        fontFamily = SubtitleFontFamily,
+        color = Color.White,
+        fontSize = fontSize,
+        lineHeight = lineHeight
+    )
+
+    Box {
+        Text(
+            text = annotatedString,
+            textAlign = TextAlign.Center,
+            style = outlineStyle
+        )
+        Text(
+            text = annotatedString,
+            textAlign = TextAlign.Center,
+            style = textStyle
+        )
+    }
 }
 
 /**
@@ -136,38 +157,38 @@ private fun rememberVttAnnotatedString(text: String): AnnotatedString {
         buildAnnotatedString {
             val cleanedText = text.replace(Regex("<c\\..*?>|</c>"), "")
                 .replace(Regex("<v.*?>|</v>"), "")
+                .replace("\\h", "\u00A0")
 
             val pattern = Pattern.compile("</?[bi]>")
             val matcher = pattern.matcher(cleanedText)
 
-            val styles = mutableListOf<SpanStyle>()
+            val styleStack = mutableListOf<SpanStyle>()
             var lastIndex = 0
 
             while (matcher.find()) {
                 val startIndex = matcher.start()
                 val endIndex = matcher.end()
-                val tag = matcher.group(0)
 
                 if (startIndex > lastIndex) {
-                    pushStyle(styles.lastOrNull() ?: SpanStyle())
+                    val combinedStyle = styleStack.fold(SpanStyle()) { acc, style -> acc.merge(style) }
+                    pushStyle(combinedStyle)
                     append(cleanedText.substring(lastIndex, startIndex))
                     pop()
                 }
 
-                if (tag == "<b>") {
-                    styles.add(SpanStyle(fontWeight = FontWeight.ExtraBold))
-                } else if (tag == "<i>") {
-                    styles.add(SpanStyle(fontStyle = FontStyle.Italic))
-                } else if (tag == "</b>" || tag == "</i>") {
-                    if (styles.isNotEmpty()) {
-                        styles.removeAt(styles.lastIndex)
+                when (matcher.group(0)) {
+                    "<b>" -> styleStack.add(SpanStyle(fontWeight = FontWeight.Bold))
+                    "<i>" -> styleStack.add(SpanStyle(fontStyle = FontStyle.Italic))
+                    "</b>", "</i>" -> {
+                        styleStack.removeLastOrNull()
                     }
                 }
                 lastIndex = endIndex
             }
 
             if (lastIndex < cleanedText.length) {
-                pushStyle(styles.lastOrNull() ?: SpanStyle())
+                val combinedStyle = styleStack.fold(SpanStyle()) { acc, style -> acc.merge(style) }
+                pushStyle(combinedStyle)
                 append(cleanedText.substring(lastIndex))
                 pop()
             }
