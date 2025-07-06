@@ -97,7 +97,7 @@ class NotificationHandler @Inject constructor() {
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .applyImage(context, notification.type, notification.imageUrl)
-            .applyActions(context, actions)
+            .applyActions(context, actions, notificationId)
 
         when (notification.type) {
             "Broadcast" -> builder.setContentTitle("Anime Airing Soon")
@@ -123,11 +123,10 @@ class NotificationHandler @Inject constructor() {
         val intent = Intent(context, NotificationReceiver::class.java).apply {
             this.action = action
             putExtra("access_id", accessId)
-            putExtra("notification_id", notificationId.toString())
+            putExtra("notification_id", notificationId)
         }
-        val requestCode = (action + accessId + notificationId).hashCode()
         return PendingIntent.getBroadcast(
-            context, requestCode, intent,
+            context, notificationId, intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
     }
@@ -162,14 +161,26 @@ class NotificationHandler @Inject constructor() {
 
     private fun NotificationCompat.Builder.applyActions(
         context: Context,
-        actions: List<NotificationAction>
+        actions: List<NotificationAction>,
+        notificationId: Int
     ): NotificationCompat.Builder = apply {
-        actions.forEach { action ->
+        actions.forEachIndexed { index, action ->
             val intent = Intent(context, NotificationReceiver::class.java).apply {
                 this.action = action.action
-                action.extras.forEach { (key, value) -> putExtra(key, value) }
+                action.extras.forEach { (key, value) ->
+                    if (key == "notification_id") {
+                        putExtra(key, value.toIntOrNull() ?: notificationId)
+                    } else {
+                        putExtra(key, value)
+                    }
+                }
+                if (!hasExtra("notification_id")) {
+                    putExtra("notification_id", notificationId)
+                }
             }
-            val requestCode = (action.action + action.extras.toString()).hashCode()
+
+            val requestCode = notificationId * 10 + (index + 1)
+
             val pendingIntent = PendingIntent.getBroadcast(
                 context, requestCode, intent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE

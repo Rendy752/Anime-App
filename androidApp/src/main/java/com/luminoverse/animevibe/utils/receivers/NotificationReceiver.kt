@@ -23,7 +23,7 @@ class NotificationReceiver : BroadcastReceiver() {
     lateinit var repository: AnimeEpisodeDetailRepository
 
     override fun onReceive(context: Context, intent: Intent) {
-        val notificationId = intent.getStringExtra("notification_id")?.toIntOrNull() ?: -1
+        val notificationId = intent.getIntExtra("notification_id", -1)
         val accessId = intent.getStringExtra("access_id")
         val pendingResult = goAsync()
 

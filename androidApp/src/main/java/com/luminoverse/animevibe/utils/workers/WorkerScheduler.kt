@@ -143,7 +143,7 @@ class WorkerScheduler @Inject constructor(
         )
         try {
             val savedId = notificationRepository.saveNotification(notification)
-            notificationHandler.sendNotification(context, notification, accessId.hashCode())
+            notificationHandler.sendNotification(context, notification, savedId.toInt())
             notificationRepository.markNotificationAsSent(savedId)
             Log.d("WorkerScheduler", "Sent immediate notification for ${anime.title}")
         } catch (e: Exception) {
