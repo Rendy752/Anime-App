@@ -70,7 +70,7 @@ class NotificationDeliveryWorker @AssistedInject constructor(
                 type = type
             )
 
-            notificationHandler.sendNotification(context, notification, accessId.hashCode())
+            notificationHandler.sendNotification(context, notification, notificationId.toInt())
             log("Sent notification for accessId=$accessId, id=$notificationId")
 
             notificationRepository.markNotificationAsSent(notificationId)

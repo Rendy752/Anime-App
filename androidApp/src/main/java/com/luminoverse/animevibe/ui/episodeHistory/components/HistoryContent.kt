@@ -22,6 +22,7 @@ import com.luminoverse.animevibe.utils.resource.Resource
 fun HistoryContent(
     modifier: Modifier = Modifier,
     navController: NavHostController,
+    playEpisode: (Int, String) -> Unit,
     showSnackbar: (SnackbarMessage) -> Unit,
     showImagePreview: (SharedImageState) -> Unit,
     listState: LazyListState,
@@ -82,12 +83,7 @@ fun HistoryContent(
                                     )
                                 },
                                 onEpisodeClick = { episode ->
-                                    navController.navigateTo(
-                                        NavRoute.AnimeWatch.fromParams(
-                                            episode.malId,
-                                            episode.id
-                                        )
-                                    )
+                                    playEpisode(anime.malId, episode.id)
                                 },
                                 onAnimeFavoriteToggle = { isFavorite ->
                                     onAction(

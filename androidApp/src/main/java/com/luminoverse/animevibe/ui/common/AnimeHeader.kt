@@ -26,11 +26,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
-import androidx.navigation.NavController
 import com.luminoverse.animevibe.models.AnimeDetail
 import com.luminoverse.animevibe.models.animeDetailPlaceholder
-import com.luminoverse.animevibe.ui.main.navigation.NavRoute
-import com.luminoverse.animevibe.ui.main.navigation.navigateTo
 
 @OptIn(ExperimentalFoundationApi::class)
 @Preview
@@ -39,7 +36,7 @@ fun AnimeHeader(
     modifier: Modifier = Modifier,
     animeDetail: AnimeDetail = animeDetailPlaceholder,
     showImage: Boolean = true,
-    navController: NavController? = null
+    onClick: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     Row(
@@ -69,11 +66,7 @@ fun AnimeHeader(
                     modifier = Modifier
                         .weight(1f)
                         .combinedClickable(
-                            onClick = {
-                                navController?.navigateTo(
-                                    NavRoute.AnimeDetail.fromId(animeDetail.mal_id)
-                                )
-                            },
+                            onClick = { onClick?.invoke() },
                             onDoubleClick = {
                                 val intent = Intent(Intent.ACTION_VIEW, animeDetail.url.toUri())
                                 context.startActivity(intent)
@@ -92,7 +85,7 @@ fun AnimeHeader(
                         )
                 )
 
-                if (animeDetail.approved == true) {
+                if (animeDetail.approved) {
                     Icon(
                         imageVector = Icons.Default.ThumbUp,
                         contentDescription = "Approved",
@@ -104,12 +97,14 @@ fun AnimeHeader(
             Text(
                 text = animeDetail.title_japanese ?: "",
                 style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(top = 4.dp)
             )
 
             Text(
                 text = animeDetail.title_english ?: "",
                 style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.padding(top = 4.dp)
             )
 

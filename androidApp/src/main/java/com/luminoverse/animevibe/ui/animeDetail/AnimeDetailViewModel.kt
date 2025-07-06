@@ -10,6 +10,7 @@ import com.luminoverse.animevibe.utils.watch.AnimeTitleFinder.normalizeTitle
 import com.luminoverse.animevibe.utils.ComplementUtils
 import com.luminoverse.animevibe.utils.FilterUtils
 import com.luminoverse.animevibe.utils.resource.Resource
+import com.luminoverse.animevibe.utils.workers.WorkerScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -44,7 +45,8 @@ sealed class DetailAction {
 
 @HiltViewModel
 class AnimeDetailViewModel @Inject constructor(
-    private val animeEpisodeDetailRepository: AnimeEpisodeDetailRepository
+    private val animeEpisodeDetailRepository: AnimeEpisodeDetailRepository,
+    private val workerScheduler: WorkerScheduler
 ) : ViewModel() {
 
     private val _detailState = MutableStateFlow(DetailState())
@@ -71,18 +73,23 @@ class AnimeDetailViewModel @Inject constructor(
 
     private fun loadAnimeDetail(id: Int) = viewModelScope.launch {
         _detailState.update { it.copy(animeDetail = Resource.Loading()) }
-        val result = animeEpisodeDetailRepository.getAnimeDetail(id)
+        val (result, isFromCache) = animeEpisodeDetailRepository.getAnimeDetail(id)
         _detailState.update { it.copy(animeDetail = result) }
-        if (result is Resource.Success) {
-            onAction(DetailAction.LoadAllEpisode())
+        if (result !is Resource.Success) return@launch
+        if (isFromCache) {
+            val updatedAnimeDetail = animeEpisodeDetailRepository.getUpdatedAnimeDetailById(id)
+            if (updatedAnimeDetail is Resource.Success) {
+                _detailState.update { it.copy(animeDetail = updatedAnimeDetail) }
+            }
         }
+        onAction(DetailAction.LoadAllEpisode())
     }
 
     private fun loadRelationAnimeDetail(id: Int) = viewModelScope.launch {
         _detailState.update {
             it.copy(relationAnimeDetails = it.relationAnimeDetails + (id to Resource.Loading()))
         }
-        val result = animeEpisodeDetailRepository.getAnimeDetail(id)
+        val (result, _) = animeEpisodeDetailRepository.getAnimeDetail(id)
         val animeDetail = when (result) {
             is Resource.Success -> Resource.Success(result.data.data)
             is Resource.Error -> Resource.Error(result.message)
@@ -125,8 +132,10 @@ class AnimeDetailViewModel @Inject constructor(
         }
 
         if (animeDetail.type == "Music") return@launch handleUnavailableEpisode(animeDetail.mal_id)
-        if (handleCachedComplement(animeDetail, isRefresh)) {
-            if (isRefresh) detectNewEpisodes(animeDetail, isCurrentAnimeDetailComplement)
+        if (handleCachedComplement(animeDetail, isRefresh) &&
+            isRefresh && isCurrentAnimeDetailComplement.data?.id?.all { it.isDigit() } == false
+        ) {
+            detectNewEpisodes(animeDetail, isCurrentAnimeDetailComplement)
             return@launch
         }
 
@@ -217,37 +226,58 @@ class AnimeDetailViewModel @Inject constructor(
         animeEnglishTitle: String?,
         animeTitle: String,
     ) {
-        val searchTitle = (animeEnglishTitle ?: animeTitle).normalizeTitle()
-        val animeAniwatchSearchResponse =
-            animeEpisodeDetailRepository.getAnimeAniwatchSearch(searchTitle)
-        if (animeAniwatchSearchResponse !is Resource.Success) {
-            _detailState.update {
-                it.copy(
-                    animeDetailComplement = Resource.Error(
-                        animeAniwatchSearchResponse.message ?: "Failed to search anime"
-                    )
-                )
+        val searchTitles = listOfNotNull(animeEnglishTitle, animeTitle).distinct()
+
+        var relatedAnime: AnimeAniwatch? = null
+
+        for (title in searchTitles) {
+            val searchResponse =
+                animeEpisodeDetailRepository.getAnimeAniwatchSearch(title.normalizeTitle())
+
+            when (searchResponse) {
+                is Resource.Success -> {
+                    val foundAnime =
+                        searchResponse.data.results.data.find { it.malID == animeMalId }
+                    if (foundAnime != null) {
+                        relatedAnime = foundAnime
+                        break
+                    }
+                }
+
+                is Resource.Error -> {
+                    _detailState.update {
+                        it.copy(
+                            animeDetailComplement = Resource.Error(
+                                searchResponse.message
+                            )
+                        )
+                    }
+                    return
+                }
+
+                is Resource.Loading<*> -> {
+                    continue
+                }
             }
+        }
+
+        val finalRelatedAnime = relatedAnime ?: run {
+            handleUnavailableEpisode(animeMalId)
             return
         }
 
-        val relatedAnime =
-            animeAniwatchSearchResponse.data.results.data.find { it.malID == animeMalId } ?: run {
-                handleUnavailableEpisode(animeMalId)
-                return
-            }
-        val episodesResource = animeEpisodeDetailRepository.getEpisodes(relatedAnime.id)
+        val episodesResource = animeEpisodeDetailRepository.getEpisodes(finalRelatedAnime.id)
 
         val complement = ComplementUtils.getOrCreateAnimeDetailComplement(
             repository = animeEpisodeDetailRepository,
-            id = relatedAnime.id,
+            id = finalRelatedAnime.id,
             malId = animeMalId
         )?.copy(
-            id = relatedAnime.id,
+            id = finalRelatedAnime.id,
             episodes = if (episodesResource is Resource.Success) episodesResource.data.results.episodes else null,
-            eps = relatedAnime.tvInfo.eps,
-            sub = relatedAnime.tvInfo.sub,
-            dub = relatedAnime.tvInfo.dub
+            eps = finalRelatedAnime.tvInfo.eps,
+            sub = finalRelatedAnime.tvInfo.sub,
+            dub = finalRelatedAnime.tvInfo.dub
         )
         if (complement != null) {
             animeEpisodeDetailRepository.updateCachedAnimeDetailComplement(complement)
@@ -279,25 +309,31 @@ class AnimeDetailViewModel @Inject constructor(
         }
 
     private fun handleToggleFavorite(isFavorite: Boolean) = viewModelScope.launch {
-        _detailState.value.animeDetail.data?.data?.mal_id?.let { malId ->
-            val updatedComplement = ComplementUtils.toggleAnimeFavorite(
-                repository = animeEpisodeDetailRepository,
-                id = _detailState.value.animeDetailComplement.data?.id,
-                malId = malId,
-                isFavorite = isFavorite
-            )
-            if (updatedComplement != null) {
-                animeEpisodeDetailRepository.updateCachedAnimeDetailComplement(updatedComplement)
-                _detailState.update {
-                    it.copy(
-                        animeDetailComplement = Resource.Success(
-                            updatedComplement
-                        )
-                    )
-                }
-            } else {
-                _detailState.update { it.copy(animeDetailComplement = Resource.Error("Failed to update favorite status")) }
+        val animeDetailData = _detailState.value.animeDetail.data?.data ?: return@launch
+        val malId = animeDetailData.mal_id
+        val complementId = _detailState.value.animeDetailComplement.data?.id
+
+        val updatedComplement = ComplementUtils.toggleAnimeFavorite(
+            repository = animeEpisodeDetailRepository,
+            id = complementId,
+            malId = malId,
+            isFavorite = isFavorite
+        )
+
+        if (updatedComplement != null) {
+            _detailState.update {
+                it.copy(
+                    animeDetailComplement = Resource.Success(updatedComplement)
+                )
             }
+            if (!animeDetailData.airing) return@launch
+            if (isFavorite) {
+                workerScheduler.scheduleImmediateBroadcastNotification(animeDetailData)
+            } else {
+                workerScheduler.cancelImmediateBroadcastNotification(malId)
+            }
+        } else {
+            _detailState.update { it.copy(animeDetailComplement = Resource.Error("Failed to update favorite status")) }
         }
     }
 }

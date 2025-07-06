@@ -7,8 +7,6 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.IBinder
 import android.support.v4.media.MediaBrowserCompat
-import android.support.v4.media.session.MediaControllerCompat
-import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import androidx.annotation.OptIn
 import androidx.compose.runtime.Composable
@@ -19,7 +17,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.ExperimentalComposeUiApi
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
@@ -28,7 +29,7 @@ import com.luminoverse.animevibe.data.remote.api.NetworkDataSource
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
-import com.luminoverse.animevibe.ui.animeWatch.PlayerUiState
+import com.luminoverse.animevibe.ui.main.PlayerDisplayMode
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.MediaPlaybackAction
@@ -44,45 +45,43 @@ fun VideoPlayerSection(
     episodeDetailComplement: EpisodeDetailComplement,
     episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
     networkDataSource: NetworkDataSource,
-    playerUiState: PlayerUiState,
     coreState: PlayerCoreState,
     controlsStateFlow: StateFlow<ControlsState>,
     playerAction: (HlsPlayerAction) -> Unit,
     isLandscape: Boolean,
-    getPlayer: () -> ExoPlayer?,
+    player: ExoPlayer,
     captureScreenshot: suspend () -> String?,
     updateStoredWatchState: (Long?, Long?, String?) -> Unit,
-    onHandleBackPress: () -> Unit,
     isScreenOn: Boolean,
     isAutoPlayVideo: Boolean,
     episodes: List<Episode>,
     episodeSourcesQuery: EpisodeSourcesQuery,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery, Boolean) -> Unit,
-    onEnterPipMode: () -> Unit,
+    displayMode: PlayerDisplayMode,
+    setPlayerDisplayMode: (PlayerDisplayMode) -> Unit,
+    onEnterSystemPipMode: () -> Unit,
     isSideSheetVisible: Boolean,
     setSideSheetVisibility: (Boolean) -> Unit,
-    setFullscreenChange: (Boolean) -> Unit,
-    setShowResume: (Boolean) -> Unit,
     setPlayerError: (String) -> Unit,
+    rememberedTopPadding: Dp,
+    verticalDragOffset: Float,
+    onVerticalDrag: (Float) -> Unit,
+    onDragEnd: (flingVelocity: Float) -> Unit,
+    pipWidth: Dp,
+    pipEndDestinationPx: Offset,
+    pipEndSizePx: IntSize,
+    onMaxDragAmountCalculated: (Float) -> Unit
 ) {
     val context = LocalContext.current
 
     val playerView = remember { PlayerView(context).apply { useController = false } }
-    val player by remember { mutableStateOf(getPlayer()) }
     var mediaBrowser by remember { mutableStateOf<MediaBrowserCompat?>(null) }
-    var mediaController by remember { mutableStateOf<MediaControllerCompat?>(null) }
     var mediaPlaybackService by remember { mutableStateOf<MediaPlaybackService?>(null) }
 
     fun setupPlayer() {
-        if (player != null) {
-            playerView.player = player
-            val videoSurface = playerView.videoSurfaceView
-            playerAction(HlsPlayerAction.SetVideoSurface(videoSurface))
-        } else {
-            Log.w("VideoPlayerSection", "Player is null")
-            setPlayerError("Player not initialized")
-            return
-        }
+        playerView.player = player
+        val videoSurface = playerView.videoSurfaceView
+        playerAction(HlsPlayerAction.SetVideoSurface(videoSurface))
 
         mediaPlaybackService?.dispatch(
             MediaPlaybackAction.SetEpisodeData(
@@ -113,7 +112,7 @@ fun VideoPlayerSection(
     }
 
     LaunchedEffect(player) {
-        if (player == null || player?.playbackState == Player.STATE_IDLE) {
+        if (player.playbackState == Player.STATE_IDLE) {
             setupPlayer()
         }
     }
@@ -121,18 +120,6 @@ fun VideoPlayerSection(
     LaunchedEffect(coreState.error) {
         coreState.error?.let { errorMessage ->
             setPlayerError(errorMessage)
-        }
-    }
-
-    val mediaControllerCallback = remember {
-        object : MediaControllerCompat.Callback() {
-            override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
-                state?.let {
-                    if (it.state == PlaybackStateCompat.STATE_PLAYING) {
-                        setShowResume(false)
-                    }
-                }
-            }
         }
     }
 
@@ -147,12 +134,11 @@ fun VideoPlayerSection(
         }
 
         onDispose {
-            Log.d(
-                "VideoPlayerSection",
-                "Disposing VideoPlayerSection. Resetting player state FIRST."
-            )
-            playerAction(HlsPlayerAction.Reset)
+            mediaBrowser?.disconnect()
 
+
+            Log.d("VideoPlayerSection", "Disposing completely. Resetting player state and service.")
+            playerAction(HlsPlayerAction.Reset)
             mediaPlaybackService?.dispatch(MediaPlaybackAction.ClearMediaData)
             mediaPlaybackService?.dispatch(MediaPlaybackAction.StopService)
 
@@ -162,9 +148,6 @@ fun VideoPlayerSection(
             } catch (e: IllegalArgumentException) {
                 Log.w("VideoPlayerSection", "Service was not registered or already unbound.", e)
             }
-
-            mediaController?.unregisterCallback(mediaControllerCallback)
-            mediaBrowser?.disconnect()
             mediaPlaybackService = null
         }
     }
@@ -181,7 +164,6 @@ fun VideoPlayerSection(
             )
         )
         setupPlayer()
-        setShowResume(episodeDetailComplement.lastTimestamp != null)
     }
 
     LaunchedEffect(isScreenOn) {
@@ -191,30 +173,34 @@ fun VideoPlayerSection(
         }
     }
 
-    player?.let {
-        VideoPlayer(
-            playerView = playerView,
-            player = it,
-            networkDataSource = networkDataSource,
-            updateStoredWatchState = updateStoredWatchState,
-            captureScreenshot = captureScreenshot,
-            coreState = coreState,
-            playerUiState = playerUiState,
-            controlsStateFlow = controlsStateFlow,
-            playerAction = playerAction,
-            onHandleBackPress = onHandleBackPress,
-            episodeDetailComplement = episodeDetailComplement,
-            episodeDetailComplements = episodeDetailComplements,
-            episodes = episodes,
-            episodeSourcesQuery = episodeSourcesQuery,
-            handleSelectedEpisodeServer = handleSelectedEpisodeServer,
-            onEnterPipMode = onEnterPipMode,
-            isSideSheetVisible = isSideSheetVisible,
-            setSideSheetVisibility = setSideSheetVisibility,
-            isAutoplayEnabled = isAutoPlayVideo,
-            onFullscreenChange = setFullscreenChange,
-            onShowResumeChange = setShowResume,
-            isLandscape = isLandscape
-        )
-    }
+    VideoPlayer(
+        playerView = playerView,
+        player = player,
+        networkDataSource = networkDataSource,
+        updateStoredWatchState = updateStoredWatchState,
+        captureScreenshot = captureScreenshot,
+        coreState = coreState,
+        controlsStateFlow = controlsStateFlow,
+        playerAction = playerAction,
+        episodeDetailComplement = episodeDetailComplement,
+        episodeDetailComplements = episodeDetailComplements,
+        episodes = episodes,
+        episodeSourcesQuery = episodeSourcesQuery,
+        handleSelectedEpisodeServer = handleSelectedEpisodeServer,
+        displayMode = displayMode,
+        setPlayerDisplayMode = setPlayerDisplayMode,
+        onEnterSystemPipMode = onEnterSystemPipMode,
+        isSideSheetVisible = isSideSheetVisible,
+        setSideSheetVisibility = setSideSheetVisibility,
+        isAutoplayEnabled = isAutoPlayVideo,
+        isLandscape = isLandscape,
+        rememberedTopPadding = rememberedTopPadding,
+        verticalDragOffset = verticalDragOffset,
+        onVerticalDrag = onVerticalDrag,
+        onDragEnd = onDragEnd,
+        pipWidth = pipWidth,
+        pipEndDestinationPx = pipEndDestinationPx,
+        pipEndSizePx = pipEndSizePx,
+        onMaxDragAmountCalculated = onMaxDragAmountCalculated
+    )
 }

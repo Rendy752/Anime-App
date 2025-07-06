@@ -16,20 +16,30 @@ import com.luminoverse.animevibe.ui.common.DetailCommonBody
 import com.luminoverse.animevibe.ui.common.DetailCommonBodySkeleton
 import com.luminoverse.animevibe.ui.common.YoutubePreview
 import com.luminoverse.animevibe.ui.common.YoutubePreviewSkeleton
+import com.luminoverse.animevibe.ui.main.PlayerDisplayMode
+import com.luminoverse.animevibe.ui.main.navigation.NavRoute
+import com.luminoverse.animevibe.ui.main.navigation.navigateTo
 
 @Composable
 fun InfoContentSection(
+    modifier: Modifier = Modifier,
     animeDetail: AnimeDetail?,
     navController: NavController,
+    setPlayerDisplayMode: (PlayerDisplayMode) -> Unit,
 ) {
     Column(
-        modifier = Modifier.padding(bottom = 8.dp),
+        modifier = modifier.padding(bottom = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         if (animeDetail != null) {
             AnimeHeader(
                 modifier = Modifier.padding(top = 8.dp),
-                animeDetail = animeDetail, navController = navController
+                animeDetail = animeDetail, onClick = {
+                    navController.navigateTo(
+                        NavRoute.AnimeDetail.fromId(animeDetail.mal_id)
+                    )
+                    setPlayerDisplayMode(PlayerDisplayMode.PIP)
+                }
             )
             NumericDetailSection(
                 score = animeDetail.score,
@@ -51,7 +61,7 @@ fun InfoContentSection(
             AnimeHeaderSkeleton()
             NumericDetailSectionSkeleton()
             YoutubePreviewSkeleton()
-            listOf<String>(
+            listOf(
                 "Background",
                 "Synopsis"
             ).forEach { DetailCommonBodySkeleton(title = it) }

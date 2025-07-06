@@ -1,5 +1,6 @@
 package com.luminoverse.animevibe.ui.animeHome.components
 
+import android.os.Build
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.EaseInOut
 import androidx.compose.animation.core.animateFloatAsState
@@ -49,9 +50,9 @@ fun TopAnimeCarousel(
         )
 
         val colorOverlay by animateColorAsState(
-            targetValue = MaterialTheme.colorScheme.surface.copy(alpha = 0.5f * scrollProgress),
+            targetValue = MaterialTheme.colorScheme.surface.copy(alpha = (0.5f * scrollProgress).coerceIn(0f, 1f)),
             animationSpec = tween(durationMillis = 300, easing = EaseInOut),
-            label = "carousel_blue_tint"
+            label = "carousel_color_overlay"
         )
 
         val blurRadius by animateFloatAsState(
@@ -63,8 +64,8 @@ fun TopAnimeCarousel(
         LaunchedEffect(autoScrollEnabled) {
             if (autoScrollEnabled && topAnimeCount > 1) {
                 while (true) {
-                    delay(3000)
-                    pagerState.animateScrollToPage((pagerState.currentPage + 1) % topAnimeCount)
+                    delay(5000)
+                    pagerState.animateScrollToPage((pagerState.currentPage + 1) % pagerState.pageCount)
                 }
             }
         }
@@ -87,12 +88,18 @@ fun TopAnimeCarousel(
             modifier = Modifier
                 .height(INITIAL_CAROUSEL_HEIGHT.dp)
                 .fillMaxWidth()
-                .graphicsLayer {
-                    renderEffect = BlurEffect(
-                        radiusX = blurRadius,
-                        radiusY = blurRadius
-                    )
-                }
+                .then(
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        Modifier.graphicsLayer {
+                            renderEffect = BlurEffect(
+                                radiusX = blurRadius,
+                                radiusY = blurRadius
+                            )
+                        }
+                    } else {
+                        Modifier
+                    }
+                )
                 .background(colorOverlay)
                 .pointerInput(Unit) {
                     detectDragGestures(

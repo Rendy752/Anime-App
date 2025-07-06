@@ -32,8 +32,6 @@ import com.luminoverse.animevibe.ui.common.AnimeHeader
 import com.luminoverse.animevibe.ui.common.DetailCommonBody
 import com.luminoverse.animevibe.ui.common.SharedImageState
 import com.luminoverse.animevibe.ui.common.YoutubePreview
-import com.luminoverse.animevibe.ui.main.navigation.NavRoute
-import com.luminoverse.animevibe.ui.main.navigation.navigateTo
 import com.luminoverse.animevibe.utils.watch.AnimeTitleFinder.normalizeTitle
 import com.luminoverse.animevibe.utils.resource.Resource
 
@@ -42,6 +40,7 @@ fun SuccessContent(
     detailState: DetailState,
     episodeFilterState: EpisodeFilterState,
     navController: NavController,
+    playEpisode: (Int, String) -> Unit,
     context: Context,
     isLandscape: Boolean,
     portraitScrollState: LazyListState,
@@ -78,6 +77,7 @@ fun SuccessContent(
                         detailState = detailState,
                         episodeFilterState = episodeFilterState,
                         navController = navController,
+                        playEpisode = playEpisode,
                         context = context,
                         onAction = onAction,
                         showImagePreview = showImagePreview,
@@ -102,6 +102,7 @@ fun SuccessContent(
                     detailState = detailState,
                     episodeFilterState = episodeFilterState,
                     navController = navController,
+                    playEpisode = playEpisode,
                     context = context,
                     onAction = onAction,
                     showImagePreview = showImagePreview,
@@ -140,6 +141,7 @@ private fun LazyListScope.rightColumnContent(
     detailState: DetailState,
     episodeFilterState: EpisodeFilterState,
     navController: NavController,
+    playEpisode: (Int, String) -> Unit,
     context: Context,
     onAction: (DetailAction) -> Unit,
     showImagePreview: (SharedImageState) -> Unit,
@@ -175,12 +177,7 @@ private fun LazyListScope.rightColumnContent(
             navBackStackEntry = navController.currentBackStackEntry,
             onEpisodeClick = { episodeId ->
                 if (detailState.animeDetailComplement is Resource.Success) {
-                    navController.navigateTo(
-                        NavRoute.AnimeWatch.fromParams(
-                            malId = animeDetail.mal_id,
-                            episodeId = episodeId
-                        )
-                    )
+                    playEpisode(animeDetail.mal_id, episodeId)
                 }
             },
             showImagePreview = showImagePreview,

@@ -58,7 +58,7 @@ fun ThumbnailPreview(
         modifier = if (imageLoadingState == ImageLoadingState.Error) {
             modifier
         } else {
-            modifier.background(Color(0xFF14161A))
+            modifier.background(Color.Black)
         },
         contentAlignment = Alignment.Center
     ) {

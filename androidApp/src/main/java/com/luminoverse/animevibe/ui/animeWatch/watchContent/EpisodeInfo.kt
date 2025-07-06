@@ -24,7 +24,6 @@ import com.luminoverse.animevibe.utils.watch.WatchUtils.getServerCategoryIcon
 fun EpisodeInfo(
     title: String?,
     episode: Episode,
-    episodeNo: Int,
     episodeSourcesQuery: EpisodeSourcesQuery?
 ) {
     Row(
@@ -55,7 +54,7 @@ fun EpisodeInfo(
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "Eps. $episodeNo",
+                text = "Eps. ${episode.episode_no}",
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurface
             )

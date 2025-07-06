@@ -5,9 +5,9 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.graphics.drawable.toBitmap
-import androidx.core.net.toUri
 import coil.imageLoader
 import coil.request.ImageRequest
 import com.luminoverse.animevibe.android.R
@@ -15,37 +15,38 @@ import com.luminoverse.animevibe.models.Notification
 import com.luminoverse.animevibe.utils.receivers.NotificationReceiver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.net.URLEncoder
 import javax.inject.Inject
 
 class NotificationHandler @Inject constructor() {
 
     companion object {
-        private const val CHANNEL_ID = "anime_notifications"
-        private const val CHANNEL_NAME = "Anime Notifications"
-        private const val CHANNEL_DESCRIPTION = "Notifications for anime events"
+        const val BROADCAST_CHANNEL_ID = "anime_broadcast_reminders"
+        const val UNFINISHED_CHANNEL_ID = "anime_unfinished_reminders"
     }
 
-    fun createNotificationChannel(context: Context) {
-        val channel = NotificationChannel(
-            CHANNEL_ID, CHANNEL_NAME, NotificationManager.IMPORTANCE_HIGH
+    fun createNotificationChannels(context: Context) {
+        val notificationManager = context.getSystemService(NotificationManager::class.java)
+
+        val broadcastChannel = NotificationChannel(
+            BROADCAST_CHANNEL_ID,
+            "Airing Reminders",
+            NotificationManager.IMPORTANCE_HIGH
         ).apply {
-            description = CHANNEL_DESCRIPTION
+            description = "Notifications for when your favorite anime is about to air."
             enableLights(true)
             enableVibration(true)
-            setShowBadge(true)
-            setBypassDnd(true)
-            lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
         }
-        val notificationManager = context.getSystemService(NotificationManager::class.java)
-        notificationManager.createNotificationChannel(channel)
-        log(
-            "Channel created: $CHANNEL_ID, importance=${
-                notificationManager.getNotificationChannel(
-                    CHANNEL_ID
-                )?.importance
-            }, lockscreenVisibility=${channel.lockscreenVisibility}"
-        )
+
+        val unfinishedChannel = NotificationChannel(
+            UNFINISHED_CHANNEL_ID,
+            "Continue Watching",
+            NotificationManager.IMPORTANCE_DEFAULT
+        ).apply {
+            description = "Reminders to continue watching episodes you haven't finished."
+        }
+
+        notificationManager.createNotificationChannels(listOf(broadcastChannel, unfinishedChannel))
+        Log.d("NotificationHandler", "Application notification channels created.")
     }
 
     suspend fun sendNotification(
@@ -53,155 +54,138 @@ class NotificationHandler @Inject constructor() {
         notification: Notification,
         notificationId: Int
     ) = withContext(Dispatchers.IO) {
-        createNotificationChannel(context)
+        val channelId = when (notification.type) {
+            "Broadcast" -> BROADCAST_CHANNEL_ID
+            "UnfinishedWatch" -> UNFINISHED_CHANNEL_ID
+            else -> {
+                log("Cannot send notification for unknown type: ${notification.type}")
+                return@withContext
+            }
+        }
+
         val actions = when (notification.type) {
             "Broadcast" -> listOf(
-                actionDetail(notification.accessId),
+                actionDetail(notification.accessId, notificationId),
+                actionUnfavorite(notification.accessId, notificationId),
                 actionClose(notificationId)
             )
 
             "UnfinishedWatch" -> listOf(
-                actionWatch(notification.accessId),
+                actionWatch(notification.accessId, notificationId),
                 actionClose(notificationId)
             )
 
-            else -> {
-                log("Invalid notification type: ${notification.type} for accessId: ${notification.accessId}")
-                emptyList()
-            }
+            else -> emptyList()
         }
 
-        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.drawable.ic_notifications_active_black_24dp)
             .setContentText(notification.contentText)
             .setStyle(NotificationCompat.BigTextStyle().bigText(notification.contentText))
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setContentIntent(createOpenIntent(context, notification.type, notification.accessId))
+            .setPriority(if (notification.type == "Broadcast") NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(
+                createOpenIntent(
+                    context,
+                    notification.type,
+                    notification.accessId,
+                    notificationId
+                )
+            )
+            .setAutoCancel(true)
             .setShowWhen(true)
             .setOnlyAlertOnce(true)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .applyImage(context, notification.type, notification.imageUrl)
-            .applyActions(context, actions)
+            .applyActions(context, actions, notificationId)
 
         when (notification.type) {
             "Broadcast" -> builder.setContentTitle("Anime Airing Soon")
             "UnfinishedWatch" -> builder.setContentTitle("Unfinished Anime")
-            else -> log("Skipping image handling for invalid type: ${notification.type}")
         }
 
         try {
             val notificationManager = context.getSystemService(NotificationManager::class.java)
             notificationManager.notify(notificationId, builder.build())
-            log("Notification sent for ${notification.contentText} (accessId: ${notification.accessId}, id: $notificationId, type: ${notification.type})")
+            log("Notification sent on channel $channelId for ${notification.contentText}")
         } catch (e: Exception) {
-            log("Failed to send notification: ${e.message}, accessId: ${notification.accessId}, type: ${notification.type}, stacktrace=${e.stackTraceToString()}")
+            log("Failed to send notification: ${e.message}")
         }
     }
 
-    private fun createOpenIntent(context: Context, type: String, accessId: String): PendingIntent {
-        val uri = when (type) {
-            "UnfinishedWatch" -> {
-                val parts = accessId.split("||")
-                if (parts.size == 2) {
-                    val encodedMalId = URLEncoder.encode(parts[0], "UTF-8")
-                    val encodedEpisodeId = URLEncoder.encode(parts[1], "UTF-8")
-                    "animevibe://anime/watch/$encodedMalId/$encodedEpisodeId".toUri()
-                } else {
-                    log("Invalid accessId format for UnfinishedWatch: $accessId, falling back to detail")
-                    "animevibe://anime/detail/$accessId".toUri()
-                }
-            }
-
-            else -> "animevibe://anime/detail/$accessId".toUri()
+    private fun createOpenIntent(
+        context: Context,
+        type: String,
+        accessId: String,
+        notificationId: Int
+    ): PendingIntent {
+        val action = if (type == "UnfinishedWatch") "ACTION_OPEN_EPISODE" else "ACTION_OPEN_DETAIL"
+        val intent = Intent(context, NotificationReceiver::class.java).apply {
+            this.action = action
+            putExtra("access_id", accessId)
+            putExtra("notification_id", notificationId)
         }
-        val intent = Intent(Intent.ACTION_VIEW, uri)
-        return PendingIntent.getActivity(
-            context, accessId.hashCode(), intent,
+        return PendingIntent.getBroadcast(
+            context, notificationId, intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
     }
 
-    private fun actionDetail(accessId: String) = NotificationAction(
+    private fun actionDetail(accessId: String, notificationId: Int) = NotificationAction(
         icon = R.drawable.ic_open_in_new_black_24dp,
         title = "Detail",
         action = "ACTION_OPEN_DETAIL",
-        extraKey = "access_id",
-        extraValue = accessId
+        extras = mapOf("access_id" to accessId, "notification_id" to notificationId.toString())
     )
 
-    private fun actionWatch(accessId: String) = NotificationAction(
+    private fun actionUnfavorite(accessId: String, notificationId: Int) = NotificationAction(
+        icon = R.drawable.ic_favorite_black_24dp,
+        title = "Unfavorite",
+        action = "ACTION_UNFAVORITE_ANIME",
+        extras = mapOf("access_id" to accessId, "notification_id" to notificationId.toString())
+    )
+
+    private fun actionWatch(accessId: String, notificationId: Int) = NotificationAction(
         icon = R.drawable.ic_open_in_new_black_24dp,
         title = "Watch Now",
         action = "ACTION_OPEN_EPISODE",
-        extraKey = "access_id",
-        extraValue = accessId
+        extras = mapOf("access_id" to accessId, "notification_id" to notificationId.toString())
     )
 
     private fun actionClose(notificationId: Int) = NotificationAction(
         icon = R.drawable.ic_close_black_24dp,
         title = "Close",
         action = "ACTION_CLOSE_NOTIFICATION",
-        extraKey = "notification_id",
-        extraValue = notificationId.toString()
+        extras = mapOf("notification_id" to notificationId.toString())
     )
 
     private fun NotificationCompat.Builder.applyActions(
         context: Context,
-        actions: List<NotificationAction>
+        actions: List<NotificationAction>,
+        notificationId: Int
     ): NotificationCompat.Builder = apply {
-        actions.forEach { action ->
-            val broadcastIntent = Intent(context, NotificationReceiver::class.java).apply {
+        actions.forEachIndexed { index, action ->
+            val intent = Intent(context, NotificationReceiver::class.java).apply {
                 this.action = action.action
-            }
-
-            val pendingIntent: PendingIntent? = when (action.action) {
-                "ACTION_OPEN_DETAIL" -> {
-                    val detailIntent = Intent(
-                        Intent.ACTION_VIEW,
-                        "animevibe://anime/detail/${action.extraValue}".toUri()
-                    )
-                    PendingIntent.getActivity(
-                        context, action.extraValue.hashCode(), detailIntent,
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                    )
-                }
-
-                "ACTION_OPEN_EPISODE" -> {
-                    val parts = action.extraValue.split("||")
-                    if (parts.size == 2) {
-                        val encodedMalId = URLEncoder.encode(parts[0], "UTF-8")
-                        val encodedEpisodeId = URLEncoder.encode(parts[1], "UTF-8")
-                        val watchIntent = Intent(
-                            Intent.ACTION_VIEW,
-                            "animevibe://anime/watch/$encodedMalId/$encodedEpisodeId".toUri()
-                        )
-                        PendingIntent.getActivity(
-                            context, action.extraValue.hashCode(), watchIntent,
-                            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                        )
+                action.extras.forEach { (key, value) ->
+                    if (key == "notification_id") {
+                        putExtra(key, value.toIntOrNull() ?: notificationId)
                     } else {
-                        log("Invalid accessId format for watch: ${action.extraValue}")
-                        null
+                        putExtra(key, value)
                     }
                 }
-
-                "ACTION_CLOSE_NOTIFICATION" -> {
-                    val notificationId = action.extraValue.toIntOrNull() ?: 0
-                    broadcastIntent.putExtra(action.extraKey, notificationId)
-                    PendingIntent.getBroadcast(
-                        context, notificationId, broadcastIntent,
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-                    )
+                if (!hasExtra("notification_id")) {
+                    putExtra("notification_id", notificationId)
                 }
+            }
 
-                else -> null
-            }
-            if (pendingIntent != null) {
-                addAction(action.icon, action.title, pendingIntent)
-            } else {
-                log("Skipping action ${action.action} due to null pendingIntent")
-            }
+            val requestCode = notificationId * 10 + (index + 1)
+
+            val pendingIntent = PendingIntent.getBroadcast(
+                context, requestCode, intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            addAction(action.icon, action.title, pendingIntent)
         }
     }
 
@@ -212,10 +196,7 @@ class NotificationHandler @Inject constructor() {
     ): NotificationCompat.Builder = apply {
         imageUrl?.let {
             try {
-                val request = ImageRequest.Builder(context)
-                    .data(it)
-                    .allowHardware(false)
-                    .build()
+                val request = ImageRequest.Builder(context).data(it).allowHardware(false).build()
                 val result = context.imageLoader.execute(request)
                 val bitmap = result.drawable?.toBitmap()
                 bitmap?.let { bmp ->
@@ -233,7 +214,7 @@ class NotificationHandler @Inject constructor() {
     }
 
     private fun log(message: String) {
-        println("NotificationHandler: $message")
+        Log.d("NotificationHandler", message)
     }
 }
 
@@ -241,6 +222,5 @@ data class NotificationAction(
     val icon: Int,
     val title: String,
     val action: String,
-    val extraKey: String,
-    val extraValue: String
+    val extras: Map<String, String> = emptyMap()
 )

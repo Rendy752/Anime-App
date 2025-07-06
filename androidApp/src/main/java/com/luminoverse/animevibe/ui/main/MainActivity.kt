@@ -14,15 +14,12 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
@@ -41,7 +38,6 @@ import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.InstallStatus
 import com.google.android.play.core.install.model.UpdateAvailability
 import com.luminoverse.animevibe.ui.common.ConfirmationAlert
-import com.luminoverse.animevibe.ui.common.SharedImagePreviewer
 import com.luminoverse.animevibe.ui.main.navigation.BottomNavigationBar
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.theme.AppTheme
@@ -60,6 +56,7 @@ import android.content.pm.PackageManager
 class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var hlsPlayerUtils: HlsPlayerUtils
+    private var playerDisplayMode: PlayerDisplayMode? = null
 
     private val mainViewModel: MainViewModel by viewModels()
 
@@ -67,7 +64,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var navController: NavHostController
     private var lastInteractionTime = System.currentTimeMillis()
     val resetIdleTimer = { lastInteractionTime = System.currentTimeMillis() }
-    private val idleTimeoutMillis = TimeUnit.MINUTES.toMillis(1)
+    private val idleTimeoutMillis = TimeUnit.MINUTES.toMillis(3)
     private val intentChannel = Channel<Intent>(Channel.CONFLATED)
     private lateinit var pipParamsBuilder: PictureInPictureParams.Builder
     private var lastBackPressTime = 0L
@@ -79,7 +76,24 @@ class MainActivity : AppCompatActivity() {
 
     private val updateActivityResultLauncher =
         registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
-            if (result.resultCode != RESULT_OK) {
+            if (result.resultCode == RESULT_OK) {
+                mainViewModel.onAction(
+                    MainAction.ShowSnackbar(
+                        SnackbarMessage(
+                            message = "Update download started...",
+                            type = SnackbarMessageType.INFO
+                        )
+                    )
+                )
+            } else {
+                mainViewModel.onAction(
+                    MainAction.ShowSnackbar(
+                        SnackbarMessage(
+                            message = "Update canceled.",
+                            type = SnackbarMessageType.INFO
+                        )
+                    )
+                )
                 println("Update flow failed! Result code: " + result.resultCode)
             }
         }
@@ -101,8 +115,35 @@ class MainActivity : AppCompatActivity() {
         appUpdateManager = AppUpdateManagerFactory.create(applicationContext)
 
         installStateUpdatedListener = InstallStateUpdatedListener { state ->
-            if (state.installStatus() == InstallStatus.DOWNLOADED) {
-                popupSnackbarForCompleteUpdate()
+            when (state.installStatus()) {
+                InstallStatus.INSTALLING -> mainViewModel.onAction(
+                    MainAction.ShowSnackbar(
+                        SnackbarMessage(
+                            message = "Installing update...",
+                            type = SnackbarMessageType.INFO
+                        )
+                    )
+                )
+
+                InstallStatus.FAILED -> mainViewModel.onAction(
+                    MainAction.ShowSnackbar(
+                        SnackbarMessage(
+                            message = "Update failed. Please try again.",
+                            type = SnackbarMessageType.ERROR
+                        )
+                    )
+                )
+
+                InstallStatus.CANCELED -> mainViewModel.onAction(
+                    MainAction.ShowSnackbar(
+                        SnackbarMessage(
+                            message = "Update canceled.",
+                            type = SnackbarMessageType.INFO
+                        )
+                    )
+                )
+
+                else -> {}
             }
         }
         appUpdateManager.registerListener(installStateUpdatedListener!!)
@@ -128,6 +169,9 @@ class MainActivity : AppCompatActivity() {
             val navBackStackEntry by navController.currentBackStackEntryAsState()
             val currentRoute = navBackStackEntry?.destination?.route
 
+            LaunchedEffect(state.playerState?.displayMode) {
+                playerDisplayMode = state.playerState?.displayMode
+            }
             LaunchedEffect(state.snackbarMessage) {
                 state.snackbarMessage?.let { snackbarMessage ->
                     val messageText = when (snackbarMessage.type) {
@@ -180,45 +224,39 @@ class MainActivity : AppCompatActivity() {
                 colorStyle = state.colorStyle,
                 isRtl = state.isRtl
             ) {
-                Box(modifier = Modifier.fillMaxSize()) {
-                    Scaffold(
-                        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
-                        bottomBar = {
-                            AnimatedVisibility(
-                                visible = NavRoute.bottomRoutes.any { it.route == currentRoute },
-                                enter = slideInVertically(initialOffsetY = { it }),
-                                exit = slideOutVertically(targetOffsetY = { it })
-                            ) { BottomNavigationBar(navController = navController) }
-                        }
-                    ) { paddingValues ->
-                        MainScreen(
-                            contentPadding = paddingValues,
-                            navController = navController,
-                            currentRoute = currentRoute,
-                            intentChannel = intentChannel,
-                            resetIdleTimer = resetIdleTimer,
-                            mainState = state.copy(isLandscape = isLandscape),
-                            mainAction = mainViewModel::onAction
-                        )
-
-                        if (state.isShowIdleDialog) {
-                            ConfirmationAlert(
-                                title = "Are you still there ?",
-                                message = "It seems you haven't interacted with the app for a while. Would you like to quit the app ?",
-                                onConfirm = { finish() },
-                                onCancel = {
-                                    mainViewModel.onAction(MainAction.SetIsShowIdleDialog(false))
-                                    resetIdleTimer()
-                                }
-                            )
-                        }
+                Scaffold(
+                    snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+                    bottomBar = {
+                        AnimatedVisibility(
+                            visible = NavRoute.bottomRoutes.any { it.route == currentRoute }
+                                    && state.playerState?.displayMode in listOf(
+                                PlayerDisplayMode.PIP,
+                                null
+                            ),
+                            enter = slideInVertically(initialOffsetY = { it }),
+                            exit = slideOutVertically(targetOffsetY = { it })
+                        ) { BottomNavigationBar(navController = navController) }
                     }
+                ) { paddingValues ->
+                    MainScreen(
+                        contentPadding = paddingValues,
+                        navController = navController,
+                        currentRoute = currentRoute,
+                        intentChannel = intentChannel,
+                        resetIdleTimer = resetIdleTimer,
+                        mainState = state.copy(isLandscape = isLandscape),
+                        mainAction = mainViewModel::onAction,
+                        hlsPlayerUtils = hlsPlayerUtils
+                    )
 
-                    state.sharedImageState?.let { imageState ->
-                        SharedImagePreviewer(
-                            sharedImageState = imageState,
-                            onDismiss = {
-                                mainViewModel.onAction(MainAction.DismissImagePreview)
+                    if (state.isShowIdleDialog) {
+                        ConfirmationAlert(
+                            title = "Are you still there ?",
+                            message = "It seems you haven't interacted with the app for a while. Would you like to quit the app ?",
+                            onConfirm = { finish() },
+                            onCancel = {
+                                mainViewModel.onAction(MainAction.SetIsShowIdleDialog(false))
+                                resetIdleTimer()
                             }
                         )
                     }
@@ -241,11 +279,18 @@ class MainActivity : AppCompatActivity() {
             .appUpdateInfo
             .addOnSuccessListener { appUpdateInfo ->
                 if (appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED) {
-                    popupSnackbarForCompleteUpdate()
+                    mainViewModel.onAction(
+                        MainAction.ShowSnackbar(
+                            SnackbarMessage(
+                                message = "An update has just been downloaded.",
+                                type = SnackbarMessageType.SUCCESS,
+                                actionLabel = "RESTART",
+                                onAction = { appUpdateManager.completeUpdate() }
+                            )
+                        )
+                    )
                 }
-                if (appUpdateInfo.updateAvailability()
-                    == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS
-                ) {
+                if (appUpdateInfo.updateAvailability() == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS) {
                     appUpdateManager.startUpdateFlowForResult(
                         appUpdateInfo,
                         updateActivityResultLauncher,
@@ -269,19 +314,6 @@ class MainActivity : AppCompatActivity() {
         }.addOnFailureListener { e ->
             println("Failed to check for update: ${e.message}")
         }
-    }
-
-    private fun popupSnackbarForCompleteUpdate() {
-        mainViewModel.onAction(
-            MainAction.ShowSnackbar(
-                SnackbarMessage(
-                    message = "An update has just been downloaded.",
-                    type = SnackbarMessageType.SUCCESS,
-                    actionLabel = "RESTART",
-                    onAction = { appUpdateManager.completeUpdate() }
-                )
-            )
-        )
     }
 
     private fun requestNotificationPermission() {
@@ -339,11 +371,16 @@ class MainActivity : AppCompatActivity() {
         super.onUserLeaveHint()
         resetIdleTimer()
         if (::navController.isInitialized) {
-            val currentRoute = navController.currentDestination?.route
             val isPlaying = hlsPlayerUtils.getPlayer()?.isPlaying == true
-            if (currentRoute?.startsWith("animeWatch/") == true && isPlaying) {
+            if (playerDisplayMode in listOf(
+                    PlayerDisplayMode.FULLSCREEN_PORTRAIT,
+                    PlayerDisplayMode.FULLSCREEN_LANDSCAPE
+                ) && isPlaying
+            ) {
                 pipParamsBuilder.setActions(buildPipActions(this@MainActivity, true))
                 enterPictureInPictureMode(pipParamsBuilder.build())
+            } else {
+                hlsPlayerUtils.dispatch(HlsPlayerAction.Pause)
             }
         }
     }
@@ -368,9 +405,8 @@ class MainActivity : AppCompatActivity() {
                     delay(1000)
                     val currentTime = System.currentTimeMillis()
                     val isIdle = currentTime - lastInteractionTime > idleTimeoutMillis
-                    val currentRoute = navController.currentDestination?.route
 
-                    if (isIdle && currentRoute?.startsWith("animeWatch/") != true) {
+                    if (isIdle && hlsPlayerUtils.getPlayer()?.isPlaying == false && playerDisplayMode != PlayerDisplayMode.SYSTEM_PIP) {
                         if (!isShowIdleDialog) {
                             action(true)
                         }

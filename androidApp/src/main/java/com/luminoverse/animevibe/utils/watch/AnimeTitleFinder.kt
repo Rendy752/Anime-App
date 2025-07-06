@@ -146,7 +146,7 @@ object AnimeTitleFinder {
     private data class ScoredItem<T>(val item: T, val score: Double)
 
     fun String.normalizeTitle(): String =
-        replace(Regex("[^a-zA-Z0-9\\s]"), "").trim().lowercase()
+        replace(Regex("[^a-zA-Z0-9\\s-]"), "").trim().lowercase()
 
     /**
      * Filters a list of items based on a search query, using extractors to focus on specific attributes.
@@ -192,16 +192,25 @@ object AnimeTitleFinder {
                 val normalizedCoreTitle = coreTitle.normalizeTitle()
 
                 normalizedCoreTitle.contains(normalizedQuery) ||
-                        levenshteinDistance.apply(normalizedCoreTitle, normalizedQuery) <= effectiveThreshold ||
-                        (normalizedQuery.length <= 7 && levenshteinDistance.apply(attribute, normalizedQuery) <= effectiveThreshold) ||
+                        levenshteinDistance.apply(
+                            normalizedCoreTitle,
+                            normalizedQuery
+                        ) <= effectiveThreshold ||
+                        (normalizedQuery.length <= 7 && levenshteinDistance.apply(
+                            attribute,
+                            normalizedQuery
+                        ) <= effectiveThreshold) ||
                         normalizedCoreTitle.split(" ").any { word ->
                             levenshteinDistance.apply(word, normalizedQuery) <= effectiveThreshold
                         }
             }
         }
 
-        return if (fuzzyMatches.isEmpty()) {
-            Log.d("AnimeTitleFinder", "No fuzzy matches for '$searchQuery', applying fallback contains check")
+        return fuzzyMatches.ifEmpty {
+            Log.d(
+                "AnimeTitleFinder",
+                "No fuzzy matches for '$searchQuery', applying fallback contains check"
+            )
             items.filter { item ->
                 extractors.any { extractor ->
                     val attribute = extractor(item).lowercase()
@@ -210,15 +219,16 @@ object AnimeTitleFinder {
                         return@any false
                     }
                     if (attribute.contains(normalizedQuery)) {
-                        Log.d("AnimeTitleFinder", "Fallback match for '$normalizedQuery' in '$attribute'")
+                        Log.d(
+                            "AnimeTitleFinder",
+                            "Fallback match for '$normalizedQuery' in '$attribute'"
+                        )
                         true
                     } else {
                         false
                     }
                 }
             }
-        } else {
-            fuzzyMatches
         }.also {
             Log.d(
                 "AnimeTitleFinder",

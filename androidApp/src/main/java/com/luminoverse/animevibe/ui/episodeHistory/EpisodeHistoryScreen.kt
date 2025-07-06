@@ -27,6 +27,7 @@ import com.luminoverse.animevibe.ui.main.SnackbarMessage
 fun EpisodeHistoryScreen(
     currentRoute: String?,
     navController: NavHostController,
+    playEpisode: (Int, String) -> Unit,
     rememberedTopPadding: Dp,
     showSnackbar: (SnackbarMessage) -> Unit,
     mainState: MainState,
@@ -118,6 +119,7 @@ fun EpisodeHistoryScreen(
                         .fillMaxHeight()
                         .padding(start = 8.dp),
                     navController = navController,
+                    playEpisode = playEpisode,
                     showSnackbar = showSnackbar,
                     showImagePreview = showImagePreview,
                     listState = historyListState,
@@ -142,6 +144,7 @@ fun EpisodeHistoryScreen(
                         .weight(1f)
                         .fillMaxWidth(),
                     navController = navController,
+                    playEpisode = playEpisode,
                     showSnackbar = showSnackbar,
                     showImagePreview = showImagePreview,
                     listState = historyListState,

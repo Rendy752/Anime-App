@@ -1,19 +1,11 @@
 package com.luminoverse.animevibe.ui.animeWatch.components.videoPlayer
 
-import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -30,14 +22,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Replay
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
@@ -45,19 +33,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -71,6 +50,7 @@ import androidx.media3.common.Player
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.ui.common.EpisodeDetailItem
+import com.luminoverse.animevibe.ui.main.PlayerDisplayMode
 import com.luminoverse.animevibe.utils.TimeUtils.formatTimestamp
 
 @Composable
@@ -81,7 +61,7 @@ fun PlayerControls(
     duration: Long,
     playbackState: Int,
     playbackErrorMessage: String?,
-    onHandleBackPress: () -> Unit,
+    setPlayerDisplayMode: (PlayerDisplayMode) -> Unit,
     episodeDetailComplement: EpisodeDetailComplement,
     hasPreviousEpisode: Boolean,
     nextEpisode: Episode?,
@@ -106,6 +86,8 @@ fun PlayerControls(
     showRemainingTime: Boolean,
     setShowRemainingTime: (Boolean) -> Unit,
     onSettingsClick: () -> Unit,
+    isAutoplayPlayNextEpisode: Boolean,
+    onAutoplayNextEpisodeToggle: (Boolean) -> Unit,
     onFullscreenToggle: () -> Unit,
     onBottomBarMeasured: (Float) -> Unit
 ) {
@@ -119,7 +101,7 @@ fun PlayerControls(
         TopSection(
             modifier = Modifier.align(Alignment.TopCenter),
             shouldShowControls = shouldShowControls,
-            onHandleBackPress = onHandleBackPress,
+            setPlayerDisplayMode = setPlayerDisplayMode,
             isLandscape = isLandscape,
             playbackState = playbackState,
             episodeDetailComplement = episodeDetailComplement,
@@ -157,6 +139,8 @@ fun PlayerControls(
             modifier = Modifier.align(Alignment.BottomCenter),
             shouldShowControls = shouldShowControls,
             isShowSeekIndicator = isShowSeekIndicator,
+            isAutoplayPlayNextEpisode = isAutoplayPlayNextEpisode,
+            onAutoplayNextEpisodeToggle = onAutoplayNextEpisodeToggle,
             onFullscreenToggle = onFullscreenToggle,
             isLandscape = isLandscape,
             handlePlay = handlePlay,
@@ -180,7 +164,7 @@ fun PlayerControls(
 private fun TopSection(
     modifier: Modifier,
     shouldShowControls: Boolean,
-    onHandleBackPress: () -> Unit,
+    setPlayerDisplayMode: (PlayerDisplayMode) -> Unit,
     isLandscape: Boolean,
     playbackState: Int,
     episodeDetailComplement: EpisodeDetailComplement,
@@ -214,9 +198,9 @@ private fun TopSection(
                 Icon(
                     modifier = Modifier
                         .clip(CircleShape)
-                        .clickable { onHandleBackPress() }
+                        .clickable { setPlayerDisplayMode(PlayerDisplayMode.PIP) }
                         .padding(8.dp),
-                    imageVector = if (isLandscape) Icons.Default.Close else Icons.AutoMirrored.Filled.ArrowBack,
+                    imageVector = Icons.Default.KeyboardArrowDown,
                     contentDescription = "Return back",
                     tint = Color.White
                 )
@@ -303,116 +287,6 @@ private fun TopSection(
                         .padding(8.dp),
                     imageVector = Icons.Default.Settings,
                     contentDescription = "Settings",
-                    tint = Color.White
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun PlayPauseLoadingButton(
-    playbackErrorMessage: String?,
-    playbackState: Int,
-    isPlaying: Boolean,
-    onSeekTo: (Long) -> Unit,
-    handlePause: () -> Unit,
-    handlePlay: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    var mutableIsPlaying by remember { mutableStateOf(isPlaying) }
-    val infiniteTransition = rememberInfiniteTransition(label = "loading_border_transition")
-    val angle by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 360f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = LinearEasing),
-        ),
-        label = "loading_border_angle"
-    )
-
-    LaunchedEffect(isPlaying) {
-        mutableIsPlaying = isPlaying
-    }
-
-    val borderModifier = if (playbackState == Player.STATE_BUFFERING && playbackErrorMessage == null) {
-        Modifier.drawBehind {
-            val strokeWidth = 3.dp.toPx()
-            val brush = Brush.sweepGradient(
-                colors = listOf(
-                    Color.White,
-                    Color.White.copy(alpha = 0.1f)
-                )
-            )
-            drawArc(
-                brush = brush,
-                startAngle = angle,
-                sweepAngle = 150f,
-                useCenter = false,
-                style = Stroke(width = strokeWidth, cap = StrokeCap.Round)
-            )
-        }
-    } else {
-        Modifier
-    }
-
-    Box(
-        modifier = modifier
-            .size(56.dp)
-            .then(borderModifier)
-            .clip(CircleShape)
-            .clickable(
-                onClick = {
-                    when (playbackState) {
-                        Player.STATE_ENDED -> {
-                            onSeekTo(0)
-                            handlePlay()
-                            mutableIsPlaying = true
-                        }
-
-                        else -> if (mutableIsPlaying) {
-                            handlePause(); mutableIsPlaying = false
-                        } else {
-                            handlePlay(); mutableIsPlaying = true
-                        }
-                    }
-                }
-            )
-            .background(
-                color = Color.Black.copy(alpha = 0.4f),
-                shape = CircleShape
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        AnimatedContent(
-            modifier = Modifier.size(40.dp),
-            targetState = when {
-                playbackState == Player.STATE_ENDED -> "ended"
-                mutableIsPlaying -> "playing"
-                else -> "paused"
-            },
-            transitionSpec = {
-                (fadeIn(tween(300)) + scaleIn(tween(300), initialScale = 0.8f))
-                    .togetherWith(fadeOut(tween(300)) + scaleOut(tween(300), targetScale = 0.8f))
-            },
-            label = "PlayerStateAnimation"
-        ) { state ->
-            when (state) {
-                "ended" -> Icon(
-                    imageVector = Icons.Default.Replay,
-                    contentDescription = "Replay",
-                    tint = Color.White
-                )
-
-                "playing" -> Icon(
-                    imageVector = Icons.Default.Pause,
-                    contentDescription = "Pause",
-                    tint = Color.White
-                )
-
-                "paused" -> Icon(
-                    imageVector = Icons.Default.PlayArrow,
-                    contentDescription = "Play",
                     tint = Color.White
                 )
             }
@@ -543,6 +417,8 @@ private fun BottomSection(
     modifier: Modifier,
     shouldShowControls: Boolean,
     isShowSeekIndicator: Int,
+    isAutoplayPlayNextEpisode: Boolean,
+    onAutoplayNextEpisodeToggle: (Boolean) -> Unit,
     onFullscreenToggle: () -> Unit,
     isLandscape: Boolean,
     handlePlay: () -> Unit,
@@ -604,15 +480,24 @@ private fun BottomSection(
                     },
                     fontSize = 14.sp
                 )
-                Icon(
-                    modifier = Modifier
-                        .clip(CircleShape)
-                        .clickable { onFullscreenToggle() }
-                        .padding(8.dp),
-                    imageVector = if (isLandscape) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
-                    contentDescription = if (isLandscape) "Exit Fullscreen" else "Enter Fullscreen",
-                    tint = Color.White
-                )
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    AutoplayNextEpisodeToggle(
+                        isAutoplayPlayNextEpisode = isAutoplayPlayNextEpisode,
+                        onToggle = { onAutoplayNextEpisodeToggle(!isAutoplayPlayNextEpisode) }
+                    )
+                    Icon(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .clickable { onFullscreenToggle() }
+                            .padding(8.dp),
+                        imageVector = if (isLandscape) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
+                        contentDescription = if (isLandscape) "Exit Fullscreen" else "Enter Fullscreen",
+                        tint = Color.White
+                    )
+                }
             }
         }
         CustomSeekBar(

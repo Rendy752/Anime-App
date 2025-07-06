@@ -1,17 +1,16 @@
 package com.luminoverse.animevibe.ui.animeWatch
 
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.ActivityInfo
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.layout.Column
+import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
@@ -19,55 +18,54 @@ import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
-import com.luminoverse.animevibe.ui.main.MainState
-import com.luminoverse.animevibe.utils.FullscreenUtils
-import com.luminoverse.animevibe.utils.receivers.ScreenOffReceiver
-import com.luminoverse.animevibe.utils.receivers.ScreenOnReceiver
-import com.luminoverse.animevibe.ui.animeWatch.components.AnimeWatchContent
-import kotlinx.coroutines.launch
-import com.luminoverse.animevibe.ui.main.MainActivity
-import androidx.compose.foundation.layout.padding
-import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.navigation.NavHostController
 import com.luminoverse.animevibe.data.remote.api.NetworkDataSource
+import com.luminoverse.animevibe.ui.animeWatch.components.AnimeWatchContent
+import com.luminoverse.animevibe.ui.main.MainActivity
+import com.luminoverse.animevibe.ui.main.MainState
+import com.luminoverse.animevibe.ui.main.PlayerDisplayMode
 import com.luminoverse.animevibe.ui.main.SnackbarMessage
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
-import kotlinx.coroutines.flow.Flow
+import com.luminoverse.animevibe.utils.receivers.ScreenOffReceiver
+import com.luminoverse.animevibe.utils.receivers.ScreenOnReceiver
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collectLatest
 
-@SuppressLint("ConfigurationScreenWidthHeight")
+@SuppressLint("SourceLockedOrientationActivity", "ConfigurationScreenWidthHeight")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnimeWatchScreen(
     malId: Int,
-    episodeId: String,
+    playerDisplayMode: PlayerDisplayMode,
+    setPlayerDisplayMode: (PlayerDisplayMode) -> Unit,
     navController: NavHostController,
-    rememberTopPadding: Dp,
     networkDataSource: NetworkDataSource,
     mainState: MainState,
     showSnackbar: (SnackbarMessage) -> Unit,
     dismissSnackbar: () -> Unit,
     watchState: WatchState,
-    playerUiState: PlayerUiState,
-    snackbarFlow: Flow<SnackbarMessage>,
     hlsPlayerCoreState: PlayerCoreState,
     hlsControlsStateFlow: StateFlow<ControlsState>,
     onAction: (WatchAction) -> Unit,
     dispatchPlayerAction: (HlsPlayerAction) -> Unit,
     getPlayer: () -> ExoPlayer?,
     captureScreenshot: suspend () -> String?,
-    onEnterPipMode: () -> Unit
+    onEnterSystemPipMode: () -> Unit,
+    rememberedTopPadding: Dp,
+    rememberedBottomPadding: Dp,
+    pipWidth: Dp,
+    pipEndDestinationPx: Offset,
+    pipEndSizePx: IntSize
 ) {
-    val scope = rememberCoroutineScope()
-    val scrollState = rememberLazyListState()
     val pullToRefreshState = rememberPullToRefreshState()
 
     var isScreenOn by remember { mutableStateOf(true) }
@@ -81,52 +79,16 @@ fun AnimeWatchScreen(
     }
     val screenOnReceiver = remember { ScreenOnReceiver { isScreenOn = true } }
 
-    LaunchedEffect(mainState.isLandscape) {
-        onAction(WatchAction.SetSideSheetVisibility(false))
-        activity?.window?.let { window ->
-            if (mainState.isLandscape) {
-                FullscreenUtils.handleFullscreenToggle(
-                    window = window,
-                    isFullscreen = false,
-                    setFullscreenChange = { onAction(WatchAction.SetFullscreen(it)) }
-                )
-            } else {
-                FullscreenUtils.handleFullscreenToggle(
-                    window = window,
-                    isFullscreen = true,
-                    setFullscreenChange = { onAction(WatchAction.SetFullscreen(it)) }
-                )
-            }
-        }
-    }
-
     val onBackPress: () -> Unit = {
-        if (playerUiState.isFullscreen) {
-            activity?.window?.let { window ->
-                FullscreenUtils.handleFullscreenToggle(
-                    window = window,
-                    isFullscreen = true,
-                    setFullscreenChange = { onAction(WatchAction.SetFullscreen(it)) }
-                )
-            }
+        if (playerDisplayMode == PlayerDisplayMode.FULLSCREEN_LANDSCAPE) {
+            setPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN_PORTRAIT)
         } else {
-            navController.popBackStack()
+            setPlayerDisplayMode(PlayerDisplayMode.PIP)
         }
     }
 
-    BackHandler {
+    BackHandler(enabled = playerDisplayMode == PlayerDisplayMode.FULLSCREEN_LANDSCAPE || playerDisplayMode == PlayerDisplayMode.FULLSCREEN_PORTRAIT) {
         onBackPress()
-    }
-
-    LaunchedEffect(Unit) {
-        scope.launch {
-            onAction(WatchAction.SetInitialState(malId, episodeId))
-        }
-        scope.launch {
-            snackbarFlow.collectLatest { snackbarMessage ->
-                showSnackbar(snackbarMessage)
-            }
-        }
     }
 
     DisposableEffect(Unit) {
@@ -134,8 +96,7 @@ fun AnimeWatchScreen(
         context.registerReceiver(screenOnReceiver, IntentFilter(Intent.ACTION_SCREEN_ON))
 
         onDispose {
-            (context as? Activity)?.requestedOrientation =
-                ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            activity?.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
             context.unregisterReceiver(screenOffReceiver)
             context.unregisterReceiver(screenOnReceiver)
         }
@@ -168,12 +129,19 @@ fun AnimeWatchScreen(
         }
     }
 
+    val verticalDragOffset = remember { Animatable(0f) }
+    var maxVerticalDrag by remember { mutableFloatStateOf(Float.POSITIVE_INFINITY) }
+    val screenHeightPx =
+        with(LocalDensity.current) { LocalConfiguration.current.screenHeightDp.dp.toPx() }
+    val dismissDragThreshold = if (maxVerticalDrag.isFinite()) maxVerticalDrag else screenHeightPx
+    val dragProgress = (verticalDragOffset.value / dismissDragThreshold).coerceIn(0f, 1f)
+
     PullToRefreshBox(
         isRefreshing = watchState.isRefreshing,
         onRefresh = { refreshEpisodeSources() },
         modifier = Modifier
             .fillMaxSize()
-            .padding(top = if (mainState.isLandscape) 0.dp else rememberTopPadding),
+            .padding(0.dp),
         state = pullToRefreshState,
         indicator = {
             PullToRefreshDefaults.Indicator(
@@ -185,17 +153,7 @@ fun AnimeWatchScreen(
             )
         }
     ) {
-        val configuration = LocalConfiguration.current
-        val screenWidth = configuration.screenWidthDp.dp
-        val videoHeight = screenWidth * 9 / 16
-        Column(modifier = Modifier.fillMaxSize()) {
-            val videoPlayerModifier = Modifier
-                .fillMaxWidth()
-                .then(
-                    if (mainState.isLandscape) Modifier.fillMaxSize() else Modifier.height(
-                        videoHeight
-                    )
-                )
+        Box(modifier = Modifier.fillMaxSize()) {
             AnimeWatchContent(
                 malId = malId,
                 navController = navController,
@@ -203,20 +161,38 @@ fun AnimeWatchScreen(
                 watchState = watchState,
                 showSnackbar = showSnackbar,
                 isScreenOn = isScreenOn,
-                isAutoPlayVideo = mainState.isAutoPlayVideo,
-                playerUiState = playerUiState,
                 mainState = mainState,
                 playerCoreState = hlsPlayerCoreState,
                 controlsStateFlow = hlsControlsStateFlow,
                 dispatchPlayerAction = dispatchPlayerAction,
                 getPlayer = getPlayer,
                 captureScreenshot = captureScreenshot,
-                onHandleBackPress = onBackPress,
                 onAction = onAction,
-                scrollState = scrollState,
-                onEnterPipMode = onEnterPipMode,
-                modifier = videoPlayerModifier,
+                playerDisplayMode = playerDisplayMode,
+                setPlayerDisplayMode = setPlayerDisplayMode,
+                onEnterSystemPipMode = onEnterSystemPipMode,
+                dragProgress = dragProgress,
+                maxVerticalDrag = maxVerticalDrag,
+                setMaxVerticalDrag = { maxVerticalDrag = it },
+                verticalDragOffset = verticalDragOffset,
+                rememberedTopPadding = rememberedTopPadding,
+                rememberedBottomPadding = rememberedBottomPadding,
+                pipWidth = pipWidth,
+                pipEndDestinationPx = pipEndDestinationPx,
+                pipEndSizePx = pipEndSizePx
             )
+
+            if (dragProgress > 0f) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            onClick = { }
+                        )
+                )
+            }
         }
     }
 }

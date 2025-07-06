@@ -27,31 +27,41 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.ui.common.EpisodeDetailItem
 import com.luminoverse.animevibe.utils.basicContainer
+import kotlinx.coroutines.delay
 
 @Composable
 fun NextEpisodeOverlay(
     modifier: Modifier = Modifier,
     isVisible: Boolean,
-    isPipMode: Boolean,
+    isOnlyShowEpisodeDetail: Boolean,
     isLandscape: Boolean,
     animeImage: String?,
     nextEpisode: Episode,
     nextEpisodeDetailComplement: EpisodeDetailComplement?,
     onDismiss: () -> Unit,
     onRestart: () -> Unit,
-    onPlayNext: () -> Unit
+    onPlayNext: () -> Unit,
+    isAutoplayNextEpisode: Boolean
 ) {
     AnimatedVisibility(
         modifier = modifier
@@ -67,11 +77,27 @@ fun NextEpisodeOverlay(
                             } while (event.changes.any { it.pressed })
                         }
                     }
-                } else Modifier),
+                } else Modifier
+            ),
         visible = isVisible,
         enter = fadeIn(),
         exit = fadeOut()
     ) {
+        var countdown by remember { mutableIntStateOf(5) }
+
+        LaunchedEffect(isVisible, isAutoplayNextEpisode) {
+            if (isVisible && isAutoplayNextEpisode) {
+                countdown = 5
+                while (countdown > 0) {
+                    delay(1000)
+                    countdown--
+                }
+                if (countdown == 0) {
+                    onPlayNext()
+                }
+            }
+        }
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -80,22 +106,54 @@ fun NextEpisodeOverlay(
             verticalArrangement = if (isLandscape) Arrangement.SpaceBetween else Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            if (!isPipMode) Row(
+            if (!isOnlyShowEpisodeDetail) Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    text = "Next Episode",
-                    textAlign = TextAlign.Start,
-                    style = MaterialTheme.typography.bodyLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
-                    modifier = Modifier.weight(1f)
-                )
+                if (isAutoplayNextEpisode && countdown > 0) {
+                    Text(
+                        text = buildAnnotatedString {
+                            withStyle(
+                                style = SpanStyle(
+                                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            ) {
+                                append("Next Episode in ")
+                            }
+                            withStyle(
+                                style = SpanStyle(
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.ExtraBold
+                                )
+                            ) { append("$countdown") }
+                        },
+                        textAlign = TextAlign.Start,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                } else {
+                    val nextEpisodeText = if (isAutoplayNextEpisode && countdown == 0) {
+                        "Playing next episode..."
+                    } else {
+                        "Next Episode"
+                    }
+                    Text(
+                        text = nextEpisodeText,
+                        textAlign = TextAlign.Start,
+                        style = MaterialTheme.typography.bodyLarge,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
                 Spacer(modifier = Modifier.width(8.dp))
                 Icon(
                     Icons.Filled.Close,
@@ -112,7 +170,7 @@ fun NextEpisodeOverlay(
                 )
             }
 
-            if (!isPipMode) Spacer(modifier = Modifier.height(8.dp))
+            if (!isOnlyShowEpisodeDetail) Spacer(modifier = Modifier.height(8.dp))
 
             Column(
                 modifier = Modifier
@@ -121,12 +179,13 @@ fun NextEpisodeOverlay(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(
                     4.dp,
-                    if (isPipMode) Alignment.CenterVertically else Alignment.Bottom
+                    if (isOnlyShowEpisodeDetail) Alignment.CenterVertically else Alignment.Bottom
                 )
             ) {
                 EpisodeDetailItem(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .weight(1f)
                         .aspectRatio(3.25f),
                     animeImage = animeImage,
                     episode = nextEpisode,
@@ -136,7 +195,7 @@ fun NextEpisodeOverlay(
                     isSameWidthContent = true
                 )
 
-                if (!isPipMode) Row(
+                Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically

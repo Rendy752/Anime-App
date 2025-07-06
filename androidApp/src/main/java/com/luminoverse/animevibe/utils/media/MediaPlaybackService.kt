@@ -4,9 +4,11 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
+import android.content.pm.ServiceInfo
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.os.Binder
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.IBinder
@@ -225,6 +227,17 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
 
     private fun updateNotification() {
         coroutineScope.launch {
+            val settingsPrefs = getSharedPreferences("settings_prefs", MODE_PRIVATE)
+            val playbackEnabled = settingsPrefs.getBoolean("notifications_playback_enabled", true)
+
+            val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+
+            if (!playbackEnabled || !notificationManager.areNotificationsEnabled()) {
+                Log.d("MediaPlaybackService", "Playback notifications disabled by user or system. Removing notification.")
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                return@launch
+            }
+
             val player = hlsPlayerUtils.getPlayer() ?: return@launch
             if (player.playbackState != Player.STATE_READY) {
                 Log.d("MediaPlaybackService", "Skipping notification update: player not ready")
@@ -320,17 +333,16 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                     )
                 )
             }
-            val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-            if (!notificationManager.areNotificationsEnabled()) {
-                Log.d(
-                    "MediaPlaybackService",
-                    "Notifications disabled, cannot start foreground service"
-                )
-                stopSelf()
-                return@launch
-            }
             try {
-                startForeground(NOTIFICATION_ID, builder.build())
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+                    startForeground(
+                        NOTIFICATION_ID,
+                        builder.build(),
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+                    )
+                } else {
+                    startForeground(NOTIFICATION_ID, builder.build())
+                }
             } catch (e: Exception) {
                 Log.e("MediaPlaybackService", "Failed to start foreground service", e)
             }

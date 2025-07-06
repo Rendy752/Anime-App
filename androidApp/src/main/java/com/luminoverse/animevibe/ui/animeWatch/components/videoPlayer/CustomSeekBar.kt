@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -39,239 +40,250 @@ import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.TimeRange
 
 @Composable
 fun CustomSeekBar(
-    modifier: Modifier,
+    modifier: Modifier = Modifier,
     currentPosition: Long,
     bufferedPosition: Long,
     duration: Long,
     intro: TimeRange,
     outro: TimeRange,
-    handlePlay: () -> Unit,
-    handlePause: () -> Unit,
-    onSeekTo: (Long) -> Unit,
+    handlePlay: (() -> Unit)? = null,
+    handlePause: (() -> Unit)? = null,
+    onSeekTo: ((Long) -> Unit)? = null,
     dragCancelTrigger: Int,
-    onDraggingSeekBarChange: (Boolean, Long) -> Unit,
+    onDraggingSeekBarChange: ((Boolean, Long) -> Unit)? = null,
     seekAmount: Long,
-    isShowSeekIndicator: Int
+    isShowSeekIndicator: Int,
+    touchTargetHeight: Dp = 24.dp,
+    trackHeight: Dp = 4.dp
 ) {
-    val introStart = intro.start.times(1000L)
-    val introEnd = intro.end.times(1000L)
-    val outroStart = outro.start.times(1000L)
-    val outroEnd = outro.end.times(1000L)
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        val introStart = intro.start.times(1000L)
+        val introEnd = intro.end.times(1000L)
+        val outroStart = outro.start.times(1000L)
+        val outroEnd = outro.end.times(1000L)
 
-    var isDragging by remember { mutableStateOf(false) }
-    var isHolding by remember { mutableStateOf(false) }
-    var dragPosition by remember { mutableFloatStateOf(currentPosition.toFloat()) }
-    var trackWidthPx by remember { mutableFloatStateOf(0f) }
-    val progress = if (duration > 0) currentPosition.toFloat() / duration else 0f
-    val bufferedProgressRatio = if (duration > 0) bufferedPosition.toFloat() / duration else 0f
-    val density = LocalDensity.current
+        var isDragging by remember { mutableStateOf(false) }
+        var isHolding by remember { mutableStateOf(false) }
+        var dragPosition by remember { mutableFloatStateOf(currentPosition.toFloat()) }
+        var trackWidthPx by remember { mutableFloatStateOf(0f) }
+        val progress = if (duration > 0) currentPosition.toFloat() / duration else 0f
+        val bufferedProgressRatio = if (duration > 0) bufferedPosition.toFloat() / duration else 0f
+        val density = LocalDensity.current
 
-    val touchTargetHeight: Dp = 24.dp
-    val thumbSize: Dp = 10.dp
-    val trackHeight: Dp = 4.dp
+        val thumbSize: Dp = 10.dp
 
-    val animatedThumbSize by animateDpAsState(
-        targetValue = if (isDragging || isHolding) thumbSize * 1.8f else thumbSize,
-        label = "thumbSizeAnimation"
-    )
+        val animatedThumbSize by animateDpAsState(
+            targetValue = if (isDragging || isHolding) thumbSize * 1.8f else thumbSize,
+            label = "thumbSizeAnimation"
+        )
 
-    val infiniteTransition = rememberInfiniteTransition(label = "shimmerTransition")
-    val shimmerPosition by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 1000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "shimmerPosition"
-    )
+        val infiniteTransition = rememberInfiniteTransition(label = "shimmerTransition")
+        val shimmerPosition by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = 1000, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "shimmerPosition"
+        )
 
-    LaunchedEffect(currentPosition, isDragging, seekAmount, isShowSeekIndicator) {
-        if (!isDragging) {
-            if (isShowSeekIndicator != 0) {
-                val targetPosition =
-                    (currentPosition + (seekAmount * isShowSeekIndicator)).coerceIn(
-                        0L,
-                        duration
-                    )
-                dragPosition = targetPosition.toFloat()
-            } else {
-                dragPosition = currentPosition.toFloat()
-            }
-        }
-    }
-
-    LaunchedEffect(isDragging, dragPosition, isShowSeekIndicator) {
-        val isSeeking = isDragging || isShowSeekIndicator != 0
-        onDraggingSeekBarChange(isSeeking, dragPosition.toLong())
-    }
-
-    LaunchedEffect(dragCancelTrigger) {
-        if (dragCancelTrigger > 0 && isDragging) {
-            isDragging = false
-            isHolding = false
-        }
-    }
-
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(touchTargetHeight)
-            .onSizeChanged { size ->
-                trackWidthPx = size.width.toFloat()
-            }
-            .pointerInput(dragCancelTrigger) {
-                awaitEachGesture {
-                    val down = awaitFirstDown()
-                    isHolding = true
-
-                    val dragStart = awaitDragOrCancellation(down.id)
-
-                    if (dragStart != null) {
-                        isDragging = true
-                        handlePause()
-                        val initialThumbPosOnDrag = dragPosition
-
-                        drag(dragStart.id) { change: PointerInputChange ->
-                            isHolding = false
-                            if (duration > 0 && trackWidthPx > 0) {
-                                val dragAmount = change.position.x - dragStart.position.x
-                                val timeDelta = (dragAmount / trackWidthPx) * duration
-                                val newPosition = (initialThumbPosOnDrag + timeDelta)
-                                    .coerceIn(0f, duration.toFloat())
-                                dragPosition = newPosition
-                            }
-                            change.consume()
-                        }
-
-                        isDragging = false
-                        val finalSeekPosition = dragPosition.toLong().coerceIn(0, duration)
-                        if (!isHolding) onSeekTo(finalSeekPosition)
-                        handlePlay()
-                    }
-
-                    isHolding = false
+        LaunchedEffect(currentPosition, isDragging, seekAmount, isShowSeekIndicator) {
+            if (!isDragging) {
+                if (isShowSeekIndicator != 0) {
+                    val targetPosition =
+                        (currentPosition + (seekAmount * isShowSeekIndicator)).coerceIn(
+                            0L, duration
+                        )
+                    dragPosition = targetPosition.toFloat()
+                } else {
+                    dragPosition = currentPosition.toFloat()
                 }
             }
-    ) {
+        }
+
+        LaunchedEffect(isDragging, dragPosition, isShowSeekIndicator) {
+            val isSeeking = isDragging || isShowSeekIndicator != 0
+            onDraggingSeekBarChange?.invoke(isSeeking, dragPosition.toLong())
+        }
+
+        LaunchedEffect(dragCancelTrigger) {
+            if (dragCancelTrigger > 0 && isDragging) {
+                isDragging = false
+                isHolding = false
+            }
+        }
+
         Box(
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxWidth()
-                .height(trackHeight)
-                .clip(RoundedCornerShape(4.dp))
-                .background(Color.Gray.copy(alpha = 0.3f))
-                .align(Alignment.Center)
-        )
+                .height(touchTargetHeight)
+                .onSizeChanged { size ->
+                    trackWidthPx = size.width.toFloat()
+                }
+                .then(
+                    if (onDraggingSeekBarChange == null) Modifier
+                    else Modifier
+                        .pointerInput(dragCancelTrigger) {
+                            awaitEachGesture {
+                                val down = awaitFirstDown()
+                                isHolding = true
 
-        if (duration > 0 && bufferedProgressRatio > progress) {
-            val bufferedSegmentStartPx = progress * trackWidthPx
-            val bufferedSegmentWidthPx = (bufferedProgressRatio - progress) * trackWidthPx
+                                val dragStart = awaitDragOrCancellation(down.id)
+
+                                if (dragStart != null) {
+                                    isDragging = true
+                                    handlePause?.invoke()
+                                    val initialThumbPosOnDrag = dragPosition
+
+                                    drag(dragStart.id) { change: PointerInputChange ->
+                                        isHolding = false
+                                        if (duration > 0 && trackWidthPx > 0) {
+                                            val dragAmount =
+                                                change.position.x - dragStart.position.x
+                                            val timeDelta = (dragAmount / trackWidthPx) * duration
+                                            val newPosition = (initialThumbPosOnDrag + timeDelta)
+                                                .coerceIn(0f, duration.toFloat())
+                                            dragPosition = newPosition
+                                        }
+                                        change.consume()
+                                    }
+
+                                    isDragging = false
+                                    val finalSeekPosition =
+                                        dragPosition.toLong().coerceIn(0, duration)
+                                    if (!isHolding) onSeekTo?.invoke(finalSeekPosition)
+                                    handlePlay?.invoke()
+                                }
+
+                                isHolding = false
+                            }
+                        }
+                )
+        ) {
             Box(
                 modifier = Modifier
-                    .offset(x = with(density) { bufferedSegmentStartPx.toDp() })
-                    .width(with(density) { bufferedSegmentWidthPx.toDp() })
+                    .fillMaxWidth()
                     .height(trackHeight)
                     .clip(RoundedCornerShape(4.dp))
-                    .background(Color.Gray.copy(alpha = 0.5f))
+                    .background(Color.Gray.copy(alpha = 0.3f))
                     .align(Alignment.CenterStart)
             )
-        }
 
-        if (introStart >= 0 && introEnd > introStart && duration > 0) {
-            val introStartProgress =
-                (introStart.toFloat() / duration).coerceIn(0f, 1f)
-            val introEndProgress = (introEnd.toFloat() / duration).coerceIn(0f, 1f)
-            val introWidthPx = (introEndProgress - introStartProgress) * trackWidthPx
-            Box(
-                modifier = Modifier
-                    .offset(x = with(density) { (introStartProgress * trackWidthPx).toDp() })
-                    .width(with(density) { introWidthPx.toDp() })
-                    .height(trackHeight)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
-                    .align(Alignment.CenterStart)
-            )
-        }
-
-        if (outroStart >= 0 && outroEnd > outroStart && duration > 0) {
-            val outroStartProgress =
-                (outroStart.toFloat() / duration).coerceIn(0f, 1f)
-            val outroEndProgress = (outroEnd.toFloat() / duration).coerceIn(0f, 1f)
-            val outroWidthPx = (outroEndProgress - outroStartProgress) * trackWidthPx
-            Box(
-                modifier = Modifier
-                    .offset(x = with(density) { (outroStartProgress * trackWidthPx).toDp() })
-                    .width(with(density) { outroWidthPx.toDp() })
-                    .height(trackHeight)
-                    .clip(RoundedCornerShape(4.dp))
-                    .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
-                    .align(Alignment.CenterStart)
-            )
-        }
-
-        val progressWidth = if (isDragging || isShowSeekIndicator != 0) {
-            (dragPosition / duration).coerceIn(0f, 1f)
-        } else {
-            progress
-        }
-
-        val primaryColor = MaterialTheme.colorScheme.primary
-        val progressBrush = if (isDragging) {
-            val shimmerWidth = 150f
-            val startX =
-                (trackWidthPx * progressWidth + shimmerWidth) * shimmerPosition - shimmerWidth
-            Brush.horizontalGradient(
-                colors = listOf(
-                    primaryColor,
-                    primaryColor.copy(alpha = 0.5f),
-                    primaryColor
-                ),
-                startX = startX,
-                endX = startX + shimmerWidth
-            )
-        } else {
-            SolidColor(primaryColor)
-        }
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth(progressWidth)
-                .height(trackHeight)
-                .clip(RoundedCornerShape(4.dp))
-                .background(progressBrush)
-                .align(Alignment.CenterStart)
-        )
-
-        val thumbOffset = with(density) {
-            val currentThumbPositionPx = progressWidth * trackWidthPx
-            (currentThumbPositionPx - (animatedThumbSize.toPx() / 2f)).toDp()
-        }
-
-        val thumbBrush = if (isDragging || isHolding) {
-            with(density) {
-                Brush.radialGradient(
-                    colors = listOf(Color.White, Color.White.copy(alpha = 0f)),
-                    center = Offset.Unspecified,
-                    radius = animatedThumbSize.toPx() / 2
+            if (duration > 0 && bufferedProgressRatio > progress) {
+                val bufferedSegmentStartPx = progress * trackWidthPx
+                val bufferedSegmentWidthPx = (bufferedProgressRatio - progress) * trackWidthPx
+                Box(
+                    modifier = Modifier
+                        .offset(x = with(density) { bufferedSegmentStartPx.toDp() })
+                        .width(with(density) { bufferedSegmentWidthPx.toDp() })
+                        .height(trackHeight)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(Color.Gray.copy(alpha = 0.5f))
+                        .align(Alignment.CenterStart)
                 )
             }
-        } else {
-            SolidColor(Color.White)
-        }
 
-        Box(
-            modifier = Modifier
-                .offset(x = thumbOffset)
-                .size(animatedThumbSize)
-                .clip(CircleShape)
-                .background(brush = thumbBrush)
-                .align(Alignment.CenterStart)
-        )
+            if (introStart >= 0 && introEnd > introStart && duration > 0) {
+                val introStartProgress =
+                    (introStart.toFloat() / duration).coerceIn(0f, 1f)
+                val introEndProgress = (introEnd.toFloat() / duration).coerceIn(0f, 1f)
+                val introWidthPx = (introEndProgress - introStartProgress) * trackWidthPx
+                Box(
+                    modifier = Modifier
+                        .offset(x = with(density) { (introStartProgress * trackWidthPx).toDp() })
+                        .width(with(density) { introWidthPx.toDp() })
+                        .height(trackHeight)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
+                        .align(Alignment.CenterStart)
+                )
+            }
+
+            if (outroStart >= 0 && outroEnd > outroStart && duration > 0) {
+                val outroStartProgress =
+                    (outroStart.toFloat() / duration).coerceIn(0f, 1f)
+                val outroEndProgress = (outroEnd.toFloat() / duration).coerceIn(0f, 1f)
+                val outroWidthPx = (outroEndProgress - outroStartProgress) * trackWidthPx
+                Box(
+                    modifier = Modifier
+                        .offset(x = with(density) { (outroStartProgress * trackWidthPx).toDp() })
+                        .width(with(density) { outroWidthPx.toDp() })
+                        .height(trackHeight)
+                        .clip(RoundedCornerShape(4.dp))
+                        .background(MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f))
+                        .align(Alignment.CenterStart)
+                )
+            }
+
+            val progressWidth = if (isDragging || isShowSeekIndicator != 0) {
+                (dragPosition / duration).coerceIn(0f, 1f)
+            } else {
+                progress
+            }
+
+            val primaryColor = MaterialTheme.colorScheme.primary
+            val progressBrush = if (isDragging) {
+                val shimmerWidth = 150f
+                val startX =
+                    (trackWidthPx * progressWidth + shimmerWidth) * shimmerPosition - shimmerWidth
+                Brush.horizontalGradient(
+                    colors = listOf(
+                        primaryColor,
+                        primaryColor.copy(alpha = 0.5f),
+                        primaryColor
+                    ),
+                    startX = startX,
+                    endX = startX + shimmerWidth
+                )
+            } else {
+                SolidColor(primaryColor)
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(progressWidth)
+                    .height(trackHeight)
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(progressBrush)
+                    .align(Alignment.CenterStart)
+            )
+
+            if (onDraggingSeekBarChange != null) {
+                val thumbOffset = with(density) {
+                    val currentThumbPositionPx = progressWidth * trackWidthPx
+                    (currentThumbPositionPx - (animatedThumbSize.toPx() / 2f)).toDp()
+                }
+
+                val thumbBrush = if (isDragging || isHolding) {
+                    with(density) {
+                        Brush.radialGradient(
+                            colors = listOf(Color.White, Color.White.copy(alpha = 0f)),
+                            center = Offset.Unspecified,
+                            radius = animatedThumbSize.toPx() / 2
+                        )
+                    }
+                } else {
+                    SolidColor(Color.White)
+                }
+
+                Box(
+                    modifier = Modifier
+                        .offset(x = thumbOffset)
+                        .size(animatedThumbSize)
+                        .clip(CircleShape)
+                        .background(brush = thumbBrush)
+                        .align(Alignment.CenterStart)
+                )
+            }
+        }
     }
 }

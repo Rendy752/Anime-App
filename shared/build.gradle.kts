@@ -70,7 +70,7 @@ kotlin {
 
 android {
     namespace = "com.luminoverse.animevibe.shared"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 27

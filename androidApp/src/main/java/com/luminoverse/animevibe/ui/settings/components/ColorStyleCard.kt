@@ -30,7 +30,7 @@ import com.luminoverse.animevibe.ui.common.EpisodeDetailItem
 import com.luminoverse.animevibe.ui.common.AnimeHeader
 import com.luminoverse.animevibe.ui.common.AnimeScheduleItem
 import com.luminoverse.animevibe.ui.common.AnimeSearchItem
-import com.luminoverse.animevibe.ui.common.ContinueWatchingAnime
+import com.luminoverse.animevibe.ui.common.ContinueWatchingEpisode
 import com.luminoverse.animevibe.ui.theme.AppTheme
 import com.luminoverse.animevibe.ui.theme.ColorStyle
 import com.luminoverse.animevibe.ui.theme.ContrastMode
@@ -87,8 +87,9 @@ fun ColorStyleCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     AnimeScheduleItem(
+                        modifier = Modifier.widthIn(max = 130.dp),
                         animeDetail = animeDetailPlaceholder,
-                        modifier = Modifier.widthIn(max = 130.dp)
+                        onItemClick = { onColorStyleSelected() }
                     )
 
                     Column(
@@ -110,26 +111,32 @@ fun ColorStyleCard(
                             query = episodePlaceholder.title.let {
                                 if (it.length > 3) it.take(3) else it
                             },
+                            onClick = { onColorStyleSelected() },
                             titleMaxLines = 2
                         )
 
-                        ContinueWatchingAnime(
+                        ContinueWatchingEpisode(
                             episodeDetailComplement = episodeDetailComplementPlaceholder.copy(
                                 animeTitle = episodeDetailComplementPlaceholder.animeTitle,
                                 imageUrl = animeDetailPlaceholder.images.webp.large_image_url
-                            )
+                            ),
+                            onTitleClick = { onColorStyleSelected() },
+                            onEpisodeClick = { _, _ -> onColorStyleSelected() }
                         )
                     }
 
                     AnimeSearchItem(
                         modifier = Modifier.widthIn(max = 400.dp),
-                        animeDetail = animeDetailPlaceholder
+                        animeDetail = animeDetailPlaceholder,
+                        onItemClick = { onColorStyleSelected() },
+                        onGenreClick = { onColorStyleSelected() }
                     )
 
                     AnimeHeader(
                         animeDetail = animeDetailPlaceholder,
                         modifier = Modifier.widthIn(max = 300.dp),
-                        showImage = false
+                        showImage = false,
+                        onClick = { onColorStyleSelected() }
                     )
                 }
             }

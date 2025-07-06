@@ -28,10 +28,10 @@ import com.luminoverse.animevibe.models.AnimeDetailComplement
 import com.luminoverse.animevibe.models.AnimeDetailResponse
 import com.luminoverse.animevibe.ui.common.DebouncedIconButton
 import com.luminoverse.animevibe.ui.common.SkeletonBox
-import com.luminoverse.animevibe.ui.main.navigation.NavRoute
-import com.luminoverse.animevibe.ui.main.navigation.navigateTo
-import com.luminoverse.animevibe.utils.resource.Resource
+import com.luminoverse.animevibe.ui.main.SnackbarMessage
+import com.luminoverse.animevibe.ui.main.SnackbarMessageType
 import com.luminoverse.animevibe.utils.ShareUtils
+import com.luminoverse.animevibe.utils.resource.Resource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -39,7 +39,11 @@ fun AnimeDetailTopBar(
     animeDetail: Resource<AnimeDetailResponse>?,
     animeDetailComplement: Resource<AnimeDetailComplement?>?,
     navController: NavController,
-    onFavoriteToggle: (Boolean) -> Unit
+    playEpisode: (Int, String) -> Unit,
+    onFavoriteToggle: (Boolean) -> Unit,
+    isPostNotificationsPermissionGranted: Boolean,
+    showSnackbar: (SnackbarMessage) -> Unit,
+    onEnableNotificationClick: () -> Unit
 ) {
     val context = LocalContext.current
     val isFavorite = remember { mutableStateOf(false) }
@@ -95,9 +99,27 @@ fun AnimeDetailTopBar(
                 if (animeDetailComplement is Resource.Success) {
                     DebouncedIconButton(
                         onClick = {
-                            isFavorite.value = !isFavorite.value
-                            animeDetailComplement.data?.let {
-                                onFavoriteToggle(isFavorite.value)
+                            val newFavoriteState = !isFavorite.value
+                            isFavorite.value = newFavoriteState
+                            onFavoriteToggle(newFavoriteState)
+
+                            if (newFavoriteState && animeDetailData.airing) {
+                                if (isPostNotificationsPermissionGranted) {
+                                    showSnackbar(
+                                        SnackbarMessage(
+                                            message = "You'll be notified when ${animeDetailData.title} is about to air.",
+                                            type = SnackbarMessageType.SUCCESS
+                                        )
+                                    )
+                                } else {
+                                    showSnackbar(
+                                        SnackbarMessage(
+                                            message = "Enable notifications to get airing alerts.",
+                                            actionLabel = "ENABLE",
+                                            onAction = onEnableNotificationClick
+                                        )
+                                    )
+                                }
                             }
                         },
                         modifier = Modifier.semantics {
@@ -117,12 +139,10 @@ fun AnimeDetailTopBar(
                     animeDetailComplement.data.let { animeDetailComplement ->
                         animeDetailComplement?.episodes?.let { episodes ->
                             IconButton(onClick = {
-                                navController.navigateTo(
-                                    NavRoute.AnimeWatch.fromParams(
-                                        malId = animeDetailData.mal_id,
-                                        episodeId = animeDetailComplement.lastEpisodeWatchedId
-                                            ?: episodes.first().id
-                                    )
+                                playEpisode(
+                                    animeDetailData.mal_id,
+                                    animeDetailComplement.lastEpisodeWatchedId
+                                        ?: episodes.first().id
                                 )
                             }) {
                                 Icon(

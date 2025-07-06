@@ -152,6 +152,7 @@ fun WatchEpisodeItem(
 
             Text(
                 text = episode.episode_no.toString(),
+                color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
                 fontWeight = FontWeight.Bold,
                 style = if (isHighlighted) {

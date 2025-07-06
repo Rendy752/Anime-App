@@ -44,8 +44,10 @@
 
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+
                 <data
                     android:host="anime"
                     android:pathPattern="/detail/.*"
@@ -54,8 +56,10 @@
 
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
+
                 <data
                     android:host="anime"
                     android:pathPattern="/watch/.*"
@@ -63,7 +67,9 @@
             </intent-filter>
         </activity>
 
-        <receiver android:name="com.luminoverse.animevibe.utils.receivers.NotificationReceiver" android:exported="false">
+        <receiver
+            android:name="com.luminoverse.animevibe.utils.receivers.NotificationReceiver"
+            android:exported="false">
             <intent-filter>
                 <action android:name="ACTION_OPEN_DETAIL" />
                 <action android:name="ACTION_OPEN_EPISODE" />
@@ -100,6 +106,7 @@
             android:exported="true"
             android:foregroundServiceType="mediaPlayback"
             android:permission="com.luminoverse.animevibe.permission.ACCESS_MEDIA_SERVICE">
+            <property android:name="android.media.PROPERTY_PLAYBACK_TYPE" android:value="local"/>
             <intent-filter>
                 <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>
@@ -126,8 +133,8 @@
 
         <receiver
             android:name="com.luminoverse.animevibe.ui.widget.LatestWatchedWidgetProvider"
-            android:label="@string/widget_name"
-            android:exported="true">
+            android:exported="true"
+            android:label="@string/widget_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>

@@ -1,7 +1,5 @@
 package com.luminoverse.animevibe.ui.animeHome
 
-import android.app.Application
-import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.luminoverse.animevibe.models.AnimeDetail
@@ -12,8 +10,6 @@ import com.luminoverse.animevibe.repository.AnimeEpisodeDetailRepository
 import com.luminoverse.animevibe.repository.AnimeHomeRepository
 import com.luminoverse.animevibe.utils.resource.Resource
 import com.luminoverse.animevibe.utils.TimeUtils.calculateRemainingTime
-import com.luminoverse.animevibe.utils.workers.BroadcastNotificationWorker
-import com.luminoverse.animevibe.utils.workers.UnfinishedWatchNotificationWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -59,7 +55,6 @@ sealed class HomeAction {
 
 @HiltViewModel
 class AnimeHomeViewModel @Inject constructor(
-    private val application: Application,
     private val animeHomeRepository: AnimeHomeRepository,
     private val animeEpisodeDetailRepository: AnimeEpisodeDetailRepository
 ) : ViewModel() {
@@ -76,7 +71,6 @@ class AnimeHomeViewModel @Inject constructor(
     private var timeUpdateJob: Job? = null
 
     init {
-        scheduleWorkers()
         onAction(HomeAction.GetAnimeSchedules)
         onAction(HomeAction.GetTop10Anime)
     }
@@ -94,12 +88,6 @@ class AnimeHomeViewModel @Inject constructor(
             is HomeAction.SetCurrentCarouselPage -> setCurrentCarouselPage(action.page)
             is HomeAction.StartUpdatingBroadcastTimes -> startUpdatingBroadcastTimes(action.animeSchedules)
         }
-    }
-
-    private fun scheduleWorkers() {
-        BroadcastNotificationWorker.schedule(application, false)
-        UnfinishedWatchNotificationWorker.schedule(application, false)
-        Log.d("AnimeHomeViewModel", "Workers scheduled from ViewModel.")
     }
 
     private fun getAnimeSchedules() = viewModelScope.launch {

@@ -74,6 +74,8 @@ fun EpisodeNavigationButton(
         Text(
             episode?.title ?: "Unknown",
             textAlign = TextAlign.Center,
+            style = MaterialTheme.typography.titleSmall,
+            color = MaterialTheme.colorScheme.onSurface,
             maxLines = 2,
             overflow = TextOverflow.Companion.Ellipsis,
             modifier = Modifier.weight(1f)

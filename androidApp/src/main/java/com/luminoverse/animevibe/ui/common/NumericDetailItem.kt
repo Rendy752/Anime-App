@@ -46,6 +46,7 @@ fun NumericDetailItem(
         Text(
             text = title,
             style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth()
         )
@@ -55,6 +56,7 @@ fun NumericDetailItem(
                 fontWeight = FontWeight.Bold,
                 fontSize = 24.sp
             ),
+            color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth()
         )
@@ -63,6 +65,7 @@ fun NumericDetailItem(
             Text(
                 text = it,
                 style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )

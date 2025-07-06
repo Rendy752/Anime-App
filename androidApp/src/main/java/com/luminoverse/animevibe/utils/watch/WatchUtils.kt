@@ -10,6 +10,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.ui.theme.defaultEpisode
@@ -42,14 +43,15 @@ object WatchUtils {
     }
 
     @Composable
-    fun getServerCategoryIcon(category: String): @Composable (() -> Unit)? {
+    fun getServerCategoryIcon(category: String, tint: Color? = null): @Composable (() -> Unit)? {
         return when (category.lowercase()) {
             "sub" -> {
                 {
                     Icon(
                         imageVector = Icons.Filled.ClosedCaption,
                         contentDescription = "Subtitles",
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(20.dp),
+                        tint = tint ?: MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
@@ -59,7 +61,8 @@ object WatchUtils {
                     Icon(
                         imageVector = Icons.Filled.Mic,
                         contentDescription = "Dubbed",
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(20.dp),
+                        tint = tint ?: MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
@@ -69,7 +72,8 @@ object WatchUtils {
                     Icon(
                         imageVector = Icons.Filled.LiveTv,
                         contentDescription = "Raw",
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(20.dp),
+                        tint = tint ?: MaterialTheme.colorScheme.onSurface
                     )
                 }
             }

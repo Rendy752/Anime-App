@@ -10,6 +10,7 @@ import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.runtime.*
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
+import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntSize
 import androidx.media3.common.Player
@@ -61,6 +62,7 @@ class VideoPlayerState(
     private val _currentPosition = MutableStateFlow(0L)
     val currentPosition: StateFlow<Long> = _currentPosition.asStateFlow()
 
+    var isShowResume by mutableStateOf(false)
     var isShowNextEpisodeOverlay by mutableStateOf(false)
     var isShowSeekIndicator by mutableIntStateOf(0)
     var seekAmount by mutableLongStateOf(0L)
@@ -70,8 +72,11 @@ class VideoPlayerState(
     var zoomScaleProgress by mutableFloatStateOf(1f)
     var isZooming by mutableStateOf(false)
     var speedUpText by mutableStateOf("")
+    var autoplayNextEpisodeStatusText by mutableStateOf<String?>(null)
+    var autoplayNextEpisodeStatusTrigger by mutableIntStateOf(0)
     var isHolding by mutableStateOf(false)
     var showLockReminder by mutableStateOf(false)
+    var isBufferingFromSeeking by mutableStateOf(false)
     var isDraggingSeekBar by mutableStateOf(false)
     var dragCancelTrigger by mutableIntStateOf(0)
         private set
@@ -167,12 +172,19 @@ class VideoPlayerState(
                         withContext(Dispatchers.IO) {
                             subtitleFile.writeText(vttContent)
                         }
-                        Log.d("VideoPlayerState", "Fetched captions from network and cached locally for $captionUrl")
+                        Log.d(
+                            "VideoPlayerState",
+                            "Fetched captions from network and cached locally for $captionUrl"
+                        )
                     } else {
                         throw IOException("Fetched caption content is null or empty.")
                     }
                 } catch (e: Exception) {
-                    Log.e("VideoPlayerState", "Failed to fetch captions from network: ${e.message}", e)
+                    Log.e(
+                        "VideoPlayerState",
+                        "Failed to fetch captions from network: ${e.message}",
+                        e
+                    )
                     return@launch
                 }
             }
@@ -378,83 +390,141 @@ fun rememberVideoPlayerState(
 
 suspend fun AwaitPointerEventScope.handleGestures(
     state: VideoPlayerState,
+    isPlayerDisplayFullscreen: Boolean,
     updatedControlsState: State<ControlsState>,
+    isLandscape: Boolean,
+    topPaddingPx: Float,
+    onVerticalDrag: (Float) -> Unit,
+    onDragEnd: (flingVelocity: Float) -> Unit
 ) {
-    val down = awaitFirstDown()
+    val down: PointerInputChange = awaitFirstDown()
+    val isDragInBarrier = isLandscape && down.position.y < topPaddingPx
 
     state.longPressJob?.cancel()
     state.longPressJob = state.scope.launch {
         delay(LONG_PRESS_THRESHOLD_MILLIS)
-        if (state.player.isPlaying && !updatedControlsState.value.isLocked) {
+        if (state.player.isPlaying && !updatedControlsState.value.isLocked && isPlayerDisplayFullscreen) {
             state.handleLongPressStart(updatedControlsState.value.playbackSpeed)
             down.consume()
         }
     }
 
     var isMultiTouch = false
-    var isDragging = false
+    var isPanning = false
+    var verticalDragConsumed = false
+    var lastVelocityY = 0f
 
     while (true) {
         val event = awaitPointerEvent()
-        if (event.changes.none { it.pressed }) {
+        val pointers = event.changes
+        if (pointers.none { it.pressed }) {
             state.longPressJob?.cancel()
             break
         }
 
-        if (event.changes.size > 1 && !updatedControlsState.value.isLocked && !state.isFirstLoad) {
+        if (updatedControlsState.value.isLocked) {
+            pointers.forEach { it.consume() }
+            continue
+        }
+
+        if (pointers.size > 1 && isPlayerDisplayFullscreen) {
             if (!isMultiTouch) {
                 isMultiTouch = true
                 state.isZooming = true
-                state.playerAction(
-                    HlsPlayerAction.RequestToggleControlsVisibility(false)
-                )
                 state.longPressJob?.cancel()
                 state.handleLongPressEnd()
+                verticalDragConsumed = false
+                isPanning = false
+                state.playerAction(HlsPlayerAction.RequestToggleControlsVisibility(false))
             }
             val zoomChange = event.calculateZoom()
-            state.zoomScaleProgress =
-                (state.zoomScaleProgress * zoomChange).coerceIn(1f, MAX_ZOOM_RATIO)
+            state.zoomScaleProgress = (state.zoomScaleProgress * zoomChange).coerceIn(1f, MAX_ZOOM_RATIO)
 
-            val (maxOffsetX, maxOffsetY) = calculateOffsetBounds(
-                size,
-                Size(
-                    width = state.videoSize.width.toFloat(),
-                    height = state.videoSize.height.toFloat()
-                ),
-                state.zoomScaleProgress
-            )
-            state.offsetX = state.offsetX.coerceIn(-maxOffsetX, maxOffsetX)
-            state.offsetY = state.offsetY.coerceIn(-maxOffsetY, maxOffsetY)
-            event.changes.forEach { it.consume() }
-        } else if (event.changes.size == 1 && !isMultiTouch && updatedControlsState.value.zoom > 1f && !updatedControlsState.value.isLocked && !state.isFirstLoad) {
-            val pan = event.calculatePan()
-            if (pan.x != 0f || pan.y != 0f) {
-                if (!isDragging) {
-                    isDragging = true
-                    state.playerAction(
-                        HlsPlayerAction.RequestToggleControlsVisibility(false)
-                    )
+            if (state.videoSize.width > 0 && state.videoSize.height > 0) {
+                val containerWidth = size.width.toFloat()
+                val containerHeight = size.height.toFloat()
+                val containerAspect = containerWidth / containerHeight
+                val videoAspect = state.videoSize.width.toFloat() / state.videoSize.height.toFloat()
+
+                val fittedVideoSize = if (videoAspect > containerAspect) {
+                    Size(width = containerWidth, height = containerWidth / videoAspect)
+                } else {
+                    Size(width = containerHeight * videoAspect, height = containerHeight)
+                }
+
+                val (maxOffsetX, maxOffsetY) = calculateOffsetBounds(
+                    containerSize = size,
+                    imageSize = fittedVideoSize,
+                    scale = state.zoomScaleProgress
+                )
+                state.offsetX = state.offsetX.coerceIn(-maxOffsetX, maxOffsetX)
+                state.offsetY = state.offsetY.coerceIn(-maxOffsetY, maxOffsetY)
+            }
+
+            pointers.forEach { it.consume() }
+            continue
+        }
+
+        if (pointers.size == 1 && !isMultiTouch && isPlayerDisplayFullscreen) {
+            val change = pointers.first()
+
+            if (updatedControlsState.value.zoom > 1f) {
+                val pan = event.calculatePan()
+                if (pan.x != 0f || pan.y != 0f) {
+                    if (!isPanning) {
+                        isPanning = true
+                        state.playerAction(HlsPlayerAction.RequestToggleControlsVisibility(false))
+                        state.longPressJob?.cancel()
+                        state.handleLongPressEnd()
+                    }
+                    if (state.videoSize.width > 0 && state.videoSize.height > 0) {
+                        val containerWidth = size.width.toFloat()
+                        val containerHeight = size.height.toFloat()
+                        val containerAspect = containerWidth / containerHeight
+                        val videoAspect = state.videoSize.width.toFloat() / state.videoSize.height.toFloat()
+
+                        val fittedVideoSize = if (videoAspect > containerAspect) {
+                            Size(width = containerWidth, height = containerWidth / videoAspect)
+                        } else {
+                            Size(width = containerHeight * videoAspect, height = containerHeight)
+                        }
+
+                        val (maxOffsetX, maxOffsetY) = calculateOffsetBounds(
+                            containerSize = size,
+                            imageSize = fittedVideoSize,
+                            scale = state.zoomScaleProgress
+                        )
+                        state.offsetX = (state.offsetX + pan.x).coerceIn(-maxOffsetX, maxOffsetX)
+                        state.offsetY = (state.offsetY + pan.y).coerceIn(-maxOffsetY, maxOffsetY)
+                    }
+                    change.consume()
+                }
+            }
+            else {
+                val positionChangeOffset = change.position - change.previousPosition
+                val dy = positionChangeOffset.y
+                val dx = positionChangeOffset.x
+
+                if (abs(dy) > abs(dx) && abs(dy) > 1f && !isDragInBarrier) {
                     state.longPressJob?.cancel()
                     state.handleLongPressEnd()
+
+                    val dt = change.uptimeMillis - change.previousUptimeMillis
+                    if (dt > 0) {
+                        lastVelocityY = dy / dt
+                    }
+
+                    onVerticalDrag(dy)
+                    verticalDragConsumed = true
+                    change.consume()
                 }
-                val (maxOffsetX, maxOffsetY) = calculateOffsetBounds(
-                    size,
-                    Size(
-                        width = state.videoSize.width.toFloat(),
-                        height = state.videoSize.height.toFloat()
-                    ),
-                    state.zoomScaleProgress
-                )
-                state.offsetX =
-                    (state.offsetX + pan.x).coerceIn(-maxOffsetX, maxOffsetX)
-                state.offsetY =
-                    (state.offsetY + pan.y).coerceIn(-maxOffsetY, maxOffsetY)
-                event.changes.forEach { it.consume() }
             }
         }
     }
 
-    if (isMultiTouch) {
+    if (verticalDragConsumed) {
+        onDragEnd(lastVelocityY)
+    } else if (isMultiTouch) {
         val halfWayRatio = (1f + state.zoomToFillRatio) / 2
         val finalZoom = if (state.zoomScaleProgress < halfWayRatio) 1f
         else if (state.zoomScaleProgress in halfWayRatio..state.zoomToFillRatio) state.zoomToFillRatio
@@ -467,7 +537,7 @@ suspend fun AwaitPointerEventScope.handleGestures(
             state.offsetY = 0f
         }
         state.isZooming = false
-    } else if (!isDragging) {
+    } else if (!isPanning && isPlayerDisplayFullscreen) {
         state.longPressJob?.cancel()
         val currentTime = System.currentTimeMillis()
         val tapX = down.position.x
