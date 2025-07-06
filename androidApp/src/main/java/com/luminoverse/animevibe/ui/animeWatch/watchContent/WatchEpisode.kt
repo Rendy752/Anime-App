@@ -47,16 +47,14 @@ fun WatchEpisode(
             gridState = gridState
         )
 
-        if (episodeDetailComplement != null) {
-            EpisodeNavigation(
-                episodeDetailComplement = episodeDetailComplement,
-                episodeDetailComplements = episodeDetailComplements,
-                onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,
-                episodes = episodes,
-                episodeSourcesQuery = episodeSourcesQuery,
-                handleSelectedEpisodeServer = handleSelectedEpisodeServer,
-            )
-        } else EpisodeNavigationSkeleton()
+        EpisodeNavigation(
+            episodeDetailComplement = episodeDetailComplement,
+            episodeDetailComplements = episodeDetailComplements,
+            onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,
+            episodes = episodes,
+            episodeSourcesQuery = episodeSourcesQuery,
+            handleSelectedEpisodeServer = handleSelectedEpisodeServer,
+        )
 
         Column {
             HorizontalDivider(modifier = Modifier.fillMaxWidth())

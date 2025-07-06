@@ -34,22 +34,18 @@ fun WatchContentSection(
         modifier = Modifier.padding(top = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        episodeDetailComplement?.let { episodeDetailComplement ->
-            episodes.find { it.id == episodeDetailComplement.id }
-                ?.let { currentEpisode ->
-                    WatchHeader(
-                        title = animeDetail?.title,
-                        networkStatus = networkStatus,
-                        onFavoriteToggle = onFavoriteToggle,
-                        episode = currentEpisode,
-                        episodeDetailComplement = episodeDetailComplement,
-                        episodeSourcesQuery = episodeSourcesQuery,
-                        serverScrollState = serverScrollState,
-                        onServerSelected = { handleSelectedEpisodeServer(it) }
-                    )
-                }
-        }
-        if (episodes.size > 1) WatchEpisode(
+        WatchHeader(
+            title = animeDetail?.title,
+            networkStatus = networkStatus,
+            onFavoriteToggle = onFavoriteToggle,
+            episode = episodes.find { it.id == episodeDetailComplement?.id },
+            episodeDetailComplement = episodeDetailComplement,
+            episodeSourcesQuery = episodeSourcesQuery,
+            serverScrollState = serverScrollState,
+            onServerSelected = { handleSelectedEpisodeServer(it) }
+        )
+
+        WatchEpisode(
             imageUrl = animeDetail?.images?.webp?.large_image_url,
             episodeDetailComplements = episodeDetailComplements,
             onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,

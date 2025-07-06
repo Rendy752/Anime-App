@@ -66,6 +66,7 @@ import com.luminoverse.animevibe.utils.media.PipUtil.buildPipActions
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 import androidx.compose.foundation.gestures.awaitEachGesture
+import kotlinx.coroutines.flow.collectLatest
 
 
 @SuppressLint("ConfigurationScreenWidthHeight")
@@ -246,8 +247,22 @@ fun PlayerHost(
                 val watchState by watchViewModel.watchState.collectAsStateWithLifecycle()
                 val playerCoreState by watchViewModel.playerCoreState.collectAsStateWithLifecycle()
 
-                val activity = LocalActivity.current as? MainActivity
+                LaunchedEffect(playerState.malId, playerState.episodeId) {
+                    hlsPlayerUtils.dispatch(HlsPlayerAction.Reset)
+                    watchViewModel.onAction(
+                        WatchAction.SetInitialState(
+                            playerState.malId,
+                            playerState.episodeId
+                        )
+                    )
+                    scope.launch {
+                        watchViewModel.snackbarFlow.collectLatest { snackbarMessage ->
+                            onAction(MainAction.ShowSnackbar(snackbarMessage))
+                        }
+                    }
+                }
 
+                val activity = LocalActivity.current as? MainActivity
                 DisposableEffect(activity) {
                     val onPictureInPictureModeChangedCallback: (Boolean) -> Unit =
                         { isInPipMode ->
@@ -301,7 +316,6 @@ fun PlayerHost(
 
                 AnimeWatchScreen(
                     malId = playerState.malId,
-                    episodeId = playerState.episodeId,
                     playerDisplayMode = playerState.displayMode,
                     setPlayerDisplayMode = { onAction(MainAction.SetPlayerDisplayMode(it)) },
                     navController = navController,
@@ -310,7 +324,6 @@ fun PlayerHost(
                     showSnackbar = { onAction(MainAction.ShowSnackbar(it)) },
                     dismissSnackbar = { onAction(MainAction.DismissSnackbar) },
                     watchState = watchState,
-                    snackbarFlow = watchViewModel.snackbarFlow,
                     hlsPlayerCoreState = playerCoreState,
                     hlsControlsStateFlow = watchViewModel.controlsState,
                     onAction = watchViewModel::onAction,

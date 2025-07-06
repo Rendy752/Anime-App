@@ -76,7 +76,24 @@ class MainActivity : AppCompatActivity() {
 
     private val updateActivityResultLauncher =
         registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
-            if (result.resultCode != RESULT_OK) {
+            if (result.resultCode == RESULT_OK) {
+                mainViewModel.onAction(
+                    MainAction.ShowSnackbar(
+                        SnackbarMessage(
+                            message = "Update download started...",
+                            type = SnackbarMessageType.INFO
+                        )
+                    )
+                )
+            } else {
+                mainViewModel.onAction(
+                    MainAction.ShowSnackbar(
+                        SnackbarMessage(
+                            message = "Update canceled.",
+                            type = SnackbarMessageType.INFO
+                        )
+                    )
+                )
                 println("Update flow failed! Result code: " + result.resultCode)
             }
         }
@@ -98,8 +115,35 @@ class MainActivity : AppCompatActivity() {
         appUpdateManager = AppUpdateManagerFactory.create(applicationContext)
 
         installStateUpdatedListener = InstallStateUpdatedListener { state ->
-            if (state.installStatus() == InstallStatus.DOWNLOADED) {
-                popupSnackbarForCompleteUpdate()
+            when (state.installStatus()) {
+                InstallStatus.INSTALLING -> mainViewModel.onAction(
+                    MainAction.ShowSnackbar(
+                        SnackbarMessage(
+                            message = "Installing update...",
+                            type = SnackbarMessageType.INFO
+                        )
+                    )
+                )
+
+                InstallStatus.FAILED -> mainViewModel.onAction(
+                    MainAction.ShowSnackbar(
+                        SnackbarMessage(
+                            message = "Update failed. Please try again.",
+                            type = SnackbarMessageType.ERROR
+                        )
+                    )
+                )
+
+                InstallStatus.CANCELED -> mainViewModel.onAction(
+                    MainAction.ShowSnackbar(
+                        SnackbarMessage(
+                            message = "Update canceled.",
+                            type = SnackbarMessageType.INFO
+                        )
+                    )
+                )
+
+                else -> {}
             }
         }
         appUpdateManager.registerListener(installStateUpdatedListener!!)
@@ -235,7 +279,16 @@ class MainActivity : AppCompatActivity() {
             .appUpdateInfo
             .addOnSuccessListener { appUpdateInfo ->
                 if (appUpdateInfo.installStatus() == InstallStatus.DOWNLOADED) {
-                    popupSnackbarForCompleteUpdate()
+                    mainViewModel.onAction(
+                        MainAction.ShowSnackbar(
+                            SnackbarMessage(
+                                message = "An update has just been downloaded.",
+                                type = SnackbarMessageType.SUCCESS,
+                                actionLabel = "RESTART",
+                                onAction = { appUpdateManager.completeUpdate() }
+                            )
+                        )
+                    )
                 }
                 if (appUpdateInfo.updateAvailability() == UpdateAvailability.DEVELOPER_TRIGGERED_UPDATE_IN_PROGRESS) {
                     appUpdateManager.startUpdateFlowForResult(
@@ -261,19 +314,6 @@ class MainActivity : AppCompatActivity() {
         }.addOnFailureListener { e ->
             println("Failed to check for update: ${e.message}")
         }
-    }
-
-    private fun popupSnackbarForCompleteUpdate() {
-        mainViewModel.onAction(
-            MainAction.ShowSnackbar(
-                SnackbarMessage(
-                    message = "An update has just been downloaded.",
-                    type = SnackbarMessageType.SUCCESS,
-                    actionLabel = "RESTART",
-                    onAction = { appUpdateManager.completeUpdate() }
-                )
-            )
-        )
     }
 
     private fun requestNotificationPermission() {

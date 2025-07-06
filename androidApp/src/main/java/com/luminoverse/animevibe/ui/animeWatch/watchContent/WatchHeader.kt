@@ -12,15 +12,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
 import com.luminoverse.animevibe.models.NetworkStatus
-import com.luminoverse.animevibe.models.episodeDetailComplementPlaceholder
-import com.luminoverse.animevibe.models.episodePlaceholder
-import com.luminoverse.animevibe.models.networkStatusPlaceholder
 import com.luminoverse.animevibe.utils.watch.WatchUtils.getEpisodeBackgroundColor
 import com.luminoverse.animevibe.utils.basicContainer
 
@@ -29,19 +25,19 @@ fun WatchHeader(
     title: String?,
     networkStatus: NetworkStatus,
     onFavoriteToggle: (Boolean) -> Unit,
-    episode: Episode,
-    episodeDetailComplement: EpisodeDetailComplement,
+    episode: Episode?,
+    episodeDetailComplement: EpisodeDetailComplement?,
     episodeSourcesQuery: EpisodeSourcesQuery?,
     serverScrollState: ScrollState,
     onServerSelected: (EpisodeSourcesQuery) -> Unit,
 ) {
-    var isFavorite by remember { mutableStateOf(episodeDetailComplement.isFavorite) }
+    var isFavorite by remember { mutableStateOf(episodeDetailComplement?.isFavorite ?: false) }
     Column(
         modifier = Modifier
             .basicContainer(
                 backgroundBrush = getEpisodeBackgroundColor(
-                    episode.filler,
-                    episodeDetailComplement.copy(isFavorite = isFavorite)
+                    episode?.filler ?: false,
+                    episodeDetailComplement?.copy(isFavorite = isFavorite)
                 ),
                 outerPadding = PaddingValues(0.dp),
                 innerPadding = PaddingValues(0.dp)
@@ -49,62 +45,30 @@ fun WatchHeader(
             .fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        episodeDetailComplement.servers.let { servers ->
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                CurrentlyWatchingHeader(
-                    networkStatus = networkStatus,
-                    onFavoriteToggle = {
-                        isFavorite = !isFavorite
-                        onFavoriteToggle(isFavorite)
-                    },
-                    isFavorite = isFavorite
-                )
-                EpisodeInfo(
-                    title = title,
-                    episode = episode,
-                    episodeNo = episodeDetailComplement.number,
-                    episodeSourcesQuery = episodeSourcesQuery
-                )
-                ServerSelection(
-                    scrollState = serverScrollState,
-                    episodeSourcesQuery = episodeSourcesQuery,
-                    servers = servers,
-                    onServerSelected = onServerSelected
-                )
-            }
-        }
-    }
-}
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            CurrentlyWatchingHeader(
+                networkStatus = networkStatus,
+                onFavoriteToggle = {
+                    isFavorite = !isFavorite
+                    onFavoriteToggle(isFavorite)
+                },
+                isFavorite = isFavorite
+            )
+            if (episode != null) EpisodeInfo(
+                title = title,
+                episode = episode,
+                episodeSourcesQuery = episodeSourcesQuery
+            ) else EpisodeInfoSkeleton()
 
-@Preview
-@Composable
-fun WatchHeaderSkeleton(
-    episode: Episode = episodePlaceholder,
-    episodeDetailComplement: EpisodeDetailComplement = episodeDetailComplementPlaceholder,
-    networkStatus: NetworkStatus = networkStatusPlaceholder
-) {
-    Column(
-        modifier = Modifier
-            .basicContainer(
-                backgroundBrush = getEpisodeBackgroundColor(
-                    episode.filler,
-                    episodeDetailComplement
-                ),
-                outerPadding = PaddingValues(0.dp),
-                innerPadding = PaddingValues(0.dp)
-            )
-            .fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        CurrentlyWatchingHeader(
-            networkStatus = networkStatus,
-            onFavoriteToggle = {},
-            isFavorite = false
-        )
-        EpisodeInfoSkeleton()
-        ServerSelectionSkeleton()
+            if (episodeDetailComplement?.servers != null) ServerSelection(
+                scrollState = serverScrollState,
+                episodeSourcesQuery = episodeSourcesQuery,
+                servers = episodeDetailComplement.servers,
+                onServerSelected = onServerSelected
+            ) else ServerSelectionSkeleton()
+        }
     }
 }

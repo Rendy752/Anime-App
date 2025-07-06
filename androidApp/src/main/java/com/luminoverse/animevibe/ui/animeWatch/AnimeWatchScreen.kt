@@ -38,17 +38,13 @@ import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
 import com.luminoverse.animevibe.utils.receivers.ScreenOffReceiver
 import com.luminoverse.animevibe.utils.receivers.ScreenOnReceiver
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.launch
 
 @SuppressLint("SourceLockedOrientationActivity", "ConfigurationScreenWidthHeight")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnimeWatchScreen(
     malId: Int,
-    episodeId: String,
     playerDisplayMode: PlayerDisplayMode,
     setPlayerDisplayMode: (PlayerDisplayMode) -> Unit,
     navController: NavHostController,
@@ -57,7 +53,6 @@ fun AnimeWatchScreen(
     showSnackbar: (SnackbarMessage) -> Unit,
     dismissSnackbar: () -> Unit,
     watchState: WatchState,
-    snackbarFlow: Flow<SnackbarMessage>,
     hlsPlayerCoreState: PlayerCoreState,
     hlsControlsStateFlow: StateFlow<ControlsState>,
     onAction: (WatchAction) -> Unit,
@@ -71,7 +66,6 @@ fun AnimeWatchScreen(
     pipEndDestinationPx: Offset,
     pipEndSizePx: IntSize
 ) {
-    val scope = rememberCoroutineScope()
     val pullToRefreshState = rememberPullToRefreshState()
 
     var isScreenOn by remember { mutableStateOf(true) }
@@ -95,17 +89,6 @@ fun AnimeWatchScreen(
 
     BackHandler(enabled = playerDisplayMode == PlayerDisplayMode.FULLSCREEN_LANDSCAPE || playerDisplayMode == PlayerDisplayMode.FULLSCREEN_PORTRAIT) {
         onBackPress()
-    }
-
-    LaunchedEffect(Unit) {
-        scope.launch {
-            onAction(WatchAction.SetInitialState(malId, episodeId))
-        }
-        scope.launch {
-            snackbarFlow.collectLatest { snackbarMessage ->
-                showSnackbar(snackbarMessage)
-            }
-        }
     }
 
     DisposableEffect(Unit) {

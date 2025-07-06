@@ -135,7 +135,7 @@ fun ImageDisplay(
 ) {
     var imageBounds by remember { mutableStateOf(Rect.Zero) }
     var asyncImageSize by remember { mutableStateOf<Size?>(null) }
-    var showFallback by remember(image) { mutableStateOf(false) }
+    var showFallback by remember(image) { mutableStateOf(image == null) }
     var componentSize by remember { mutableStateOf<Size?>(null) }
 
     var isVerticallyCropped by remember { mutableStateOf(false) }
@@ -156,6 +156,12 @@ fun ImageDisplay(
             }
 
             else -> null to null
+        }
+    }
+
+    LaunchedEffect(imageUrl, decodedBitmap) {
+        if (imageUrl == null && decodedBitmap == null) {
+            showFallback = true
         }
     }
 
