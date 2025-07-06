@@ -2,6 +2,8 @@ package com.luminoverse.animevibe.ui.main
 
 import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
@@ -384,19 +386,25 @@ fun MainScreen(
                 )
             }
         }
-        mainState.playerState?.let { playerState ->
-            PlayerHost(
-                playerState = playerState,
-                mainState = mainState,
-                onAction = mainAction,
-                hlsPlayerUtils = hlsPlayerUtils,
-                isCurrentBottomScreen = isCurrentBottomScreen,
-                rememberedTopPadding = rememberedTopPadding,
-                rememberedBottomPadding = rememberedBottomPadding,
-                startPadding = contentPadding.calculateStartPadding(layoutDirection),
-                endPadding = contentPadding.calculateEndPadding(layoutDirection),
-                navController = navController
-            )
+        AnimatedVisibility(
+            visible = mainState.playerState != null,
+            enter = slideInVertically { fullHeight -> fullHeight } + fadeIn(),
+            exit = slideOutVertically { fullHeight -> fullHeight } + fadeOut()
+        ) {
+            mainState.playerState?.let { playerState ->
+                PlayerHost(
+                    playerState = playerState,
+                    mainState = mainState,
+                    onAction = mainAction,
+                    hlsPlayerUtils = hlsPlayerUtils,
+                    isCurrentBottomScreen = isCurrentBottomScreen,
+                    rememberedTopPadding = rememberedTopPadding,
+                    rememberedBottomPadding = rememberedBottomPadding,
+                    startPadding = contentPadding.calculateStartPadding(layoutDirection),
+                    endPadding = contentPadding.calculateEndPadding(layoutDirection),
+                    navController = navController
+                )
+            }
         }
     }
 }

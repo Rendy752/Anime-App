@@ -18,10 +18,12 @@ import com.luminoverse.animevibe.ui.theme.ColorStyle
 import com.luminoverse.animevibe.ui.theme.ContrastMode
 import com.luminoverse.animevibe.ui.theme.ThemeMode
 import com.luminoverse.animevibe.utils.NetworkStateMonitor
+import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -111,7 +113,8 @@ sealed class MainAction {
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val app: Application,
-    private val networkStateMonitor: NetworkStateMonitor
+    private val networkStateMonitor: NetworkStateMonitor,
+    val hlsPlayerUtils: HlsPlayerUtils,
 ) : AndroidViewModel(app) {
 
     private val themePrefs = app.getSharedPreferences("theme_prefs", Context.MODE_PRIVATE)
@@ -203,14 +206,18 @@ class MainViewModel @Inject constructor(
     }
 
     private fun playEpisode(malId: Int, episodeId: String) {
-        _state.update {
-            it.copy(
-                playerState = PlayerState(
-                    malId = malId,
-                    episodeId = episodeId,
-                    displayMode = if (it.isLandscape) PlayerDisplayMode.FULLSCREEN_LANDSCAPE else PlayerDisplayMode.FULLSCREEN_PORTRAIT
+        viewModelScope.launch {
+            hlsPlayerUtils.isPlayerInitialized.first { it }
+
+            _state.update {
+                it.copy(
+                    playerState = PlayerState(
+                        malId = malId,
+                        episodeId = episodeId,
+                        displayMode = if (it.isLandscape) PlayerDisplayMode.FULLSCREEN_LANDSCAPE else PlayerDisplayMode.FULLSCREEN_PORTRAIT
+                    )
                 )
-            )
+            }
         }
     }
 

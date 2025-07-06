@@ -1,10 +1,12 @@
 package com.luminoverse.animevibe.ui.animeWatch.components
 
 import android.annotation.SuppressLint
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -30,6 +32,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -37,6 +41,9 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
@@ -95,11 +102,15 @@ fun AnimeWatchContent(
     pipEndDestinationPx: Offset,
     pipEndSizePx: IntSize
 ) {
+    val player by remember { mutableStateOf(getPlayer()) }
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
     val serverScrollState = rememberScrollState()
 
-    val isPortrait = !mainState.isLandscape && playerDisplayMode in listOf(PlayerDisplayMode.FULLSCREEN_LANDSCAPE, PlayerDisplayMode.FULLSCREEN_PORTRAIT)
+    val isPortrait = !mainState.isLandscape && playerDisplayMode in listOf(
+        PlayerDisplayMode.FULLSCREEN_LANDSCAPE,
+        PlayerDisplayMode.FULLSCREEN_PORTRAIT
+    )
     val isSideSheetVisible = !isPortrait && watchState.isSideSheetVisible && dragProgress == 0f
 
     val scope = rememberCoroutineScope()
@@ -141,117 +152,116 @@ fun AnimeWatchContent(
                         )
                         .weight(1f)
                 ) {
-                    if (watchState.episodeDetailComplement == null || watchState.episodeDetailComplement.sources.link.file.isEmpty() || watchState.animeDetailComplement?.episodes == null || watchState.episodeSourcesQuery == null) {
+                    if (player == null || watchState.episodeDetailComplement == null || watchState.episodeDetailComplement.sources.link.file.isEmpty() || watchState.animeDetailComplement?.episodes == null || watchState.episodeSourcesQuery == null) {
                         if (playerCoreState.error != null && !watchState.isRefreshing && !playerCoreState.isPlaying) ImageDisplay(
                             image = watchState.animeDetail?.images?.webp?.large_image_url,
                             ratio = ImageAspectRatio.WIDESCREEN.ratio,
                             contentDescription = "Anime cover",
                             roundedCorners = ImageRoundedCorner.NONE
-                        ) else Box(
-                            modifier = Modifier.background(Color.Black)
-                        )
+                        ) else Box(modifier = Modifier.background(Color.Black))
                     } else {
-                        VideoPlayerSection(
-                            episodeDetailComplement = watchState.episodeDetailComplement,
-                            episodeDetailComplements = watchState.episodeDetailComplements,
-                            networkDataSource = networkDataSource,
-                            coreState = playerCoreState,
-                            controlsStateFlow = controlsStateFlow,
-                            playerAction = dispatchPlayerAction,
-                            isLandscape = mainState.isLandscape,
-                            getPlayer = getPlayer,
-                            captureScreenshot = captureScreenshot,
-                            updateStoredWatchState = { currentPosition, duration, screenShot ->
-                                onAction(WatchAction.UpdateLastEpisodeWatchedId(watchState.episodeDetailComplement.id))
-                                onAction(
-                                    WatchAction.UpdateStoredWatchState(
-                                        currentPosition, duration, screenShot
+                        player?.let { player ->
+                            VideoPlayerSection(
+                                episodeDetailComplement = watchState.episodeDetailComplement,
+                                episodeDetailComplements = watchState.episodeDetailComplements,
+                                networkDataSource = networkDataSource,
+                                coreState = playerCoreState,
+                                controlsStateFlow = controlsStateFlow,
+                                playerAction = dispatchPlayerAction,
+                                isLandscape = mainState.isLandscape,
+                                player = player,
+                                captureScreenshot = captureScreenshot,
+                                updateStoredWatchState = { currentPosition, duration, screenShot ->
+                                    onAction(WatchAction.UpdateLastEpisodeWatchedId(watchState.episodeDetailComplement.id))
+                                    onAction(
+                                        WatchAction.UpdateStoredWatchState(
+                                            currentPosition, duration, screenShot
+                                        )
                                     )
-                                )
-                            },
-                            onHandleBackPress = onHandleBackPress,
-                            isScreenOn = isScreenOn,
-                            isAutoPlayVideo = mainState.isAutoPlayVideo,
-                            episodes = watchState.animeDetailComplement.episodes,
-                            episodeSourcesQuery = watchState.episodeSourcesQuery,
-                            handleSelectedEpisodeServer = { episodeSourcesQuery, isRefresh ->
-                                onAction(
-                                    WatchAction.HandleSelectedEpisodeServer(
-                                        episodeSourcesQuery = episodeSourcesQuery,
-                                        isRefresh = isRefresh
+                                },
+                                onHandleBackPress = onHandleBackPress,
+                                isScreenOn = isScreenOn,
+                                isAutoPlayVideo = mainState.isAutoPlayVideo,
+                                episodes = watchState.animeDetailComplement.episodes,
+                                episodeSourcesQuery = watchState.episodeSourcesQuery,
+                                handleSelectedEpisodeServer = { episodeSourcesQuery, isRefresh ->
+                                    onAction(
+                                        WatchAction.HandleSelectedEpisodeServer(
+                                            episodeSourcesQuery = episodeSourcesQuery,
+                                            isRefresh = isRefresh
+                                        )
                                     )
-                                )
-                            },
-                            displayMode = playerDisplayMode,
-                            setPlayerDisplayMode = setPlayerDisplayMode,
-                            onEnterSystemPipMode = onEnterSystemPipMode,
-                            isSideSheetVisible = watchState.isSideSheetVisible,
-                            setSideSheetVisibility = {
-                                onAction(
-                                    WatchAction.SetSideSheetVisibility(
-                                        it
+                                },
+                                displayMode = playerDisplayMode,
+                                setPlayerDisplayMode = setPlayerDisplayMode,
+                                onEnterSystemPipMode = onEnterSystemPipMode,
+                                isSideSheetVisible = watchState.isSideSheetVisible,
+                                setSideSheetVisibility = {
+                                    onAction(
+                                        WatchAction.SetSideSheetVisibility(
+                                            it
+                                        )
                                     )
-                                )
-                            },
-                            setPlayerError = {
-                                showSnackbar(
-                                    SnackbarMessage(
-                                        message = it,
-                                        type = SnackbarMessageType.ERROR,
-                                        actionLabel = "RETRY",
-                                        onAction = {
-                                            onAction(
-                                                WatchAction.HandleSelectedEpisodeServer(
-                                                    episodeSourcesQuery = watchState.episodeSourcesQuery,
-                                                    isRefresh = true
+                                },
+                                setPlayerError = {
+                                    showSnackbar(
+                                        SnackbarMessage(
+                                            message = it,
+                                            type = SnackbarMessageType.ERROR,
+                                            actionLabel = "RETRY",
+                                            onAction = {
+                                                onAction(
+                                                    WatchAction.HandleSelectedEpisodeServer(
+                                                        episodeSourcesQuery = watchState.episodeSourcesQuery,
+                                                        isRefresh = true
+                                                    )
                                                 )
-                                            )
-                                        }
+                                            }
+                                        )
                                     )
-                                )
-                            },
-                            rememberedTopPadding = rememberedTopPadding,
-                            verticalDragOffset = verticalDragOffset.value,
-                            onVerticalDrag = { delta ->
-                                scope.launch {
-                                    val newOffset =
-                                        (verticalDragOffset.value + delta).coerceIn(
-                                            0f,
-                                            maxVerticalDrag
-                                        )
-                                    verticalDragOffset.snapTo(newOffset)
-                                }
-                            },
-                            onDragEnd = { flingVelocity ->
-                                scope.launch {
-                                    val flingVelocityThreshold = 1.8f
-                                    val positionThreshold = maxVerticalDrag * 0.5f
+                                },
+                                rememberedTopPadding = rememberedTopPadding,
+                                verticalDragOffset = verticalDragOffset.value,
+                                onVerticalDrag = { delta ->
+                                    scope.launch {
+                                        val newOffset =
+                                            (verticalDragOffset.value + delta).coerceIn(
+                                                0f, maxVerticalDrag
+                                            )
+                                        verticalDragOffset.snapTo(newOffset)
+                                    }
+                                },
+                                onDragEnd = { flingVelocity ->
+                                    scope.launch {
+                                        val flingVelocityThreshold = 1.8f
+                                        val positionThreshold = maxVerticalDrag * 0.5f
 
-                                    if (flingVelocity > flingVelocityThreshold) {
-                                        setPlayerDisplayMode(PlayerDisplayMode.PIP)
-                                        verticalDragOffset.snapTo(0f)
-                                    } else if (flingVelocity < -flingVelocityThreshold) {
-                                        verticalDragOffset.animateTo(
-                                            0f,
-                                            animationSpec = tween(durationMillis = 300)
-                                        )
-                                    } else {
-                                        if (maxVerticalDrag.isFinite() && verticalDragOffset.value > positionThreshold) {
+                                        if (flingVelocity > flingVelocityThreshold) {
                                             setPlayerDisplayMode(PlayerDisplayMode.PIP)
                                             verticalDragOffset.snapTo(0f)
-                                        } else {
+                                        } else if (flingVelocity < -flingVelocityThreshold) {
                                             verticalDragOffset.animateTo(
                                                 0f,
                                                 animationSpec = tween(durationMillis = 300)
                                             )
+                                        } else {
+                                            if (maxVerticalDrag.isFinite() && verticalDragOffset.value > positionThreshold) {
+                                                setPlayerDisplayMode(PlayerDisplayMode.PIP)
+                                                verticalDragOffset.snapTo(0f)
+                                            } else {
+                                                verticalDragOffset.animateTo(
+                                                    0f,
+                                                    animationSpec = tween(durationMillis = 300)
+                                                )
+                                            }
                                         }
                                     }
-                                }
-                            },
-                            pipEndDestinationPx = pipEndDestinationPx,
-                            pipEndSizePx = pipEndSizePx,
-                            onMaxDragAmountCalculated = { setMaxVerticalDrag(it) }
-                        )
+                                },
+                                pipEndDestinationPx = pipEndDestinationPx,
+                                pipEndSizePx = pipEndSizePx,
+                                onMaxDragAmountCalculated = { setMaxVerticalDrag(it) }
+                            )
+                        }
                     }
                 }
 
@@ -321,7 +331,11 @@ fun AnimeWatchContent(
             }
         }
 
-        if (isPortrait && watchState.animeDetailComplement?.episodes != null && watchState.animeDetail?.mal_id == malId) {
+        AnimatedVisibility(
+            visible = isPortrait && watchState.animeDetailComplement?.episodes != null && watchState.animeDetail?.mal_id == malId,
+            enter = slideInVertically { fullHeight -> fullHeight } + fadeIn(),
+            exit = slideOutVertically { fullHeight -> fullHeight } + fadeOut()
+        ) {
             LazyColumn(
                 modifier = contentModifier,
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -340,7 +354,7 @@ fun AnimeWatchContent(
                             onAction(WatchAction.LoadEpisodeDetailComplement(it))
                         },
                         episodeDetailComplements = watchState.episodeDetailComplements,
-                        episodes = watchState.animeDetailComplement.episodes,
+                        episodes = watchState.animeDetailComplement?.episodes ?: emptyList(),
                         newEpisodeIdList = watchState.newEpisodeIdList,
                         episodeSourcesQuery = watchState.episodeSourcesQuery,
                         episodeJumpNumber = watchState.episodeJumpNumber,

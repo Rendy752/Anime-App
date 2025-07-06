@@ -3,10 +3,12 @@ package com.luminoverse.animevibe.ui.main.navigation
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import kotlinx.coroutines.delay
@@ -63,7 +65,7 @@ fun getBottomBarEnterTransition(
         }
         slideInHorizontally(animationSpec = tween(700), initialOffsetX = slideOffset)
     } else {
-        scaleIn(animationSpec = tween(700))
+        slideInVertically { fullHeight -> fullHeight } + fadeIn()
     }
 }
 
@@ -85,6 +87,6 @@ fun getBottomBarExitTransition(
         }
         slideOutHorizontally(animationSpec = tween(700), targetOffsetX = slideOffset)
     } else {
-        scaleOut(animationSpec = tween(700))
+        slideOutVertically { fullHeight -> fullHeight } + fadeOut()
     }
 }

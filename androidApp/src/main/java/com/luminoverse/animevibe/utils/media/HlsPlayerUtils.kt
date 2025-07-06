@@ -123,6 +123,9 @@ class HlsPlayerUtils @Inject constructor(
     private val _controlsState = MutableStateFlow(ControlsState())
     val controlsState: StateFlow<ControlsState> = _controlsState.asStateFlow()
 
+    private val _isPlayerInitialized = MutableStateFlow(false)
+    val isPlayerInitialized: StateFlow<Boolean> = _isPlayerInitialized.asStateFlow()
+
     init {
         initializePlayerInternal()
 
@@ -158,6 +161,7 @@ class HlsPlayerUtils @Inject constructor(
                 PlayerCoreState(isPlaying = false, playbackState = Player.STATE_IDLE)
             }
             _controlsState.update { ControlsState(isControlsVisible = true) }
+            _isPlayerInitialized.value = true
         }
     }
 

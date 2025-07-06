@@ -3,6 +3,9 @@ package com.luminoverse.animevibe.ui.animeWatch.videoPlayer
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.pm.ActivityInfo
+import android.database.ContentObserver
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import android.view.OrientationEventListener
 import androidx.compose.animation.*
@@ -260,13 +263,31 @@ fun VideoPlayer(
     )
 
     var physicalOrientation by remember { mutableStateOf(PhysicalOrientation.UNKNOWN) }
-    val isSystemAutoRotateEnabled by remember {
-        derivedStateOf {
-            Settings.System.getInt(
-                context.contentResolver,
-                Settings.System.ACCELEROMETER_ROTATION,
-                0
-            ) == 1
+
+    val contentResolver = context.contentResolver
+    var isSystemAutoRotateEnabled by remember {
+        mutableStateOf(
+            Settings.System.getInt(contentResolver, Settings.System.ACCELEROMETER_ROTATION, 0) == 1
+        )
+    }
+
+    DisposableEffect(contentResolver) {
+        val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
+            override fun onChange(selfChange: Boolean) {
+                isSystemAutoRotateEnabled = Settings.System.getInt(
+                    contentResolver,
+                    Settings.System.ACCELEROMETER_ROTATION,
+                    0
+                ) == 1
+            }
+        }
+        contentResolver.registerContentObserver(
+            Settings.System.getUriFor(Settings.System.ACCELEROMETER_ROTATION),
+            true,
+            observer
+        )
+        onDispose {
+            contentResolver.unregisterContentObserver(observer)
         }
     }
 
