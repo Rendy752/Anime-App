@@ -3,6 +3,12 @@ package com.luminoverse.animevibe.ui.common
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.Base64
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -28,6 +34,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Rect
@@ -45,6 +52,7 @@ import androidx.core.graphics.get
 import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
 import coil.request.ImageRequest
+import kotlin.math.max
 import kotlin.math.min
 
 /**
@@ -111,6 +119,8 @@ private fun isBitmapMostlyBlack(image: Bitmap): Boolean {
     return blackPixelsFound.toFloat() / totalPixelsSampled > 0.8
 }
 
+private const val PAN_ANIMATION_DURATION_MS = 8000
+
 @Composable
 fun ImageDisplay(
     modifier: Modifier = Modifier,
@@ -128,12 +138,12 @@ fun ImageDisplay(
     var showFallback by remember(image) { mutableStateOf(false) }
     var componentSize by remember { mutableStateOf<Size?>(null) }
 
+    var isVerticallyCropped by remember { mutableStateOf(false) }
+    var isHorizontallyCropped by remember { mutableStateOf(false) }
+
     val (imageUrl, decodedBitmap) = remember(image) {
         when {
-            image?.startsWith("http", ignoreCase = true) == true -> {
-                image to null
-            }
-
+            image?.startsWith("http", ignoreCase = true) == true -> image to null
             image != null -> {
                 val bitmap = try {
                     val decodedBytes = Base64.decode(image, Base64.DEFAULT)
@@ -145,16 +155,47 @@ fun ImageDisplay(
                 null to bitmap
             }
 
-            else -> {
-                null to null
-            }
+            else -> null to null
         }
     }
 
-    LaunchedEffect(imageUrl, decodedBitmap) {
-        if (imageUrl == null && decodedBitmap == null) {
-            showFallback = true
+    LaunchedEffect(componentSize, asyncImageSize, decodedBitmap) {
+        val cSize = componentSize ?: return@LaunchedEffect
+
+        val iSize = asyncImageSize ?: decodedBitmap?.let {
+            Size(it.width.toFloat(), it.height.toFloat())
         }
+
+        if (iSize != null) {
+            val scale = max(cSize.width / iSize.width, cSize.height / iSize.height)
+            val scaledImageHeight = iSize.height * scale
+            val scaledImageWidth = iSize.width * scale
+
+            val newIsVerticallyCropped = scaledImageHeight > cSize.height + 1
+            val newIsHorizontallyCropped =
+                !newIsVerticallyCropped && (scaledImageWidth > cSize.width + 1)
+
+            if (newIsVerticallyCropped != isVerticallyCropped) isVerticallyCropped =
+                newIsVerticallyCropped
+            if (newIsHorizontallyCropped != isHorizontallyCropped) isHorizontallyCropped =
+                newIsHorizontallyCropped
+        }
+    }
+
+    val infiniteTransition = rememberInfiniteTransition(label = "ImagePanTransition")
+    val panProgress by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = PAN_ANIMATION_DURATION_MS, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ), label = "PanProgress"
+    )
+
+    val alignment: Alignment = when {
+        isVerticallyCropped -> BiasAlignment(0f, (panProgress * 2) - 1f)
+        isHorizontallyCropped -> BiasAlignment((panProgress * 2) - 1f, 0f)
+        else -> Alignment.Center
     }
 
     val imageModifier = Modifier
@@ -201,7 +242,7 @@ fun ImageDisplay(
                     contentDescription = "Placeholder for $contentDescription",
                     modifier = imageModifier.align(Alignment.Center),
                     contentScale = ContentScale.Crop,
-                    alignment = Alignment.TopCenter,
+                    alignment = alignment,
                     onState = { state ->
                         if (state is AsyncImagePainter.State.Success) {
                             asyncImageSize = state.painter.intrinsicSize
@@ -226,7 +267,7 @@ fun ImageDisplay(
                         contentDescription = contentDescription,
                         modifier = imageModifier.align(Alignment.Center),
                         contentScale = ContentScale.Crop,
-                        alignment = Alignment.TopCenter
+                        alignment = alignment
                     )
                 }
 
@@ -241,7 +282,7 @@ fun ImageDisplay(
                         contentDescription = contentDescription,
                         modifier = imageModifier.align(Alignment.Center),
                         contentScale = ContentScale.Crop,
-                        alignment = Alignment.TopCenter,
+                        alignment = alignment,
                         onState = { state ->
                             isImageLoading = state is AsyncImagePainter.State.Loading
                             when (state) {
@@ -253,10 +294,7 @@ fun ImageDisplay(
                                     }
                                 }
 
-                                is AsyncImagePainter.State.Error -> {
-                                    showFallback = true
-                                }
-
+                                is AsyncImagePainter.State.Error -> showFallback = true
                                 else -> {}
                             }
                         }

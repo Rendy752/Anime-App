@@ -304,15 +304,18 @@ fun AnimeWatchContent(
                             color = MaterialTheme.colorScheme.surfaceContainerHighest,
                         )
 
-                        InfoContentSection(
+                        Column(
                             modifier = Modifier
-                                .padding(horizontal = 8.dp)
-                                .fillMaxSize()
-                                .weight(1f),
-                            animeDetail = watchState.animeDetail,
-                            navController = navController,
-                            setPlayerDisplayMode = setPlayerDisplayMode
-                        )
+                                .weight(1f)
+                                .verticalScroll(rememberScrollState())
+                        ) {
+                            InfoContentSection(
+                                modifier = Modifier.padding(horizontal = 8.dp),
+                                animeDetail = watchState.animeDetail,
+                                navController = navController,
+                                setPlayerDisplayMode = setPlayerDisplayMode
+                            )
+                        }
                     }
                 }
             }

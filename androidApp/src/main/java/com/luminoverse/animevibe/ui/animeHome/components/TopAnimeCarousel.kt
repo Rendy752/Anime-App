@@ -64,7 +64,7 @@ fun TopAnimeCarousel(
         LaunchedEffect(autoScrollEnabled) {
             if (autoScrollEnabled && topAnimeCount > 1) {
                 while (true) {
-                    delay(3000)
+                    delay(5000)
                     pagerState.animateScrollToPage((pagerState.currentPage + 1) % pagerState.pageCount)
                 }
             }
