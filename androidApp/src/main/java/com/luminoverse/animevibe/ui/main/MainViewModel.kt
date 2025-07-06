@@ -7,6 +7,8 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.res.Configuration
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
@@ -60,7 +62,8 @@ data class PlayerState(
     val malId: Int,
     val episodeId: String,
     val displayMode: PlayerDisplayMode = PlayerDisplayMode.FULLSCREEN_PORTRAIT,
-    val pipRelativeOffset: Offset = Offset(1f, 1f)
+    val pipRelativeOffset: Offset = Offset(1f, 1f),
+    val pipWidth: Dp = 250.dp
 )
 
 data class NotificationSettings(
@@ -107,6 +110,7 @@ sealed class MainAction {
     data class PlayEpisode(val malId: Int, val episodeId: String) : MainAction()
     data class UpdatePlayerPipRelativeOffset(val relativeOffset: Offset) : MainAction()
     data class SetPlayerDisplayMode(val mode: PlayerDisplayMode) : MainAction()
+    data class SetPlayerPipWidth(val width: Dp) : MainAction()
     object ClosePlayer : MainAction()
 }
 
@@ -193,6 +197,7 @@ class MainViewModel @Inject constructor(
             is MainAction.PlayEpisode -> playEpisode(action.malId, action.episodeId)
             is MainAction.UpdatePlayerPipRelativeOffset -> updatePlayerPipRelativeOffset(action.relativeOffset)
             is MainAction.SetPlayerDisplayMode -> setPlayerDisplayMode(action.mode)
+            is MainAction.SetPlayerPipWidth -> setPlayerPipWidth(action.width)
             is MainAction.ClosePlayer -> closePlayer()
         }
     }
@@ -238,6 +243,14 @@ class MainViewModel @Inject constructor(
             }
             _state.update {
                 it.copy(playerState = newPlayerState)
+            }
+        }
+    }
+
+    private fun setPlayerPipWidth(width: Dp) {
+        _state.value.playerState?.let { current ->
+            _state.update {
+                it.copy(playerState = current.copy(pipWidth = width))
             }
         }
     }

@@ -50,7 +50,7 @@ import com.luminoverse.animevibe.ui.main.navigation.navigateTo
 import com.luminoverse.animevibe.utils.resource.Resource
 import kotlinx.coroutines.delay
 
-const val INITIAL_CAROUSEL_HEIGHT = 200
+const val INITIAL_CAROUSEL_HEIGHT = 180
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Preview

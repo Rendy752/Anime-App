@@ -8,12 +8,14 @@ import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.VectorConverter
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -103,29 +105,54 @@ fun PlayerHost(
             val screenWidthPx = with(density) { configuration.screenWidthDp.dp.toPx() }
             val screenHeightPx = with(density) { configuration.screenHeightDp.dp.toPx() }
 
-            val pipWidthDp = 250.dp
+            val animatedPipWidth by animateDpAsState(
+                targetValue = playerState.pipWidth, animationSpec = spring(), label = "pipWidth"
+            )
             val pipAspectRatio = 16f / 9f
-            val pipWidthPx = with(density) { pipWidthDp.toPx() }
-            val pipHeightPx = with(density) { (pipWidthDp / pipAspectRatio).toPx() }
+
+            val pipWidthPx =
+                remember(animatedPipWidth) { with(density) { animatedPipWidth.toPx() } }
+            val pipHeightPx =
+                remember(animatedPipWidth) { with(density) { (animatedPipWidth / pipAspectRatio).toPx() } }
 
             val minX = startPaddingPx
-            val maxX = (screenWidthPx - pipWidthPx - endPaddingPx).coerceAtLeast(minX)
-            val draggableWidth = (maxX - minX).coerceAtLeast(1f)
+            val maxX = remember(pipWidthPx, screenWidthPx, endPaddingPx) {
+                (screenWidthPx - pipWidthPx - endPaddingPx).coerceAtLeast(minX)
+            }
+            val draggableWidth = remember(minX, maxX) {
+                (maxX - minX).coerceAtLeast(1f)
+            }
 
             val minY = topPaddingPx
-            val maxY = if (!mainState.isLandscape) {
-                (screenHeightPx - pipHeightPx - bottomPaddingPx).coerceAtLeast(minY)
-            } else {
-                if (isCurrentBottomScreen) {
+            val maxY = remember(
+                pipHeightPx,
+                screenHeightPx,
+                bottomPaddingPx,
+                isCurrentBottomScreen,
+                mainState.isLandscape
+            ) {
+                if (!mainState.isLandscape) {
                     (screenHeightPx - pipHeightPx - bottomPaddingPx).coerceAtLeast(minY)
                 } else {
-                    (screenHeightPx - pipHeightPx).coerceAtLeast(minY)
+                    if (isCurrentBottomScreen) {
+                        (screenHeightPx - pipHeightPx - bottomPaddingPx).coerceAtLeast(minY)
+                    } else {
+                        (screenHeightPx - pipHeightPx).coerceAtLeast(minY)
+                    }
                 }
             }
-            val draggableHeight = (maxY - minY).coerceAtLeast(1f)
+            val draggableHeight = remember(minY, maxY) {
+                (maxY - minY).coerceAtLeast(1f)
+            }
 
-            val pipEndDestinationPx = Offset(maxX, maxY)
-            val pipEndSizePx = IntSize(pipWidthPx.toInt(), pipHeightPx.toInt())
+            val pipEndDestinationPx = remember(maxX, maxY) { Offset(maxX, maxY) }
+            val pipEndSizePx = remember(pipWidthPx, pipHeightPx) {
+                IntSize(
+                    pipWidthPx.toInt(),
+                    pipHeightPx.toInt()
+                )
+            }
+
 
             val pipModifier = Modifier
                 .align(Alignment.TopStart)
@@ -133,21 +160,27 @@ fun PlayerHost(
                     translationX = minX + (animatableRelativeOffset.value.x * draggableWidth)
                     translationY = minY + (animatableRelativeOffset.value.y * draggableHeight)
                 }
-                .width(pipWidthDp)
+                .width(animatedPipWidth)
                 .aspectRatio(pipAspectRatio)
+                .padding(8.dp)
                 .clip(RoundedCornerShape(8.dp))
                 .shadow(8.dp, RoundedCornerShape(8.dp))
-                .clickable(
+                .combinedClickable(
                     interactionSource = remember { MutableInteractionSource() },
-                    indication = null
-                ) {
-                    onAction(
-                        MainAction.SetPlayerDisplayMode(
-                            if (mainState.isLandscape) PlayerDisplayMode.FULLSCREEN_LANDSCAPE
-                            else PlayerDisplayMode.FULLSCREEN_PORTRAIT
+                    indication = null,
+                    onClick = {
+                        onAction(
+                            MainAction.SetPlayerDisplayMode(
+                                if (mainState.isLandscape) PlayerDisplayMode.FULLSCREEN_LANDSCAPE
+                                else PlayerDisplayMode.FULLSCREEN_PORTRAIT
+                            )
                         )
-                    )
-                }
+                    },
+                    onDoubleClick = {
+                        val newWidth = if (playerState.pipWidth == 500.dp) 250.dp else 500.dp
+                        onAction(MainAction.SetPlayerPipWidth(newWidth))
+                    }
+                )
                 .pointerInput(draggableWidth, draggableHeight) {
                     awaitEachGesture {
                         val down = awaitFirstDown(requireUnconsumed = false)
@@ -167,13 +200,11 @@ fun PlayerHost(
                                 val currentVal = animatableRelativeOffset.value
                                 val newRelativeX =
                                     (currentVal.x + (dragAmount.x / draggableWidth)).coerceIn(
-                                        0f,
-                                        1f
+                                        0f, 1f
                                     )
                                 val newRelativeY =
                                     (currentVal.y + (dragAmount.y / draggableHeight)).coerceIn(
-                                        0f,
-                                        1f
+                                        0f, 1f
                                     )
                                 animatableRelativeOffset.snapTo(Offset(newRelativeX, newRelativeY))
                             }

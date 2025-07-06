@@ -22,12 +22,13 @@ import com.luminoverse.animevibe.ui.main.navigation.navigateTo
 
 @Composable
 fun InfoContentSection(
+    modifier: Modifier = Modifier,
     animeDetail: AnimeDetail?,
     navController: NavController,
     setPlayerDisplayMode: (PlayerDisplayMode) -> Unit,
 ) {
     Column(
-        modifier = Modifier.padding(bottom = 8.dp),
+        modifier = modifier.padding(bottom = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         if (animeDetail != null) {

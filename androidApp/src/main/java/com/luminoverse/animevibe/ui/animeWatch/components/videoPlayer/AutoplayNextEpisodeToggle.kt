@@ -61,7 +61,7 @@ fun AutoplayNextEpisodeToggle(
             val icon =
                 if (isAutoplayPlayNextEpisode) Icons.Default.PlayArrow else Icons.Default.Pause
             val iconColor =
-                if (isAutoplayPlayNextEpisode) MaterialTheme.colorScheme.primary else Color.DarkGray
+                if (isAutoplayPlayNextEpisode) Color.Black else Color.DarkGray
 
             Icon(
                 imageVector = icon,

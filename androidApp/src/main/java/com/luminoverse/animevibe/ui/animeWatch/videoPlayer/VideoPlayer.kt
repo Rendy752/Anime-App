@@ -409,6 +409,12 @@ fun VideoPlayer(
         animationSpec = tween(durationMillis = 300),
         label = "cornerRadiusAnimation"
     )
+    val animatedPadding by animateDpAsState(
+        targetValue = if (verticalDragOffset > 0) 8.dp else 0.dp,
+        animationSpec = tween(durationMillis = 300),
+        label = "paddingAnimation"
+    )
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -447,6 +453,7 @@ fun VideoPlayer(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(animatedPadding)
                 .clip(RoundedCornerShape(animatedCornerRadius))
                 .clipToBounds()
                 .pointerInput(
@@ -531,8 +538,8 @@ fun VideoPlayer(
                 seekAmount = videoPlayerState.seekAmount * 1000L,
                 dragCancelTrigger = videoPlayerState.dragCancelTrigger,
                 isShowSeekIndicator = videoPlayerState.isShowSeekIndicator,
-                touchTargetHeight = 2.dp,
-                trackHeight = 2.dp
+                touchTargetHeight = 3.dp,
+                trackHeight = 3.dp
             )
         }
 

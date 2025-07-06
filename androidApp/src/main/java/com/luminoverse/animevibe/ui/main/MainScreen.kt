@@ -2,8 +2,6 @@ package com.luminoverse.animevibe.ui.main
 
 import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
@@ -328,7 +326,13 @@ fun MainScreen(
                             rememberedTopPadding = rememberedTopPadding,
                             mainState = mainState,
                             checkNotificationPermission = { mainAction.invoke(MainAction.CheckNotificationPermission) },
-                            setPostNotificationsPermission = { mainAction.invoke(MainAction.SetPostNotificationsPermission(it)) },
+                            setPostNotificationsPermission = {
+                                mainAction.invoke(
+                                    MainAction.SetPostNotificationsPermission(
+                                        it
+                                    )
+                                )
+                            },
                             showSnackbar = { mainAction.invoke(MainAction.ShowSnackbar(it)) },
                             dismissSnackbar = { mainAction.invoke(MainAction.DismissSnackbar) },
                             showImagePreview = { mainAction.invoke(MainAction.ShowImagePreview(it)) },
@@ -386,25 +390,20 @@ fun MainScreen(
                 )
             }
         }
-        AnimatedVisibility(
-            visible = mainState.playerState != null,
-            enter = slideInVertically { fullHeight -> fullHeight } + fadeIn(),
-            exit = slideOutVertically { fullHeight -> fullHeight } + fadeOut()
-        ) {
-            mainState.playerState?.let { playerState ->
-                PlayerHost(
-                    playerState = playerState,
-                    mainState = mainState,
-                    onAction = mainAction,
-                    hlsPlayerUtils = hlsPlayerUtils,
-                    isCurrentBottomScreen = isCurrentBottomScreen,
-                    rememberedTopPadding = rememberedTopPadding,
-                    rememberedBottomPadding = rememberedBottomPadding,
-                    startPadding = contentPadding.calculateStartPadding(layoutDirection),
-                    endPadding = contentPadding.calculateEndPadding(layoutDirection),
-                    navController = navController
-                )
-            }
+
+        mainState.playerState?.let { playerState ->
+            PlayerHost(
+                playerState = playerState,
+                mainState = mainState,
+                onAction = mainAction,
+                hlsPlayerUtils = hlsPlayerUtils,
+                isCurrentBottomScreen = isCurrentBottomScreen,
+                rememberedTopPadding = rememberedTopPadding,
+                rememberedBottomPadding = rememberedBottomPadding,
+                startPadding = contentPadding.calculateStartPadding(layoutDirection),
+                endPadding = contentPadding.calculateEndPadding(layoutDirection),
+                navController = navController
+            )
         }
     }
 }

@@ -11,7 +11,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
@@ -72,7 +71,6 @@ fun AnimeWatchScreen(
     pipEndSizePx: IntSize
 ) {
     val scope = rememberCoroutineScope()
-    val scrollState = rememberLazyListState()
     val pullToRefreshState = rememberPullToRefreshState()
 
     var isScreenOn by remember { mutableStateOf(true) }
@@ -187,7 +185,6 @@ fun AnimeWatchScreen(
                 captureScreenshot = captureScreenshot,
                 onHandleBackPress = onBackPress,
                 onAction = onAction,
-                scrollState = scrollState,
                 playerDisplayMode = playerDisplayMode,
                 setPlayerDisplayMode = setPlayerDisplayMode,
                 onEnterSystemPipMode = onEnterSystemPipMode,

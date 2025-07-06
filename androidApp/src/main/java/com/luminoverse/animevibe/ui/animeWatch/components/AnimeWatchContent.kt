@@ -1,12 +1,10 @@
 package com.luminoverse.animevibe.ui.animeWatch.components
 
 import android.annotation.SuppressLint
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -20,9 +18,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
@@ -40,10 +37,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.style.TextOverflow
@@ -89,7 +82,6 @@ fun AnimeWatchContent(
     captureScreenshot: suspend () -> String?,
     onHandleBackPress: () -> Unit,
     onAction: (WatchAction) -> Unit,
-    scrollState: LazyListState,
     playerDisplayMode: PlayerDisplayMode,
     setPlayerDisplayMode: (PlayerDisplayMode) -> Unit,
     onEnterSystemPipMode: () -> Unit,
@@ -108,8 +100,7 @@ fun AnimeWatchContent(
     val serverScrollState = rememberScrollState()
 
     val isPortrait = !mainState.isLandscape && playerDisplayMode in listOf(
-        PlayerDisplayMode.FULLSCREEN_LANDSCAPE,
-        PlayerDisplayMode.FULLSCREEN_PORTRAIT
+        PlayerDisplayMode.FULLSCREEN_LANDSCAPE, PlayerDisplayMode.FULLSCREEN_PORTRAIT
     )
     val isSideSheetVisible = !isPortrait && watchState.isSideSheetVisible && dragProgress == 0f
 
@@ -132,6 +123,7 @@ fun AnimeWatchContent(
         .blur(radius = (dragProgress * 10.dp).coerceAtMost(10.dp))
 
     Column(modifier = Modifier.fillMaxSize()) {
+        val columnScrollState = rememberScrollState()
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
@@ -153,12 +145,13 @@ fun AnimeWatchContent(
                         .weight(1f)
                 ) {
                     if (player == null || watchState.episodeDetailComplement == null || watchState.episodeDetailComplement.sources.link.file.isEmpty() || watchState.animeDetailComplement?.episodes == null || watchState.episodeSourcesQuery == null) {
-                        if (playerCoreState.error != null && !watchState.isRefreshing && !playerCoreState.isPlaying) ImageDisplay(
-                            image = watchState.animeDetail?.images?.webp?.large_image_url,
+                        ImageDisplay(
+                            image = watchState.episodeDetailComplement?.screenshot,
+                            imagePlaceholder = watchState.episodeDetailComplement?.imageUrl ?: watchState.animeDetail?.images?.webp?.large_image_url,
                             ratio = ImageAspectRatio.WIDESCREEN.ratio,
                             contentDescription = "Anime cover",
                             roundedCorners = ImageRoundedCorner.NONE
-                        ) else Box(modifier = Modifier.background(Color.Black))
+                        )
                     } else {
                         player?.let { player ->
                             VideoPlayerSection(
@@ -310,72 +303,56 @@ fun AnimeWatchContent(
                             color = MaterialTheme.colorScheme.surfaceContainerHighest,
                         )
 
-                        LazyColumn(
+                        InfoContentSection(
                             modifier = Modifier
                                 .padding(horizontal = 8.dp)
                                 .fillMaxSize()
                                 .weight(1f),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center,
-                        ) {
-                            item {
-                                InfoContentSection(
-                                    animeDetail = watchState.animeDetail,
-                                    navController = navController,
-                                    setPlayerDisplayMode = setPlayerDisplayMode
-                                )
-                            }
-                        }
+                            animeDetail = watchState.animeDetail,
+                            navController = navController,
+                            setPlayerDisplayMode = setPlayerDisplayMode
+                        )
                     }
                 }
             }
         }
 
-        AnimatedVisibility(
-            visible = isPortrait && watchState.animeDetailComplement?.episodes != null && watchState.animeDetail?.mal_id == malId,
-            enter = slideInVertically { fullHeight -> fullHeight } + fadeIn(),
-            exit = slideOutVertically { fullHeight -> fullHeight } + fadeOut()
+        if (isPortrait && watchState.animeDetailComplement?.episodes != null && watchState.animeDetail?.mal_id == malId) Column(
+            modifier = contentModifier.verticalScroll(columnScrollState),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
         ) {
-            LazyColumn(
-                modifier = contentModifier,
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center,
-                state = scrollState
-            ) {
-                item {
-                    WatchContentSection(
-                        animeDetail = watchState.animeDetail,
-                        networkStatus = mainState.networkStatus,
-                        onFavoriteToggle = { isFavorite ->
-                            onAction(WatchAction.SetFavorite(isFavorite))
-                        },
-                        episodeDetailComplement = watchState.episodeDetailComplement,
-                        onLoadEpisodeDetailComplement = {
-                            onAction(WatchAction.LoadEpisodeDetailComplement(it))
-                        },
-                        episodeDetailComplements = watchState.episodeDetailComplements,
-                        episodes = watchState.animeDetailComplement?.episodes ?: emptyList(),
-                        newEpisodeIdList = watchState.newEpisodeIdList,
-                        episodeSourcesQuery = watchState.episodeSourcesQuery,
-                        episodeJumpNumber = watchState.episodeJumpNumber,
-                        setEpisodeJumpNumber = { onAction(WatchAction.SetEpisodeJumpNumber(it)) },
-                        serverScrollState = serverScrollState,
-                        handleSelectedEpisodeServer = {
-                            onAction(
-                                WatchAction.HandleSelectedEpisodeServer(
-                                    episodeSourcesQuery = it, isRefresh = false
-                                )
-                            )
-                        },
+            WatchContentSection(
+                animeDetail = watchState.animeDetail,
+                networkStatus = mainState.networkStatus,
+                onFavoriteToggle = { isFavorite ->
+                    onAction(WatchAction.SetFavorite(isFavorite))
+                },
+                episodeDetailComplement = watchState.episodeDetailComplement,
+                onLoadEpisodeDetailComplement = {
+                    onAction(WatchAction.LoadEpisodeDetailComplement(it))
+                },
+                episodeDetailComplements = watchState.episodeDetailComplements,
+                episodes = watchState.animeDetailComplement.episodes,
+                newEpisodeIdList = watchState.newEpisodeIdList,
+                episodeSourcesQuery = watchState.episodeSourcesQuery,
+                episodeJumpNumber = watchState.episodeJumpNumber,
+                setEpisodeJumpNumber = { onAction(WatchAction.SetEpisodeJumpNumber(it)) },
+                serverScrollState = serverScrollState,
+                handleSelectedEpisodeServer = {
+                    onAction(
+                        WatchAction.HandleSelectedEpisodeServer(
+                            episodeSourcesQuery = it, isRefresh = false
+                        )
                     )
+                },
+            )
 
-                    InfoContentSection(
-                        animeDetail = watchState.animeDetail,
-                        navController = navController,
-                        setPlayerDisplayMode = setPlayerDisplayMode
-                    )
-                }
-            }
+            InfoContentSection(
+                animeDetail = watchState.animeDetail,
+                navController = navController,
+                setPlayerDisplayMode = setPlayerDisplayMode
+            )
         }
     }
 }

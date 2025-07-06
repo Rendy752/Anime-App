@@ -269,8 +269,7 @@ class VideoPlayerState(
         Log.d("PlayerView", "VideoPlayerState disposed, cleaning up resources.")
     }
 
-    fun handleSingleTap(isPlayerDisplayFullscreen: Boolean, isLocked: Boolean) {
-        if (!isPlayerDisplayFullscreen) return
+    fun handleSingleTap(isLocked: Boolean) {
         if (!isLocked && !isHolding) {
             playerAction(HlsPlayerAction.RequestToggleControlsVisibility())
             Log.d("PlayerView", "Single tap: Toggled controls visibility")
@@ -538,7 +537,7 @@ suspend fun AwaitPointerEventScope.handleGestures(
             state.offsetY = 0f
         }
         state.isZooming = false
-    } else if (!isPanning) {
+    } else if (!isPanning && isPlayerDisplayFullscreen) {
         state.longPressJob?.cancel()
         val currentTime = System.currentTimeMillis()
         val tapX = down.position.x
@@ -555,7 +554,7 @@ suspend fun AwaitPointerEventScope.handleGestures(
                     updatedControlsState.value.isLocked
                 )
             } else {
-                state.handleSingleTap(isPlayerDisplayFullscreen, updatedControlsState.value.isLocked)
+                state.handleSingleTap(updatedControlsState.value.isLocked)
             }
             state.lastTapTime = currentTime
             state.lastTapX = tapX
