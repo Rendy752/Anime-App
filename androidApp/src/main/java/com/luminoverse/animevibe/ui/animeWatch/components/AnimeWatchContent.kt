@@ -50,15 +50,13 @@ import androidx.navigation.NavController
 import com.luminoverse.animevibe.data.remote.api.NetworkDataSource
 import com.luminoverse.animevibe.ui.animeWatch.WatchAction
 import com.luminoverse.animevibe.ui.animeWatch.WatchState
-import com.luminoverse.animevibe.ui.animeWatch.videoPlayer.VideoPlayerSection
+import com.luminoverse.animevibe.ui.animeWatch.videoPlayer.VideoPlayer
 import com.luminoverse.animevibe.ui.animeWatch.watchContent.WatchContentSection
 import com.luminoverse.animevibe.ui.common.ImageAspectRatio
 import com.luminoverse.animevibe.ui.common.ImageDisplay
 import com.luminoverse.animevibe.ui.common.ImageRoundedCorner
 import com.luminoverse.animevibe.ui.main.MainState
 import com.luminoverse.animevibe.ui.main.PlayerDisplayMode
-import com.luminoverse.animevibe.ui.main.SnackbarMessage
-import com.luminoverse.animevibe.ui.main.SnackbarMessageType
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
@@ -72,7 +70,6 @@ fun AnimeWatchContent(
     navController: NavController,
     networkDataSource: NetworkDataSource,
     watchState: WatchState,
-    showSnackbar: (SnackbarMessage) -> Unit,
     isScreenOn: Boolean,
     mainState: MainState,
     playerCoreState: PlayerCoreState,
@@ -155,9 +152,10 @@ fun AnimeWatchContent(
                         )
                     } else {
                         player?.let { player ->
-                            VideoPlayerSection(
+                            VideoPlayer(
                                 episodeDetailComplement = watchState.episodeDetailComplement,
                                 episodeDetailComplements = watchState.episodeDetailComplements,
+                                isRefreshing = watchState.isRefreshing,
                                 networkDataSource = networkDataSource,
                                 coreState = playerCoreState,
                                 controlsStateFlow = controlsStateFlow,
@@ -191,26 +189,7 @@ fun AnimeWatchContent(
                                 isSideSheetVisible = watchState.isSideSheetVisible,
                                 setSideSheetVisibility = {
                                     onAction(
-                                        WatchAction.SetSideSheetVisibility(
-                                            it
-                                        )
-                                    )
-                                },
-                                setPlayerError = {
-                                    showSnackbar(
-                                        SnackbarMessage(
-                                            message = it,
-                                            type = SnackbarMessageType.ERROR,
-                                            actionLabel = "RETRY",
-                                            onAction = {
-                                                onAction(
-                                                    WatchAction.HandleSelectedEpisodeServer(
-                                                        episodeSourcesQuery = watchState.episodeSourcesQuery,
-                                                        isRefresh = true
-                                                    )
-                                                )
-                                            }
-                                        )
+                                        WatchAction.SetSideSheetVisibility(it)
                                     )
                                 },
                                 rememberedTopPadding = rememberedTopPadding,
@@ -344,10 +323,11 @@ fun AnimeWatchContent(
                     episodeJumpNumber = watchState.episodeJumpNumber,
                     setEpisodeJumpNumber = { onAction(WatchAction.SetEpisodeJumpNumber(it)) },
                     serverScrollState = serverScrollState,
-                    handleSelectedEpisodeServer = {
+                    isRefreshing = watchState.isRefreshing,
+                    handleSelectedEpisodeServer = { episodeSourcesQuery, isRefresh ->
                         onAction(
                             WatchAction.HandleSelectedEpisodeServer(
-                                episodeSourcesQuery = it, isRefresh = false
+                                episodeSourcesQuery = episodeSourcesQuery, isRefresh = isRefresh
                             )
                         )
                     },

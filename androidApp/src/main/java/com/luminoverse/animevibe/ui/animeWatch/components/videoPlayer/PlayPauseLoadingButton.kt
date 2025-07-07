@@ -43,6 +43,7 @@ import androidx.media3.common.Player
 fun PlayPauseLoadingButton(
     playbackErrorMessage: String?,
     playbackState: Int,
+    isRefreshing: Boolean,
     isPlaying: Boolean,
     onSeekTo: (Long) -> Unit,
     handlePause: () -> Unit,
@@ -66,7 +67,7 @@ fun PlayPauseLoadingButton(
     }
 
     val borderModifier =
-        if (playbackState == Player.STATE_BUFFERING && playbackErrorMessage == null) {
+        if ((playbackState == Player.STATE_BUFFERING || isRefreshing) && playbackErrorMessage == null) {
             Modifier.drawBehind {
                 val strokeWidth = 3.dp.toPx()
                 val brush = Brush.sweepGradient(

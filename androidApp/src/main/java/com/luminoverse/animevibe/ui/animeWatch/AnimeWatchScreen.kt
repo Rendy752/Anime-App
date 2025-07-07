@@ -12,11 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalConfiguration
@@ -33,6 +29,7 @@ import com.luminoverse.animevibe.ui.main.MainActivity
 import com.luminoverse.animevibe.ui.main.MainState
 import com.luminoverse.animevibe.ui.main.PlayerDisplayMode
 import com.luminoverse.animevibe.ui.main.SnackbarMessage
+import com.luminoverse.animevibe.ui.main.SnackbarMessageType
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
@@ -66,8 +63,6 @@ fun AnimeWatchScreen(
     pipEndDestinationPx: Offset,
     pipEndSizePx: IntSize
 ) {
-    val pullToRefreshState = rememberPullToRefreshState()
-
     var isScreenOn by remember { mutableStateOf(true) }
     val context = LocalContext.current
     val activity = context as? MainActivity
@@ -114,6 +109,16 @@ fun AnimeWatchScreen(
     }
 
     LaunchedEffect(watchState.isRefreshing, hlsPlayerCoreState.error) {
+        hlsPlayerCoreState.error?.let { errorMessage ->
+            showSnackbar(
+                SnackbarMessage(
+                    message = errorMessage,
+                    type = SnackbarMessageType.ERROR,
+                    actionLabel = "RETRY",
+                    onAction = { refreshEpisodeSources() }
+                )
+            )
+        }
         if (watchState.isRefreshing || hlsPlayerCoreState.error == null) dismissSnackbar()
     }
 
@@ -136,63 +141,48 @@ fun AnimeWatchScreen(
     val dismissDragThreshold = if (maxVerticalDrag.isFinite()) maxVerticalDrag else screenHeightPx
     val dragProgress = (verticalDragOffset.value / dismissDragThreshold).coerceIn(0f, 1f)
 
-    PullToRefreshBox(
-        isRefreshing = watchState.isRefreshing,
-        onRefresh = { refreshEpisodeSources() },
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(0.dp),
-        state = pullToRefreshState,
-        indicator = {
-            PullToRefreshDefaults.Indicator(
-                isRefreshing = watchState.isRefreshing,
-                containerColor = MaterialTheme.colorScheme.primary,
-                color = MaterialTheme.colorScheme.onPrimary,
-                modifier = Modifier.align(Alignment.TopCenter),
-                state = pullToRefreshState
-            )
-        }
+            .padding(0.dp)
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            AnimeWatchContent(
-                malId = malId,
-                navController = navController,
-                networkDataSource = networkDataSource,
-                watchState = watchState,
-                showSnackbar = showSnackbar,
-                isScreenOn = isScreenOn,
-                mainState = mainState,
-                playerCoreState = hlsPlayerCoreState,
-                controlsStateFlow = hlsControlsStateFlow,
-                dispatchPlayerAction = dispatchPlayerAction,
-                getPlayer = getPlayer,
-                captureScreenshot = captureScreenshot,
-                onAction = onAction,
-                playerDisplayMode = playerDisplayMode,
-                setPlayerDisplayMode = setPlayerDisplayMode,
-                onEnterSystemPipMode = onEnterSystemPipMode,
-                dragProgress = dragProgress,
-                maxVerticalDrag = maxVerticalDrag,
-                setMaxVerticalDrag = { maxVerticalDrag = it },
-                verticalDragOffset = verticalDragOffset,
-                rememberedTopPadding = rememberedTopPadding,
-                rememberedBottomPadding = rememberedBottomPadding,
-                pipWidth = pipWidth,
-                pipEndDestinationPx = pipEndDestinationPx,
-                pipEndSizePx = pipEndSizePx
-            )
+        AnimeWatchContent(
+            malId = malId,
+            navController = navController,
+            networkDataSource = networkDataSource,
+            watchState = watchState,
+            isScreenOn = isScreenOn,
+            mainState = mainState,
+            playerCoreState = hlsPlayerCoreState,
+            controlsStateFlow = hlsControlsStateFlow,
+            dispatchPlayerAction = dispatchPlayerAction,
+            getPlayer = getPlayer,
+            captureScreenshot = captureScreenshot,
+            onAction = onAction,
+            playerDisplayMode = playerDisplayMode,
+            setPlayerDisplayMode = setPlayerDisplayMode,
+            onEnterSystemPipMode = onEnterSystemPipMode,
+            dragProgress = dragProgress,
+            maxVerticalDrag = maxVerticalDrag,
+            setMaxVerticalDrag = { maxVerticalDrag = it },
+            verticalDragOffset = verticalDragOffset,
+            rememberedTopPadding = rememberedTopPadding,
+            rememberedBottomPadding = rememberedBottomPadding,
+            pipWidth = pipWidth,
+            pipEndDestinationPx = pipEndDestinationPx,
+            pipEndSizePx = pipEndSizePx
+        )
 
-            if (dragProgress > 0f) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = { }
-                        )
-                )
-            }
+        if (dragProgress > 0f) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable(
+                        interactionSource = remember { MutableInteractionSource() },
+                        indication = null,
+                        onClick = { }
+                    )
+            )
         }
     }
 }

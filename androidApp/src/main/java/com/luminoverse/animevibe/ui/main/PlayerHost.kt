@@ -364,6 +364,7 @@ fun PlayerHost(
                     PlayPauseLoadingButton(
                         playbackErrorMessage = playerCoreState.error,
                         playbackState = playerCoreState.playbackState,
+                        isRefreshing = watchState.isRefreshing,
                         isPlaying = isPlaying,
                         onSeekTo = { hlsPlayerUtils.dispatch(HlsPlayerAction.SeekTo(0)) },
                         handlePause = { hlsPlayerUtils.dispatch(HlsPlayerAction.Pause) },

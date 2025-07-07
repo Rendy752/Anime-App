@@ -26,7 +26,5 @@ fun LoadingIndicator(
             .clip(CircleShape),
         enter = fadeIn(tween(300)) + scaleIn(tween(300)),
         exit = fadeOut(tween(300)) + scaleOut(tween(300))
-    ) {
-        CircularLoadingIndicator(size = 40)
-    }
+    ) { CircularLoadingIndicator(size = 40) }
 }

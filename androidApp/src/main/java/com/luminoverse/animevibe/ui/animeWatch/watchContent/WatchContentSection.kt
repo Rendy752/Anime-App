@@ -28,7 +28,8 @@ fun WatchContentSection(
     episodeJumpNumber: Int?,
     setEpisodeJumpNumber: (Int) -> Unit,
     serverScrollState: ScrollState,
-    handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
+    isRefreshing: Boolean,
+    handleSelectedEpisodeServer: (EpisodeSourcesQuery, Boolean) -> Unit,
 ) {
     Column(
         modifier = Modifier.padding(top = 8.dp),
@@ -42,7 +43,11 @@ fun WatchContentSection(
             episodeDetailComplement = episodeDetailComplement,
             episodeSourcesQuery = episodeSourcesQuery,
             serverScrollState = serverScrollState,
-            onServerSelected = { handleSelectedEpisodeServer(it) }
+            isRefreshing = isRefreshing,
+            onRefresh = { episodeSourcesQuery?.let { handleSelectedEpisodeServer(it, true) } },
+            onServerSelected = { episodeSourcesQuery ->
+                handleSelectedEpisodeServer(episodeSourcesQuery, false)
+            }
         )
 
         WatchEpisode(
@@ -55,7 +60,9 @@ fun WatchContentSection(
             episodeSourcesQuery = episodeSourcesQuery,
             episodeJumpNumber = episodeJumpNumber,
             setEpisodeJumpNumber = setEpisodeJumpNumber,
-            handleSelectedEpisodeServer = handleSelectedEpisodeServer
+            handleSelectedEpisodeServer = { episodeSourcesQuery ->
+                handleSelectedEpisodeServer(episodeSourcesQuery, false)
+            }
         )
     }
 }

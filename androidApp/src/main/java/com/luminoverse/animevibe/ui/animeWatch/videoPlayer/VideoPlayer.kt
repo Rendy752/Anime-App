@@ -1,20 +1,21 @@
 package com.luminoverse.animevibe.ui.animeWatch.videoPlayer
 
-import android.annotation.SuppressLint
-import android.app.Activity
-import android.content.pm.ActivityInfo
-import android.database.ContentObserver
-import android.os.Handler
-import android.os.Looper
-import android.provider.Settings
-import android.view.OrientationEventListener
-import androidx.compose.animation.*
-import androidx.compose.animation.core.Animatable
+import android.content.ComponentName
+import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
+import android.os.IBinder
+import android.support.v4.media.MediaBrowserCompat
+import android.util.Log
+import androidx.annotation.OptIn
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -22,13 +23,19 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -73,41 +80,32 @@ import com.luminoverse.animevibe.ui.common.ImageAspectRatio
 import com.luminoverse.animevibe.ui.common.ImageDisplay
 import com.luminoverse.animevibe.ui.common.ImageRoundedCorner
 import com.luminoverse.animevibe.ui.main.PlayerDisplayMode
-import com.luminoverse.animevibe.utils.FullscreenUtils
-import com.luminoverse.animevibe.utils.media.BoundsUtils.calculateOffsetBounds
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
+import com.luminoverse.animevibe.utils.media.MediaPlaybackAction
+import com.luminoverse.animevibe.utils.media.MediaPlaybackService
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
-import com.luminoverse.animevibe.utils.media.findActiveCaptionCues
 import com.luminoverse.animevibe.utils.resource.Resource
-import kotlin.math.min
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.launch
+import kotlin.math.min
 
-private enum class PhysicalOrientation {
-    PORTRAIT, LANDSCAPE, REVERSE_LANDSCAPE, UNKNOWN;
-
-    fun isLandscape(): Boolean {
-        return this == LANDSCAPE || this == REVERSE_LANDSCAPE
-    }
-}
-
-@SuppressLint("ConfigurationScreenWidthHeight")
-@androidx.annotation.OptIn(UnstableApi::class)
+@OptIn(UnstableApi::class, ExperimentalComposeUiApi::class)
 @Composable
 fun VideoPlayer(
-    playerView: PlayerView,
-    player: ExoPlayer,
+    episodeDetailComplement: EpisodeDetailComplement,
+    episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
+    isRefreshing: Boolean,
     networkDataSource: NetworkDataSource,
-    updateStoredWatchState: (Long?, Long?, String?) -> Unit,
-    captureScreenshot: suspend () -> String?,
     coreState: PlayerCoreState,
     controlsStateFlow: StateFlow<ControlsState>,
     playerAction: (HlsPlayerAction) -> Unit,
-    episodeDetailComplement: EpisodeDetailComplement,
-    episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
+    isLandscape: Boolean,
+    player: ExoPlayer,
+    captureScreenshot: suspend () -> String?,
+    updateStoredWatchState: (Long?, Long?, String?) -> Unit,
+    isScreenOn: Boolean,
+    isAutoPlayVideo: Boolean,
     episodes: List<Episode>,
     episodeSourcesQuery: EpisodeSourcesQuery,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery, Boolean) -> Unit,
@@ -116,8 +114,6 @@ fun VideoPlayer(
     onEnterSystemPipMode: () -> Unit,
     isSideSheetVisible: Boolean,
     setSideSheetVisibility: (Boolean) -> Unit,
-    isAutoplayEnabled: Boolean,
-    isLandscape: Boolean,
     rememberedTopPadding: Dp,
     verticalDragOffset: Float,
     onVerticalDrag: (Float) -> Unit,
@@ -128,100 +124,119 @@ fun VideoPlayer(
     onMaxDragAmountCalculated: (Float) -> Unit
 ) {
     val context = LocalContext.current
-    val topPaddingPx = with(LocalDensity.current) { rememberedTopPadding.toPx() }
-    val activity = context as? Activity
 
-    val videoPlayerState =
-        rememberVideoPlayerState(
-            key = episodeDetailComplement.sources.link.file,
-            player = player,
-            playerAction = playerAction,
-            networkDataSource = networkDataSource
+    val playerView = remember { PlayerView(context).apply { useController = false } }
+    var mediaBrowser by remember { mutableStateOf<MediaBrowserCompat?>(null) }
+    var mediaPlaybackService by remember { mutableStateOf<MediaPlaybackService?>(null) }
+
+    fun setupPlayer() {
+        playerView.player = player
+        val videoSurface = playerView.videoSurfaceView
+        playerAction(HlsPlayerAction.SetVideoSurface(videoSurface))
+
+        mediaPlaybackService?.dispatch(
+            MediaPlaybackAction.SetEpisodeData(
+                complement = episodeDetailComplement,
+                episodes = episodes,
+                query = episodeSourcesQuery,
+                handleSelectedEpisodeServer = { episodeQuery ->
+                    handleSelectedEpisodeServer(episodeQuery, false)
+                }
+            )
         )
-    val controlsState by controlsStateFlow.collectAsStateWithLifecycle()
-    val currentPosition by videoPlayerState.currentPosition.collectAsStateWithLifecycle()
-
-    val playerHeight = videoPlayerState.playerSize.height.toFloat()
-    val finalTranslationY = remember(playerHeight, pipEndDestinationPx, pipEndSizePx) {
-        if (playerHeight > 0f) {
-            (pipEndDestinationPx.y + pipEndSizePx.height / 2f) - (playerHeight / 2f)
-        } else {
-            Float.POSITIVE_INFINITY
-        }
-    }
-    LaunchedEffect(finalTranslationY) {
-        if (finalTranslationY != Float.POSITIVE_INFINITY) {
-            onMaxDragAmountCalculated(finalTranslationY)
-        }
     }
 
-    val landscapeDragOffset = remember { Animatable(0f) }
-    LaunchedEffect(isLandscape) {
-        if (!isLandscape) {
-            landscapeDragOffset.snapTo(0f)
-        }
-    }
-    LaunchedEffect(isLandscape, videoPlayerState.playerSize, videoPlayerState.zoomScaleProgress) {
-        val playerSize = videoPlayerState.playerSize
-        val videoSize = videoPlayerState.videoSize
-        val scale = videoPlayerState.zoomScaleProgress
-
-        if (playerSize.width > 0 && playerSize.height > 0 && videoSize.width > 0 && videoSize.height > 0 && scale > 1f) {
-            val containerWidth = playerSize.width.toFloat()
-            val containerHeight = playerSize.height.toFloat()
-            val containerAspect = containerWidth / containerHeight
-            val videoAspect = videoSize.width.toFloat() / videoSize.height.toFloat()
-
-            val fittedVideoSize = if (videoAspect > containerAspect) {
-                Size(width = containerWidth, height = containerWidth / videoAspect)
-            } else {
-                Size(width = containerHeight * videoAspect, height = containerHeight)
+    val serviceConnection = remember {
+        object : ServiceConnection {
+            override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+                Log.d("VideoPlayerSection", "Service connected")
+                val binder = service as MediaPlaybackService.MediaPlaybackBinder
+                mediaPlaybackService = binder.getService()
+                setupPlayer()
             }
 
-            val (maxOffsetX, maxOffsetY) = calculateOffsetBounds(
-                containerSize = playerSize,
-                imageSize = fittedVideoSize,
-                scale = scale
-            )
-
-            videoPlayerState.offsetX = videoPlayerState.offsetX.coerceIn(-maxOffsetX, maxOffsetY)
-            videoPlayerState.offsetY = videoPlayerState.offsetY.coerceIn(-maxOffsetY, maxOffsetY)
+            override fun onServiceDisconnected(name: ComponentName?) {
+                Log.w("VideoPlayerSection", "Service disconnected")
+                mediaPlaybackService = null
+            }
         }
     }
 
-    val thumbnailTrackUrl =
-        episodeDetailComplement.sources.tracks.find { it.kind == "thumbnails" }?.file
-    LaunchedEffect(thumbnailTrackUrl) {
-        if (thumbnailTrackUrl != null) {
-            videoPlayerState.loadAndCacheThumbnails(context, thumbnailTrackUrl)
+    LaunchedEffect(player) {
+        if (player.playbackState == Player.STATE_IDLE) {
+            setupPlayer()
+        }
+    }
+
+    DisposableEffect(Unit) {
+        val intent = Intent(context, MediaPlaybackService::class.java)
+        try {
+            context.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
+            Log.d("VideoPlayerSection", "Binding to MediaPlaybackService.")
+        } catch (e: Exception) {
+            Log.e("VideoPlayerSection", "Failed to bind service", e)
+        }
+
+        onDispose {
+            mediaBrowser?.disconnect()
+
+
+            Log.d("VideoPlayerSection", "Disposing completely. Resetting player state and service.")
+            playerAction(HlsPlayerAction.Reset)
+            mediaPlaybackService?.dispatch(MediaPlaybackAction.ClearMediaData)
+            mediaPlaybackService?.dispatch(MediaPlaybackAction.StopService)
+
+            try {
+                context.unbindService(serviceConnection)
+                Log.d("VideoPlayerSection", "Unbound from MediaPlaybackService.")
+            } catch (e: IllegalArgumentException) {
+                Log.w("VideoPlayerSection", "Service was not registered or already unbound.", e)
+            }
+            mediaPlaybackService = null
         }
     }
 
     LaunchedEffect(episodeDetailComplement.sources.link.file) {
-        videoPlayerState.isShowResume = episodeDetailComplement.lastTimestamp != null
+        Log.d("VideoPlayerSection", "episodeSourcesQuery changed: ${episodeSourcesQuery.id}")
+        playerAction(
+            HlsPlayerAction.SetMedia(
+                videoData = episodeDetailComplement.sources,
+                isAutoPlayVideo = isAutoPlayVideo,
+                currentPosition = episodeDetailComplement.lastTimestamp ?: 0,
+                duration = episodeDetailComplement.duration ?: 0
+            )
+        )
+        setupPlayer()
     }
-    val selectedSubtitle = controlsState.selectedSubtitle
-    LaunchedEffect(episodeDetailComplement.sources.link.file, selectedSubtitle) {
-        if (selectedSubtitle != null) {
-            videoPlayerState.loadAndCacheCaptions(selectedSubtitle.file)
-        }
-    }
-    val activeCaptionCue = selectedSubtitle?.file?.let { url ->
-        videoPlayerState.captionCues[url]?.let { cues ->
-            findActiveCaptionCues(currentPosition, cues)
+
+    LaunchedEffect(isScreenOn) {
+        if (!isScreenOn) {
+            playerAction(HlsPlayerAction.Pause)
+            Log.d("VideoPlayerSection", "Paused due to screen off")
         }
     }
 
-    val updatedControlsState = rememberUpdatedState(controlsState)
-    val updatedCoreState = rememberUpdatedState(coreState)
-    var isAutoplayNextEpisode by remember { mutableStateOf(false) }
-
-    LaunchedEffect(videoPlayerState.autoplayNextEpisodeStatusTrigger) {
-        if (videoPlayerState.autoplayNextEpisodeStatusTrigger > 0) {
-            delay(3000)
-            videoPlayerState.autoplayNextEpisodeStatusText = null
-        }
-    }
+    val topPaddingPx = with(LocalDensity.current) { rememberedTopPadding.toPx() }
+    val videoPlayerState = rememberVideoPlayerState(
+        key = episodeDetailComplement.sources.link.file,
+        player = player,
+        playerAction = playerAction,
+        networkDataSource = networkDataSource,
+        episodeDetailComplement = episodeDetailComplement,
+        controlsStateFlow = controlsStateFlow,
+        coreState = coreState,
+        displayMode = displayMode,
+        setPlayerDisplayMode = setPlayerDisplayMode,
+        setSideSheetVisibility = setSideSheetVisibility,
+        isLandscape = isLandscape,
+        pipEndDestinationPx = pipEndDestinationPx,
+        pipEndSizePx = pipEndSizePx,
+        onMaxDragAmountCalculated = onMaxDragAmountCalculated,
+        updateStoredWatchState = updateStoredWatchState,
+        captureScreenshot = captureScreenshot
+    )
+    val controlsState by controlsStateFlow.collectAsStateWithLifecycle()
+    val currentPosition by videoPlayerState.currentPosition.collectAsStateWithLifecycle()
 
     val animatedZoom by animateFloatAsState(
         targetValue = videoPlayerState.zoomScaleProgress,
@@ -236,43 +251,9 @@ fun VideoPlayer(
     val prevEpisode = episodes.find { it.episode_no == currentEpisode - 1 }
     val nextEpisode = episodes.find { it.episode_no == currentEpisode + 1 }
 
-    val shouldShowResumeOverlay = !isAutoplayEnabled && videoPlayerState.isShowResume &&
+    val shouldShowResumeOverlay = !isAutoPlayVideo && videoPlayerState.isShowResume &&
             episodeDetailComplement.lastTimestamp != null &&
-            updatedCoreState.value.playbackState == Player.STATE_READY && !updatedCoreState.value.isPlaying
-
-    LaunchedEffect(updatedCoreState.value.isPlaying) {
-        val duration = player.duration.coerceAtLeast(0L)
-        if (updatedCoreState.value.isPlaying) {
-            videoPlayerState.isShowResume = false
-            videoPlayerState.isShowNextEpisodeOverlay = false
-            if (videoPlayerState.isFirstLoad && updatedCoreState.value.playbackState == Player.STATE_READY) {
-                videoPlayerState.isFirstLoad = false
-            }
-            while (true) {
-                val currentPosition = player.currentPosition
-                videoPlayerState.updatePosition(currentPosition)
-                if (player.duration > 0 && currentPosition >= 10_000) {
-                    val position = currentPosition.coerceAtLeast(0L)
-                    updateStoredWatchState(position, duration, captureScreenshot())
-                }
-                delay(500)
-            }
-        } else {
-            if (updatedCoreState.value.playbackState == Player.STATE_ENDED) {
-                videoPlayerState.isShowResume = false
-                videoPlayerState.isShowNextEpisodeOverlay = true
-                videoPlayerState.updatePosition(duration)
-                updateStoredWatchState(duration, duration, captureScreenshot())
-            }
-        }
-    }
-
-    LaunchedEffect(videoPlayerState.showLockReminder, updatedControlsState.value.isLocked) {
-        if (videoPlayerState.showLockReminder && updatedControlsState.value.isLocked) {
-            delay(3000)
-            videoPlayerState.showLockReminder = false
-        }
-    }
+            coreState.playbackState == Player.STATE_READY && !coreState.isPlaying
 
     val isPlayerDisplayFullscreen = displayMode in listOf(
         PlayerDisplayMode.FULLSCREEN_PORTRAIT,
@@ -283,135 +264,19 @@ fun VideoPlayer(
         PlayerDisplayMode.SYSTEM_PIP
     )
 
-    var physicalOrientation by remember { mutableStateOf(PhysicalOrientation.UNKNOWN) }
-
-    val contentResolver = context.contentResolver
-    var isSystemAutoRotateEnabled by remember {
-        mutableStateOf(
-            Settings.System.getInt(contentResolver, Settings.System.ACCELEROMETER_ROTATION, 0) == 1
-        )
-    }
-
-    DisposableEffect(contentResolver) {
-        val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
-            override fun onChange(selfChange: Boolean) {
-                isSystemAutoRotateEnabled = Settings.System.getInt(
-                    contentResolver,
-                    Settings.System.ACCELEROMETER_ROTATION,
-                    0
-                ) == 1
-            }
-        }
-        contentResolver.registerContentObserver(
-            Settings.System.getUriFor(Settings.System.ACCELEROMETER_ROTATION),
-            true,
-            observer
-        )
-        onDispose {
-            contentResolver.unregisterContentObserver(observer)
-        }
-    }
-
-    DisposableEffect(Unit) {
-        val orientationEventListener = object : OrientationEventListener(context) {
-            override fun onOrientationChanged(orientation: Int) {
-                if (orientation == ORIENTATION_UNKNOWN) {
-                    return
-                }
-                physicalOrientation = when (orientation) {
-                    in 345..359, in 0..15 -> PhysicalOrientation.PORTRAIT
-                    in 75..105 -> PhysicalOrientation.REVERSE_LANDSCAPE
-                    in 255..285 -> PhysicalOrientation.LANDSCAPE
-                    else -> physicalOrientation
-                }
-            }
-        }
-        orientationEventListener.enable()
-        onDispose {
-            orientationEventListener.disable()
-        }
-    }
-
-    LaunchedEffect(displayMode, controlsState.isLocked, isSystemAutoRotateEnabled) {
-        setSideSheetVisibility(false)
-        activity ?: return@LaunchedEffect
-        val newOrientation = when (displayMode) {
-            PlayerDisplayMode.FULLSCREEN_LANDSCAPE -> {
-                if (controlsState.isLocked) {
-                    ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-                } else if (isSystemAutoRotateEnabled) {
-                    ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-                } else {
-                    ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-                }
-            }
-
-            PlayerDisplayMode.FULLSCREEN_PORTRAIT -> {
-                ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-            }
-
-            else -> {
-                if (isSystemAutoRotateEnabled) {
-                    ActivityInfo.SCREEN_ORIENTATION_SENSOR
-                } else {
-                    ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-                }
-            }
-        }
-
-        if (activity.requestedOrientation != newOrientation) {
-            activity.requestedOrientation = newOrientation
-        }
-    }
-
-    LaunchedEffect(physicalOrientation, controlsState.isLocked, isSystemAutoRotateEnabled) {
-        if (controlsState.isLocked || !isSystemAutoRotateEnabled) {
-            return@LaunchedEffect
-        }
-
-        if (physicalOrientation.isLandscape() && displayMode == PlayerDisplayMode.FULLSCREEN_PORTRAIT) {
-            setPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN_LANDSCAPE)
-        } else if (physicalOrientation == PhysicalOrientation.PORTRAIT && displayMode == PlayerDisplayMode.FULLSCREEN_LANDSCAPE) {
-            setPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN_PORTRAIT)
-        }
-    }
-
-    LaunchedEffect(isLandscape, displayMode) {
-        val window = activity?.window ?: return@LaunchedEffect
-        if (displayMode in listOf(PlayerDisplayMode.PIP, PlayerDisplayMode.SYSTEM_PIP)) {
-            FullscreenUtils.setFullscreen(window, false)
-            return@LaunchedEffect
-        }
-
-        if (isLandscape) {
-            FullscreenUtils.setFullscreen(window, true)
-        } else {
-            FullscreenUtils.setFullscreen(window, false)
-        }
-    }
-
-    LaunchedEffect(updatedCoreState.value.playbackState, videoPlayerState.isDraggingSeekBar) {
-        videoPlayerState.isBufferingFromSeeking =
-            if (videoPlayerState.isDraggingSeekBar && (updatedCoreState.value.playbackState == Player.STATE_READY || updatedCoreState.value.playbackState == Player.STATE_BUFFERING)) {
-                true
-            } else if (updatedCoreState.value.playbackState != Player.STATE_BUFFERING) {
-                false
-            } else {
-                videoPlayerState.isBufferingFromSeeking
-            }
-    }
-
     val isCommonPartVisible =
-        !isPlayerDisplayPip && !updatedControlsState.value.isLocked && verticalDragOffset == 0f && landscapeDragOffset.value == 0f
+        !isPlayerDisplayPip && !controlsState.isLocked && verticalDragOffset == 0f && videoPlayerState.landscapeDragOffset.value == 0f
 
     val animatedCornerRadius by animateDpAsState(
-        targetValue = if (verticalDragOffset > 0 || landscapeDragOffset.value > 0) 8.dp else 0.dp,
+        targetValue = if (verticalDragOffset > 0 || videoPlayerState.landscapeDragOffset.value > 0) 8.dp else 0.dp,
         animationSpec = tween(durationMillis = 300),
         label = "cornerRadiusAnimation"
     )
 
-    val landscapeDragProgress = if (playerHeight > 0f) {
-        (landscapeDragOffset.value / playerHeight).coerceIn(0f, 1f)
+    val landscapeDragProgress = if (videoPlayerState.playerSize.height > 0f) {
+        (videoPlayerState.landscapeDragOffset.value / videoPlayerState.playerSize.height).coerceIn(
+            0f, 1f
+        )
     } else 0f
     val landscapeBackgroundAlpha = lerp(0f, 0.6f, landscapeDragProgress * 2)
 
@@ -421,23 +286,26 @@ fun VideoPlayer(
             .onSizeChanged { videoPlayerState.playerSize = it }
             .background(Color.Black.copy(alpha = if (isLandscape) landscapeBackgroundAlpha else 0f))
             .graphicsLayer {
-                if (isLandscape && landscapeDragOffset.value > 0) {
+                if (isLandscape && videoPlayerState.landscapeDragOffset.value > 0) {
                     val scale = lerp(1f, 0.8f, landscapeDragProgress * 2)
                     scaleX = scale
                     scaleY = scale
-                    translationY = landscapeDragOffset.value
+                    translationY = videoPlayerState.landscapeDragOffset.value
                 } else if (isPlayerDisplayFullscreen) {
                     val playerWidth = videoPlayerState.playerSize.width.toFloat()
-                    val pHeight = videoPlayerState.playerSize.height.toFloat()
+                    val playerHeight = videoPlayerState.playerSize.height.toFloat()
 
-                    if (playerWidth > 0f && pHeight > 0f) {
+                    if (playerWidth > 0f && playerHeight > 0f) {
                         val targetScale = min(
                             pipEndSizePx.width / playerWidth,
-                            pipEndSizePx.height / pHeight
+                            pipEndSizePx.height / playerHeight
                         )
 
                         val finalTranslationX =
                             (pipEndDestinationPx.x + pipEndSizePx.width / 2f) - (playerWidth / 2f)
+
+                        val finalTranslationY =
+                            (pipEndDestinationPx.y + pipEndSizePx.height / 2f) - (playerHeight / 2f)
 
                         val progress = if (finalTranslationY > 0f) {
                             (verticalDragOffset / finalTranslationY).coerceIn(0f, 1f)
@@ -464,7 +332,7 @@ fun VideoPlayer(
                 .pointerInput(
                     episodeDetailComplement.sources.link.file,
                     displayMode,
-                    updatedControlsState.value.zoom,
+                    controlsState.zoom,
                     isLandscape
                 ) {
                     coroutineScope {
@@ -473,41 +341,22 @@ fun VideoPlayer(
                                 handleGestures(
                                     state = videoPlayerState,
                                     isPlayerDisplayFullscreen = isPlayerDisplayFullscreen,
-                                    updatedControlsState = updatedControlsState,
                                     isLandscape = isLandscape,
                                     topPaddingPx = topPaddingPx,
                                     onVerticalDrag = { dy ->
-                                        if (isLandscape) {
-                                            launch {
-                                                val screenHeight = size.height.toFloat()
-                                                val maxDrag = screenHeight * 0.5f
-                                                landscapeDragOffset.snapTo(
-                                                    (landscapeDragOffset.value + dy).coerceIn(
-                                                        0f, maxDrag
-                                                    )
-                                                )
-                                            }
-                                        } else {
-                                            onVerticalDrag(dy)
-                                        }
+                                        videoPlayerState.onVerticalDrag(
+                                            dy,
+                                            isLandscape,
+                                            onVerticalDrag
+                                        )
                                     },
                                     onDragEnd = { flingVelocity ->
-                                        if (isLandscape) {
-                                            val screenHeight = size.height.toFloat()
-                                            val threshold = screenHeight * 0.5f
-                                            if (landscapeDragOffset.value >= threshold) {
-                                                setPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN_PORTRAIT)
-                                            } else {
-                                                launch {
-                                                    landscapeDragOffset.animateTo(
-                                                        0f,
-                                                        animationSpec = spring()
-                                                    )
-                                                }
-                                            }
-                                        } else {
-                                            onDragEnd(flingVelocity)
-                                        }
+                                        videoPlayerState.onDragEnd(
+                                            flingVelocity,
+                                            isLandscape,
+                                            onDragEnd,
+                                            setPlayerDisplayMode
+                                        )
                                     }
                                 )
                             } finally {
@@ -582,11 +431,13 @@ fun VideoPlayer(
         }
 
         val isPlayerControlsVisible =
-            (updatedControlsState.value.isControlsVisible || videoPlayerState.isDraggingSeekBar) && !shouldShowResumeOverlay && isCommonPartVisible && isPlayerDisplayFullscreen
+            (controlsState.isControlsVisible || videoPlayerState.isDraggingSeekBar) && !shouldShowResumeOverlay && isCommonPartVisible && isPlayerDisplayFullscreen
 
+        val thumbnailTrackUrl =
+            episodeDetailComplement.sources.tracks.find { it.kind == "thumbnails" }?.file
         thumbnailTrackUrl?.let { url ->
             val showThumbnail =
-                videoPlayerState.isBufferingFromSeeking || (!updatedCoreState.value.isPlaying && videoPlayerState.isDraggingSeekBar && !videoPlayerState.isFirstLoad)
+                videoPlayerState.isBufferingFromSeeking || (!coreState.isPlaying && videoPlayerState.isDraggingSeekBar && !videoPlayerState.isFirstLoad)
             val thumbnailSeekPositionKey =
                 remember(videoPlayerState.dragSeekPosition) { (videoPlayerState.dragSeekPosition / 10000L) * 10000L }
 
@@ -623,7 +474,7 @@ fun VideoPlayer(
                     top = animatedSubtitleTopPadding, bottom = animatedSubtitleBottomPadding,
                     start = 8.dp, end = 8.dp
                 ),
-            cues = activeCaptionCue,
+            cues = videoPlayerState.activeCaptionCue,
             isLandscape = isLandscape,
             isPipMode = isPlayerDisplayPip,
             pipWidth = pipWidth
@@ -631,13 +482,14 @@ fun VideoPlayer(
 
         AnimatedVisibility(visible = isPlayerControlsVisible, enter = fadeIn(), exit = fadeOut()) {
             PlayerControls(
-                isPlaying = updatedCoreState.value.isPlaying,
+                isPlaying = coreState.isPlaying,
                 currentPosition = currentPosition,
                 bufferedPosition = player.bufferedPosition,
                 duration = player.duration.takeIf { it > 0 }
                     ?: episodeDetailComplement.duration ?: 0,
-                playbackState = updatedCoreState.value.playbackState,
-                playbackErrorMessage = updatedCoreState.value.error,
+                playbackState = coreState.playbackState,
+                isRefreshing = isRefreshing,
+                playbackErrorMessage = coreState.error,
                 setPlayerDisplayMode = setPlayerDisplayMode,
                 episodeDetailComplement = episodeDetailComplement,
                 hasPreviousEpisode = prevEpisode != null,
@@ -674,12 +526,9 @@ fun VideoPlayer(
                 showRemainingTime = videoPlayerState.showRemainingTime,
                 setShowRemainingTime = { videoPlayerState.showRemainingTime = it },
                 onSettingsClick = { videoPlayerState.showSettingsSheet = true },
-                isAutoplayPlayNextEpisode = isAutoplayNextEpisode,
+                isAutoplayPlayNextEpisode = videoPlayerState.isAutoplayNextEpisode,
                 onAutoplayNextEpisodeToggle = { enabled ->
-                    isAutoplayNextEpisode = enabled
-                    videoPlayerState.autoplayNextEpisodeStatusText =
-                        if (enabled) "Autoplay is ON" else "Autoplay is OFF"
-                    videoPlayerState.autoplayNextEpisodeStatusTrigger++
+                    videoPlayerState.onAutoplayNextEpisodeToggle(enabled)
                 },
                 onFullscreenToggle = {
                     setPlayerDisplayMode(
@@ -696,8 +545,8 @@ fun VideoPlayer(
 
         LoadingIndicator(
             modifier = Modifier.align(Alignment.Center),
-            isVisible = (updatedCoreState.value.playbackState == Player.STATE_BUFFERING || updatedCoreState.value.playbackState == Player.STATE_IDLE)
-                    && !isPlayerControlsVisible && updatedCoreState.value.error == null && isPlayerDisplayFullscreen
+            isVisible = (coreState.playbackState == Player.STATE_BUFFERING || coreState.playbackState == Player.STATE_IDLE || isRefreshing)
+                    && !isPlayerControlsVisible && coreState.error == null && isPlayerDisplayFullscreen
         )
 
         SeekIndicator(
@@ -709,10 +558,10 @@ fun VideoPlayer(
         )
 
         val isSkipVisible =
-            displayMode != PlayerDisplayMode.SYSTEM_PIP && !updatedControlsState.value.isLocked &&
-                    verticalDragOffset == 0f && landscapeDragOffset.value == 0f && !videoPlayerState.isHolding && !videoPlayerState.isDraggingSeekBar &&
-                    updatedCoreState.value.playbackState != Player.STATE_ENDED &&
-                    updatedCoreState.value.playbackState != Player.STATE_IDLE &&
+            displayMode != PlayerDisplayMode.SYSTEM_PIP && !controlsState.isLocked &&
+                    verticalDragOffset == 0f && videoPlayerState.landscapeDragOffset.value == 0f && !videoPlayerState.isHolding && !videoPlayerState.isDraggingSeekBar &&
+                    coreState.playbackState != Player.STATE_ENDED &&
+                    coreState.playbackState != Player.STATE_IDLE &&
                     !shouldShowResumeOverlay && !videoPlayerState.isFirstLoad
         val skipButtonPadding = if (displayMode == PlayerDisplayMode.PIP) 8.dp
         else if (!isLandscape) 60.dp else 120.dp
@@ -767,7 +616,7 @@ fun VideoPlayer(
         )
 
         LockButton(
-            visible = updatedControlsState.value.isLocked && !isPlayerDisplayPip && videoPlayerState.showLockReminder,
+            visible = controlsState.isLocked && !isPlayerDisplayPip && videoPlayerState.showLockReminder,
             onClick = {
                 playerAction(HlsPlayerAction.ToggleLock(false))
             },
@@ -806,7 +655,7 @@ fun VideoPlayer(
                 animeImage = episodeDetailComplement.imageUrl,
                 nextEpisode = it,
                 nextEpisodeDetailComplement = episodeDetailComplements[it.id]?.data,
-                isAutoplayNextEpisode = isAutoplayNextEpisode,
+                isAutoplayNextEpisode = videoPlayerState.isAutoplayNextEpisode,
                 onDismiss = {
                     videoPlayerState.isShowNextEpisodeOverlay = false
                     playerAction(HlsPlayerAction.RequestToggleControlsVisibility(true))
@@ -839,17 +688,17 @@ fun VideoPlayer(
                 onLockClick = {
                     videoPlayerState.showLockReminder = true
                     setPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN_LANDSCAPE)
-                    if (updatedCoreState.value.playbackState == Player.STATE_ENDED) playerAction(
+                    if (coreState.playbackState == Player.STATE_ENDED) playerAction(
                         HlsPlayerAction.SeekTo(0)
                     )
                     playerAction(HlsPlayerAction.Play)
                     playerAction(HlsPlayerAction.ToggleLock(true))
                 },
                 onPipClick = { onEnterSystemPipMode() },
-                selectedPlaybackSpeed = updatedControlsState.value.playbackSpeed,
+                selectedPlaybackSpeed = controlsState.playbackSpeed,
                 onPlaybackSpeedClick = { videoPlayerState.showPlaybackSpeedSheet = true },
                 isSubtitleAvailable = episodeDetailComplement.sources.tracks.any { it.kind == "captions" },
-                selectedSubtitle = updatedControlsState.value.selectedSubtitle,
+                selectedSubtitle = controlsState.selectedSubtitle,
                 onSubtitleClick = { videoPlayerState.showSubtitleSheet = true }
             )
         }
@@ -863,7 +712,7 @@ fun VideoPlayer(
         ) {
             SubtitleContent(
                 tracks = episodeDetailComplement.sources.tracks,
-                selectedSubtitle = updatedControlsState.value.selectedSubtitle,
+                selectedSubtitle = controlsState.selectedSubtitle,
                 onSubtitleSelected = { subtitleTrack ->
                     playerAction(HlsPlayerAction.SetSubtitle(subtitleTrack))
                     videoPlayerState.showSubtitleSheet = false
@@ -879,7 +728,7 @@ fun VideoPlayer(
             onDismiss = { videoPlayerState.showPlaybackSpeedSheet = false }
         ) {
             PlaybackSpeedContent(
-                selectedPlaybackSpeed = updatedControlsState.value.playbackSpeed,
+                selectedPlaybackSpeed = controlsState.playbackSpeed,
                 onSpeedChange = { speed ->
                     playerAction(HlsPlayerAction.SetPlaybackSpeed(speed))
                     videoPlayerState.showPlaybackSpeedSheet = false

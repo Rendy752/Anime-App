@@ -29,6 +29,8 @@ fun WatchHeader(
     episodeDetailComplement: EpisodeDetailComplement?,
     episodeSourcesQuery: EpisodeSourcesQuery?,
     serverScrollState: ScrollState,
+    isRefreshing: Boolean,
+    onRefresh: () -> Unit,
     onServerSelected: (EpisodeSourcesQuery) -> Unit,
 ) {
     var isFavorite by remember { mutableStateOf(episodeDetailComplement?.isFavorite ?: false) }
@@ -51,6 +53,8 @@ fun WatchHeader(
         ) {
             CurrentlyWatchingHeader(
                 networkStatus = networkStatus,
+                isRefreshing = isRefreshing,
+                onRefresh = onRefresh,
                 onFavoriteToggle = {
                     isFavorite = !isFavorite
                     onFavoriteToggle(isFavorite)
