@@ -1,23 +1,24 @@
 package com.luminoverse.animevibe.utils
 
-import android.view.Window
+import android.app.Activity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 
-object FullscreenUtils {
+object SystemBarsUtils {
     /**
      * Sets the system UI visibility for fullscreen mode.
      *
-     * @param window The activity's window. This is used to control the system UI visibility.
-     * @param requestHideSystemBars True to hide system bars for fullscreen, false to show them.
+     * @param activity The activity whose window will be used to control system UI visibility.
+     * @param hideSystemBars True to hide system bars for fullscreen, false to show them.
      */
-    fun setFullscreen(window: Window, requestHideSystemBars: Boolean) {
+    fun setSystemBarsVisibility(activity: Activity?, hideSystemBars: Boolean) {
+        val window = activity?.window ?: return
         val windowInsetsController = WindowCompat.getInsetsController(window, window.decorView)
         windowInsetsController.systemBarsBehavior =
             WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 
-        if (requestHideSystemBars) {
+        if (hideSystemBars) {
             windowInsetsController.hide(WindowInsetsCompat.Type.systemBars())
         } else {
             windowInsetsController.show(WindowInsetsCompat.Type.systemBars())
