@@ -8,13 +8,16 @@ import android.content.Intent
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.graphics.drawable.toBitmap
+import androidx.core.net.toUri
 import coil.imageLoader
 import coil.request.ImageRequest
 import com.luminoverse.animevibe.android.R
 import com.luminoverse.animevibe.models.Notification
+import com.luminoverse.animevibe.ui.main.MainActivity
 import com.luminoverse.animevibe.utils.receivers.NotificationReceiver
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.net.URLEncoder
 import javax.inject.Inject
 
 class NotificationHandler @Inject constructor() {
@@ -79,7 +82,7 @@ class NotificationHandler @Inject constructor() {
         }
 
         val builder = NotificationCompat.Builder(context, channelId)
-            .setSmallIcon(R.drawable.ic_notifications_active_black_24dp)
+            .setSmallIcon(R.drawable.app_icon)
             .setContentText(notification.contentText)
             .setStyle(NotificationCompat.BigTextStyle().bigText(notification.contentText))
             .setPriority(if (notification.type == "Broadcast") NotificationCompat.PRIORITY_HIGH else NotificationCompat.PRIORITY_DEFAULT)
@@ -119,13 +122,33 @@ class NotificationHandler @Inject constructor() {
         accessId: String,
         notificationId: Int
     ): PendingIntent {
-        val action = if (type == "UnfinishedWatch") "ACTION_OPEN_EPISODE" else "ACTION_OPEN_DETAIL"
-        val intent = Intent(context, NotificationReceiver::class.java).apply {
-            this.action = action
-            putExtra("access_id", accessId)
-            putExtra("notification_id", notificationId)
+        val intent: Intent
+        when (type) {
+            "Broadcast" -> {
+                val deepLinkUri = "animevibe://anime/detail/$accessId".toUri()
+                intent = Intent(Intent.ACTION_VIEW, deepLinkUri).setPackage(context.packageName)
+            }
+
+            "UnfinishedWatch" -> {
+                val parts = accessId.split("||")
+                val deepLinkUri = if (parts.size == 2) {
+                    val encodedEpisodeId = URLEncoder.encode(parts[1], "UTF-8")
+                    "animevibe://anime/watch/${parts[0]}/$encodedEpisodeId".toUri()
+                } else {
+                    "animevibe://anime/watch/$accessId".toUri()
+                }
+                intent = Intent(Intent.ACTION_VIEW, deepLinkUri).setPackage(context.packageName)
+            }
+
+            else -> {
+                intent = context.packageManager.getLaunchIntentForPackage(context.packageName)
+                    ?: Intent(context, MainActivity::class.java)
+            }
         }
-        return PendingIntent.getBroadcast(
+
+        intent.putExtra("notification_id", notificationId)
+        intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+        return PendingIntent.getActivity(
             context, notificationId, intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -165,27 +188,37 @@ class NotificationHandler @Inject constructor() {
         notificationId: Int
     ): NotificationCompat.Builder = apply {
         actions.forEachIndexed { index, action ->
-            val intent = Intent(context, NotificationReceiver::class.java).apply {
-                this.action = action.action
-                action.extras.forEach { (key, value) ->
-                    if (key == "notification_id") {
-                        putExtra(key, value.toIntOrNull() ?: notificationId)
-                    } else {
-                        putExtra(key, value)
+            val requestCode = notificationId * 10 + (index + 1)
+            val pendingIntent: PendingIntent?
+
+            when (action.action) {
+                "ACTION_OPEN_DETAIL", "ACTION_OPEN_EPISODE" -> {
+                    val accessId = action.extras["access_id"] ?: ""
+                    pendingIntent = createOpenIntent(
+                        context,
+                        if (action.action == "ACTION_OPEN_DETAIL") "Broadcast" else "UnfinishedWatch",
+                        accessId,
+                        requestCode
+                    )
+                }
+
+                "ACTION_UNFAVORITE_ANIME", "ACTION_CLOSE_NOTIFICATION" -> {
+                    val intent = Intent(context, NotificationReceiver::class.java).apply {
+                        this.action = action.action
+                        action.extras.forEach { (key, value) -> putExtra(key, value) }
                     }
+                    pendingIntent = PendingIntent.getBroadcast(
+                        context, requestCode, intent,
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    )
                 }
-                if (!hasExtra("notification_id")) {
-                    putExtra("notification_id", notificationId)
-                }
+
+                else -> pendingIntent = null
             }
 
-            val requestCode = notificationId * 10 + (index + 1)
-
-            val pendingIntent = PendingIntent.getBroadcast(
-                context, requestCode, intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            addAction(action.icon, action.title, pendingIntent)
+            if (pendingIntent != null) {
+                addAction(action.icon, action.title, pendingIntent)
+            }
         }
     }
 

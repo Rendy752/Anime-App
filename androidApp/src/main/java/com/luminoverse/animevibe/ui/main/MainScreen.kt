@@ -1,5 +1,7 @@
 package com.luminoverse.animevibe.ui.main
 
+import android.app.NotificationManager
+import android.content.Context
 import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
@@ -24,6 +26,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -72,6 +75,7 @@ fun MainScreen(
     mainAction: (MainAction) -> Unit,
     hlsPlayerUtils: HlsPlayerUtils
 ) {
+    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     var isNavigating by remember { mutableStateOf(false) }
     val layoutDirection = LocalLayoutDirection.current
@@ -101,6 +105,12 @@ fun MainScreen(
         intentChannel.receiveAsFlow()
             .distinctUntilChanged { old, new -> old.data == new.data && old.action == new.action }
             .collect { intent ->
+                val notificationId = intent.getIntExtra("notification_id", -1)
+                if (notificationId != -1) {
+                    val notificationManager =
+                        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                    notificationManager.cancel(notificationId)
+                }
                 if (intent.action != Intent.ACTION_VIEW || intent.data == null) return@collect
                 intent.data?.let { uri ->
                     if (uri.scheme == "animevibe" && uri.host == "anime") {
