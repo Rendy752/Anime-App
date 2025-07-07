@@ -83,11 +83,11 @@ fun NextEpisodeOverlay(
         enter = fadeIn(),
         exit = fadeOut()
     ) {
-        var countdown by remember { mutableIntStateOf(5) }
+        var countdown by remember { mutableIntStateOf(3) }
 
         LaunchedEffect(isVisible, isAutoplayNextEpisode) {
             if (isVisible && isAutoplayNextEpisode) {
-                countdown = 5
+                countdown = 3
                 while (countdown > 0) {
                     delay(1000)
                     countdown--

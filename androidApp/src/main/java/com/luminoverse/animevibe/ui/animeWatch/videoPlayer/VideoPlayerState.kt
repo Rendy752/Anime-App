@@ -412,6 +412,7 @@ suspend fun AwaitPointerEventScope.handleGestures(
     var isMultiTouch = false
     var isPanning = false
     var verticalDragConsumed = false
+    var dragStarted = false
     var lastVelocityY = 0f
 
     while (true) {
@@ -428,17 +429,23 @@ suspend fun AwaitPointerEventScope.handleGestures(
         }
 
         if (pointers.size > 1 && isPlayerDisplayFullscreen) {
+            if (verticalDragConsumed) {
+                onDragEnd(0f)
+                verticalDragConsumed = false
+                dragStarted = false
+            }
+
             if (!isMultiTouch) {
                 isMultiTouch = true
                 state.isZooming = true
                 state.longPressJob?.cancel()
                 state.handleLongPressEnd()
-                verticalDragConsumed = false
                 isPanning = false
                 state.playerAction(HlsPlayerAction.RequestToggleControlsVisibility(false))
             }
             val zoomChange = event.calculateZoom()
-            state.zoomScaleProgress = (state.zoomScaleProgress * zoomChange).coerceIn(1f, MAX_ZOOM_RATIO)
+            state.zoomScaleProgress =
+                (state.zoomScaleProgress * zoomChange).coerceIn(1f, MAX_ZOOM_RATIO)
 
             if (state.videoSize.width > 0 && state.videoSize.height > 0) {
                 val containerWidth = size.width.toFloat()
@@ -481,7 +488,8 @@ suspend fun AwaitPointerEventScope.handleGestures(
                         val containerWidth = size.width.toFloat()
                         val containerHeight = size.height.toFloat()
                         val containerAspect = containerWidth / containerHeight
-                        val videoAspect = state.videoSize.width.toFloat() / state.videoSize.height.toFloat()
+                        val videoAspect =
+                            state.videoSize.width.toFloat() / state.videoSize.height.toFloat()
 
                         val fittedVideoSize = if (videoAspect > containerAspect) {
                             Size(width = containerWidth, height = containerWidth / videoAspect)
@@ -499,23 +507,24 @@ suspend fun AwaitPointerEventScope.handleGestures(
                     }
                     change.consume()
                 }
-            }
-            else {
+            } else {
                 val positionChangeOffset = change.position - change.previousPosition
                 val dy = positionChangeOffset.y
                 val dx = positionChangeOffset.x
 
-                if (abs(dy) > abs(dx) && abs(dy) > 1f && !isDragInBarrier) {
+                if (!dragStarted && abs(dy) > abs(dx) && abs(dy) > 1f && !isDragInBarrier) {
+                    dragStarted = true
+                    verticalDragConsumed = true
                     state.longPressJob?.cancel()
                     state.handleLongPressEnd()
+                }
 
+                if (dragStarted) {
                     val dt = change.uptimeMillis - change.previousUptimeMillis
                     if (dt > 0) {
                         lastVelocityY = dy / dt
                     }
-
                     onVerticalDrag(dy)
-                    verticalDragConsumed = true
                     change.consume()
                 }
             }

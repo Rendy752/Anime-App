@@ -9,6 +9,7 @@ import android.os.Looper
 import android.provider.Settings
 import android.view.OrientationEventListener
 import androidx.compose.animation.*
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -80,8 +81,10 @@ import com.luminoverse.animevibe.utils.media.PlayerCoreState
 import com.luminoverse.animevibe.utils.media.findActiveCaptionCues
 import com.luminoverse.animevibe.utils.resource.Resource
 import kotlin.math.min
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 
 private enum class PhysicalOrientation {
     PORTRAIT, LANDSCAPE, REVERSE_LANDSCAPE, UNKNOWN;
@@ -139,7 +142,6 @@ fun VideoPlayer(
     val currentPosition by videoPlayerState.currentPosition.collectAsStateWithLifecycle()
 
     val playerHeight = videoPlayerState.playerSize.height.toFloat()
-
     val finalTranslationY = remember(playerHeight, pipEndDestinationPx, pipEndSizePx) {
         if (playerHeight > 0f) {
             (pipEndDestinationPx.y + pipEndSizePx.height / 2f) - (playerHeight / 2f)
@@ -147,13 +149,18 @@ fun VideoPlayer(
             Float.POSITIVE_INFINITY
         }
     }
-
     LaunchedEffect(finalTranslationY) {
         if (finalTranslationY != Float.POSITIVE_INFINITY) {
             onMaxDragAmountCalculated(finalTranslationY)
         }
     }
 
+    val landscapeDragOffset = remember { Animatable(0f) }
+    LaunchedEffect(isLandscape) {
+        if (!isLandscape) {
+            landscapeDragOffset.snapTo(0f)
+        }
+    }
     LaunchedEffect(isLandscape, videoPlayerState.playerSize, videoPlayerState.zoomScaleProgress) {
         val playerSize = videoPlayerState.playerSize
         val videoSize = videoPlayerState.videoSize
@@ -369,7 +376,6 @@ fun VideoPlayer(
         }
     }
 
-
     LaunchedEffect(isLandscape, displayMode) {
         val window = activity?.window ?: return@LaunchedEffect
         if (displayMode in listOf(PlayerDisplayMode.PIP, PlayerDisplayMode.SYSTEM_PIP)) {
@@ -396,20 +402,31 @@ fun VideoPlayer(
     }
 
     val isCommonPartVisible =
-        !isPlayerDisplayPip && !updatedControlsState.value.isLocked && verticalDragOffset == 0f
+        !isPlayerDisplayPip && !updatedControlsState.value.isLocked && verticalDragOffset == 0f && landscapeDragOffset.value == 0f
 
     val animatedCornerRadius by animateDpAsState(
-        targetValue = if (verticalDragOffset > 0) 8.dp else 0.dp,
+        targetValue = if (verticalDragOffset > 0 || landscapeDragOffset.value > 0) 8.dp else 0.dp,
         animationSpec = tween(durationMillis = 300),
         label = "cornerRadiusAnimation"
     )
+
+    val landscapeDragProgress = if (playerHeight > 0f) {
+        (landscapeDragOffset.value / playerHeight).coerceIn(0f, 1f)
+    } else 0f
+    val landscapeBackgroundAlpha = lerp(0f, 0.6f, landscapeDragProgress * 2)
 
     Box(
         modifier = Modifier
             .fillMaxSize()
             .onSizeChanged { videoPlayerState.playerSize = it }
+            .background(Color.Black.copy(alpha = if (isLandscape) landscapeBackgroundAlpha else 0f))
             .graphicsLayer {
-                if (isPlayerDisplayFullscreen) {
+                if (isLandscape && landscapeDragOffset.value > 0) {
+                    val scale = lerp(1f, 0.8f, landscapeDragProgress * 2)
+                    scaleX = scale
+                    scaleY = scale
+                    translationY = landscapeDragOffset.value
+                } else if (isPlayerDisplayFullscreen) {
                     val playerWidth = videoPlayerState.playerSize.width.toFloat()
                     val pHeight = videoPlayerState.playerSize.height.toFloat()
 
@@ -450,23 +467,56 @@ fun VideoPlayer(
                     updatedControlsState.value.zoom,
                     isLandscape
                 ) {
-                    awaitEachGesture {
-                        try {
-                            handleGestures(
-                                state = videoPlayerState,
-                                isPlayerDisplayFullscreen = isPlayerDisplayFullscreen,
-                                updatedControlsState = updatedControlsState,
-                                isLandscape = isLandscape,
-                                topPaddingPx = topPaddingPx,
-                                onVerticalDrag = onVerticalDrag,
-                                onDragEnd = onDragEnd
-                            )
-                        } finally {
-                            if (videoPlayerState.isHolding) {
-                                videoPlayerState.handleLongPressEnd()
-                            }
-                            if (videoPlayerState.isZooming) {
-                                videoPlayerState.isZooming = false
+                    coroutineScope {
+                        awaitEachGesture {
+                            try {
+                                handleGestures(
+                                    state = videoPlayerState,
+                                    isPlayerDisplayFullscreen = isPlayerDisplayFullscreen,
+                                    updatedControlsState = updatedControlsState,
+                                    isLandscape = isLandscape,
+                                    topPaddingPx = topPaddingPx,
+                                    onVerticalDrag = { dy ->
+                                        if (isLandscape) {
+                                            launch {
+                                                val screenHeight = size.height.toFloat()
+                                                val maxDrag = screenHeight * 0.5f
+                                                landscapeDragOffset.snapTo(
+                                                    (landscapeDragOffset.value + dy).coerceIn(
+                                                        0f, maxDrag
+                                                    )
+                                                )
+                                            }
+                                        } else {
+                                            onVerticalDrag(dy)
+                                        }
+                                    },
+                                    onDragEnd = { flingVelocity ->
+                                        if (isLandscape) {
+                                            val screenHeight = size.height.toFloat()
+                                            val threshold = screenHeight * 0.5f
+                                            if (landscapeDragOffset.value >= threshold) {
+                                                setPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN_PORTRAIT)
+                                            } else {
+                                                launch {
+                                                    landscapeDragOffset.animateTo(
+                                                        0f,
+                                                        animationSpec = spring()
+                                                    )
+                                                }
+                                            }
+                                        } else {
+                                            onDragEnd(flingVelocity)
+                                        }
+                                    }
+                                )
+                            } finally {
+                                if (videoPlayerState.isHolding) {
+                                    videoPlayerState.handleLongPressEnd()
+                                }
+                                if (videoPlayerState.isZooming) {
+                                    videoPlayerState.isZooming = false
+                                }
                             }
                         }
                     }
@@ -660,7 +710,7 @@ fun VideoPlayer(
 
         val isSkipVisible =
             displayMode != PlayerDisplayMode.SYSTEM_PIP && !updatedControlsState.value.isLocked &&
-                    verticalDragOffset == 0f && !videoPlayerState.isHolding && !videoPlayerState.isDraggingSeekBar &&
+                    verticalDragOffset == 0f && landscapeDragOffset.value == 0f && !videoPlayerState.isHolding && !videoPlayerState.isDraggingSeekBar &&
                     updatedCoreState.value.playbackState != Player.STATE_ENDED &&
                     updatedCoreState.value.playbackState != Player.STATE_IDLE &&
                     !shouldShowResumeOverlay && !videoPlayerState.isFirstLoad

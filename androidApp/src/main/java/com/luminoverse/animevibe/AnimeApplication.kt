@@ -58,7 +58,7 @@ class AnimeApplication : Application(), Configuration.Provider, ImageLoaderFacto
 
         if (BuildConfig.DEBUG) {
             setupSensor()
-            scheduleDebugNotification(this)
+//            scheduleDebugNotification(this)
         }
     }
 
