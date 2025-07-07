@@ -192,6 +192,12 @@ fun AnimeWatchContent(
                                         WatchAction.SetSideSheetVisibility(it)
                                     )
                                 },
+                                isAutoplayNextEpisodeEnabled = watchState.isAutoplayNextEpisodeEnabled,
+                                setAutoplayNextEpisodeEnabled = {
+                                    onAction(
+                                        WatchAction.SetAutoplayNextEpisodeEnabled(it)
+                                    )
+                                },
                                 rememberedTopPadding = rememberedTopPadding,
                                 verticalDragOffset = verticalDragOffset.value,
                                 onVerticalDrag = { delta ->
@@ -266,9 +272,7 @@ fun AnimeWatchContent(
                                     .clip(CircleShape)
                                     .clickable {
                                         onAction(
-                                            WatchAction.SetSideSheetVisibility(
-                                                false
-                                            )
+                                            WatchAction.SetSideSheetVisibility(false)
                                         )
                                     }
                                     .padding(8.dp),

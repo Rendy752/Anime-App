@@ -62,8 +62,8 @@ fun PlayPauseLoadingButton(
         label = "loading_border_angle"
     )
 
-    LaunchedEffect(isPlaying) {
-        mutableIsPlaying = isPlaying
+    LaunchedEffect(isPlaying, playbackState) {
+        mutableIsPlaying = if (playbackState == Player.STATE_IDLE) false else isPlaying
     }
 
     val borderModifier =
