@@ -1,5 +1,9 @@
 package com.luminoverse.animevibe.ui.common
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -8,8 +12,13 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -23,24 +32,50 @@ fun SearchView(
     keyboardType: KeyboardType = KeyboardType.Text,
     modifier: Modifier = Modifier
 ) {
+    var isFocused by remember { mutableStateOf(false) }
+
+    val searchIconTint by animateColorAsState(
+        targetValue = if (isFocused) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer,
+        label = "searchIconTintAnimation"
+    )
+
+    val clearIconTint by animateColorAsState(
+        targetValue = if (isFocused) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer,
+        label = "clearIconTintAnimation"
+    )
+
+    val labelColor by animateColorAsState(
+        targetValue = if (isFocused) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onPrimaryContainer,
+        label = "labelColorAnimation"
+    )
+
     OutlinedTextField(
         value = query,
         onValueChange = onQueryChange,
         modifier = modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(MaterialTheme.colorScheme.primaryContainer),
+            .background(MaterialTheme.colorScheme.primaryContainer)
+            .onFocusChanged { focusState ->
+                isFocused = focusState.isFocused
+            },
         leadingIcon = {
             Icon(
                 Icons.Filled.Search,
                 contentDescription = "Search",
+                tint = searchIconTint
             )
         },
         trailingIcon = {
-            if (query.isNotEmpty()) {
+            AnimatedVisibility(
+                visible = query.isNotEmpty(),
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
                 IconButton(onClick = { onQueryChange("") }) {
                     Icon(
                         Icons.Filled.Close,
                         contentDescription = "Clear",
+                        tint = clearIconTint
                     )
                 }
             }
@@ -49,7 +84,8 @@ fun SearchView(
             Text(
                 text = placeholder,
                 fontWeight = MaterialTheme.typography.bodyMedium.fontWeight,
-                maxLines = 1
+                maxLines = 1,
+                color = labelColor.copy(alpha = 0.7f)
             )
         },
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),

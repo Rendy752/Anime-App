@@ -67,6 +67,7 @@ fun AnimeHomeScreen(
     mainState: MainState = MainState(),
     currentRoute: String? = NavRoute.Home.route,
     navController: NavHostController = rememberNavController(),
+    isVideoPlayerVisible : Boolean = false,
     playEpisode: (Int, String) -> Unit = { _, _ -> },
     rememberedTopPadding: Dp = 0.dp
 ) {
@@ -95,8 +96,8 @@ fun AnimeHomeScreen(
         label = "carousel_height"
     )
 
-    LaunchedEffect(currentRoute) {
-        if (currentRoute == NavRoute.Home.route) {
+    LaunchedEffect(currentRoute, isVideoPlayerVisible) {
+        if (currentRoute == NavRoute.Home.route && !isVideoPlayerVisible) {
             onAction(HomeAction.FetchContinueWatchingEpisode)
         }
     }
@@ -232,7 +233,7 @@ fun AnimeHomeScreen(
                 }
 
                 homeState.continueWatchingEpisode?.let { continueWatchingEpisode ->
-                    if (homeState.isShowPopup && currentRoute == NavRoute.Home.route) {
+                    if (homeState.isShowPopup && currentRoute == NavRoute.Home.route && !isVideoPlayerVisible) {
                         Box(
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)

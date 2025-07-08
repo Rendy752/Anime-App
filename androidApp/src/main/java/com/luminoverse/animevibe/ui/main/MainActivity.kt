@@ -230,8 +230,7 @@ class MainActivity : AppCompatActivity() {
                         AnimatedVisibility(
                             visible = NavRoute.bottomRoutes.any { it.route == currentRoute }
                                     && state.playerState?.displayMode in listOf(
-                                PlayerDisplayMode.PIP,
-                                null
+                                PlayerDisplayMode.PIP, null
                             ),
                             enter = slideInVertically(initialOffsetY = { it }),
                             exit = slideOutVertically(targetOffsetY = { it })

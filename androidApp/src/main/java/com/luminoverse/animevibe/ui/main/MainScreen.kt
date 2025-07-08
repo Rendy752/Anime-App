@@ -7,7 +7,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -25,7 +24,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
@@ -51,17 +49,13 @@ import com.luminoverse.animevibe.ui.main.navigation.getBottomBarEnterTransition
 import com.luminoverse.animevibe.ui.main.navigation.getBottomBarExitTransition
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.main.navigation.navigateTo
-import com.luminoverse.animevibe.ui.main.navigation.navigateToAdjacentRoute
 import com.luminoverse.animevibe.ui.settings.SettingsScreen
 import com.luminoverse.animevibe.ui.settings.SettingsViewModel
 import com.luminoverse.animevibe.utils.basicContainer
 import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.launch
-import kotlin.math.abs
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,8 +70,6 @@ fun MainScreen(
     hlsPlayerUtils: HlsPlayerUtils
 ) {
     val context = LocalContext.current
-    val coroutineScope = rememberCoroutineScope()
-    var isNavigating by remember { mutableStateOf(false) }
     val layoutDirection = LocalLayoutDirection.current
 
     val isCurrentBottomScreen by remember(currentRoute) {
@@ -171,25 +163,11 @@ fun MainScreen(
 
     Box {
         Box(
-            modifier = Modifier
-                .padding(
-                    start = contentPadding.calculateStartPadding(layoutDirection),
-                    end = contentPadding.calculateEndPadding(layoutDirection),
-                    bottom = if (isCurrentBottomScreen || !mainState.isLandscape) rememberedBottomPadding else 0.dp
-                )
-                .pointerInput(Unit) {
-                    detectHorizontalDragGestures { _, dragAmount ->
-                        if (abs(dragAmount) > 100f && !isNavigating) {
-                            isNavigating = true
-                            coroutineScope.launch(Dispatchers.Main) {
-                                val isNextLogical =
-                                    if (mainState.isRtl) dragAmount > 0 else dragAmount < 0
-                                navigateToAdjacentRoute(isNextLogical, currentRoute, navController)
-                                isNavigating = false
-                            }
-                        }
-                    }
-                }
+            modifier = Modifier.padding(
+                start = contentPadding.calculateStartPadding(layoutDirection),
+                end = contentPadding.calculateEndPadding(layoutDirection),
+                bottom = if (isCurrentBottomScreen || !mainState.isLandscape) rememberedBottomPadding else 0.dp
+            )
         ) {
             Column {
                 NavHost(
@@ -197,32 +175,16 @@ fun MainScreen(
                     navController = navController,
                     startDestination = NavRoute.Home.route,
                     enterTransition = {
-                        getBottomBarEnterTransition(
-                            initialState,
-                            targetState,
-                            mainState.isRtl
-                        )
+                        getBottomBarEnterTransition(initialState, targetState)
                     },
                     exitTransition = {
-                        getBottomBarExitTransition(
-                            initialState,
-                            targetState,
-                            mainState.isRtl
-                        )
+                        getBottomBarExitTransition(initialState, targetState)
                     },
                     popEnterTransition = {
-                        getBottomBarEnterTransition(
-                            initialState,
-                            targetState,
-                            mainState.isRtl
-                        )
+                        getBottomBarEnterTransition(initialState, targetState)
                     },
                     popExitTransition = {
-                        getBottomBarExitTransition(
-                            initialState,
-                            targetState,
-                            mainState.isRtl
-                        )
+                        getBottomBarExitTransition(initialState, targetState)
                     }
                 ) {
                     composable(NavRoute.Home.route) {
@@ -238,6 +200,7 @@ fun MainScreen(
                             mainState = mainState,
                             currentRoute = currentRoute,
                             navController = navController,
+                            isVideoPlayerVisible = mainState.playerState != null,
                             playEpisode = { malId, episodeId ->
                                 mainAction.invoke(MainAction.PlayEpisode(malId, episodeId))
                             },
