@@ -251,7 +251,7 @@ fun VideoPlayer(
         displayMode in listOf(PlayerDisplayMode.PIP, PlayerDisplayMode.SYSTEM_PIP)
 
     val isOverlayVisible =
-        !isPlayerDisplayPip && !controlsState.isLocked && verticalDragOffset == 0f && videoPlayerState.landscapeDragOffset.value == 0f
+        displayMode != PlayerDisplayMode.SYSTEM_PIP && !controlsState.isLocked && verticalDragOffset == 0f && videoPlayerState.landscapeDragOffset.value == 0f
 
     val animatedCornerRadius by animateDpAsState(
         targetValue = if (verticalDragOffset > 0 || videoPlayerState.landscapeDragOffset.value > 0) 8.dp else 0.dp,

@@ -118,7 +118,7 @@ private fun SubtitleText(
         lineHeight = lineHeight,
         drawStyle = Stroke(
             miter = 10f,
-            width = 2.5f,
+            width = 5f,
             join = StrokeJoin.Round
         )
     )
