@@ -134,12 +134,19 @@ fun AnimeWatchScreen(
         }
     }
 
-    val verticalDragOffset = remember { Animatable(0f) }
+    val portraitDragOffset = remember { Animatable(0f) }
+    LaunchedEffect(mainState.isLandscape) {
+        if (mainState.isLandscape) portraitDragOffset.snapTo(0f)
+    }
     var maxVerticalDrag by remember { mutableFloatStateOf(Float.POSITIVE_INFINITY) }
     val screenHeightPx =
         with(LocalDensity.current) { LocalConfiguration.current.screenHeightDp.dp.toPx() }
+
     val dismissDragThreshold = if (maxVerticalDrag.isFinite()) maxVerticalDrag else screenHeightPx
-    val dragProgress = (verticalDragOffset.value / dismissDragThreshold).coerceIn(0f, 1f)
+    val pipDragProgress = (portraitDragOffset.value / dismissDragThreshold).coerceIn(0f, 1f)
+
+    val maxUpwardDrag = screenHeightPx * -0.5f
+    val landscapeDragProgress = (portraitDragOffset.value / maxUpwardDrag).coerceIn(0f, 1f)
 
     Box(
         modifier = Modifier
@@ -162,10 +169,12 @@ fun AnimeWatchScreen(
             playerDisplayMode = playerDisplayMode,
             setPlayerDisplayMode = setPlayerDisplayMode,
             onEnterSystemPipMode = onEnterSystemPipMode,
-            dragProgress = dragProgress,
+            pipDragProgress = pipDragProgress,
+            landscapeDragProgress = landscapeDragProgress,
             maxVerticalDrag = maxVerticalDrag,
+            maxUpwardDrag = maxUpwardDrag,
             setMaxVerticalDrag = { maxVerticalDrag = it },
-            verticalDragOffset = verticalDragOffset,
+            portraitDragOffset = portraitDragOffset,
             rememberedTopPadding = rememberedTopPadding,
             rememberedBottomPadding = rememberedBottomPadding,
             pipWidth = pipWidth,
@@ -173,7 +182,7 @@ fun AnimeWatchScreen(
             pipEndSizePx = pipEndSizePx
         )
 
-        if (dragProgress > 0f) {
+        if (pipDragProgress > 0f) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()

@@ -105,7 +105,8 @@ fun VideoPlayer(
     isAutoplayNextEpisodeEnabled: Boolean,
     setAutoplayNextEpisodeEnabled: (Boolean) -> Unit,
     rememberedTopPadding: Dp,
-    verticalDragOffset: Float,
+    portraitDragOffset: Float,
+    landscapeDragProgress: Float,
     onVerticalDrag: (Float) -> Unit,
     onDragEnd: (flingVelocity: Float) -> Unit,
     pipWidth: Dp,
@@ -251,21 +252,20 @@ fun VideoPlayer(
         displayMode in listOf(PlayerDisplayMode.PIP, PlayerDisplayMode.SYSTEM_PIP)
 
     val isOverlayVisible =
-        displayMode != PlayerDisplayMode.SYSTEM_PIP && !controlsState.isLocked && verticalDragOffset == 0f && videoPlayerState.landscapeDragOffset.value == 0f
+        displayMode != PlayerDisplayMode.SYSTEM_PIP && !controlsState.isLocked && portraitDragOffset == 0f && videoPlayerState.landscapeDragOffset.value == 0f
 
     val animatedCornerRadius by animateDpAsState(
-        targetValue = if (verticalDragOffset > 0 || videoPlayerState.landscapeDragOffset.value > 0) 8.dp else 0.dp,
+        targetValue = if (portraitDragOffset != 0f || videoPlayerState.landscapeDragOffset.value > 0) 8.dp else 0.dp,
         animationSpec = tween(durationMillis = 300),
         label = "cornerRadiusAnimation"
     )
 
-    val landscapeDragProgress = if (videoPlayerState.playerContainerSize.height > 0f) {
+    val currentLandscapeDragProgress = if (videoPlayerState.playerContainerSize.height > 0f) {
         (videoPlayerState.landscapeDragOffset.value / videoPlayerState.playerContainerSize.height).coerceIn(
-            0f,
-            1f
+            0f, 1f
         )
     } else 0f
-    val landscapeBackgroundAlpha = lerp(0f, 0.6f, landscapeDragProgress * 2)
+    val landscapeBackgroundAlpha = lerp(0f, 0.6f, currentLandscapeDragProgress * 2)
     // endregion
 
     Box(
@@ -274,40 +274,46 @@ fun VideoPlayer(
             .onSizeChanged { videoPlayerState.playerContainerSize = it }
             .background(Color.Black.copy(alpha = if (isLandscape) landscapeBackgroundAlpha else 0f))
             .graphicsLayer {
-                // Logic for landscape drag-to-dismiss and portrait drag-to-pip animations
                 if (isLandscape && videoPlayerState.landscapeDragOffset.value > 0) {
-                    val scale = lerp(1f, 0.8f, landscapeDragProgress * 2)
+                    val scale = lerp(1f, 0.8f, currentLandscapeDragProgress * 2)
                     scaleX = scale
                     scaleY = scale
                     translationY = videoPlayerState.landscapeDragOffset.value
                 } else if (isPlayerDisplayFullscreen) {
-                    val playerWidth = videoPlayerState.playerContainerSize.width.toFloat()
-                    val playerHeight = videoPlayerState.playerContainerSize.height.toFloat()
+                    if (portraitDragOffset < 0) {
+                        val scale = lerp(1f, 1.1f, landscapeDragProgress * 4)
+                        val playerHeight = videoPlayerState.playerContainerSize.height.toFloat()
 
-                    if (playerWidth > 0f && playerHeight > 0f) {
-                        val targetScale = min(
-                            pipEndSizePx.width / playerWidth,
-                            pipEndSizePx.height / playerHeight
-                        )
-                        val finalTranslationX =
-                            (pipEndDestinationPx.x + pipEndSizePx.width / 2f) - (playerWidth / 2f)
-                        val finalTranslationY =
-                            (pipEndDestinationPx.y + pipEndSizePx.height / 2f) - (playerHeight / 2f)
-                        val progress =
-                            if (finalTranslationY > 0f) (verticalDragOffset / finalTranslationY).coerceIn(
-                                0f,
-                                1f
-                            ) else 0f
+                        scaleX = scale
+                        scaleY = scale
+                        translationY = - (playerHeight * (scale - 1)) / 2
+                    } else {
+                        val playerWidth = videoPlayerState.playerContainerSize.width.toFloat()
+                        val playerHeight = videoPlayerState.playerContainerSize.height.toFloat()
 
-                        translationY = verticalDragOffset
-                        translationX = lerp(0f, finalTranslationX, progress)
-                        scaleX = lerp(1f, targetScale, progress)
-                        scaleY = lerp(1f, targetScale, progress)
+                        if (playerWidth > 0f && playerHeight > 0f) {
+                            val targetScale = min(
+                                pipEndSizePx.width / playerWidth,
+                                pipEndSizePx.height / playerHeight
+                            )
+                            val finalTranslationX =
+                                (pipEndDestinationPx.x + pipEndSizePx.width / 2f) - (playerWidth / 2f)
+                            val finalTranslationY =
+                                (pipEndDestinationPx.y + pipEndSizePx.height / 2f) - (playerHeight / 2f)
+                            val pipProgress =
+                                if (finalTranslationY > 0f) (portraitDragOffset / finalTranslationY).coerceIn(
+                                    0f, 1f
+                                ) else 0f
+
+                            translationY = portraitDragOffset
+                            translationX = lerp(0f, finalTranslationX, pipProgress)
+                            scaleX = lerp(1f, targetScale, pipProgress)
+                            scaleY = lerp(1f, targetScale, pipProgress)
+                        }
                     }
                 }
             }
     ) {
-        // Player View Container with Gesture Input
         Box(
             modifier = Modifier
                 .fillMaxSize()

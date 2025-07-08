@@ -17,6 +17,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -63,11 +64,9 @@ import com.luminoverse.animevibe.ui.animeWatch.components.videoPlayer.PlayPauseL
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
 import com.luminoverse.animevibe.utils.media.PipUtil.buildPipActions
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import kotlin.math.abs
-import androidx.compose.foundation.gestures.awaitEachGesture
-import kotlinx.coroutines.flow.collectLatest
-
 
 @SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
@@ -199,14 +198,8 @@ fun PlayerHost(
 
                             scope.launch {
                                 val currentVal = animatableRelativeOffset.value
-                                val newRelativeX =
-                                    (currentVal.x + (dragAmount.x / draggableWidth)).coerceIn(
-                                        0f, 1f
-                                    )
-                                val newRelativeY =
-                                    (currentVal.y + (dragAmount.y / draggableHeight)).coerceIn(
-                                        0f, 1f
-                                    )
+                                val newRelativeX = currentVal.x + (dragAmount.x / draggableWidth)
+                                val newRelativeY = currentVal.y + (dragAmount.y / draggableHeight)
                                 animatableRelativeOffset.snapTo(Offset(newRelativeX, newRelativeY))
                             }
                         }
@@ -226,8 +219,13 @@ fun PlayerHost(
                             targetOffset = Offset(targetX, targetY)
                         }
 
+                        val correctedTargetOffset = Offset(
+                            x = targetOffset.x.coerceIn(0f, 1f),
+                            y = targetOffset.y.coerceIn(0f, 1f)
+                        )
+
                         scope.launch {
-                            animatableRelativeOffset.animateTo(targetOffset, spring())
+                            animatableRelativeOffset.animateTo(correctedTargetOffset, spring())
                             onAction(
                                 MainAction.UpdatePlayerPipRelativeOffset(
                                     animatableRelativeOffset.value

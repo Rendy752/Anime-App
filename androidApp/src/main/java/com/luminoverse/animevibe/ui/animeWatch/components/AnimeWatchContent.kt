@@ -81,10 +81,12 @@ fun AnimeWatchContent(
     playerDisplayMode: PlayerDisplayMode,
     setPlayerDisplayMode: (PlayerDisplayMode) -> Unit,
     onEnterSystemPipMode: () -> Unit,
-    dragProgress: Float,
+    pipDragProgress: Float,
+    landscapeDragProgress: Float,
     maxVerticalDrag: Float,
+    maxUpwardDrag: Float,
     setMaxVerticalDrag: (Float) -> Unit,
-    verticalDragOffset: Animatable<Float, *>,
+    portraitDragOffset: Animatable<Float, *>,
     rememberedTopPadding: Dp,
     rememberedBottomPadding: Dp,
     pipWidth: Dp,
@@ -99,25 +101,25 @@ fun AnimeWatchContent(
     val isPortrait = !mainState.isLandscape && playerDisplayMode in listOf(
         PlayerDisplayMode.FULLSCREEN_LANDSCAPE, PlayerDisplayMode.FULLSCREEN_PORTRAIT
     )
-    val isSideSheetVisible = !isPortrait && watchState.isSideSheetVisible && dragProgress == 0f
+    val isSideSheetVisible = !isPortrait && watchState.isSideSheetVisible && pipDragProgress == 0f
 
     val scope = rememberCoroutineScope()
     val animatedBackgroundColor by animateColorAsState(
-        targetValue = MaterialTheme.colorScheme.background.copy(alpha = 1f - dragProgress),
+        targetValue = MaterialTheme.colorScheme.background.copy(alpha = 1f - pipDragProgress),
         animationSpec = tween(durationMillis = 150),
         label = "backgroundAlpha"
     )
 
     val contentModifier = Modifier
         .graphicsLayer {
-            translationY = verticalDragOffset.value
-            alpha = 1f - (dragProgress * 1.5f).coerceIn(0f, 1f)
+            translationY = portraitDragOffset.value.coerceAtLeast(0f)
+            alpha = 1f - (pipDragProgress * 1.5f).coerceIn(0f, 1f)
         }
         .background(animatedBackgroundColor)
         .padding(bottom = if (isPortrait) rememberedBottomPadding else 0.dp)
         .padding(horizontal = 8.dp)
         .fillMaxSize()
-        .blur(radius = (dragProgress * 10.dp).coerceAtMost(10.dp))
+        .blur(radius = (pipDragProgress * 10.dp).coerceAtMost(10.dp))
 
     Column(modifier = Modifier.fillMaxSize()) {
         val columnScrollState = rememberScrollState()
@@ -199,35 +201,39 @@ fun AnimeWatchContent(
                                     )
                                 },
                                 rememberedTopPadding = rememberedTopPadding,
-                                verticalDragOffset = verticalDragOffset.value,
+                                portraitDragOffset = portraitDragOffset.value,
+                                landscapeDragProgress = landscapeDragProgress,
                                 onVerticalDrag = { delta ->
                                     scope.launch {
-                                        val newOffset =
-                                            (verticalDragOffset.value + delta).coerceIn(
-                                                0f, maxVerticalDrag
-                                            )
-                                        verticalDragOffset.snapTo(newOffset)
+                                        val newOffset = (portraitDragOffset.value + delta)
+                                            .coerceIn(maxUpwardDrag, maxVerticalDrag)
+                                        portraitDragOffset.snapTo(newOffset)
                                     }
                                 },
                                 onDragEnd = { flingVelocity ->
                                     scope.launch {
-                                        val flingVelocityThreshold = 1.8f
-                                        val positionThreshold = maxVerticalDrag * 0.5f
+                                        val flingToPipThreshold = 1.8f
+                                        val flingToLandscapeThreshold = -1.8f
+                                        val pipPositionThreshold = maxVerticalDrag * 0.5f
+                                        val landscapePositionThreshold = maxUpwardDrag * 0.25f
 
-                                        if (flingVelocity > flingVelocityThreshold) {
-                                            setPlayerDisplayMode(PlayerDisplayMode.PIP)
-                                            verticalDragOffset.snapTo(0f)
-                                        } else if (flingVelocity < -flingVelocityThreshold) {
-                                            verticalDragOffset.animateTo(
-                                                0f,
-                                                animationSpec = tween(durationMillis = 300)
-                                            )
-                                        } else {
-                                            if (maxVerticalDrag.isFinite() && verticalDragOffset.value > positionThreshold) {
+                                        when {
+                                            flingVelocity > flingToPipThreshold -> {
                                                 setPlayerDisplayMode(PlayerDisplayMode.PIP)
-                                                verticalDragOffset.snapTo(0f)
-                                            } else {
-                                                verticalDragOffset.animateTo(
+                                                portraitDragOffset.snapTo(0f)
+                                            }
+                                            flingVelocity < flingToLandscapeThreshold -> {
+                                                setPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN_LANDSCAPE)
+                                            }
+                                            maxVerticalDrag.isFinite() && portraitDragOffset.value > pipPositionThreshold -> {
+                                                setPlayerDisplayMode(PlayerDisplayMode.PIP)
+                                                portraitDragOffset.snapTo(0f)
+                                            }
+                                            portraitDragOffset.value < landscapePositionThreshold -> {
+                                                setPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN_LANDSCAPE)
+                                            }
+                                            else -> {
+                                                portraitDragOffset.animateTo(
                                                     0f,
                                                     animationSpec = tween(durationMillis = 300)
                                                 )
