@@ -3,6 +3,7 @@ package com.luminoverse.animevibe.ui.animeWatch.components.videoPlayer
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -111,6 +112,9 @@ private fun SubtitleText(
     }
 
     val lineHeight = fontSize * 1.3f
+
+    val shadowOffset = 1.dp
+
     val outlineStyle = TextStyle(
         fontFamily = SubtitleFontFamily,
         color = Color.Black,
@@ -131,6 +135,13 @@ private fun SubtitleText(
     )
 
     Box {
+        Text(
+            text = annotatedString,
+            textAlign = TextAlign.Center,
+            style = outlineStyle,
+            modifier = Modifier.offset(x = shadowOffset, y = shadowOffset)
+        )
+
         Text(
             text = annotatedString,
             textAlign = TextAlign.Center,
