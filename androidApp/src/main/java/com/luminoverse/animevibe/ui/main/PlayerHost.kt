@@ -20,10 +20,8 @@ import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -321,8 +319,10 @@ fun PlayerHost(
             if (!mainState.isLandscape && !isPipMode) {
                 val serverScrollState = rememberScrollState()
                 val columnScrollState = rememberScrollState()
+                val playerHeight = configuration.screenWidthDp.dp * (9f / 16f)
                 Column(
                     modifier = Modifier
+                        .padding(top = playerHeight)
                         .graphicsLayer {
                             translationY = portraitDragOffset.value.coerceAtLeast(0f)
                             alpha = 1f - (pipDragProgress * 1.5f).coerceIn(0f, 1f)
@@ -333,9 +333,6 @@ fun PlayerHost(
                         .verticalScroll(columnScrollState),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    val playerHeight = LocalConfiguration.current.screenWidthDp.dp * (9f / 16f)
-                    Spacer(Modifier.height(playerHeight))
-
                     if (watchState.animeDetailComplement?.episodes != null
                         && watchState.animeDetail?.mal_id == playerState.malId
                     ) WatchContentSection(

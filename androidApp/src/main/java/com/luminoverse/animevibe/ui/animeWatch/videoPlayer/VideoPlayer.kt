@@ -9,6 +9,7 @@ import android.support.v4.media.MediaBrowserCompat
 import android.util.Log
 import androidx.annotation.OptIn
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -29,6 +30,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
@@ -72,6 +74,7 @@ import com.luminoverse.animevibe.utils.media.PlayerCoreState
 import com.luminoverse.animevibe.utils.resource.Resource
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import kotlin.math.min
 
 /**
@@ -105,7 +108,8 @@ fun VideoPlayer(
     isAutoplayNextEpisodeEnabled: Boolean,
     setAutoplayNextEpisodeEnabled: (Boolean) -> Unit,
     rememberedTopPadding: Dp,
-    portraitDragOffset: Float,
+    portraitDragOffset: Animatable<Float, *>,
+    maxVerticalDrag: Float,
     pipDragProgress: Float,
     landscapeDragProgress: Float,
     onVerticalDrag: (Float) -> Unit,
@@ -116,6 +120,7 @@ fun VideoPlayer(
     onMaxDragAmountCalculated: (Float) -> Unit
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
 
     // region Service Connection and Player Setup
     val playerView = remember { PlayerView(context).apply { useController = false } }
@@ -253,10 +258,10 @@ fun VideoPlayer(
         displayMode in listOf(PlayerDisplayMode.PIP, PlayerDisplayMode.SYSTEM_PIP)
 
     val isOverlayVisible =
-        displayMode != PlayerDisplayMode.SYSTEM_PIP && !controlsState.isLocked && portraitDragOffset == 0f && videoPlayerState.landscapeDragOffset.value == 0f
+        displayMode != PlayerDisplayMode.SYSTEM_PIP && !controlsState.isLocked && portraitDragOffset.value == 0f && videoPlayerState.landscapeDragOffset.value == 0f
 
     val animatedCornerRadius by animateDpAsState(
-        targetValue = if (displayMode == PlayerDisplayMode.PIP || portraitDragOffset != 0f || videoPlayerState.landscapeDragOffset.value > 0) 8.dp else 0.dp,
+        targetValue = if (displayMode == PlayerDisplayMode.PIP || portraitDragOffset.value != 0f || videoPlayerState.landscapeDragOffset.value > 0) 8.dp else 0.dp,
         animationSpec = tween(durationMillis = 300),
         label = "cornerRadiusAnimation"
     )
@@ -281,13 +286,13 @@ fun VideoPlayer(
                     scaleY = scale
                     translationY = videoPlayerState.landscapeDragOffset.value
                 } else if (displayMode == PlayerDisplayMode.FULLSCREEN_PORTRAIT || displayMode == PlayerDisplayMode.FULLSCREEN_LANDSCAPE) {
-                    if (portraitDragOffset < 0) {
+                    if (portraitDragOffset.value < 0) {
                         val scale = lerp(1f, 1.1f, landscapeDragProgress * 4)
                         val playerHeight = videoPlayerState.playerContainerSize.height.toFloat()
                         scaleX = scale
                         scaleY = scale
                         translationY = -(playerHeight * (scale - 1)) / 2
-                    } else if (portraitDragOffset > 0) {
+                    } else if (portraitDragOffset.value > 0) {
                         val playerWidth = videoPlayerState.playerContainerSize.width.toFloat()
                         val playerHeight = videoPlayerState.playerContainerSize.height.toFloat()
 
@@ -458,7 +463,13 @@ fun VideoPlayer(
                 ?: 0,
                 playbackState = coreState.playbackState,
                 isRefreshing = isRefreshing,
-                setPlayerDisplayMode = setPlayerDisplayMode,
+                setPlayerDisplayMode = {
+                    scope.launch {
+                        portraitDragOffset.animateTo(maxVerticalDrag, spring(stiffness = 400f))
+                        setPlayerDisplayMode(it)
+                        portraitDragOffset.snapTo(0f)
+                    }
+                },
                 episodeDetailComplement = episodeDetailComplement,
                 hasPreviousEpisode = prevEpisode != null,
                 nextEpisode = nextEpisode,

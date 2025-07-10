@@ -100,8 +100,9 @@ fun AnimeWatchScreen(
     pipEndDestinationPx: Offset,
     pipEndSizePx: IntSize
 ) {
-    var isScreenOn by remember { mutableStateOf(true) }
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    var isScreenOn by remember { mutableStateOf(true) }
     val activity = context as? MainActivity
     val screenOffReceiver = remember {
         ScreenOffReceiver {
@@ -115,7 +116,11 @@ fun AnimeWatchScreen(
         if (playerDisplayMode == PlayerDisplayMode.FULLSCREEN_LANDSCAPE) {
             setPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN_PORTRAIT)
         } else {
-            setPlayerDisplayMode(PlayerDisplayMode.PIP)
+            scope.launch {
+                portraitDragOffset.animateTo(maxVerticalDrag, spring(stiffness = 400f))
+                setPlayerDisplayMode(PlayerDisplayMode.PIP)
+                portraitDragOffset.snapTo(0f)
+            }
         }
     }
 
@@ -158,7 +163,11 @@ fun AnimeWatchScreen(
         if (!mainState.networkStatus.isConnected) return@LaunchedEffect
         if (getPlayer()?.isPlaying == false) dispatchPlayerAction(HlsPlayerAction.Play)
         if (watchState.episodeDetailComplement == null && watchState.episodeSourcesQuery != null) {
-            onAction(WatchAction.HandleSelectedEpisodeServer(watchState.episodeSourcesQuery, isRefresh = true))
+            onAction(
+                WatchAction.HandleSelectedEpisodeServer(
+                    watchState.episodeSourcesQuery, isRefresh = true
+                )
+            )
         }
     }
 
@@ -173,8 +182,6 @@ fun AnimeWatchScreen(
         PlayerDisplayMode.FULLSCREEN_LANDSCAPE, PlayerDisplayMode.FULLSCREEN_PORTRAIT
     )
     val isSideSheetVisible = !isPortrait && watchState.isSideSheetVisible && pipDragProgress == 0f
-
-    val scope = rememberCoroutineScope()
 
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val containerWidth = this.maxWidth
@@ -212,24 +219,42 @@ fun AnimeWatchScreen(
                             captureScreenshot = captureScreenshot,
                             updateStoredWatchState = { currentPosition, duration, screenShot ->
                                 onAction(WatchAction.UpdateLastEpisodeWatchedId(watchState.episodeDetailComplement.id))
-                                onAction(WatchAction.UpdateStoredWatchState(currentPosition, duration, screenShot))
+                                onAction(
+                                    WatchAction.UpdateStoredWatchState(
+                                        currentPosition, duration, screenShot
+                                    )
+                                )
                             },
                             isScreenOn = isScreenOn,
                             isAutoPlayVideo = mainState.isAutoPlayVideo,
                             episodes = watchState.animeDetailComplement.episodes,
                             episodeSourcesQuery = watchState.episodeSourcesQuery,
                             handleSelectedEpisodeServer = { episodeSourcesQuery, isRefresh ->
-                                onAction(WatchAction.HandleSelectedEpisodeServer(episodeSourcesQuery, isRefresh))
+                                onAction(
+                                    WatchAction.HandleSelectedEpisodeServer(
+                                        episodeSourcesQuery,
+                                        isRefresh
+                                    )
+                                )
                             },
                             displayMode = playerDisplayMode,
                             setPlayerDisplayMode = setPlayerDisplayMode,
                             onEnterSystemPipMode = onEnterSystemPipMode,
                             isSideSheetVisible = watchState.isSideSheetVisible,
-                            setSideSheetVisibility = { onAction(WatchAction.SetSideSheetVisibility(it)) },
+                            setSideSheetVisibility = {
+                                onAction(
+                                    WatchAction.SetSideSheetVisibility(it)
+                                )
+                            },
                             isAutoplayNextEpisodeEnabled = watchState.isAutoplayNextEpisodeEnabled,
-                            setAutoplayNextEpisodeEnabled = { onAction(WatchAction.SetAutoplayNextEpisodeEnabled(it)) },
+                            setAutoplayNextEpisodeEnabled = {
+                                onAction(
+                                    WatchAction.SetAutoplayNextEpisodeEnabled(it)
+                                )
+                            },
                             rememberedTopPadding = rememberedTopPadding,
-                            portraitDragOffset = portraitDragOffset.value,
+                            portraitDragOffset = portraitDragOffset,
+                            maxVerticalDrag = maxVerticalDrag,
                             pipDragProgress = pipDragProgress,
                             landscapeDragProgress = landscapeDragProgress,
                             onVerticalDrag = { delta ->
@@ -246,20 +271,27 @@ fun AnimeWatchScreen(
                                     val pipPositionThreshold = maxVerticalDrag * 0.5f
                                     val landscapePositionThreshold = maxUpwardDrag * 0.25f
 
-                                    val shouldGoToPip = (flingVelocity > flingToPipThreshold && portraitDragOffset.value > 0) ||
-                                            (maxVerticalDrag.isFinite() && portraitDragOffset.value > pipPositionThreshold)
-                                    val shouldGoToLandscape = (flingVelocity < flingToLandscapeThreshold && portraitDragOffset.value < 0) ||
-                                            (portraitDragOffset.value < landscapePositionThreshold)
+                                    val shouldGoToPip =
+                                        (flingVelocity > flingToPipThreshold && portraitDragOffset.value > 0) ||
+                                                (maxVerticalDrag.isFinite() && portraitDragOffset.value > pipPositionThreshold)
+                                    val shouldGoToLandscape =
+                                        (flingVelocity < flingToLandscapeThreshold && portraitDragOffset.value < 0) ||
+                                                (portraitDragOffset.value < landscapePositionThreshold)
 
                                     when {
                                         shouldGoToPip -> {
-                                            portraitDragOffset.animateTo(maxVerticalDrag, spring(stiffness = 400f))
+                                            portraitDragOffset.animateTo(
+                                                maxVerticalDrag,
+                                                spring(stiffness = 400f)
+                                            )
                                             setPlayerDisplayMode(PlayerDisplayMode.PIP)
                                             portraitDragOffset.snapTo(0f)
                                         }
+
                                         shouldGoToLandscape -> {
                                             setPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN_LANDSCAPE)
                                         }
+
                                         else -> {
                                             portraitDragOffset.animateTo(0f, spring())
                                         }
@@ -275,7 +307,9 @@ fun AnimeWatchScreen(
                 }
 
                 this@Row.AnimatedVisibility(
-                    modifier = Modifier.align(Alignment.TopStart).padding(4.dp),
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(4.dp),
                     visible = playerDisplayMode == PlayerDisplayMode.PIP,
                     enter = fadeIn(),
                     exit = fadeOut(animationSpec = tween(durationMillis = 0))
@@ -292,7 +326,9 @@ fun AnimeWatchScreen(
                 }
 
                 this@Row.AnimatedVisibility(
-                    modifier = Modifier.align(Alignment.TopEnd).padding(4.dp),
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(4.dp),
                     visible = playerDisplayMode == PlayerDisplayMode.PIP,
                     enter = fadeIn(),
                     exit = fadeOut(animationSpec = tween(durationMillis = 0))
@@ -306,14 +342,19 @@ fun AnimeWatchScreen(
                                 dispatchPlayerAction(HlsPlayerAction.Reset)
                                 closePlayer()
                             }
-                            .background(color = Color.Black.copy(alpha = 0.4f), shape = CircleShape),
+                            .background(
+                                color = Color.Black.copy(alpha = 0.4f),
+                                shape = CircleShape
+                            ),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Close Custom Picture In Picture Player",
                             tint = Color.White,
-                            modifier = Modifier.size(32.dp).align(Alignment.Center)
+                            modifier = Modifier
+                                .size(32.dp)
+                                .align(Alignment.Center)
                         )
                     }
                 }
