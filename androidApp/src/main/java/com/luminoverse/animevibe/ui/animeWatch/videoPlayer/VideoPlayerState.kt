@@ -92,7 +92,10 @@ class VideoPlayerState(
             val currentPosition = currentPositionMs.collectAsStateWithLifecycle().value
             return controlsState.value.selectedSubtitle?.file?.let { url ->
                 captionCues[url]?.let { cues ->
-                    findActiveCaptionCues(currentPosition, cues)
+                    findActiveCaptionCues(
+                        if (isDraggingSeekBar) dragSeekPositionMs else currentPosition,
+                        cues
+                    )
                 }
             }
         }
