@@ -28,6 +28,7 @@ fun WatchContentSection(
     episodeJumpNumber: Int?,
     setEpisodeJumpNumber: (Int) -> Unit,
     serverScrollState: ScrollState,
+    isError: Boolean,
     isRefreshing: Boolean,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery, Boolean) -> Unit,
 ) {
@@ -43,6 +44,7 @@ fun WatchContentSection(
             episodeDetailComplement = episodeDetailComplement,
             episodeSourcesQuery = episodeSourcesQuery,
             serverScrollState = serverScrollState,
+            isError = isError,
             isRefreshing = isRefreshing,
             onRefresh = { episodeSourcesQuery?.let { handleSelectedEpisodeServer(it, true) } },
             onServerSelected = { episodeSourcesQuery ->

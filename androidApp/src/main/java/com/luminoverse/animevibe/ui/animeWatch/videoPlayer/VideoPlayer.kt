@@ -286,7 +286,7 @@ fun VideoPlayer(
 
                         scaleX = scale
                         scaleY = scale
-                        translationY = - (playerHeight * (scale - 1)) / 2
+                        translationY = -(playerHeight * (scale - 1)) / 2
                     } else {
                         val playerWidth = videoPlayerState.playerContainerSize.width.toFloat()
                         val playerHeight = videoPlayerState.playerContainerSize.height.toFloat()
@@ -461,7 +461,6 @@ fun VideoPlayer(
                 ?: 0,
                 playbackState = coreState.playbackState,
                 isRefreshing = isRefreshing,
-                playbackErrorMessage = coreState.error,
                 setPlayerDisplayMode = setPlayerDisplayMode,
                 episodeDetailComplement = episodeDetailComplement,
                 hasPreviousEpisode = prevEpisode != null,

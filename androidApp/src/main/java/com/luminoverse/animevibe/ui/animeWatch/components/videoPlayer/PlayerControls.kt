@@ -61,7 +61,6 @@ fun PlayerControls(
     duration: Long,
     playbackState: Int,
     isRefreshing: Boolean,
-    playbackErrorMessage: String?,
     setPlayerDisplayMode: (PlayerDisplayMode) -> Unit,
     episodeDetailComplement: EpisodeDetailComplement,
     hasPreviousEpisode: Boolean,
@@ -118,7 +117,6 @@ fun PlayerControls(
 
         MiddleSection(
             modifier = Modifier.align(Alignment.Center),
-            playbackErrorMessage = playbackErrorMessage,
             shouldShowControls = shouldShowControls,
             hasPreviousEpisode = hasPreviousEpisode,
             playbackState = playbackState,
@@ -299,7 +297,6 @@ private fun TopSection(
 @Composable
 private fun MiddleSection(
     modifier: Modifier,
-    playbackErrorMessage: String?,
     shouldShowControls: Boolean,
     hasPreviousEpisode: Boolean,
     playbackState: Int,
@@ -351,7 +348,6 @@ private fun MiddleSection(
             }
 
             PlayPauseLoadingButton(
-                playbackErrorMessage = playbackErrorMessage,
                 playbackState = playbackState,
                 isRefreshing = isRefreshing,
                 isPlaying = isPlaying,

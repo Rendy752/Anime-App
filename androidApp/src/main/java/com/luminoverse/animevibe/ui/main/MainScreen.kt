@@ -198,7 +198,6 @@ fun MainScreen(
                             remainingTimes = remainingTimes,
                             onAction = viewModel::onAction,
                             mainState = mainState,
-                            currentRoute = currentRoute,
                             navController = navController,
                             isVideoPlayerVisible = mainState.playerState != null,
                             playEpisode = { malId, episodeId ->

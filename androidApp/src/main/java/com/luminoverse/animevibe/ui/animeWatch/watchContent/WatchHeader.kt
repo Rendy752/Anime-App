@@ -29,6 +29,7 @@ fun WatchHeader(
     episodeDetailComplement: EpisodeDetailComplement?,
     episodeSourcesQuery: EpisodeSourcesQuery?,
     serverScrollState: ScrollState,
+    isError: Boolean,
     isRefreshing: Boolean,
     onRefresh: () -> Unit,
     onServerSelected: (EpisodeSourcesQuery) -> Unit,
@@ -53,6 +54,7 @@ fun WatchHeader(
         ) {
             CurrentlyWatchingHeader(
                 networkStatus = networkStatus,
+                isError = isError,
                 isRefreshing = isRefreshing,
                 onRefresh = onRefresh,
                 onFavoriteToggle = {

@@ -35,6 +35,7 @@ import com.luminoverse.animevibe.utils.basicContainer
 @Composable
 fun CurrentlyWatchingHeader(
     networkStatus: NetworkStatus,
+    isError: Boolean,
     isRefreshing: Boolean,
     onRefresh: () -> Unit,
     onFavoriteToggle: () -> Unit,
@@ -91,7 +92,8 @@ fun CurrentlyWatchingHeader(
             Row(
                 horizontalArrangement = Arrangement.Center,
                 modifier = Modifier.basicContainer(
-                    isPrimary = !isRefreshing,
+                    isPrimary = !isError,
+                    isError = isError,
                     onItemClick = { if (isRefreshing) null else onRefresh() },
                     outerPadding = PaddingValues(0.dp),
                     innerPadding = PaddingValues(4.dp)
@@ -103,7 +105,7 @@ fun CurrentlyWatchingHeader(
                     modifier = Modifier.size(36.dp),
                     imageVector = Icons.Default.Refresh,
                     contentDescription = "Retry",
-                    tint = MaterialTheme.colorScheme.onPrimary
+                    tint = if (isError) MaterialTheme.colorScheme.onError else MaterialTheme.colorScheme.onPrimary
                 )
             }
         }

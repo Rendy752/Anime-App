@@ -65,9 +65,8 @@ fun AnimeHomeScreen(
     remainingTimes: Map<String, String> = emptyMap(),
     onAction: (HomeAction) -> Unit = {},
     mainState: MainState = MainState(),
-    currentRoute: String? = NavRoute.Home.route,
     navController: NavHostController = rememberNavController(),
-    isVideoPlayerVisible : Boolean = false,
+    isVideoPlayerVisible: Boolean = false,
     playEpisode: (Int, String) -> Unit = { _, _ -> },
     rememberedTopPadding: Dp = 0.dp
 ) {
@@ -96,10 +95,8 @@ fun AnimeHomeScreen(
         label = "carousel_height"
     )
 
-    LaunchedEffect(currentRoute, isVideoPlayerVisible) {
-        if (currentRoute == NavRoute.Home.route && !isVideoPlayerVisible) {
-            onAction(HomeAction.FetchContinueWatchingEpisode)
-        }
+    LaunchedEffect(isVideoPlayerVisible) {
+        if (!isVideoPlayerVisible) onAction(HomeAction.FetchContinueWatchingEpisode)
     }
 
     LaunchedEffect(homeState.isMinimized) {
@@ -233,7 +230,7 @@ fun AnimeHomeScreen(
                 }
 
                 homeState.continueWatchingEpisode?.let { continueWatchingEpisode ->
-                    if (homeState.isShowPopup && currentRoute == NavRoute.Home.route && !isVideoPlayerVisible) {
+                    if (homeState.isShowPopup && !isVideoPlayerVisible) {
                         Box(
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)
