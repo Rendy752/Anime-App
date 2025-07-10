@@ -106,6 +106,7 @@ fun VideoPlayer(
     setAutoplayNextEpisodeEnabled: (Boolean) -> Unit,
     rememberedTopPadding: Dp,
     portraitDragOffset: Float,
+    pipDragProgress: Float,
     landscapeDragProgress: Float,
     onVerticalDrag: (Float) -> Unit,
     onDragEnd: (flingVelocity: Float) -> Unit,
@@ -255,7 +256,7 @@ fun VideoPlayer(
         displayMode != PlayerDisplayMode.SYSTEM_PIP && !controlsState.isLocked && portraitDragOffset == 0f && videoPlayerState.landscapeDragOffset.value == 0f
 
     val animatedCornerRadius by animateDpAsState(
-        targetValue = if (portraitDragOffset != 0f || videoPlayerState.landscapeDragOffset.value > 0) 8.dp else 0.dp,
+        targetValue = if (displayMode == PlayerDisplayMode.PIP || portraitDragOffset != 0f || videoPlayerState.landscapeDragOffset.value > 0) 8.dp else 0.dp,
         animationSpec = tween(durationMillis = 300),
         label = "cornerRadiusAnimation"
     )
@@ -279,15 +280,14 @@ fun VideoPlayer(
                     scaleX = scale
                     scaleY = scale
                     translationY = videoPlayerState.landscapeDragOffset.value
-                } else if (isPlayerDisplayFullscreen) {
+                } else if (displayMode == PlayerDisplayMode.FULLSCREEN_PORTRAIT || displayMode == PlayerDisplayMode.FULLSCREEN_LANDSCAPE) {
                     if (portraitDragOffset < 0) {
                         val scale = lerp(1f, 1.1f, landscapeDragProgress * 4)
                         val playerHeight = videoPlayerState.playerContainerSize.height.toFloat()
-
                         scaleX = scale
                         scaleY = scale
                         translationY = -(playerHeight * (scale - 1)) / 2
-                    } else {
+                    } else if (portraitDragOffset > 0) {
                         val playerWidth = videoPlayerState.playerContainerSize.width.toFloat()
                         val playerHeight = videoPlayerState.playerContainerSize.height.toFloat()
 
@@ -295,20 +295,17 @@ fun VideoPlayer(
                             val targetScale = min(
                                 pipEndSizePx.width / playerWidth,
                                 pipEndSizePx.height / playerHeight
-                            )
+                            ).coerceAtLeast(0.1f)
+
                             val finalTranslationX =
                                 (pipEndDestinationPx.x + pipEndSizePx.width / 2f) - (playerWidth / 2f)
                             val finalTranslationY =
                                 (pipEndDestinationPx.y + pipEndSizePx.height / 2f) - (playerHeight / 2f)
-                            val pipProgress =
-                                if (finalTranslationY > 0f) (portraitDragOffset / finalTranslationY).coerceIn(
-                                    0f, 1f
-                                ) else 0f
 
-                            translationY = portraitDragOffset
-                            translationX = lerp(0f, finalTranslationX, pipProgress)
-                            scaleX = lerp(1f, targetScale, pipProgress)
-                            scaleY = lerp(1f, targetScale, pipProgress)
+                            translationX = lerp(0f, finalTranslationX, pipDragProgress)
+                            translationY = lerp(0f, finalTranslationY, pipDragProgress)
+                            scaleX = lerp(1f, targetScale, pipDragProgress)
+                            scaleY = lerp(1f, targetScale, pipDragProgress)
                         }
                     }
                 }

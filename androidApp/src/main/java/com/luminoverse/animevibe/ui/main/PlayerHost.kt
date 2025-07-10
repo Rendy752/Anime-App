@@ -18,11 +18,12 @@ import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.drag
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
@@ -45,6 +46,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
@@ -112,7 +114,6 @@ fun PlayerHost(
                         if (isInPipMode) PlayerDisplayMode.SYSTEM_PIP else PlayerDisplayMode.FULLSCREEN_PORTRAIT
                     onAction(MainAction.SetPlayerDisplayMode(updatedPlayerDisplayMode))
                     Log.d("MainScreen", "PiP mode changed: isInPipMode=$isInPipMode")
-                    Unit
                 }
             activity?.addOnPictureInPictureModeChangedListener(
                 onPictureInPictureModeChangedCallback
@@ -134,10 +135,6 @@ fun PlayerHost(
                 }
             }
             if (mainState.playerState?.displayMode == PlayerDisplayMode.SYSTEM_PIP && activity != null) {
-                Log.d(
-                    "MainScreen",
-                    "Updating PiP params: isPlaying=${playerCoreState.isPlaying}"
-                )
                 val actions = buildPipActions(activity, playerCoreState.isPlaying)
                 activity.setPictureInPictureParams(
                     PictureInPictureParams.Builder()
@@ -155,6 +152,7 @@ fun PlayerHost(
                 activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             }
         }
+
 
         val configuration = LocalConfiguration.current
         val density = LocalDensity.current
@@ -233,7 +231,47 @@ fun PlayerHost(
             )
         }
 
-        val pipModifier = Modifier
+        val pipDragModifier = Modifier.pointerInput(draggableWidth, draggableHeight) {
+            awaitEachGesture {
+                val down = awaitFirstDown(requireUnconsumed = false)
+                var lastVelocity = Offset.Zero
+                drag(down.id) { change ->
+                    val dt = change.uptimeMillis - change.previousUptimeMillis
+                    val dp = change.position - change.previousPosition
+                    if (dt > 0) {
+                        lastVelocity = dp / dt.toFloat()
+                    }
+                    val dragAmount = change.position - change.previousPosition
+                    change.consume()
+                    scope.launch {
+                        val currentVal = animatableRelativeOffset.value
+                        val newRelativeX = currentVal.x + (dragAmount.x / draggableWidth)
+                        val newRelativeY = currentVal.y + (dragAmount.y / draggableHeight)
+                        animatableRelativeOffset.snapTo(Offset(newRelativeX, newRelativeY))
+                    }
+                }
+                val flingVelocityThreshold = 1.5f
+                val currentOffset = animatableRelativeOffset.value
+                var targetOffset = currentOffset
+                val isFlingX = abs(lastVelocity.x) > flingVelocityThreshold
+                val isFlingY = abs(lastVelocity.y) > flingVelocityThreshold
+                if (isFlingX || isFlingY) {
+                    val targetX =
+                        if (isFlingX) (if (lastVelocity.x > 0) 1f else 0f) else currentOffset.x
+                    val targetY =
+                        if (isFlingY) (if (lastVelocity.y > 0) 1f else 0f) else currentOffset.y
+                    targetOffset = Offset(targetX, targetY)
+                }
+                val correctedTargetOffset =
+                    Offset(x = targetOffset.x.coerceIn(0f, 1f), y = targetOffset.y.coerceIn(0f, 1f))
+                scope.launch {
+                    animatableRelativeOffset.animateTo(correctedTargetOffset, spring())
+                    onAction(MainAction.UpdatePlayerPipRelativeOffset(animatableRelativeOffset.value))
+                }
+            }
+        }
+
+        val pipPlacementModifier = Modifier
             .graphicsLayer {
                 translationX = minX + (animatableRelativeOffset.value.x * draggableWidth)
                 translationY = minY + (animatableRelativeOffset.value.y * draggableHeight)
@@ -259,124 +297,28 @@ fun PlayerHost(
                     onAction(MainAction.SetPlayerPipWidth(newWidth))
                 }
             )
-            .pointerInput(draggableWidth, draggableHeight) {
-                awaitEachGesture {
-                    val down = awaitFirstDown(requireUnconsumed = false)
-                    var lastVelocity = Offset.Zero
+            .then(pipDragModifier)
 
-                    drag(down.id) { change ->
-                        val dt = change.uptimeMillis - change.previousUptimeMillis
-                        val dp = change.position - change.previousPosition
-                        if (dt > 0) {
-                            lastVelocity = dp / dt.toFloat()
-                        }
-
-                        val dragAmount = change.position - change.previousPosition
-                        change.consume()
-
-                        scope.launch {
-                            val currentVal = animatableRelativeOffset.value
-                            val newRelativeX = currentVal.x + (dragAmount.x / draggableWidth)
-                            val newRelativeY = currentVal.y + (dragAmount.y / draggableHeight)
-                            animatableRelativeOffset.snapTo(Offset(newRelativeX, newRelativeY))
-                        }
-                    }
-
-                    val flingVelocityThreshold = 1.5f
-                    val currentOffset = animatableRelativeOffset.value
-                    var targetOffset = currentOffset
-
-                    val isFlingX = abs(lastVelocity.x) > flingVelocityThreshold
-                    val isFlingY = abs(lastVelocity.y) > flingVelocityThreshold
-
-                    if (isFlingX || isFlingY) {
-                        val targetX =
-                            if (isFlingX) (if (lastVelocity.x > 0) 1f else 0f) else currentOffset.x
-                        val targetY =
-                            if (isFlingY) (if (lastVelocity.y > 0) 1f else 0f) else currentOffset.y
-                        targetOffset = Offset(targetX, targetY)
-                    }
-
-                    val correctedTargetOffset = Offset(
-                        x = targetOffset.x.coerceIn(0f, 1f),
-                        y = targetOffset.y.coerceIn(0f, 1f)
-                    )
-
-                    scope.launch {
-                        animatableRelativeOffset.animateTo(correctedTargetOffset, spring())
-                        onAction(
-                            MainAction.UpdatePlayerPipRelativeOffset(
-                                animatableRelativeOffset.value
-                            )
-                        )
-                    }
-                }
-            }
-
+        val isPipMode =
+            playerState.displayMode in listOf(PlayerDisplayMode.SYSTEM_PIP, PlayerDisplayMode.PIP)
         val animatedBackgroundColor by animateColorAsState(
-            targetValue = MaterialTheme.colorScheme.background.copy(alpha = 1f - pipDragProgress),
+            targetValue = if (isPipMode) Color.Transparent else MaterialTheme.colorScheme.background.copy(
+                alpha = 1f - pipDragProgress
+            ),
             animationSpec = tween(durationMillis = 150),
             label = "backgroundAlpha"
         )
 
-        val containerModifier = when (playerState.displayMode) {
-            PlayerDisplayMode.PIP -> pipModifier
-            else -> Modifier
-                .background(animatedBackgroundColor)
+        Box(
+            modifier = Modifier
                 .fillMaxSize()
+                .background(animatedBackgroundColor)
                 .padding(
-                    top = if (mainState.isLandscape) 0.dp else rememberedTopPadding,
-                    bottom = if (mainState.isLandscape) 0.dp else rememberedBottomPadding
+                    top = if (mainState.isLandscape || isPipMode) 0.dp else rememberedTopPadding,
+                    bottom = if (mainState.isLandscape || isPipMode) 0.dp else rememberedBottomPadding
                 )
-        }
-
-        Box(modifier = containerModifier) {
-            Column(modifier = Modifier.fillMaxSize()) {
-                AnimeWatchScreen(
-                    malId = playerState.malId,
-                    episodeId = playerState.episodeId,
-                    playerDisplayMode = playerState.displayMode,
-                    setPlayerDisplayMode = { onAction(MainAction.SetPlayerDisplayMode(it)) },
-                    navController = navController,
-                    networkDataSource = watchViewModel.networkDataSource,
-                    mainState = mainState,
-                    showSnackbar = { onAction(MainAction.ShowSnackbar(it)) },
-                    dismissSnackbar = { onAction(MainAction.DismissSnackbar) },
-                    closePlayer = { onAction(MainAction.ClosePlayer) },
-                    watchState = watchState,
-                    hlsPlayerCoreState = playerCoreState,
-                    hlsControlsStateFlow = watchViewModel.controlsState,
-                    onAction = watchViewModel::onAction,
-                    dispatchPlayerAction = watchViewModel::dispatchPlayerAction,
-                    getPlayer = watchViewModel::getPlayer,
-                    captureScreenshot = { watchViewModel.captureScreenshot() },
-                    onEnterSystemPipMode = {
-                        if (activity != null) {
-                            Log.d(
-                                "MainScreen",
-                                "Entering PiP: isPlaying=${playerCoreState.isPlaying}"
-                            )
-                            val actions =
-                                buildPipActions(activity, playerCoreState.isPlaying)
-                            activity.enterPictureInPictureMode(
-                                PictureInPictureParams.Builder()
-                                    .setActions(actions)
-                                    .build()
-                            )
-                            onAction(MainAction.SetPlayerDisplayMode(PlayerDisplayMode.SYSTEM_PIP))
-                        }
-                    },
-                    rememberedTopPadding = rememberedTopPadding,
-                    screenHeightPx = screenHeightPx,
-                    portraitDragOffset = portraitDragOffset,
-                    pipDragProgress = pipDragProgress,
-                    maxVerticalDrag = maxVerticalDrag,
-                    setMaxVerticalDrag = { maxVerticalDrag = it },
-                    pipWidth = animatedPipWidth,
-                    pipEndDestinationPx = pipEndDestinationPx,
-                    pipEndSizePx = pipEndSizePx
-                )
-
+        ) {
+            if (!mainState.isLandscape && !isPipMode) {
                 val serverScrollState = rememberScrollState()
                 val columnScrollState = rememberScrollState()
                 Column(
@@ -385,57 +327,59 @@ fun PlayerHost(
                             translationY = portraitDragOffset.value.coerceAtLeast(0f)
                             alpha = 1f - (pipDragProgress * 1.5f).coerceIn(0f, 1f)
                         }
-                        .padding(horizontal = 8.dp)
                         .fillMaxSize()
                         .blur(radius = (pipDragProgress * 10.dp).coerceAtMost(10.dp))
+                        .padding(horizontal = 8.dp)
                         .verticalScroll(columnScrollState),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    if (!mainState.isLandscape && mainState.playerState?.displayMode == PlayerDisplayMode.FULLSCREEN_PORTRAIT
-                        && watchState.animeDetailComplement?.episodes != null
+                    val playerHeight = LocalConfiguration.current.screenWidthDp.dp * (9f / 16f)
+                    Spacer(Modifier.height(playerHeight))
+
+                    if (watchState.animeDetailComplement?.episodes != null
                         && watchState.animeDetail?.mal_id == playerState.malId
-                    ) {
-                        WatchContentSection(
-                            animeDetail = watchState.animeDetail,
-                            networkStatus = mainState.networkStatus,
-                            onFavoriteToggle = { isFavorite ->
-                                watchViewModel.onAction(WatchAction.SetFavorite(isFavorite))
-                            },
-                            episodeDetailComplement = watchState.episodeDetailComplement,
-                            onLoadEpisodeDetailComplement = {
-                                watchViewModel.onAction(
-                                    WatchAction.LoadEpisodeDetailComplement(
-                                        it
-                                    )
+                    ) WatchContentSection(
+                        animeDetail = watchState.animeDetail,
+                        networkStatus = mainState.networkStatus,
+                        onFavoriteToggle = { isFavorite ->
+                            watchViewModel.onAction(
+                                WatchAction.SetFavorite(
+                                    isFavorite
                                 )
-                            },
-                            episodeDetailComplements = watchState.episodeDetailComplements,
-                            episodes = watchState.animeDetailComplement?.episodes
-                                ?: emptyList(),
-                            newEpisodeIdList = watchState.newEpisodeIdList,
-                            episodeSourcesQuery = watchState.episodeSourcesQuery,
-                            episodeJumpNumber = watchState.episodeJumpNumber,
-                            setEpisodeJumpNumber = {
-                                watchViewModel.onAction(
-                                    WatchAction.SetEpisodeJumpNumber(
-                                        it
-                                    )
+                            )
+                        },
+                        episodeDetailComplement = watchState.episodeDetailComplement,
+                        onLoadEpisodeDetailComplement = {
+                            watchViewModel.onAction(
+                                WatchAction.LoadEpisodeDetailComplement(
+                                    it
                                 )
-                            },
-                            serverScrollState = serverScrollState,
-                            isError = playerCoreState.error != null,
-                            isRefreshing = watchState.isRefreshing,
-                            handleSelectedEpisodeServer = { episodeSourcesQuery, isRefresh ->
-                                watchViewModel.onAction(
-                                    WatchAction.HandleSelectedEpisodeServer(
-                                        episodeSourcesQuery = episodeSourcesQuery,
-                                        isRefresh = isRefresh
-                                    )
+                            )
+                        },
+                        episodeDetailComplements = watchState.episodeDetailComplements,
+                        episodes = watchState.animeDetailComplement?.episodes ?: emptyList(),
+                        newEpisodeIdList = watchState.newEpisodeIdList,
+                        episodeSourcesQuery = watchState.episodeSourcesQuery,
+                        episodeJumpNumber = watchState.episodeJumpNumber,
+                        setEpisodeJumpNumber = {
+                            watchViewModel.onAction(
+                                WatchAction.SetEpisodeJumpNumber(
+                                    it
                                 )
-                            },
-                        )
-                    }
+                            )
+                        },
+                        serverScrollState = serverScrollState,
+                        isError = playerCoreState.error != null,
+                        isRefreshing = watchState.isRefreshing,
+                        handleSelectedEpisodeServer = { episodeSourcesQuery, isRefresh ->
+                            watchViewModel.onAction(
+                                WatchAction.HandleSelectedEpisodeServer(
+                                    episodeSourcesQuery,
+                                    isRefresh
+                                )
+                            )
+                        },
+                    )
                     InfoContentSection(
                         animeDetail = watchState.animeDetail,
                         navController = navController,
@@ -444,7 +388,46 @@ fun PlayerHost(
                 }
             }
 
-            if (pipDragProgress > 0f) {
+            AnimeWatchScreen(
+                modifier = if (playerState.displayMode == PlayerDisplayMode.PIP) pipPlacementModifier else Modifier,
+                malId = playerState.malId,
+                episodeId = playerState.episodeId,
+                playerDisplayMode = playerState.displayMode,
+                setPlayerDisplayMode = { onAction(MainAction.SetPlayerDisplayMode(it)) },
+                navController = navController,
+                networkDataSource = watchViewModel.networkDataSource,
+                mainState = mainState,
+                showSnackbar = { onAction(MainAction.ShowSnackbar(it)) },
+                dismissSnackbar = { onAction(MainAction.DismissSnackbar) },
+                closePlayer = { onAction(MainAction.ClosePlayer) },
+                watchState = watchState,
+                hlsPlayerCoreState = playerCoreState,
+                hlsControlsStateFlow = watchViewModel.controlsState,
+                onAction = watchViewModel::onAction,
+                dispatchPlayerAction = watchViewModel::dispatchPlayerAction,
+                getPlayer = watchViewModel::getPlayer,
+                captureScreenshot = { watchViewModel.captureScreenshot() },
+                onEnterSystemPipMode = {
+                    if (activity != null) {
+                        val actions = buildPipActions(activity, playerCoreState.isPlaying)
+                        activity.enterPictureInPictureMode(
+                            PictureInPictureParams.Builder().setActions(actions).build()
+                        )
+                        onAction(MainAction.SetPlayerDisplayMode(PlayerDisplayMode.SYSTEM_PIP))
+                    }
+                },
+                rememberedTopPadding = rememberedTopPadding,
+                screenHeightPx = screenHeightPx,
+                portraitDragOffset = portraitDragOffset,
+                pipDragProgress = pipDragProgress,
+                maxVerticalDrag = maxVerticalDrag,
+                setMaxVerticalDrag = { maxVerticalDrag = it },
+                pipWidth = animatedPipWidth,
+                pipEndDestinationPx = pipEndDestinationPx,
+                pipEndSizePx = pipEndSizePx
+            )
+
+            if (pipDragProgress > 0f && mainState.playerState?.displayMode == PlayerDisplayMode.FULLSCREEN_PORTRAIT) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()

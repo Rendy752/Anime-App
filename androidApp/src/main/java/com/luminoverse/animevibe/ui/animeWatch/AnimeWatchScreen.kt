@@ -8,6 +8,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -32,7 +33,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -71,6 +71,7 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AnimeWatchScreen(
+    modifier: Modifier = Modifier,
     malId: Int,
     episodeId: String,
     playerDisplayMode: PlayerDisplayMode,
@@ -135,12 +136,7 @@ fun AnimeWatchScreen(
 
     fun refreshEpisodeSources() {
         watchState.episodeSourcesQuery?.let { episodeSourcesQuery ->
-            onAction(
-                WatchAction.HandleSelectedEpisodeServer(
-                    episodeSourcesQuery,
-                    isRefresh = true
-                )
-            )
+            onAction(WatchAction.HandleSelectedEpisodeServer(episodeSourcesQuery, isRefresh = true))
         }
     }
 
@@ -162,11 +158,7 @@ fun AnimeWatchScreen(
         if (!mainState.networkStatus.isConnected) return@LaunchedEffect
         if (getPlayer()?.isPlaying == false) dispatchPlayerAction(HlsPlayerAction.Play)
         if (watchState.episodeDetailComplement == null && watchState.episodeSourcesQuery != null) {
-            onAction(
-                WatchAction.HandleSelectedEpisodeServer(
-                    watchState.episodeSourcesQuery, isRefresh = true
-                )
-            )
+            onAction(WatchAction.HandleSelectedEpisodeServer(watchState.episodeSourcesQuery, isRefresh = true))
         }
     }
 
@@ -184,18 +176,15 @@ fun AnimeWatchScreen(
 
     val scope = rememberCoroutineScope()
 
-    BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val containerWidth = this.maxWidth
         Row(modifier = Modifier.fillMaxWidth()) {
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
                     .then(
-                        if (isPortrait) {
-                            Modifier.height(screenWidth * 9 / 16)
-                        } else {
-                            Modifier.fillMaxSize()
-                        }
+                        if (playerDisplayMode == PlayerDisplayMode.PIP) Modifier.fillMaxSize()
+                        else if (isPortrait) Modifier.height(screenWidth * 9 / 16)
+                        else Modifier.fillMaxSize()
                     )
                     .weight(1f)
             ) {
@@ -206,11 +195,12 @@ fun AnimeWatchScreen(
                             ?: watchState.animeDetail?.images?.webp?.large_image_url,
                         ratio = ImageAspectRatio.WIDESCREEN.ratio,
                         contentDescription = "Anime cover",
-                        roundedCorners = ImageRoundedCorner.NONE
+                        roundedCorners = if (playerDisplayMode == PlayerDisplayMode.PIP) ImageRoundedCorner.ALL else ImageRoundedCorner.NONE
                     )
                 } else {
-                    player?.let { player ->
+                    player?.let { exoPlayer ->
                         VideoPlayer(
+                            player = exoPlayer,
                             episodeDetailComplement = watchState.episodeDetailComplement,
                             episodeDetailComplements = watchState.episodeDetailComplements,
                             isRefreshing = watchState.isRefreshing,
@@ -219,45 +209,28 @@ fun AnimeWatchScreen(
                             controlsStateFlow = hlsControlsStateFlow,
                             playerAction = dispatchPlayerAction,
                             isLandscape = mainState.isLandscape,
-                            player = player,
                             captureScreenshot = captureScreenshot,
                             updateStoredWatchState = { currentPosition, duration, screenShot ->
                                 onAction(WatchAction.UpdateLastEpisodeWatchedId(watchState.episodeDetailComplement.id))
-                                onAction(
-                                    WatchAction.UpdateStoredWatchState(
-                                        currentPosition, duration, screenShot
-                                    )
-                                )
+                                onAction(WatchAction.UpdateStoredWatchState(currentPosition, duration, screenShot))
                             },
                             isScreenOn = isScreenOn,
                             isAutoPlayVideo = mainState.isAutoPlayVideo,
                             episodes = watchState.animeDetailComplement.episodes,
                             episodeSourcesQuery = watchState.episodeSourcesQuery,
                             handleSelectedEpisodeServer = { episodeSourcesQuery, isRefresh ->
-                                onAction(
-                                    WatchAction.HandleSelectedEpisodeServer(
-                                        episodeSourcesQuery = episodeSourcesQuery,
-                                        isRefresh = isRefresh
-                                    )
-                                )
+                                onAction(WatchAction.HandleSelectedEpisodeServer(episodeSourcesQuery, isRefresh))
                             },
                             displayMode = playerDisplayMode,
                             setPlayerDisplayMode = setPlayerDisplayMode,
                             onEnterSystemPipMode = onEnterSystemPipMode,
                             isSideSheetVisible = watchState.isSideSheetVisible,
-                            setSideSheetVisibility = {
-                                onAction(
-                                    WatchAction.SetSideSheetVisibility(it)
-                                )
-                            },
+                            setSideSheetVisibility = { onAction(WatchAction.SetSideSheetVisibility(it)) },
                             isAutoplayNextEpisodeEnabled = watchState.isAutoplayNextEpisodeEnabled,
-                            setAutoplayNextEpisodeEnabled = {
-                                onAction(
-                                    WatchAction.SetAutoplayNextEpisodeEnabled(it)
-                                )
-                            },
+                            setAutoplayNextEpisodeEnabled = { onAction(WatchAction.SetAutoplayNextEpisodeEnabled(it)) },
                             rememberedTopPadding = rememberedTopPadding,
                             portraitDragOffset = portraitDragOffset.value,
+                            pipDragProgress = pipDragProgress,
                             landscapeDragProgress = landscapeDragProgress,
                             onVerticalDrag = { delta ->
                                 scope.launch {
@@ -273,30 +246,22 @@ fun AnimeWatchScreen(
                                     val pipPositionThreshold = maxVerticalDrag * 0.5f
                                     val landscapePositionThreshold = maxUpwardDrag * 0.25f
 
+                                    val shouldGoToPip = (flingVelocity > flingToPipThreshold && portraitDragOffset.value > 0) ||
+                                            (maxVerticalDrag.isFinite() && portraitDragOffset.value > pipPositionThreshold)
+                                    val shouldGoToLandscape = (flingVelocity < flingToLandscapeThreshold && portraitDragOffset.value < 0) ||
+                                            (portraitDragOffset.value < landscapePositionThreshold)
+
                                     when {
-                                        flingVelocity > flingToPipThreshold && portraitDragOffset.value > 0 -> {
+                                        shouldGoToPip -> {
+                                            portraitDragOffset.animateTo(maxVerticalDrag, spring(stiffness = 400f))
                                             setPlayerDisplayMode(PlayerDisplayMode.PIP)
                                             portraitDragOffset.snapTo(0f)
                                         }
-
-                                        flingVelocity < flingToLandscapeThreshold && portraitDragOffset.value < 0 -> {
+                                        shouldGoToLandscape -> {
                                             setPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN_LANDSCAPE)
                                         }
-
-                                        maxVerticalDrag.isFinite() && portraitDragOffset.value > pipPositionThreshold -> {
-                                            setPlayerDisplayMode(PlayerDisplayMode.PIP)
-                                            portraitDragOffset.snapTo(0f)
-                                        }
-
-                                        portraitDragOffset.value < landscapePositionThreshold -> {
-                                            setPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN_LANDSCAPE)
-                                        }
-
                                         else -> {
-                                            portraitDragOffset.animateTo(
-                                                0f,
-                                                animationSpec = tween(durationMillis = 300)
-                                            )
+                                            portraitDragOffset.animateTo(0f, spring())
                                         }
                                     }
                                 }
@@ -310,9 +275,7 @@ fun AnimeWatchScreen(
                 }
 
                 this@Row.AnimatedVisibility(
-                    modifier = Modifier
-                        .align(Alignment.TopStart)
-                        .padding(4.dp),
+                    modifier = Modifier.align(Alignment.TopStart).padding(4.dp),
                     visible = playerDisplayMode == PlayerDisplayMode.PIP,
                     enter = fadeIn(),
                     exit = fadeOut(animationSpec = tween(durationMillis = 0))
@@ -329,9 +292,7 @@ fun AnimeWatchScreen(
                 }
 
                 this@Row.AnimatedVisibility(
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(4.dp),
+                    modifier = Modifier.align(Alignment.TopEnd).padding(4.dp),
                     visible = playerDisplayMode == PlayerDisplayMode.PIP,
                     enter = fadeIn(),
                     exit = fadeOut(animationSpec = tween(durationMillis = 0))
@@ -340,28 +301,19 @@ fun AnimeWatchScreen(
                         modifier = Modifier
                             .size(48.dp)
                             .clip(CircleShape)
-                            .clickable(
-                                onClick = {
-                                    onAction(
-                                        WatchAction.SetInitialState(malId, episodeId)
-                                    )
-                                    dispatchPlayerAction(HlsPlayerAction.Reset)
-                                    closePlayer()
-                                }
-                            )
-                            .background(
-                                color = Color.Black.copy(alpha = 0.4f),
-                                shape = CircleShape
-                            ),
+                            .clickable {
+                                onAction(WatchAction.SetInitialState(malId, episodeId))
+                                dispatchPlayerAction(HlsPlayerAction.Reset)
+                                closePlayer()
+                            }
+                            .background(color = Color.Black.copy(alpha = 0.4f), shape = CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = "Close Custom Picture In Picture Player",
                             tint = Color.White,
-                            modifier = Modifier
-                                .size(32.dp)
-                                .align(Alignment.Center)
+                            modifier = Modifier.size(32.dp).align(Alignment.Center)
                         )
                     }
                 }
