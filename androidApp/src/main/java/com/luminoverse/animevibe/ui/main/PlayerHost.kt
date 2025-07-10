@@ -6,6 +6,7 @@ import android.util.Log
 import android.view.WindowManager
 import androidx.activity.compose.LocalActivity
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.animateDpAsState
@@ -31,14 +32,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -86,6 +90,8 @@ fun PlayerHost(
         Box(modifier = Modifier.fillMaxSize()) {
             val configuration = LocalConfiguration.current
             val density = LocalDensity.current
+            val screenWidthPx = with(density) { configuration.screenWidthDp.dp.toPx() }
+            val screenHeightPx = with(density) { configuration.screenHeightDp.dp.toPx() }
             val scope = rememberCoroutineScope()
 
             val animatableRelativeOffset =
@@ -97,13 +103,20 @@ fun PlayerHost(
                 }
             }
 
+            val portraitDragOffset = remember { Animatable(0f) }
+            LaunchedEffect(mainState.isLandscape) {
+                if (mainState.isLandscape) portraitDragOffset.snapTo(0f)
+            }
+            var maxVerticalDrag by remember { mutableFloatStateOf(Float.POSITIVE_INFINITY) }
+
+            val dismissDragThreshold =
+                if (maxVerticalDrag.isFinite()) maxVerticalDrag else screenHeightPx
+            val pipDragProgress = (portraitDragOffset.value / dismissDragThreshold).coerceIn(0f, 1f)
+
             val topPaddingPx = with(density) { rememberedTopPadding.toPx() }
             val bottomPaddingPx = with(density) { rememberedBottomPadding.toPx() }
             val startPaddingPx = with(density) { startPadding.toPx() }
             val endPaddingPx = with(density) { endPadding.toPx() }
-
-            val screenWidthPx = with(density) { configuration.screenWidthDp.dp.toPx() }
-            val screenHeightPx = with(density) { configuration.screenHeightDp.dp.toPx() }
 
             val animatedPipWidth by animateDpAsState(
                 targetValue = playerState.pipWidth, animationSpec = spring(), label = "pipWidth"
@@ -235,9 +248,21 @@ fun PlayerHost(
                     }
                 }
 
+            val animatedBackgroundColor by animateColorAsState(
+                targetValue = MaterialTheme.colorScheme.background.copy(alpha = 1f - pipDragProgress),
+                animationSpec = tween(durationMillis = 150),
+                label = "backgroundAlpha"
+            )
+
             val containerModifier = when (playerState.displayMode) {
                 PlayerDisplayMode.PIP -> pipModifier
-                else -> Modifier.fillMaxSize()
+                else -> Modifier
+                    .background(animatedBackgroundColor)
+                    .fillMaxSize()
+                    .padding(
+                        top = if (mainState.isLandscape) 0.dp else rememberedTopPadding,
+                        bottom = if (mainState.isLandscape) 0.dp else rememberedBottomPadding
+                    )
             }
 
             Box(modifier = containerModifier) {
@@ -345,7 +370,11 @@ fun PlayerHost(
                         }
                     },
                     rememberedTopPadding = rememberedTopPadding,
-                    rememberedBottomPadding = rememberedBottomPadding,
+                    screenHeightPx = screenHeightPx,
+                    portraitDragOffset = portraitDragOffset,
+                    pipDragProgress = pipDragProgress,
+                    maxVerticalDrag = maxVerticalDrag,
+                    setMaxVerticalDrag = { maxVerticalDrag = it },
                     pipWidth = animatedPipWidth,
                     pipEndDestinationPx = pipEndDestinationPx,
                     pipEndSizePx = pipEndSizePx

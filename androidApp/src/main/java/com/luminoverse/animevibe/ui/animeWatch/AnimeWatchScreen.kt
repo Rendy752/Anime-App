@@ -6,25 +6,52 @@ import android.content.IntentFilter
 import android.content.pm.ActivityInfo
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.unit.times
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.navigation.NavHostController
 import com.luminoverse.animevibe.data.remote.api.NetworkDataSource
-import com.luminoverse.animevibe.ui.animeWatch.components.AnimeWatchContent
+import com.luminoverse.animevibe.ui.animeWatch.components.InfoContentSection
+import com.luminoverse.animevibe.ui.animeWatch.videoPlayer.VideoPlayer
+import com.luminoverse.animevibe.ui.animeWatch.watchContent.WatchContentSection
+import com.luminoverse.animevibe.ui.common.ImageAspectRatio
+import com.luminoverse.animevibe.ui.common.ImageDisplay
+import com.luminoverse.animevibe.ui.common.ImageRoundedCorner
 import com.luminoverse.animevibe.ui.main.MainActivity
 import com.luminoverse.animevibe.ui.main.MainState
 import com.luminoverse.animevibe.ui.main.PlayerDisplayMode
@@ -36,6 +63,7 @@ import com.luminoverse.animevibe.utils.media.PlayerCoreState
 import com.luminoverse.animevibe.utils.receivers.ScreenOffReceiver
 import com.luminoverse.animevibe.utils.receivers.ScreenOnReceiver
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 
 @SuppressLint("SourceLockedOrientationActivity", "ConfigurationScreenWidthHeight")
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,7 +86,11 @@ fun AnimeWatchScreen(
     captureScreenshot: suspend () -> String?,
     onEnterSystemPipMode: () -> Unit,
     rememberedTopPadding: Dp,
-    rememberedBottomPadding: Dp,
+    screenHeightPx: Float,
+    portraitDragOffset: Animatable<Float, *>,
+    pipDragProgress: Float,
+    maxVerticalDrag: Float,
+    setMaxVerticalDrag: (Float) -> Unit,
     pipWidth: Dp,
     pipEndDestinationPx: Offset,
     pipEndSizePx: IntSize
@@ -134,64 +166,267 @@ fun AnimeWatchScreen(
         }
     }
 
-    val portraitDragOffset = remember { Animatable(0f) }
-    LaunchedEffect(mainState.isLandscape) {
-        if (mainState.isLandscape) portraitDragOffset.snapTo(0f)
-    }
-    var maxVerticalDrag by remember { mutableFloatStateOf(Float.POSITIVE_INFINITY) }
-    val screenHeightPx =
-        with(LocalDensity.current) { LocalConfiguration.current.screenHeightDp.dp.toPx() }
-
-    val dismissDragThreshold = if (maxVerticalDrag.isFinite()) maxVerticalDrag else screenHeightPx
-    val pipDragProgress = (portraitDragOffset.value / dismissDragThreshold).coerceIn(0f, 1f)
-
     val maxUpwardDrag = screenHeightPx * -0.5f
     val landscapeDragProgress = (portraitDragOffset.value / maxUpwardDrag).coerceIn(0f, 1f)
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(0.dp)
-    ) {
-        AnimeWatchContent(
-            malId = malId,
-            navController = navController,
-            networkDataSource = networkDataSource,
-            watchState = watchState,
-            isScreenOn = isScreenOn,
-            mainState = mainState,
-            playerCoreState = hlsPlayerCoreState,
-            controlsStateFlow = hlsControlsStateFlow,
-            dispatchPlayerAction = dispatchPlayerAction,
-            getPlayer = getPlayer,
-            captureScreenshot = captureScreenshot,
-            onAction = onAction,
-            playerDisplayMode = playerDisplayMode,
-            setPlayerDisplayMode = setPlayerDisplayMode,
-            onEnterSystemPipMode = onEnterSystemPipMode,
-            pipDragProgress = pipDragProgress,
-            landscapeDragProgress = landscapeDragProgress,
-            maxVerticalDrag = maxVerticalDrag,
-            maxUpwardDrag = maxUpwardDrag,
-            setMaxVerticalDrag = { maxVerticalDrag = it },
-            portraitDragOffset = portraitDragOffset,
-            rememberedTopPadding = rememberedTopPadding,
-            rememberedBottomPadding = rememberedBottomPadding,
-            pipWidth = pipWidth,
-            pipEndDestinationPx = pipEndDestinationPx,
-            pipEndSizePx = pipEndSizePx
-        )
+    val player by remember { mutableStateOf(getPlayer()) }
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+    val serverScrollState = rememberScrollState()
 
-        if (pipDragProgress > 0f) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clickable(
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = null,
-                        onClick = { }
-                    )
+    val isPortrait = !mainState.isLandscape && playerDisplayMode in listOf(
+        PlayerDisplayMode.FULLSCREEN_LANDSCAPE, PlayerDisplayMode.FULLSCREEN_PORTRAIT
+    )
+    val isSideSheetVisible = !isPortrait && watchState.isSideSheetVisible && pipDragProgress == 0f
+
+    val scope = rememberCoroutineScope()
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        val columnScrollState = rememberScrollState()
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+            val containerWidth = this.maxWidth
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .then(
+                            if (isPortrait) {
+                                Modifier.height(screenWidth * 9 / 16)
+                            } else {
+                                Modifier.fillMaxSize()
+                            }
+                        )
+                        .weight(1f)
+                ) {
+                    if (player == null || watchState.episodeDetailComplement == null || watchState.episodeDetailComplement.sources.link.file.isEmpty() || watchState.animeDetailComplement?.episodes == null || watchState.episodeSourcesQuery == null) {
+                        ImageDisplay(
+                            image = watchState.episodeDetailComplement?.screenshot,
+                            imagePlaceholder = watchState.episodeDetailComplement?.imageUrl
+                                ?: watchState.animeDetail?.images?.webp?.large_image_url,
+                            ratio = ImageAspectRatio.WIDESCREEN.ratio,
+                            contentDescription = "Anime cover",
+                            roundedCorners = ImageRoundedCorner.NONE
+                        )
+                    } else {
+                        player?.let { player ->
+                            VideoPlayer(
+                                episodeDetailComplement = watchState.episodeDetailComplement,
+                                episodeDetailComplements = watchState.episodeDetailComplements,
+                                isRefreshing = watchState.isRefreshing,
+                                networkDataSource = networkDataSource,
+                                coreState = hlsPlayerCoreState,
+                                controlsStateFlow = hlsControlsStateFlow,
+                                playerAction = dispatchPlayerAction,
+                                isLandscape = mainState.isLandscape,
+                                player = player,
+                                captureScreenshot = captureScreenshot,
+                                updateStoredWatchState = { currentPosition, duration, screenShot ->
+                                    onAction(WatchAction.UpdateLastEpisodeWatchedId(watchState.episodeDetailComplement.id))
+                                    onAction(
+                                        WatchAction.UpdateStoredWatchState(
+                                            currentPosition, duration, screenShot
+                                        )
+                                    )
+                                },
+                                isScreenOn = isScreenOn,
+                                isAutoPlayVideo = mainState.isAutoPlayVideo,
+                                episodes = watchState.animeDetailComplement.episodes,
+                                episodeSourcesQuery = watchState.episodeSourcesQuery,
+                                handleSelectedEpisodeServer = { episodeSourcesQuery, isRefresh ->
+                                    onAction(
+                                        WatchAction.HandleSelectedEpisodeServer(
+                                            episodeSourcesQuery = episodeSourcesQuery,
+                                            isRefresh = isRefresh
+                                        )
+                                    )
+                                },
+                                displayMode = playerDisplayMode,
+                                setPlayerDisplayMode = setPlayerDisplayMode,
+                                onEnterSystemPipMode = onEnterSystemPipMode,
+                                isSideSheetVisible = watchState.isSideSheetVisible,
+                                setSideSheetVisibility = {
+                                    onAction(
+                                        WatchAction.SetSideSheetVisibility(it)
+                                    )
+                                },
+                                isAutoplayNextEpisodeEnabled = watchState.isAutoplayNextEpisodeEnabled,
+                                setAutoplayNextEpisodeEnabled = {
+                                    onAction(
+                                        WatchAction.SetAutoplayNextEpisodeEnabled(it)
+                                    )
+                                },
+                                rememberedTopPadding = rememberedTopPadding,
+                                portraitDragOffset = portraitDragOffset.value,
+                                landscapeDragProgress = landscapeDragProgress,
+                                onVerticalDrag = { delta ->
+                                    scope.launch {
+                                        val newOffset = (portraitDragOffset.value + delta)
+                                            .coerceIn(maxUpwardDrag, maxVerticalDrag)
+                                        portraitDragOffset.snapTo(newOffset)
+                                    }
+                                },
+                                onDragEnd = { flingVelocity ->
+                                    scope.launch {
+                                        val flingToPipThreshold = 1.8f
+                                        val flingToLandscapeThreshold = -1.8f
+                                        val pipPositionThreshold = maxVerticalDrag * 0.5f
+                                        val landscapePositionThreshold = maxUpwardDrag * 0.25f
+
+                                        when {
+                                            flingVelocity > flingToPipThreshold -> {
+                                                setPlayerDisplayMode(PlayerDisplayMode.PIP)
+                                                portraitDragOffset.snapTo(0f)
+                                            }
+
+                                            flingVelocity < flingToLandscapeThreshold -> {
+                                                setPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN_LANDSCAPE)
+                                            }
+
+                                            maxVerticalDrag.isFinite() && portraitDragOffset.value > pipPositionThreshold -> {
+                                                setPlayerDisplayMode(PlayerDisplayMode.PIP)
+                                                portraitDragOffset.snapTo(0f)
+                                            }
+
+                                            portraitDragOffset.value < landscapePositionThreshold -> {
+                                                setPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN_LANDSCAPE)
+                                            }
+
+                                            else -> {
+                                                portraitDragOffset.animateTo(
+                                                    0f,
+                                                    animationSpec = tween(durationMillis = 300)
+                                                )
+                                            }
+                                        }
+                                    }
+                                },
+                                pipWidth = pipWidth,
+                                pipEndDestinationPx = pipEndDestinationPx,
+                                pipEndSizePx = pipEndSizePx,
+                                onMaxDragAmountCalculated = { setMaxVerticalDrag(it) }
+                            )
+                        }
+                    }
+                }
+
+                val sideSheetWidth by animateDpAsState(
+                    targetValue = if (isSideSheetVisible) containerWidth * 0.3f else 0.dp,
+                    label = "sideSheetWidthAnimation"
+                )
+
+                if (sideSheetWidth > 0.dp) {
+                    Column(modifier = Modifier.width(sideSheetWidth)) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = "Info",
+                                style = MaterialTheme.typography.titleMedium,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                fontSize = 20.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Icon(
+                                modifier = Modifier
+                                    .clip(CircleShape)
+                                    .clickable {
+                                        onAction(
+                                            WatchAction.SetSideSheetVisibility(false)
+                                        )
+                                    }
+                                    .padding(8.dp),
+                                imageVector = Icons.Default.Close,
+                                contentDescription = "Close currently watching anime info",
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 8.dp),
+                            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        )
+
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .verticalScroll(rememberScrollState())
+                        ) {
+                            InfoContentSection(
+                                modifier = Modifier.padding(horizontal = 8.dp),
+                                animeDetail = watchState.animeDetail,
+                                navController = navController,
+                                setPlayerDisplayMode = setPlayerDisplayMode
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
+        Column(
+            modifier = Modifier
+                .graphicsLayer {
+                    translationY = portraitDragOffset.value.coerceAtLeast(0f)
+                    alpha = 1f - (pipDragProgress * 1.5f).coerceIn(0f, 1f)
+                }
+                .padding(horizontal = 8.dp)
+                .fillMaxSize()
+                .blur(radius = (pipDragProgress * 10.dp).coerceAtMost(10.dp))
+                .verticalScroll(columnScrollState),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
+        ) {
+            if (isPortrait && watchState.animeDetailComplement?.episodes != null && watchState.animeDetail?.mal_id == malId) {
+                WatchContentSection(
+                    animeDetail = watchState.animeDetail,
+                    networkStatus = mainState.networkStatus,
+                    onFavoriteToggle = { isFavorite ->
+                        onAction(WatchAction.SetFavorite(isFavorite))
+                    },
+                    episodeDetailComplement = watchState.episodeDetailComplement,
+                    onLoadEpisodeDetailComplement = {
+                        onAction(WatchAction.LoadEpisodeDetailComplement(it))
+                    },
+                    episodeDetailComplements = watchState.episodeDetailComplements,
+                    episodes = watchState.animeDetailComplement.episodes,
+                    newEpisodeIdList = watchState.newEpisodeIdList,
+                    episodeSourcesQuery = watchState.episodeSourcesQuery,
+                    episodeJumpNumber = watchState.episodeJumpNumber,
+                    setEpisodeJumpNumber = { onAction(WatchAction.SetEpisodeJumpNumber(it)) },
+                    serverScrollState = serverScrollState,
+                    isRefreshing = watchState.isRefreshing,
+                    handleSelectedEpisodeServer = { episodeSourcesQuery, isRefresh ->
+                        onAction(
+                            WatchAction.HandleSelectedEpisodeServer(
+                                episodeSourcesQuery = episodeSourcesQuery, isRefresh = isRefresh
+                            )
+                        )
+                    },
+                )
+            }
+            InfoContentSection(
+                animeDetail = watchState.animeDetail,
+                navController = navController,
+                setPlayerDisplayMode = setPlayerDisplayMode
             )
         }
+    }
+
+    if (pipDragProgress > 0f) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = { }
+                )
+        )
     }
 }
