@@ -36,6 +36,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
@@ -67,6 +68,7 @@ import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
 import com.luminoverse.animevibe.utils.media.PipUtil.buildPipActions
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
@@ -181,24 +183,15 @@ fun PlayerHost(
         val startPaddingPx = with(density) { startPadding.toPx() }
         val endPaddingPx = with(density) { endPadding.toPx() }
 
-        // 1. Determine the maximum safe width for the PiP window on the current screen.
         val safeScreenWidthDp = screenWidthDp - (startPadding + endPadding)
-
-        // 2. Constrain the desired PiP width to not exceed this safe screen width.
         val coercedPipWidth = playerState.pipWidth.coerceAtMost(safeScreenWidthDp)
-
-        // 3. Use this coerced (corrected) width as the animation target.
         val animatedPipWidth by animateDpAsState(
             targetValue = coercedPipWidth,
             animationSpec = spring(dampingRatio = 0.8f, stiffness = 400f),
             label = "pipWidth"
         )
 
-        // ✨ END FIX ✨
-
         val videoAspectRatio = 16f / 9f
-
-        // All subsequent calculations will now be correct because they start from a valid width.
         val pipWidthPx = with(density) { animatedPipWidth.toPx() }
         val pipHeightPx = with(density) { (animatedPipWidth / videoAspectRatio).toPx() }
 
@@ -221,7 +214,53 @@ fun PlayerHost(
         val pipEndDestinationPx = Offset(maxX, maxY)
         val pipEndSizePx = IntSize(pipWidthPx.toInt(), pipHeightPx.toInt())
 
-        val pipDragModifier = Modifier.pointerInput(draggableWidth, draggableHeight) {
+        var isAnimating by remember { mutableStateOf(false) }
+        val animatablePlayerOffset = remember { Animatable(Offset.Zero, Offset.VectorConverter) }
+        val animatablePlayerScale = remember { Animatable(1f) }
+
+        val onPipClick: () -> Unit = {
+            if (isAnimating) Unit
+            scope.launch {
+                isAnimating = true
+
+                val startScale = pipWidthPx / screenWidthPx
+                val startOffset = Offset(
+                    x = minX + (animatableRelativeOffset.value.x * draggableWidth),
+                    y = minY + (animatableRelativeOffset.value.y * draggableHeight)
+                )
+
+                animatablePlayerScale.snapTo(startScale)
+                animatablePlayerOffset.snapTo(startOffset)
+
+                onAction(
+                    MainAction.SetPlayerDisplayMode(
+                        if (mainState.isLandscape) PlayerDisplayMode.FULLSCREEN_LANDSCAPE
+                        else PlayerDisplayMode.FULLSCREEN_PORTRAIT
+                    )
+                )
+
+                val animationJobs = listOf(
+                    launch {
+                        animatablePlayerScale.animateTo(
+                            targetValue = 1f,
+                            animationSpec = spring(dampingRatio = 0.8f, stiffness = 400f)
+                        )
+                    },
+                    launch {
+                        animatablePlayerOffset.animateTo(
+                            targetValue = Offset.Zero,
+                            animationSpec = spring(dampingRatio = 0.8f, stiffness = 400f)
+                        )
+                    }
+                )
+                animationJobs.joinAll()
+
+                isAnimating = false
+            }
+        }
+
+        val pipDragModifier = Modifier.pointerInput(draggableWidth, draggableHeight, isAnimating) {
+            if (isAnimating) return@pointerInput
             awaitEachGesture {
                 val down = awaitFirstDown(requireUnconsumed = false)
                 var lastVelocity = Offset.Zero
@@ -261,33 +300,37 @@ fun PlayerHost(
             }
         }
 
-        val pipPlacementModifier = Modifier
-            .graphicsLayer {
-                translationX = minX + (animatableRelativeOffset.value.x * draggableWidth)
-                translationY = minY + (animatableRelativeOffset.value.y * draggableHeight)
+        val playerModifier = when {
+            isAnimating -> Modifier.graphicsLayer {
+                scaleX = animatablePlayerScale.value
+                scaleY = animatablePlayerScale.value
+                translationX = animatablePlayerOffset.value.x
+                translationY = animatablePlayerOffset.value.y
             }
-            .width(animatedPipWidth)
-            .padding(8.dp)
-            .aspectRatio(videoAspectRatio)
-            .clip(RoundedCornerShape(8.dp))
-            .shadow(8.dp, RoundedCornerShape(8.dp))
-            .combinedClickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = null,
-                onClick = {
-                    onAction(
-                        MainAction.SetPlayerDisplayMode(
-                            if (mainState.isLandscape) PlayerDisplayMode.FULLSCREEN_LANDSCAPE
-                            else PlayerDisplayMode.FULLSCREEN_PORTRAIT
-                        )
-                    )
-                },
-                onDoubleClick = {
-                    val newWidth = if (playerState.pipWidth == 500.dp) 250.dp else 500.dp
-                    onAction(MainAction.SetPlayerPipWidth(newWidth))
+
+            playerState.displayMode == PlayerDisplayMode.PIP -> Modifier
+                .graphicsLayer {
+                    translationX = minX + (animatableRelativeOffset.value.x * draggableWidth)
+                    translationY = minY + (animatableRelativeOffset.value.y * draggableHeight)
                 }
-            )
-            .then(pipDragModifier)
+                .width(animatedPipWidth)
+                .padding(8.dp)
+                .aspectRatio(videoAspectRatio)
+                .clip(RoundedCornerShape(8.dp))
+                .shadow(8.dp, RoundedCornerShape(8.dp))
+                .combinedClickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onPipClick,
+                    onDoubleClick = {
+                        val newWidth = if (playerState.pipWidth == 500.dp) 250.dp else 500.dp
+                        onAction(MainAction.SetPlayerPipWidth(newWidth))
+                    }
+                )
+                .then(pipDragModifier)
+
+            else -> Modifier
+        }
 
         val isPipMode =
             playerState.displayMode in listOf(PlayerDisplayMode.SYSTEM_PIP, PlayerDisplayMode.PIP)
@@ -379,7 +422,7 @@ fun PlayerHost(
             )
 
             AnimeWatchScreen(
-                modifier = if (playerState.displayMode == PlayerDisplayMode.PIP) pipPlacementModifier else Modifier,
+                modifier = playerModifier,
                 malId = playerState.malId,
                 episodeId = playerState.episodeId,
                 playerDisplayMode = playerState.displayMode,
