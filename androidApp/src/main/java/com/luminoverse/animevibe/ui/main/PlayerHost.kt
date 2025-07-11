@@ -207,9 +207,8 @@ fun PlayerHost(
         }
 
         LaunchedEffect(maxY) {
-            val finalTranslationY = (maxY + pipHeightPx / 2f) - (screenHeightPx / 2f)
-            if (finalTranslationY.isFinite()) {
-                maxVerticalDrag = finalTranslationY
+            if (maxY.isFinite()) {
+                maxVerticalDrag = maxY
             }
         }
 
@@ -367,11 +366,6 @@ fun PlayerHost(
             animationSpec = spring(),
             label = "topPadding"
         )
-        val animatedBottomPadding by animateDpAsState(
-            targetValue = if (mainState.isLandscape || isPipMode || pipDragProgress > 0.5f) 0.dp else rememberedBottomPadding,
-            animationSpec = spring(),
-            label = "bottomPadding"
-        )
 
         Box(
             modifier = Modifier
@@ -379,7 +373,7 @@ fun PlayerHost(
                 .background(animatedBackgroundColor)
                 .padding(
                     top = animatedTopPadding,
-                    bottom = animatedBottomPadding
+                    bottom = 0.dp
                 )
         ) {
             val serverScrollState = rememberScrollState()
@@ -440,6 +434,7 @@ fun PlayerHost(
                     },
                 )
                 InfoContentSection(
+                    rememberedBottomPadding = rememberedBottomPadding,
                     animeDetail = watchState.animeDetail,
                     navController = navController,
                     setPlayerDisplayMode = { onAction(MainAction.SetPlayerDisplayMode(it)) }

@@ -369,18 +369,14 @@ fun VideoPlayer(
                                                     0f, animationSpec = spring()
                                                 )
                                             } else {
-                                                val flingToPipThreshold = 1.8f
-                                                val flingToLandscapeThreshold = -1.8f
+                                                val flingThreshold = 1.8f
                                                 val pipPositionThreshold = maxVerticalDrag * 0.5f
-                                                val landscapePositionThreshold =
-                                                    maxUpwardDrag * 0.25f
 
                                                 val shouldGoToPip =
-                                                    (flingVelocity > flingToPipThreshold && verticalDragOffset.value > 0) ||
-                                                            (maxVerticalDrag.isFinite() && verticalDragOffset.value > pipPositionThreshold)
+                                                    (flingVelocity > flingThreshold) || (verticalDragOffset.value > pipPositionThreshold)
                                                 val shouldGoToLandscape =
-                                                    (flingVelocity < flingToLandscapeThreshold && verticalDragOffset.value < 0) ||
-                                                            (verticalDragOffset.value < landscapePositionThreshold)
+                                                    (flingVelocity < -flingThreshold && verticalDragOffset.value < 0)
+                                                            || (verticalDragOffset.value < maxUpwardDrag * 0.28f)
 
                                                 when {
                                                     shouldGoToPip -> {
@@ -516,10 +512,10 @@ fun VideoPlayer(
                 ?: 0,
                 playbackState = coreState.playbackState,
                 isRefreshing = isRefreshing,
-                setPlayerDisplayMode = {
+                setDisplayModePip = {
                     scope.launch {
                         verticalDragOffset.animateTo(maxVerticalDrag, spring(stiffness = 400f))
-                        setPlayerDisplayMode(it)
+                        setPlayerDisplayMode(PlayerDisplayMode.PIP)
                         verticalDragOffset.snapTo(0f)
                     }
                 },
@@ -576,7 +572,7 @@ fun VideoPlayer(
         // Center Indicators (Loading, Seek, etc.)
         LoadingIndicator(
             modifier = Modifier.align(Alignment.Center),
-            isVisible = (coreState.playbackState == Player.STATE_BUFFERING || isRefreshing) && !isPlayerControlsVisible
+            isVisible = (coreState.playbackState == Player.STATE_BUFFERING || isRefreshing) && displayMode != PlayerDisplayMode.PIP && !isPlayerControlsVisible
         )
         SeekIndicator(
             modifier = Modifier.align(Alignment.Center),
