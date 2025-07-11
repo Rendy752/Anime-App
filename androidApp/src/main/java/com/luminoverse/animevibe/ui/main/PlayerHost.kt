@@ -174,10 +174,6 @@ fun PlayerHost(
         }
         var maxVerticalDrag by remember { mutableFloatStateOf(Float.POSITIVE_INFINITY) }
 
-        val dismissDragThreshold =
-            if (maxVerticalDrag.isFinite()) maxVerticalDrag else screenHeightPx
-        val pipDragProgress = (verticalDragOffset.value / dismissDragThreshold).coerceIn(0f, 1f)
-
         val topPaddingPx = with(density) { rememberedTopPadding.toPx() }
         val bottomPaddingPx = with(density) { rememberedBottomPadding.toPx() }
         val startPaddingPx = with(density) { startPadding.toPx() }
@@ -209,19 +205,39 @@ fun PlayerHost(
                 (screenHeightPx - pipHeightPx).coerceAtLeast(minY)
             }
         }
+
+        LaunchedEffect(maxY) {
+            val finalTranslationY = (maxY + pipHeightPx / 2f) - (screenHeightPx / 2f)
+            if (finalTranslationY.isFinite()) {
+                maxVerticalDrag = finalTranslationY
+            }
+        }
+
+        val pipDragProgress by remember(maxVerticalDrag) {
+            derivedStateOf {
+                if (maxVerticalDrag > 0) {
+                    (verticalDragOffset.value / maxVerticalDrag).coerceIn(0f, 1f)
+                } else {
+                    0f
+                }
+            }
+        }
+        LaunchedEffect(pipDragProgress) {
+            onAction(MainAction.UpdatePipDragProgress(pipDragProgress))
+        }
         val draggableHeight = (maxY - minY).coerceAtLeast(1f)
 
         val pipEndDestinationPx = Offset(maxX, maxY)
         val pipEndSizePx = IntSize(pipWidthPx.toInt(), pipHeightPx.toInt())
 
-        var isAnimating by remember { mutableStateOf(false) }
+        var isAnimatingToFullscreen by remember { mutableStateOf(false) }
         val animatablePlayerOffset = remember { Animatable(Offset.Zero, Offset.VectorConverter) }
         val animatablePlayerScale = remember { Animatable(1f) }
 
         val onPipClick: () -> Unit = {
-            if (isAnimating) Unit
+            if (isAnimatingToFullscreen) Unit
             scope.launch {
-                isAnimating = true
+                isAnimatingToFullscreen = true
 
                 val startScale = pipWidthPx / screenWidthPx
                 val startOffset = Offset(
@@ -255,58 +271,63 @@ fun PlayerHost(
                 )
                 animationJobs.joinAll()
 
-                isAnimating = false
+                isAnimatingToFullscreen = false
             }
         }
 
-        val pipDragModifier = Modifier.pointerInput(draggableWidth, draggableHeight, isAnimating) {
-            if (isAnimating) return@pointerInput
-            awaitEachGesture {
-                val down = awaitFirstDown(requireUnconsumed = false)
-                var lastVelocity = Offset.Zero
-                drag(down.id) { change ->
-                    val dt = change.uptimeMillis - change.previousUptimeMillis
-                    val dp = change.position - change.previousPosition
-                    if (dt > 0) {
-                        lastVelocity = dp / dt.toFloat()
+        val pipDragModifier =
+            Modifier.pointerInput(draggableWidth, draggableHeight, isAnimatingToFullscreen) {
+                if (isAnimatingToFullscreen) return@pointerInput
+                awaitEachGesture {
+                    val down = awaitFirstDown(requireUnconsumed = false)
+                    var lastVelocity = Offset.Zero
+                    drag(down.id) { change ->
+                        val dt = change.uptimeMillis - change.previousUptimeMillis
+                        val dp = change.position - change.previousPosition
+                        if (dt > 0) {
+                            lastVelocity = dp / dt.toFloat()
+                        }
+                        val dragAmount = change.position - change.previousPosition
+                        change.consume()
+                        scope.launch {
+                            val currentVal = animatableRelativeOffset.value
+                            val newRelativeX = currentVal.x + (dragAmount.x / draggableWidth)
+                            val newRelativeY = currentVal.y + (dragAmount.y / draggableHeight)
+                            animatableRelativeOffset.snapTo(Offset(newRelativeX, newRelativeY))
+                        }
                     }
-                    val dragAmount = change.position - change.previousPosition
-                    change.consume()
+                    val flingVelocityThreshold = 1.5f
+                    val currentOffset = animatableRelativeOffset.value
+                    var targetOffset = currentOffset
+                    val isFlingX = abs(lastVelocity.x) > flingVelocityThreshold
+                    val isFlingY = abs(lastVelocity.y) > flingVelocityThreshold
+                    if (isFlingX || isFlingY) {
+                        val targetX =
+                            if (isFlingX) (if (lastVelocity.x > 0) 1f else 0f) else currentOffset.x
+                        val targetY =
+                            if (isFlingY) (if (lastVelocity.y > 0) 1f else 0f) else currentOffset.y
+                        targetOffset = Offset(targetX, targetY)
+                    }
+                    val correctedTargetOffset =
+                        Offset(
+                            x = targetOffset.x.coerceIn(0f, 1f),
+                            y = targetOffset.y.coerceIn(0f, 1f)
+                        )
                     scope.launch {
-                        val currentVal = animatableRelativeOffset.value
-                        val newRelativeX = currentVal.x + (dragAmount.x / draggableWidth)
-                        val newRelativeY = currentVal.y + (dragAmount.y / draggableHeight)
-                        animatableRelativeOffset.snapTo(Offset(newRelativeX, newRelativeY))
+                        animatableRelativeOffset.animateTo(correctedTargetOffset, spring())
+                        onAction(MainAction.UpdatePlayerPipRelativeOffset(animatableRelativeOffset.value))
                     }
-                }
-                val flingVelocityThreshold = 1.5f
-                val currentOffset = animatableRelativeOffset.value
-                var targetOffset = currentOffset
-                val isFlingX = abs(lastVelocity.x) > flingVelocityThreshold
-                val isFlingY = abs(lastVelocity.y) > flingVelocityThreshold
-                if (isFlingX || isFlingY) {
-                    val targetX =
-                        if (isFlingX) (if (lastVelocity.x > 0) 1f else 0f) else currentOffset.x
-                    val targetY =
-                        if (isFlingY) (if (lastVelocity.y > 0) 1f else 0f) else currentOffset.y
-                    targetOffset = Offset(targetX, targetY)
-                }
-                val correctedTargetOffset =
-                    Offset(x = targetOffset.x.coerceIn(0f, 1f), y = targetOffset.y.coerceIn(0f, 1f))
-                scope.launch {
-                    animatableRelativeOffset.animateTo(correctedTargetOffset, spring())
-                    onAction(MainAction.UpdatePlayerPipRelativeOffset(animatableRelativeOffset.value))
                 }
             }
-        }
 
         val playerModifier = when {
-            isAnimating -> Modifier.graphicsLayer {
-                scaleX = animatablePlayerScale.value
-                scaleY = animatablePlayerScale.value
-                translationX = animatablePlayerOffset.value.x
-                translationY = animatablePlayerOffset.value.y
-            }
+            isAnimatingToFullscreen -> Modifier
+                .graphicsLayer {
+                    scaleX = animatablePlayerScale.value
+                    scaleY = animatablePlayerScale.value
+                    translationX = animatablePlayerOffset.value.x
+                    translationY = animatablePlayerOffset.value.y
+                }
 
             playerState.displayMode == PlayerDisplayMode.PIP -> Modifier
                 .graphicsLayer {
@@ -314,7 +335,6 @@ fun PlayerHost(
                     translationY = minY + (animatableRelativeOffset.value.y * draggableHeight)
                 }
                 .width(animatedPipWidth)
-                .padding(8.dp)
                 .aspectRatio(videoAspectRatio)
                 .clip(RoundedCornerShape(8.dp))
                 .shadow(8.dp, RoundedCornerShape(8.dp))
@@ -342,13 +362,24 @@ fun PlayerHost(
             label = "backgroundAlpha"
         )
 
+        val animatedTopPadding by animateDpAsState(
+            targetValue = if (mainState.isLandscape || isPipMode || pipDragProgress > 0.5f) 0.dp else rememberedTopPadding,
+            animationSpec = spring(),
+            label = "topPadding"
+        )
+        val animatedBottomPadding by animateDpAsState(
+            targetValue = if (mainState.isLandscape || isPipMode || pipDragProgress > 0.5f) 0.dp else rememberedBottomPadding,
+            animationSpec = spring(),
+            label = "bottomPadding"
+        )
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(animatedBackgroundColor)
                 .padding(
-                    top = if (mainState.isLandscape || isPipMode) 0.dp else rememberedTopPadding,
-                    bottom = if (mainState.isLandscape || isPipMode) 0.dp else rememberedBottomPadding
+                    top = animatedTopPadding,
+                    bottom = animatedBottomPadding
                 )
         ) {
             val serverScrollState = rememberScrollState()

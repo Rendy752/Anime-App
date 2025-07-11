@@ -576,7 +576,7 @@ fun VideoPlayer(
         // Center Indicators (Loading, Seek, etc.)
         LoadingIndicator(
             modifier = Modifier.align(Alignment.Center),
-            isVisible = (coreState.playbackState == Player.STATE_BUFFERING || coreState.playbackState == Player.STATE_IDLE || isRefreshing) && !isPlayerControlsVisible
+            isVisible = (coreState.playbackState == Player.STATE_BUFFERING || isRefreshing) && !isPlayerControlsVisible
         )
         SeekIndicator(
             modifier = Modifier.align(Alignment.Center),

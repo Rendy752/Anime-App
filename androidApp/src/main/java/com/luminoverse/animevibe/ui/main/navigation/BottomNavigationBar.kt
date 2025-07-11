@@ -65,7 +65,7 @@ fun getNavigationBarPadding(): androidx.compose.ui.unit.Dp {
 }
 
 @Composable
-fun BottomNavigationBar(navController: NavHostController) {
+fun BottomNavigationBar(modifier: Modifier, navController: NavHostController) {
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = navBackStackEntry?.destination?.route
@@ -83,7 +83,7 @@ fun BottomNavigationBar(navController: NavHostController) {
         Surface(
             color = MaterialTheme.colorScheme.surfaceContainer,
             shadowElevation = 8.dp,
-            modifier = Modifier.fillMaxWidth()
+            modifier = modifier.fillMaxWidth()
         ) {
             Box(
                 modifier = Modifier
@@ -231,7 +231,7 @@ fun RowScope.CustomBottomNavigationItem(
 @Composable
 fun PreviewBottomNavigationBar() {
     MaterialTheme {
-        BottomNavigationBar(rememberNavController())
+        BottomNavigationBar(modifier = Modifier, navController = rememberNavController())
     }
 }
 

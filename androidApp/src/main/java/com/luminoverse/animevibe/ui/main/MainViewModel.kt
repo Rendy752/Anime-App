@@ -61,6 +61,7 @@ data class PlayerState(
     val episodeId: String,
     val displayMode: PlayerDisplayMode = PlayerDisplayMode.FULLSCREEN_PORTRAIT,
     val pipRelativeOffset: Offset = Offset(1f, 1f),
+    val pipDragProgress: Float = 0f,
     val pipWidth: Dp = 250.dp
 )
 
@@ -107,6 +108,7 @@ sealed class MainAction {
     data object DismissSnackbar : MainAction()
     data class PlayEpisode(val malId: Int, val episodeId: String) : MainAction()
     data class UpdatePlayerPipRelativeOffset(val relativeOffset: Offset) : MainAction()
+    data class UpdatePipDragProgress(val progress: Float) : MainAction()
     data class SetPlayerDisplayMode(val mode: PlayerDisplayMode) : MainAction()
     data class SetPlayerPipWidth(val width: Dp) : MainAction()
     object ClosePlayer : MainAction()
@@ -193,6 +195,7 @@ class MainViewModel @Inject constructor(
             is MainAction.DismissSnackbar -> dismissSnackbar()
             is MainAction.PlayEpisode -> playEpisode(action.malId, action.episodeId)
             is MainAction.UpdatePlayerPipRelativeOffset -> updatePlayerPipRelativeOffset(action.relativeOffset)
+            is MainAction.UpdatePipDragProgress -> updatePlayerPipDragProgress(action.progress)
             is MainAction.SetPlayerDisplayMode -> setPlayerDisplayMode(action.mode)
             is MainAction.SetPlayerPipWidth -> setPlayerPipWidth(action.width)
             is MainAction.ClosePlayer -> closePlayer()
@@ -223,6 +226,14 @@ class MainViewModel @Inject constructor(
         _state.value.playerState?.let { current ->
             _state.update {
                 it.copy(playerState = current.copy(pipRelativeOffset = relativeOffset))
+            }
+        }
+    }
+
+    private fun updatePlayerPipDragProgress(progress: Float) {
+        _state.value.playerState?.let { current ->
+            _state.update {
+                it.copy(playerState = current.copy(pipDragProgress = progress))
             }
         }
     }
