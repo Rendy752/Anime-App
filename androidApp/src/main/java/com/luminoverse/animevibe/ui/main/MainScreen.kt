@@ -363,19 +363,26 @@ fun MainScreen(
             }
         }
 
-        mainState.playerState?.let { playerState ->
-            PlayerHost(
-                playerState = playerState,
-                mainState = mainState,
-                onAction = mainAction,
-                hlsPlayerUtils = hlsPlayerUtils,
-                isCurrentBottomScreen = isCurrentBottomScreen,
-                rememberedTopPadding = rememberedTopPadding,
-                rememberedBottomPadding = rememberedBottomPadding,
-                startPadding = contentPadding.calculateStartPadding(layoutDirection),
-                endPadding = contentPadding.calculateEndPadding(layoutDirection),
-                navController = navController
-            )
+        AnimatedVisibility(
+            modifier = Modifier.fillMaxWidth(),
+            visible = mainState.playerState != null,
+            enter = slideInVertically { it },
+            exit = slideOutVertically { it }
+        ) {
+            mainState.playerState?.let { playerState ->
+                PlayerHost(
+                    playerState = playerState,
+                    mainState = mainState,
+                    onAction = mainAction,
+                    hlsPlayerUtils = hlsPlayerUtils,
+                    isCurrentBottomScreen = isCurrentBottomScreen,
+                    rememberedTopPadding = rememberedTopPadding,
+                    rememberedBottomPadding = rememberedBottomPadding,
+                    startPadding = contentPadding.calculateStartPadding(layoutDirection),
+                    endPadding = contentPadding.calculateEndPadding(layoutDirection),
+                    navController = navController
+                )
+            }
         }
     }
 }

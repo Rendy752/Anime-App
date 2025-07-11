@@ -96,6 +96,7 @@ fun VideoPlayer(
     captureScreenshot: suspend () -> String?,
     updateStoredWatchState: (Long?, Long?, String?) -> Unit,
     isScreenOn: Boolean,
+    screenHeightPx: Float,
     isAutoPlayVideo: Boolean,
     episodes: List<Episode>,
     episodeSourcesQuery: EpisodeSourcesQuery,
@@ -108,12 +109,9 @@ fun VideoPlayer(
     isAutoplayNextEpisodeEnabled: Boolean,
     setAutoplayNextEpisodeEnabled: (Boolean) -> Unit,
     rememberedTopPadding: Dp,
-    portraitDragOffset: Animatable<Float, *>,
+    verticalDragOffset: Animatable<Float, *>,
     maxVerticalDrag: Float,
     pipDragProgress: Float,
-    landscapeDragProgress: Float,
-    onVerticalDrag: (Float) -> Unit,
-    onDragEnd: (flingVelocity: Float) -> Unit,
     pipWidth: Dp,
     pipEndDestinationPx: Offset,
     pipEndSizePx: IntSize,
@@ -210,6 +208,7 @@ fun VideoPlayer(
 
     // region State Holders
     val topPaddingPx = with(LocalDensity.current) { rememberedTopPadding.toPx() }
+    val maxUpwardDrag = screenHeightPx * -0.5f
     val videoPlayerState = rememberVideoPlayerState(
         key = episodeDetailComplement.sources.link.file,
         player = player,
@@ -258,16 +257,16 @@ fun VideoPlayer(
         displayMode in listOf(PlayerDisplayMode.PIP, PlayerDisplayMode.SYSTEM_PIP)
 
     val isOverlayVisible =
-        displayMode != PlayerDisplayMode.SYSTEM_PIP && !controlsState.isLocked && portraitDragOffset.value == 0f && videoPlayerState.landscapeDragOffset.value == 0f
+        displayMode != PlayerDisplayMode.SYSTEM_PIP && !controlsState.isLocked && verticalDragOffset.value == 0f
 
     val animatedCornerRadius by animateDpAsState(
-        targetValue = if (displayMode == PlayerDisplayMode.PIP || portraitDragOffset.value != 0f || videoPlayerState.landscapeDragOffset.value > 0) 8.dp else 0.dp,
+        targetValue = if (displayMode == PlayerDisplayMode.PIP || verticalDragOffset.value != 0f) 8.dp else 0.dp,
         animationSpec = tween(durationMillis = 300),
         label = "cornerRadiusAnimation"
     )
 
     val currentLandscapeDragProgress = if (videoPlayerState.playerContainerSize.height > 0f) {
-        (videoPlayerState.landscapeDragOffset.value / videoPlayerState.playerContainerSize.height).coerceIn(
+        (verticalDragOffset.value / videoPlayerState.playerContainerSize.height).coerceIn(
             0f, 1f
         )
     } else 0f
@@ -280,19 +279,23 @@ fun VideoPlayer(
             .onSizeChanged { videoPlayerState.playerContainerSize = it }
             .background(Color.Black.copy(alpha = if (isLandscape) landscapeBackgroundAlpha else 0f))
             .graphicsLayer {
-                if (isLandscape && videoPlayerState.landscapeDragOffset.value > 0) {
+                if (isLandscape && verticalDragOffset.value > 0) {
                     val scale = lerp(1f, 0.8f, currentLandscapeDragProgress * 2)
                     scaleX = scale
                     scaleY = scale
-                    translationY = videoPlayerState.landscapeDragOffset.value
-                } else if (displayMode == PlayerDisplayMode.FULLSCREEN_PORTRAIT || displayMode == PlayerDisplayMode.FULLSCREEN_LANDSCAPE) {
-                    if (portraitDragOffset.value < 0) {
-                        val scale = lerp(1f, 1.1f, landscapeDragProgress * 4)
+                    translationY = verticalDragOffset.value
+                } else {
+                    if (verticalDragOffset.value < 0) {
+                        val scale = lerp(
+                            1f,
+                            1.1f,
+                            (verticalDragOffset.value / maxUpwardDrag).coerceIn(0f, 1f) * 6
+                        )
                         val playerHeight = videoPlayerState.playerContainerSize.height.toFloat()
                         scaleX = scale
                         scaleY = scale
                         translationY = -(playerHeight * (scale - 1)) / 2
-                    } else if (portraitDragOffset.value > 0) {
+                    } else if (verticalDragOffset.value > 0) {
                         val playerWidth = videoPlayerState.playerContainerSize.width.toFloat()
                         val playerHeight = videoPlayerState.playerContainerSize.height.toFloat()
 
@@ -335,20 +338,70 @@ fun VideoPlayer(
                                     isPlayerDisplayFullscreen = isPlayerDisplayFullscreen,
                                     isLandscape = isLandscape,
                                     topPaddingPx = topPaddingPx,
-                                    onVerticalDrag = { dy ->
-                                        videoPlayerState.onVerticalDrag(
-                                            dy,
-                                            isLandscape,
-                                            onVerticalDrag
-                                        )
+                                    onVerticalDrag = { delta ->
+                                        scope.launch {
+                                            if (isLandscape) {
+                                                val screenHeight =
+                                                    videoPlayerState.playerContainerSize.height.toFloat()
+                                                val maxDrag = screenHeight * 0.5f
+                                                verticalDragOffset.snapTo(
+                                                    (verticalDragOffset.value + delta).coerceIn(
+                                                        0f, maxDrag
+                                                    )
+                                                )
+                                            } else {
+                                                val newOffset = (verticalDragOffset.value + delta)
+                                                    .coerceIn(maxUpwardDrag, maxVerticalDrag)
+                                                verticalDragOffset.snapTo(newOffset)
+                                            }
+                                        }
                                     },
                                     onDragEnd = { flingVelocity ->
-                                        videoPlayerState.onDragEnd(
-                                            flingVelocity,
-                                            isLandscape,
-                                            onDragEnd,
-                                            setPlayerDisplayMode
-                                        )
+                                        scope.launch {
+                                            if (isLandscape) {
+                                                val screenHeight =
+                                                    videoPlayerState.playerContainerSize.height.toFloat()
+                                                val threshold = screenHeight * 0.5f
+                                                if (verticalDragOffset.value >= threshold) {
+                                                    setPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN_PORTRAIT)
+                                                }
+                                                verticalDragOffset.animateTo(
+                                                    0f, animationSpec = spring()
+                                                )
+                                            } else {
+                                                val flingToPipThreshold = 1.8f
+                                                val flingToLandscapeThreshold = -1.8f
+                                                val pipPositionThreshold = maxVerticalDrag * 0.5f
+                                                val landscapePositionThreshold =
+                                                    maxUpwardDrag * 0.25f
+
+                                                val shouldGoToPip =
+                                                    (flingVelocity > flingToPipThreshold && verticalDragOffset.value > 0) ||
+                                                            (maxVerticalDrag.isFinite() && verticalDragOffset.value > pipPositionThreshold)
+                                                val shouldGoToLandscape =
+                                                    (flingVelocity < flingToLandscapeThreshold && verticalDragOffset.value < 0) ||
+                                                            (verticalDragOffset.value < landscapePositionThreshold)
+
+                                                when {
+                                                    shouldGoToPip -> {
+                                                        verticalDragOffset.animateTo(
+                                                            maxVerticalDrag,
+                                                            spring(stiffness = 400f)
+                                                        )
+                                                        setPlayerDisplayMode(PlayerDisplayMode.PIP)
+                                                        verticalDragOffset.snapTo(0f)
+                                                    }
+
+                                                    shouldGoToLandscape -> {
+                                                        setPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN_LANDSCAPE)
+                                                    }
+
+                                                    else -> {
+                                                        verticalDragOffset.animateTo(0f, spring())
+                                                    }
+                                                }
+                                            }
+                                        }
                                     }
                                 )
                             } finally {
@@ -465,9 +518,9 @@ fun VideoPlayer(
                 isRefreshing = isRefreshing,
                 setPlayerDisplayMode = {
                     scope.launch {
-                        portraitDragOffset.animateTo(maxVerticalDrag, spring(stiffness = 400f))
+                        verticalDragOffset.animateTo(maxVerticalDrag, spring(stiffness = 400f))
                         setPlayerDisplayMode(it)
-                        portraitDragOffset.snapTo(0f)
+                        verticalDragOffset.snapTo(0f)
                     }
                 },
                 episodeDetailComplement = episodeDetailComplement,
@@ -523,7 +576,7 @@ fun VideoPlayer(
         // Center Indicators (Loading, Seek, etc.)
         LoadingIndicator(
             modifier = Modifier.align(Alignment.Center),
-            isVisible = (coreState.playbackState == Player.STATE_BUFFERING || coreState.playbackState == Player.STATE_IDLE || isRefreshing) && !isPlayerControlsVisible && coreState.error == null && isPlayerDisplayFullscreen
+            isVisible = (coreState.playbackState == Player.STATE_BUFFERING || coreState.playbackState == Player.STATE_IDLE || isRefreshing) && !isPlayerControlsVisible
         )
         SeekIndicator(
             modifier = Modifier.align(Alignment.Center),

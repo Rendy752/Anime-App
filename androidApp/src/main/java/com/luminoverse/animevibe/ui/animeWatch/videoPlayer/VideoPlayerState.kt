@@ -4,8 +4,6 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.spring
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
@@ -23,7 +21,6 @@ import coil.ImageLoader
 import coil.request.ImageRequest
 import com.luminoverse.animevibe.data.remote.api.NetworkDataSource
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
-import com.luminoverse.animevibe.ui.main.PlayerDisplayMode
 import com.luminoverse.animevibe.utils.media.CaptionCue
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
@@ -168,8 +165,6 @@ class VideoPlayerState(
     /** A trigger to show the autoplay status text. Incremented on each toggle. */
     var autoplayStatusId by mutableIntStateOf(0)
 
-    /** The animatable vertical offset used for the drag-to-dismiss gesture in landscape mode. */
-    val landscapeDragOffset = Animatable(0f)
     // endregion
 
     // region Private Interaction Logic State
@@ -448,48 +443,6 @@ class VideoPlayerState(
         }
     }
 
-    /** Handles vertical drag gestures, delegating to different handlers based on orientation. */
-    internal fun onVerticalDrag(
-        dy: Float,
-        isLandscape: Boolean,
-        onPipVerticalDrag: (Float) -> Unit
-    ) {
-        if (isLandscape) {
-            // Handle drag-to-dismiss in landscape
-            coroutineScope.launch {
-                val screenHeight = playerContainerSize.height.toFloat()
-                val maxDrag = screenHeight * 0.5f // Threshold to dismiss
-                landscapeDragOffset.snapTo((landscapeDragOffset.value + dy).coerceIn(0f, maxDrag))
-            }
-        } else {
-            // Handle drag for Picture-in-Picture in portrait
-            onPipVerticalDrag(dy)
-        }
-    }
-
-    /** Finalizes a drag gesture, either dismissing the player or snapping back. */
-    internal fun onDragEnd(
-        flingVelocity: Float,
-        isLandscape: Boolean,
-        onPipDragEnd: (flingVelocity: Float) -> Unit,
-        setPlayerDisplayMode: (PlayerDisplayMode) -> Unit
-    ) {
-        if (isLandscape) {
-            val screenHeight = playerContainerSize.height.toFloat()
-            val threshold = screenHeight * 0.5f
-            if (landscapeDragOffset.value >= threshold) {
-                // Dismiss to portrait view if dragged far enough
-                setPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN_PORTRAIT)
-            } else {
-                // Animate back to original position if not dragged far enough
-                coroutineScope.launch {
-                    landscapeDragOffset.animateTo(0f, animationSpec = spring())
-                }
-            }
-        } else {
-            onPipDragEnd(flingVelocity)
-        }
-    }
     // endregion
 
     // region Private Helper Functions

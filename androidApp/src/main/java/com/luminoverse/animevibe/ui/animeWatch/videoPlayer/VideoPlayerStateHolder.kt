@@ -294,10 +294,9 @@ fun rememberVideoPlayerState(
             return@LaunchedEffect
         }
         if (isLandscape) {
-            SystemBarsUtils.setSystemBarsVisibility(activity, true) // Hide bars in landscape
+            SystemBarsUtils.setSystemBarsVisibility(activity, true)
         } else {
-            SystemBarsUtils.setSystemBarsVisibility(activity, false) // Show bars in portrait
-            state.landscapeDragOffset.snapTo(0f)
+            SystemBarsUtils.setSystemBarsVisibility(activity, false)
         }
     }
 

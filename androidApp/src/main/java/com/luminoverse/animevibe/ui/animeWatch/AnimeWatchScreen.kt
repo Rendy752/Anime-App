@@ -92,7 +92,7 @@ fun AnimeWatchScreen(
     onEnterSystemPipMode: () -> Unit,
     rememberedTopPadding: Dp,
     screenHeightPx: Float,
-    portraitDragOffset: Animatable<Float, *>,
+    verticalDragOffset: Animatable<Float, *>,
     pipDragProgress: Float,
     maxVerticalDrag: Float,
     setMaxVerticalDrag: (Float) -> Unit,
@@ -117,9 +117,9 @@ fun AnimeWatchScreen(
             setPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN_PORTRAIT)
         } else {
             scope.launch {
-                portraitDragOffset.animateTo(maxVerticalDrag, spring(stiffness = 400f))
+                verticalDragOffset.animateTo(maxVerticalDrag, spring(stiffness = 400f))
                 setPlayerDisplayMode(PlayerDisplayMode.PIP)
-                portraitDragOffset.snapTo(0f)
+                verticalDragOffset.snapTo(0f)
             }
         }
     }
@@ -170,9 +170,6 @@ fun AnimeWatchScreen(
             )
         }
     }
-
-    val maxUpwardDrag = screenHeightPx * -0.5f
-    val landscapeDragProgress = (portraitDragOffset.value / maxUpwardDrag).coerceIn(0f, 1f)
 
     val player by remember { mutableStateOf(getPlayer()) }
     val configuration = LocalConfiguration.current
@@ -226,6 +223,7 @@ fun AnimeWatchScreen(
                                 )
                             },
                             isScreenOn = isScreenOn,
+                            screenHeightPx = screenHeightPx,
                             isAutoPlayVideo = mainState.isAutoPlayVideo,
                             episodes = watchState.animeDetailComplement.episodes,
                             episodeSourcesQuery = watchState.episodeSourcesQuery,
@@ -253,51 +251,9 @@ fun AnimeWatchScreen(
                                 )
                             },
                             rememberedTopPadding = rememberedTopPadding,
-                            portraitDragOffset = portraitDragOffset,
+                            verticalDragOffset = verticalDragOffset,
                             maxVerticalDrag = maxVerticalDrag,
                             pipDragProgress = pipDragProgress,
-                            landscapeDragProgress = landscapeDragProgress,
-                            onVerticalDrag = { delta ->
-                                scope.launch {
-                                    val newOffset = (portraitDragOffset.value + delta)
-                                        .coerceIn(maxUpwardDrag, maxVerticalDrag)
-                                    portraitDragOffset.snapTo(newOffset)
-                                }
-                            },
-                            onDragEnd = { flingVelocity ->
-                                scope.launch {
-                                    val flingToPipThreshold = 1.8f
-                                    val flingToLandscapeThreshold = -1.8f
-                                    val pipPositionThreshold = maxVerticalDrag * 0.5f
-                                    val landscapePositionThreshold = maxUpwardDrag * 0.25f
-
-                                    val shouldGoToPip =
-                                        (flingVelocity > flingToPipThreshold && portraitDragOffset.value > 0) ||
-                                                (maxVerticalDrag.isFinite() && portraitDragOffset.value > pipPositionThreshold)
-                                    val shouldGoToLandscape =
-                                        (flingVelocity < flingToLandscapeThreshold && portraitDragOffset.value < 0) ||
-                                                (portraitDragOffset.value < landscapePositionThreshold)
-
-                                    when {
-                                        shouldGoToPip -> {
-                                            portraitDragOffset.animateTo(
-                                                maxVerticalDrag,
-                                                spring(stiffness = 400f)
-                                            )
-                                            setPlayerDisplayMode(PlayerDisplayMode.PIP)
-                                            portraitDragOffset.snapTo(0f)
-                                        }
-
-                                        shouldGoToLandscape -> {
-                                            setPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN_LANDSCAPE)
-                                        }
-
-                                        else -> {
-                                            portraitDragOffset.animateTo(0f, spring())
-                                        }
-                                    }
-                                }
-                            },
                             pipWidth = pipWidth,
                             pipEndDestinationPx = pipEndDestinationPx,
                             pipEndSizePx = pipEndSizePx,
