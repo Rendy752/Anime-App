@@ -1,6 +1,7 @@
 package com.luminoverse.animevibe.ui.main
 
 import android.annotation.SuppressLint
+import android.os.Build
 import android.app.PictureInPictureParams
 import android.util.Log
 import android.view.WindowManager
@@ -21,9 +22,14 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.calculateEndPadding
+import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -174,10 +180,22 @@ fun PlayerHost(
         }
         var maxVerticalDrag by remember { mutableFloatStateOf(Float.POSITIVE_INFINITY) }
 
+        val layoutDirection = LocalLayoutDirection.current
+
+        val safeAreaPadding = WindowInsets.safeDrawing.asPaddingValues()
+        val systemPaddingPx = with(density) {
+            if (Build.VERSION.SDK_INT > Build.VERSION_CODES.R) 0f
+            else safeAreaPadding.calculateBottomPadding()
+                .toPx() + safeAreaPadding.calculateTopPadding().toPx()
+        }
         val topPaddingPx = with(density) { rememberedTopPadding.toPx() }
         val bottomPaddingPx = with(density) { rememberedBottomPadding.toPx() }
-        val startPaddingPx = with(density) { startPadding.toPx() }
-        val endPaddingPx = with(density) { endPadding.toPx() }
+        val startPaddingPx =
+            with(density) { safeAreaPadding.calculateStartPadding(layoutDirection).toPx() }
+        val endPaddingPx =
+            with(density) { safeAreaPadding.calculateEndPadding(layoutDirection).toPx() }.let {
+                if (Build.VERSION.SDK_INT > Build.VERSION_CODES.R) it else -it
+            }
 
         val safeScreenWidthDp = screenWidthDp - (startPadding + endPadding)
         val coercedPipWidth = playerState.pipWidth.coerceAtMost(safeScreenWidthDp)
@@ -196,14 +214,10 @@ fun PlayerHost(
         val draggableWidth = (maxX - minX).coerceAtLeast(1f)
 
         val minY = topPaddingPx
-        val maxY = if (!mainState.isLandscape) {
-            (screenHeightPx - pipHeightPx - bottomPaddingPx).coerceAtLeast(minY)
+        val maxY = if (!mainState.isLandscape || isCurrentBottomScreen) {
+            (screenHeightPx - pipHeightPx - bottomPaddingPx + systemPaddingPx).coerceAtLeast(minY)
         } else {
-            if (isCurrentBottomScreen) {
-                (screenHeightPx - pipHeightPx - bottomPaddingPx).coerceAtLeast(minY)
-            } else {
-                (screenHeightPx - pipHeightPx).coerceAtLeast(minY)
-            }
+            (screenHeightPx - pipHeightPx).coerceAtLeast(minY)
         }
 
         LaunchedEffect(maxY) {
@@ -382,7 +396,7 @@ fun PlayerHost(
             val defaultPlayerHeight = screenWidthDp * (9f / 16f)
             Column(
                 modifier = Modifier
-                    .padding(top = if (isPipMode) configuration.screenHeightDp.dp else defaultPlayerHeight)
+                    .padding(top = if (isPipMode) configuration.screenHeightDp.dp + topPaddingPx.dp + bottomPaddingPx.dp else defaultPlayerHeight)
                     .graphicsLayer {
                         translationY = verticalDragOffset.value.coerceAtLeast(0f)
                         alpha = 1f - (pipDragProgress * 1.5f).coerceIn(0f, 1f)

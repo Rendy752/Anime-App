@@ -531,7 +531,7 @@ fun VideoPlayer(
 
         // Subtitle View
         val animatedSubtitleBottomPadding by animateDpAsState(
-            targetValue = if (isOverlayVisible && controlsState.isControlsVisible && isLandscape) videoPlayerState.bottomBarHeight.dp else if (isSideSheetVisible) 16.dp else 8.dp,
+            targetValue = if (isOverlayVisible && controlsState.isControlsVisible && isLandscape && displayMode == PlayerDisplayMode.FULLSCREEN_LANDSCAPE) videoPlayerState.bottomBarHeight.dp else if (isSideSheetVisible) 16.dp else 8.dp,
             label = "SubtitleBottomPadding"
         )
         CustomSubtitleView(

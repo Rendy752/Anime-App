@@ -4,10 +4,10 @@
     <selectionStates>
       <SelectionState runConfigName="AnimeVibe.app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2025-07-11T13:36:21.929848100Z">
+        <DropdownSelection timestamp="2025-07-12T18:49:19.767452600Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\rendy\.android\avd\Pixel_2.avd" />
+              <DeviceId pluginId="PhysicalDevice" identifier="serial=524b638e" />
             </handle>
           </Target>
         </DropdownSelection>
