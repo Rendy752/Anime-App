@@ -24,6 +24,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.NotificationsActive
+import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -130,6 +131,7 @@ fun ImageDisplay(
     contentDescription: String,
     roundedCorners: ImageRoundedCorner = ImageRoundedCorner.ALL,
     isAiring: Boolean? = null,
+    isApproved: Boolean? = null,
     positionData: Pair<Long?, Long?>? = null,
     onClick: ((image: Any?, bounds: Rect, imageSize: Size?) -> Unit)? = null,
 ) {
@@ -338,6 +340,23 @@ fun ImageDisplay(
                     .padding(4.dp)
                     .size(16.dp)
                     .align(Alignment.TopStart)
+            )
+        }
+
+        if (isApproved != null) {
+            Icon(
+                imageVector = Icons.Default.ThumbUp,
+                contentDescription = "Approved",
+                tint = MaterialTheme.colorScheme.tertiary,
+                modifier = Modifier
+                    .padding(4.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+                        shape = RoundedCornerShape(50)
+                    )
+                    .padding(4.dp)
+                    .size(16.dp)
+                    .align(Alignment.TopEnd)
             )
         }
 
