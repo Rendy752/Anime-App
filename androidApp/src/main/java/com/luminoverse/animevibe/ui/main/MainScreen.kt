@@ -66,6 +66,7 @@ fun MainScreen(
     intentChannel: Channel<Intent>,
     resetIdleTimer: () -> Unit,
     mainState: MainState,
+    playerState: PlayerState?,
     mainAction: (MainAction) -> Unit,
     hlsPlayerUtils: HlsPlayerUtils
 ) {
@@ -88,7 +89,7 @@ fun MainScreen(
         rememberedBottomPadding = currentBottomPadding
     }
 
-    LaunchedEffect(currentRoute, mainState.playerState?.displayMode) {
+    LaunchedEffect(currentRoute, playerState?.displayMode) {
         resetIdleTimer()
         mainAction(MainAction.DismissSnackbar)
     }
@@ -199,7 +200,7 @@ fun MainScreen(
                             onAction = viewModel::onAction,
                             mainState = mainState,
                             navController = navController,
-                            isVideoPlayerVisible = mainState.playerState != null,
+                            isVideoPlayerVisible = playerState != null,
                             playEpisode = { malId, episodeId ->
                                 mainAction.invoke(MainAction.PlayEpisode(malId, episodeId))
                             },
@@ -365,11 +366,11 @@ fun MainScreen(
 
         AnimatedVisibility(
             modifier = Modifier.fillMaxWidth(),
-            visible = mainState.playerState != null,
+            visible = playerState != null,
             enter = slideInVertically { it },
             exit = slideOutVertically { it }
         ) {
-            mainState.playerState?.let { playerState ->
+            playerState?.let { playerState ->
                 PlayerHost(
                     playerState = playerState,
                     mainState = mainState,

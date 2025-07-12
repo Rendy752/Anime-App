@@ -128,13 +128,13 @@ fun PlayerHost(
         val isPlaying by remember { derivedStateOf { playerCoreState.isPlaying } }
         LaunchedEffect(isPlaying) {
             activity?.window?.let { window ->
-                if (isPlaying && mainState.playerState?.displayMode != PlayerDisplayMode.SYSTEM_PIP) {
+                if (isPlaying && playerState.displayMode != PlayerDisplayMode.SYSTEM_PIP) {
                     window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                 } else {
                     window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
                 }
             }
-            if (mainState.playerState?.displayMode == PlayerDisplayMode.SYSTEM_PIP && activity != null) {
+            if (playerState.displayMode == PlayerDisplayMode.SYSTEM_PIP && activity != null) {
                 val actions = buildPipActions(activity, playerCoreState.isPlaying)
                 activity.setPictureInPictureParams(
                     PictureInPictureParams.Builder()
@@ -486,7 +486,7 @@ fun PlayerHost(
                 pipEndSizePx = pipEndSizePx
             )
 
-            if (pipDragProgress > 0f && mainState.playerState?.displayMode == PlayerDisplayMode.FULLSCREEN_PORTRAIT) {
+            if (pipDragProgress > 0f && playerState.displayMode == PlayerDisplayMode.FULLSCREEN_PORTRAIT) {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()

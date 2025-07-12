@@ -84,8 +84,7 @@ data class MainState(
     val isShowIdleDialog: Boolean = false,
     val isLandscape: Boolean = false,
     val sharedImageState: SharedImageState? = null,
-    val snackbarMessage: SnackbarMessage? = null,
-    val playerState: PlayerState? = null
+    val snackbarMessage: SnackbarMessage? = null
 )
 
 sealed class MainAction {
@@ -125,8 +124,10 @@ class MainViewModel @Inject constructor(
         app.getSharedPreferences("settings_prefs", Context.MODE_PRIVATE)
 
     private val _state: MutableStateFlow<MainState>
-
     val state: StateFlow<MainState>
+
+    private val _playerState = MutableStateFlow<PlayerState?>(null)
+    val playerState: StateFlow<PlayerState?> = _playerState.asStateFlow()
 
     private val configurationChangeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -193,6 +194,7 @@ class MainViewModel @Inject constructor(
             is MainAction.DismissImagePreview -> _state.update { it.copy(sharedImageState = null) }
             is MainAction.ShowSnackbar -> showSnackbar(action.message)
             is MainAction.DismissSnackbar -> dismissSnackbar()
+
             is MainAction.PlayEpisode -> playEpisode(action.malId, action.episodeId)
             is MainAction.UpdatePlayerPipRelativeOffset -> updatePlayerPipRelativeOffset(action.relativeOffset)
             is MainAction.UpdatePipDragProgress -> updatePlayerPipDragProgress(action.progress)
@@ -211,56 +213,39 @@ class MainViewModel @Inject constructor(
     }
 
     private fun playEpisode(malId: Int, episodeId: String) {
-        _state.update {
-            it.copy(
-                playerState = PlayerState(
-                    malId = malId,
-                    episodeId = episodeId,
-                    displayMode = if (it.isLandscape) PlayerDisplayMode.FULLSCREEN_LANDSCAPE else PlayerDisplayMode.FULLSCREEN_PORTRAIT
-                )
-            )
-        }
+        _playerState.value = PlayerState(
+            malId = malId,
+            episodeId = episodeId,
+            displayMode = if (_state.value.isLandscape) PlayerDisplayMode.FULLSCREEN_LANDSCAPE else PlayerDisplayMode.FULLSCREEN_PORTRAIT
+        )
     }
 
     private fun updatePlayerPipRelativeOffset(relativeOffset: Offset) {
-        _state.value.playerState?.let { current ->
-            _state.update {
-                it.copy(playerState = current.copy(pipRelativeOffset = relativeOffset))
-            }
-        }
+        _playerState.update { it?.copy(pipRelativeOffset = relativeOffset) }
     }
 
     private fun updatePlayerPipDragProgress(progress: Float) {
-        _state.value.playerState?.let { current ->
-            _state.update {
-                it.copy(playerState = current.copy(pipDragProgress = progress))
-            }
-        }
+        _playerState.update { it?.copy(pipDragProgress = progress) }
     }
 
     private fun setPlayerDisplayMode(mode: PlayerDisplayMode) {
-        _state.value.playerState?.let { current ->
-            val newPlayerState = if (mode == PlayerDisplayMode.PIP) {
-                current.copy(displayMode = mode, pipRelativeOffset = Offset(1f, 1f))
-            } else {
-                current.copy(displayMode = mode)
-            }
-            _state.update {
-                it.copy(playerState = newPlayerState)
+        _playerState.update { current ->
+            current?.let {
+                if (mode == PlayerDisplayMode.PIP) {
+                    it.copy(displayMode = mode, pipRelativeOffset = Offset(1f, 1f))
+                } else {
+                    it.copy(displayMode = mode)
+                }
             }
         }
     }
 
     private fun setPlayerPipWidth(width: Dp) {
-        _state.value.playerState?.let { current ->
-            _state.update {
-                it.copy(playerState = current.copy(pipWidth = width))
-            }
-        }
+        _playerState.update { it?.copy(pipWidth = width) }
     }
 
     private fun closePlayer() {
-        _state.update { it.copy(playerState = null) }
+        _playerState.value = null
     }
 
     private fun isDarkMode(themeMode: ThemeMode): Boolean {

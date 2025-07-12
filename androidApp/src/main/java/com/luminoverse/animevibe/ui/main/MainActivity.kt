@@ -169,14 +169,15 @@ class MainActivity : AppCompatActivity() {
         setContent {
             val density = LocalDensity.current
             val state by mainViewModel.state.collectAsStateWithLifecycle()
+            val playerState by mainViewModel.playerState.collectAsStateWithLifecycle()
             val snackbarHostState = remember { SnackbarHostState() }
 
             navController = rememberNavController()
             val navBackStackEntry by navController.currentBackStackEntryAsState()
             val currentRoute = navBackStackEntry?.destination?.route
 
-            LaunchedEffect(state.playerState?.displayMode) {
-                playerDisplayMode = state.playerState?.displayMode
+            LaunchedEffect(playerState?.displayMode) {
+                playerDisplayMode = playerState?.displayMode
             }
             LaunchedEffect(state.snackbarMessage) {
                 state.snackbarMessage?.let { snackbarMessage ->
@@ -233,10 +234,10 @@ class MainActivity : AppCompatActivity() {
                 Scaffold(
                     snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
                     bottomBar = {
-                        val isPipModeOrNoPlayerVisible = state.playerState?.displayMode in listOf(
+                        val isPipModeOrNoPlayerVisible = playerState?.displayMode in listOf(
                             PlayerDisplayMode.PIP, null
                         )
-                        val pipDragProgress = state.playerState?.pipDragProgress ?: 0f
+                        val pipDragProgress = playerState?.pipDragProgress ?: 0f
 
                         val bottomBarHeight = 80.dp
                         val bottomBarHeightPx = with(density) { bottomBarHeight.toPx() }
@@ -268,6 +269,7 @@ class MainActivity : AppCompatActivity() {
                         intentChannel = intentChannel,
                         resetIdleTimer = resetIdleTimer,
                         mainState = state.copy(isLandscape = isLandscape),
+                        playerState = playerState,
                         mainAction = mainViewModel::onAction,
                         hlsPlayerUtils = hlsPlayerUtils
                     )
