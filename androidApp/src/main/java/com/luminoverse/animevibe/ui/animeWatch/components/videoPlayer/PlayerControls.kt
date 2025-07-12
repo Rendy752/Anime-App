@@ -50,7 +50,6 @@ import androidx.media3.common.Player
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.ui.common.EpisodeDetailItem
-import com.luminoverse.animevibe.ui.main.PlayerDisplayMode
 import com.luminoverse.animevibe.utils.TimeUtils.formatTimestamp
 
 @Composable
@@ -60,8 +59,8 @@ fun PlayerControls(
     bufferedPosition: Long,
     duration: Long,
     playbackState: Int,
-    playbackErrorMessage: String?,
-    setPlayerDisplayMode: (PlayerDisplayMode) -> Unit,
+    isRefreshing: Boolean,
+    setDisplayModePip: () -> Unit,
     episodeDetailComplement: EpisodeDetailComplement,
     hasPreviousEpisode: Boolean,
     nextEpisode: Episode?,
@@ -101,7 +100,7 @@ fun PlayerControls(
         TopSection(
             modifier = Modifier.align(Alignment.TopCenter),
             shouldShowControls = shouldShowControls,
-            setPlayerDisplayMode = setPlayerDisplayMode,
+            setDisplayModePip = setDisplayModePip,
             isLandscape = isLandscape,
             playbackState = playbackState,
             episodeDetailComplement = episodeDetailComplement,
@@ -117,10 +116,10 @@ fun PlayerControls(
 
         MiddleSection(
             modifier = Modifier.align(Alignment.Center),
-            playbackErrorMessage = playbackErrorMessage,
             shouldShowControls = shouldShowControls,
             hasPreviousEpisode = hasPreviousEpisode,
             playbackState = playbackState,
+            isRefreshing = isRefreshing,
             handlePlay = handlePlay,
             handlePause = handlePause,
             onPreviousEpisode = onPreviousEpisode,
@@ -164,7 +163,7 @@ fun PlayerControls(
 private fun TopSection(
     modifier: Modifier,
     shouldShowControls: Boolean,
-    setPlayerDisplayMode: (PlayerDisplayMode) -> Unit,
+    setDisplayModePip: () -> Unit,
     isLandscape: Boolean,
     playbackState: Int,
     episodeDetailComplement: EpisodeDetailComplement,
@@ -198,7 +197,7 @@ private fun TopSection(
                 Icon(
                     modifier = Modifier
                         .clip(CircleShape)
-                        .clickable { setPlayerDisplayMode(PlayerDisplayMode.PIP) }
+                        .clickable { setDisplayModePip() }
                         .padding(8.dp),
                     imageVector = Icons.Default.KeyboardArrowDown,
                     contentDescription = "Return back",
@@ -297,10 +296,10 @@ private fun TopSection(
 @Composable
 private fun MiddleSection(
     modifier: Modifier,
-    playbackErrorMessage: String?,
     shouldShowControls: Boolean,
     hasPreviousEpisode: Boolean,
     playbackState: Int,
+    isRefreshing: Boolean,
     handlePlay: () -> Unit,
     handlePause: () -> Unit,
     onPreviousEpisode: () -> Unit,
@@ -348,8 +347,8 @@ private fun MiddleSection(
             }
 
             PlayPauseLoadingButton(
-                playbackErrorMessage = playbackErrorMessage,
                 playbackState = playbackState,
+                isRefreshing = isRefreshing,
                 isPlaying = isPlaying,
                 onSeekTo = onSeekTo,
                 handlePause = handlePause,

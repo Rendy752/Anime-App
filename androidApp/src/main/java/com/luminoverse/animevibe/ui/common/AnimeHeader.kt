@@ -12,10 +12,6 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ThumbUp
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,7 +43,8 @@ fun AnimeHeader(
             modifier = Modifier.weight(0.5f),
             image = animeDetail.images.webp.large_image_url,
             contentDescription = animeDetail.title,
-            isAiring = animeDetail.airing
+            isAiring = animeDetail.airing,
+            isApproved = animeDetail.approved,
         )
 
         Column(
@@ -55,44 +52,30 @@ fun AnimeHeader(
                 .padding(start = 8.dp)
                 .weight(0.5f)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = animeDetail.title,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier
-                        .weight(1f)
-                        .combinedClickable(
-                            onClick = { onClick?.invoke() },
-                            onDoubleClick = {
-                                val intent = Intent(Intent.ACTION_VIEW, animeDetail.url.toUri())
-                                context.startActivity(intent)
-                            },
-                            onLongClick = {
-                                val clipboard = ContextCompat.getSystemService(
-                                    context,
-                                    ClipboardManager::class.java
-                                )
-                                val clip = ClipData.newPlainText(
-                                    "Anime Title",
-                                    animeDetail.title
-                                )
-                                clipboard?.setPrimaryClip(clip)
-                            }
-                        )
-                )
-
-                if (animeDetail.approved) {
-                    Icon(
-                        imageVector = Icons.Default.ThumbUp,
-                        contentDescription = "Approved",
-                        tint = MaterialTheme.colorScheme.tertiary
+            Text(
+                text = animeDetail.title,
+                style = MaterialTheme.typography.titleLarge,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier
+                    .combinedClickable(
+                        onClick = { onClick?.invoke() },
+                        onDoubleClick = {
+                            val intent = Intent(Intent.ACTION_VIEW, animeDetail.url.toUri())
+                            context.startActivity(intent)
+                        },
+                        onLongClick = {
+                            val clipboard = ContextCompat.getSystemService(
+                                context,
+                                ClipboardManager::class.java
+                            )
+                            val clip = ClipData.newPlainText(
+                                "Anime Title",
+                                animeDetail.title
+                            )
+                            clipboard?.setPrimaryClip(clip)
+                        }
                     )
-                }
-            }
+            )
 
             Text(
                 text = animeDetail.title_japanese ?: "",
@@ -129,31 +112,25 @@ fun AnimeHeaderSkeleton(modifier: Modifier = Modifier, showImage: Boolean = true
                 .padding(start = 8.dp)
                 .weight(1f)
         ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                SkeletonBox(
-                    modifier = Modifier
-                        .weight(1f),
-                    height = 24.dp
-                )
-
-                SkeletonBox(
-                    modifier = Modifier.size(24.dp),
-                    height = 24.dp
-                )
-            }
-
-            Spacer(modifier = Modifier.height(4.dp))
             SkeletonBox(
-                modifier = Modifier.fillMaxWidth(0.8f),
-                height = 20.dp
+                modifier = Modifier.fillMaxWidth(0.7f),
+                height = 24.dp
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            SkeletonBox(
+                modifier = Modifier.fillMaxWidth(0.9f),
+                height = 24.dp
             )
 
             Spacer(modifier = Modifier.height(4.dp))
             SkeletonBox(
                 modifier = Modifier.fillMaxWidth(0.6f),
+                height = 20.dp
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+            SkeletonBox(
+                modifier = Modifier.fillMaxWidth(0.8f),
                 height = 20.dp
             )
 

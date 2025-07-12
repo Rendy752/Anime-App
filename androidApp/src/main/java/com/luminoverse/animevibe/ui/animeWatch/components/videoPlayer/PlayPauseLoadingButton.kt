@@ -41,8 +41,8 @@ import androidx.media3.common.Player
 
 @Composable
 fun PlayPauseLoadingButton(
-    playbackErrorMessage: String?,
     playbackState: Int,
+    isRefreshing: Boolean,
     isPlaying: Boolean,
     onSeekTo: (Long) -> Unit,
     handlePause: () -> Unit,
@@ -61,12 +61,12 @@ fun PlayPauseLoadingButton(
         label = "loading_border_angle"
     )
 
-    LaunchedEffect(isPlaying) {
-        mutableIsPlaying = isPlaying
+    LaunchedEffect(isPlaying, playbackState) {
+        mutableIsPlaying = if (playbackState == Player.STATE_IDLE) false else isPlaying
     }
 
     val borderModifier =
-        if (playbackState == Player.STATE_BUFFERING && playbackErrorMessage == null) {
+        if (playbackState == Player.STATE_BUFFERING || isRefreshing) {
             Modifier.drawBehind {
                 val strokeWidth = 3.dp.toPx()
                 val brush = Brush.sweepGradient(

@@ -78,8 +78,7 @@ sealed class HlsPlayerAction {
         val videoData: EpisodeSources,
         val isAutoPlayVideo: Boolean,
         val currentPosition: Long,
-        val duration: Long,
-        val onError: (String) -> Unit
+        val duration: Long
     ) : HlsPlayerAction()
 
     data object Reset : HlsPlayerAction()
@@ -123,9 +122,6 @@ class HlsPlayerUtils @Inject constructor(
     private val _controlsState = MutableStateFlow(ControlsState())
     val controlsState: StateFlow<ControlsState> = _controlsState.asStateFlow()
 
-    private val _isPlayerInitialized = MutableStateFlow(false)
-    val isPlayerInitialized: StateFlow<Boolean> = _isPlayerInitialized.asStateFlow()
-
     init {
         initializePlayerInternal()
 
@@ -161,7 +157,6 @@ class HlsPlayerUtils @Inject constructor(
                 PlayerCoreState(isPlaying = false, playbackState = Player.STATE_IDLE)
             }
             _controlsState.update { ControlsState(isControlsVisible = true) }
-            _isPlayerInitialized.value = true
         }
     }
 
@@ -171,8 +166,7 @@ class HlsPlayerUtils @Inject constructor(
                 action.videoData,
                 action.isAutoPlayVideo,
                 action.currentPosition,
-                action.duration,
-                action.onError
+                action.duration
             )
 
             is HlsPlayerAction.Reset -> reset()
@@ -284,9 +278,10 @@ class HlsPlayerUtils @Inject constructor(
                     it.copy(
                         isPlaying = false,
                         isLoading = false,
-                        error = errorMessage
+                        error = null
                     )
                 }
+                _playerCoreState.update { it.copy(error = errorMessage) }
                 Log.e("HlsPlayerUtils", "PlayerError: $errorMessage", error)
             }
         }
@@ -367,8 +362,7 @@ class HlsPlayerUtils @Inject constructor(
         videoData: EpisodeSources,
         isAutoPlayVideo: Boolean,
         currentPosition: Long,
-        duration: Long,
-        onError: (String) -> Unit
+        duration: Long
     ) {
         try {
             _controlsState.update { ControlsState() }
@@ -393,17 +387,13 @@ class HlsPlayerUtils @Inject constructor(
                         else if (currentPosition < duration) seekTo(currentPosition)
                         dispatch(HlsPlayerAction.Play)
                     }
-                } else {
-                    onError("Invalid HLS source")
                 }
-            } ?: run {
-                onError("Player not initialized")
             }
             dispatch(
                 HlsPlayerAction.RequestToggleControlsVisibility(isVisible = true)
             )
         } catch (e: Exception) {
-            onError("Failed to set media: ${e.message ?: "Unknown error"}")
+            Log.e("HlsPlayerUtils", "Failed to set media", e)
         }
     }
 

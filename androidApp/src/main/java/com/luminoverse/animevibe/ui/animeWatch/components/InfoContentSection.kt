@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.luminoverse.animevibe.models.AnimeDetail
@@ -23,6 +24,7 @@ import com.luminoverse.animevibe.ui.main.navigation.navigateTo
 @Composable
 fun InfoContentSection(
     modifier: Modifier = Modifier,
+    rememberedBottomPadding: Dp = 0.dp,
     animeDetail: AnimeDetail?,
     navController: NavController,
     setPlayerDisplayMode: (PlayerDisplayMode) -> Unit,
@@ -50,21 +52,21 @@ fun InfoContentSection(
                 favorites = animeDetail.favorites
             )
             YoutubePreview(embedUrl = animeDetail.trailer.embed_url)
-            val commonBodyItems = listOf(
-                "Background" to animeDetail.background,
-                "Synopsis" to animeDetail.synopsis,
+            DetailCommonBody(title = "Background", body = animeDetail.background)
+            DetailCommonBody(
+                modifier = Modifier.padding(bottom = rememberedBottomPadding),
+                title = "Synopsis",
+                body = animeDetail.synopsis
             )
-            commonBodyItems.forEach { item ->
-                DetailCommonBody(title = item.first, body = item.second)
-            }
         } else {
             AnimeHeaderSkeleton()
             NumericDetailSectionSkeleton()
             YoutubePreviewSkeleton()
-            listOf(
-                "Background",
-                "Synopsis"
-            ).forEach { DetailCommonBodySkeleton(title = it) }
+            DetailCommonBodySkeleton(title = "Background")
+            DetailCommonBodySkeleton(
+                modifier = Modifier.padding(bottom = rememberedBottomPadding),
+                title = "Synopsis"
+            )
         }
     }
 }

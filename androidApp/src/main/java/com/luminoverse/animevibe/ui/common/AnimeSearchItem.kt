@@ -8,7 +8,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Image
-import androidx.compose.material.icons.filled.Recommend
 import androidx.compose.material.icons.filled.Score
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.HorizontalDivider
@@ -61,6 +60,7 @@ fun AnimeSearchItem(
                     image = animeDetail?.images?.webp?.large_image_url,
                     contentDescription = contentDescription,
                     isAiring = animeDetail?.airing,
+                    isApproved = animeDetail?.approved,
                     onClick = showImagePreview?.let {
                         { image, bounds, size ->
                             it(
@@ -101,28 +101,16 @@ fun AnimeSearchItem(
                 )
                 if (errorTitle.isNullOrEmpty()) {
                     HorizontalDivider()
-                    Row(
-                        modifier = Modifier.padding(top = 2.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
-                    ) {
-                        Text(
-                            text = "${animeDetail?.type ?: "Unknown Type"} (${animeDetail?.episodes} eps) - ${animeDetail?.aired?.prop?.from?.year ?: "Unknown Year"}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.weight(1f),
-                            maxLines = 1,
-                            textAlign = TextAlign.Center,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        if (animeDetail?.approved == true) {
-                            Icon(
-                                imageVector = Icons.Filled.Recommend,
-                                contentDescription = "Approved",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
-                    }
+                    Text(
+                        text = "${animeDetail?.type ?: "Unknown Type"} (${animeDetail?.episodes} eps) - ${animeDetail?.aired?.prop?.from?.year ?: "Unknown Year"}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier
+                            .padding(top = 2.dp)
+                            .fillMaxWidth(),
+                        maxLines = 1,
+                        textAlign = TextAlign.Center,
+                        overflow = TextOverflow.Ellipsis
+                    )
                     animeDetail?.genres?.let { genres ->
                         Row(
                             modifier = Modifier
@@ -196,11 +184,13 @@ fun AnimeSearchItemSkeleton(modifier: Modifier = Modifier) {
                 modifier = Modifier
                     .weight(1f)
                     .padding(end = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 SkeletonBox(width = 150.dp, height = 20.dp)
-                Spacer(modifier = Modifier.height(2.dp))
+                Spacer(modifier = Modifier.height(4.dp))
                 SkeletonBox(width = 100.dp, height = 16.dp)
                 Spacer(modifier = Modifier.height(8.dp))
+
                 Row(
                     modifier = Modifier.horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)

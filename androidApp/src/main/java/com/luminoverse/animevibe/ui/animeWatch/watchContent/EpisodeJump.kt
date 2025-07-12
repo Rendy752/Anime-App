@@ -37,7 +37,9 @@ fun EpisodeJump(
 ) {
     val scope = rememberCoroutineScope()
     val totalEpisodes = episodes.size
-    var textValue by remember { mutableStateOf(episodeJumpNumber?.toString()?.takeIf { it != "0" } ?: "") }
+    var textValue by remember {
+        mutableStateOf(episodeJumpNumber?.toString()?.takeIf { it != "0" } ?: "")
+    }
 
     LaunchedEffect(episodeJumpNumber) {
         textValue = episodeJumpNumber?.toString()?.takeIf { it != "0" } ?: ""
@@ -50,11 +52,9 @@ fun EpisodeJump(
                 val index = episodes.indexOfFirst { it.episode_no == intValue }
                 if (index != -1) {
                     scope.launch {
-                        if (abs(gridState.firstVisibleItemIndex - index) < 20) {
-                            gridState.animateScrollToItem(index)
-                        } else {
-                            gridState.scrollToItem(index)
-                        }
+                        val indexDifference = abs(gridState.firstVisibleItemIndex - index)
+                        if (indexDifference < 50) gridState.animateScrollToItem(index)
+                        else gridState.scrollToItem(index)
                     }
                 }
             }

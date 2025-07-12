@@ -1,5 +1,12 @@
 package com.luminoverse.animevibe.ui.main.navigation
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NamedNavArgument
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
@@ -7,25 +14,31 @@ import androidx.navigation.navArgument
 sealed interface NavRoute {
     val route: String
     val arguments: List<NamedNavArgument> get() = emptyList()
+    val icon: ImageVector? get() = null
 
     object Home : NavRoute {
         override val route = "home"
+        override val icon = Icons.Filled.Home
     }
 
     object Recommendations : NavRoute {
         override val route = "recommendations"
+        override val icon = Icons.AutoMirrored.Filled.List
     }
 
     object Search : NavRoute {
         override val route = "search"
+        override val icon = Icons.Filled.Search
     }
 
     object History : NavRoute {
         override val route = "history"
+        override val icon = Icons.Filled.History
     }
 
     object Settings : NavRoute {
         override val route = "settings"
+        override val icon = Icons.Filled.Settings
     }
 
     data class AnimeDetail(val id: Int) : NavRoute {

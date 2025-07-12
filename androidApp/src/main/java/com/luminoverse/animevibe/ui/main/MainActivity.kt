@@ -51,6 +51,11 @@ import kotlinx.coroutines.launch
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import android.content.pm.PackageManager
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.lerp
 
 @AndroidEntryPoint
 class MainActivity : AppCompatActivity() {
@@ -162,15 +167,17 @@ class MainActivity : AppCompatActivity() {
         requestNotificationPermission()
 
         setContent {
+            val density = LocalDensity.current
             val state by mainViewModel.state.collectAsStateWithLifecycle()
+            val playerState by mainViewModel.playerState.collectAsStateWithLifecycle()
             val snackbarHostState = remember { SnackbarHostState() }
 
             navController = rememberNavController()
             val navBackStackEntry by navController.currentBackStackEntryAsState()
             val currentRoute = navBackStackEntry?.destination?.route
 
-            LaunchedEffect(state.playerState?.displayMode) {
-                playerDisplayMode = state.playerState?.displayMode
+            LaunchedEffect(playerState?.displayMode) {
+                playerDisplayMode = playerState?.displayMode
             }
             LaunchedEffect(state.snackbarMessage) {
                 state.snackbarMessage?.let { snackbarMessage ->
@@ -227,15 +234,32 @@ class MainActivity : AppCompatActivity() {
                 Scaffold(
                     snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
                     bottomBar = {
+                        val isPipModeOrNoPlayerVisible = playerState?.displayMode in listOf(
+                            PlayerDisplayMode.PIP, null
+                        )
+                        val pipDragProgress = playerState?.pipDragProgress ?: 0f
+
+                        val bottomBarHeight = 80.dp
+                        val bottomBarHeightPx = with(density) { bottomBarHeight.toPx() }
+
                         AnimatedVisibility(
-                            visible = NavRoute.bottomRoutes.any { it.route == currentRoute }
-                                    && state.playerState?.displayMode in listOf(
-                                PlayerDisplayMode.PIP,
-                                null
-                            ),
+                            visible = NavRoute.bottomRoutes.any { it.route == currentRoute } &&
+                                    (isPipModeOrNoPlayerVisible || (pipDragProgress > 0f && !isLandscape)),
                             enter = slideInVertically(initialOffsetY = { it }),
                             exit = slideOutVertically(targetOffsetY = { it })
-                        ) { BottomNavigationBar(navController = navController) }
+                        ) {
+                            BottomNavigationBar(
+                                modifier = Modifier.graphicsLayer {
+                                    translationY = if (isPipModeOrNoPlayerVisible) 0f
+                                    else lerp(
+                                        start = bottomBarHeightPx,
+                                        stop = 0f,
+                                        fraction = pipDragProgress
+                                    )
+                                },
+                                navController = navController
+                            )
+                        }
                     }
                 ) { paddingValues ->
                     MainScreen(
@@ -245,6 +269,7 @@ class MainActivity : AppCompatActivity() {
                         intentChannel = intentChannel,
                         resetIdleTimer = resetIdleTimer,
                         mainState = state.copy(isLandscape = isLandscape),
+                        playerState = playerState,
                         mainAction = mainViewModel::onAction,
                         hlsPlayerUtils = hlsPlayerUtils
                     )
@@ -401,12 +426,22 @@ class MainActivity : AppCompatActivity() {
     private fun startIdleDetection(isShowIdleDialog: Boolean, action: (Boolean) -> Unit) {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
+                var wasPlaying = hlsPlayerUtils.getPlayer()?.isPlaying ?: false
+
                 while (true) {
                     delay(1000)
+
+                    val isCurrentlyPlaying = hlsPlayerUtils.getPlayer()?.isPlaying ?: false
+
+                    if (isCurrentlyPlaying != wasPlaying) {
+                        resetIdleTimer()
+                        wasPlaying = isCurrentlyPlaying
+                    }
+
                     val currentTime = System.currentTimeMillis()
                     val isIdle = currentTime - lastInteractionTime > idleTimeoutMillis
 
-                    if (isIdle && hlsPlayerUtils.getPlayer()?.isPlaying == false && playerDisplayMode != PlayerDisplayMode.SYSTEM_PIP) {
+                    if (isIdle && !isCurrentlyPlaying && playerDisplayMode != PlayerDisplayMode.SYSTEM_PIP) {
                         if (!isShowIdleDialog) {
                             action(true)
                         }

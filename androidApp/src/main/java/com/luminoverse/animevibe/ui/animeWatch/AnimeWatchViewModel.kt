@@ -41,6 +41,7 @@ data class WatchState(
     val newEpisodeIdList: List<String> = emptyList(),
     val episodeJumpNumber: Int? = null,
     val isSideSheetVisible: Boolean = false,
+    val isAutoplayNextEpisodeEnabled: Boolean = false,
     val errorSourceQueryList: List<EpisodeSourcesQuery> = emptyList(),
 )
 
@@ -63,6 +64,7 @@ sealed class WatchAction {
 
     data class SetEpisodeJumpNumber(val jumpNumber: Int) : WatchAction()
     data class SetSideSheetVisibility(val isVisible: Boolean) : WatchAction()
+    data class SetAutoplayNextEpisodeEnabled(val isEnabled: Boolean) : WatchAction()
 
     data class ShowErrorMessage(val message: String) : WatchAction()
     data class SetFavorite(val isFavorite: Boolean, val updateComplement: Boolean = true) :
@@ -119,6 +121,8 @@ class AnimeWatchViewModel @Inject constructor(
 
             is WatchAction.SetEpisodeJumpNumber -> _watchState.update { it.copy(episodeJumpNumber = action.jumpNumber) }
             is WatchAction.SetSideSheetVisibility -> _watchState.update { it.copy(isSideSheetVisible = action.isVisible) }
+            is WatchAction.SetAutoplayNextEpisodeEnabled -> _watchState.update { it.copy(isAutoplayNextEpisodeEnabled = action.isEnabled) }
+
             is WatchAction.ShowErrorMessage -> viewModelScope.launch {
                 _snackbarChannel.send(
                     SnackbarMessage(

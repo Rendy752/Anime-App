@@ -87,9 +87,7 @@ fun ContinueWatchingEpisode(
         ) {
             if (!minimized) {
                 ImageDisplay(
-                    modifier = Modifier
-                        .width(75.dp)
-                        .height(100.dp),
+                    modifier = Modifier.height(100.dp),
                     image = episodeDetailComplement.imageUrl,
                     contentDescription = "${episodeDetailComplement.animeTitle} image cover",
                     roundedCorners = ImageRoundedCorner.START
