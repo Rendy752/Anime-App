@@ -424,12 +424,22 @@ class MainActivity : AppCompatActivity() {
     private fun startIdleDetection(isShowIdleDialog: Boolean, action: (Boolean) -> Unit) {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
+                var wasPlaying = hlsPlayerUtils.getPlayer()?.isPlaying ?: false
+
                 while (true) {
                     delay(1000)
+
+                    val isCurrentlyPlaying = hlsPlayerUtils.getPlayer()?.isPlaying ?: false
+
+                    if (isCurrentlyPlaying != wasPlaying) {
+                        resetIdleTimer()
+                        wasPlaying = isCurrentlyPlaying
+                    }
+
                     val currentTime = System.currentTimeMillis()
                     val isIdle = currentTime - lastInteractionTime > idleTimeoutMillis
 
-                    if (isIdle && hlsPlayerUtils.getPlayer()?.isPlaying == false && playerDisplayMode != PlayerDisplayMode.SYSTEM_PIP) {
+                    if (isIdle && !isCurrentlyPlaying && playerDisplayMode != PlayerDisplayMode.SYSTEM_PIP) {
                         if (!isShowIdleDialog) {
                             action(true)
                         }
