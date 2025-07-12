@@ -207,6 +207,7 @@ fun AnimeWatchScreen(
                             player = exoPlayer,
                             episodeDetailComplement = watchState.episodeDetailComplement,
                             episodeDetailComplements = watchState.episodeDetailComplements,
+                            imagePlaceholder = watchState.animeDetail?.images?.webp?.large_image_url,
                             isRefreshing = watchState.isRefreshing,
                             networkDataSource = networkDataSource,
                             coreState = hlsPlayerCoreState,

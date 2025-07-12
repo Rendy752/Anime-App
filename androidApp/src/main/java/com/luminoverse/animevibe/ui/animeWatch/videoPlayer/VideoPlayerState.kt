@@ -102,6 +102,9 @@ class VideoPlayerState(
     /** Manages the visibility of the "Resume Playback" overlay. */
     var shouldShowResumeOverlay by mutableStateOf(false)
 
+    /** Manages the visibility of the landscape episode list. */
+    var showLandscapeEpisodeList by mutableStateOf(false)
+
     /** Manages the visibility of the "Next Episode" overlay. */
     var shouldShowNextEpisodeOverlay by mutableStateOf(false)
 

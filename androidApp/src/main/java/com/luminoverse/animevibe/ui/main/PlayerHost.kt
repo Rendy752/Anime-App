@@ -253,18 +253,19 @@ fun PlayerHost(
                         else PlayerDisplayMode.FULLSCREEN_PORTRAIT
                     )
                 )
+                onAction(MainAction.UpdatePlayerPipRelativeOffset(Offset(1f, 1f)))
 
                 val animationJobs = listOf(
                     launch {
                         animatablePlayerScale.animateTo(
                             targetValue = 1f,
-                            animationSpec = spring(dampingRatio = 0.8f, stiffness = 400f)
+                            animationSpec = spring()
                         )
                     },
                     launch {
                         animatablePlayerOffset.animateTo(
                             targetValue = Offset.Zero,
-                            animationSpec = spring(dampingRatio = 0.8f, stiffness = 400f)
+                            animationSpec = spring()
                         )
                     }
                 )

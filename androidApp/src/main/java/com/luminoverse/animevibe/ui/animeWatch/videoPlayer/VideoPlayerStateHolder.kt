@@ -296,6 +296,7 @@ fun rememberVideoPlayerState(
         if (isLandscape) {
             SystemBarsUtils.setSystemBarsVisibility(activity, true)
         } else {
+            state.showLandscapeEpisodeList = false
             SystemBarsUtils.setSystemBarsVisibility(activity, false)
         }
     }

@@ -23,6 +23,7 @@ import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -86,6 +87,7 @@ import kotlin.math.min
 fun VideoPlayer(
     episodeDetailComplement: EpisodeDetailComplement,
     episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
+    imagePlaceholder: String?,
     isRefreshing: Boolean,
     networkDataSource: NetworkDataSource,
     coreState: PlayerCoreState,
@@ -119,6 +121,7 @@ fun VideoPlayer(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val landscapeEpisodeListState = rememberLazyListState()
 
     // region Service Connection and Player Setup
     val playerView = remember { PlayerView(context).apply { useController = false } }
@@ -209,6 +212,7 @@ fun VideoPlayer(
     // region State Holders
     val topPaddingPx = with(LocalDensity.current) { rememberedTopPadding.toPx() }
     val maxUpwardDrag = screenHeightPx * -0.5f
+    val maxDownwardDragLandscape = screenHeightPx * -0.4f
     val videoPlayerState = rememberVideoPlayerState(
         key = episodeDetailComplement.sources.link.file,
         player = player,
@@ -241,9 +245,18 @@ fun VideoPlayer(
         label = "PlayerZoomAnimation"
     )
 
-    val currentEpisode = episodeDetailComplement.number
-    val prevEpisode = episodes.find { it.episode_no == currentEpisode - 1 }
-    val nextEpisode = episodes.find { it.episode_no == currentEpisode + 1 }
+    val currentEpisode = episodes.find { it.id == episodeDetailComplement.id } ?: episodes.first()
+    val prevEpisode = episodes.find { it.episode_no == currentEpisode.episode_no - 1 }
+    val nextEpisode = episodes.find { it.episode_no == currentEpisode.episode_no + 1 }
+    val episodesToShow = episodes.filter { episode -> episode.id != currentEpisode.id }
+    LaunchedEffect(episodes, currentEpisode) {
+        nextEpisode?.let {
+            val nextIndex = episodesToShow.indexOfFirst { episode -> episode.id == it.id }
+            if (nextIndex != -1) {
+                landscapeEpisodeListState.scrollToItem(nextIndex)
+            }
+        }
+    }
 
     val shouldShowResumeOverlay = !isAutoPlayVideo && videoPlayerState.shouldShowResumeOverlay &&
             episodeDetailComplement.lastTimestamp != null &&
@@ -271,6 +284,9 @@ fun VideoPlayer(
         )
     } else 0f
     val landscapeBackgroundAlpha = lerp(0f, 0.6f, currentLandscapeDragProgress * 2)
+    val landscapeEpisodeListProgress = if (maxDownwardDragLandscape != 0f) {
+        (verticalDragOffset.value / maxDownwardDragLandscape).coerceIn(0f, 1f)
+    } else 0f
     // endregion
 
     Box(
@@ -279,7 +295,8 @@ fun VideoPlayer(
             .onSizeChanged { videoPlayerState.playerContainerSize = it }
             .background(Color.Black.copy(alpha = if (isLandscape) landscapeBackgroundAlpha else 0f))
             .graphicsLayer {
-                if (isLandscape && verticalDragOffset.value > 0) {
+                if (isLandscape) {
+                    if (verticalDragOffset.value < 0) return@graphicsLayer
                     val scale = lerp(1f, 0.8f, currentLandscapeDragProgress * 2)
                     scaleX = scale
                     scaleY = scale
@@ -341,14 +358,24 @@ fun VideoPlayer(
                                     onVerticalDrag = { delta ->
                                         scope.launch {
                                             if (isLandscape) {
-                                                val screenHeight =
-                                                    videoPlayerState.playerContainerSize.height.toFloat()
-                                                val maxDrag = screenHeight * 0.5f
-                                                verticalDragOffset.snapTo(
-                                                    (verticalDragOffset.value + delta).coerceIn(
-                                                        0f, maxDrag
+                                                val currentOffset = verticalDragOffset.value
+                                                val newOffset = currentOffset + delta
+                                                val dismissMaxDrag =
+                                                    videoPlayerState.playerContainerSize.height.toFloat() * 0.5f
+
+                                                if (currentOffset < 0 || (currentOffset == 0f && delta < 0)) {
+                                                    verticalDragOffset.snapTo(
+                                                        newOffset.coerceIn(
+                                                            maxDownwardDragLandscape, 0f
+                                                        )
                                                     )
-                                                )
+                                                } else {
+                                                    verticalDragOffset.snapTo(
+                                                        newOffset.coerceIn(
+                                                            0f, dismissMaxDrag
+                                                        )
+                                                    )
+                                                }
                                             } else {
                                                 val newOffset = (verticalDragOffset.value + delta)
                                                     .coerceIn(maxUpwardDrag, maxVerticalDrag)
@@ -357,19 +384,36 @@ fun VideoPlayer(
                                         }
                                     },
                                     onDragEnd = { flingVelocity ->
+                                        val flingThreshold = 1.8f
                                         scope.launch {
                                             if (isLandscape) {
-                                                val screenHeight =
-                                                    videoPlayerState.playerContainerSize.height.toFloat()
-                                                val threshold = screenHeight * 0.5f
-                                                if (verticalDragOffset.value >= threshold) {
-                                                    setPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN_PORTRAIT)
+                                                val currentOffset = verticalDragOffset.value
+                                                if (currentOffset < 0) {
+                                                    val threshold = maxDownwardDragLandscape * 0.5f
+                                                    if (currentOffset < threshold || flingVelocity < -flingThreshold) {
+                                                        verticalDragOffset.animateTo(
+                                                            maxDownwardDragLandscape
+                                                        )
+                                                        videoPlayerState.showLandscapeEpisodeList =
+                                                            true
+                                                        verticalDragOffset.snapTo(0f)
+                                                    } else {
+                                                        verticalDragOffset.animateTo(0f)
+                                                        videoPlayerState.showLandscapeEpisodeList =
+                                                            false
+                                                    }
+                                                } else {
+                                                    val threshold =
+                                                        videoPlayerState.playerContainerSize.height.toFloat() * 0.5f
+                                                    if (currentOffset >= threshold) {
+                                                        setPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN_PORTRAIT)
+                                                    }
+                                                    verticalDragOffset.animateTo(
+                                                        0f,
+                                                        animationSpec = spring()
+                                                    )
                                                 }
-                                                verticalDragOffset.animateTo(
-                                                    0f, animationSpec = spring()
-                                                )
                                             } else {
-                                                val flingThreshold = 1.8f
                                                 val pipPositionThreshold = maxVerticalDrag * 0.5f
 
                                                 val shouldGoToPip =
@@ -418,7 +462,7 @@ fun VideoPlayer(
                 ImageDisplay(
                     modifier = Modifier.fillMaxSize(),
                     image = episodeDetailComplement.screenshot,
-                    imagePlaceholder = episodeDetailComplement.imageUrl,
+                    imagePlaceholder = imagePlaceholder,
                     ratio = ImageAspectRatio.WIDESCREEN.ratio,
                     contentDescription = "Thumbnail Image",
                     roundedCorners = ImageRoundedCorner.NONE
@@ -502,7 +546,7 @@ fun VideoPlayer(
 
         // Player Controls Overlay
         val isPlayerControlsVisible =
-            (controlsState.isControlsVisible || videoPlayerState.isDraggingSeekBar) && !shouldShowResumeOverlay && isOverlayVisible && isPlayerDisplayFullscreen
+            (controlsState.isControlsVisible || videoPlayerState.isDraggingSeekBar) && !shouldShowResumeOverlay && isOverlayVisible && isPlayerDisplayFullscreen && !videoPlayerState.showLandscapeEpisodeList
         AnimatedVisibility(visible = isPlayerControlsVisible, enter = fadeIn(), exit = fadeOut()) {
             PlayerControls(
                 isPlaying = coreState.isPlaying,
@@ -668,6 +712,46 @@ fun VideoPlayer(
                 }
             )
         }
+
+        // Landscape Episode List
+        AnimatedVisibility(
+            visible = isPlayerDisplayFullscreen && isLandscape && (verticalDragOffset.value < 0 || videoPlayerState.showLandscapeEpisodeList),
+            modifier = Modifier.fillMaxSize(),
+            enter = fadeIn(animationSpec = tween(150)),
+            exit = fadeOut(animationSpec = tween(150))
+        ) {
+            LandscapeEpisodeList(
+                modifier = Modifier.graphicsLayer {
+                    translationY = if (videoPlayerState.showLandscapeEpisodeList) {
+                        0f
+                    } else {
+                        lerp(
+                            start = videoPlayerState.playerContainerSize.height.toFloat(),
+                            stop = 0f,
+                            fraction = landscapeEpisodeListProgress
+                        )
+                    }
+                },
+                listState = landscapeEpisodeListState,
+                episodesToShow = episodesToShow,
+                imagePlaceholder = imagePlaceholder,
+                episodeDetailComplements = episodeDetailComplements,
+                onEpisodeSelected = { episode ->
+                    handleSelectedEpisodeServer(
+                        episodeSourcesQuery.copy(id = episode.id),
+                        false
+                    )
+                },
+                onClose = {
+                    scope.launch {
+                        verticalDragOffset.snapTo(maxDownwardDragLandscape)
+                        videoPlayerState.showLandscapeEpisodeList = false
+                        verticalDragOffset.animateTo(0f)
+                    }
+                }
+            )
+        }
+
         nextEpisode?.let {
             NextEpisodeOverlay(
                 modifier = Modifier.align(Alignment.Center),

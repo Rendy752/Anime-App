@@ -27,7 +27,7 @@ android {
         applicationId = "com.luminoverse.animevibe"
         minSdk = 27
         targetSdk = 36
-        versionCode = 11
+        versionCode = 12
         versionName = "1.0.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
