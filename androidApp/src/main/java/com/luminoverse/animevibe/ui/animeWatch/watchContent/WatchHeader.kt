@@ -19,6 +19,7 @@ import com.luminoverse.animevibe.models.EpisodeSourcesQuery
 import com.luminoverse.animevibe.models.NetworkStatus
 import com.luminoverse.animevibe.utils.watch.WatchUtils.getEpisodeBackgroundColor
 import com.luminoverse.animevibe.utils.basicContainer
+import com.luminoverse.animevibe.utils.resource.Resource
 
 @Composable
 fun WatchHeader(
@@ -26,7 +27,7 @@ fun WatchHeader(
     networkStatus: NetworkStatus,
     onFavoriteToggle: (Boolean) -> Unit,
     episode: Episode?,
-    episodeDetailComplement: EpisodeDetailComplement?,
+    episodeDetailComplement: Resource<EpisodeDetailComplement>,
     episodeSourcesQuery: EpisodeSourcesQuery?,
     serverScrollState: ScrollState,
     isError: Boolean,
@@ -34,13 +35,13 @@ fun WatchHeader(
     onRefresh: () -> Unit,
     onServerSelected: (EpisodeSourcesQuery) -> Unit,
 ) {
-    var isFavorite by remember { mutableStateOf(episodeDetailComplement?.isFavorite ?: false) }
+    var isFavorite by remember(episodeDetailComplement) { mutableStateOf(episodeDetailComplement.data?.isFavorite ?: false) }
     Column(
         modifier = Modifier
             .basicContainer(
                 backgroundBrush = getEpisodeBackgroundColor(
                     episode?.filler ?: false,
-                    episodeDetailComplement?.copy(isFavorite = isFavorite)
+                    episodeDetailComplement.data?.copy(isFavorite = isFavorite)
                 ),
                 outerPadding = PaddingValues(0.dp),
                 innerPadding = PaddingValues(0.dp)
@@ -69,12 +70,12 @@ fun WatchHeader(
                 episodeSourcesQuery = episodeSourcesQuery
             ) else EpisodeInfoSkeleton()
 
-            if (episodeDetailComplement?.servers != null) ServerSelection(
+            if (episodeDetailComplement is Resource.Success) ServerSelection(
                 scrollState = serverScrollState,
                 episodeSourcesQuery = episodeSourcesQuery,
-                servers = episodeDetailComplement.servers,
+                servers = episodeDetailComplement.data.servers,
                 onServerSelected = onServerSelected
-            ) else ServerSelectionSkeleton()
+            ) else if (episodeDetailComplement is Resource.Loading) ServerSelectionSkeleton()
         }
     }
 }

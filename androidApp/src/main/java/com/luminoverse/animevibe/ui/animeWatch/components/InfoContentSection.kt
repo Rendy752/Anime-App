@@ -20,12 +20,13 @@ import com.luminoverse.animevibe.ui.common.YoutubePreviewSkeleton
 import com.luminoverse.animevibe.ui.main.PlayerDisplayMode
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.main.navigation.navigateTo
+import com.luminoverse.animevibe.utils.resource.Resource
 
 @Composable
 fun InfoContentSection(
     modifier: Modifier = Modifier,
     rememberedBottomPadding: Dp = 0.dp,
-    animeDetail: AnimeDetail?,
+    animeDetail: Resource<AnimeDetail>,
     navController: NavController,
     setPlayerDisplayMode: (PlayerDisplayMode) -> Unit,
 ) {
@@ -33,32 +34,32 @@ fun InfoContentSection(
         modifier = modifier.padding(bottom = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        if (animeDetail != null) {
+        if (animeDetail is Resource.Success) {
             AnimeHeader(
                 modifier = Modifier.padding(top = 8.dp),
-                animeDetail = animeDetail, onClick = {
+                animeDetail = animeDetail.data, onClick = {
                     navController.navigateTo(
-                        NavRoute.AnimeDetail.fromId(animeDetail.mal_id)
+                        NavRoute.AnimeDetail.fromId(animeDetail.data.mal_id)
                     )
                     setPlayerDisplayMode(PlayerDisplayMode.PIP)
                 }
             )
             NumericDetailSection(
-                score = animeDetail.score,
-                scoredBy = animeDetail.scored_by,
-                rank = animeDetail.rank,
-                popularity = animeDetail.popularity,
-                members = animeDetail.members,
-                favorites = animeDetail.favorites
+                score = animeDetail.data.score,
+                scoredBy = animeDetail.data.scored_by,
+                rank = animeDetail.data.rank,
+                popularity = animeDetail.data.popularity,
+                members = animeDetail.data.members,
+                favorites = animeDetail.data.favorites
             )
-            YoutubePreview(embedUrl = animeDetail.trailer.embed_url)
-            DetailCommonBody(title = "Background", body = animeDetail.background)
+            YoutubePreview(embedUrl = animeDetail.data.trailer.embed_url)
+            DetailCommonBody(title = "Background", body = animeDetail.data.background)
             DetailCommonBody(
                 modifier = Modifier.padding(bottom = rememberedBottomPadding),
                 title = "Synopsis",
-                body = animeDetail.synopsis
+                body = animeDetail.data.synopsis
             )
-        } else {
+        } else if (animeDetail is Resource.Loading) {
             AnimeHeaderSkeleton()
             NumericDetailSectionSkeleton()
             YoutubePreviewSkeleton()

@@ -4,10 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.luminoverse.animevibe.models.*
 import com.luminoverse.animevibe.repository.AnimeEpisodeDetailRepository
+import com.luminoverse.animevibe.repository.LoadEpisodesResult
 import com.luminoverse.animevibe.ui.main.SnackbarMessage
 import com.luminoverse.animevibe.ui.main.SnackbarMessageType
-import com.luminoverse.animevibe.utils.watch.AnimeTitleFinder.normalizeTitle
-import com.luminoverse.animevibe.utils.ComplementUtils
 import com.luminoverse.animevibe.utils.FilterUtils
 import com.luminoverse.animevibe.utils.resource.Resource
 import com.luminoverse.animevibe.utils.workers.WorkerScheduler
@@ -124,171 +123,50 @@ class AnimeDetailViewModel @Inject constructor(
     }
 
     private fun loadAllEpisode(isRefresh: Boolean = false) = viewModelScope.launch {
-        val isCurrentAnimeDetailComplement = _detailState.value.animeDetailComplement
-        _detailState.update { it.copy(animeDetailComplement = Resource.Loading(data = isCurrentAnimeDetailComplement.data)) }
+        val currentComplement = _detailState.value.animeDetailComplement
+        _detailState.update { it.copy(animeDetailComplement = Resource.Loading(data = currentComplement.data)) }
+
         val animeDetail = _detailState.value.animeDetail.data?.data ?: run {
             _detailState.update { it.copy(animeDetailComplement = Resource.Error("Anime data not available")) }
             return@launch
         }
 
-        if (animeDetail.type == "Music") return@launch handleUnavailableEpisode(animeDetail.mal_id)
-        if (handleCachedComplement(animeDetail, isRefresh) &&
-            isRefresh && isCurrentAnimeDetailComplement.data?.id?.all { it.isDigit() } == false
-        ) {
-            detectNewEpisodes(animeDetail, isCurrentAnimeDetailComplement)
-            return@launch
-        }
-
-        handleUnregisteredEpisode(
-            animeMalId = animeDetail.mal_id,
-            animeEnglishTitle = animeDetail.title_english,
-            animeTitle = animeDetail.title,
+        val result = animeEpisodeDetailRepository.loadAllEpisodes(
+            animeDetail = animeDetail,
+            isRefresh = isRefresh
         )
-    }
 
-    private suspend fun handleCachedComplement(
-        animeDetail: AnimeDetail, isRefresh: Boolean
-    ): Boolean {
-        val cachedComplement =
-            animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(animeDetail.mal_id)
-        cachedComplement?.let {
-            val updatedComplement = ComplementUtils.updateAnimeDetailComplementWithEpisodes(
-                repository = animeEpisodeDetailRepository,
-                animeDetail = animeDetail,
-                animeDetailComplement = it,
-                isRefresh = isRefresh
-            )
-            if (updatedComplement != null) {
-                updateSuccessAdditionalState(updatedComplement)
-                return true
-            }
-        }
-        return false
-    }
-
-    private suspend fun detectNewEpisodes(
-        animeDetail: AnimeDetail,
-        isCurrentAnimeDetailComplement: Resource<AnimeDetailComplement?>
-    ) {
-        isCurrentAnimeDetailComplement.data?.episodes?.let { currentEpisodes ->
-            val currentEpisodeIds = currentEpisodes.map { it.id }.toSet()
-            val cachedComplement =
-                animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(
-                    animeDetail.mal_id
-                )
-            cachedComplement?.episodes?.let { cachedEpisodes ->
-                val newEpisodeIds = cachedEpisodes
-                    .filter { episode -> episode.id !in currentEpisodeIds }
-                    .map { episode -> episode.id }
-
-                if (newEpisodeIds.isEmpty()) {
-                    _detailState.update { it.copy(newEpisodeIdList = emptyList()) }
-                    _snackbarChannel.send(
-                        SnackbarMessage(
-                            message = "No new episodes are available!",
-                            type = SnackbarMessageType.INFO
-                        )
-                    )
-                    return@let
-                }
-                val message = if (newEpisodeIds.size == 1) {
-                    "1 new episode is available!"
-                } else {
-                    "${newEpisodeIds.size} new episodes are available!"
-                }
-                _snackbarChannel.send(
-                    SnackbarMessage(
-                        message = message,
-                        type = SnackbarMessageType.INFO
-                    )
-                )
-                _detailState.update { it.copy(newEpisodeIdList = newEpisodeIds) }
-            }
-        }
-    }
-
-    private fun handleUnavailableEpisode(malId: Int) {
-        viewModelScope.launch {
-            val complement = ComplementUtils.getOrCreateAnimeDetailComplement(
-                repository = animeEpisodeDetailRepository,
-                malId = malId
-            )
-            if (complement != null) {
-                _detailState.update { it.copy(animeDetailComplement = Resource.Success(complement)) }
-            } else {
-                _detailState.update { it.copy(animeDetailComplement = Resource.Error("Failed to create anime complement")) }
-            }
-        }
-    }
-
-    private suspend fun handleUnregisteredEpisode(
-        animeMalId: Int,
-        animeEnglishTitle: String?,
-        animeTitle: String,
-    ) {
-        val searchTitles = listOfNotNull(animeEnglishTitle, animeTitle).distinct()
-
-        var relatedAnime: AnimeAniwatch? = null
-
-        for (title in searchTitles) {
-            val searchResponse =
-                animeEpisodeDetailRepository.getAnimeAniwatchSearch(title.normalizeTitle())
-
-            when (searchResponse) {
-                is Resource.Success -> {
-                    val foundAnime =
-                        searchResponse.data.results.data.find { it.malID == animeMalId }
-                    if (foundAnime != null) {
-                        relatedAnime = foundAnime
-                        break
+        when (result) {
+            is LoadEpisodesResult.Success -> {
+                if (result.newEpisodeIds.isNotEmpty()) {
+                    val message = if (result.newEpisodeIds.size == 1) {
+                        "1 new episode is available!"
+                    } else {
+                        "${result.newEpisodeIds.size} new episodes are available!"
                     }
-                }
+                    _snackbarChannel.send(SnackbarMessage(message, SnackbarMessageType.INFO))
 
-                is Resource.Error -> {
                     _detailState.update {
                         it.copy(
-                            animeDetailComplement = Resource.Error(
-                                searchResponse.message
-                            )
+                            animeDetailComplement = Resource.Success(result.complement),
+                            newEpisodeIdList = result.newEpisodeIds
                         )
                     }
-                    return
+                } else {
+                    _detailState.update { it.copy(animeDetailComplement = Resource.Success(result.complement)) }
+                    if (isRefresh) {
+                        _snackbarChannel.send(
+                            SnackbarMessage("No new episodes are available!", SnackbarMessageType.INFO)
+                        )
+                    }
                 }
-
-                is Resource.Loading<*> -> {
-                    continue
+                _episodeFilterState.update {
+                    it.copy(filteredEpisodes = result.complement.episodes?.reversed() ?: emptyList())
                 }
             }
-        }
-
-        val finalRelatedAnime = relatedAnime ?: run {
-            handleUnavailableEpisode(animeMalId)
-            return
-        }
-
-        val episodesResource = animeEpisodeDetailRepository.getEpisodes(finalRelatedAnime.id)
-
-        val complement = ComplementUtils.getOrCreateAnimeDetailComplement(
-            repository = animeEpisodeDetailRepository,
-            id = finalRelatedAnime.id,
-            malId = animeMalId
-        )?.copy(
-            id = finalRelatedAnime.id,
-            episodes = if (episodesResource is Resource.Success) episodesResource.data.results.episodes else null,
-            eps = finalRelatedAnime.tvInfo.eps,
-            sub = finalRelatedAnime.tvInfo.sub,
-            dub = finalRelatedAnime.tvInfo.dub
-        )
-        if (complement != null) {
-            animeEpisodeDetailRepository.updateCachedAnimeDetailComplement(complement)
-            updateSuccessAdditionalState(complement)
-        }
-    }
-
-    private fun updateSuccessAdditionalState(complement: AnimeDetailComplement) {
-        _detailState.update { it.copy(animeDetailComplement = Resource.Success(complement)) }
-        _episodeFilterState.update {
-            it.copy(filteredEpisodes = complement.episodes?.reversed() ?: emptyList())
+            is LoadEpisodesResult.Error -> {
+                _detailState.update { it.copy(animeDetailComplement = Resource.Error(result.message)) }
+            }
         }
     }
 
@@ -313,8 +191,7 @@ class AnimeDetailViewModel @Inject constructor(
         val malId = animeDetailData.mal_id
         val complementId = _detailState.value.animeDetailComplement.data?.id
 
-        val updatedComplement = ComplementUtils.toggleAnimeFavorite(
-            repository = animeEpisodeDetailRepository,
+        val updatedComplement = animeEpisodeDetailRepository.toggleAnimeFavorite(
             id = complementId,
             malId = malId,
             isFavorite = isFavorite

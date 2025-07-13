@@ -32,7 +32,7 @@ fun EpisodeSelectionGrid(
     newEpisodeIdList: List<String>,
     episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
     onLoadEpisodeDetailComplement: (String) -> Unit,
-    episodeDetailComplement: EpisodeDetailComplement?,
+    episodeDetailComplement: Resource<EpisodeDetailComplement>,
     episodeSourcesQuery: EpisodeSourcesQuery?,
     gridState: LazyGridState,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
@@ -41,8 +41,8 @@ fun EpisodeSelectionGrid(
     val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(episodeDetailComplement, episodes, newEpisodeIdList) {
-        val targetEpisodeId = episodeDetailComplement?.id
-        val targetEpisodeNo = episodeDetailComplement?.number
+        val targetEpisodeId = episodeDetailComplement.data?.id
+        val targetEpisodeNo = episodeDetailComplement.data?.number
 
         if (targetEpisodeId != null) {
             setSelectedEpisodeId(targetEpisodeId)

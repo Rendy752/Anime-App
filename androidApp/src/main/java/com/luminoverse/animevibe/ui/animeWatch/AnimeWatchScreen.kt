@@ -64,6 +64,7 @@ import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
 import com.luminoverse.animevibe.utils.receivers.ScreenOffReceiver
 import com.luminoverse.animevibe.utils.receivers.ScreenOnReceiver
+import com.luminoverse.animevibe.utils.resource.Resource
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
@@ -145,7 +146,12 @@ fun AnimeWatchScreen(
         }
     }
 
-    LaunchedEffect(watchState.isRefreshing, hlsPlayerCoreState.error) {
+    LaunchedEffect(
+        watchState.animeDetail,
+        watchState.animeDetailComplement,
+        watchState.episodeDetailComplement,
+        hlsPlayerCoreState.error
+    ) {
         hlsPlayerCoreState.error?.let { errorMessage ->
             showSnackbar(
                 SnackbarMessage(
@@ -156,13 +162,17 @@ fun AnimeWatchScreen(
                 )
             )
         }
-        if (watchState.isRefreshing || hlsPlayerCoreState.error == null) dismissSnackbar()
+        if (watchState.animeDetail is Resource.Loading ||
+            watchState.animeDetailComplement is Resource.Loading ||
+            watchState.episodeDetailComplement is Resource.Loading ||
+            hlsPlayerCoreState.error == null
+        ) dismissSnackbar()
     }
 
     LaunchedEffect(mainState.networkStatus.isConnected) {
         if (!mainState.networkStatus.isConnected) return@LaunchedEffect
         if (getPlayer()?.isPlaying == false) dispatchPlayerAction(HlsPlayerAction.Play)
-        if (watchState.episodeDetailComplement == null && watchState.episodeSourcesQuery != null) {
+        if (watchState.episodeDetailComplement is Resource.Error && watchState.episodeSourcesQuery != null) {
             onAction(
                 WatchAction.HandleSelectedEpisodeServer(
                     watchState.episodeSourcesQuery, isRefresh = true
@@ -192,11 +202,11 @@ fun AnimeWatchScreen(
                     )
                     .weight(1f)
             ) {
-                if (player == null || watchState.episodeDetailComplement == null || watchState.episodeDetailComplement.sources.link.file.isEmpty() || watchState.animeDetailComplement?.episodes == null || watchState.episodeSourcesQuery == null) {
+                if (player == null || watchState.animeDetailComplement !is Resource.Success || watchState.episodeDetailComplement !is Resource.Success || watchState.episodeDetailComplement.data.sources.link.file.isEmpty() || watchState.animeDetailComplement.data.episodes == null || watchState.episodeSourcesQuery == null) {
                     ImageDisplay(
-                        image = watchState.episodeDetailComplement?.screenshot,
-                        imagePlaceholder = watchState.episodeDetailComplement?.imageUrl
-                            ?: watchState.animeDetail?.images?.webp?.large_image_url,
+                        image = watchState.episodeDetailComplement.data?.screenshot,
+                        imagePlaceholder = watchState.episodeDetailComplement.data?.imageUrl
+                            ?: watchState.animeDetail.data?.images?.webp?.large_image_url,
                         ratio = ImageAspectRatio.WIDESCREEN.ratio,
                         contentDescription = "Anime cover",
                         roundedCorners = if (playerDisplayMode == PlayerDisplayMode.PIP) ImageRoundedCorner.ALL else ImageRoundedCorner.NONE
@@ -205,10 +215,10 @@ fun AnimeWatchScreen(
                     player?.let { exoPlayer ->
                         VideoPlayer(
                             player = exoPlayer,
-                            episodeDetailComplement = watchState.episodeDetailComplement,
+                            episodeDetailComplement = watchState.episodeDetailComplement.data,
                             episodeDetailComplements = watchState.episodeDetailComplements,
-                            imagePlaceholder = watchState.animeDetail?.images?.webp?.large_image_url,
-                            isRefreshing = watchState.isRefreshing,
+                            imagePlaceholder = watchState.animeDetail.data?.images?.webp?.large_image_url,
+                            isRefreshing = watchState.animeDetail is Resource.Loading,
                             networkDataSource = networkDataSource,
                             coreState = hlsPlayerCoreState,
                             controlsStateFlow = hlsControlsStateFlow,
@@ -216,7 +226,7 @@ fun AnimeWatchScreen(
                             isLandscape = mainState.isLandscape,
                             captureScreenshot = captureScreenshot,
                             updateStoredWatchState = { currentPosition, duration, screenShot ->
-                                onAction(WatchAction.UpdateLastEpisodeWatchedId(watchState.episodeDetailComplement.id))
+                                onAction(WatchAction.UpdateLastEpisodeWatchedId(watchState.episodeDetailComplement.data.id))
                                 onAction(
                                     WatchAction.UpdateStoredWatchState(
                                         currentPosition, duration, screenShot
@@ -226,7 +236,7 @@ fun AnimeWatchScreen(
                             isScreenOn = isScreenOn,
                             screenHeightPx = screenHeightPx,
                             isAutoPlayVideo = mainState.isAutoPlayVideo,
-                            episodes = watchState.animeDetailComplement.episodes,
+                            episodes = watchState.animeDetailComplement.data.episodes,
                             episodeSourcesQuery = watchState.episodeSourcesQuery,
                             handleSelectedEpisodeServer = { episodeSourcesQuery, isRefresh ->
                                 onAction(
@@ -273,7 +283,7 @@ fun AnimeWatchScreen(
                 ) {
                     PlayPauseLoadingButton(
                         playbackState = hlsPlayerCoreState.playbackState,
-                        isRefreshing = watchState.isRefreshing,
+                        isRefreshing = watchState.animeDetail is Resource.Loading || watchState.animeDetailComplement is Resource.Loading || watchState.episodeDetailComplement is Resource.Loading,
                         isPlaying = hlsPlayerCoreState.isPlaying,
                         onSeekTo = { dispatchPlayerAction(HlsPlayerAction.SeekTo(0)) },
                         handlePause = { dispatchPlayerAction(HlsPlayerAction.Pause) },

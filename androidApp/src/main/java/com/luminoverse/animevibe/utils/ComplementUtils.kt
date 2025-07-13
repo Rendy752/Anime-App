@@ -2,11 +2,6 @@ package com.luminoverse.animevibe.utils
 
 import com.luminoverse.animevibe.models.AnimeDetail
 import com.luminoverse.animevibe.models.AnimeDetailComplement
-import com.luminoverse.animevibe.models.Episode
-import com.luminoverse.animevibe.models.EpisodeDetailComplement
-import com.luminoverse.animevibe.models.EpisodeServer
-import com.luminoverse.animevibe.models.EpisodeSources
-import com.luminoverse.animevibe.models.EpisodeSourcesQuery
 import com.luminoverse.animevibe.repository.AnimeEpisodeDetailRepository
 import com.luminoverse.animevibe.utils.resource.Resource
 import kotlinx.coroutines.Dispatchers
@@ -65,75 +60,5 @@ object ComplementUtils {
             }
         }
         animeDetailComplement
-    }
-
-    /**
-     * Creates and caches an EpisodeDetailComplement from episode data.
-     */
-    suspend fun createEpisodeDetailComplement(
-        repository: AnimeEpisodeDetailRepository,
-        animeDetailMalId: Int,
-        animeDetailTitle: String,
-        animeDetailImageUrl: String?,
-        animeDetailComplement: AnimeDetailComplement,
-        episode: Episode,
-        servers: List<EpisodeServer>,
-        sources: EpisodeSources,
-        sourcesQuery: EpisodeSourcesQuery
-    ): EpisodeDetailComplement = withContext(Dispatchers.IO) {
-        val complement = EpisodeDetailComplement(
-            id = episode.id,
-            malId = animeDetailMalId,
-            aniwatchId = animeDetailComplement.id,
-            animeTitle = animeDetailTitle,
-            episodeTitle = episode.title,
-            imageUrl = animeDetailImageUrl,
-            number = episode.episode_no,
-            isFiller = episode.filler,
-            servers = servers,
-            sources = sources,
-            sourcesQuery = sourcesQuery
-        )
-        repository.insertCachedEpisodeDetailComplement(complement)
-        complement
-    }
-
-    /**
-     * Toggles favorite status for an AnimeDetailComplement.
-     */
-    suspend fun toggleAnimeFavorite(
-        repository: AnimeEpisodeDetailRepository,
-        id: String? = null,
-        malId: Int,
-        isFavorite: Boolean
-    ): AnimeDetailComplement? = withContext(Dispatchers.IO) {
-        val animeComplement = getOrCreateAnimeDetailComplement(
-            repository = repository,
-            id = id,
-            malId = malId,
-            isFavorite = isFavorite
-        )
-        if (animeComplement != null) {
-            val updatedAnime = animeComplement.copy(isFavorite = isFavorite)
-            repository.updateCachedAnimeDetailComplement(updatedAnime)
-            updatedAnime
-        } else {
-            null
-        }
-    }
-
-    /**
-     * Toggles favorite status for an EpisodeDetailComplement.
-     */
-    suspend fun toggleEpisodeFavorite(
-        repository: AnimeEpisodeDetailRepository,
-        episodeId: String,
-        isFavorite: Boolean
-    ) = withContext(Dispatchers.IO) {
-        val episode = repository.getCachedEpisodeDetailComplement(episodeId)
-        if (episode != null) {
-            val updatedEpisode = episode.copy(isFavorite = isFavorite)
-            repository.updateEpisodeDetailComplement(updatedEpisode)
-        }
     }
 }

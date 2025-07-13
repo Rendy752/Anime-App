@@ -73,6 +73,7 @@ import com.luminoverse.animevibe.ui.animeWatch.watchContent.WatchContentSection
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
 import com.luminoverse.animevibe.utils.media.PipUtil.buildPipActions
+import com.luminoverse.animevibe.utils.resource.Resource
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
@@ -407,10 +408,11 @@ fun PlayerHost(
                     .verticalScroll(columnScrollState),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                if (watchState.animeDetailComplement?.episodes != null
-                    && watchState.animeDetail?.mal_id == playerState.malId
+                if (watchState.animeDetailComplement.data?.episodes != null
+                    && watchState.animeDetail.data?.mal_id == playerState.malId
                 ) WatchContentSection(
                     animeDetail = watchState.animeDetail,
+                    isAnimeDetailComplementLoading = watchState.animeDetailComplement is Resource.Loading,
                     networkStatus = mainState.networkStatus,
                     onFavoriteToggle = { isFavorite ->
                         watchViewModel.onAction(
@@ -424,7 +426,7 @@ fun PlayerHost(
                         )
                     },
                     episodeDetailComplements = watchState.episodeDetailComplements,
-                    episodes = watchState.animeDetailComplement?.episodes ?: emptyList(),
+                    episodes = watchState.animeDetailComplement.data?.episodes ?: emptyList(),
                     newEpisodeIdList = watchState.newEpisodeIdList,
                     episodeSourcesQuery = watchState.episodeSourcesQuery,
                     episodeJumpNumber = watchState.episodeJumpNumber,
@@ -437,12 +439,10 @@ fun PlayerHost(
                     },
                     serverScrollState = serverScrollState,
                     isError = playerCoreState.error != null,
-                    isRefreshing = watchState.isRefreshing,
-                    handleSelectedEpisodeServer = { episodeSourcesQuery, isFirstInit, isRefresh ->
+                    handleSelectedEpisodeServer = { episodeSourcesQuery, isRefresh ->
                         watchViewModel.onAction(
                             WatchAction.HandleSelectedEpisodeServer(
                                 episodeSourcesQuery = episodeSourcesQuery,
-                                isFirstInit = isFirstInit,
                                 isRefresh = isRefresh
                             )
                         )

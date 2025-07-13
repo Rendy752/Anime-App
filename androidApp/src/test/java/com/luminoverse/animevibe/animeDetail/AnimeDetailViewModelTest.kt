@@ -3,14 +3,12 @@ package com.luminoverse.animevibe.animeDetail
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.luminoverse.animevibe.models.*
 import com.luminoverse.animevibe.repository.AnimeEpisodeDetailRepository
+import com.luminoverse.animevibe.repository.LoadEpisodesResult
 import com.luminoverse.animevibe.ui.animeDetail.AnimeDetailViewModel
 import com.luminoverse.animevibe.ui.animeDetail.DetailAction
-import com.luminoverse.animevibe.ui.common.AnimeAniwatchCommonResponse
-import com.luminoverse.animevibe.utils.watch.AnimeTitleFinder
-import com.luminoverse.animevibe.utils.ComplementUtils
+import com.luminoverse.animevibe.ui.animeDetail.EpisodeFilterState
 import com.luminoverse.animevibe.utils.FilterUtils
 import com.luminoverse.animevibe.utils.resource.Resource
-import com.luminoverse.animevibe.utils.media.StreamingUtils
 import com.luminoverse.animevibe.utils.workers.WorkerScheduler
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
@@ -30,473 +28,129 @@ class AnimeDetailViewModelTest {
     val instantExecutorRule = InstantTaskExecutorRule()
 
     private lateinit var viewModel: AnimeDetailViewModel
-    private lateinit var animeEpisodeDetailRepository: AnimeEpisodeDetailRepository
-    private val workerScheduler: WorkerScheduler = mockk()
+    private lateinit var repository: AnimeEpisodeDetailRepository
+    private val workerScheduler: WorkerScheduler = mockk(relaxed = true)
     private lateinit var testDispatcher: TestDispatcher
+
+    private val mockAnimeDetail = animeDetailPlaceholder.copy(mal_id = 1)
+    private val mockAnimeResponse = AnimeDetailResponse(mockAnimeDetail)
+    private val mockAnimeComplement = animeDetailComplementPlaceholder.copy(malId = 1)
 
     @Before
     fun setup() {
         testDispatcher = StandardTestDispatcher()
         Dispatchers.setMain(testDispatcher)
-        animeEpisodeDetailRepository = mockk()
-
-        mockkStatic("android.util.Log")
-        every { android.util.Log.d(any(), any()) } returns 0
-
-        mockkObject(AnimeTitleFinder)
-        mockkObject(StreamingUtils)
+        repository = mockk()
         mockkObject(FilterUtils)
-        mockkObject(ComplementUtils)
-
-        coEvery { animeEpisodeDetailRepository.getAnimeDetail(1735) } returns Pair(Resource.Success(
-            AnimeDetailResponse(data = animeDetailPlaceholder.copy(mal_id = 1735))
-        ), false)
-        coEvery { animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(1735) } returns null
-        coEvery { animeEpisodeDetailRepository.insertCachedAnimeDetailComplement(any()) } just Runs
-        coEvery { animeEpisodeDetailRepository.insertCachedEpisodeDetailComplement(any()) } just Runs
-        coEvery { animeEpisodeDetailRepository.getAnimeAniwatchSearch(any()) } returns Resource.Success(
-            AnimeAniwatchCommonResponse(
-                success = true,
-                results = AnimeAniwatchSearchResponse(
-                    data = listOf(
-                        animeAniwatchPlaceholder.copy(id = "anime-1735")
-                    ),
-                    totalPage = 1
-                )
-            )
-        )
-        coEvery { animeEpisodeDetailRepository.getEpisodes("anime-1735") } returns Resource.Success(
-            AnimeAniwatchCommonResponse(
-                success = true,
-                results = EpisodesResponse(
-                    totalEpisodes = 1,
-                    episodes = listOf(episodePlaceholder.copy(id = "lorem-ipsum-123?ep=123"))
-                )
-            )
-        )
-        coEvery {
-            AnimeTitleFinder.findClosestMatches(
-                any(), listOf(animeAniwatchPlaceholder), any(), any()
-            )
-        } returns listOf(animeAniwatchPlaceholder)
-        coEvery { animeEpisodeDetailRepository.getEpisodeServers("lorem-ipsum-123?ep=123") } returns Resource.Success(
-            AnimeAniwatchCommonResponse(
-                success = true,
-                results = listOf(
-                    episodeServerPlaceholder.copy(
-                        data_id = "lorem-ipsum-123?ep=123",
-                        type = "sub",
-                        server_id = "123",
-                        serverName = "vidstreaming",
-                    ),
-                    episodeServerPlaceholder.copy(
-                        data_id = "lorem-ipsum-123?ep=123",
-                        type = "dub",
-                        server_id = "123",
-                        serverName = "vidstreaming",
-                    )
-                )
-            )
-        )
-        coEvery {
-            animeEpisodeDetailRepository.getEpisodeSources(
-                "lorem-ipsum-123?ep=123",
-                "server1",
-                "sub"
-            )
-        } returns Resource.Error("Server1 failed")
-        coEvery {
-            animeEpisodeDetailRepository.getEpisodeSources(
-                "lorem-ipsum-123?ep=123",
-                "server2",
-                "sub"
-            )
-        } returns Resource.Error("Server2 failed")
-        coEvery {
-            animeEpisodeDetailRepository.getEpisodeSources(
-                "lorem-ipsum-123?ep=123",
-                "vidstreaming",
-                "sub"
-            )
-        } returns Resource.Success(
-            AnimeAniwatchCommonResponse(
-                success = true,
-                results = episodeSourcesResponsePlaceholder.copy(
-                    streamingLink = episodeSourcesPlaceholder.copy(
-                        id = "1735",
-                        link = sourcePlaceholder.copy(
-                            file = "https://example.com/stream",
-                            type = "video"
-                        )
-                    ),
-                    servers = listOf(episodeServerPlaceholder.copy(serverName = "vidstreaming"))
-                )
-            )
-        )
-        coEvery {
-            animeEpisodeDetailRepository.getEpisodeSources(
-                "lorem-ipsum-123?ep=123",
-                "dubserver1",
-                "dub"
-            )
-        } returns Resource.Error("Dubserver1 failed")
-        coEvery {
-            animeEpisodeDetailRepository.getEpisodeSources(
-                "lorem-ipsum-123?ep=123",
-                "dubserver2",
-                "dub"
-            )
-        } returns Resource.Error("Dubserver2 failed")
-        coEvery {
-            animeEpisodeDetailRepository.getEpisodeSources(
-                "lorem-ipsum-123?ep=123",
-                "vidstreaming",
-                "dub"
-            )
-        } returns Resource.Success(
-            AnimeAniwatchCommonResponse(
-                success = true,
-                results = episodeSourcesResponsePlaceholder.copy(
-                    streamingLink = episodeSourcesPlaceholder.copy(
-                        link = sourcePlaceholder.copy(file = "https://example.com/stream", type = "video")
-                    )
-                )
-            )
-        )
-        coEvery { animeEpisodeDetailRepository.updateCachedAnimeDetailComplement(any()) } just Runs
-        coEvery {
-            ComplementUtils.getOrCreateAnimeDetailComplement(any(), any(), 1735)
-        } returns animeDetailComplementPlaceholder.copy(
-            id = "anime-1735",
-            malId = 1735,
-            episodes = listOf(episodePlaceholder.copy(id = "lorem-ipsum-123?ep=123"))
-        )
-        coEvery {
-            ComplementUtils.updateAnimeDetailComplementWithEpisodes(any(), any(), any(), any())
-        } returns animeDetailComplementPlaceholder.copy(
-            id = "anime-1735",
-            malId = 1735,
-            episodes = listOf(episodePlaceholder.copy(id = "lorem-ipsum-123?ep=123"))
-        )
-        coEvery {
-            ComplementUtils.createEpisodeDetailComplement(
-                any(), any(), any(), any(), any(), any(), any(), any(), any()
-            )
-        } returns episodeDetailComplementPlaceholder.copy(id = "lorem-ipsum-123?ep=123")
     }
 
     @After
     fun tearDown() {
         Dispatchers.resetMain()
         clearAllMocks()
-        unmockkStatic("android.util.Log")
-        unmockkObject(AnimeTitleFinder)
-        unmockkObject(StreamingUtils)
         unmockkObject(FilterUtils)
-        unmockkObject(ComplementUtils)
     }
 
     @Test
-    fun `loadAnimeDetail should update state with anime details and trigger loadEpisodes`() =
-        runTest {
-            viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository, workerScheduler)
-            val animeId = 1735
-
-            viewModel.onAction(DetailAction.LoadAnimeDetail(animeId))
-            advanceUntilIdle()
-
-            val state = viewModel.detailState.value
-            assertTrue("Anime detail should be success", state.animeDetail is Resource.Success)
-            assertTrue(
-                "Anime detail complement should be success",
-                state.animeDetailComplement is Resource.Success
-            )
-            coVerify(exactly = 1) { animeEpisodeDetailRepository.getAnimeDetail(animeId) }
-            coVerify(exactly = 1) { animeEpisodeDetailRepository.getAnimeAniwatchSearch(any()) }
-            coVerify(exactly = 1) { animeEpisodeDetailRepository.getEpisodes("anime-1735") }
-        }
-
-    @Test
-    fun `loadAnimeDetail should handle error and not trigger loadEpisodes`() = runTest {
-        viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository, workerScheduler)
-        val animeId = 1735
-        coEvery { animeEpisodeDetailRepository.getAnimeDetail(animeId) } returns Pair(Resource.Error("Network error"), false)
+    fun `loadAnimeDetail success should update state and trigger loadAllEpisodes`() = runTest {
+        val animeId = 1
+        coEvery { repository.getAnimeDetail(animeId) } returns Pair(Resource.Success(mockAnimeResponse), false)
+        coEvery { repository.loadAllEpisodes(any(), any()) } returns LoadEpisodesResult.Success(mockAnimeComplement)
+        viewModel = AnimeDetailViewModel(repository, workerScheduler)
 
         viewModel.onAction(DetailAction.LoadAnimeDetail(animeId))
         advanceUntilIdle()
 
         val state = viewModel.detailState.value
-        assertTrue("Anime detail should be error", state.animeDetail is Resource.Error)
-        assertEquals("Network error", (state.animeDetail as Resource.Error).message)
-        assertTrue(
-            "Anime detail complement should be loading",
-            state.animeDetailComplement is Resource.Loading
-        )
-        coVerify(exactly = 1) { animeEpisodeDetailRepository.getAnimeDetail(animeId) }
-        coVerify(exactly = 0) { animeEpisodeDetailRepository.getAnimeAniwatchSearch(any()) }
+        assertTrue(state.animeDetail is Resource.Success)
+        assertEquals(animeId, state.animeDetail.data?.data?.mal_id)
+        assertTrue(state.animeDetailComplement is Resource.Success)
+        assertEquals(animeId, state.animeDetailComplement.data?.malId)
+
+        coVerify(exactly = 1) { repository.getAnimeDetail(animeId) }
+        coVerify(exactly = 1) { repository.loadAllEpisodes(any(), any()) }
     }
 
     @Test
-    fun `loadAnimeDetail should handle null episode sources query`() = runTest {
-        viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository, workerScheduler)
-        val animeId = 1735
-        coEvery { StreamingUtils.getEpisodeSourcesResult(any(), any(), any()) } returns Pair(
-            Resource.Error("All servers failed"),
-            null
-        )
+    fun `loadAnimeDetail from cache should trigger background update`() = runTest {
+        val animeId = 1
+        val updatedAnimeResponse = AnimeDetailResponse(mockAnimeDetail.copy(title = "Updated Title"))
+        coEvery { repository.getAnimeDetail(animeId) } returns Pair(Resource.Success(mockAnimeResponse), true)
+        coEvery { repository.getUpdatedAnimeDetailById(animeId) } returns Resource.Success(updatedAnimeResponse)
+        coEvery { repository.loadAllEpisodes(any(), any()) } returns LoadEpisodesResult.Success(mockAnimeComplement)
+        viewModel = AnimeDetailViewModel(repository, workerScheduler)
 
         viewModel.onAction(DetailAction.LoadAnimeDetail(animeId))
         advanceUntilIdle()
 
         val state = viewModel.detailState.value
-        assertTrue("Anime detail should be success", state.animeDetail is Resource.Success)
-        assertTrue(
-            "Anime detail complement should be success as default",
-            state.animeDetailComplement is Resource.Success
-        )
-        coVerify(exactly = 1) { animeEpisodeDetailRepository.getAnimeDetail(animeId) }
-        coVerify(exactly = 1) { animeEpisodeDetailRepository.getAnimeAniwatchSearch(any()) }
-        coVerify(exactly = 1) { animeEpisodeDetailRepository.getEpisodes("anime-1735") }
-        coVerify(exactly = 0) { animeEpisodeDetailRepository.insertCachedEpisodeDetailComplement(any()) }
+        assertTrue(state.animeDetail is Resource.Success)
+        assertEquals("Updated Title", state.animeDetail.data?.data?.title)
+
+        coVerify(exactly = 1) { repository.getAnimeDetail(animeId) }
+        coVerify(exactly = 1) { repository.getUpdatedAnimeDetailById(animeId) }
+        coVerify(exactly = 1) { repository.loadAllEpisodes(any(), any()) }
     }
 
+
     @Test
-    fun `loadAnimeDetail should handle episode sources failure`() = runTest {
-        viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository, workerScheduler)
-        val animeId = 1735
-        coEvery { StreamingUtils.getEpisodeSourcesResult(any(), any(), any()) } returns Pair(
-            Resource.Error("Server error"),
-            null
-        )
+    fun `loadAnimeDetail error should update state and not trigger loadAllEpisodes`() = runTest {
+        val animeId = 1
+        coEvery { repository.getAnimeDetail(animeId) } returns Pair(Resource.Error("Network Error"), false)
+        viewModel = AnimeDetailViewModel(repository, workerScheduler)
 
         viewModel.onAction(DetailAction.LoadAnimeDetail(animeId))
         advanceUntilIdle()
 
         val state = viewModel.detailState.value
-        assertTrue("Anime detail should be success", state.animeDetail is Resource.Success)
-        assertTrue(
-            "Anime detail complement should be success as default",
-            state.animeDetailComplement is Resource.Success
-        )
-        coVerify(exactly = 1) { animeEpisodeDetailRepository.getAnimeDetail(animeId) }
-        coVerify(exactly = 1) { animeEpisodeDetailRepository.getAnimeAniwatchSearch(any()) }
-        coVerify(exactly = 1) { animeEpisodeDetailRepository.getEpisodes("anime-1735") }
-        coVerify(exactly = 0) { animeEpisodeDetailRepository.insertCachedEpisodeDetailComplement(any()) }
+        assertTrue(state.animeDetail is Resource.Error)
+        assertEquals("Network Error", state.animeDetail.message)
+        assertTrue(state.animeDetailComplement is Resource.Loading)
+
+        coVerify(exactly = 1) { repository.getAnimeDetail(animeId) }
+        coVerify(exactly = 0) { repository.loadAllEpisodes(any(), any()) }
     }
 
     @Test
-    fun `loadRelationAnimeDetail should update relationAnimeDetails with anime detail`() = runTest {
-        viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository, workerScheduler)
-        val relationId = 2
-        coEvery { animeEpisodeDetailRepository.getAnimeDetail(relationId) } returns Pair(Resource.Success(
-            AnimeDetailResponse(
-                data = animeDetailPlaceholder.copy(
-                    mal_id = 2,
-                    title = "Related Anime"
-                )
-            )
-        ), false)
-
-        viewModel.onAction(DetailAction.LoadRelationAnimeDetail(relationId))
-        advanceUntilIdle()
-
-        val state = viewModel.detailState.value
-        assertTrue(
-            "Relation anime details should contain key",
-            state.relationAnimeDetails.containsKey(relationId)
-        )
-        assertTrue(
-            "Relation anime detail should be success",
-            state.relationAnimeDetails[relationId] is Resource.Success
-        )
-        coVerify(exactly = 1) { animeEpisodeDetailRepository.getAnimeDetail(relationId) }
-    }
-
-    @Test
-    fun `loadEpisodeDetailComplement should use cached complement if available`() = runTest {
-        viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository, workerScheduler)
-        val episodeId = episodeDetailComplementPlaceholder.id
-        coEvery { animeEpisodeDetailRepository.getCachedEpisodeDetailComplement(episodeId) } returns episodeDetailComplementPlaceholder
-        coEvery { animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(1735) } returns animeDetailComplementPlaceholder
-
-        viewModel.onAction(DetailAction.LoadAnimeDetail(1735))
-        advanceUntilIdle()
-        viewModel.onAction(DetailAction.LoadEpisodeDetail(episodeId))
-        advanceUntilIdle()
-
-        val state = viewModel.detailState.value
-        assertTrue(
-            "Episode detail complements should contain key",
-            state.episodeDetailComplements.containsKey(episodeId)
-        )
-        assertTrue(
-            "Episode detail complement should be success",
-            state.episodeDetailComplements[episodeId] != null
-        )
-        coVerify(exactly = 1) {
-            animeEpisodeDetailRepository.getCachedEpisodeDetailComplement(
-                episodeId
-            )
-        }
-        coVerify(exactly = 0) { animeEpisodeDetailRepository.getEpisodeServers(any()) }
-    }
-
-    @Test
-    fun `loadEpisodeDetailComplement should fetch servers and sources if no cache`() = runTest {
-        viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository, workerScheduler)
-        val episodeId = episodeDetailComplementPlaceholder.id
-        val animeId = 1735
-        coEvery { animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(1735) } returns animeDetailComplementPlaceholder
-        coEvery { animeEpisodeDetailRepository.getCachedEpisodeDetailComplement(episodeId) } returns null
-
-        viewModel.onAction(DetailAction.LoadAnimeDetail(animeId))
-        advanceUntilIdle()
-        viewModel.onAction(DetailAction.LoadEpisodeDetail(episodeId))
-        advanceUntilIdle()
-
-        val state = viewModel.detailState.value
-        assertTrue(
-            "Episode detail complements should contain key",
-            state.episodeDetailComplements.containsKey(episodeId)
-        )
-        assertTrue(
-            "Episode detail complement should be error",
-            state.episodeDetailComplements[episodeId] == null
-        )
-        coVerify(exactly = 1) {
-            animeEpisodeDetailRepository.getCachedEpisodeDetailComplement(
-                episodeId
-            )
-        }
-        coVerify(exactly = 0) { animeEpisodeDetailRepository.getEpisodeServers(episodeId) }
-        coVerify(exactly = 0) {
-            animeEpisodeDetailRepository.getEpisodeSources(
-                any(),
-                any(),
-                any()
-            )
-        }
-        coVerify(exactly = 0) { animeEpisodeDetailRepository.insertCachedEpisodeDetailComplement(any()) }
-    }
-
-    @Test
-    fun `loadEpisodes should use cached complement if available`() = runTest {
-        viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository, workerScheduler)
-        val animeId = 1735
-        coEvery { animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(animeId) } returns animeDetailComplementPlaceholder
-        coEvery { animeEpisodeDetailRepository.getCachedEpisodeDetailComplement("lorem-ipsum-123?ep=123") } returns episodeDetailComplementPlaceholder
-
+    fun `toggleFavorite should call repository and update state`() = runTest {
+        val animeId = 1
+        val updatedComplement = mockAnimeComplement.copy(isFavorite = true)
+        coEvery { repository.getAnimeDetail(animeId) } returns Pair(Resource.Success(mockAnimeResponse), false)
+        coEvery { repository.loadAllEpisodes(any(), any()) } returns LoadEpisodesResult.Success(mockAnimeComplement)
+        coEvery { repository.toggleAnimeFavorite(any(), any(), true) } returns updatedComplement
+        viewModel = AnimeDetailViewModel(repository, workerScheduler)
         viewModel.onAction(DetailAction.LoadAnimeDetail(animeId))
         advanceUntilIdle()
 
-        val detailState = viewModel.detailState.value
-        val filterState = viewModel.episodeFilterState.value
-        assertTrue(
-            "Anime detail complement should be success",
-            detailState.animeDetailComplement is Resource.Success
-        )
-        assertTrue(
-            "Filtered episodes should not be empty",
-            filterState.filteredEpisodes.isNotEmpty()
-        )
-        coVerify(exactly = 1) {
-            animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(
-                animeId
-            )
-        }
-        coVerify(exactly = 1) { animeEpisodeDetailRepository.getAnimeAniwatchSearch(any()) }
-    }
-
-    @Test
-    fun `loadEpisodes should handle music type anime correctly`() = runTest {
-        viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository, workerScheduler)
-        val animeId = 1735
-        coEvery { animeEpisodeDetailRepository.getAnimeDetail(animeId) } returns Pair(Resource.Success(
-            AnimeDetailResponse(data = animeDetailPlaceholder.copy(mal_id = 1735, type = "Music"))
-        ), false)
-        coEvery { animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(animeId) } returns null
-
-        viewModel.onAction(DetailAction.LoadAnimeDetail(animeId))
-        advanceUntilIdle()
-
-        val state = viewModel.detailState.value
-        assertTrue(
-            "Anime detail complement should be success",
-            state.animeDetailComplement is Resource.Success
-        )
-        coVerify(exactly = 1) { animeEpisodeDetailRepository.getAnimeDetail(animeId) }
-        coVerify(exactly = 1) {
-            ComplementUtils.getOrCreateAnimeDetailComplement(
-                any(),
-                any(),
-                animeId
-            )
-        }
-    }
-
-    @Test
-    fun `updateEpisodeQueryState should filter episodes based on query`() = runTest {
-        viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository, workerScheduler)
-        val animeId = 1735
-        val query = FilterUtils.EpisodeQueryState(title = "Title of Episode")
-        coEvery { animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(1735) } returns animeDetailComplementPlaceholder
-        coEvery {
-            AnimeTitleFinder.searchTitle(
-                searchQuery = query.title,
-                items = any<List<Episode>>(),
-                extractors = any()
-            )
-        } returns listOf(episodePlaceholder)
-
-        viewModel.onAction(DetailAction.LoadAnimeDetail(animeId))
-        advanceUntilIdle()
-        viewModel.onAction(DetailAction.UpdateEpisodeQueryState(query))
-        advanceUntilIdle()
-
-        val filterState = viewModel.episodeFilterState.value
-        assertEquals(query, filterState.episodeQuery)
-        assertTrue(
-            "Filtered episodes should not be empty",
-            filterState.filteredEpisodes.isNotEmpty()
-        )
-        coVerify(exactly = 1) {
-            animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(
-                1735
-            )
-        }
-        coVerify(exactly = 1) {
-            AnimeTitleFinder.searchTitle(
-                searchQuery = query.title,
-                items = any<List<Episode>>(),
-                extractors = any()
-            )
-        }
-    }
-
-    @Test
-    fun `toggleFavorite should update favorite status and cache`() = runTest {
-        viewModel = AnimeDetailViewModel(animeEpisodeDetailRepository, workerScheduler)
-        val animeId = 1735
-        coEvery { animeEpisodeDetailRepository.getCachedAnimeDetailComplementByMalId(1735) } returns animeDetailComplementPlaceholder
-        coEvery { animeEpisodeDetailRepository.updateCachedAnimeDetailComplement(any()) } just Runs
-        coEvery {
-            ComplementUtils.toggleAnimeFavorite(any(), any(), 1735, true)
-        } returns animeDetailComplementPlaceholder.copy(isFavorite = true)
-
-        viewModel.onAction(DetailAction.LoadAnimeDetail(animeId))
-        advanceUntilIdle()
         viewModel.onAction(DetailAction.ToggleFavorite(true))
         advanceUntilIdle()
 
         val state = viewModel.detailState.value
-        assertTrue(
-            "Anime detail complement should be success",
-            state.animeDetailComplement is Resource.Success
-        )
-        assertTrue(
-            "isFavorite should be true",
-            state.animeDetailComplement.data?.isFavorite == true
-        )
-        coVerify(exactly = 1) { animeEpisodeDetailRepository.updateCachedAnimeDetailComplement(any()) }
+        assertTrue((state.animeDetailComplement as? Resource.Success)?.data?.isFavorite == true)
+        coVerify(exactly = 1) { repository.toggleAnimeFavorite(any(), animeId, true) }
+    }
+
+    @Test
+    fun `updateEpisodeQueryState should call FilterUtils and update state`() = runTest {
+        val query = EpisodeFilterState(episodeQuery = FilterUtils.EpisodeQueryState(title = "test"))
+        val episodes = listOf(episodePlaceholder)
+        val filteredEpisodes = listOf(episodePlaceholder)
+        val initialComplement = mockAnimeComplement.copy(episodes = episodes)
+
+        coEvery { repository.getAnimeDetail(any()) } returns Pair(Resource.Success(mockAnimeResponse), false)
+        coEvery { repository.loadAllEpisodes(any(), any()) } returns LoadEpisodesResult.Success(initialComplement)
+        every { FilterUtils.filterEpisodes(episodes.reversed(), query.episodeQuery, any()) } returns filteredEpisodes
+
+        viewModel = AnimeDetailViewModel(repository, workerScheduler)
+        viewModel.onAction(DetailAction.LoadAnimeDetail(1))
+        advanceUntilIdle()
+
+        viewModel.onAction(DetailAction.UpdateEpisodeQueryState(query.episodeQuery))
+        advanceUntilIdle()
+
+        val state = viewModel.episodeFilterState.value
+        assertEquals(query.episodeQuery, state.episodeQuery)
+        assertEquals(filteredEpisodes, state.filteredEpisodes)
+        verify { FilterUtils.filterEpisodes(episodes.reversed(), query.episodeQuery, any()) }
     }
 }

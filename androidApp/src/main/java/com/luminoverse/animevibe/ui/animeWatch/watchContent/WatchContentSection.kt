@@ -16,12 +16,13 @@ import com.luminoverse.animevibe.utils.resource.Resource
 
 @Composable
 fun WatchContentSection(
-    animeDetail: AnimeDetail?,
+    animeDetail: Resource<AnimeDetail>,
+    isAnimeDetailComplementLoading: Boolean,
     networkStatus: NetworkStatus,
     onFavoriteToggle: (Boolean) -> Unit,
     episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
     onLoadEpisodeDetailComplement: (String) -> Unit,
-    episodeDetailComplement: EpisodeDetailComplement?,
+    episodeDetailComplement: Resource<EpisodeDetailComplement>,
     episodes: List<Episode>,
     newEpisodeIdList: List<String>,
     episodeSourcesQuery: EpisodeSourcesQuery?,
@@ -29,35 +30,34 @@ fun WatchContentSection(
     setEpisodeJumpNumber: (Int) -> Unit,
     serverScrollState: ScrollState,
     isError: Boolean,
-    isRefreshing: Boolean,
-    handleSelectedEpisodeServer: (EpisodeSourcesQuery, Boolean, Boolean) -> Unit,
+    handleSelectedEpisodeServer: (EpisodeSourcesQuery, Boolean) -> Unit,
 ) {
     Column(
         modifier = Modifier.padding(top = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         WatchHeader(
-            title = animeDetail?.title,
+            title = animeDetail.data?.title,
             networkStatus = networkStatus,
             onFavoriteToggle = onFavoriteToggle,
-            episode = episodes.find { it.id == episodeDetailComplement?.id },
+            episode = episodes.find { it.id == episodeDetailComplement.data?.id },
             episodeDetailComplement = episodeDetailComplement,
             episodeSourcesQuery = episodeSourcesQuery,
             serverScrollState = serverScrollState,
             isError = isError,
-            isRefreshing = isRefreshing,
+            isRefreshing = episodeDetailComplement is Resource.Loading || animeDetail is Resource.Loading || isAnimeDetailComplementLoading,
             onRefresh = {
                 episodeSourcesQuery?.let {
-                    handleSelectedEpisodeServer(it, false, true)
+                    handleSelectedEpisodeServer(it, true)
                 }
             },
             onServerSelected = { episodeSourcesQuery ->
-                handleSelectedEpisodeServer(episodeSourcesQuery, false, false)
+                handleSelectedEpisodeServer(episodeSourcesQuery, false)
             }
         )
 
         WatchEpisode(
-            imageUrl = animeDetail?.images?.webp?.large_image_url,
+            imageUrl = animeDetail.data?.images?.webp?.large_image_url,
             episodeDetailComplements = episodeDetailComplements,
             onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,
             episodeDetailComplement = episodeDetailComplement,
@@ -67,7 +67,7 @@ fun WatchContentSection(
             episodeJumpNumber = episodeJumpNumber,
             setEpisodeJumpNumber = setEpisodeJumpNumber,
             handleSelectedEpisodeServer = { episodeSourcesQuery ->
-                handleSelectedEpisodeServer(episodeSourcesQuery, false, false)
+                handleSelectedEpisodeServer(episodeSourcesQuery, false)
             }
         )
     }

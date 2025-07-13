@@ -15,14 +15,14 @@ import com.luminoverse.animevibe.utils.resource.Resource
 
 @Composable
 fun EpisodeNavigation(
-    episodeDetailComplement: EpisodeDetailComplement?,
+    episodeDetailComplement: Resource<EpisodeDetailComplement>,
     episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
     onLoadEpisodeDetailComplement: (String) -> Unit,
     episodes: List<Episode>,
     episodeSourcesQuery: EpisodeSourcesQuery?,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
 ) {
-    val currentEpisodeNo = episodeDetailComplement?.number
+    val currentEpisodeNo = episodeDetailComplement.data?.number
     val previousEpisode = episodes.find { it.episode_no == currentEpisodeNo?.minus(1) }
     val nextEpisode = episodes.find { it.episode_no == currentEpisodeNo?.plus(1) }
 

@@ -39,7 +39,7 @@ fun HistoryContent(
                 suggestion = "Episodes you watch will appear here."
             )
         }
-    } else when (val results = state.filteredEpisodeHistoryResults) {
+    } else when (val results = state.paginatedHistory) {
         is Resource.Loading -> {
             LazyColumn(
                 modifier = modifier,

@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import com.luminoverse.animevibe.repository.AnimeEpisodeDetailRepository
-import com.luminoverse.animevibe.utils.ComplementUtils
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -38,11 +37,8 @@ class NotificationReceiver : BroadcastReceiver() {
                         if (accessId != null) {
                             val malId = accessId.toIntOrNull()
                             if (malId != null) {
-                                val complement = ComplementUtils.toggleAnimeFavorite(
-                                    repository,
-                                    null,
-                                    malId,
-                                    false
+                                val complement = repository.toggleAnimeFavorite(
+                                    null, malId, false
                                 )
                                 if (complement != null) {
                                     repository.updateCachedAnimeDetailComplement(complement)

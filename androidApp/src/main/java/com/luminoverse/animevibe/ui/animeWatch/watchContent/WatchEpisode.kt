@@ -22,7 +22,7 @@ fun WatchEpisode(
     imageUrl: String?,
     episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
     onLoadEpisodeDetailComplement: (String) -> Unit,
-    episodeDetailComplement: EpisodeDetailComplement?,
+    episodeDetailComplement: Resource<EpisodeDetailComplement>,
     episodes: List<Episode>,
     newEpisodeIdList: List<String>,
     episodeSourcesQuery: EpisodeSourcesQuery?,
