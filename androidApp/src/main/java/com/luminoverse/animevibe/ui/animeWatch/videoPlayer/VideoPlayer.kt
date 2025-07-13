@@ -529,9 +529,11 @@ fun VideoPlayer(
             }
         }
 
+        val isPlayerControlsVisible =
+            (controlsState.isControlsVisible || videoPlayerState.isDraggingSeekBar) && !shouldShowResumeOverlay && isOverlayVisible && isPlayerDisplayFullscreen && !videoPlayerState.showLandscapeEpisodeList
         // Subtitle View
         val animatedSubtitleBottomPadding by animateDpAsState(
-            targetValue = if (isOverlayVisible && controlsState.isControlsVisible && isLandscape && displayMode == PlayerDisplayMode.FULLSCREEN_LANDSCAPE) videoPlayerState.bottomBarHeight.dp else if (isSideSheetVisible) 16.dp else 8.dp,
+            targetValue = if (isOverlayVisible && isPlayerControlsVisible && isLandscape && displayMode == PlayerDisplayMode.FULLSCREEN_LANDSCAPE) videoPlayerState.bottomBarHeight.dp else if (isSideSheetVisible) 16.dp else 8.dp,
             label = "SubtitleBottomPadding"
         )
         CustomSubtitleView(
@@ -545,8 +547,6 @@ fun VideoPlayer(
         )
 
         // Player Controls Overlay
-        val isPlayerControlsVisible =
-            (controlsState.isControlsVisible || videoPlayerState.isDraggingSeekBar) && !shouldShowResumeOverlay && isOverlayVisible && isPlayerDisplayFullscreen && !videoPlayerState.showLandscapeEpisodeList
         AnimatedVisibility(visible = isPlayerControlsVisible, enter = fadeIn(), exit = fadeOut()) {
             PlayerControls(
                 isPlaying = coreState.isPlaying,
