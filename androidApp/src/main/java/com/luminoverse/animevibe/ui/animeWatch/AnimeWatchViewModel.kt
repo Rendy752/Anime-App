@@ -115,8 +115,11 @@ class AnimeWatchViewModel @Inject constructor(
     private fun setInitialState(malId: Int, episodeId: String) = viewModelScope.launch {
         _watchState.update {
             it.copy(
+                episodeSourcesQuery = episodeSourcesQueryPlaceholder.copy(id = episodeId),
+                episodeJumpNumber = if (_watchState.value.animeDetail.data?.mal_id == malId) _watchState.value.episodeJumpNumber else null,
                 animeDetail = Resource.Loading(),
-                animeDetailComplement = Resource.Loading()
+                animeDetailComplement = Resource.Loading(),
+                episodeDetailComplement = Resource.Loading()
             )
         }
 
@@ -127,16 +130,7 @@ class AnimeWatchViewModel @Inject constructor(
         }
         _watchState.update { it.copy(animeDetail = Resource.Success(animeDetailResource.data.data)) }
 
-        if (isFromCache) {
-            animeEpisodeDetailRepository.getUpdatedAnimeDetailById(malId).let { updatedResource ->
-                if (updatedResource is Resource.Success) {
-                    _watchState.update { it.copy(animeDetail = Resource.Success(updatedResource.data.data)) }
-                }
-            }
-        }
-
         val episodeLoadResult = loadAllEpisodes()
-
         if (episodeLoadResult is LoadEpisodesResult.Success) {
             val complement = episodeLoadResult.complement
             val lastWatchedId = complement.lastEpisodeWatchedId
@@ -150,6 +144,14 @@ class AnimeWatchViewModel @Inject constructor(
                 onAction(WatchAction.ShowErrorMessage("No episodes available to play."))
             }
         }
+
+        if (isFromCache) {
+            animeEpisodeDetailRepository.getUpdatedAnimeDetailById(malId).let { updatedResource ->
+                if (updatedResource is Resource.Success) {
+                    _watchState.update { it.copy(animeDetail = Resource.Success(updatedResource.data.data)) }
+                }
+            }
+        }
     }
 
     private suspend fun determineInitialQuery(
@@ -158,18 +160,15 @@ class AnimeWatchViewModel @Inject constructor(
     ): EpisodeSourcesQuery {
         val cachedEpisode = animeEpisodeDetailRepository.getCachedEpisodeDetailComplement(episodeId)
         if (cachedEpisode != null) return cachedEpisode.sourcesQuery.copy(id = episodeId)
-
-        val firstServer = complement.episodes?.find { it.id == episodeId }?.let { ep ->
-            animeEpisodeDetailRepository.getEpisodeServers(ep.id).data?.results?.firstOrNull()
+        val allServers = complement.episodes?.find { it.id == episodeId }?.let { ep ->
+            animeEpisodeDetailRepository.getEpisodeServers(ep.id).data?.results
         }
+        if (allServers.isNullOrEmpty()) return episodeSourcesQueryPlaceholder.copy(id = episodeId)
 
-        return if (firstServer != null) {
-            EpisodeSourcesQuery.create(episodeId, firstServer.serverName, firstServer.type)
-        } else {
-            episodeSourcesQueryPlaceholder.copy(id = episodeId)
-        }
+        val lastSubServer = allServers.lastOrNull { it.type == "sub" }
+        val priorityServer = lastSubServer ?: allServers.first()
+        return EpisodeSourcesQuery.create(episodeId, priorityServer.serverName, priorityServer.type)
     }
-
 
     private fun handleSelectedEpisodeServer(
         episodeSourcesQuery: EpisodeSourcesQuery,
@@ -220,12 +219,11 @@ class AnimeWatchViewModel @Inject constructor(
      * This removes the need for a callback and makes the control flow sequential.
      */
     private suspend fun loadAllEpisodes(): LoadEpisodesResult {
-        val animeDetail = _watchState.value.animeDetail.data ?: return LoadEpisodesResult.Error("Anime Detail not available.")
-        _watchState.update { it.copy(animeDetailComplement = Resource.Loading(it.animeDetailComplement.data)) }
+        val animeDetail = _watchState.value.animeDetail.data
+            ?: return LoadEpisodesResult.Error("Anime Detail not available.")
 
         val result = animeEpisodeDetailRepository.loadAllEpisodes(
-            animeDetail = animeDetail,
-            isRefresh = true
+            animeDetail = animeDetail, isRefresh = true
         )
 
         when (result) {
@@ -262,7 +260,14 @@ class AnimeWatchViewModel @Inject constructor(
         screenShot: String?
     ) = viewModelScope.launch {
         val episodeComplement = _watchState.value.episodeDetailComplement.data ?: return@launch
-        val updatedComplement = episodeComplement.copy(
+        val cachedEpisodeComplement =
+            animeEpisodeDetailRepository.getCachedEpisodeDetailComplement(episodeComplement.id)
+        val updatedComplement = cachedEpisodeComplement?.copy(
+            lastTimestamp = currentPosition,
+            duration = duration,
+            screenshot = screenShot,
+            lastWatched = LocalDateTime.now().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+        ) ?: episodeComplement.copy(
             lastTimestamp = currentPosition,
             duration = duration,
             screenshot = screenShot,

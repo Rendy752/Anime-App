@@ -44,7 +44,6 @@ import com.luminoverse.animevibe.models.animeDetailPlaceholder
 import com.luminoverse.animevibe.models.episodeDetailComplementPlaceholder
 import com.luminoverse.animevibe.models.episodePlaceholder
 import com.luminoverse.animevibe.utils.basicContainer
-import com.luminoverse.animevibe.utils.resource.Resource
 import com.luminoverse.animevibe.utils.watch.WatchUtils.getEpisodeBackgroundColor
 
 @Preview
@@ -52,7 +51,7 @@ import com.luminoverse.animevibe.utils.watch.WatchUtils.getEpisodeBackgroundColo
 fun WatchEpisodeItemPreview() {
     WatchEpisodeItem(
         imageUrl = animeDetailPlaceholder.images.webp.large_image_url,
-        currentEpisode = Resource.Success(episodeDetailComplementPlaceholder.copy(number = 2)),
+        isCurrentEpisode = true,
         episode = episodePlaceholder,
         isHighlighted = true,
         isNew = true,
@@ -65,7 +64,7 @@ fun WatchEpisodeItemPreview() {
 @Composable
 fun WatchEpisodeItem(
     imageUrl: String?,
-    currentEpisode: Resource<EpisodeDetailComplement>,
+    isCurrentEpisode: Boolean,
     episode: Episode,
     isHighlighted: Boolean,
     isNew: Boolean,
@@ -73,8 +72,6 @@ fun WatchEpisodeItem(
     onEpisodeClick: (String) -> Unit,
     isSelected: Boolean
 ) {
-    val isCurrentEpisode =
-        if (currentEpisode is Resource.Success) currentEpisode.data.number == episode.episode_no else false
     var showTooltip by remember { mutableStateOf(false) }
     val backgroundColor =
         getEpisodeBackgroundColor(

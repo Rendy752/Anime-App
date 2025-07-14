@@ -127,6 +127,7 @@ class AnimeWatchViewModelTest {
     fun `UpdateStoredWatchState should call repository to insert or update`() = runTest {
         val position = 100L
         val duration = 200L
+        coEvery { repository.getCachedEpisodeDetailComplement(any()) } returns mockEpisodeComplement
         coEvery { repository.getEpisodeStreamingDetails(any(), any(), any(), any(), any()) } returns Resource.Success(mockEpisodeComplement)
         viewModel.onAction(WatchAction.HandleSelectedEpisodeServer(episodeSourcesQueryPlaceholder))
         advanceUntilIdle()

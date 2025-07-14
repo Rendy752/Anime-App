@@ -8,7 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.AnimeDetail
-import com.luminoverse.animevibe.models.Episode
+import com.luminoverse.animevibe.models.AnimeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
 import com.luminoverse.animevibe.models.NetworkStatus
@@ -17,13 +17,12 @@ import com.luminoverse.animevibe.utils.resource.Resource
 @Composable
 fun WatchContentSection(
     animeDetail: Resource<AnimeDetail>,
-    isAnimeDetailComplementLoading: Boolean,
+    animeDetailComplement: Resource<AnimeDetailComplement>,
     networkStatus: NetworkStatus,
     onFavoriteToggle: (Boolean) -> Unit,
     episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
     onLoadEpisodeDetailComplement: (String) -> Unit,
     episodeDetailComplement: Resource<EpisodeDetailComplement>,
-    episodes: List<Episode>,
     newEpisodeIdList: List<String>,
     episodeSourcesQuery: EpisodeSourcesQuery?,
     episodeJumpNumber: Int?,
@@ -40,12 +39,12 @@ fun WatchContentSection(
             title = animeDetail.data?.title,
             networkStatus = networkStatus,
             onFavoriteToggle = onFavoriteToggle,
-            episode = episodes.find { it.id == episodeDetailComplement.data?.id },
+            animeDetailComplement = animeDetailComplement,
             episodeDetailComplement = episodeDetailComplement,
             episodeSourcesQuery = episodeSourcesQuery,
             serverScrollState = serverScrollState,
             isError = isError,
-            isRefreshing = episodeDetailComplement is Resource.Loading || animeDetail is Resource.Loading || isAnimeDetailComplementLoading,
+            isRefreshing = episodeDetailComplement is Resource.Loading || animeDetail is Resource.Loading || animeDetailComplement is Resource.Loading,
             onRefresh = {
                 episodeSourcesQuery?.let {
                     handleSelectedEpisodeServer(it, true)
@@ -60,8 +59,7 @@ fun WatchContentSection(
             imageUrl = animeDetail.data?.images?.webp?.large_image_url,
             episodeDetailComplements = episodeDetailComplements,
             onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,
-            episodeDetailComplement = episodeDetailComplement,
-            episodes = episodes,
+            animeDetailComplement = animeDetailComplement,
             newEpisodeIdList = newEpisodeIdList,
             episodeSourcesQuery = episodeSourcesQuery,
             episodeJumpNumber = episodeJumpNumber,

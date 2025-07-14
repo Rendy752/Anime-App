@@ -22,7 +22,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.Episode
+import com.luminoverse.animevibe.ui.common.CircularLoadingIndicator
 import com.luminoverse.animevibe.ui.common.SearchView
+import com.luminoverse.animevibe.ui.common.SearchViewSkeleton
 import com.luminoverse.animevibe.utils.Debounce
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -91,13 +93,12 @@ fun EpisodeJump(
             query = textValue,
             onQueryChange = { newText ->
                 val filteredText = newText.filter { it.isDigit() }
+                val newIntValue = filteredText.toIntOrNull()
 
-                val newIntValue = filteredText.toIntOrNull() ?: 0
-
-                if (newIntValue <= totalEpisodes) {
+                if (newIntValue == null || newIntValue <= totalEpisodes) {
                     textValue = filteredText
-                    setEpisodeJumpNumber(newIntValue)
-                    if (newIntValue > 0) {
+                    setEpisodeJumpNumber(newIntValue ?: 0)
+                    if (newIntValue != null && newIntValue > 0) {
                         debounce.query(newIntValue.toString())
                     }
                 } else {
@@ -110,5 +111,22 @@ fun EpisodeJump(
             placeholder = "Jump to Episode",
             modifier = Modifier.weight(0.5f)
         )
+    }
+}
+
+@Composable
+fun EpisodeJumpSkeleton(modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(
+            modifier = Modifier
+                .weight(0.5f)
+                .align(Alignment.CenterVertically),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) { CircularLoadingIndicator(size = 24, strokeWidth = 2f) }
+        SearchViewSkeleton(modifier = Modifier.weight(0.5f))
     }
 }

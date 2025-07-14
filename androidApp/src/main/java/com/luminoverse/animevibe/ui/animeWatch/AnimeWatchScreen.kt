@@ -240,8 +240,7 @@ fun AnimeWatchScreen(
                             handleSelectedEpisodeServer = { episodeSourcesQuery, isRefresh ->
                                 onAction(
                                     WatchAction.HandleSelectedEpisodeServer(
-                                        episodeSourcesQuery,
-                                        isRefresh
+                                        episodeSourcesQuery, isRefresh
                                     )
                                 )
                             },

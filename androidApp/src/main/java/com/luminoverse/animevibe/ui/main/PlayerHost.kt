@@ -73,7 +73,6 @@ import com.luminoverse.animevibe.ui.animeWatch.watchContent.WatchContentSection
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
 import com.luminoverse.animevibe.utils.media.PipUtil.buildPipActions
-import com.luminoverse.animevibe.utils.resource.Resource
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
@@ -408,11 +407,9 @@ fun PlayerHost(
                     .verticalScroll(columnScrollState),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                if (watchState.animeDetailComplement.data?.episodes != null
-                    && watchState.animeDetail.data?.mal_id == playerState.malId
-                ) WatchContentSection(
+                WatchContentSection(
                     animeDetail = watchState.animeDetail,
-                    isAnimeDetailComplementLoading = watchState.animeDetailComplement is Resource.Loading,
+                    animeDetailComplement = watchState.animeDetailComplement,
                     networkStatus = mainState.networkStatus,
                     onFavoriteToggle = { isFavorite ->
                         watchViewModel.onAction(
@@ -426,15 +423,12 @@ fun PlayerHost(
                         )
                     },
                     episodeDetailComplements = watchState.episodeDetailComplements,
-                    episodes = watchState.animeDetailComplement.data?.episodes ?: emptyList(),
                     newEpisodeIdList = watchState.newEpisodeIdList,
                     episodeSourcesQuery = watchState.episodeSourcesQuery,
                     episodeJumpNumber = watchState.episodeJumpNumber,
                     setEpisodeJumpNumber = {
                         watchViewModel.onAction(
-                            WatchAction.SetEpisodeJumpNumber(
-                                it
-                            )
+                            WatchAction.SetEpisodeJumpNumber(it)
                         )
                     },
                     serverScrollState = serverScrollState,

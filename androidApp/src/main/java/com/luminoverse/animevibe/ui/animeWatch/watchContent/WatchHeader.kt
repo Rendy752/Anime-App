@@ -13,7 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.luminoverse.animevibe.models.Episode
+import com.luminoverse.animevibe.models.AnimeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
 import com.luminoverse.animevibe.models.NetworkStatus
@@ -26,7 +26,7 @@ fun WatchHeader(
     title: String?,
     networkStatus: NetworkStatus,
     onFavoriteToggle: (Boolean) -> Unit,
-    episode: Episode?,
+    animeDetailComplement: Resource<AnimeDetailComplement>,
     episodeDetailComplement: Resource<EpisodeDetailComplement>,
     episodeSourcesQuery: EpisodeSourcesQuery?,
     serverScrollState: ScrollState,
@@ -35,12 +35,17 @@ fun WatchHeader(
     onRefresh: () -> Unit,
     onServerSelected: (EpisodeSourcesQuery) -> Unit,
 ) {
-    var isFavorite by remember(episodeDetailComplement) { mutableStateOf(episodeDetailComplement.data?.isFavorite ?: false) }
+    val currentEpisode by remember(animeDetailComplement) {
+        mutableStateOf(animeDetailComplement.data?.episodes?.find { it.id == episodeSourcesQuery?.id })
+    }
+    var isFavorite by remember(episodeDetailComplement) {
+        mutableStateOf(episodeDetailComplement.data?.isFavorite ?: false)
+    }
     Column(
         modifier = Modifier
             .basicContainer(
                 backgroundBrush = getEpisodeBackgroundColor(
-                    episode?.filler ?: false,
+                    currentEpisode?.filler ?: false,
                     episodeDetailComplement.data?.copy(isFavorite = isFavorite)
                 ),
                 outerPadding = PaddingValues(0.dp),
@@ -64,11 +69,13 @@ fun WatchHeader(
                 },
                 isFavorite = isFavorite
             )
-            if (episode != null) EpisodeInfo(
-                title = title,
-                episode = episode,
-                episodeSourcesQuery = episodeSourcesQuery
-            ) else EpisodeInfoSkeleton()
+            currentEpisode?.let {
+                EpisodeInfo(
+                    title = title,
+                    currentEpisode = it,
+                    episodeSourcesQuery = episodeSourcesQuery
+                )
+            } ?: EpisodeInfoSkeleton()
 
             if (episodeDetailComplement is Resource.Success) ServerSelection(
                 scrollState = serverScrollState,

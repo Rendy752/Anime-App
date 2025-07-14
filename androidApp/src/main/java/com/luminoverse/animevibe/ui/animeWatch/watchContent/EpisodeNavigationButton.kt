@@ -1,5 +1,6 @@
 package com.luminoverse.animevibe.ui.animeWatch.watchContent
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -63,7 +64,7 @@ fun EpisodeNavigationButton(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if (isPrevious) {
+        AnimatedVisibility(visible = isPrevious) {
             Icon(
                 buttonIcon,
                 contentDescription = "Previous Episode",
@@ -71,6 +72,7 @@ fun EpisodeNavigationButton(
                 tint = MaterialTheme.colorScheme.primary
             )
         }
+
         Text(
             episode?.title ?: "Unknown",
             textAlign = TextAlign.Center,
@@ -80,7 +82,8 @@ fun EpisodeNavigationButton(
             overflow = TextOverflow.Companion.Ellipsis,
             modifier = Modifier.weight(1f)
         )
-        if (!isPrevious) {
+
+        AnimatedVisibility(visible = !isPrevious) {
             Icon(
                 buttonIcon,
                 contentDescription = "Next Episode",
@@ -111,7 +114,7 @@ fun EpisodeNavigationButtonSkeleton(modifier: Modifier = Modifier, isPrevious: B
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if (isPrevious) {
+        AnimatedVisibility(visible = isPrevious) {
             Icon(
                 buttonIcon,
                 contentDescription = "Previous Episode",
@@ -119,12 +122,14 @@ fun EpisodeNavigationButtonSkeleton(modifier: Modifier = Modifier, isPrevious: B
                 tint = MaterialTheme.colorScheme.primary
             )
         }
+
         SkeletonBox(
             width = 100.dp,
             height = 20.dp,
             modifier = Modifier.weight(1f)
         )
-        if (!isPrevious) {
+
+        AnimatedVisibility(visible = !isPrevious) {
             Icon(
                 buttonIcon,
                 contentDescription = "Next Episode",

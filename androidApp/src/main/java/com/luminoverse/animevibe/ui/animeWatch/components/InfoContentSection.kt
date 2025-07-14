@@ -15,6 +15,7 @@ import com.luminoverse.animevibe.ui.common.AnimeHeader
 import com.luminoverse.animevibe.ui.common.AnimeHeaderSkeleton
 import com.luminoverse.animevibe.ui.common.DetailCommonBody
 import com.luminoverse.animevibe.ui.common.DetailCommonBodySkeleton
+import com.luminoverse.animevibe.ui.common.SomethingWentWrongDisplay
 import com.luminoverse.animevibe.ui.common.YoutubePreview
 import com.luminoverse.animevibe.ui.common.YoutubePreviewSkeleton
 import com.luminoverse.animevibe.ui.main.PlayerDisplayMode
@@ -34,40 +35,51 @@ fun InfoContentSection(
         modifier = modifier.padding(bottom = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        if (animeDetail is Resource.Success) {
-            AnimeHeader(
-                modifier = Modifier.padding(top = 8.dp),
-                animeDetail = animeDetail.data, onClick = {
-                    navController.navigateTo(
-                        NavRoute.AnimeDetail.fromId(animeDetail.data.mal_id)
-                    )
-                    setPlayerDisplayMode(PlayerDisplayMode.PIP)
-                }
-            )
-            NumericDetailSection(
-                score = animeDetail.data.score,
-                scoredBy = animeDetail.data.scored_by,
-                rank = animeDetail.data.rank,
-                popularity = animeDetail.data.popularity,
-                members = animeDetail.data.members,
-                favorites = animeDetail.data.favorites
-            )
-            YoutubePreview(embedUrl = animeDetail.data.trailer.embed_url)
-            DetailCommonBody(title = "Background", body = animeDetail.data.background)
-            DetailCommonBody(
-                modifier = Modifier.padding(bottom = rememberedBottomPadding),
-                title = "Synopsis",
-                body = animeDetail.data.synopsis
-            )
-        } else if (animeDetail is Resource.Loading) {
-            AnimeHeaderSkeleton()
-            NumericDetailSectionSkeleton()
-            YoutubePreviewSkeleton()
-            DetailCommonBodySkeleton(title = "Background")
-            DetailCommonBodySkeleton(
-                modifier = Modifier.padding(bottom = rememberedBottomPadding),
-                title = "Synopsis"
-            )
+        when (animeDetail) {
+            is Resource.Success -> {
+                AnimeHeader(
+                    modifier = Modifier.padding(top = 8.dp),
+                    animeDetail = animeDetail.data, onClick = {
+                        navController.navigateTo(
+                            NavRoute.AnimeDetail.fromId(animeDetail.data.mal_id)
+                        )
+                        setPlayerDisplayMode(PlayerDisplayMode.PIP)
+                    }
+                )
+                NumericDetailSection(
+                    score = animeDetail.data.score,
+                    scoredBy = animeDetail.data.scored_by,
+                    rank = animeDetail.data.rank,
+                    popularity = animeDetail.data.popularity,
+                    members = animeDetail.data.members,
+                    favorites = animeDetail.data.favorites
+                )
+                YoutubePreview(embedUrl = animeDetail.data.trailer.embed_url)
+                DetailCommonBody(title = "Background", body = animeDetail.data.background)
+                DetailCommonBody(
+                    modifier = Modifier.padding(bottom = rememberedBottomPadding),
+                    title = "Synopsis",
+                    body = animeDetail.data.synopsis
+                )
+            }
+
+            is Resource.Loading -> {
+                AnimeHeaderSkeleton()
+                NumericDetailSectionSkeleton()
+                YoutubePreviewSkeleton()
+                DetailCommonBodySkeleton(title = "Background")
+                DetailCommonBodySkeleton(
+                    modifier = Modifier.padding(bottom = rememberedBottomPadding),
+                    title = "Synopsis"
+                )
+            }
+
+            is Resource.Error -> {
+                SomethingWentWrongDisplay(
+                    message = animeDetail.message,
+                    suggestion = "Please try again later"
+                )
+            }
         }
     }
 }
