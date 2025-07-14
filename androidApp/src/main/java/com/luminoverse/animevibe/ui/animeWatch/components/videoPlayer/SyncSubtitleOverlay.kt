@@ -40,6 +40,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -55,6 +56,7 @@ import androidx.media3.common.util.UnstableApi
 import com.luminoverse.animevibe.utils.TimeUtils.formatTimestamp
 import com.luminoverse.animevibe.utils.media.CaptionCue
 import com.luminoverse.animevibe.utils.media.vttTextToAnnotatedString
+import kotlinx.coroutines.launch
 import java.util.Locale
 import kotlin.math.abs
 
@@ -78,20 +80,28 @@ fun SyncSubtitleOverlay(
     handlePlay: () -> Unit
 ) {
     val lazyListState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
 
     LaunchedEffect(activeCues, isVisible) {
         if (isVisible && activeCues.isNotEmpty() && allCues.isNotEmpty()) {
             val targetIndex = allCues.indexOfFirst { it.startTime == activeCues.first().startTime }
                 .coerceAtLeast(0)
 
-            val visibleItems = lazyListState.layoutInfo.visibleItemsInfo
-            if (visibleItems.none { it.index == targetIndex }) {
+            scope.launch {
+                val layoutInfo = lazyListState.layoutInfo
+                val viewportHeight = layoutInfo.viewportSize.height
+
+                val averageItemHeight = layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 72 // Default height
+
+                val scrollOffset = -(viewportHeight / 2 - averageItemHeight / 2)
+
                 val firstVisibleIndex = lazyListState.firstVisibleItemIndex
                 val distance = abs(targetIndex - firstVisibleIndex)
+
                 if (distance < 20) {
-                    lazyListState.animateScrollToItem(targetIndex)
+                    lazyListState.animateScrollToItem(targetIndex, scrollOffset = scrollOffset)
                 } else {
-                    lazyListState.scrollToItem(targetIndex)
+                    lazyListState.scrollToItem(targetIndex, scrollOffset = scrollOffset)
                 }
             }
         }
