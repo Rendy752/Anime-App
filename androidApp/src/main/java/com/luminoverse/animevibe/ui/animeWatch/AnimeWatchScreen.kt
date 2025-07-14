@@ -97,7 +97,6 @@ fun AnimeWatchScreen(
     pipDragProgress: Float,
     maxVerticalDrag: Float,
     setMaxVerticalDrag: (Float) -> Unit,
-    pipWidth: Dp,
     pipEndDestinationPx: Offset,
     pipEndSizePx: IntSize
 ) {
@@ -265,7 +264,6 @@ fun AnimeWatchScreen(
                             verticalDragOffset = verticalDragOffset,
                             maxVerticalDrag = maxVerticalDrag,
                             pipDragProgress = pipDragProgress,
-                            pipWidth = pipWidth,
                             pipEndDestinationPx = pipEndDestinationPx,
                             pipEndSizePx = pipEndSizePx,
                             onMaxDragAmountCalculated = { setMaxVerticalDrag(it) }

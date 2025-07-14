@@ -496,7 +496,6 @@ fun PlayerHost(
                 pipDragProgress = pipDragProgress,
                 maxVerticalDrag = maxVerticalDrag,
                 setMaxVerticalDrag = { maxVerticalDrag = it },
-                pipWidth = animatedPipWidth,
                 pipEndDestinationPx = pipEndDestinationPx,
                 pipEndSizePx = pipEndSizePx
             )

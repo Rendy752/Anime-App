@@ -114,7 +114,6 @@ fun VideoPlayer(
     verticalDragOffset: Animatable<Float, *>,
     maxVerticalDrag: Float,
     pipDragProgress: Float,
-    pipWidth: Dp,
     pipEndDestinationPx: Offset,
     pipEndSizePx: IntSize,
     onMaxDragAmountCalculated: (Float) -> Unit
@@ -532,6 +531,10 @@ fun VideoPlayer(
         val isPlayerControlsVisible =
             (controlsState.isControlsVisible || videoPlayerState.isDraggingSeekBar) && !shouldShowResumeOverlay && isOverlayVisible && isPlayerDisplayFullscreen && !videoPlayerState.showLandscapeEpisodeList
         // Subtitle View
+        val animatedSubtitleTopPadding by animateDpAsState(
+            targetValue = if (isPlayerDisplayPip) 4.dp else 8.dp,
+            label = "SubtitleTopPadding"
+        )
         val animatedSubtitleBottomPadding by animateDpAsState(
             targetValue = if (isOverlayVisible && isPlayerControlsVisible && isLandscape && displayMode == PlayerDisplayMode.FULLSCREEN_LANDSCAPE) videoPlayerState.bottomBarHeight.dp else if (isSideSheetVisible) 16.dp else 8.dp,
             label = "SubtitleBottomPadding"
@@ -539,11 +542,11 @@ fun VideoPlayer(
         CustomSubtitleView(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(bottom = animatedSubtitleBottomPadding, start = 8.dp, end = 8.dp),
-            cues = videoPlayerState.activeCaptionCue,
-            isLandscape = isLandscape,
-            isPipMode = isPlayerDisplayPip,
-            pipWidth = pipWidth
+                .padding(
+                    top = animatedSubtitleTopPadding, bottom = animatedSubtitleBottomPadding,
+                    start = 8.dp, end = 8.dp
+                ),
+            cues = videoPlayerState.activeCaptionCue
         )
 
         // Player Controls Overlay
