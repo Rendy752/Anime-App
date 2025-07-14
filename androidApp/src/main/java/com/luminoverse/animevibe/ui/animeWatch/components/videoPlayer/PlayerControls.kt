@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.Icon
@@ -87,6 +88,7 @@ fun PlayerControls(
     onSettingsClick: () -> Unit,
     isAutoplayPlayNextEpisode: Boolean,
     onAutoplayNextEpisodeToggle: (Boolean) -> Unit,
+    onShareClick: () -> Unit,
     onFullscreenToggle: () -> Unit,
     onBottomBarMeasured: (Float) -> Unit
 ) {
@@ -140,6 +142,7 @@ fun PlayerControls(
             isShowSeekIndicator = isShowSeekIndicator,
             isAutoplayPlayNextEpisode = isAutoplayPlayNextEpisode,
             onAutoplayNextEpisodeToggle = onAutoplayNextEpisodeToggle,
+            onShareClick = onShareClick,
             onFullscreenToggle = onFullscreenToggle,
             isLandscape = isLandscape,
             handlePlay = handlePlay,
@@ -418,6 +421,7 @@ private fun BottomSection(
     isShowSeekIndicator: Int,
     isAutoplayPlayNextEpisode: Boolean,
     onAutoplayNextEpisodeToggle: (Boolean) -> Unit,
+    onShareClick: () -> Unit,
     onFullscreenToggle: () -> Unit,
     isLandscape: Boolean,
     handlePlay: () -> Unit,
@@ -480,12 +484,21 @@ private fun BottomSection(
                     fontSize = 14.sp
                 )
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     AutoplayNextEpisodeToggle(
                         isAutoplayPlayNextEpisode = isAutoplayPlayNextEpisode,
                         onToggle = { onAutoplayNextEpisodeToggle(!isAutoplayPlayNextEpisode) }
+                    )
+                    Icon(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .clickable { onShareClick() }
+                            .padding(8.dp),
+                        imageVector = Icons.Default.Share,
+                        contentDescription = "Share Streaming URL",
+                        tint = Color.White
                     )
                     Icon(
                         modifier = Modifier

@@ -107,6 +107,7 @@ class VideoPlayerState(
     /** Manages the visibility of the "Next Episode" overlay. */
     var shouldShowNextEpisodeOverlay by mutableStateOf(false)
 
+
     /**
      * The manual offset in milliseconds applied to all subtitle cues.
      * A positive value makes subtitles appear later, a negative value makes them appear earlier.
@@ -125,6 +126,12 @@ class VideoPlayerState(
 
     /** Manages the visibility of the playback speed selection bottom sheet. */
     var showPlaybackSpeedSheet by mutableStateOf(false)
+
+    /** Determines whether the current timestamp should be included when sharing the video.*/
+    var includeTimestampInShare by mutableStateOf(false)
+
+    /** Manages the visibility of the "Share Options" bottom sheet. */
+    var showShareSheet by mutableStateOf(false)
 
     /** Manages the visibility of the lock reminder icon. */
     var showLockReminder by mutableStateOf(false)

@@ -67,6 +67,7 @@ import com.luminoverse.animevibe.ui.common.ImageAspectRatio
 import com.luminoverse.animevibe.ui.common.ImageDisplay
 import com.luminoverse.animevibe.ui.common.ImageRoundedCorner
 import com.luminoverse.animevibe.ui.main.PlayerDisplayMode
+import com.luminoverse.animevibe.utils.ShareUtils
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.MediaPlaybackAction
@@ -76,6 +77,7 @@ import com.luminoverse.animevibe.utils.resource.Resource
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import java.net.URLEncoder
 import kotlin.math.min
 
 /**
@@ -543,15 +545,21 @@ fun VideoPlayer(
             targetValue = if (isOverlayVisible && isPlayerControlsVisible && isLandscape && displayMode == PlayerDisplayMode.FULLSCREEN_LANDSCAPE) videoPlayerState.bottomBarHeight.dp else if (isSideSheetVisible) 16.dp else 8.dp,
             label = "SubtitleBottomPadding"
         )
-        CustomSubtitleView(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(
-                    top = animatedSubtitleTopPadding, bottom = animatedSubtitleBottomPadding,
-                    start = 8.dp, end = 8.dp
-                ),
-            cues = videoPlayerState.activeCaptionCue
-        )
+        AnimatedVisibility(
+            visible = !videoPlayerState.showSubtitleSyncOverlay,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            CustomSubtitleView(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(
+                        top = animatedSubtitleTopPadding, bottom = animatedSubtitleBottomPadding,
+                        start = 8.dp, end = 8.dp
+                    ),
+                cues = videoPlayerState.activeCaptionCue
+            )
+        }
 
         // Player Controls Overlay
         AnimatedVisibility(visible = isPlayerControlsVisible, enter = fadeIn(), exit = fadeOut()) {
@@ -615,6 +623,7 @@ fun VideoPlayer(
                     setAutoplayNextEpisodeEnabled(enabled)
                     videoPlayerState.onAutoplayNextEpisodeToggle(enabled)
                 },
+                onShareClick = { videoPlayerState.showShareSheet = true },
                 onFullscreenToggle = { setPlayerDisplayMode(if (displayMode == PlayerDisplayMode.FULLSCREEN_LANDSCAPE) PlayerDisplayMode.FULLSCREEN_PORTRAIT else PlayerDisplayMode.FULLSCREEN_LANDSCAPE) },
                 onBottomBarMeasured = { height -> videoPlayerState.bottomBarHeight = height }
             )
@@ -867,6 +876,31 @@ fun VideoPlayer(
                     playerAction(HlsPlayerAction.SetPlaybackSpeed(speed))
                     videoPlayerState.showPlaybackSpeedSheet = false
                 }
+            )
+        }
+
+        CustomModalBottomSheet(
+            modifier = Modifier.align(Alignment.BottomCenter),
+            isVisible = videoPlayerState.showShareSheet && isOverlayVisible,
+            isLandscape = isLandscape,
+            config = settingsSheetConfig,
+            onDismiss = { videoPlayerState.showShareSheet = false }
+        ) {
+            val baseUrl = "animevibe://anime/watch/${(episodeDetailComplement.malId)}/${
+                URLEncoder.encode(currentEpisode.id, "UTF-8")
+            }"
+            val generatedLink =
+                if (videoPlayerState.includeTimestampInShare && currentPositionMs > 0) {
+                    "$baseUrl/$currentPositionMs"
+                } else {
+                    baseUrl
+                }
+            ShareOptionsContent(
+                includeTimestamp = videoPlayerState.includeTimestampInShare,
+                onIncludeTimestampChange = { videoPlayerState.includeTimestampInShare = it },
+                generatedLink = generatedLink,
+                onShareClick = { ShareUtils.shareText(context, generatedLink) },
+                onDismiss = { videoPlayerState.showShareSheet = false }
             )
         }
     }

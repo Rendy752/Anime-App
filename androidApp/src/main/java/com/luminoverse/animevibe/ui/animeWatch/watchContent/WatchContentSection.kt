@@ -56,7 +56,7 @@ fun WatchContentSection(
             }
         )
 
-        AnimatedVisibility(visible = episodeDetailComplement !is Resource.Error) {
+        AnimatedVisibility(visible = episodeDetailComplement !is Resource.Error || animeDetailComplement !is Resource.Error) {
             WatchEpisode(
                 imageUrl = animeDetail.data?.images?.webp?.large_image_url,
                 episodeDetailComplements = episodeDetailComplements,
