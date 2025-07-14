@@ -103,6 +103,7 @@ fun VideoPlayer(
     episodes: List<Episode>,
     episodeSourcesQuery: EpisodeSourcesQuery,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery, Boolean) -> Unit,
+    initialSeekPositionMs: Long?,
     displayMode: PlayerDisplayMode,
     setPlayerDisplayMode: (PlayerDisplayMode) -> Unit,
     onEnterSystemPipMode: () -> Unit,
@@ -194,7 +195,8 @@ fun VideoPlayer(
             HlsPlayerAction.SetMedia(
                 videoData = episodeDetailComplement.sources,
                 isAutoPlayVideo = isAutoPlayVideo,
-                currentPosition = episodeDetailComplement.lastTimestamp ?: 0,
+                currentPosition =
+                    initialSeekPositionMs ?: episodeDetailComplement.lastTimestamp ?: 0,
                 duration = episodeDetailComplement.duration ?: 0
             )
         )
@@ -763,6 +765,7 @@ fun VideoPlayer(
                 modifier = Modifier.align(Alignment.Center),
                 isVisible = shouldShowResumeOverlay,
                 isPipMode = isPlayerDisplayPip,
+                initialSeekPositionMs = initialSeekPositionMs,
                 lastTimestamp = lastTimestamp,
                 onDismiss = {
                     videoPlayerState.shouldShowResumeOverlay = false

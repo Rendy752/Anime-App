@@ -125,15 +125,17 @@ fun MainScreen(
                                 }
                             }
 
-                            segments.size >= 3 && segments[0] == "watch" -> {
-                                val malId = segments[1].toIntOrNull()
-                                val episodeId = segments[2]
-                                if (malId != null && episodeId.isNotEmpty()) {
+                            segments.isNotEmpty() && segments[0] == "watch" -> {
+                                val malId = segments.getOrNull(1)?.toIntOrNull()
+                                val episodeId = segments.getOrNull(2)?.takeIf { it.lowercase() != "null" }
+                                val position = segments.getOrNull(3)?.toLongOrNull()
+
+                                if (malId != null) {
                                     navController.popBackStack(
                                         navController.graph.startDestinationId,
                                         inclusive = false
                                     )
-                                    mainAction.invoke(MainAction.PlayEpisode(malId, episodeId))
+                                    mainAction.invoke(MainAction.PlayEpisode(malId, episodeId, position))
                                 } else {
                                     mainAction(
                                         MainAction.ShowSnackbar(

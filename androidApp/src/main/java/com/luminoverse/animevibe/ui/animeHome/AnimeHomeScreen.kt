@@ -67,7 +67,7 @@ fun AnimeHomeScreen(
     mainState: MainState = MainState(),
     navController: NavHostController = rememberNavController(),
     isVideoPlayerVisible: Boolean = false,
-    playEpisode: (Int, String) -> Unit = { _, _ -> },
+    playEpisode: (Int, String?) -> Unit = { _, _ -> },
     rememberedTopPadding: Dp = 0.dp
 ) {
     val pullToRefreshState = rememberPullToRefreshState()
@@ -149,7 +149,7 @@ fun AnimeHomeScreen(
                                 onAction(HomeAction.SetAutoScrollEnabled(it))
                             },
                             onCarouselInteraction = { onAction(HomeAction.UpdateCarouselLastInteractionTime) },
-                            navController = navController,
+                            onItemClick = { malId -> playEpisode(malId, null) },
                             scrollProgress = scrollProgress
                         )
                     }
@@ -189,11 +189,7 @@ fun AnimeHomeScreen(
                                     AnimeSchedulesGrid(
                                         animeSchedules = animeSchedules.data,
                                         remainingTimes = remainingTimes,
-                                        onItemClick = { anime ->
-                                            navController.navigateTo(
-                                                NavRoute.AnimeDetail.fromId(anime.mal_id)
-                                            )
-                                        },
+                                        onItemClick = { malId -> playEpisode(malId, null) },
                                         gridState = gridState
                                     )
                                 }

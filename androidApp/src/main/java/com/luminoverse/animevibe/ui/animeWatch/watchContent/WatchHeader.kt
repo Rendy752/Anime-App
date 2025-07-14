@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.runtime.getValue
@@ -17,6 +18,7 @@ import com.luminoverse.animevibe.models.AnimeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
 import com.luminoverse.animevibe.models.NetworkStatus
+import com.luminoverse.animevibe.ui.common.SomethingWentWrongDisplay
 import com.luminoverse.animevibe.utils.watch.WatchUtils.getEpisodeBackgroundColor
 import com.luminoverse.animevibe.utils.basicContainer
 import com.luminoverse.animevibe.utils.resource.Resource
@@ -69,20 +71,28 @@ fun WatchHeader(
                 },
                 isFavorite = isFavorite
             )
-            currentEpisode?.let {
-                EpisodeInfo(
-                    title = title,
-                    currentEpisode = it,
-                    episodeSourcesQuery = episodeSourcesQuery
-                )
-            } ?: EpisodeInfoSkeleton()
 
-            if (episodeDetailComplement is Resource.Success) ServerSelection(
-                scrollState = serverScrollState,
-                episodeSourcesQuery = episodeSourcesQuery,
-                servers = episodeDetailComplement.data.servers,
-                onServerSelected = onServerSelected
-            ) else if (episodeDetailComplement is Resource.Loading) ServerSelectionSkeleton()
+            Column(
+                modifier = Modifier.padding(8.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                if (episodeDetailComplement !is Resource.Error) currentEpisode?.let {
+                    EpisodeInfo(
+                        title = title,
+                        currentEpisode = it,
+                        episodeSourcesQuery = episodeSourcesQuery
+                    )
+                } ?: EpisodeInfoSkeleton()
+                else SomethingWentWrongDisplay(message = episodeDetailComplement.message)
+
+                if (episodeDetailComplement is Resource.Success) ServerSelection(
+                    scrollState = serverScrollState,
+                    episodeSourcesQuery = episodeSourcesQuery,
+                    servers = episodeDetailComplement.data.servers,
+                    onServerSelected = onServerSelected
+                ) else if (episodeDetailComplement is Resource.Loading) ServerSelectionSkeleton()
+            }
         }
     }
 }

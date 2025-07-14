@@ -460,6 +460,7 @@ fun PlayerHost(
                 modifier = playerModifier,
                 malId = playerState.malId,
                 episodeId = playerState.episodeId,
+                initialSeekPositionMs = playerState.initialSeekPositionMs,
                 playerDisplayMode = playerState.displayMode,
                 setPlayerDisplayMode = { onAction(MainAction.SetPlayerDisplayMode(it)) },
                 navController = navController,

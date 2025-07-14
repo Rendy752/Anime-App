@@ -74,7 +74,8 @@ import kotlinx.coroutines.launch
 fun AnimeWatchScreen(
     modifier: Modifier = Modifier,
     malId: Int,
-    episodeId: String,
+    episodeId: String?,
+    initialSeekPositionMs: Long?,
     playerDisplayMode: PlayerDisplayMode,
     setPlayerDisplayMode: (PlayerDisplayMode) -> Unit,
     navController: NavHostController,
@@ -100,6 +101,14 @@ fun AnimeWatchScreen(
     pipEndDestinationPx: Offset,
     pipEndSizePx: IntSize
 ) {
+    val player by remember { mutableStateOf(getPlayer()) }
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+
+    val isPortrait = !mainState.isLandscape && playerDisplayMode in listOf(
+        PlayerDisplayMode.FULLSCREEN_LANDSCAPE, PlayerDisplayMode.FULLSCREEN_PORTRAIT
+    )
+    val isSideSheetVisible = !isPortrait && watchState.isSideSheetVisible && pipDragProgress == 0f
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var isScreenOn by remember { mutableStateOf(true) }
@@ -112,14 +121,22 @@ fun AnimeWatchScreen(
     }
     val screenOnReceiver = remember { ScreenOnReceiver { isScreenOn = true } }
 
+    val showImagePlaceholder =
+        player == null || watchState.animeDetailComplement !is Resource.Success ||
+                watchState.episodeDetailComplement !is Resource.Success ||
+                watchState.episodeDetailComplement.data.sources.link.file.isEmpty() ||
+                watchState.animeDetailComplement.data.episodes == null || watchState.episodeSourcesQuery == null
     val onBackPress: () -> Unit = {
         if (playerDisplayMode == PlayerDisplayMode.FULLSCREEN_LANDSCAPE) {
             setPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN_PORTRAIT)
         } else {
-            scope.launch {
-                verticalDragOffset.animateTo(maxVerticalDrag, spring(stiffness = 400f))
-                setPlayerDisplayMode(PlayerDisplayMode.PIP)
-                verticalDragOffset.snapTo(0f)
+            if (showImagePlaceholder) closePlayer()
+            else {
+                scope.launch {
+                    verticalDragOffset.animateTo(maxVerticalDrag, spring(stiffness = 400f))
+                    setPlayerDisplayMode(PlayerDisplayMode.PIP)
+                    verticalDragOffset.snapTo(0f)
+                }
             }
         }
     }
@@ -180,15 +197,6 @@ fun AnimeWatchScreen(
         }
     }
 
-    val player by remember { mutableStateOf(getPlayer()) }
-    val configuration = LocalConfiguration.current
-    val screenWidth = configuration.screenWidthDp.dp
-
-    val isPortrait = !mainState.isLandscape && playerDisplayMode in listOf(
-        PlayerDisplayMode.FULLSCREEN_LANDSCAPE, PlayerDisplayMode.FULLSCREEN_PORTRAIT
-    )
-    val isSideSheetVisible = !isPortrait && watchState.isSideSheetVisible && pipDragProgress == 0f
-
     BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
         val containerWidth = this.maxWidth
         Row(modifier = Modifier.fillMaxWidth()) {
@@ -199,10 +207,11 @@ fun AnimeWatchScreen(
                         else if (isPortrait) Modifier.height(screenWidth * 9 / 16)
                         else Modifier.fillMaxSize()
                     )
-                    .weight(1f)
+                    .weight(1f),
+                contentAlignment = Alignment.Center
             ) {
-                if (player == null || watchState.animeDetailComplement !is Resource.Success || watchState.episodeDetailComplement !is Resource.Success || watchState.episodeDetailComplement.data.sources.link.file.isEmpty() || watchState.animeDetailComplement.data.episodes == null || watchState.episodeSourcesQuery == null) {
-                    ImageDisplay(
+                if (showImagePlaceholder) {
+                    if (pipDragProgress == 0f || verticalDragOffset.value == 0f) ImageDisplay(
                         image = watchState.episodeDetailComplement.data?.screenshot,
                         imagePlaceholder = watchState.episodeDetailComplement.data?.imageUrl
                             ?: watchState.animeDetail.data?.images?.webp?.large_image_url,
@@ -244,6 +253,7 @@ fun AnimeWatchScreen(
                                     )
                                 )
                             },
+                            initialSeekPositionMs = initialSeekPositionMs,
                             displayMode = playerDisplayMode,
                             setPlayerDisplayMode = setPlayerDisplayMode,
                             onEnterSystemPipMode = onEnterSystemPipMode,

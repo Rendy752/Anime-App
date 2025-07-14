@@ -58,7 +58,8 @@ enum class PlayerDisplayMode {
 
 data class PlayerState(
     val malId: Int,
-    val episodeId: String,
+    val episodeId: String? = null,
+    val initialSeekPositionMs: Long? = null,
     val displayMode: PlayerDisplayMode = PlayerDisplayMode.FULLSCREEN_PORTRAIT,
     val pipRelativeOffset: Offset = Offset(1f, 1f),
     val pipDragProgress: Float = 0f,
@@ -105,7 +106,12 @@ sealed class MainAction {
     data object DismissImagePreview : MainAction()
     data class ShowSnackbar(val message: SnackbarMessage) : MainAction()
     data object DismissSnackbar : MainAction()
-    data class PlayEpisode(val malId: Int, val episodeId: String) : MainAction()
+    data class PlayEpisode(
+        val malId: Int,
+        val episodeId: String? = null,
+        val positionMs: Long? = null
+    ) : MainAction()
+
     data class UpdatePlayerPipRelativeOffset(val relativeOffset: Offset) : MainAction()
     data class UpdatePipDragProgress(val progress: Float) : MainAction()
     data class SetPlayerDisplayMode(val mode: PlayerDisplayMode) : MainAction()
@@ -195,7 +201,12 @@ class MainViewModel @Inject constructor(
             is MainAction.ShowSnackbar -> showSnackbar(action.message)
             is MainAction.DismissSnackbar -> dismissSnackbar()
 
-            is MainAction.PlayEpisode -> playEpisode(action.malId, action.episodeId)
+            is MainAction.PlayEpisode -> playEpisode(
+                action.malId,
+                action.episodeId,
+                action.positionMs
+            )
+
             is MainAction.UpdatePlayerPipRelativeOffset -> updatePlayerPipRelativeOffset(action.relativeOffset)
             is MainAction.UpdatePipDragProgress -> updatePlayerPipDragProgress(action.progress)
             is MainAction.SetPlayerDisplayMode -> setPlayerDisplayMode(action.mode)
@@ -212,10 +223,11 @@ class MainViewModel @Inject constructor(
         _state.update { it.copy(snackbarMessage = null) }
     }
 
-    private fun playEpisode(malId: Int, episodeId: String) {
+    private fun playEpisode(malId: Int, episodeId: String?, positionMs: Long?) {
         _playerState.value = PlayerState(
             malId = malId,
             episodeId = episodeId,
+            initialSeekPositionMs = positionMs,
             displayMode = if (_state.value.isLandscape) PlayerDisplayMode.FULLSCREEN_LANDSCAPE else PlayerDisplayMode.FULLSCREEN_PORTRAIT
         )
     }

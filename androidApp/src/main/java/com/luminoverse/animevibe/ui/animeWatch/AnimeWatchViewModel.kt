@@ -36,7 +36,7 @@ data class WatchState(
 )
 
 sealed class WatchAction {
-    data class SetInitialState(val malId: Int, val episodeId: String) : WatchAction()
+    data class SetInitialState(val malId: Int, val episodeId: String?) : WatchAction()
     data class HandleSelectedEpisodeServer(
         val episodeSourcesQuery: EpisodeSourcesQuery,
         val isRefresh: Boolean = false
@@ -112,10 +112,12 @@ class AnimeWatchViewModel @Inject constructor(
         }
     }
 
-    private fun setInitialState(malId: Int, episodeId: String) = viewModelScope.launch {
+    private fun setInitialState(malId: Int, episodeId: String?) = viewModelScope.launch {
         _watchState.update {
             it.copy(
-                episodeSourcesQuery = episodeSourcesQueryPlaceholder.copy(id = episodeId),
+                episodeSourcesQuery = episodeId?.let { episodeId ->
+                    episodeSourcesQueryPlaceholder.copy(id = episodeId)
+                },
                 episodeJumpNumber = if (_watchState.value.animeDetail.data?.mal_id == malId) _watchState.value.episodeJumpNumber else null,
                 animeDetail = Resource.Loading(),
                 animeDetailComplement = Resource.Loading(),
@@ -134,13 +136,25 @@ class AnimeWatchViewModel @Inject constructor(
         if (episodeLoadResult is LoadEpisodesResult.Success) {
             val complement = episodeLoadResult.complement
             val lastWatchedId = complement.lastEpisodeWatchedId
-            val targetEpisodeId =
-                episodeId.ifEmpty { lastWatchedId ?: complement.episodes?.firstOrNull()?.id }
+
+            val targetEpisodeId = if (episodeId.isNullOrEmpty()) {
+                lastWatchedId ?: complement.episodes?.firstOrNull()?.id
+            } else {
+                episodeId
+            }
 
             if (targetEpisodeId != null) {
                 val initialQuery = determineInitialQuery(targetEpisodeId, complement)
                 handleSelectedEpisodeServer(initialQuery, isRefresh = false)
             } else {
+                _watchState.update {
+                    it.copy(
+                        episodeDetailComplement = Resource.Error(
+                            if (animeDetailResource.data.data.type == "Music") "Music videos typically do not have episodes"
+                            else "No episodes available to play"
+                        )
+                    )
+                }
                 onAction(WatchAction.ShowErrorMessage("No episodes available to play."))
             }
         }
@@ -158,6 +172,11 @@ class AnimeWatchViewModel @Inject constructor(
         episodeId: String,
         complement: AnimeDetailComplement
     ): EpisodeSourcesQuery {
+        _watchState.update {
+            it.copy(
+                episodeSourcesQuery = episodeSourcesQueryPlaceholder.copy(id = episodeId)
+            )
+        }
         val cachedEpisode = animeEpisodeDetailRepository.getCachedEpisodeDetailComplement(episodeId)
         if (cachedEpisode != null) return cachedEpisode.sourcesQuery.copy(id = episodeId)
         val allServers = complement.episodes?.find { it.id == episodeId }?.let { ep ->

@@ -37,11 +37,17 @@ fun ResumePlaybackOverlay(
     modifier: Modifier = Modifier,
     isVisible: Boolean,
     isPipMode: Boolean,
+    initialSeekPositionMs: Long?,
     lastTimestamp: Long,
     onDismiss: () -> Unit,
     onRestart: () -> Unit,
     onResume: (Long) -> Unit
 ) {
+    val isDeeplinkSeek = initialSeekPositionMs != null && initialSeekPositionMs > 0
+    val targetTimestamp = if (isDeeplinkSeek) initialSeekPositionMs else lastTimestamp
+    val descriptionText = if (isDeeplinkSeek) "Seek to" else "Resume from"
+    val buttonText = if (isDeeplinkSeek) "Yes, seek" else "Yes, resume"
+
     AnimatedVisibility(
         modifier = modifier.fillMaxSize(),
         visible = isVisible,
@@ -68,9 +74,9 @@ fun ResumePlaybackOverlay(
             ) {
                 Text(
                     buildAnnotatedString {
-                        append("Resume from ")
+                        append("$descriptionText ")
                         pushStyle(SpanStyle(fontWeight = FontWeight.Bold))
-                        append(TimeUtils.formatTimestamp(lastTimestamp))
+                        append(TimeUtils.formatTimestamp(targetTimestamp))
                         pop()
                         append(" ?")
                     },
@@ -104,7 +110,7 @@ fun ResumePlaybackOverlay(
                     Row(
                         modifier = Modifier.basicContainer(
                             isPrimary = true,
-                            onItemClick = { onResume(lastTimestamp) },
+                            onItemClick = { onResume(targetTimestamp) },
                             outerPadding = PaddingValues(0.dp),
                             innerPadding = PaddingValues(8.dp)
                         ),
@@ -116,7 +122,7 @@ fun ResumePlaybackOverlay(
                             tint = MaterialTheme.colorScheme.onPrimary
                         )
                         if (!isPipMode) Text(
-                            text = "Yes, resume",
+                            text = buttonText,
                             color = MaterialTheme.colorScheme.onPrimary
                         )
                     }

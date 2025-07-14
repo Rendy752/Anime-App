@@ -1,5 +1,6 @@
 package com.luminoverse.animevibe.ui.animeWatch.watchContent
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -55,18 +56,20 @@ fun WatchContentSection(
             }
         )
 
-        WatchEpisode(
-            imageUrl = animeDetail.data?.images?.webp?.large_image_url,
-            episodeDetailComplements = episodeDetailComplements,
-            onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,
-            animeDetailComplement = animeDetailComplement,
-            newEpisodeIdList = newEpisodeIdList,
-            episodeSourcesQuery = episodeSourcesQuery,
-            episodeJumpNumber = episodeJumpNumber,
-            setEpisodeJumpNumber = setEpisodeJumpNumber,
-            handleSelectedEpisodeServer = { episodeSourcesQuery ->
-                handleSelectedEpisodeServer(episodeSourcesQuery, false)
-            }
-        )
+        AnimatedVisibility(visible = episodeDetailComplement !is Resource.Error) {
+            WatchEpisode(
+                imageUrl = animeDetail.data?.images?.webp?.large_image_url,
+                episodeDetailComplements = episodeDetailComplements,
+                onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,
+                animeDetailComplement = animeDetailComplement,
+                newEpisodeIdList = newEpisodeIdList,
+                episodeSourcesQuery = episodeSourcesQuery,
+                episodeJumpNumber = episodeJumpNumber,
+                setEpisodeJumpNumber = setEpisodeJumpNumber,
+                handleSelectedEpisodeServer = { episodeSourcesQuery ->
+                    handleSelectedEpisodeServer(episodeSourcesQuery, false)
+                }
+            )
+        }
     }
 }
