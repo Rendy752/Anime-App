@@ -283,7 +283,7 @@ fun AnimeWatchScreen(
                         playbackState = hlsPlayerCoreState.playbackState,
                         isRefreshing = watchState.animeDetail is Resource.Loading || watchState.animeDetailComplement is Resource.Loading || watchState.episodeDetailComplement is Resource.Loading,
                         isPlaying = hlsPlayerCoreState.isPlaying,
-                        onSeekTo = { dispatchPlayerAction(HlsPlayerAction.SeekTo(0)) },
+                        handleRestart = { dispatchPlayerAction(HlsPlayerAction.SeekTo(0)) },
                         handlePause = { dispatchPlayerAction(HlsPlayerAction.Pause) },
                         handlePlay = { dispatchPlayerAction(HlsPlayerAction.Play) },
                         size = 48.dp

@@ -529,7 +529,9 @@ fun VideoPlayer(
         }
 
         val isPlayerControlsVisible =
-            (controlsState.isControlsVisible || videoPlayerState.isDraggingSeekBar) && !shouldShowResumeOverlay && isOverlayVisible && isPlayerDisplayFullscreen && !videoPlayerState.showLandscapeEpisodeList
+            (controlsState.isControlsVisible || videoPlayerState.isDraggingSeekBar)
+                    && !shouldShowResumeOverlay && isOverlayVisible && isPlayerDisplayFullscreen
+                    && !videoPlayerState.showLandscapeEpisodeList && !videoPlayerState.showSubtitleSyncOverlay
         // Subtitle View
         val animatedSubtitleTopPadding by animateDpAsState(
             targetValue = if (isPlayerDisplayPip) 4.dp else 8.dp,
@@ -692,29 +694,29 @@ fun VideoPlayer(
             modifier = Modifier.align(Alignment.TopEnd)
         )
 
-        // Fullscreen Overlays
-        episodeDetailComplement.lastTimestamp?.let { lastTimestamp ->
-            ResumePlaybackOverlay(
-                modifier = Modifier.align(Alignment.Center),
-                isVisible = shouldShowResumeOverlay,
-                isPipMode = isPlayerDisplayPip,
-                lastTimestamp = lastTimestamp,
-                onDismiss = {
-                    videoPlayerState.shouldShowResumeOverlay = false
-                    playerAction(HlsPlayerAction.RequestToggleControlsVisibility(true))
-                },
-                onRestart = {
-                    playerAction(HlsPlayerAction.SeekTo(0))
-                    playerAction(HlsPlayerAction.Play)
-                    videoPlayerState.shouldShowResumeOverlay = false
-                },
-                onResume = {
-                    playerAction(HlsPlayerAction.SeekTo(it))
-                    playerAction(HlsPlayerAction.Play)
-                    videoPlayerState.shouldShowResumeOverlay = false
-                }
-            )
-        }
+        SyncSubtitleOverlay(
+            isVisible = videoPlayerState.showSubtitleSyncOverlay && isOverlayVisible,
+            allCues = videoPlayerState.getAllCuesForCurrentTrack(),
+            activeCues = videoPlayerState.activeCaptionCue ?: emptyList(),
+            currentOffset = videoPlayerState.subtitleOffsetMs,
+            playerCurrentPosition = currentPositionMs,
+            onSyncToCue = { cueStartTimeMs ->
+                videoPlayerState.syncSubtitlesToTime(cueStartTimeMs)
+            },
+            onAdjustOffset = { adjustment ->
+                videoPlayerState.subtitleOffsetMs += adjustment
+            },
+            onResetOffset = { videoPlayerState.subtitleOffsetMs = 0L },
+            onDismiss = {
+                videoPlayerState.showSubtitleSyncOverlay = false
+            },
+            playbackState = coreState.playbackState,
+            isPlaying = coreState.isPlaying,
+            isRefreshing = isRefreshing,
+            onSeekTo = { position -> playerAction(HlsPlayerAction.SeekTo(position)) },
+            handlePause = { playerAction(HlsPlayerAction.Pause) },
+            handlePlay = { playerAction(HlsPlayerAction.Play) }
+        )
 
         // Landscape Episode List
         AnimatedVisibility(
@@ -751,6 +753,30 @@ fun VideoPlayer(
                         videoPlayerState.showLandscapeEpisodeList = false
                         verticalDragOffset.animateTo(0f)
                     }
+                }
+            )
+        }
+
+        // Fullscreen Overlays
+        episodeDetailComplement.lastTimestamp?.let { lastTimestamp ->
+            ResumePlaybackOverlay(
+                modifier = Modifier.align(Alignment.Center),
+                isVisible = shouldShowResumeOverlay,
+                isPipMode = isPlayerDisplayPip,
+                lastTimestamp = lastTimestamp,
+                onDismiss = {
+                    videoPlayerState.shouldShowResumeOverlay = false
+                    playerAction(HlsPlayerAction.RequestToggleControlsVisibility(true))
+                },
+                onRestart = {
+                    playerAction(HlsPlayerAction.SeekTo(0))
+                    playerAction(HlsPlayerAction.Play)
+                    videoPlayerState.shouldShowResumeOverlay = false
+                },
+                onResume = {
+                    playerAction(HlsPlayerAction.SeekTo(it))
+                    playerAction(HlsPlayerAction.Play)
+                    videoPlayerState.shouldShowResumeOverlay = false
                 }
             )
         }
@@ -796,9 +822,7 @@ fun VideoPlayer(
                     videoPlayerState.showLockReminder = true
                     setPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN_LANDSCAPE)
                     if (coreState.playbackState == Player.STATE_ENDED) playerAction(
-                        HlsPlayerAction.SeekTo(
-                            0
-                        )
+                        HlsPlayerAction.SeekTo(0)
                     )
                     playerAction(HlsPlayerAction.Play)
                     playerAction(HlsPlayerAction.ToggleLock(true))
@@ -808,7 +832,9 @@ fun VideoPlayer(
                 onPlaybackSpeedClick = { videoPlayerState.showPlaybackSpeedSheet = true },
                 isSubtitleAvailable = episodeDetailComplement.sources.tracks.any { it.kind == "captions" },
                 selectedSubtitle = controlsState.selectedSubtitle,
-                onSubtitleClick = { videoPlayerState.showSubtitleSheet = true }
+                onSubtitleClick = { videoPlayerState.showSubtitleSheet = true },
+                subtitleOffsetMs = videoPlayerState.subtitleOffsetMs,
+                onAdjustSyncSubtitleClick = { videoPlayerState.showSubtitleSyncOverlay = true }
             )
         }
         CustomModalBottomSheet(

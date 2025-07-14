@@ -9,24 +9,18 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.font.FontStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.luminoverse.animevibe.ui.theme.SubtitleFontFamily
 import com.luminoverse.animevibe.utils.media.CaptionCue
-import java.util.regex.Pattern
+import com.luminoverse.animevibe.utils.media.vttTextToAnnotatedString
 
 /**
  * A custom view to render a list of subtitles with advanced placement logic.
@@ -85,7 +79,7 @@ fun CustomSubtitleView(
  */
 @Composable
 private fun SubtitleText(text: String) {
-    val annotatedString = rememberVttAnnotatedString(text = text)
+    val annotatedString = vttTextToAnnotatedString(text)
     val shadowOffset = 1.dp
 
     val outlineStyle = TextStyle(
@@ -130,58 +124,5 @@ private fun SubtitleText(text: String) {
             style = textStyle,
             autoSize = textAutoSize
         )
-    }
-}
-
-/**
- * A memoized function that parses a VTT string with simple HTML tags (<b>, <i>)
- * and converts it into an [AnnotatedString] for Compose.
- *
- * @param text The raw text from the VTT cue.
- * @return An [AnnotatedString] with appropriate styling applied.
- */
-@Composable
-private fun rememberVttAnnotatedString(text: String): AnnotatedString {
-    return remember(text) {
-        buildAnnotatedString {
-            val cleanedText = text.replace(Regex("<c\\..*?>|</c>"), "")
-                .replace(Regex("<v.*?>|</v>"), "")
-                .replace("\\h", "\u00A0")
-
-            val pattern = Pattern.compile("</?[bi]>")
-            val matcher = pattern.matcher(cleanedText)
-
-            val styleStack = mutableListOf<SpanStyle>()
-            var lastIndex = 0
-
-            while (matcher.find()) {
-                val startIndex = matcher.start()
-                val endIndex = matcher.end()
-
-                if (startIndex > lastIndex) {
-                    val combinedStyle =
-                        styleStack.fold(SpanStyle()) { acc, style -> acc.merge(style) }
-                    pushStyle(combinedStyle)
-                    append(cleanedText.substring(lastIndex, startIndex))
-                    pop()
-                }
-
-                when (matcher.group(0)) {
-                    "<b>" -> styleStack.add(SpanStyle(fontWeight = FontWeight.Bold))
-                    "<i>" -> styleStack.add(SpanStyle(fontStyle = FontStyle.Italic))
-                    "</b>", "</i>" -> {
-                        styleStack.removeLastOrNull()
-                    }
-                }
-                lastIndex = endIndex
-            }
-
-            if (lastIndex < cleanedText.length) {
-                val combinedStyle = styleStack.fold(SpanStyle()) { acc, style -> acc.merge(style) }
-                pushStyle(combinedStyle)
-                append(cleanedText.substring(lastIndex))
-                pop()
-            }
-        }
     }
 }

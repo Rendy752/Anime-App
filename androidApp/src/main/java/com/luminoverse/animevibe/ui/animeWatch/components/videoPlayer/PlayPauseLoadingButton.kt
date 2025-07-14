@@ -44,7 +44,7 @@ fun PlayPauseLoadingButton(
     playbackState: Int,
     isRefreshing: Boolean,
     isPlaying: Boolean,
-    onSeekTo: (Long) -> Unit,
+    handleRestart: (Long) -> Unit,
     handlePause: () -> Unit,
     handlePlay: () -> Unit,
     size: Dp = 56.dp,
@@ -96,7 +96,7 @@ fun PlayPauseLoadingButton(
                 onClick = {
                     when (playbackState) {
                         Player.STATE_ENDED -> {
-                            onSeekTo(0)
+                            handleRestart(0)
                             handlePlay()
                             mutableIsPlaying = true
                         }

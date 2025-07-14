@@ -89,10 +89,9 @@ class VideoPlayerState(
             val currentPosition = currentPositionMs.collectAsStateWithLifecycle().value
             return controlsState.value.selectedSubtitle?.file?.let { url ->
                 captionCues[url]?.let { cues ->
-                    findActiveCaptionCues(
-                        if (isDraggingSeekBar) dragSeekPositionMs else currentPosition,
-                        cues
-                    )
+                    val adjustedPosition =
+                        (if (isDraggingSeekBar) dragSeekPositionMs else currentPosition) - subtitleOffsetMs
+                    findActiveCaptionCues(adjustedPosition, cues)
                 }
             }
         }
@@ -107,6 +106,16 @@ class VideoPlayerState(
 
     /** Manages the visibility of the "Next Episode" overlay. */
     var shouldShowNextEpisodeOverlay by mutableStateOf(false)
+
+    /**
+     * The manual offset in milliseconds applied to all subtitle cues.
+     * A positive value makes subtitles appear later, a negative value makes them appear earlier.
+     */
+    var subtitleOffsetMs by mutableLongStateOf(0L)
+
+    /** Manages the visibility of the subtitle sync overlay. */
+    var showSubtitleSyncOverlay by mutableStateOf(false)
+    // endregion
 
     /** Manages the visibility of the settings bottom sheet. */
     var showSettingsSheet by mutableStateOf(false)
@@ -241,6 +250,24 @@ class VideoPlayerState(
     /** Updates the current playback position. Called from a listener. */
     fun updatePosition(positionMs: Long) {
         _currentPositionMs.value = positionMs
+    }
+
+    /**
+     * Calculates and applies the necessary offset to sync a specific cue to the current player time.
+     * @param cueStartTimeMs The start time of the cue in milliseconds.
+     */
+    fun syncSubtitlesToTime(cueStartTimeMs: Long) {
+        val playerTimeMs = player.currentPosition
+        subtitleOffsetMs = playerTimeMs - cueStartTimeMs
+    }
+
+    /**
+     * Returns the full list of parsed cues for the currently selected subtitle track.
+     * This is used to populate the sync overlay UI.
+     */
+    fun getAllCuesForCurrentTrack(): List<CaptionCue> {
+        val selectedUrl = controlsState.value.selectedSubtitle?.file ?: return emptyList()
+        return captionCues[selectedUrl] ?: emptyList()
     }
 
     /**

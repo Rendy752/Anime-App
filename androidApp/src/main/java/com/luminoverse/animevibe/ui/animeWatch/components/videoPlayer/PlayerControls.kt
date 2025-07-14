@@ -350,7 +350,7 @@ private fun MiddleSection(
                 playbackState = playbackState,
                 isRefreshing = isRefreshing,
                 isPlaying = isPlaying,
-                onSeekTo = onSeekTo,
+                handleRestart = onSeekTo,
                 handlePause = handlePause,
                 handlePlay = handlePlay
             )
