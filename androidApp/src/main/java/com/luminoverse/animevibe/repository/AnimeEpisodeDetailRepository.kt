@@ -6,7 +6,6 @@ import com.luminoverse.animevibe.data.local.dao.EpisodeDetailComplementDao
 import com.luminoverse.animevibe.data.remote.api.AnimeAPI
 import com.luminoverse.animevibe.models.*
 import com.luminoverse.animevibe.ui.common.AnimeAniwatchCommonResponse
-import com.luminoverse.animevibe.utils.ComplementUtils
 import com.luminoverse.animevibe.utils.TimeUtils
 import com.luminoverse.animevibe.utils.media.StreamingUtils
 import com.luminoverse.animevibe.utils.resource.Resource
@@ -14,6 +13,8 @@ import com.luminoverse.animevibe.utils.resource.ResponseHandler
 import com.luminoverse.animevibe.utils.resource.ResponseHandler.safeApiCall
 import com.luminoverse.animevibe.utils.watch.AnimeTitleFinder
 import com.luminoverse.animevibe.utils.watch.AnimeTitleFinder.normalizeTitle
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.time.Instant
 import kotlin.math.ceil
 
@@ -39,6 +40,51 @@ class AnimeEpisodeDetailRepository(
         { it.animeTitle }
     )
 
+    private suspend fun getOrCreateAnimeDetailComplement(
+        id: String? = null,
+        malId: Int,
+        isFavorite: Boolean = false
+    ): AnimeDetailComplement? = withContext(Dispatchers.IO) {
+        getCachedAnimeDetailComplementByMalId(malId)?.let { return@withContext it }
+
+        val (animeDetailResult, _) = getAnimeDetail(malId)
+        if (animeDetailResult is Resource.Success) {
+            val animeDetail = animeDetailResult.data.data
+            val animeComplement = AnimeDetailComplement(
+                id = id ?: animeDetail.mal_id.toString(),
+                malId = animeDetail.mal_id,
+                isFavorite = isFavorite,
+                eps = animeDetail.episodes
+            )
+            insertCachedAnimeDetailComplement(animeComplement)
+            return@withContext animeComplement
+        }
+        null
+    }
+
+    private suspend fun updateAnimeDetailComplementWithEpisodes(
+        animeDetail: AnimeDetail,
+        animeDetailComplement: AnimeDetailComplement,
+        isRefresh: Boolean
+    ): AnimeDetailComplement? = withContext(Dispatchers.IO) {
+        val isDataNeedUpdate = isDataNeedUpdate(animeDetail, animeDetailComplement)
+        if (!isDataNeedUpdate && !isRefresh || animeDetailComplement.id.all { it.isDigit() }) return@withContext animeDetailComplement
+
+        val episodesResponse = getEpisodes(animeDetailComplement.id)
+        if (episodesResponse is Resource.Success) {
+            val episodes = episodesResponse.data.results.episodes
+            if (episodes != animeDetailComplement.episodes) {
+                val updatedAnimeDetail = animeDetailComplement.copy(
+                    episodes = episodes,
+                    lastEpisodeUpdatedAt = Instant.now().epochSecond
+                )
+                updateCachedAnimeDetailComplement(updatedAnimeDetail)
+                return@withContext updatedAnimeDetail
+            }
+        }
+        animeDetailComplement
+    }
+
     suspend fun getPaginatedAndFilteredHistory(queryState: EpisodeHistoryQueryState): Resource<EpisodeHistoryResult> {
         return try {
             val allHistory = episodeDetailComplementDao.getAllEpisodeHistory(
@@ -58,7 +104,7 @@ class AnimeEpisodeDetailRepository(
 
             val groupedByAnime = searchedHistory.groupBy { it.malId }
                 .mapNotNull { (malId, episodes) ->
-                    ComplementUtils.getOrCreateAnimeDetailComplement(this, malId = malId)
+                    getOrCreateAnimeDetailComplement(malId = malId)
                         ?.let { complement -> complement to episodes }
                 }.toMap()
 
@@ -94,24 +140,12 @@ class AnimeEpisodeDetailRepository(
         }
     }
 
-    suspend fun toggleEpisodeFavorite(episodeId: String, isFavorite: Boolean): Resource<Unit> {
-        return try {
-            val episode = getCachedEpisodeDetailComplement(episodeId)
-                ?: return Resource.Error("Episode not found")
-            val updatedEpisode = episode.copy(isFavorite = isFavorite)
-            updateEpisodeDetailComplement(updatedEpisode)
-            Resource.Success(Unit)
-        } catch (e: Exception) {
-            Resource.Error("Failed to update favorite status: ${e.message}")
-        }
-    }
-
     suspend fun loadAllEpisodes(
         animeDetail: AnimeDetail,
         isRefresh: Boolean
     ): LoadEpisodesResult {
         if (animeDetail.type == "Music") {
-            val complement = ComplementUtils.getOrCreateAnimeDetailComplement(this, malId = animeDetail.mal_id)
+            val complement = getOrCreateAnimeDetailComplement(malId = animeDetail.mal_id)
             return if (complement != null) LoadEpisodesResult.Success(complement)
             else LoadEpisodesResult.Error("Failed to create anime complement for Music type")
         }
@@ -119,9 +153,7 @@ class AnimeEpisodeDetailRepository(
         val cachedComplement = getCachedAnimeDetailComplementByMalId(animeDetail.mal_id)
         if (cachedComplement != null) {
             val oldEpisodes = cachedComplement.episodes ?: emptyList()
-
-            val updatedComplement = ComplementUtils.updateAnimeDetailComplementWithEpisodes(
-                repository = this,
+            val updatedComplement = updateAnimeDetailComplementWithEpisodes(
                 animeDetail = animeDetail,
                 animeDetailComplement = cachedComplement,
                 isRefresh = isRefresh
@@ -155,14 +187,15 @@ class AnimeEpisodeDetailRepository(
         }
 
         val finalRelatedAnime = relatedAnime ?: run {
-            val complement = ComplementUtils.getOrCreateAnimeDetailComplement(this, malId = animeDetail.mal_id)
+            // Updated call
+            val complement = getOrCreateAnimeDetailComplement(malId = animeDetail.mal_id)
             return if (complement != null) LoadEpisodesResult.Success(complement)
             else LoadEpisodesResult.Error("Anime not found and failed to create complement")
         }
 
         val episodesResource = getEpisodes(finalRelatedAnime.id)
-        val complement = ComplementUtils.getOrCreateAnimeDetailComplement(
-            repository = this,
+        // Updated call
+        val complement = getOrCreateAnimeDetailComplement(
             id = finalRelatedAnime.id,
             malId = animeDetail.mal_id
         )?.copy(
@@ -186,8 +219,7 @@ class AnimeEpisodeDetailRepository(
         malId: Int,
         isFavorite: Boolean
     ): AnimeDetailComplement? {
-        val animeComplement = ComplementUtils.getOrCreateAnimeDetailComplement(
-            repository = this,
+        val animeComplement = getOrCreateAnimeDetailComplement(
             id = id,
             malId = malId,
             isFavorite = isFavorite
@@ -198,6 +230,18 @@ class AnimeEpisodeDetailRepository(
             updatedAnime
         } else {
             null
+        }
+    }
+
+    suspend fun toggleEpisodeFavorite(episodeId: String, isFavorite: Boolean): Resource<Unit> {
+        return try {
+            val episode = getCachedEpisodeDetailComplement(episodeId)
+                ?: return Resource.Error("Episode not found")
+            val updatedEpisode = episode.copy(isFavorite = isFavorite)
+            updateEpisodeDetailComplement(updatedEpisode)
+            Resource.Success(Unit)
+        } catch (e: Exception) {
+            Resource.Error("Failed to update favorite status: ${e.message}")
         }
     }
 
@@ -291,7 +335,6 @@ class AnimeEpisodeDetailRepository(
         animeDetail: AnimeDetail?,
         animeDetailComplement: AnimeDetailComplement?
     ): Resource<EpisodeDetailComplement> {
-        // 1. Try to get from cache if not refreshing
         if (!isRefresh) {
             val cachedEpisode = getCachedEpisodeDetailComplement(episodeSourcesQuery.id)
             if (cachedEpisode != null && cachedEpisode.sourcesQuery == episodeSourcesQuery) {
@@ -299,18 +342,15 @@ class AnimeEpisodeDetailRepository(
             }
         }
 
-        // Ensure we have the necessary data to proceed
         if (animeDetail == null || animeDetailComplement == null) {
             return Resource.Error("Anime details not loaded.")
         }
 
-        // 2. Fetch episode servers
         val serversResource = getEpisodeServers(episodeSourcesQuery.id)
         if (serversResource !is Resource.Success) {
             return Resource.Error("Failed to fetch episode servers.")
         }
 
-        // 3. Find the best available sources
         val (sourcesResource, finalQuery) = StreamingUtils.getEpisodeSourcesResult(
             episodeId = episodeSourcesQuery.id,
             episodeServers = serversResource.data.results,
@@ -323,7 +363,6 @@ class AnimeEpisodeDetailRepository(
             return Resource.Error(sourcesResource.message ?: "Could not find any working servers.")
         }
 
-        // 4. Create or Update the EpisodeDetailComplement
         val existingComplement = getCachedEpisodeDetailComplement(episodeSourcesQuery.id)
         val finalComplement = if (existingComplement != null) {
             existingComplement.copy(
@@ -350,7 +389,6 @@ class AnimeEpisodeDetailRepository(
             )
         }
 
-        // 5. Save to cache and return
         insertCachedEpisodeDetailComplement(finalComplement)
         return Resource.Success(finalComplement)
     }

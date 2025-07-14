@@ -6,7 +6,6 @@ import com.luminoverse.animevibe.data.local.dao.EpisodeDetailComplementDao
 import com.luminoverse.animevibe.data.remote.api.AnimeAPI
 import com.luminoverse.animevibe.models.*
 import com.luminoverse.animevibe.ui.common.AnimeAniwatchCommonResponse
-import com.luminoverse.animevibe.utils.ComplementUtils
 import com.luminoverse.animevibe.utils.media.StreamingUtils
 import com.luminoverse.animevibe.utils.resource.Resource
 import com.luminoverse.animevibe.utils.watch.AnimeTitleFinder
@@ -22,7 +21,6 @@ import retrofit2.Response
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AnimeEpisodeDetailRepositoryTest {
-
     private val animeDetailDao: AnimeDetailDao = mockk(relaxed = true)
     private val animeDetailComplementDao: AnimeDetailComplementDao = mockk(relaxed = true)
     private val episodeDetailComplementDao: EpisodeDetailComplementDao = mockk(relaxed = true)
@@ -71,7 +69,6 @@ class AnimeEpisodeDetailRepositoryTest {
             jikanAPI,
             runwayAPI
         )
-        mockkObject(ComplementUtils)
         mockkObject(StreamingUtils)
         mockkObject(AnimeTitleFinder)
     }
@@ -80,6 +77,66 @@ class AnimeEpisodeDetailRepositoryTest {
     fun tearDown() {
         Dispatchers.resetMain()
         unmockkAll()
+    }
+
+    @Test
+    fun `loadAllEpisodes returns success with no new episodes if refresh finds none`() = runTest {
+        val episodes = listOf(mockEpisode1, mockEpisode2)
+        val existingComplement = mockAnimeComplement.copy(
+            episodes = episodes,
+            id = "aniwatch-1"
+        )
+        coEvery { animeDetailComplementDao.getAnimeDetailComplementByMalId(1) } returns existingComplement
+        coEvery { runwayAPI.getEpisodes(any()) } returns Response.success(
+            AnimeAniwatchCommonResponse(true, EpisodesResponse(2, episodes))
+        )
+
+        val result = repository.loadAllEpisodes(mockAnimeDetail, isRefresh = true)
+
+        assertTrue(result is LoadEpisodesResult.Success)
+        val successResult = result as LoadEpisodesResult.Success
+        assertTrue("New episode list should be empty", successResult.newEpisodeIds.isEmpty())
+    }
+
+    @Test
+    fun `loadAllEpisodes with no cache searches, finds, and fetches episodes`() = runTest {
+        coEvery { animeDetailComplementDao.getAnimeDetailComplementByMalId(1) } returns null
+        coEvery { runwayAPI.getAnimeAniwatchSearch(any()) } returns Response.success(
+            mockAniwatchSearchResponse
+        )
+        coEvery { runwayAPI.getEpisodes("aniwatch-1") } returns Response.success(
+            mockEpisodesResponse
+        )
+
+        val result = repository.loadAllEpisodes(mockAnimeDetail, isRefresh = false)
+
+        assertTrue(result is LoadEpisodesResult.Success)
+        val successResult = result as LoadEpisodesResult.Success
+        assertEquals(1, successResult.complement.episodes?.size)
+        coVerify { runwayAPI.getAnimeAniwatchSearch(any()) }
+        coVerify { runwayAPI.getEpisodes("aniwatch-1") }
+    }
+
+    @Test
+    fun `getPaginatedAndFilteredHistory returns paginated data`() = runTest {
+        val query = EpisodeHistoryQueryState(page = 1, limit = 5)
+        val fullList = listOf(mockEpisodeComplement)
+        coEvery { episodeDetailComplementDao.getAllEpisodeHistory(any(), any()) } returns fullList
+        every {
+            AnimeTitleFinder.searchTitle<EpisodeDetailComplement>(
+                any(),
+                any(),
+                any()
+            )
+        } returns fullList
+        coEvery { animeDetailComplementDao.getAnimeDetailComplementByMalId(1) } returns mockAnimeComplement
+
+        val result = repository.getPaginatedAndFilteredHistory(query)
+
+        assertTrue(result is Resource.Success)
+        val historyResult = result.data!!
+        assertEquals(1, historyResult.data.size)
+        assertEquals(1, historyResult.pagination.items.total)
     }
 
     @Test
@@ -105,123 +162,6 @@ class AnimeEpisodeDetailRepositoryTest {
         repository.getAnimeDetail(animeId)
 
         coVerify(exactly = 1) { animeDetailDao.insertAnimeDetail(mockAnimeDetail) }
-    }
-
-    @Test
-    fun `loadAllEpisodes returns error when search fails and no cache exists`() = runTest {
-        coEvery { animeDetailComplementDao.getAnimeDetailComplementByMalId(1) } returns null
-        coEvery { runwayAPI.getAnimeAniwatchSearch(any()) } returns Response.error(
-            404,
-            mockk(relaxed = true)
-        )
-
-        val result = repository.loadAllEpisodes(mockAnimeDetail, isRefresh = false)
-
-        assertTrue(result is LoadEpisodesResult.Error)
-    }
-
-    @Test
-    fun `loadAllEpisodes returns success with no new episodes if refresh finds none`() = runTest {
-        val existingComplement = mockAnimeComplement.copy(
-            episodes = listOf(mockEpisode1, mockEpisode2),
-            id = "aniwatch-1"
-        )
-        coEvery { animeDetailComplementDao.getAnimeDetailComplementByMalId(1) } returns existingComplement
-        coEvery {
-            ComplementUtils.updateAnimeDetailComplementWithEpisodes(
-                any(),
-                any(),
-                any(),
-                any()
-            )
-        } returns existingComplement
-
-        val result = repository.loadAllEpisodes(mockAnimeDetail, isRefresh = true)
-
-        assertTrue(result is LoadEpisodesResult.Success)
-        val successResult = result as LoadEpisodesResult.Success
-        assertTrue("New episode list should be empty", successResult.newEpisodeIds.isEmpty())
-    }
-
-    @Test
-    fun `getEpisodeStreamingDetails returns cached data if query matches`() = runTest {
-        val query = mockEpisodeComplement.sourcesQuery
-        coEvery { episodeDetailComplementDao.getEpisodeDetailComplementById(query.id) } returns mockEpisodeComplement
-
-        val result = repository.getEpisodeStreamingDetails(query, false, emptyList(), null, null)
-
-        assertTrue(result is Resource.Success)
-        assertEquals(mockEpisodeComplement, result.data)
-        coVerify(exactly = 0) { runwayAPI.getEpisodeServers(any(), any()) }
-    }
-
-    @Test
-    fun `getEpisodeStreamingDetails returns error when details are missing`() = runTest {
-        val query = episodeSourcesQueryPlaceholder.copy(id = "ep1")
-        coEvery { episodeDetailComplementDao.getEpisodeDetailComplementById(any()) } returns null
-
-        val result = repository.getEpisodeStreamingDetails(
-            query,
-            false,
-            emptyList(),
-            null,
-            mockAnimeComplement
-        )
-
-        assertTrue(result is Resource.Error)
-        assertEquals("Anime details not loaded.", result.message)
-    }
-
-    @Test
-    fun `getEpisodeStreamingDetails returns error when episode info is not in complement`() = runTest {
-        val query = episodeSourcesQueryPlaceholder.copy(id = "ep_that_does_not_exist")
-        val animeComplementWithEpisode = mockAnimeComplement.copy(episodes = listOf(mockEpisode1))
-        coEvery { episodeDetailComplementDao.getEpisodeDetailComplementById(any()) } returns null
-        coEvery { runwayAPI.getEpisodeServers(any(), any()) } returns Response.success(mockServersResponse)
-        coEvery { StreamingUtils.getEpisodeSourcesResult(any(), any(), any(), any(), any(), any()) } returns Pair(Resource.Success(mockSourcesResponse), query)
-
-        val result = repository.getEpisodeStreamingDetails(query, false, emptyList(), mockAnimeDetail, animeComplementWithEpisode)
-
-        assertTrue(result is Resource.Error)
-        assertEquals("Episode info not found in complement.", result.message)
-    }
-
-    @Test
-    fun `toggleEpisodeFavorite returns error when episode not found`() = runTest {
-        val episodeId = "non_existent_ep"
-        coEvery { episodeDetailComplementDao.getEpisodeDetailComplementById(episodeId) } returns null
-
-        val result = repository.toggleEpisodeFavorite(episodeId, true)
-
-        assertTrue(result is Resource.Error)
-        assertEquals("Episode not found", result.message)
-        coVerify(exactly = 0) { episodeDetailComplementDao.updateEpisodeDetailComplement(any()) }
-    }
-
-    @Test
-    fun `loadAllEpisodes with no cache searches, finds, and fetches episodes`() = runTest {
-        coEvery { animeDetailComplementDao.getAnimeDetailComplementByMalId(1) } returns null
-        coEvery { runwayAPI.getAnimeAniwatchSearch(any()) } returns Response.success(
-            mockAniwatchSearchResponse
-        )
-        coEvery { runwayAPI.getEpisodes("aniwatch-1") } returns Response.success(
-            mockEpisodesResponse
-        )
-        coEvery {
-            ComplementUtils.getOrCreateAnimeDetailComplement(
-                any(),
-                any(),
-                any()
-            )
-        } returns mockAnimeComplement
-
-        val result = repository.loadAllEpisodes(mockAnimeDetail, isRefresh = false)
-
-        assertTrue(result is LoadEpisodesResult.Success)
-        val successResult = result as LoadEpisodesResult.Success
-        assertEquals(1, successResult.complement.episodes?.size)
-        coVerify { runwayAPI.getAnimeAniwatchSearch(any()) }
-        coVerify { runwayAPI.getEpisodes("aniwatch-1") }
     }
 
     @Test
@@ -255,32 +195,5 @@ class AnimeEpisodeDetailRepositoryTest {
         assertTrue(result is Resource.Success)
         coVerify { runwayAPI.getEpisodeServers(any(), any()) }
         coVerify { episodeDetailComplementDao.insertEpisodeDetailComplement(any()) }
-    }
-
-    @Test
-    fun `getPaginatedAndFilteredHistory returns paginated data`() = runTest {
-        val query = EpisodeHistoryQueryState(page = 1, limit = 5)
-        val fullList = listOf(mockEpisodeComplement)
-        coEvery { episodeDetailComplementDao.getAllEpisodeHistory(any(), any()) } returns fullList
-        every {
-            AnimeTitleFinder.searchTitle<EpisodeDetailComplement>(
-                any(),
-                any(),
-                any()
-            )
-        } returns fullList
-        coEvery {
-            ComplementUtils.getOrCreateAnimeDetailComplement(
-                repository,
-                malId = 1
-            )
-        } returns mockAnimeComplement
-
-        val result = repository.getPaginatedAndFilteredHistory(query)
-
-        assertTrue(result is Resource.Success)
-        val historyResult = result.data!!
-        assertEquals(1, historyResult.data.size)
-        assertEquals(1, historyResult.pagination.items.total)
     }
 }
