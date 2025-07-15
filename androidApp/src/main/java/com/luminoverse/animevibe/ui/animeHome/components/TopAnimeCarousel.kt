@@ -22,11 +22,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavHostController
 import com.luminoverse.animevibe.models.AnimeDetail
 import com.luminoverse.animevibe.ui.animeHome.INITIAL_CAROUSEL_HEIGHT
-import com.luminoverse.animevibe.ui.main.navigation.NavRoute
-import com.luminoverse.animevibe.ui.main.navigation.navigateTo
 import kotlinx.coroutines.delay
 import java.util.Date
 
@@ -39,7 +36,7 @@ fun TopAnimeCarousel(
     onPageChanged: (Int) -> Unit,
     onAutoScrollEnabledChanged: (Boolean) -> Unit,
     onCarouselInteraction: () -> Unit,
-    navController: NavHostController,
+    onItemClick: (Int) -> Unit,
     scrollProgress: Float
 ) {
     if (topAnimeList.isNotEmpty()) {
@@ -121,7 +118,7 @@ fun TopAnimeCarousel(
                 val animeDetail = topAnimeList[index]
                 Box(modifier = Modifier.fillMaxWidth()) {
                     TopAnimeItem(animeDetail = animeDetail, onItemClick = {
-                        navController.navigateTo(NavRoute.AnimeDetail.fromId(animeDetail.mal_id))
+                        onItemClick(animeDetail.mal_id)
                     })
                 }
             }

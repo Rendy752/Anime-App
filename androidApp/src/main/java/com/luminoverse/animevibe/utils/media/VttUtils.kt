@@ -2,12 +2,18 @@ package com.luminoverse.animevibe.utils.media
 
 import android.graphics.Bitmap
 import android.graphics.Rect
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.font.FontWeight
 import coil.size.Size
 import coil.transform.Transformation
 import com.luminoverse.animevibe.utils.TimeUtils.parseTimestamp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.net.URL
+import java.util.regex.Pattern
 
 data class ThumbnailCue(
     val startTime: Long,
@@ -78,14 +84,16 @@ suspend fun parseThumbnailCues(vttContent: String, baseUrl: String): List<Thumbn
 
 /**
  * Parses a VTT file content for standard text captions.
+ * This version groups any cues that share the exact same timestamp into a single cue.
  * @param vttContent The raw string content of the VTT file.
- * @return A list of [CaptionCue] objects.
+ * @return A list of [CaptionCue] objects with unique timestamps.
  */
 suspend fun parseCaptionCues(vttContent: String): List<CaptionCue> =
     withContext(Dispatchers.Default) {
-        val cues = mutableListOf<CaptionCue>()
+        val groupedCues = mutableMapOf<Pair<Long, Long>, MutableList<String>>()
         val lines = vttContent.lines()
         var i = 0
+
         while (i < lines.size) {
             if (lines[i].contains("-->")) {
                 val timeParts = lines[i].split("-->").map { it.trim() }
@@ -93,6 +101,7 @@ suspend fun parseCaptionCues(vttContent: String): List<CaptionCue> =
                     try {
                         val startTime = parseTimestamp(timeParts[0])
                         val endTime = parseTimestamp(timeParts[1].split(" ")[0])
+                        val timeKey = Pair(startTime, endTime)
 
                         val textLines = mutableListOf<String>()
                         i++
@@ -101,7 +110,8 @@ suspend fun parseCaptionCues(vttContent: String): List<CaptionCue> =
                             i++
                         }
                         if (textLines.isNotEmpty()) {
-                            cues.add(CaptionCue(startTime, endTime, textLines.joinToString("\n")))
+                            groupedCues.getOrPut(timeKey) { mutableListOf() }
+                                .add(textLines.joinToString("\n"))
                         }
                     } catch (_: Exception) {
                     }
@@ -109,7 +119,14 @@ suspend fun parseCaptionCues(vttContent: String): List<CaptionCue> =
             }
             i++
         }
-        cues
+
+        return@withContext groupedCues.map { (time, texts) ->
+            CaptionCue(
+                startTime = time.first,
+                endTime = time.second,
+                text = texts.joinToString("\n")
+            )
+        }.sortedBy { it.startTime }
     }
 
 
@@ -126,6 +143,54 @@ fun findThumbnailCueForPosition(position: Long, cues: List<ThumbnailCue>): Thumb
  */
 fun findActiveCaptionCues(position: Long, cues: List<CaptionCue>): List<CaptionCue> {
     return cues.filter { position >= it.startTime && position < it.endTime }
+}
+
+/**
+ * Parses a VTT string with simple HTML tags (<b>, <i>)
+ * and converts it into an [AnnotatedString] for Compose.
+ *
+ * @param text The raw text from the VTT cue.
+ * @return An [AnnotatedString] with appropriate styling applied.
+ */
+fun vttTextToAnnotatedString(text: String): AnnotatedString {
+    return buildAnnotatedString {
+        val cleanedText = text.replace(Regex("<c\\..*?>|</c>"), "")
+            .replace(Regex("<v.*?>|</v>"), "")
+            .replace("\\h", "\u00A0") // Replace horizontal tab with non-breaking space
+
+        val pattern = Pattern.compile("</?[bi]>")
+        val matcher = pattern.matcher(cleanedText)
+        val styleStack = mutableListOf<SpanStyle>()
+        var lastIndex = 0
+
+        while (matcher.find()) {
+            val startIndex = matcher.start()
+            val endIndex = matcher.end()
+
+            if (startIndex > lastIndex) {
+                val combinedStyle = styleStack.fold(SpanStyle()) { acc, style -> acc.merge(style) }
+                pushStyle(combinedStyle)
+                append(cleanedText.substring(lastIndex, startIndex))
+                pop()
+            }
+
+            when (matcher.group(0)) {
+                "<b>" -> styleStack.add(SpanStyle(fontWeight = FontWeight.Bold))
+                "<i>" -> styleStack.add(SpanStyle(fontStyle = FontStyle.Italic))
+                "</b>", "</i>" -> {
+                    styleStack.removeLastOrNull()
+                }
+            }
+            lastIndex = endIndex
+        }
+
+        if (lastIndex < cleanedText.length) {
+            val combinedStyle = styleStack.fold(SpanStyle()) { acc, style -> acc.merge(style) }
+            pushStyle(combinedStyle)
+            append(cleanedText.substring(lastIndex))
+            pop()
+        }
+    }
 }
 
 /**

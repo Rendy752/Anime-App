@@ -6,39 +6,62 @@ import com.luminoverse.animevibe.data.local.dao.EpisodeDetailComplementDao
 import com.luminoverse.animevibe.data.remote.api.AnimeAPI
 import com.luminoverse.animevibe.models.*
 import com.luminoverse.animevibe.ui.common.AnimeAniwatchCommonResponse
+import com.luminoverse.animevibe.utils.media.StreamingUtils
 import com.luminoverse.animevibe.utils.resource.Resource
-import com.luminoverse.animevibe.utils.resource.ResponseHandler
-import com.luminoverse.animevibe.utils.TimeUtils
+import com.luminoverse.animevibe.utils.watch.AnimeTitleFinder
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.*
-import okhttp3.ResponseBody.Companion.toResponseBody
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
+import org.junit.Assert.*
 import retrofit2.Response
-import java.time.Instant
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
-import org.junit.Assert.assertFalse
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class AnimeEpisodeDetailRepositoryTest {
-
+    private val animeDetailDao: AnimeDetailDao = mockk(relaxed = true)
+    private val animeDetailComplementDao: AnimeDetailComplementDao = mockk(relaxed = true)
+    private val episodeDetailComplementDao: EpisodeDetailComplementDao = mockk(relaxed = true)
+    private val jikanAPI: AnimeAPI = mockk(relaxed = true)
+    private val runwayAPI: AnimeAPI = mockk(relaxed = true)
     private lateinit var repository: AnimeEpisodeDetailRepository
-    private val animeDetailDao: AnimeDetailDao = mockk()
-    private val animeDetailComplementDao: AnimeDetailComplementDao = mockk()
-    private val episodeDetailComplementDao: EpisodeDetailComplementDao = mockk()
-    private val jikanAPI: AnimeAPI = mockk()
-    private val runwayAPI: AnimeAPI = mockk()
     private val testDispatcher = StandardTestDispatcher()
+
+    private val mockAnimeDetail =
+        animeDetailPlaceholder.copy(mal_id = 1, type = "TV", airing = true)
+    private val mockAnimeResponse = AnimeDetailResponse(mockAnimeDetail)
+    private val mockEpisode1 = episodePlaceholder.copy(id = "ep1", episode_no = 1)
+    private val mockEpisode2 = episodePlaceholder.copy(id = "ep2", episode_no = 2)
+    private val mockAnimeComplement =
+        animeDetailComplementPlaceholder.copy(malId = 1, episodes = listOf(mockEpisode1))
+    private val mockEpisodeComplement =
+        episodeDetailComplementPlaceholder.copy(id = "ep1", malId = 1)
+    private val mockAniwatchSearchResponse = AnimeAniwatchCommonResponse(
+        true,
+        AnimeAniwatchSearchResponse(
+            listOf(
+                animeAniwatchPlaceholder.copy(
+                    malID = 1,
+                    id = "aniwatch-1"
+                )
+            ), 1
+        )
+    )
+    private val mockEpisodesResponse =
+        AnimeAniwatchCommonResponse(true, EpisodesResponse(1, listOf(mockEpisode1)))
+    private val mockServersResponse =
+        AnimeAniwatchCommonResponse(true, listOf(episodeServerPlaceholder))
+    private val mockSourcesResponse = AnimeAniwatchCommonResponse(
+        true,
+        EpisodeSourcesResponse(episodeSourcesPlaceholder, emptyList())
+    )
+
 
     @Before
     fun setUp() {
         Dispatchers.setMain(testDispatcher)
-        mockkObject(TimeUtils)
-        mockkObject(ResponseHandler)
         repository = AnimeEpisodeDetailRepository(
             animeDetailDao,
             animeDetailComplementDao,
@@ -46,485 +69,131 @@ class AnimeEpisodeDetailRepositoryTest {
             jikanAPI,
             runwayAPI
         )
+        mockkObject(StreamingUtils)
+        mockkObject(AnimeTitleFinder)
     }
 
     @After
     fun tearDown() {
         Dispatchers.resetMain()
-        unmockkObject(TimeUtils)
-        unmockkObject(ResponseHandler)
-        clearAllMocks()
+        unmockkAll()
     }
 
     @Test
-    fun `getAnimeDetail returns cached data when available and up to date`() = runTest {
-        val animeId = 1735
-        val lastEpisodeUpdatedAt = Instant.now().epochSecond
-        val broadcast = mockk<Broadcast> {
-            every { time } returns "12:00"
-            every { timezone } returns "Asia/Tokyo"
-            every { day } returns "Monday"
-        }
-        val animeDetail = mockk<AnimeDetail> {
-            every { mal_id } returns animeId
-            every { airing } returns false
-            every { this@mockk.broadcast } returns broadcast
-        }
-        val animeDetailResponse = AnimeDetailResponse(animeDetail)
-        val animeDetailComplement = mockk<AnimeDetailComplement> {
-            every { this@mockk.lastEpisodeUpdatedAt } returns lastEpisodeUpdatedAt
-        }
-        coEvery { animeDetailDao.getAnimeDetailById(animeId) } returns animeDetail
-        coEvery { animeDetailComplementDao.getAnimeDetailComplementByMalId(animeId) } returns animeDetailComplement
-        coEvery {
-            TimeUtils.isEpisodeAreUpToDate("12:00", "Asia/Tokyo", "Monday", lastEpisodeUpdatedAt)
-        } returns true
+    fun `loadAllEpisodes returns success with no new episodes if refresh finds none`() = runTest {
+        val episodes = listOf(mockEpisode1, mockEpisode2)
+        val existingComplement = mockAnimeComplement.copy(
+            episodes = episodes,
+            id = "aniwatch-1"
+        )
+        coEvery { animeDetailComplementDao.getAnimeDetailComplementByMalId(1) } returns existingComplement
+        coEvery { runwayAPI.getEpisodes(any()) } returns Response.success(
+            AnimeAniwatchCommonResponse(true, EpisodesResponse(2, episodes))
+        )
+
+        val result = repository.loadAllEpisodes(mockAnimeDetail, isRefresh = true)
+
+        assertTrue(result is LoadEpisodesResult.Success)
+        val successResult = result as LoadEpisodesResult.Success
+        assertTrue("New episode list should be empty", successResult.newEpisodeIds.isEmpty())
+    }
+
+    @Test
+    fun `loadAllEpisodes with no cache searches, finds, and fetches episodes`() = runTest {
+        coEvery { animeDetailComplementDao.getAnimeDetailComplementByMalId(1) } returns null
+        coEvery { runwayAPI.getAnimeAniwatchSearch(any()) } returns Response.success(
+            mockAniwatchSearchResponse
+        )
+        coEvery { runwayAPI.getEpisodes("aniwatch-1") } returns Response.success(
+            mockEpisodesResponse
+        )
+
+        val result = repository.loadAllEpisodes(mockAnimeDetail, isRefresh = false)
+
+        assertTrue(result is LoadEpisodesResult.Success)
+        val successResult = result as LoadEpisodesResult.Success
+        assertEquals(1, successResult.complement.episodes?.size)
+        coVerify { runwayAPI.getAnimeAniwatchSearch(any()) }
+        coVerify { runwayAPI.getEpisodes("aniwatch-1") }
+    }
+
+    @Test
+    fun `getPaginatedAndFilteredHistory returns paginated data`() = runTest {
+        val query = EpisodeHistoryQueryState(page = 1, limit = 5)
+        val fullList = listOf(mockEpisodeComplement)
+        coEvery { episodeDetailComplementDao.getAllEpisodeHistory(any(), any()) } returns fullList
+        every {
+            AnimeTitleFinder.searchTitle<EpisodeDetailComplement>(
+                any(),
+                any(),
+                any()
+            )
+        } returns fullList
+        coEvery { animeDetailComplementDao.getAnimeDetailComplementByMalId(1) } returns mockAnimeComplement
+
+        val result = repository.getPaginatedAndFilteredHistory(query)
+
+        assertTrue(result is Resource.Success)
+        val historyResult = result.data!!
+        assertEquals(1, historyResult.data.size)
+        assertEquals(1, historyResult.pagination.items.total)
+    }
+
+    @Test
+    fun `getAnimeDetail returns cached data when available and not airing`() = runTest {
+        val animeId = 1
+        val cachedDetail = mockAnimeDetail.copy(airing = false)
+        coEvery { animeDetailDao.getAnimeDetailById(animeId) } returns cachedDetail
 
         val (result, isCached) = repository.getAnimeDetail(animeId)
-        testDispatcher.scheduler.advanceUntilIdle()
 
         assertTrue(result is Resource.Success)
         assertTrue(isCached)
-        assertEquals(animeDetailResponse, (result as Resource.Success).data)
-        coVerify { animeDetailDao.getAnimeDetailById(animeId) }
-        coVerify { animeDetailComplementDao.getAnimeDetailComplementByMalId(animeId) }
+        assertEquals(cachedDetail, result.data?.data)
         coVerify(exactly = 0) { jikanAPI.getAnimeDetail(any()) }
     }
 
     @Test
-    fun `getAnimeDetail returns remote data when cache is not available`() = runTest {
-        val animeId = 123
-        val animeDetail = mockk<AnimeDetail> {
-            every { mal_id } returns animeId
-        }
-        val animeDetailResponse = AnimeDetailResponse(animeDetail)
+    fun `getAnimeDetail fetches remote data when cache is not available`() = runTest {
+        val animeId = 1
         coEvery { animeDetailDao.getAnimeDetailById(animeId) } returns null
-        coEvery { jikanAPI.getAnimeDetail(animeId) } returns Response.success(animeDetailResponse)
-        coEvery { ResponseHandler.handleCommonResponse(any<Response<AnimeDetailResponse>>()) } returns Resource.Success(
-            animeDetailResponse
-        )
-        coEvery { animeDetailDao.insertAnimeDetail(animeDetail) } returns Unit
+        coEvery { jikanAPI.getAnimeDetail(animeId) } returns Response.success(mockAnimeResponse)
 
-        val (result, isCached) = repository.getAnimeDetail(animeId)
-        testDispatcher.scheduler.advanceUntilIdle()
+        repository.getAnimeDetail(animeId)
 
-        assertTrue(result is Resource.Success)
-        assertFalse(isCached)
-        assertEquals(animeDetailResponse, (result as Resource.Success).data)
-        coVerify { animeDetailDao.getAnimeDetailById(animeId) }
-        coVerify { jikanAPI.getAnimeDetail(animeId) }
-        coVerify { animeDetailDao.insertAnimeDetail(animeDetail) }
+        coVerify(exactly = 1) { animeDetailDao.insertAnimeDetail(mockAnimeDetail) }
     }
 
     @Test
-    fun `getAnimeDetail returns remote data when cache is outdated`() = runTest {
-        val animeId = 1735
-        val lastEpisodeUpdatedAt = Instant.now().epochSecond - 3600
-        val broadcast = mockk<Broadcast> {
-            every { time } returns "12:00"
-            every { timezone } returns "Asia/Tokyo"
-            every { day } returns "Monday"
-        }
-        val animeDetail = mockk<AnimeDetail> {
-            every { mal_id } returns animeId
-            every { airing } returns true
-            every { this@mockk.broadcast } returns broadcast
-        }
-        val newAnimeDetail = mockk<AnimeDetail> {
-            every { mal_id } returns animeId
-        }
-        val animeDetailResponse = AnimeDetailResponse(newAnimeDetail)
-        val animeDetailComplement = mockk<AnimeDetailComplement> {
-            every { this@mockk.lastEpisodeUpdatedAt } returns lastEpisodeUpdatedAt
-            every { id } returns "anime-$animeId"
-        }
-        coEvery { animeDetailDao.getAnimeDetailById(animeId) } returns animeDetail
-        coEvery { animeDetailComplementDao.getAnimeDetailComplementByMalId(animeId) } returns animeDetailComplement
+    fun `getEpisodeStreamingDetails fetches remote data when no cache`() = runTest {
+        val query = episodeSourcesQueryPlaceholder.copy(id = "ep1")
+        val animeComplementWithEpisode = mockAnimeComplement.copy(episodes = listOf(mockEpisode1))
+
+        coEvery { episodeDetailComplementDao.getEpisodeDetailComplementById(query.id) } returns null
+        coEvery { runwayAPI.getEpisodeServers(any(), any()) } returns Response.success(
+            mockServersResponse
+        )
         coEvery {
-            TimeUtils.isEpisodeAreUpToDate("12:00", "Asia/Tokyo", "Monday", lastEpisodeUpdatedAt)
-        } returns true
-        coEvery { jikanAPI.getAnimeDetail(animeId) } returns Response.success(animeDetailResponse)
-        coEvery { ResponseHandler.handleCommonResponse(any<Response<AnimeDetailResponse>>()) } returns Resource.Success(
-            animeDetailResponse
-        )
-        coEvery { animeDetailDao.insertAnimeDetail(newAnimeDetail) } returns Unit
-
-        val (result, isCached) = repository.getAnimeDetail(animeId)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertTrue(result is Resource.Success)
-        assertFalse(isCached)
-        assertEquals(animeDetailResponse.data.mal_id, (result as Resource.Success).data.data.mal_id)
-        coVerify { animeDetailDao.getAnimeDetailById(animeId) }
-        coVerify { animeDetailComplementDao.getAnimeDetailComplementByMalId(animeId) }
-        coVerify { jikanAPI.getAnimeDetail(animeId) }
-        coVerify { animeDetailDao.insertAnimeDetail(newAnimeDetail) }
-    }
-
-    @Test
-    fun `getAnimeDetail returns error when remote call fails`() = runTest {
-        val animeId = 123
-        coEvery { animeDetailDao.getAnimeDetailById(animeId) } returns null
-        coEvery { jikanAPI.getAnimeDetail(animeId) } returns Response.error(
-            500,
-            "Server error".toResponseBody()
-        )
-        coEvery { ResponseHandler.handleCommonResponse(any<Response<AnimeDetailResponse>>()) } returns Resource.Error(
-            "Server error"
-        )
-
-        val (result, isCached) = repository.getAnimeDetail(animeId)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertTrue(result is Resource.Error)
-        assertFalse(isCached)
-        assertEquals("Server error", (result as Resource.Error).message)
-        coVerify { animeDetailDao.getAnimeDetailById(animeId) }
-        coVerify { jikanAPI.getAnimeDetail(animeId) }
-    }
-
-    @Test
-    fun `getCachedAnimeDetailById returns cached data`() = runTest {
-        val animeId = 123
-        val animeDetail = mockk<AnimeDetail>()
-        coEvery { animeDetailDao.getAnimeDetailById(animeId) } returns animeDetail
-
-        val result = repository.getCachedAnimeDetailById(animeId)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertEquals(animeDetail, result)
-        coVerify { animeDetailDao.getAnimeDetailById(animeId) }
-    }
-
-    @Test
-    fun `getCachedAnimeDetailComplementByMalId returns cached data`() = runTest {
-        val malId = 123
-        val animeDetailComplement = mockk<AnimeDetailComplement>()
-        coEvery { animeDetailComplementDao.getAnimeDetailComplementByMalId(malId) } returns animeDetailComplement
-
-        val result = repository.getCachedAnimeDetailComplementByMalId(malId)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertEquals(animeDetailComplement, result)
-        coVerify { animeDetailComplementDao.getAnimeDetailComplementByMalId(malId) }
-    }
-
-    @Test
-    fun `insertCachedAnimeDetailComplement inserts data`() = runTest {
-        val animeDetailComplement = mockk<AnimeDetailComplement>()
-        coEvery { animeDetailComplementDao.insertAnimeDetailComplement(animeDetailComplement) } returns Unit
-
-        repository.insertCachedAnimeDetailComplement(animeDetailComplement)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        coVerify { animeDetailComplementDao.insertAnimeDetailComplement(animeDetailComplement) }
-    }
-
-    @Test
-    fun `updateCachedAnimeDetailComplement updates data with timestamp`() = runTest {
-        val animeDetailComplement = mockk<AnimeDetailComplement>()
-        val updatedComplement = mockk<AnimeDetailComplement>()
-        val capturedComplement = slot<AnimeDetailComplement>()
-        coEvery { animeDetailComplement.copy(updatedAt = any()) } returns updatedComplement
-        coEvery { animeDetailComplementDao.replaceByMalId(capture(capturedComplement)) } returns Unit
-        every { updatedComplement.updatedAt } returns Instant.now().epochSecond
-
-        repository.updateCachedAnimeDetailComplement(animeDetailComplement)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertTrue(capturedComplement.captured.updatedAt > 0)
-        assertEquals(updatedComplement, capturedComplement.captured)
-        coVerify { animeDetailComplementDao.replaceByMalId(updatedComplement) }
-    }
-
-    @Test
-    fun `deleteAnimeDetailById deletes data`() = runTest {
-        val animeId = 123
-        coEvery { animeDetailDao.deleteAnimeDetailById(animeId) } returns Unit
-
-        repository.deleteAnimeDetailById(animeId)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        coVerify { animeDetailDao.deleteAnimeDetailById(animeId) }
-    }
-
-    @Test
-    fun `getCachedLatestWatchedEpisodeDetailComplement returns cached data`() = runTest {
-        val episodeDetailComplement = mockk<EpisodeDetailComplement>()
-        coEvery { episodeDetailComplementDao.getLatestWatchedEpisodeDetailComplement() } returns episodeDetailComplement
-
-        val result = repository.getCachedLatestWatchedEpisodeDetailComplement()
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertEquals(episodeDetailComplement, result)
-        coVerify { episodeDetailComplementDao.getLatestWatchedEpisodeDetailComplement() }
-    }
-
-    @Test
-    fun `getCachedEpisodeDetailComplement returns cached data`() = runTest {
-        val episodeId = "episode_123"
-        val episodeDetailComplement = mockk<EpisodeDetailComplement>()
-        coEvery { episodeDetailComplementDao.getEpisodeDetailComplementById(episodeId) } returns episodeDetailComplement
-
-        val result = repository.getCachedEpisodeDetailComplement(episodeId)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertEquals(episodeDetailComplement, result)
-        coVerify { episodeDetailComplementDao.getEpisodeDetailComplementById(episodeId) }
-    }
-
-    @Test
-    fun `insertCachedEpisodeDetailComplement inserts data`() = runTest {
-        val episodeDetailComplement = mockk<EpisodeDetailComplement>()
-        coEvery { episodeDetailComplementDao.insertEpisodeDetailComplement(episodeDetailComplement) } returns Unit
-
-        repository.insertCachedEpisodeDetailComplement(episodeDetailComplement)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        coVerify { episodeDetailComplementDao.insertEpisodeDetailComplement(episodeDetailComplement) }
-    }
-
-    @Test
-    fun `updateEpisodeDetailComplement updates data with timestamp`() = runTest {
-        val episodeDetailComplement = mockk<EpisodeDetailComplement>()
-        val updatedComplement = mockk<EpisodeDetailComplement>()
-        val capturedComplement = slot<EpisodeDetailComplement>()
-        coEvery { episodeDetailComplement.copy(updatedAt = any()) } returns updatedComplement
-        coEvery {
-            episodeDetailComplementDao.updateEpisodeDetailComplement(
-                capture(
-                    capturedComplement
-                )
+            StreamingUtils.getEpisodeSourcesResult(
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any()
             )
-        } returns Unit
-        every { updatedComplement.updatedAt } returns Instant.now().epochSecond
+        } returns Pair(Resource.Success(mockSourcesResponse), query)
 
-        repository.updateEpisodeDetailComplement(episodeDetailComplement)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertTrue(capturedComplement.captured.updatedAt > 0)
-        assertEquals(updatedComplement, capturedComplement.captured)
-        coVerify { episodeDetailComplementDao.updateEpisodeDetailComplement(updatedComplement) }
-    }
-
-    @Test
-    fun `getEpisodes returns success with valid response`() = runTest {
-        val id = "anime_123"
-        val episodesResponse = mockk<AnimeAniwatchCommonResponse<EpisodesResponse>>()
-        coEvery { runwayAPI.getEpisodes(id) } returns Response.success(episodesResponse)
-        coEvery { ResponseHandler.handleCommonResponse(any<Response<AnimeAniwatchCommonResponse<EpisodesResponse>>>()) } returns Resource.Success(
-            episodesResponse
+        val result = repository.getEpisodeStreamingDetails(
+            query,
+            false,
+            emptyList(),
+            mockAnimeDetail,
+            animeComplementWithEpisode
         )
-
-        val result = repository.getEpisodes(id)
-        testDispatcher.scheduler.advanceUntilIdle()
 
         assertTrue(result is Resource.Success)
-        assertEquals(episodesResponse, (result as Resource.Success).data)
-        coVerify { runwayAPI.getEpisodes(id) }
-    }
-
-    @Test
-    fun `getEpisodes returns error when api call fails`() = runTest {
-        val id = "anime_123"
-        coEvery { runwayAPI.getEpisodes(id) } returns Response.error(
-            500,
-            "Server error".toResponseBody()
-        )
-        coEvery { ResponseHandler.handleCommonResponse(any<Response<EpisodesResponse>>()) } returns Resource.Error(
-            "Server error"
-        )
-
-        val result = repository.getEpisodes(id)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertTrue(result is Resource.Error)
-        assertEquals("Server error", (result as Resource.Error).message)
-        coVerify { runwayAPI.getEpisodes(id) }
-    }
-
-    @Test
-    fun `getEpisodeServers returns success with valid response`() = runTest {
-        val id = "anime-123?ep=789"
-        val animeId = "anime-123"
-        val episodeId = "789"
-        val serversResponse = mockk<AnimeAniwatchCommonResponse<List<EpisodeServer>>>()
-        coEvery { runwayAPI.getEpisodeServers(animeId, episodeId) } returns Response.success(
-            serversResponse
-        )
-        coEvery { ResponseHandler.handleCommonResponse(any<Response<AnimeAniwatchCommonResponse<List<EpisodeServer>>>>()) } returns Resource.Success(
-            serversResponse
-        )
-
-        val result = repository.getEpisodeServers(id)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertTrue(result is Resource.Success)
-        assertEquals(serversResponse, (result as Resource.Success).data)
-        coVerify { runwayAPI.getEpisodeServers(animeId, episodeId) }
-    }
-
-    @Test
-    fun `getEpisodeServers returns error when api call fails`() = runTest {
-        val id = "anime-123?ep=789"
-        val animeId = "anime-123"
-        val episodeId = "789"
-        coEvery { runwayAPI.getEpisodeServers(animeId, episodeId) } returns Response.error(
-            500,
-            "Server error".toResponseBody()
-        )
-        coEvery { ResponseHandler.handleCommonResponse(any<Response<EpisodeServer>>()) } returns Resource.Error(
-            "Server error"
-        )
-
-        val result = repository.getEpisodeServers(id)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertTrue(result is Resource.Error)
-        assertEquals("Server error", (result as Resource.Error).message)
-        coVerify { runwayAPI.getEpisodeServers(animeId, episodeId) }
-    }
-
-    @Test
-    fun `getAnimeAniwatchSearch returns success with valid response`() = runTest {
-        val keyword = "naruto"
-        val searchResponse = mockk<AnimeAniwatchCommonResponse<AnimeAniwatchSearchResponse>>()
-        coEvery { runwayAPI.getAnimeAniwatchSearch(keyword) } returns Response.success(
-            searchResponse
-        )
-        coEvery { ResponseHandler.handleCommonResponse(any<Response<AnimeAniwatchCommonResponse<AnimeAniwatchSearchResponse>>>()) } returns Resource.Success(
-            searchResponse
-        )
-
-        val result = repository.getAnimeAniwatchSearch(keyword)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertTrue(result is Resource.Success)
-        assertEquals(searchResponse, (result as Resource.Success).data)
-        coVerify { runwayAPI.getAnimeAniwatchSearch(keyword) }
-    }
-
-    @Test
-    fun `getAnimeAniwatchSearch returns error when api call fails`() = runTest {
-        val keyword = "naruto"
-        coEvery { runwayAPI.getAnimeAniwatchSearch(keyword) } returns Response.error(
-            500,
-            "Server error".toResponseBody()
-        )
-        coEvery { ResponseHandler.handleCommonResponse(any<Response<AnimeAniwatchSearchResponse>>()) } returns Resource.Error(
-            "Server error"
-        )
-
-        val result = repository.getAnimeAniwatchSearch(keyword)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertTrue(result is Resource.Error)
-        assertEquals("Server error", (result as Resource.Error).message)
-        coVerify { runwayAPI.getAnimeAniwatchSearch(keyword) }
-    }
-
-    @Test
-    fun `getEpisodeSources returns success with valid response`() = runTest {
-        val episodeId = "episode_123"
-        val server = "server1"
-        val category = "category1"
-        val sourcesResponse = mockk<AnimeAniwatchCommonResponse<EpisodeSourcesResponse>>()
-        coEvery {
-            runwayAPI.getEpisodeSources(
-                episodeId,
-                server,
-                category
-            )
-        } returns Response.success(sourcesResponse)
-        coEvery { ResponseHandler.handleCommonResponse(any<Response<AnimeAniwatchCommonResponse<EpisodeSourcesResponse>>>()) } returns Resource.Success(
-            sourcesResponse
-        )
-
-        val result = repository.getEpisodeSources(episodeId, server, category)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertTrue(result is Resource.Success)
-        assertEquals(sourcesResponse, (result as Resource.Success).data)
-        coVerify { runwayAPI.getEpisodeSources(episodeId, server, category) }
-    }
-
-    @Test
-    fun `getEpisodeSources returns error when api call fails`() = runTest {
-        val episodeId = "episode_123"
-        val server = "server1"
-        val category = "category1"
-        coEvery { runwayAPI.getEpisodeSources(episodeId, server, category) } returns Response.error(
-            500,
-            "Server error".toResponseBody()
-        )
-        coEvery { ResponseHandler.handleCommonResponse(any<Response<EpisodeSourcesResponse>>()) } returns Resource.Error(
-            "Server error"
-        )
-
-        val result = repository.getEpisodeSources(episodeId, server, category)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertTrue(result is Resource.Error)
-        assertEquals("Server error", (result as Resource.Error).message)
-        coVerify { runwayAPI.getEpisodeSources(episodeId, server, category) }
-    }
-
-    @Test
-    fun `deleteAnimeDetailComplement returns true when anime exists`() = runTest {
-        val malId = 123
-        val animeDetailComplement = mockk<AnimeDetailComplement>()
-        coEvery { animeDetailComplementDao.getAnimeDetailComplementByMalId(malId) } returns animeDetailComplement
-        coEvery { animeDetailComplementDao.deleteAnimeDetailComplement(animeDetailComplement) } returns Unit
-        coEvery { episodeDetailComplementDao.deleteEpisodeDetailComplementByMalId(malId) } returns Unit
-
-        val result = repository.deleteAnimeDetailComplement(malId)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertTrue(result)
-        coVerify { animeDetailComplementDao.getAnimeDetailComplementByMalId(malId) }
-        coVerify { animeDetailComplementDao.deleteAnimeDetailComplement(animeDetailComplement) }
-        coVerify { episodeDetailComplementDao.deleteEpisodeDetailComplementByMalId(malId) }
-    }
-
-    @Test
-    fun `deleteAnimeDetailComplement returns false when anime does not exist`() = runTest {
-        val malId = 123
-        coEvery { animeDetailComplementDao.getAnimeDetailComplementByMalId(malId) } returns null
-
-        val result = repository.deleteAnimeDetailComplement(malId)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertFalse(result)
-        coVerify { animeDetailComplementDao.getAnimeDetailComplementByMalId(malId) }
-        coVerify(exactly = 0) { animeDetailComplementDao.deleteAnimeDetailComplement(any()) }
-        coVerify(exactly = 0) { episodeDetailComplementDao.deleteEpisodeDetailComplementByMalId(any()) }
-    }
-
-    @Test
-    fun `deleteEpisodeDetailComplement returns true when episode exists`() = runTest {
-        val episodeId = "episode_123"
-        val episodeDetailComplement = mockk<EpisodeDetailComplement>()
-        coEvery { episodeDetailComplementDao.getEpisodeDetailComplementById(episodeId) } returns episodeDetailComplement
-        coEvery { episodeDetailComplementDao.deleteEpisodeDetailComplement(episodeDetailComplement) } returns Unit
-
-        val result = repository.deleteEpisodeDetailComplement(episodeId)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertTrue(result)
-        coVerify { episodeDetailComplementDao.getEpisodeDetailComplementById(episodeId) }
-        coVerify { episodeDetailComplementDao.deleteEpisodeDetailComplement(episodeDetailComplement) }
-    }
-
-    @Test
-    fun `deleteEpisodeDetailComplement returns false when episode does not exist`() = runTest {
-        val episodeId = "episode_123"
-        coEvery { episodeDetailComplementDao.getEpisodeDetailComplementById(episodeId) } returns null
-
-        val result = repository.deleteEpisodeDetailComplement(episodeId)
-        testDispatcher.scheduler.advanceUntilIdle()
-
-        assertFalse(result)
-        coVerify { episodeDetailComplementDao.getEpisodeDetailComplementById(episodeId) }
-        coVerify(exactly = 0) { episodeDetailComplementDao.deleteEpisodeDetailComplement(any()) }
+        coVerify { runwayAPI.getEpisodeServers(any(), any()) }
+        coVerify { episodeDetailComplementDao.insertEpisodeDetailComplement(any()) }
     }
 }

@@ -107,8 +107,7 @@ fun CustomModalBottomSheet(
                         interactionSource = remember { MutableInteractionSource() },
                         indication = null
                     ) { onDismiss() }) {
-                // Content of the Bottom Sheet
-                AnimatedVisibility( // Controls the show/hide animation of the sheet
+                AnimatedVisibility(
                     visible = isVisible,
                     enter = slideInVertically(
                         initialOffsetY = { fullHeight -> fullHeight },

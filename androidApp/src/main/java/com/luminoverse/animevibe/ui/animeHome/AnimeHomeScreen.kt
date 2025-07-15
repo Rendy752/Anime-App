@@ -65,9 +65,9 @@ fun AnimeHomeScreen(
     remainingTimes: Map<String, String> = emptyMap(),
     onAction: (HomeAction) -> Unit = {},
     mainState: MainState = MainState(),
-    currentRoute: String? = NavRoute.Home.route,
     navController: NavHostController = rememberNavController(),
-    playEpisode: (Int, String) -> Unit = { _, _ -> },
+    isVideoPlayerVisible: Boolean = false,
+    playEpisode: (Int, String?) -> Unit = { _, _ -> },
     rememberedTopPadding: Dp = 0.dp
 ) {
     val pullToRefreshState = rememberPullToRefreshState()
@@ -95,10 +95,8 @@ fun AnimeHomeScreen(
         label = "carousel_height"
     )
 
-    LaunchedEffect(currentRoute) {
-        if (currentRoute == NavRoute.Home.route) {
-            onAction(HomeAction.FetchContinueWatchingEpisode)
-        }
+    LaunchedEffect(isVideoPlayerVisible) {
+        if (!isVideoPlayerVisible) onAction(HomeAction.FetchContinueWatchingEpisode)
     }
 
     LaunchedEffect(homeState.isMinimized) {
@@ -151,7 +149,7 @@ fun AnimeHomeScreen(
                                 onAction(HomeAction.SetAutoScrollEnabled(it))
                             },
                             onCarouselInteraction = { onAction(HomeAction.UpdateCarouselLastInteractionTime) },
-                            navController = navController,
+                            onItemClick = { malId -> playEpisode(malId, null) },
                             scrollProgress = scrollProgress
                         )
                     }
@@ -191,11 +189,7 @@ fun AnimeHomeScreen(
                                     AnimeSchedulesGrid(
                                         animeSchedules = animeSchedules.data,
                                         remainingTimes = remainingTimes,
-                                        onItemClick = { anime ->
-                                            navController.navigateTo(
-                                                NavRoute.AnimeDetail.fromId(anime.mal_id)
-                                            )
-                                        },
+                                        onItemClick = { malId -> playEpisode(malId, null) },
                                         gridState = gridState
                                     )
                                 }
@@ -232,7 +226,7 @@ fun AnimeHomeScreen(
                 }
 
                 homeState.continueWatchingEpisode?.let { continueWatchingEpisode ->
-                    if (homeState.isShowPopup && currentRoute == NavRoute.Home.route) {
+                    if (homeState.isShowPopup && !isVideoPlayerVisible) {
                         Box(
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)

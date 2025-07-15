@@ -19,7 +19,7 @@ import com.luminoverse.animevibe.utils.Debounce
 @Composable
 fun FilterContent(
     modifier: Modifier = Modifier,
-    isfilteredEpisodeHistoryResultsEmpty: Boolean,
+    isResultEmpty: Boolean?,
     queryState: EpisodeHistoryQueryState,
     onAction: (EpisodeHistoryAction) -> Unit
 ) {
@@ -99,9 +99,11 @@ fun FilterContent(
                     val currentIndex = sortOptions.indexOf(sortBy)
                     val nextIndex = (currentIndex + 1) % sortOptions.size
                     sortBy = sortOptions[nextIndex]
-                    if (!isfilteredEpisodeHistoryResultsEmpty) onAction(
-                        EpisodeHistoryAction.ApplyFilters(queryState.copy(sortBy = sortBy))
-                    )
+                    if (isResultEmpty == false) {
+                        onAction(
+                            EpisodeHistoryAction.ApplyFilters(queryState.copy(sortBy = sortBy))
+                        )
+                    }
                 },
                 label = {
                     Text(

@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.Icon
@@ -50,7 +51,6 @@ import androidx.media3.common.Player
 import com.luminoverse.animevibe.models.Episode
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.ui.common.EpisodeDetailItem
-import com.luminoverse.animevibe.ui.main.PlayerDisplayMode
 import com.luminoverse.animevibe.utils.TimeUtils.formatTimestamp
 
 @Composable
@@ -60,8 +60,8 @@ fun PlayerControls(
     bufferedPosition: Long,
     duration: Long,
     playbackState: Int,
-    playbackErrorMessage: String?,
-    setPlayerDisplayMode: (PlayerDisplayMode) -> Unit,
+    isRefreshing: Boolean,
+    setDisplayModePip: () -> Unit,
     episodeDetailComplement: EpisodeDetailComplement,
     hasPreviousEpisode: Boolean,
     nextEpisode: Episode?,
@@ -88,6 +88,7 @@ fun PlayerControls(
     onSettingsClick: () -> Unit,
     isAutoplayPlayNextEpisode: Boolean,
     onAutoplayNextEpisodeToggle: (Boolean) -> Unit,
+    onShareClick: () -> Unit,
     onFullscreenToggle: () -> Unit,
     onBottomBarMeasured: (Float) -> Unit
 ) {
@@ -96,12 +97,12 @@ fun PlayerControls(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.6f))
+            .background(Color.Black.copy(alpha = 0.4f))
     ) {
         TopSection(
             modifier = Modifier.align(Alignment.TopCenter),
             shouldShowControls = shouldShowControls,
-            setPlayerDisplayMode = setPlayerDisplayMode,
+            setDisplayModePip = setDisplayModePip,
             isLandscape = isLandscape,
             playbackState = playbackState,
             episodeDetailComplement = episodeDetailComplement,
@@ -117,10 +118,10 @@ fun PlayerControls(
 
         MiddleSection(
             modifier = Modifier.align(Alignment.Center),
-            playbackErrorMessage = playbackErrorMessage,
             shouldShowControls = shouldShowControls,
             hasPreviousEpisode = hasPreviousEpisode,
             playbackState = playbackState,
+            isRefreshing = isRefreshing,
             handlePlay = handlePlay,
             handlePause = handlePause,
             onPreviousEpisode = onPreviousEpisode,
@@ -141,6 +142,7 @@ fun PlayerControls(
             isShowSeekIndicator = isShowSeekIndicator,
             isAutoplayPlayNextEpisode = isAutoplayPlayNextEpisode,
             onAutoplayNextEpisodeToggle = onAutoplayNextEpisodeToggle,
+            onShareClick = onShareClick,
             onFullscreenToggle = onFullscreenToggle,
             isLandscape = isLandscape,
             handlePlay = handlePlay,
@@ -164,7 +166,7 @@ fun PlayerControls(
 private fun TopSection(
     modifier: Modifier,
     shouldShowControls: Boolean,
-    setPlayerDisplayMode: (PlayerDisplayMode) -> Unit,
+    setDisplayModePip: () -> Unit,
     isLandscape: Boolean,
     playbackState: Int,
     episodeDetailComplement: EpisodeDetailComplement,
@@ -198,7 +200,7 @@ private fun TopSection(
                 Icon(
                     modifier = Modifier
                         .clip(CircleShape)
-                        .clickable { setPlayerDisplayMode(PlayerDisplayMode.PIP) }
+                        .clickable { setDisplayModePip() }
                         .padding(8.dp),
                     imageVector = Icons.Default.KeyboardArrowDown,
                     contentDescription = "Return back",
@@ -297,10 +299,10 @@ private fun TopSection(
 @Composable
 private fun MiddleSection(
     modifier: Modifier,
-    playbackErrorMessage: String?,
     shouldShowControls: Boolean,
     hasPreviousEpisode: Boolean,
     playbackState: Int,
+    isRefreshing: Boolean,
     handlePlay: () -> Unit,
     handlePause: () -> Unit,
     onPreviousEpisode: () -> Unit,
@@ -348,10 +350,10 @@ private fun MiddleSection(
             }
 
             PlayPauseLoadingButton(
-                playbackErrorMessage = playbackErrorMessage,
                 playbackState = playbackState,
+                isRefreshing = isRefreshing,
                 isPlaying = isPlaying,
-                onSeekTo = onSeekTo,
+                handleRestart = onSeekTo,
                 handlePause = handlePause,
                 handlePlay = handlePlay
             )
@@ -419,6 +421,7 @@ private fun BottomSection(
     isShowSeekIndicator: Int,
     isAutoplayPlayNextEpisode: Boolean,
     onAutoplayNextEpisodeToggle: (Boolean) -> Unit,
+    onShareClick: () -> Unit,
     onFullscreenToggle: () -> Unit,
     isLandscape: Boolean,
     handlePlay: () -> Unit,
@@ -481,12 +484,21 @@ private fun BottomSection(
                     fontSize = 14.sp
                 )
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.End),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     AutoplayNextEpisodeToggle(
                         isAutoplayPlayNextEpisode = isAutoplayPlayNextEpisode,
                         onToggle = { onAutoplayNextEpisodeToggle(!isAutoplayPlayNextEpisode) }
+                    )
+                    Icon(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .clickable { onShareClick() }
+                            .padding(8.dp),
+                        imageVector = Icons.Default.Share,
+                        contentDescription = "Share Streaming URL",
+                        tint = Color.White
                     )
                     Icon(
                         modifier = Modifier

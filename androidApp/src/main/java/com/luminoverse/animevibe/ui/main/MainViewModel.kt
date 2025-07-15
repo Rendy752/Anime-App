@@ -58,9 +58,11 @@ enum class PlayerDisplayMode {
 
 data class PlayerState(
     val malId: Int,
-    val episodeId: String,
+    val episodeId: String? = null,
+    val initialSeekPositionMs: Long? = null,
     val displayMode: PlayerDisplayMode = PlayerDisplayMode.FULLSCREEN_PORTRAIT,
     val pipRelativeOffset: Offset = Offset(1f, 1f),
+    val pipDragProgress: Float = 0f,
     val pipWidth: Dp = 250.dp
 )
 
@@ -83,8 +85,7 @@ data class MainState(
     val isShowIdleDialog: Boolean = false,
     val isLandscape: Boolean = false,
     val sharedImageState: SharedImageState? = null,
-    val snackbarMessage: SnackbarMessage? = null,
-    val playerState: PlayerState? = null
+    val snackbarMessage: SnackbarMessage? = null
 )
 
 sealed class MainAction {
@@ -105,8 +106,14 @@ sealed class MainAction {
     data object DismissImagePreview : MainAction()
     data class ShowSnackbar(val message: SnackbarMessage) : MainAction()
     data object DismissSnackbar : MainAction()
-    data class PlayEpisode(val malId: Int, val episodeId: String) : MainAction()
+    data class PlayEpisode(
+        val malId: Int,
+        val episodeId: String? = null,
+        val positionMs: Long? = null
+    ) : MainAction()
+
     data class UpdatePlayerPipRelativeOffset(val relativeOffset: Offset) : MainAction()
+    data class UpdatePipDragProgress(val progress: Float) : MainAction()
     data class SetPlayerDisplayMode(val mode: PlayerDisplayMode) : MainAction()
     data class SetPlayerPipWidth(val width: Dp) : MainAction()
     object ClosePlayer : MainAction()
@@ -123,8 +130,10 @@ class MainViewModel @Inject constructor(
         app.getSharedPreferences("settings_prefs", Context.MODE_PRIVATE)
 
     private val _state: MutableStateFlow<MainState>
-
     val state: StateFlow<MainState>
+
+    private val _playerState = MutableStateFlow<PlayerState?>(null)
+    val playerState: StateFlow<PlayerState?> = _playerState.asStateFlow()
 
     private val configurationChangeReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -191,8 +200,15 @@ class MainViewModel @Inject constructor(
             is MainAction.DismissImagePreview -> _state.update { it.copy(sharedImageState = null) }
             is MainAction.ShowSnackbar -> showSnackbar(action.message)
             is MainAction.DismissSnackbar -> dismissSnackbar()
-            is MainAction.PlayEpisode -> playEpisode(action.malId, action.episodeId)
+
+            is MainAction.PlayEpisode -> playEpisode(
+                action.malId,
+                action.episodeId,
+                action.positionMs
+            )
+
             is MainAction.UpdatePlayerPipRelativeOffset -> updatePlayerPipRelativeOffset(action.relativeOffset)
+            is MainAction.UpdatePipDragProgress -> updatePlayerPipDragProgress(action.progress)
             is MainAction.SetPlayerDisplayMode -> setPlayerDisplayMode(action.mode)
             is MainAction.SetPlayerPipWidth -> setPlayerPipWidth(action.width)
             is MainAction.ClosePlayer -> closePlayer()
@@ -207,49 +223,41 @@ class MainViewModel @Inject constructor(
         _state.update { it.copy(snackbarMessage = null) }
     }
 
-    private fun playEpisode(malId: Int, episodeId: String) {
-        _state.update {
-            it.copy(
-                playerState = PlayerState(
-                    malId = malId,
-                    episodeId = episodeId,
-                    displayMode = if (it.isLandscape) PlayerDisplayMode.FULLSCREEN_LANDSCAPE else PlayerDisplayMode.FULLSCREEN_PORTRAIT
-                )
-            )
-        }
+    private fun playEpisode(malId: Int, episodeId: String?, positionMs: Long?) {
+        _playerState.value = PlayerState(
+            malId = malId,
+            episodeId = episodeId,
+            initialSeekPositionMs = positionMs,
+            displayMode = if (_state.value.isLandscape) PlayerDisplayMode.FULLSCREEN_LANDSCAPE else PlayerDisplayMode.FULLSCREEN_PORTRAIT
+        )
     }
 
     private fun updatePlayerPipRelativeOffset(relativeOffset: Offset) {
-        _state.value.playerState?.let { current ->
-            _state.update {
-                it.copy(playerState = current.copy(pipRelativeOffset = relativeOffset))
-            }
-        }
+        _playerState.update { it?.copy(pipRelativeOffset = relativeOffset) }
+    }
+
+    private fun updatePlayerPipDragProgress(progress: Float) {
+        _playerState.update { it?.copy(pipDragProgress = progress) }
     }
 
     private fun setPlayerDisplayMode(mode: PlayerDisplayMode) {
-        _state.value.playerState?.let { current ->
-            val newPlayerState = if (mode == PlayerDisplayMode.PIP) {
-                current.copy(displayMode = mode, pipRelativeOffset = Offset(1f, 1f))
-            } else {
-                current.copy(displayMode = mode)
-            }
-            _state.update {
-                it.copy(playerState = newPlayerState)
+        _playerState.update { current ->
+            current?.let {
+                if (mode == PlayerDisplayMode.PIP) {
+                    it.copy(displayMode = mode, pipRelativeOffset = Offset(1f, 1f))
+                } else {
+                    it.copy(displayMode = mode)
+                }
             }
         }
     }
 
     private fun setPlayerPipWidth(width: Dp) {
-        _state.value.playerState?.let { current ->
-            _state.update {
-                it.copy(playerState = current.copy(pipWidth = width))
-            }
-        }
+        _playerState.update { it?.copy(pipWidth = width) }
     }
 
     private fun closePlayer() {
-        _state.update { it.copy(playerState = null) }
+        _playerState.value = null
     }
 
     private fun isDarkMode(themeMode: ThemeMode): Boolean {

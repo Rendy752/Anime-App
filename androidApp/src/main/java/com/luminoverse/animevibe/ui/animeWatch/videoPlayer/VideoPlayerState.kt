@@ -4,34 +4,34 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.calculatePan
-import androidx.compose.foundation.gestures.calculateZoom
-import androidx.compose.runtime.*
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.input.pointer.AwaitPointerEventScope
-import androidx.compose.ui.input.pointer.PointerInputChange
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.State
 import androidx.compose.ui.unit.IntSize
-import androidx.media3.common.Player
-import androidx.media3.common.VideoSize
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.exoplayer.ExoPlayer
 import coil.ImageLoader
-import coil.imageLoader
 import coil.request.ImageRequest
 import com.luminoverse.animevibe.data.remote.api.NetworkDataSource
-import com.luminoverse.animevibe.utils.media.BoundsUtils.calculateOffsetBounds
+import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.utils.media.CaptionCue
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
 import com.luminoverse.animevibe.utils.media.ThumbnailCue
+import com.luminoverse.animevibe.utils.media.findActiveCaptionCues
 import com.luminoverse.animevibe.utils.media.parseCaptionCues
 import com.luminoverse.animevibe.utils.media.parseThumbnailCues
 import com.luminoverse.animevibe.utils.media.toSha256
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -39,72 +39,253 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
-import java.util.*
+import java.util.Locale
 import kotlin.math.abs
 import kotlin.math.max
 
 private const val FAST_FORWARD_REWIND_DEBOUNCE_MILLIS = 1000L
-private const val DEFAULT_SEEK_INCREMENT = 10000L
-private const val LONG_PRESS_THRESHOLD_MILLIS = 500L
-private const val DOUBLE_TAP_THRESHOLD_MILLIS = 300L
-private const val MAX_ZOOM_RATIO = 8f
+private const val DEFAULT_SEEK_INCREMENT_MS = 10000L
+const val MAX_ZOOM_SCALE = 8f
 
+/**
+ * A state holder for the video player, responsible for managing UI state, handling user interactions,
+ * and coordinating with the underlying ExoPlayer instance.
+ *
+ * @param context The Android context.
+ * @param player The ExoPlayer instance for media playback.
+ * @param onPlayerAction A lambda to dispatch actions to the player (e.g., play, pause, seek).
+ * @param coroutineScope The coroutine scope for launching async operations like data fetching.
+ * @param imageLoader The Coil image loader for fetching and caching thumbnails.
+ * @param networkDataSource The data source for fetching remote data like VTT files.
+ * @param episodeDetails The complementary details of the current episode.
+ * @param controlsState A state object representing the shared state of player controls.
+ */
 @Stable
 class VideoPlayerState(
     private val context: Context,
     val player: ExoPlayer,
-    val playerAction: (HlsPlayerAction) -> Unit,
-    val scope: CoroutineScope,
+    val onPlayerAction: (HlsPlayerAction) -> Unit,
+    val coroutineScope: CoroutineScope,
     private val imageLoader: ImageLoader,
-    private val networkDataSource: NetworkDataSource
+    private val networkDataSource: NetworkDataSource,
+    val episodeDetails: EpisodeDetailComplement,
+    val controlsState: State<ControlsState>
 ) {
-    var isFirstLoad by mutableStateOf(true)
-    private val _currentPosition = MutableStateFlow(0L)
-    val currentPosition: StateFlow<Long> = _currentPosition.asStateFlow()
 
-    var isShowResume by mutableStateOf(false)
-    var isShowNextEpisodeOverlay by mutableStateOf(false)
-    var isShowSeekIndicator by mutableIntStateOf(0)
-    var seekAmount by mutableLongStateOf(0L)
-    var isSeeking by mutableStateOf(false)
-    var offsetX by mutableFloatStateOf(0f)
-    var offsetY by mutableFloatStateOf(0f)
-    var zoomScaleProgress by mutableFloatStateOf(1f)
-    var isZooming by mutableStateOf(false)
-    var speedUpText by mutableStateOf("")
-    var autoplayNextEpisodeStatusText by mutableStateOf<String?>(null)
-    var autoplayNextEpisodeStatusTrigger by mutableIntStateOf(0)
-    var isHolding by mutableStateOf(false)
-    var showLockReminder by mutableStateOf(false)
+    // region Core Playback State
+    /** Tracks if the player is loading for the very first time. */
+    var isInitialLoading by mutableStateOf(true)
+    private val _currentPositionMs = MutableStateFlow(0L)
+
+    /** The current playback position in milliseconds, exposed as a StateFlow. */
+    val currentPositionMs: StateFlow<Long> = _currentPositionMs.asStateFlow()
+
+    /** True if the seek bar is being dragged, used to show a buffering indicator. */
     var isBufferingFromSeeking by mutableStateOf(false)
-    var isDraggingSeekBar by mutableStateOf(false)
-    var dragCancelTrigger by mutableIntStateOf(0)
-        private set
-    var dragSeekPosition by mutableLongStateOf(0L)
+
+    /** The active caption cues for the current playback position. */
+    val activeCaptionCue: List<CaptionCue>?
+        @Composable get() {
+            val currentPosition = currentPositionMs.collectAsStateWithLifecycle().value
+            return controlsState.value.selectedSubtitle?.file?.let { url ->
+                captionCues[url]?.let { cues ->
+                    val adjustedPosition =
+                        (if (isDraggingSeekBar) dragSeekPositionMs else currentPosition) - subtitleOffsetMs
+                    findActiveCaptionCues(adjustedPosition, cues)
+                }
+            }
+        }
+    // endregion
+
+    // region UI Overlays & Sheets State
+    /** Manages the visibility of the "Resume Playback" overlay. */
+    var shouldShowResumeOverlay by mutableStateOf(false)
+
+    /** Manages the visibility of the landscape episode list. */
+    var showLandscapeEpisodeList by mutableStateOf(false)
+
+    /** Manages the visibility of the "Next Episode" overlay. */
+    var shouldShowNextEpisodeOverlay by mutableStateOf(false)
+
+
+    /**
+     * The manual offset in milliseconds applied to all subtitle cues.
+     * A positive value makes subtitles appear later, a negative value makes them appear earlier.
+     */
+    var subtitleOffsetMs by mutableLongStateOf(0L)
+
+    /** Manages the visibility of the subtitle sync overlay. */
+    var showSubtitleSyncOverlay by mutableStateOf(false)
+    // endregion
+
+    /** Manages the visibility of the settings bottom sheet. */
     var showSettingsSheet by mutableStateOf(false)
+
+    /** Manages the visibility of the subtitle selection bottom sheet. */
     var showSubtitleSheet by mutableStateOf(false)
+
+    /** Manages the visibility of the playback speed selection bottom sheet. */
     var showPlaybackSpeedSheet by mutableStateOf(false)
-    var playerSize by mutableStateOf(IntSize.Zero)
-    var videoSize by mutableStateOf(player.videoSize)
-    var bottomBarHeight by mutableFloatStateOf(0f)
+
+    /** Determines whether the current timestamp should be included when sharing the video.*/
+    var includeTimestampInShare by mutableStateOf(false)
+
+    /** Manages the visibility of the "Share Options" bottom sheet. */
+    var showShareSheet by mutableStateOf(false)
+
+    /** Manages the visibility of the lock reminder icon. */
+    var showLockReminder by mutableStateOf(false)
+
+    /** Toggles between showing remaining time vs. total duration in the seek bar. */
     var showRemainingTime by mutableStateOf(false)
+    // endregion
 
-    var longPressJob by mutableStateOf<Job?>(null)
-    private var fastForwardRewindCounter by mutableIntStateOf(0)
+    // region Gesture & Interaction State
+    /** The direction of the seek indicator: -1 for rewind, 1 for forward, 0 for hidden. */
+    var seekIndicatorDirection by mutableIntStateOf(0)
+
+    /** The accumulated seek amount in seconds during a double-tap seek gesture. */
+    var seekAmountSeconds by mutableLongStateOf(0L)
+
+    /** True if a seek operation (e.g., from double-tap) is in progress. */
+    var isSeeking by mutableStateOf(false)
+
+    /** The horizontal offset for pan gestures when zoomed in. */
+    var panOffsetX by mutableFloatStateOf(0f)
+
+    /** The vertical offset for pan gestures when zoomed in. */
+    var panOffsetY by mutableFloatStateOf(0f)
+
+    /** The current zoom scale of the player view. */
+    var zoomScale by mutableFloatStateOf(1f)
+
+    /** True if a zoom gesture is currently active. */
+    var isZooming by mutableStateOf(false)
+
+    /** The text displayed in the speed-up indicator (e.g., "2x speed"). */
+    var speedUpIndicatorText by mutableStateOf("")
+
+    /** True if the user is performing a long press to speed up playback. */
+    var isSpeedingUpWithLongPress by mutableStateOf(false)
+
+    /** True if the user is currently dragging the seek bar. */
+    var isDraggingSeekBar by mutableStateOf(false)
+
+    /** The seek position from the drag gesture, used for thumbnail previews. */
+    var dragSeekPositionMs by mutableLongStateOf(0L)
+
+    /** A trigger to notify observers that a seek bar drag has been cancelled. Incremented on each cancellation. */
+    var seekBarDragCancellationId by mutableIntStateOf(0)
+        private set
+
+    /** The status text for autoplay (e.g., "Autoplay is ON"). Disappears after a delay. */
+    var autoplayStatusText by mutableStateOf<String?>(null)
+
+    /** A trigger to show the autoplay status text. Incremented on each toggle. */
+    var autoplayStatusId by mutableIntStateOf(0)
+
+    // endregion
+
+    // region Private Interaction Logic State
+    private var fastForwardRewindCounterSeconds by mutableIntStateOf(0)
     private var previousPlaybackSpeed by mutableFloatStateOf(1f)
-    var lastTapTime by mutableLongStateOf(0L)
-    var lastTapX by mutableStateOf<Float?>(null)
-    var thumbnailCues by mutableStateOf<Map<String, List<ThumbnailCue>>>(emptyMap())
-        private set
-    var captionCues by mutableStateOf<Map<String, List<CaptionCue>>>(emptyMap())
-        private set
+    internal var lastTapTimestamp by mutableLongStateOf(0L)
+    internal var lastTapPositionX by mutableStateOf<Float?>(null)
+    internal var longPressJob by mutableStateOf<Job?>(null)
+    // endregion
 
-    fun updatePosition(position: Long) {
-        _currentPosition.value = position
+    // region Data & Resource State
+    var thumbnailCues by mutableStateOf<Map<String, List<ThumbnailCue>>>(emptyMap())
+    private var captionCues by mutableStateOf<Map<String, List<CaptionCue>>>(emptyMap())
+    // endregion
+
+    // region Player & Video Dimensions
+    /** The size of the player container View in pixels. */
+    var playerContainerSize by mutableStateOf(IntSize.Zero)
+
+    /** The size of the decoded video in pixels. */
+    var videoResolution by mutableStateOf(player.videoSize)
+
+    /** The measured height of the bottom control bar, used for subtitle padding. */
+    var bottomBarHeight by mutableFloatStateOf(0f)
+
+    /** The calculated zoom ratio required to make the video fill the container. */
+    val zoomToFillRatio by derivedStateOf {
+        if (playerContainerSize.width > 0 && playerContainerSize.height > 0 && videoResolution.width > 0 && videoResolution.height > 0) {
+            val containerAspect =
+                playerContainerSize.width.toFloat() / playerContainerSize.height.toFloat()
+            val videoAspect = videoResolution.width.toFloat() / videoResolution.height.toFloat()
+            val (fittedWidth, fittedHeight) = if (videoAspect > containerAspect) {
+                playerContainerSize.width.toFloat() to playerContainerSize.width.toFloat() / videoAspect
+            } else {
+                playerContainerSize.height.toFloat() * videoAspect to playerContainerSize.height.toFloat()
+            }
+            max(
+                playerContainerSize.width / fittedWidth,
+                playerContainerSize.height / fittedHeight
+            ).coerceAtLeast(1f)
+        } else {
+            1f
+        }
+    }
+    // endregion
+
+    // region Internal Handlers
+    private val seekDisplayHandler = Handler(Looper.getMainLooper())
+    private val seekDisplayRunnable = Runnable {
+        val totalSeekSeconds = fastForwardRewindCounterSeconds
+        val fixedSeekPerCall = (DEFAULT_SEEK_INCREMENT_MS / 1000L).toInt()
+
+        if (totalSeekSeconds != 0) {
+            val numCalls = abs(totalSeekSeconds) / fixedSeekPerCall
+            repeat(numCalls) {
+                if (totalSeekSeconds > 0) onPlayerAction(HlsPlayerAction.FastForward)
+                else onPlayerAction(HlsPlayerAction.Rewind)
+            }
+        }
+
+        seekIndicatorDirection = 0
+        seekAmountSeconds = 0L
+        isSeeking = false
+        fastForwardRewindCounterSeconds = 0
+        onPlayerAction(HlsPlayerAction.Play)
+    }
+    // endregion
+
+    // region Public Functions
+
+    /** Updates the current playback position. Called from a listener. */
+    fun updatePosition(positionMs: Long) {
+        _currentPositionMs.value = positionMs
     }
 
+    /**
+     * Calculates and applies the necessary offset to sync a specific cue to the current player time.
+     * @param cueStartTimeMs The start time of the cue in milliseconds.
+     */
+    fun syncSubtitlesToTime(cueStartTimeMs: Long) {
+        val playerTimeMs = player.currentPosition
+        subtitleOffsetMs = playerTimeMs - cueStartTimeMs
+    }
+
+    /**
+     * Returns the full list of parsed cues for the currently selected subtitle track.
+     * This is used to populate the sync overlay UI.
+     */
+    fun getAllCuesForCurrentTrack(): List<CaptionCue> {
+        val selectedUrl = controlsState.value.selectedSubtitle?.file ?: return emptyList()
+        return captionCues[selectedUrl] ?: emptyList()
+    }
+
+    /**
+     * Downloads and parses a VTT thumbnail file, then pre-caches the associated thumbnail images.
+     * Cues are stored in memory to prevent re-fetching.
+     *
+     * @param context The Android context.
+     * @param thumbnailUrl The URL of the VTT thumbnail file.
+     */
     fun loadAndCacheThumbnails(context: Context, thumbnailUrl: String) {
-        scope.launch {
+        coroutineScope.launch {
             if (thumbnailCues.containsKey(thumbnailUrl)) return@launch
 
             try {
@@ -120,62 +301,46 @@ class VideoPlayerState(
 
                 thumbnailCues = thumbnailCues + (thumbnailUrl to cues)
 
+                // Pre-warm the Coil cache with all thumbnail images
                 cues.map { it.imageUrl }.distinct().forEach { imageUrl ->
-                    val request = ImageRequest.Builder(context)
-                        .data(imageUrl)
-                        .build()
+                    val request = ImageRequest.Builder(context).data(imageUrl).build()
                     imageLoader.enqueue(request)
                 }
                 Log.d("VideoPlayerState", "Thumbnails loaded and cached for $thumbnailUrl")
-
             } catch (e: Exception) {
                 Log.e("VideoPlayerState", "Failed to load or cache thumbnails: ${e.message}", e)
             }
         }
     }
 
-    private fun getSubtitlesCacheDir(): File {
-        return File(context.cacheDir, "subtitles").also {
-            if (!it.exists()) {
-                it.mkdirs()
-            }
-        }
-    }
-
-    private fun getSubtitleFile(url: String): File {
-        val fileName = "${url.toSha256()}.vtt"
-        return File(getSubtitlesCacheDir(), fileName)
-    }
-
+    /**
+     * Downloads and parses a VTT caption file. The file is cached locally on disk
+     * to avoid re-fetching on subsequent loads.
+     *
+     * @param captionUrl The URL of the VTT caption file.
+     */
     fun loadAndCacheCaptions(captionUrl: String) {
-        scope.launch {
+        coroutineScope.launch {
             if (captionCues.containsKey(captionUrl)) return@launch
 
             val subtitleFile = getSubtitleFile(captionUrl)
             var vttContent: String? = null
 
+            // Try reading from local cache first
             if (subtitleFile.exists()) {
                 try {
-                    vttContent = withContext(Dispatchers.IO) {
-                        subtitleFile.readText()
-                    }
-                    Log.d("VideoPlayerState", "Loaded captions from local cache for $captionUrl")
+                    vttContent = withContext(Dispatchers.IO) { subtitleFile.readText() }
                 } catch (e: Exception) {
                     Log.e("VideoPlayerState", "Failed to read local caption file: ${e.message}", e)
                 }
             }
 
+            // If not in cache, fetch from network and save to cache
             if (vttContent == null) {
                 try {
                     vttContent = networkDataSource.fetchText(captionUrl)
                     if (!vttContent.isNullOrEmpty()) {
-                        withContext(Dispatchers.IO) {
-                            subtitleFile.writeText(vttContent)
-                        }
-                        Log.d(
-                            "VideoPlayerState",
-                            "Fetched captions from network and cached locally for $captionUrl"
-                        )
+                        withContext(Dispatchers.IO) { subtitleFile.writeText(vttContent) }
                     } else {
                         throw IOException("Fetched caption content is null or empty.")
                     }
@@ -189,6 +354,7 @@ class VideoPlayerState(
                 }
             }
 
+            // Parse the VTT content into cues
             try {
                 val cues = parseCaptionCues(vttContent)
                 captionCues = captionCues + (captionUrl to cues)
@@ -198,366 +364,132 @@ class VideoPlayerState(
         }
     }
 
-    private val seekDisplayHandler = Handler(Looper.getMainLooper())
-    private val seekDisplayRunnable = Runnable {
-        Log.d("PlayerView", "Debounce period ended. Performing accumulated seeks.")
-        val totalSeekSeconds = fastForwardRewindCounter
-        val fixedSeekPerCall = (DEFAULT_SEEK_INCREMENT / 1000L).toInt()
-
-        if (totalSeekSeconds != 0) {
-            val numCalls = abs(totalSeekSeconds) / fixedSeekPerCall
-            repeat(numCalls) {
-                if (totalSeekSeconds > 0) playerAction(HlsPlayerAction.FastForward)
-                else playerAction(HlsPlayerAction.Rewind)
-            }
-        }
-
-        isShowSeekIndicator = 0
-        seekAmount = 0L
-        isSeeking = false
-        fastForwardRewindCounter = 0
-        playerAction(HlsPlayerAction.Play)
-        Log.d("PlayerView", "Seek actions completed and states reset.")
+    /** Resets the zoom and pan to their default state (1x scale, no offset). */
+    fun resetZoom() {
+        zoomScale = 1f
+        onPlayerAction(HlsPlayerAction.SetZoom(1f))
+        panOffsetX = 0f
+        panOffsetY = 0f
     }
 
-    val zoomToFillRatio by derivedStateOf {
-        if (playerSize.width > 0 && playerSize.height > 0 && videoSize.width > 0 && videoSize.height > 0) {
-            val containerAspect = playerSize.width.toFloat() / playerSize.height.toFloat()
-            val videoAspect = videoSize.width.toFloat() / videoSize.height.toFloat()
-            val (fittedWidth, fittedHeight) = if (videoAspect > containerAspect) {
-                playerSize.width.toFloat() to playerSize.width.toFloat() / videoAspect
-            } else {
-                playerSize.height.toFloat() * videoAspect to playerSize.height.toFloat()
-            }
-            max(playerSize.width / fittedWidth, playerSize.height / fittedHeight).coerceAtLeast(1f)
-        } else {
-            1f
-        }
-    }
-
-    fun cancelSeekBarDrag() {
-        if (isDraggingSeekBar) {
-            isShowSeekIndicator = 0
-            seekAmount = 0L
-            isSeeking = false
-            fastForwardRewindCounter = 0
-            isDraggingSeekBar = false
-            dragCancelTrigger++
-        }
-    }
-
+    /** Returns a user-friendly string representation of the current zoom ratio. */
     fun getZoomRatioText(): String = when {
-        abs(zoomScaleProgress - zoomToFillRatio) < 0.01f && zoomToFillRatio > 1f -> "Full View"
-        zoomScaleProgress > 1f -> String.format(Locale.US, "%.1fx", zoomScaleProgress)
+        abs(zoomScale - zoomToFillRatio) < 0.01f && zoomToFillRatio > 1f -> "Full View"
+        zoomScale > 1f -> String.format(Locale.US, "%.1fx", zoomScale)
         else -> "Original"
     }
 
-    fun resetZoom() {
-        zoomScaleProgress = 1f
-        playerAction(HlsPlayerAction.SetZoom(1f))
-        offsetX = 0f
-        offsetY = 0f
+    /** Immediately hides indicators and resets state related to seek bar dragging. */
+    fun cancelSeekBarDrag() {
+        if (isDraggingSeekBar) {
+            seekIndicatorDirection = 0
+            seekAmountSeconds = 0L
+            isSeeking = false
+            fastForwardRewindCounterSeconds = 0
+            isDraggingSeekBar = false
+            seekBarDragCancellationId++
+        }
     }
 
+    /** Toggles the state of autoplay for the next episode and triggers a status message. */
+    fun onAutoplayNextEpisodeToggle(enabled: Boolean) {
+        autoplayStatusText = if (enabled) "Autoplay is ON" else "Autoplay is OFF"
+        autoplayStatusId++
+    }
+
+    /**
+     * Cleans up resources like coroutine jobs and pending handler messages
+     * when the state holder is disposed.
+     */
     fun onDispose() {
         seekDisplayHandler.removeCallbacksAndMessages(null)
         longPressJob?.cancel()
-        if (isHolding) {
-            isHolding = false
-            playerAction(HlsPlayerAction.SetPlaybackSpeed(previousPlaybackSpeed))
+        if (isSpeedingUpWithLongPress) {
+            isSpeedingUpWithLongPress = false
+            onPlayerAction(HlsPlayerAction.SetPlaybackSpeed(previousPlaybackSpeed))
         }
-        Log.d("PlayerView", "VideoPlayerState disposed, cleaning up resources.")
     }
 
-    fun handleSingleTap(isLocked: Boolean) {
-        if (!isLocked && !isHolding) {
-            playerAction(HlsPlayerAction.RequestToggleControlsVisibility())
-            Log.d("PlayerView", "Single tap: Toggled controls visibility")
+    // endregion
+
+    // region Gesture Handling Logic (called from pointer input handler)
+
+    /** Handles a single tap gesture, typically toggling control visibility. */
+    internal fun handleSingleTap(isLocked: Boolean) {
+        if (!isLocked && !isSpeedingUpWithLongPress) {
+            onPlayerAction(HlsPlayerAction.RequestToggleControlsVisibility())
         } else if (isLocked) {
             showLockReminder = true
-            Log.d("PlayerView", "Single tap: Player is locked, showing lock reminder.")
         }
     }
 
-    fun handleDoubleTap(
-        x: Float,
-        screenWidth: Float,
-        isLocked: Boolean
-    ) {
-        if (!isLocked) {
-            Log.d("PlayerView", "Double tap at x=$x")
-            val newSeekDirection = when {
-                x < screenWidth * 0.4 -> -1
-                x > screenWidth * 0.6 -> 1
-                else -> 0
-            }
+    /** Handles a double tap gesture for fast forward or rewind. */
+    internal fun handleDoubleTap(tapPositionX: Float, screenWidth: Float, isLocked: Boolean) {
+        if (isLocked) return
 
-            if (newSeekDirection != 0) {
-                seekDisplayHandler.removeCallbacks(seekDisplayRunnable)
-                playerAction(HlsPlayerAction.Pause)
-                val seekIncrementSeconds = (DEFAULT_SEEK_INCREMENT / 1000L)
+        val newSeekDirection = when {
+            tapPositionX < screenWidth * 0.4 -> -1 // Rewind
+            tapPositionX > screenWidth * 0.6 -> 1  // Forward
+            else -> 0
+        }
 
-                if (isShowSeekIndicator != newSeekDirection && isShowSeekIndicator != 0) {
-                    seekAmount = seekIncrementSeconds
-                    fastForwardRewindCounter = newSeekDirection * seekIncrementSeconds.toInt()
-                } else {
-                    seekAmount += seekIncrementSeconds
-                    fastForwardRewindCounter += newSeekDirection * seekIncrementSeconds.toInt()
-                }
+        if (newSeekDirection != 0) {
+            seekDisplayHandler.removeCallbacks(seekDisplayRunnable)
+            onPlayerAction(HlsPlayerAction.Pause)
+            val seekIncrementSeconds = (DEFAULT_SEEK_INCREMENT_MS / 1000L)
 
-                isShowSeekIndicator = newSeekDirection
-                isSeeking = true
-                seekDisplayHandler.postDelayed(
-                    seekDisplayRunnable,
-                    FAST_FORWARD_REWIND_DEBOUNCE_MILLIS
-                )
+            // If direction changes, reset the counter. Otherwise, accumulate.
+            if (seekIndicatorDirection != newSeekDirection && seekIndicatorDirection != 0) {
+                seekAmountSeconds = seekIncrementSeconds
+                fastForwardRewindCounterSeconds = newSeekDirection * seekIncrementSeconds.toInt()
             } else {
-                playerAction(HlsPlayerAction.Play)
-                seekDisplayHandler.removeCallbacks(seekDisplayRunnable)
-                if (fastForwardRewindCounter == 0) {
-                    isShowSeekIndicator = 0
-                    seekAmount = 0L
-                    isSeeking = false
-                }
-                fastForwardRewindCounter = 0
-            }
-        }
-    }
-
-    fun handleLongPressStart(currentSpeed: Float) {
-        isHolding = true
-        speedUpText = "2x speed"
-        previousPlaybackSpeed = currentSpeed
-        playerAction(HlsPlayerAction.SetPlaybackSpeed(2f))
-        Log.d("PlayerView", "Long press started: Speed set to 2x")
-    }
-
-    fun handleLongPressEnd() {
-        if (isHolding) {
-            isHolding = false
-            speedUpText = ""
-            playerAction(HlsPlayerAction.SetPlaybackSpeed(previousPlaybackSpeed))
-            Log.d("PlayerView", "Long press ended")
-        }
-    }
-}
-
-@Composable
-fun rememberVideoPlayerState(
-    key: Any?,
-    player: ExoPlayer,
-    playerAction: (HlsPlayerAction) -> Unit,
-    networkDataSource: NetworkDataSource,
-    scope: CoroutineScope = rememberCoroutineScope()
-): VideoPlayerState {
-    val imageLoader = LocalContext.current.imageLoader
-    val context = LocalContext.current
-
-    val state = remember(key) {
-        VideoPlayerState(
-            context = context,
-            player = player,
-            playerAction = playerAction,
-            scope = scope,
-            imageLoader = imageLoader,
-            networkDataSource = networkDataSource
-        )
-    }
-
-    DisposableEffect(key) {
-        val listener = object : Player.Listener {
-            override fun onVideoSizeChanged(newVideoSize: VideoSize) {
-                state.videoSize = newVideoSize
+                seekAmountSeconds += seekIncrementSeconds
+                fastForwardRewindCounterSeconds += newSeekDirection * seekIncrementSeconds.toInt()
             }
 
-            override fun onPositionDiscontinuity(
-                oldPosition: Player.PositionInfo,
-                newPosition: Player.PositionInfo,
-                reason: Int
-            ) {
-                super.onPositionDiscontinuity(oldPosition, newPosition, reason)
-                state.updatePosition(newPosition.positionMs)
-            }
-        }
-        player.addListener(listener)
-        onDispose {
-            player.removeListener(listener)
-            state.onDispose()
-        }
-    }
-    return state
-}
-
-suspend fun AwaitPointerEventScope.handleGestures(
-    state: VideoPlayerState,
-    isPlayerDisplayFullscreen: Boolean,
-    updatedControlsState: State<ControlsState>,
-    isLandscape: Boolean,
-    topPaddingPx: Float,
-    onVerticalDrag: (Float) -> Unit,
-    onDragEnd: (flingVelocity: Float) -> Unit
-) {
-    val down: PointerInputChange = awaitFirstDown()
-    val isDragInBarrier = isLandscape && down.position.y < topPaddingPx
-
-    state.longPressJob?.cancel()
-    state.longPressJob = state.scope.launch {
-        delay(LONG_PRESS_THRESHOLD_MILLIS)
-        if (state.player.isPlaying && !updatedControlsState.value.isLocked && isPlayerDisplayFullscreen) {
-            state.handleLongPressStart(updatedControlsState.value.playbackSpeed)
-            down.consume()
-        }
-    }
-
-    var isMultiTouch = false
-    var isPanning = false
-    var verticalDragConsumed = false
-    var lastVelocityY = 0f
-
-    while (true) {
-        val event = awaitPointerEvent()
-        val pointers = event.changes
-        if (pointers.none { it.pressed }) {
-            state.longPressJob?.cancel()
-            break
-        }
-
-        if (updatedControlsState.value.isLocked) {
-            pointers.forEach { it.consume() }
-            continue
-        }
-
-        if (pointers.size > 1 && isPlayerDisplayFullscreen) {
-            if (!isMultiTouch) {
-                isMultiTouch = true
-                state.isZooming = true
-                state.longPressJob?.cancel()
-                state.handleLongPressEnd()
-                verticalDragConsumed = false
-                isPanning = false
-                state.playerAction(HlsPlayerAction.RequestToggleControlsVisibility(false))
-            }
-            val zoomChange = event.calculateZoom()
-            state.zoomScaleProgress = (state.zoomScaleProgress * zoomChange).coerceIn(1f, MAX_ZOOM_RATIO)
-
-            if (state.videoSize.width > 0 && state.videoSize.height > 0) {
-                val containerWidth = size.width.toFloat()
-                val containerHeight = size.height.toFloat()
-                val containerAspect = containerWidth / containerHeight
-                val videoAspect = state.videoSize.width.toFloat() / state.videoSize.height.toFloat()
-
-                val fittedVideoSize = if (videoAspect > containerAspect) {
-                    Size(width = containerWidth, height = containerWidth / videoAspect)
-                } else {
-                    Size(width = containerHeight * videoAspect, height = containerHeight)
-                }
-
-                val (maxOffsetX, maxOffsetY) = calculateOffsetBounds(
-                    containerSize = size,
-                    imageSize = fittedVideoSize,
-                    scale = state.zoomScaleProgress
-                )
-                state.offsetX = state.offsetX.coerceIn(-maxOffsetX, maxOffsetX)
-                state.offsetY = state.offsetY.coerceIn(-maxOffsetY, maxOffsetY)
-            }
-
-            pointers.forEach { it.consume() }
-            continue
-        }
-
-        if (pointers.size == 1 && !isMultiTouch && isPlayerDisplayFullscreen) {
-            val change = pointers.first()
-
-            if (updatedControlsState.value.zoom > 1f) {
-                val pan = event.calculatePan()
-                if (pan.x != 0f || pan.y != 0f) {
-                    if (!isPanning) {
-                        isPanning = true
-                        state.playerAction(HlsPlayerAction.RequestToggleControlsVisibility(false))
-                        state.longPressJob?.cancel()
-                        state.handleLongPressEnd()
-                    }
-                    if (state.videoSize.width > 0 && state.videoSize.height > 0) {
-                        val containerWidth = size.width.toFloat()
-                        val containerHeight = size.height.toFloat()
-                        val containerAspect = containerWidth / containerHeight
-                        val videoAspect = state.videoSize.width.toFloat() / state.videoSize.height.toFloat()
-
-                        val fittedVideoSize = if (videoAspect > containerAspect) {
-                            Size(width = containerWidth, height = containerWidth / videoAspect)
-                        } else {
-                            Size(width = containerHeight * videoAspect, height = containerHeight)
-                        }
-
-                        val (maxOffsetX, maxOffsetY) = calculateOffsetBounds(
-                            containerSize = size,
-                            imageSize = fittedVideoSize,
-                            scale = state.zoomScaleProgress
-                        )
-                        state.offsetX = (state.offsetX + pan.x).coerceIn(-maxOffsetX, maxOffsetX)
-                        state.offsetY = (state.offsetY + pan.y).coerceIn(-maxOffsetY, maxOffsetY)
-                    }
-                    change.consume()
-                }
-            }
-            else {
-                val positionChangeOffset = change.position - change.previousPosition
-                val dy = positionChangeOffset.y
-                val dx = positionChangeOffset.x
-
-                if (abs(dy) > abs(dx) && abs(dy) > 1f && !isDragInBarrier) {
-                    state.longPressJob?.cancel()
-                    state.handleLongPressEnd()
-
-                    val dt = change.uptimeMillis - change.previousUptimeMillis
-                    if (dt > 0) {
-                        lastVelocityY = dy / dt
-                    }
-
-                    onVerticalDrag(dy)
-                    verticalDragConsumed = true
-                    change.consume()
-                }
-            }
-        }
-    }
-
-    if (verticalDragConsumed) {
-        onDragEnd(lastVelocityY)
-    } else if (isMultiTouch) {
-        val halfWayRatio = (1f + state.zoomToFillRatio) / 2
-        val finalZoom = if (state.zoomScaleProgress < halfWayRatio) 1f
-        else if (state.zoomScaleProgress in halfWayRatio..state.zoomToFillRatio) state.zoomToFillRatio
-        else state.zoomScaleProgress
-
-        state.playerAction(HlsPlayerAction.SetZoom(finalZoom))
-        state.zoomScaleProgress = finalZoom
-        if (state.zoomScaleProgress <= 1.01f) {
-            state.offsetX = 0f
-            state.offsetY = 0f
-        }
-        state.isZooming = false
-    } else if (!isPanning && isPlayerDisplayFullscreen) {
-        state.longPressJob?.cancel()
-        val currentTime = System.currentTimeMillis()
-        val tapX = down.position.x
-        if (state.isHolding) {
-            state.handleLongPressEnd()
+            seekIndicatorDirection = newSeekDirection
+            isSeeking = true
+            seekDisplayHandler.postDelayed(seekDisplayRunnable, FAST_FORWARD_REWIND_DEBOUNCE_MILLIS)
         } else {
-            if (currentTime - state.lastTapTime < DOUBLE_TAP_THRESHOLD_MILLIS && state.lastTapX != null && abs(
-                    tapX - state.lastTapX!!
-                ) < 100f
-            ) {
-                state.handleDoubleTap(
-                    tapX,
-                    size.width.toFloat(),
-                    updatedControlsState.value.isLocked
-                )
-            } else {
-                state.handleSingleTap(updatedControlsState.value.isLocked)
+            // Tapped in the center, cancel any pending seek
+            onPlayerAction(HlsPlayerAction.Play)
+            seekDisplayHandler.removeCallbacks(seekDisplayRunnable)
+            if (fastForwardRewindCounterSeconds == 0) {
+                seekIndicatorDirection = 0
+                seekAmountSeconds = 0L
+                isSeeking = false
             }
-            state.lastTapTime = currentTime
-            state.lastTapX = tapX
+            fastForwardRewindCounterSeconds = 0
         }
     }
+
+    /** Initiates the 2x speed-up on a long press gesture. */
+    internal fun handleLongPressStart(currentSpeed: Float) {
+        isSpeedingUpWithLongPress = true
+        speedUpIndicatorText = "2x speed"
+        previousPlaybackSpeed = currentSpeed
+        onPlayerAction(HlsPlayerAction.SetPlaybackSpeed(2f))
+    }
+
+    /** Reverts the playback speed when the long press is released. */
+    internal fun handleLongPressEnd() {
+        if (isSpeedingUpWithLongPress) {
+            isSpeedingUpWithLongPress = false
+            speedUpIndicatorText = ""
+            onPlayerAction(HlsPlayerAction.SetPlaybackSpeed(previousPlaybackSpeed))
+        }
+    }
+
+    // endregion
+
+    // region Private Helper Functions
+    private fun getSubtitlesCacheDir(): File {
+        return File(context.cacheDir, "subtitles").also { it.mkdirs() }
+    }
+
+    private fun getSubtitleFile(url: String): File {
+        val fileName = "${url.toSha256()}.vtt"
+        return File(getSubtitlesCacheDir(), fileName)
+    }
+    // endregion
 }

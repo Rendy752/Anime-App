@@ -13,6 +13,8 @@ import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.PictureInPictureAlt
 import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.Subtitles
+import androidx.compose.material.icons.filled.Sync
+
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -26,6 +28,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.Track
 import com.luminoverse.animevibe.utils.basicContainer
+import java.util.Locale
 
 @Composable
 fun SettingsContent(
@@ -37,6 +40,8 @@ fun SettingsContent(
     isSubtitleAvailable: Boolean,
     selectedSubtitle: Track?,
     onSubtitleClick: () -> Unit,
+    subtitleOffsetMs: Long,
+    onAdjustSyncSubtitleClick: () -> Unit
 ) {
     LazyColumn(modifier = Modifier.fillMaxWidth()) {
         item {
@@ -57,7 +62,7 @@ fun SettingsContent(
             SettingsContentItem(
                 icon = Icons.Default.Speed,
                 name = "Playback Speed",
-                selectedValue = "${selectedPlaybackSpeed}x",
+                value = "${selectedPlaybackSpeed}x",
                 onItemClick = { onPlaybackSpeedClick(); onDismiss() }
             )
         }
@@ -65,11 +70,25 @@ fun SettingsContent(
             SettingsContentItem(
                 icon = Icons.Default.Subtitles,
                 name = "Subtitles",
-                selectedValue = if (isSubtitleAvailable) selectedSubtitle?.label
+                value = if (isSubtitleAvailable) selectedSubtitle?.label
                     ?: "None" else "Unavailable",
                 isClickable = isSubtitleAvailable,
                 onItemClick = if (isSubtitleAvailable) {
                     { onSubtitleClick(); onDismiss() }
+                } else null
+            )
+        }
+
+        item {
+            SettingsContentItem(
+                icon = Icons.Default.Sync,
+                name = "Adjust Subtitle Sync",
+                value = if (subtitleOffsetMs != 0L) {
+                    String.format(Locale.US, "%.1fs", subtitleOffsetMs / 1000.0)
+                } else null,
+                isClickable = isSubtitleAvailable,
+                onItemClick = if (isSubtitleAvailable) {
+                    { onAdjustSyncSubtitleClick(); onDismiss() }
                 } else null
             )
         }
@@ -80,7 +99,7 @@ fun SettingsContent(
 private fun SettingsContentItem(
     icon: ImageVector,
     name: String,
-    selectedValue: String? = null,
+    value: String? = null,
     isClickable: Boolean = true,
     onItemClick: (() -> Unit)?
 ) {
@@ -119,7 +138,7 @@ private fun SettingsContentItem(
             )
         }
 
-        selectedValue?.let {
+        value?.let {
             Row(
                 modifier = Modifier
                     .weight(1f)

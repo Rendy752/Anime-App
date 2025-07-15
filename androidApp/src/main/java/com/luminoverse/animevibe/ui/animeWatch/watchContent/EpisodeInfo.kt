@@ -23,13 +23,11 @@ import com.luminoverse.animevibe.utils.watch.WatchUtils.getServerCategoryIcon
 @Composable
 fun EpisodeInfo(
     title: String?,
-    episode: Episode,
+    currentEpisode: Episode,
     episodeSourcesQuery: EpisodeSourcesQuery?
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp, start = 8.dp, end = 8.dp),
+        modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -38,7 +36,7 @@ fun EpisodeInfo(
             horizontalArrangement = Arrangement.Center
         ) {
             if (title != null) Text(
-                text = if (episode.title != "Full") episode.title else title,
+                text = if (currentEpisode.title != "Full") currentEpisode.title else title,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
                 fontWeight = FontWeight.Bold,
@@ -54,7 +52,7 @@ fun EpisodeInfo(
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
-                text = "Eps. ${episode.episode_no}",
+                text = "Eps. ${currentEpisode.episode_no}",
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurface
             )
@@ -71,9 +69,7 @@ fun EpisodeInfo(
 @Composable
 fun EpisodeInfoSkeleton() {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp, start = 8.dp, end = 8.dp),
+        modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {

@@ -57,4 +57,14 @@ object ShareUtils {
             context.startActivity(shareIntent)
         }
     }
+
+    fun shareText(context: Context, shareText: String) {
+        val sendIntent: Intent = Intent().apply {
+            action = Intent.ACTION_SEND
+            putExtra(Intent.EXTRA_TEXT, shareText)
+            type = "text/plain"
+        }
+        val shareIntent = Intent.createChooser(sendIntent, "Share Episode")
+        context.startActivity(shareIntent)
+    }
 }

@@ -40,14 +40,13 @@ fun EpisodeHistoryScreen(
 
     LaunchedEffect(currentRoute) {
         if (currentRoute == NavRoute.History.route) {
-            onAction(EpisodeHistoryAction.FetchAllHistory)
+            onAction(EpisodeHistoryAction.CheckIfHistoryIsEmpty)
             onAction(EpisodeHistoryAction.FetchHistory)
         }
     }
 
-    LaunchedEffect(mainState.networkStatus.isConnected, historyState.episodeHistoryResults) {
-        if (mainState.networkStatus.isConnected && historyState.episodeHistoryResults is Resource.Error) {
-            onAction(EpisodeHistoryAction.FetchAllHistory)
+    LaunchedEffect(mainState.networkStatus.isConnected, historyState.paginatedHistory) {
+        if (mainState.networkStatus.isConnected && historyState.paginatedHistory is Resource.Error) {
             onAction(EpisodeHistoryAction.FetchHistory)
         }
     }
@@ -55,7 +54,7 @@ fun EpisodeHistoryScreen(
     PullToRefreshBox(
         modifier = Modifier.padding(top = rememberedTopPadding + 8.dp),
         isRefreshing = historyState.isRefreshing,
-        onRefresh = { onAction(EpisodeHistoryAction.ApplyFilters(historyState.queryState)) },
+        onRefresh = { onAction(EpisodeHistoryAction.FetchHistory) },
         state = pullToRefreshState,
         indicator = {
             PullToRefreshDefaults.Indicator(
@@ -81,12 +80,12 @@ fun EpisodeHistoryScreen(
                 ) {
                     FilterContent(
                         modifier = Modifier.weight(1f),
-                        isfilteredEpisodeHistoryResultsEmpty = historyState.filteredEpisodeHistoryResults.data?.isEmpty() == true,
+                        isResultEmpty = (historyState.paginatedHistory as? Resource.Success)?.data.isNullOrEmpty(),
                         queryState = historyState.queryState,
                         onAction = onAction
                     )
                     LimitAndPaginationSection(
-                        isVisible = historyState.episodeHistoryResults is Resource.Success,
+                        isVisible = historyState.paginatedHistory is Resource.Success,
                         pagination = historyState.pagination,
                         query = LimitAndPaginationQueryState(
                             page = historyState.queryState.page,
@@ -135,7 +134,7 @@ fun EpisodeHistoryScreen(
             ) {
                 FilterContent(
                     queryState = historyState.queryState,
-                    isfilteredEpisodeHistoryResultsEmpty = historyState.filteredEpisodeHistoryResults.data?.isEmpty() == true,
+                    isResultEmpty = (historyState.paginatedHistory as? Resource.Success)?.data.isNullOrEmpty(),
                     onAction = onAction
                 )
                 HistoryContent(
@@ -152,7 +151,7 @@ fun EpisodeHistoryScreen(
                     onAction = onAction
                 )
                 LimitAndPaginationSection(
-                    isVisible = historyState.episodeHistoryResults is Resource.Success,
+                    isVisible = historyState.paginatedHistory is Resource.Success,
                     pagination = historyState.pagination,
                     query = LimitAndPaginationQueryState(
                         page = historyState.queryState.page,

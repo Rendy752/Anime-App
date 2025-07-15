@@ -1,11 +1,12 @@
 package com.luminoverse.animevibe.ui.main
 
+import android.app.NotificationManager
+import android.content.Context
 import android.content.Intent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -23,7 +24,7 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -48,17 +49,13 @@ import com.luminoverse.animevibe.ui.main.navigation.getBottomBarEnterTransition
 import com.luminoverse.animevibe.ui.main.navigation.getBottomBarExitTransition
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.main.navigation.navigateTo
-import com.luminoverse.animevibe.ui.main.navigation.navigateToAdjacentRoute
 import com.luminoverse.animevibe.ui.settings.SettingsScreen
 import com.luminoverse.animevibe.ui.settings.SettingsViewModel
 import com.luminoverse.animevibe.utils.basicContainer
 import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.receiveAsFlow
-import kotlinx.coroutines.launch
-import kotlin.math.abs
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,11 +66,11 @@ fun MainScreen(
     intentChannel: Channel<Intent>,
     resetIdleTimer: () -> Unit,
     mainState: MainState,
+    playerState: PlayerState?,
     mainAction: (MainAction) -> Unit,
     hlsPlayerUtils: HlsPlayerUtils
 ) {
-    val coroutineScope = rememberCoroutineScope()
-    var isNavigating by remember { mutableStateOf(false) }
+    val context = LocalContext.current
     val layoutDirection = LocalLayoutDirection.current
 
     val isCurrentBottomScreen by remember(currentRoute) {
@@ -92,7 +89,7 @@ fun MainScreen(
         rememberedBottomPadding = currentBottomPadding
     }
 
-    LaunchedEffect(currentRoute, mainState.playerState?.displayMode) {
+    LaunchedEffect(currentRoute, playerState?.displayMode) {
         resetIdleTimer()
         mainAction(MainAction.DismissSnackbar)
     }
@@ -101,6 +98,12 @@ fun MainScreen(
         intentChannel.receiveAsFlow()
             .distinctUntilChanged { old, new -> old.data == new.data && old.action == new.action }
             .collect { intent ->
+                val notificationId = intent.getIntExtra("notification_id", -1)
+                if (notificationId != -1) {
+                    val notificationManager =
+                        context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                    notificationManager.cancel(notificationId)
+                }
                 if (intent.action != Intent.ACTION_VIEW || intent.data == null) return@collect
                 intent.data?.let { uri ->
                     if (uri.scheme == "animevibe" && uri.host == "anime") {
@@ -122,15 +125,17 @@ fun MainScreen(
                                 }
                             }
 
-                            segments.size >= 3 && segments[0] == "watch" -> {
-                                val malId = segments[1].toIntOrNull()
-                                val episodeId = segments[2]
-                                if (malId != null && episodeId.isNotEmpty()) {
+                            segments.isNotEmpty() && segments[0] == "watch" -> {
+                                val malId = segments.getOrNull(1)?.toIntOrNull()
+                                val episodeId = segments.getOrNull(2)?.takeIf { it.lowercase() != "null" }
+                                val position = segments.getOrNull(3)?.toLongOrNull()
+
+                                if (malId != null) {
                                     navController.popBackStack(
                                         navController.graph.startDestinationId,
                                         inclusive = false
                                     )
-                                    mainAction.invoke(MainAction.PlayEpisode(malId, episodeId))
+                                    mainAction.invoke(MainAction.PlayEpisode(malId, episodeId, position))
                                 } else {
                                     mainAction(
                                         MainAction.ShowSnackbar(
@@ -161,25 +166,11 @@ fun MainScreen(
 
     Box {
         Box(
-            modifier = Modifier
-                .padding(
-                    start = contentPadding.calculateStartPadding(layoutDirection),
-                    end = contentPadding.calculateEndPadding(layoutDirection),
-                    bottom = if (isCurrentBottomScreen || !mainState.isLandscape) rememberedBottomPadding else 0.dp
-                )
-                .pointerInput(Unit) {
-                    detectHorizontalDragGestures { _, dragAmount ->
-                        if (abs(dragAmount) > 100f && !isNavigating) {
-                            isNavigating = true
-                            coroutineScope.launch(Dispatchers.Main) {
-                                val isNextLogical =
-                                    if (mainState.isRtl) dragAmount > 0 else dragAmount < 0
-                                navigateToAdjacentRoute(isNextLogical, currentRoute, navController)
-                                isNavigating = false
-                            }
-                        }
-                    }
-                }
+            modifier = Modifier.padding(
+                start = contentPadding.calculateStartPadding(layoutDirection),
+                end = contentPadding.calculateEndPadding(layoutDirection),
+                bottom = if (isCurrentBottomScreen || !mainState.isLandscape) rememberedBottomPadding else 0.dp
+            )
         ) {
             Column {
                 NavHost(
@@ -187,32 +178,16 @@ fun MainScreen(
                     navController = navController,
                     startDestination = NavRoute.Home.route,
                     enterTransition = {
-                        getBottomBarEnterTransition(
-                            initialState,
-                            targetState,
-                            mainState.isRtl
-                        )
+                        getBottomBarEnterTransition(initialState, targetState)
                     },
                     exitTransition = {
-                        getBottomBarExitTransition(
-                            initialState,
-                            targetState,
-                            mainState.isRtl
-                        )
+                        getBottomBarExitTransition(initialState, targetState)
                     },
                     popEnterTransition = {
-                        getBottomBarEnterTransition(
-                            initialState,
-                            targetState,
-                            mainState.isRtl
-                        )
+                        getBottomBarEnterTransition(initialState, targetState)
                     },
                     popExitTransition = {
-                        getBottomBarExitTransition(
-                            initialState,
-                            targetState,
-                            mainState.isRtl
-                        )
+                        getBottomBarExitTransition(initialState, targetState)
                     }
                 ) {
                     composable(NavRoute.Home.route) {
@@ -226,8 +201,8 @@ fun MainScreen(
                             remainingTimes = remainingTimes,
                             onAction = viewModel::onAction,
                             mainState = mainState,
-                            currentRoute = currentRoute,
                             navController = navController,
+                            isVideoPlayerVisible = playerState != null,
                             playEpisode = { malId, episodeId ->
                                 mainAction.invoke(MainAction.PlayEpisode(malId, episodeId))
                             },
@@ -391,19 +366,26 @@ fun MainScreen(
             }
         }
 
-        mainState.playerState?.let { playerState ->
-            PlayerHost(
-                playerState = playerState,
-                mainState = mainState,
-                onAction = mainAction,
-                hlsPlayerUtils = hlsPlayerUtils,
-                isCurrentBottomScreen = isCurrentBottomScreen,
-                rememberedTopPadding = rememberedTopPadding,
-                rememberedBottomPadding = rememberedBottomPadding,
-                startPadding = contentPadding.calculateStartPadding(layoutDirection),
-                endPadding = contentPadding.calculateEndPadding(layoutDirection),
-                navController = navController
-            )
+        AnimatedVisibility(
+            modifier = Modifier.fillMaxWidth(),
+            visible = playerState != null,
+            enter = slideInVertically { it },
+            exit = slideOutVertically { it }
+        ) {
+            playerState?.let { playerState ->
+                PlayerHost(
+                    playerState = playerState,
+                    mainState = mainState,
+                    onAction = mainAction,
+                    hlsPlayerUtils = hlsPlayerUtils,
+                    isCurrentBottomScreen = isCurrentBottomScreen,
+                    rememberedTopPadding = rememberedTopPadding,
+                    rememberedBottomPadding = rememberedBottomPadding,
+                    startPadding = contentPadding.calculateStartPadding(layoutDirection),
+                    endPadding = contentPadding.calculateEndPadding(layoutDirection),
+                    navController = navController
+                )
+            }
         }
     }
 }

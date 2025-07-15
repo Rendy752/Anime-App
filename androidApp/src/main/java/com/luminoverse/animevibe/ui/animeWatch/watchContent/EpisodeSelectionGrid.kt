@@ -23,6 +23,7 @@ import com.luminoverse.animevibe.models.EpisodeSourcesQuery
 import com.luminoverse.animevibe.utils.Debounce
 import com.luminoverse.animevibe.utils.resource.Resource
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlin.math.abs
 
 @Composable
 fun EpisodeSelectionGrid(
@@ -32,7 +33,6 @@ fun EpisodeSelectionGrid(
     newEpisodeIdList: List<String>,
     episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
     onLoadEpisodeDetailComplement: (String) -> Unit,
-    episodeDetailComplement: EpisodeDetailComplement?,
     episodeSourcesQuery: EpisodeSourcesQuery?,
     gridState: LazyGridState,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
@@ -40,25 +40,22 @@ fun EpisodeSelectionGrid(
     val (selectedEpisodeId, setSelectedEpisodeId) = remember { mutableStateOf<String?>(null) }
     val coroutineScope = rememberCoroutineScope()
 
-    LaunchedEffect(episodeDetailComplement, episodes, newEpisodeIdList) {
-        val targetEpisodeId = episodeDetailComplement?.id
-        val targetEpisodeNo = episodeDetailComplement?.number
-
+    LaunchedEffect(episodeSourcesQuery, episodes, newEpisodeIdList) {
+        val targetEpisodeId = episodeSourcesQuery?.id
         if (targetEpisodeId != null) {
             setSelectedEpisodeId(targetEpisodeId)
-        }
 
-        if (targetEpisodeNo != null) {
             val targetIndex = if (newEpisodeIdList.isNotEmpty() && episodes.isNotEmpty()) {
                 episodes.indexOfFirst { it.id == newEpisodeIdList.last() }.coerceAtLeast(0)
             } else {
-                episodes.indexOfFirst { it.episode_no == targetEpisodeNo }
+                episodes.indexOfFirst { it.id == targetEpisodeId }
             }
+
             if (targetIndex != -1) {
                 val currentFirstVisibleIndex = gridState.firstVisibleItemIndex
                 val scrollThreshold = 50
 
-                if (kotlin.math.abs(targetIndex - currentFirstVisibleIndex) > scrollThreshold) {
+                if (abs(targetIndex - currentFirstVisibleIndex) > scrollThreshold) {
                     gridState.scrollToItem(targetIndex)
                 } else {
                     gridState.animateScrollToItem(targetIndex)
@@ -70,14 +67,9 @@ fun EpisodeSelectionGrid(
 
     val episodeSelectionDebounce = remember(coroutineScope) {
         Debounce(coroutineScope) { episodeId ->
-            handleSelectedEpisodeServer(
-                episodeSourcesQuery?.copy(id = episodeId)
-                    ?: EpisodeSourcesQuery.create(
-                        id = episodeId,
-                        rawServer = "vidsrc",
-                        category = "sub"
-                    )
-            )
+            episodeSourcesQuery?.let {
+                handleSelectedEpisodeServer(it.copy(id = episodeId))
+            }
         }
     }
 
@@ -119,7 +111,7 @@ fun EpisodeSelectionGrid(
 
             WatchEpisodeItem(
                 imageUrl = imageUrl,
-                currentEpisode = episodeDetailComplement,
+                isCurrentEpisode = episode.id == selectedEpisodeId,
                 episode = episode,
                 isHighlighted = episode.episode_no == episodeJumpNumber,
                 isNew = episode.id in newEpisodeIdList,

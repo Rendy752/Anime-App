@@ -1,5 +1,6 @@
 package com.luminoverse.animevibe.ui.animeWatch.watchContent
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -8,7 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.luminoverse.animevibe.models.AnimeDetail
-import com.luminoverse.animevibe.models.Episode
+import com.luminoverse.animevibe.models.AnimeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.models.EpisodeSourcesQuery
 import com.luminoverse.animevibe.models.NetworkStatus
@@ -16,46 +17,59 @@ import com.luminoverse.animevibe.utils.resource.Resource
 
 @Composable
 fun WatchContentSection(
-    animeDetail: AnimeDetail?,
+    animeDetail: Resource<AnimeDetail>,
+    animeDetailComplement: Resource<AnimeDetailComplement>,
     networkStatus: NetworkStatus,
     onFavoriteToggle: (Boolean) -> Unit,
     episodeDetailComplements: Map<String, Resource<EpisodeDetailComplement>>,
     onLoadEpisodeDetailComplement: (String) -> Unit,
-    episodeDetailComplement: EpisodeDetailComplement?,
-    episodes: List<Episode>,
+    episodeDetailComplement: Resource<EpisodeDetailComplement>,
     newEpisodeIdList: List<String>,
     episodeSourcesQuery: EpisodeSourcesQuery?,
     episodeJumpNumber: Int?,
     setEpisodeJumpNumber: (Int) -> Unit,
     serverScrollState: ScrollState,
-    handleSelectedEpisodeServer: (EpisodeSourcesQuery) -> Unit,
+    isError: Boolean,
+    handleSelectedEpisodeServer: (EpisodeSourcesQuery, Boolean) -> Unit,
 ) {
     Column(
         modifier = Modifier.padding(top = 8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         WatchHeader(
-            title = animeDetail?.title,
+            title = animeDetail.data?.title,
             networkStatus = networkStatus,
             onFavoriteToggle = onFavoriteToggle,
-            episode = episodes.find { it.id == episodeDetailComplement?.id },
+            animeDetailComplement = animeDetailComplement,
             episodeDetailComplement = episodeDetailComplement,
             episodeSourcesQuery = episodeSourcesQuery,
             serverScrollState = serverScrollState,
-            onServerSelected = { handleSelectedEpisodeServer(it) }
+            isError = isError,
+            isRefreshing = episodeDetailComplement is Resource.Loading || animeDetail is Resource.Loading || animeDetailComplement is Resource.Loading,
+            onRefresh = {
+                episodeSourcesQuery?.let {
+                    handleSelectedEpisodeServer(it, true)
+                }
+            },
+            onServerSelected = { episodeSourcesQuery ->
+                handleSelectedEpisodeServer(episodeSourcesQuery, false)
+            }
         )
 
-        WatchEpisode(
-            imageUrl = animeDetail?.images?.webp?.large_image_url,
-            episodeDetailComplements = episodeDetailComplements,
-            onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,
-            episodeDetailComplement = episodeDetailComplement,
-            episodes = episodes,
-            newEpisodeIdList = newEpisodeIdList,
-            episodeSourcesQuery = episodeSourcesQuery,
-            episodeJumpNumber = episodeJumpNumber,
-            setEpisodeJumpNumber = setEpisodeJumpNumber,
-            handleSelectedEpisodeServer = handleSelectedEpisodeServer
-        )
+        AnimatedVisibility(visible = episodeDetailComplement !is Resource.Error || animeDetailComplement !is Resource.Error) {
+            WatchEpisode(
+                imageUrl = animeDetail.data?.images?.webp?.large_image_url,
+                episodeDetailComplements = episodeDetailComplements,
+                onLoadEpisodeDetailComplement = onLoadEpisodeDetailComplement,
+                animeDetailComplement = animeDetailComplement,
+                newEpisodeIdList = newEpisodeIdList,
+                episodeSourcesQuery = episodeSourcesQuery,
+                episodeJumpNumber = episodeJumpNumber,
+                setEpisodeJumpNumber = setEpisodeJumpNumber,
+                handleSelectedEpisodeServer = { episodeSourcesQuery ->
+                    handleSelectedEpisodeServer(episodeSourcesQuery, false)
+                }
+            )
+        }
     }
 }

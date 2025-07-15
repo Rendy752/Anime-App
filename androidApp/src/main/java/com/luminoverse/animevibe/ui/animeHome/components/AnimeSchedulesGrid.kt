@@ -17,7 +17,7 @@ import com.luminoverse.animevibe.ui.common.AnimeScheduleItemSkeleton
 fun AnimeSchedulesGrid(
     animeSchedules: List<AnimeDetail>,
     remainingTimes: Map<String, String>,
-    onItemClick: (AnimeDetail) -> Unit,
+    onItemClick: (malId: Int) -> Unit,
     gridState: LazyGridState
 ) {
     LazyVerticalGrid(
@@ -31,7 +31,7 @@ fun AnimeSchedulesGrid(
             AnimeScheduleItem(
                 animeDetail = animeDetail,
                 remainingTime = remainingTimes[animeDetail.mal_id.toString()] ?: "",
-                onItemClick = onItemClick
+                onItemClick = { onItemClick(animeDetail.mal_id) }
             )
         }
     }

@@ -3,10 +3,9 @@ package com.luminoverse.animevibe.episodeHistory
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
 import com.luminoverse.animevibe.models.*
 import com.luminoverse.animevibe.repository.AnimeEpisodeDetailRepository
+import com.luminoverse.animevibe.repository.EpisodeHistoryResult
 import com.luminoverse.animevibe.ui.episodeHistory.EpisodeHistoryAction
 import com.luminoverse.animevibe.ui.episodeHistory.EpisodeHistoryViewModel
-import com.luminoverse.animevibe.utils.watch.AnimeTitleFinder
-import com.luminoverse.animevibe.utils.ComplementUtils
 import com.luminoverse.animevibe.utils.resource.Resource
 import io.mockk.*
 import kotlinx.coroutines.Dispatchers
@@ -28,574 +27,208 @@ class EpisodeHistoryViewModelTest {
     private lateinit var repository: AnimeEpisodeDetailRepository
     private lateinit var testDispatcher: TestDispatcher
 
-    private val mockAnimeDetailComplement = AnimeDetailComplement(
-        id = "aniwatch1",
-        malId = 1,
-        lastEpisodeWatchedId = "lorem-ipsum-123?ep=123",
-        episodes = listOf(
-            Episode(
-                id = "lorem-ipsum-123?ep=123",
-                episode_no = 1,
-                title = "Episode 1",
-                japanese_title = "Episode 1",
-                filler = false
-            )
-        ),
-        isFavorite = false
-    )
-
-    private val mockAnimeDetailComplement2 = mockAnimeDetailComplement.copy(
-        id = "aniwatch2",
-        malId = 2,
-        lastEpisodeWatchedId = "lorem-ipsum-124?ep=124"
-    )
-
-    private val mockEpisodeDetailComplement = EpisodeDetailComplement(
-        id = "lorem-ipsum-123?ep=123",
+    private val mockAnimeComplement = AnimeDetailComplement("aniwatch1", 1)
+    private val mockEpisodeComplement = EpisodeDetailComplement(
+        id = "ep1",
         malId = 1,
         aniwatchId = "aniwatch1",
-        animeTitle = "Naruto: Shippuuden",
+        animeTitle = "Anime 1",
         episodeTitle = "Episode 1",
-        imageUrl = "test_image_url",
+        imageUrl = "url",
         number = 1,
         isFiller = false,
-        servers = listOf(episodeServerPlaceholder),
+        servers = emptyList(),
         sources = episodeSourcesPlaceholder,
-        sourcesQuery = episodeSourcesQueryPlaceholder,
-        isFavorite = false,
-        lastWatched = "2025-05-12T23:54:02.306274",
-        lastTimestamp = 600,
-        updatedAt = 1620950042
+        sourcesQuery = episodeSourcesQueryPlaceholder
     )
-
-    private val mockEpisodeDetailComplement2 = mockEpisodeDetailComplement.copy(
-        id = "lorem-ipsum-124?ep=124",
-        malId = 2,
-        aniwatchId = "aniwatch2",
-        episodeTitle = "Episode 2",
-        number = 2,
-        isFavorite = true,
-        lastWatched = "2025-05-11T23:54:02.306274",
-        lastTimestamp = 700
+    private val mockHistoryResult = EpisodeHistoryResult(
+        data = mapOf(mockAnimeComplement to listOf(mockEpisodeComplement)),
+        pagination = CompletePagination(1, false, 1, Items(1, 1, 10))
     )
 
     @Before
     fun setUp() {
         testDispatcher = StandardTestDispatcher()
         Dispatchers.setMain(testDispatcher)
-        repository = mockk()
-        mockkObject(ComplementUtils)
-        mockkObject(AnimeTitleFinder)
+        repository = mockk(relaxed = true)
+        viewModel = EpisodeHistoryViewModel(repository)
     }
 
     @After
     fun tearDown() {
         Dispatchers.resetMain()
-        unmockkObject(ComplementUtils)
-        unmockkObject(AnimeTitleFinder)
         clearAllMocks()
     }
 
     @Test
-    fun `FetchHistory updates state with grouped episodes and pagination`() = runTest {
-        coEvery { repository.getAllEpisodeHistory(any()) } returns Resource.Success(
-            listOf(mockEpisodeDetailComplement)
+    fun `FetchHistory action successfully updates state with paginated data`() = runTest {
+        coEvery { repository.getPaginatedAndFilteredHistory(any()) } returns Resource.Success(
+            mockHistoryResult
         )
-        coEvery {
-            ComplementUtils.getOrCreateAnimeDetailComplement(repository = repository, malId = 1)
-        } returns mockAnimeDetailComplement
-
         viewModel = EpisodeHistoryViewModel(repository)
+
         viewModel.onAction(EpisodeHistoryAction.FetchHistory)
         advanceUntilIdle()
 
         with(viewModel.historyState.value) {
-            assertTrue(filteredEpisodeHistoryResults is Resource.Success)
-            assertTrue(episodeHistoryResults is Resource.Success)
-            val filteredResults = (filteredEpisodeHistoryResults as Resource.Success).data
-            val episodeResults = (episodeHistoryResults as Resource.Success).data
-            assertTrue(filteredResults.containsKey(mockAnimeDetailComplement))
-            assertEquals(listOf(mockEpisodeDetailComplement), filteredResults[mockAnimeDetailComplement])
-            assertEquals(listOf(mockEpisodeDetailComplement), episodeResults)
-            assertEquals(1, pagination.items.total)
-            assertEquals(1, pagination.items.count)
-            assertEquals(1, pagination.last_visible_page)
-            assertFalse(pagination.has_next_page)
+            assertTrue(paginatedHistory is Resource.Success)
+            val successData = (paginatedHistory as Resource.Success).data
+            assertEquals(mockHistoryResult.data, successData)
+            assertEquals(mockHistoryResult.pagination, pagination)
             assertFalse(isRefreshing)
         }
-        coVerify(exactly = 1) { repository.getAllEpisodeHistory(any()) }
+        coVerify(exactly = 1) { repository.getPaginatedAndFilteredHistory(any()) }
     }
 
     @Test
-    fun `FetchHistory with search query filters episodes using AnimeTitleFinder`() = runTest {
-        val queryState = EpisodeHistoryQueryState(searchQuery = "Naruto", page = 1, limit = 10)
-        val allEpisodes = listOf(mockEpisodeDetailComplement, mockEpisodeDetailComplement2)
-
-        coEvery { repository.getAllEpisodeHistory(any()) } returns Resource.Success(allEpisodes)
-
-        coEvery {
-            AnimeTitleFinder.searchTitle<EpisodeDetailComplement>("Naruto", any(), any())
-        } returns listOf(mockEpisodeDetailComplement)
-        coEvery {
-            ComplementUtils.getOrCreateAnimeDetailComplement(repository = repository, malId = 1)
-        } returns mockAnimeDetailComplement
-
+    fun `FetchHistory action with error updates state correctly`() = runTest {
+        coEvery { repository.getPaginatedAndFilteredHistory(any()) } returns Resource.Error("Database Error")
         viewModel = EpisodeHistoryViewModel(repository)
 
-        viewModel.onAction(EpisodeHistoryAction.FetchAllHistory)
-        advanceUntilIdle()
-
-        viewModel.onAction(EpisodeHistoryAction.ApplyFilters(queryState))
-        advanceUntilIdle()
-
-        with(viewModel.historyState.value) {
-            assertTrue(filteredEpisodeHistoryResults is Resource.Success)
-            val filteredData = (filteredEpisodeHistoryResults as Resource.Success).data
-            assertTrue(episodeHistoryResults is Resource.Success)
-            val allData = (episodeHistoryResults as Resource.Success).data
-
-            assertEquals(allEpisodes, allData)
-            assertEquals(1, filteredData.size)
-            assertTrue(filteredData.containsKey(mockAnimeDetailComplement))
-            assertEquals(listOf(mockEpisodeDetailComplement), filteredData[mockAnimeDetailComplement])
-            assertEquals(1, pagination.items.total)
-            assertEquals(1, pagination.items.count)
-            assertEquals(queryState.copy(page = pagination.current_page), this.queryState)
-        }
-        coVerify(exactly = 2) { repository.getAllEpisodeHistory(any()) }
-        coVerify(exactly = 1) { AnimeTitleFinder.searchTitle<EpisodeDetailComplement>("Naruto", any(), any()) }
-    }
-
-    @Test
-    fun `FetchHistory with isFavorite filter returns only favorite episodes`() = runTest {
-        val queryState = EpisodeHistoryQueryState(isFavorite = true, page = 1, limit = 10)
-        val allEpisodes = listOf(mockEpisodeDetailComplement, mockEpisodeDetailComplement2)
-
-        coEvery { repository.getAllEpisodeHistory(any()) } returns Resource.Success(allEpisodes)
-        coEvery {
-            ComplementUtils.getOrCreateAnimeDetailComplement(repository = repository, malId = 2)
-        } returns mockAnimeDetailComplement2
-
-        viewModel = EpisodeHistoryViewModel(repository)
-
-        viewModel.onAction(EpisodeHistoryAction.FetchAllHistory)
-        advanceUntilIdle()
-
-        viewModel.onAction(EpisodeHistoryAction.ApplyFilters(queryState))
-        advanceUntilIdle()
-
-        with(viewModel.historyState.value) {
-            assertTrue(filteredEpisodeHistoryResults is Resource.Success)
-            val filteredData = (filteredEpisodeHistoryResults as Resource.Success).data
-            assertTrue(episodeHistoryResults is Resource.Success)
-            val allData = (episodeHistoryResults as Resource.Success).data
-
-            assertEquals(allEpisodes, allData)
-            assertEquals(1, filteredData.size)
-            assertTrue(filteredData.containsKey(mockAnimeDetailComplement2))
-            assertEquals(listOf(mockEpisodeDetailComplement2), filteredData[mockAnimeDetailComplement2])
-            assertEquals(1, pagination.items.total)
-            assertEquals(1, pagination.items.count)
-            assertEquals(queryState.copy(page = pagination.current_page), this.queryState)
-        }
-        coVerify(exactly = 2) { repository.getAllEpisodeHistory(any()) }
-        coVerify(exactly = 0) { AnimeTitleFinder.searchTitle<EpisodeDetailComplement>(any(), any(), any()) }
-    }
-
-    @Test
-    fun `FetchHistory with error updates state with error`() = runTest {
-        coEvery { repository.getAllEpisodeHistory(any()) } returns Resource.Error("Database error")
-
-        viewModel = EpisodeHistoryViewModel(repository)
         viewModel.onAction(EpisodeHistoryAction.FetchHistory)
         advanceUntilIdle()
 
         with(viewModel.historyState.value) {
-            assertTrue(filteredEpisodeHistoryResults is Resource.Error)
-            assertTrue(episodeHistoryResults is Resource.Error)
-            assertEquals("Database error", (filteredEpisodeHistoryResults as Resource.Error).message)
-            assertEquals("Database error", (episodeHistoryResults as Resource.Error).message)
-            assertEquals(defaultCompletePagination, pagination)
+            assertTrue(paginatedHistory is Resource.Error)
+            assertEquals("Database Error", (paginatedHistory as Resource.Error).message)
             assertFalse(isRefreshing)
         }
-        coVerify(exactly = 1) { repository.getAllEpisodeHistory(any()) }
     }
 
     @Test
-    fun `ApplyFilters updates queryState and triggers FetchHistory`() = runTest {
-        val queryState = EpisodeHistoryQueryState(searchQuery = "Boruto", isFavorite = true, page = 1, limit = 10)
-        val allEpisodes = listOf(mockEpisodeDetailComplement, mockEpisodeDetailComplement2)
+    fun `ApplyFilters action updates query state and refetches history when history is not empty`() = runTest {
+        val newQuery = EpisodeHistoryQueryState(searchQuery = "Test")
+        coEvery { repository.getAllEpisodeHistory(any()) } returns Resource.Success(listOf(mockEpisodeComplement))
+        coEvery { repository.getPaginatedAndFilteredHistory(any()) } returns Resource.Success(mockHistoryResult)
 
-        coEvery { repository.getAllEpisodeHistory(any()) } returns Resource.Success(allEpisodes)
-        coEvery {
-            AnimeTitleFinder.searchTitle<EpisodeDetailComplement>("Boruto", listOf(mockEpisodeDetailComplement2), any())
-        } returns listOf(mockEpisodeDetailComplement2)
-        coEvery {
-            ComplementUtils.getOrCreateAnimeDetailComplement(repository = repository, malId = 2)
-        } returns mockAnimeDetailComplement2
-
-        viewModel = EpisodeHistoryViewModel(repository)
-
-        viewModel.onAction(EpisodeHistoryAction.FetchAllHistory)
+        viewModel.onAction(EpisodeHistoryAction.CheckIfHistoryIsEmpty)
         advanceUntilIdle()
-
-        viewModel.onAction(EpisodeHistoryAction.ApplyFilters(queryState))
+        viewModel.onAction(EpisodeHistoryAction.ApplyFilters(newQuery))
         advanceUntilIdle()
 
         with(viewModel.historyState.value) {
-            assertEquals(queryState.copy(page = pagination.current_page), this.queryState)
-            assertTrue(filteredEpisodeHistoryResults is Resource.Success)
-            val filteredData = (filteredEpisodeHistoryResults as Resource.Success).data
-            assertTrue(episodeHistoryResults is Resource.Success)
-            val allData = (episodeHistoryResults as Resource.Success).data
-
-            assertEquals(allEpisodes, allData)
-            assertEquals(1, filteredData.size)
-            assertTrue(filteredData.containsKey(mockAnimeDetailComplement2))
-            assertEquals(listOf(mockEpisodeDetailComplement2), filteredData[mockAnimeDetailComplement2])
-            assertEquals(1, pagination.items.total)
-            assertEquals(1, pagination.items.count)
+            assertEquals(newQuery.copy(page = 1), queryState)
         }
-        coVerify(exactly = 2) { repository.getAllEpisodeHistory(any()) }
-        coVerify(exactly = 1) { AnimeTitleFinder.searchTitle<EpisodeDetailComplement>("Boruto", any(), any()) }
+        coVerify(exactly = 1) {
+            repository.getPaginatedAndFilteredHistory(withArg {
+                assertEquals("Test", it.searchQuery)
+            })
+        }
     }
 
     @Test
-    fun `ChangePage updates page and fetches correct episodes`() = runTest {
-        val episodes = List(15) { i ->
-            mockEpisodeDetailComplement.copy(
-                id = "ep_$i",
-                malId = 1,
-                episodeTitle = "Episode ${i + 1}",
-                number = i + 1,
-                lastWatched = "2025-05-12T23:54:02.306274",
-                lastTimestamp = 600L - i
-            )
-        }
-        coEvery { repository.getAllEpisodeHistory(any()) } returns Resource.Success(episodes)
-        coEvery {
-            ComplementUtils.getOrCreateAnimeDetailComplement(repository = repository, malId = 1)
-        } returns mockAnimeDetailComplement
+    fun `ChangePage action updates query state and refetches history`() = runTest {
+        val page2Result = mockHistoryResult.copy(
+            pagination = mockHistoryResult.pagination.copy(current_page = 2)
+        )
+        coEvery { repository.getPaginatedAndFilteredHistory(match { it.page == 2 }) } returns Resource.Success(page2Result)
 
-        viewModel = EpisodeHistoryViewModel(repository)
-        viewModel.onAction(EpisodeHistoryAction.FetchHistory)
-        advanceUntilIdle()
         viewModel.onAction(EpisodeHistoryAction.ChangePage(2))
         advanceUntilIdle()
 
         with(viewModel.historyState.value) {
             assertEquals(2, queryState.page)
-            assertTrue(filteredEpisodeHistoryResults is Resource.Success)
-            assertTrue(episodeHistoryResults is Resource.Success)
-            val filteredResults = (filteredEpisodeHistoryResults as Resource.Success).data
-            val episodeResults = (episodeHistoryResults as Resource.Success).data
-            val pageEpisodes = filteredResults[mockAnimeDetailComplement] ?: emptyList()
-            assertEquals(5, pageEpisodes.size)
-            assertEquals("Episode 11", pageEpisodes.first().episodeTitle)
-            assertEquals(episodes, episodeResults)
-            assertEquals(15, pagination.items.total)
-            assertEquals(5, pagination.items.count)
-            assertEquals(2, pagination.last_visible_page)
-            assertFalse(pagination.has_next_page)
+            assertEquals(2, pagination.current_page)
         }
-        coVerify(exactly = 1) { repository.getAllEpisodeHistory(any()) }
+        coVerify(exactly = 1) {
+            repository.getPaginatedAndFilteredHistory(withArg {
+                assertEquals(2, it.page)
+            })
+        }
     }
 
     @Test
-    fun `ToggleEpisodeFavorite updates episode favorite status and preserves pagination`() = runTest {
-        coEvery { repository.getAllEpisodeHistory(any()) } returns Resource.Success(
-            listOf(mockEpisodeDetailComplement, mockEpisodeDetailComplement2)
+    fun `ToggleEpisodeFavorite action calls repository and refetches history`() = runTest {
+        val episodeId = "ep1"
+        coEvery { repository.toggleEpisodeFavorite(episodeId, true) } returns Resource.Success(Unit)
+        coEvery { repository.getPaginatedAndFilteredHistory(any()) } returns Resource.Success(
+            mockHistoryResult
         )
-        coEvery { repository.getCachedEpisodeDetailComplement("lorem-ipsum-123?ep=123") } returns mockEpisodeDetailComplement
-        coEvery { repository.updateEpisodeDetailComplement(any()) } just Runs
-        coEvery {
-            ComplementUtils.getOrCreateAnimeDetailComplement(repository = repository, malId = 1)
-        } returns mockAnimeDetailComplement
-        coEvery {
-            ComplementUtils.getOrCreateAnimeDetailComplement(repository = repository, malId = 2)
-        } returns mockAnimeDetailComplement2
-
         viewModel = EpisodeHistoryViewModel(repository)
-        viewModel.onAction(EpisodeHistoryAction.FetchHistory)
-        advanceUntilIdle()
-        viewModel.onAction(EpisodeHistoryAction.ChangePage(1))
-        advanceUntilIdle()
-        viewModel.onAction(EpisodeHistoryAction.ToggleEpisodeFavorite("lorem-ipsum-123?ep=123", true))
+
+        viewModel.onAction(EpisodeHistoryAction.ToggleEpisodeFavorite(episodeId, true))
         advanceUntilIdle()
 
-        with(viewModel.historyState.value) {
-            assertTrue(filteredEpisodeHistoryResults is Resource.Success)
-            assertTrue(episodeHistoryResults is Resource.Success)
-            assertEquals(1, pagination.current_page)
-            assertEquals(2, pagination.items.total)
-            assertEquals(2, pagination.items.count)
-        }
-        coVerify(exactly = 1) { repository.getCachedEpisodeDetailComplement("lorem-ipsum-123?ep=123") }
-        coVerify(exactly = 1) { repository.updateEpisodeDetailComplement(any()) }
+        coVerify(exactly = 1) { repository.toggleEpisodeFavorite(episodeId, true) }
+        coVerify(exactly = 1) { repository.getPaginatedAndFilteredHistory(any()) }
     }
 
     @Test
-    fun `ToggleEpisodeFavorite with isFavorite filter removes episode if not matching`() = runTest {
-        val queryState = EpisodeHistoryQueryState(isFavorite = true, page = 1, limit = 10)
-        coEvery { repository.getAllEpisodeHistory(any()) } returns Resource.Success(
-            listOf(mockEpisodeDetailComplement, mockEpisodeDetailComplement2)
+    fun `ToggleAnimeFavorite action calls repository and refetches history`() = runTest {
+        val malId = 1
+        coEvery { repository.getCachedAnimeDetailComplementByMalId(malId) } returns mockAnimeComplement
+        coEvery { repository.toggleAnimeFavorite(any(), malId, true) } returns mockAnimeComplement
+        coEvery { repository.getPaginatedAndFilteredHistory(any()) } returns Resource.Success(
+            mockHistoryResult
         )
-        coEvery { repository.getCachedEpisodeDetailComplement("lorem-ipsum-124?ep=124") } returns mockEpisodeDetailComplement2
-        coEvery { repository.updateEpisodeDetailComplement(any()) } just Runs
-        coEvery {
-            ComplementUtils.getOrCreateAnimeDetailComplement(repository = repository, malId = 1)
-        } returns mockAnimeDetailComplement
-        coEvery {
-            ComplementUtils.getOrCreateAnimeDetailComplement(repository = repository, malId = 2)
-        } returns mockAnimeDetailComplement2
-
         viewModel = EpisodeHistoryViewModel(repository)
-        viewModel.onAction(EpisodeHistoryAction.ApplyFilters(queryState))
-        advanceUntilIdle()
-        viewModel.onAction(EpisodeHistoryAction.ToggleEpisodeFavorite("lorem-ipsum-124?ep=124", false))
-        advanceUntilIdle()
 
-        with(viewModel.historyState.value) {
-            assertTrue(filteredEpisodeHistoryResults is Resource.Success)
-            assertTrue(episodeHistoryResults is Resource.Success)
-            assertEquals(1, pagination.last_visible_page)
-        }
-        coVerify(exactly = 1) { repository.getCachedEpisodeDetailComplement("lorem-ipsum-124?ep=124") }
-        coVerify(exactly = 1) { repository.updateEpisodeDetailComplement(any()) }
-    }
-
-    @Test
-    fun `ToggleEpisodeFavorite multiple times persists all changes`() = runTest {
-        coEvery { repository.getAllEpisodeHistory(any()) } returns Resource.Success(
-            listOf(mockEpisodeDetailComplement, mockEpisodeDetailComplement2)
-        )
-        coEvery { repository.getCachedEpisodeDetailComplement("lorem-ipsum-123?ep=123") } returns mockEpisodeDetailComplement
-        coEvery { repository.getCachedEpisodeDetailComplement("lorem-ipsum-124?ep=124") } returns mockEpisodeDetailComplement2
-        coEvery { repository.updateEpisodeDetailComplement(any()) } just Runs
-        coEvery {
-            ComplementUtils.getOrCreateAnimeDetailComplement(repository = repository, malId = 1)
-        } returns mockAnimeDetailComplement
-        coEvery {
-            ComplementUtils.getOrCreateAnimeDetailComplement(repository = repository, malId = 2)
-        } returns mockAnimeDetailComplement2
-
-        viewModel = EpisodeHistoryViewModel(repository)
-        viewModel.onAction(EpisodeHistoryAction.FetchHistory)
-        advanceUntilIdle()
-        viewModel.onAction(EpisodeHistoryAction.ToggleEpisodeFavorite("lorem-ipsum-123?ep=123", true))
-        advanceUntilIdle()
-        viewModel.onAction(EpisodeHistoryAction.ToggleEpisodeFavorite("lorem-ipsum-124?ep=124", false))
+        viewModel.onAction(EpisodeHistoryAction.ToggleAnimeFavorite(malId, true))
         advanceUntilIdle()
 
-        with(viewModel.historyState.value) {
-            assertTrue(filteredEpisodeHistoryResults is Resource.Success)
-            assertTrue(episodeHistoryResults is Resource.Success)
-            assertEquals(2, pagination.items.total)
-        }
-        coVerify(exactly = 1) { repository.getCachedEpisodeDetailComplement("lorem-ipsum-123?ep=123") }
-        coVerify(exactly = 1) { repository.getCachedEpisodeDetailComplement("lorem-ipsum-124?ep=124") }
-        coVerify(exactly = 2) { repository.updateEpisodeDetailComplement(any()) }
-    }
-
-    @Test
-    fun `ToggleEpisodeFavorite with error does not update state`() = runTest {
-        coEvery { repository.getAllEpisodeHistory(any()) } returns Resource.Success(
-            listOf(mockEpisodeDetailComplement)
-        )
-        coEvery { repository.getCachedEpisodeDetailComplement("lorem-ipsum-123?ep=123") } returns null
-        coEvery {
-            ComplementUtils.getOrCreateAnimeDetailComplement(repository = repository, malId = 1)
-        } returns mockAnimeDetailComplement
-
-        viewModel = EpisodeHistoryViewModel(repository)
-        viewModel.onAction(EpisodeHistoryAction.FetchHistory)
-        advanceUntilIdle()
-        viewModel.onAction(EpisodeHistoryAction.ToggleEpisodeFavorite("lorem-ipsum-123?ep=123", true))
-        advanceUntilIdle()
-
-        with(viewModel.historyState.value) {
-            assertTrue(filteredEpisodeHistoryResults is Resource.Error)
-            assertTrue(episodeHistoryResults is Resource.Error)
-            assertEquals("Episode not found", (filteredEpisodeHistoryResults as Resource.Error).message)
-            assertEquals("Episode not found", (episodeHistoryResults as Resource.Error).message)
-        }
-        coVerify(exactly = 1) { repository.getCachedEpisodeDetailComplement("lorem-ipsum-123?ep=123") }
-        coVerify(exactly = 0) { repository.updateEpisodeDetailComplement(any()) }
-    }
-
-    @Test
-    fun `ToggleAnimeFavorite updates anime favorite status and preserves pagination`() = runTest {
-        val episodes = List(15) { i ->
-            mockEpisodeDetailComplement.copy(
-                id = "ep_$i",
-                malId = 1,
-                episodeTitle = "Episode ${i + 1}",
-                number = i + 1
+        coVerify(exactly = 1) {
+            repository.toggleAnimeFavorite(
+                mockAnimeComplement.id,
+                malId,
+                true
             )
         }
-        coEvery { repository.getAllEpisodeHistory(any()) } returns Resource.Success(episodes)
-        coEvery { repository.getCachedAnimeDetailComplementByMalId(1) } returns mockAnimeDetailComplement
-        coEvery { repository.updateCachedAnimeDetailComplement(any()) } just Runs
-        coEvery {
-            ComplementUtils.getOrCreateAnimeDetailComplement(repository = repository, malId = 1)
-        } returns mockAnimeDetailComplement
-
-        viewModel = EpisodeHistoryViewModel(repository)
-        viewModel.onAction(EpisodeHistoryAction.FetchHistory)
-        advanceUntilIdle()
-        viewModel.onAction(EpisodeHistoryAction.ChangePage(2))
-        advanceUntilIdle()
-        viewModel.onAction(EpisodeHistoryAction.ToggleAnimeFavorite(1, true))
-        advanceUntilIdle()
-
-        with(viewModel.historyState.value) {
-            assertTrue(filteredEpisodeHistoryResults is Resource.Success)
-            assertTrue(episodeHistoryResults is Resource.Success)
-            val filteredResults = (filteredEpisodeHistoryResults as Resource.Success).data
-            assertEquals(2, pagination.current_page)
-            assertEquals(5, filteredResults.values.sumOf { it.size })
-            assertEquals(15, pagination.items.total)
-            assertEquals(5, pagination.items.count)
-        }
-        coVerify(exactly = 1) { repository.getCachedAnimeDetailComplementByMalId(1) }
-        coVerify(exactly = 1) { repository.updateCachedAnimeDetailComplement(any()) }
+        coVerify(exactly = 1) { repository.getPaginatedAndFilteredHistory(any()) }
     }
 
     @Test
-    fun `ToggleAnimeFavorite with error updates state with error`() = runTest {
-        coEvery { repository.getAllEpisodeHistory(any()) } returns Resource.Success(
-            listOf(mockEpisodeDetailComplement)
+    fun `DeleteEpisode action calls repository and refetches history`() = runTest {
+        val episodeId = "ep1"
+        coEvery { repository.deleteEpisodeDetailComplement(episodeId) } returns true
+        coEvery { repository.getPaginatedAndFilteredHistory(any()) } returns Resource.Success(
+            mockHistoryResult
         )
-        coEvery { repository.getCachedAnimeDetailComplementByMalId(1) } returns null
-        coEvery {
-            ComplementUtils.getOrCreateAnimeDetailComplement(repository = repository, malId = 1)
-        } returns mockAnimeDetailComplement
-
         viewModel = EpisodeHistoryViewModel(repository)
-        viewModel.onAction(EpisodeHistoryAction.FetchHistory)
-        advanceUntilIdle()
-        viewModel.onAction(EpisodeHistoryAction.ToggleAnimeFavorite(1, true))
+
+        viewModel.onAction(EpisodeHistoryAction.DeleteEpisode(episodeId))
         advanceUntilIdle()
 
-        with(viewModel.historyState.value) {
-            assertTrue(filteredEpisodeHistoryResults is Resource.Error)
-            assertTrue(episodeHistoryResults is Resource.Error)
-            assertEquals("Anime not found", (filteredEpisodeHistoryResults as Resource.Error).message)
-            assertEquals("Anime not found", (episodeHistoryResults as Resource.Error).message)
-        }
-        coVerify(exactly = 1) { repository.getCachedAnimeDetailComplementByMalId(1) }
-        coVerify(exactly = 0) { repository.updateCachedAnimeDetailComplement(any()) }
+        coVerify(exactly = 1) { repository.deleteEpisodeDetailComplement(episodeId) }
+        coVerify(exactly = 1) { repository.getPaginatedAndFilteredHistory(any()) }
     }
 
     @Test
-    fun `DeleteEpisode removes episode using removeEpisodesFromFilteredMap`() = runTest {
-        coEvery { repository.getAllEpisodeHistory(any()) } returns Resource.Success(
-            listOf(mockEpisodeDetailComplement, mockEpisodeDetailComplement2)
+    fun `DeleteAnime action calls repository and refetches history`() = runTest {
+        val malId = 1
+        coEvery { repository.deleteAnimeDetailById(malId) } just Runs
+        coEvery { repository.deleteAnimeDetailComplement(malId) } returns true
+        coEvery { repository.getPaginatedAndFilteredHistory(any()) } returns Resource.Success(
+            mockHistoryResult
         )
-        coEvery { repository.deleteEpisodeDetailComplement("lorem-ipsum-123?ep=123") } returns true
-        coEvery {
-            ComplementUtils.getOrCreateAnimeDetailComplement(repository = repository, malId = 1)
-        } returns mockAnimeDetailComplement
-        coEvery {
-            ComplementUtils.getOrCreateAnimeDetailComplement(repository = repository, malId = 2)
-        } returns mockAnimeDetailComplement2
-
         viewModel = EpisodeHistoryViewModel(repository)
-        viewModel.onAction(EpisodeHistoryAction.FetchHistory)
-        advanceUntilIdle()
-        viewModel.onAction(EpisodeHistoryAction.DeleteEpisode("lorem-ipsum-123?ep=123"))
+
+        viewModel.onAction(EpisodeHistoryAction.DeleteAnime(malId))
         advanceUntilIdle()
 
-        with(viewModel.historyState.value) {
-            assertTrue(filteredEpisodeHistoryResults is Resource.Success)
-            assertTrue(episodeHistoryResults is Resource.Success)
-            val filteredResults = (filteredEpisodeHistoryResults as Resource.Success).data
-            assertTrue(filteredResults[mockAnimeDetailComplement2]?.any { it.id == "lorem-ipsum-124?ep=124" } == true)
-            assertEquals(listOf(mockEpisodeDetailComplement, mockEpisodeDetailComplement2), (episodeHistoryResults as Resource.Success).data)
-        }
-        coVerify(exactly = 1) { repository.deleteEpisodeDetailComplement("lorem-ipsum-123?ep=123") }
+        coVerify(exactly = 1) { repository.deleteAnimeDetailById(malId) }
+        coVerify(exactly = 1) { repository.deleteAnimeDetailComplement(malId) }
+        coVerify(exactly = 1) { repository.getPaginatedAndFilteredHistory(any()) }
     }
 
     @Test
-    fun `DeleteEpisode with error updates state with error`() = runTest {
+    fun `CheckIfHistoryIsEmpty updates state correctly`() = runTest {
         coEvery { repository.getAllEpisodeHistory(any()) } returns Resource.Success(
-            listOf(mockEpisodeDetailComplement)
+            listOf(
+                mockEpisodeComplement
+            )
         )
-        coEvery { repository.deleteEpisodeDetailComplement("lorem-ipsum-123?ep=123") } returns false
-        coEvery {
-            ComplementUtils.getOrCreateAnimeDetailComplement(repository = repository, malId = 1)
-        } returns mockAnimeDetailComplement
-
         viewModel = EpisodeHistoryViewModel(repository)
-        viewModel.onAction(EpisodeHistoryAction.FetchHistory)
-        advanceUntilIdle()
-        viewModel.onAction(EpisodeHistoryAction.DeleteEpisode("lorem-ipsum-123?ep=123"))
-        advanceUntilIdle()
 
-        with(viewModel.historyState.value) {
-            assertTrue(filteredEpisodeHistoryResults is Resource.Error)
-            assertTrue(episodeHistoryResults is Resource.Error)
-            assertEquals("Episode not found", (filteredEpisodeHistoryResults as Resource.Error).message)
-            assertEquals("Episode not found", (episodeHistoryResults as Resource.Error).message)
-        }
-        coVerify(exactly = 1) { repository.deleteEpisodeDetailComplement("lorem-ipsum-123?ep=123") }
-    }
-
-    @Test
-    fun `DeleteAnime removes episodes for anime using removeEpisodesFromFilteredMap`() = runTest {
-        coEvery { repository.getAllEpisodeHistory(any()) } returns Resource.Success(
-            listOf(mockEpisodeDetailComplement, mockEpisodeDetailComplement2)
-        )
-        coEvery { repository.deleteAnimeDetailById(1) } just Runs
-        coEvery { repository.deleteAnimeDetailComplement(1) } returns true
-        coEvery {
-            ComplementUtils.getOrCreateAnimeDetailComplement(repository = repository, malId = 1)
-        } returns mockAnimeDetailComplement
-        coEvery {
-            ComplementUtils.getOrCreateAnimeDetailComplement(repository = repository, malId = 2)
-        } returns mockAnimeDetailComplement2
-
-        viewModel = EpisodeHistoryViewModel(repository)
-        viewModel.onAction(EpisodeHistoryAction.FetchHistory)
-        advanceUntilIdle()
-        viewModel.onAction(EpisodeHistoryAction.DeleteAnime(1))
+        viewModel.onAction(EpisodeHistoryAction.CheckIfHistoryIsEmpty)
         advanceUntilIdle()
 
-        with(viewModel.historyState.value) {
-            assertTrue(filteredEpisodeHistoryResults is Resource.Success)
-            assertTrue(episodeHistoryResults is Resource.Success)
-            val filteredResults = (filteredEpisodeHistoryResults as Resource.Success).data
-            assertTrue(filteredResults[mockAnimeDetailComplement2]?.any { it.id == "lorem-ipsum-124?ep=124" } == true)
-            assertEquals(listOf(mockEpisodeDetailComplement, mockEpisodeDetailComplement2), (episodeHistoryResults as Resource.Success).data)
-        }
-        coVerify(exactly = 1) { repository.deleteAnimeDetailById(1) }
-        coVerify(exactly = 1) { repository.deleteAnimeDetailComplement(1) }
-    }
+        assertFalse(viewModel.historyState.value.isEpisodeHistoryEmpty)
 
-    @Test
-    fun `DeleteAnime with error updates state with error`() = runTest {
-        coEvery { repository.getAllEpisodeHistory(any()) } returns Resource.Success(
-            listOf(mockEpisodeDetailComplement)
-        )
-        coEvery { repository.deleteAnimeDetailById(1) } just Runs
-        coEvery { repository.deleteAnimeDetailComplement(1) } returns false
-        coEvery {
-            ComplementUtils.getOrCreateAnimeDetailComplement(repository = repository, malId = 1)
-        } returns mockAnimeDetailComplement
+        coEvery { repository.getAllEpisodeHistory(any()) } returns Resource.Success(emptyList())
 
-        viewModel = EpisodeHistoryViewModel(repository)
-        viewModel.onAction(EpisodeHistoryAction.FetchHistory)
-        advanceUntilIdle()
-        viewModel.onAction(EpisodeHistoryAction.DeleteAnime(1))
+        viewModel.onAction(EpisodeHistoryAction.CheckIfHistoryIsEmpty)
         advanceUntilIdle()
 
-        with(viewModel.historyState.value) {
-            assertTrue(filteredEpisodeHistoryResults is Resource.Error)
-            assertTrue(episodeHistoryResults is Resource.Error)
-            assertEquals("Anime not found", (filteredEpisodeHistoryResults as Resource.Error).message)
-            assertEquals("Anime not found", (episodeHistoryResults as Resource.Error).message)
-        }
-        coVerify(exactly = 1) { repository.deleteAnimeDetailById(1) }
-        coVerify(exactly = 1) { repository.deleteAnimeDetailComplement(1) }
+        assertTrue(viewModel.historyState.value.isEpisodeHistoryEmpty)
     }
 }
