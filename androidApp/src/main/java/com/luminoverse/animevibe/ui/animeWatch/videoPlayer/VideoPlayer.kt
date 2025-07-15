@@ -707,6 +707,7 @@ fun VideoPlayer(
 
         SyncSubtitleOverlay(
             isVisible = videoPlayerState.showSubtitleSyncOverlay && isOverlayVisible,
+            isLandscape = isLandscape,
             allCues = videoPlayerState.getAllCuesForCurrentTrack(),
             activeCues = videoPlayerState.activeCaptionCue ?: emptyList(),
             currentOffset = videoPlayerState.subtitleOffsetMs,
@@ -821,7 +822,7 @@ fun VideoPlayer(
 
         // Bottom Sheets
         val settingsSheetConfig =
-            BottomSheetConfig(landscapeWidthFraction = 0.4f, landscapeHeightFraction = 0.7f)
+            BottomSheetConfig(landscapeWidthFraction = 0.5f, landscapeHeightFraction = 0.7f)
         CustomModalBottomSheet(
             modifier = Modifier.align(Alignment.BottomCenter),
             isVisible = videoPlayerState.showSettingsSheet && isOverlayVisible,
@@ -874,7 +875,6 @@ fun VideoPlayer(
                 selectedPlaybackSpeed = controlsState.playbackSpeed,
                 onSpeedChange = { speed ->
                     playerAction(HlsPlayerAction.SetPlaybackSpeed(speed))
-                    videoPlayerState.showPlaybackSpeedSheet = false
                 }
             )
         }

@@ -33,7 +33,6 @@ import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Replay5
 import androidx.compose.material.icons.filled.RestartAlt
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -64,6 +63,7 @@ import kotlin.math.abs
 @Composable
 fun SyncSubtitleOverlay(
     isVisible: Boolean,
+    isLandscape: Boolean,
     allCues: List<CaptionCue>,
     activeCues: List<CaptionCue>,
     currentOffset: Long,
@@ -91,7 +91,7 @@ fun SyncSubtitleOverlay(
                 val layoutInfo = lazyListState.layoutInfo
                 val viewportHeight = layoutInfo.viewportSize.height
 
-                val averageItemHeight = layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 72 // Default height
+                val averageItemHeight = layoutInfo.visibleItemsInfo.firstOrNull()?.size ?: 72
 
                 val scrollOffset = -(viewportHeight / 2 - averageItemHeight / 2)
 
@@ -130,6 +130,7 @@ fun SyncSubtitleOverlay(
                     .clickable(enabled = false) {}
             ) {
                 Header(
+                    isLandscape = isLandscape,
                     onDismiss = onDismiss,
                     playbackState = playbackState,
                     isRefreshing = isRefreshing,
@@ -187,6 +188,7 @@ fun SyncSubtitleOverlay(
 
 @Composable
 private fun Header(
+    isLandscape: Boolean,
     onDismiss: () -> Unit,
     playbackState: Int,
     isRefreshing: Boolean,
@@ -204,12 +206,18 @@ private fun Header(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(
-            text = "Adjust Subtitle Sync",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = Color.White
-        )
+        AnimatedVisibility(
+            visible = isLandscape,
+            enter = fadeIn(),
+            exit = fadeOut()
+        ) {
+            Text(
+                text = "Adjust Subtitle Sync",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+        }
         Spacer(modifier = Modifier.weight(1f))
         PlaybackControls(
             playbackState = playbackState,
@@ -318,23 +326,52 @@ private fun ManualAdjustControls(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            IconButton(onClick = onResetOffset) {
-                Icon(Icons.Default.RestartAlt, "Reset Offset", tint = Color.White)
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .clickable(onClick = onResetOffset)
+                    .background(color = Color.Black.copy(alpha = 0.4f), shape = CircleShape)
+            ) {
+                Icon(
+                    Icons.Default.RestartAlt,
+                    "Reset Offset",
+                    tint = Color.White,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .align(Alignment.Center)
+                )
             }
-            IconButton(onClick = { onAdjustOffset(-100L) }) {
-                Icon(Icons.Default.Remove, "Decrease Offset", tint = Color.White)
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .clickable(onClick = { onAdjustOffset(-100L) })
+                    .background(color = Color.Black.copy(alpha = 0.4f), shape = CircleShape)
+            ) {
+                Icon(
+                    Icons.Default.Remove, "Decrease Offset", tint = Color.White,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .align(Alignment.Center)
+                )
             }
-            Text(
-                text = String.format(Locale.US, "%.1fs", currentOffset / 1000.0),
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
-                ),
-                modifier = Modifier.width(60.dp)
+            TextWithOutline(
+                text = String.format(Locale.US, "%.1fs", currentOffset / 1000.0)
             )
-            IconButton(onClick = { onAdjustOffset(100L) }) {
-                Icon(Icons.Default.Add, "Increase Offset", tint = Color.White)
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .clickable(onClick = { onAdjustOffset(100L) })
+                    .background(color = Color.Black.copy(alpha = 0.4f), shape = CircleShape)
+            ) {
+                Icon(
+                    Icons.Default.Add, "Increase Offset", tint = Color.White,
+                    modifier = Modifier
+                        .size(24.dp)
+                        .align(Alignment.Center)
+                )
             }
         }
     }
@@ -348,6 +385,7 @@ private fun TextWithOutline(text: String, modifier: Modifier = Modifier) {
             style = MaterialTheme.typography.bodyLarge.copy(
                 fontSize = 14.sp,
                 color = Color.Black,
+                textAlign = TextAlign.Center,
                 fontWeight = FontWeight.Bold,
                 drawStyle = Stroke(width = 4f, join = StrokeJoin.Round)
             )
@@ -357,6 +395,7 @@ private fun TextWithOutline(text: String, modifier: Modifier = Modifier) {
             style = MaterialTheme.typography.bodyLarge.copy(
                 fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.Center,
                 fontWeight = FontWeight.Bold
             )
         )

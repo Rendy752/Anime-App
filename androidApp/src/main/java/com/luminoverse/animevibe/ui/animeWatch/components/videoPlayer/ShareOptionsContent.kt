@@ -20,7 +20,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
@@ -77,7 +76,7 @@ fun ShareOptionsContent(
                     .padding(8.dp),
                 imageVector = Icons.Default.ContentCopy,
                 contentDescription = "Copy Link",
-                tint = Color.White
+                tint = MaterialTheme.colorScheme.onSurface
             )
         }
 
