@@ -23,11 +23,21 @@ import com.luminoverse.animevibe.utils.media.CaptionCue
 import com.luminoverse.animevibe.utils.media.vttTextToAnnotatedString
 
 /**
+ * A helper function to count the number of lines in a given text block.
+ * @param text The string to analyze.
+ * @return The number of lines.
+ */
+private fun countLines(text: String): Int {
+    return text.count { it == '\n' } + 1
+}
+
+/**
  * A custom view to render a list of subtitles with advanced placement logic.
  *
- * If more than one cue is active, it places the first cue at the top of the screen
- * and the remaining cues at the bottom. Each section has a constrained height,
- * and the text auto-sizes to fit within it.
+ * This view dynamically adjusts the vertical space for subtitles based on their
+ * line count. It allocates a total screen height fraction for all cues and then
+ * divides that space proportionally between top and bottom cues if both are present.
+ * This prevents subtitles from becoming excessively large and ensures a balanced layout.
  *
  * @param modifier The modifier to be applied to the layout.
  * @param cues The List of [CaptionCue]s to display. If empty or null, nothing is rendered.
@@ -44,22 +54,39 @@ fun CustomSubtitleView(
         val topCue = if (hasMultipleCues) cues.first() else null
         val bottomCues = if (hasMultipleCues) cues.drop(1) else cues
 
-        if (topCue != null) {
+        val topLines = topCue?.let { countLines(it.text) } ?: 0
+        val bottomLines = bottomCues.sumOf { countLines(it.text) }
+        val totalLines = topLines + bottomLines
+
+        if (totalLines == 0) return
+
+        val fractionPerLine = 0.1f
+        val minTotalFraction = 0.1f
+        val maxTotalFraction = 0.4f
+        val totalTargetFraction = (totalLines * fractionPerLine).coerceIn(minTotalFraction, maxTotalFraction)
+
+        val topPortion = if (totalLines > 0) topLines.toFloat() / totalLines.toFloat() else 0f
+        val bottomPortion = if (totalLines > 0) bottomLines.toFloat() / totalLines.toFloat() else 0f
+
+        val topContainerFraction = totalTargetFraction * topPortion
+        val bottomContainerFraction = totalTargetFraction * bottomPortion
+
+        if (topCue != null && topContainerFraction > 0f) {
             Box(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
                     .fillMaxWidth()
-                    .fillMaxHeight(0.4f),
+                    .fillMaxHeight(topContainerFraction),
                 contentAlignment = Alignment.TopCenter
             ) { SubtitleText(text = topCue.text) }
         }
 
-        if (bottomCues.isNotEmpty()) {
+        if (bottomCues.isNotEmpty() && bottomContainerFraction > 0f) {
             Column(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .fillMaxHeight(0.6f),
+                    .fillMaxHeight(bottomContainerFraction),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(4.dp, alignment = Alignment.Bottom)
             ) {
@@ -99,14 +126,11 @@ private fun SubtitleText(text: String) {
         color = Color.White
     )
 
-    // Use uniform auto-sizing without a max font size for better fluid scaling.
     val textAutoSize = TextAutoSize.StepBased(
         minFontSize = 10.sp,
-        maxFontSize = 24.sp
+        maxFontSize = 20.sp
     )
 
-    // This Box fills the constrained space from the parent. By removing the
-    // contentAlignment, it will inherit the alignment from its parent.
     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         BasicText(
             text = annotatedString,

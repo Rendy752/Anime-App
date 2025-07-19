@@ -139,7 +139,6 @@ fun IframePlayer(
                 const video = doc.querySelector('video');
                 if (!video) return;
 
-                video.controls = false;
                 let style = doc.getElementById('av-control-hider-style');
                 if (!style) {
                     style = doc.createElement('style');
@@ -152,8 +151,28 @@ fun IframePlayer(
                         div[class*="overlay"], .vjs-control-bar, .plyr__controls {
                             display: none !important; opacity: 0 !important; visibility: hidden !important;
                         }
+                        video::cue {
+                           display: none !important;
+                        }
                     `;
                     doc.head.appendChild(style);
+                }
+
+                const parent = video.parentElement;
+                if (parent) {
+                    video.style.width = '100%';
+                    video.style.height = '100%';
+                    video.style.position = 'absolute';
+                    video.style.top = '0';
+                    video.style.left = '0';
+                    video.style.zIndex = '99999';
+
+                    for (const child of parent.children) {
+                        if (child !== video) {
+                           child.style.display = 'none';
+                           child.style.visibility = 'hidden';
+                        }
+                    }
                 }
 
                 if (video.dataset.listenersAttached !== 'true') {
