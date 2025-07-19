@@ -8,7 +8,6 @@ import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.os.Handler
 import android.os.Looper
-import android.util.Base64
 import android.util.Log
 import android.view.PixelCopy
 import android.view.Surface
@@ -49,8 +48,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
-import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.FileOutputStream
 import java.net.UnknownHostException
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -336,13 +335,21 @@ class HlsPlayerUtils @Inject constructor(
     suspend fun captureScreenshot(): String? = withContext(Dispatchers.IO) {
         try {
             val bitmap = captureFrame() ?: return@withContext null
-            val outputStream = ByteArrayOutputStream()
-            bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
-            val byteArray = outputStream.toByteArray()
+
+            val cacheDir = applicationContext.cacheDir
+            val screenshotsDir = File(cacheDir, "screenshots")
+            screenshotsDir.mkdirs()
+
+            val file = File(screenshotsDir, "screenshot_${System.currentTimeMillis()}.png")
+
+            FileOutputStream(file).use { out ->
+                bitmap.compress(Bitmap.CompressFormat.PNG, 90, out)
+            }
+
             bitmap.recycle()
-            Base64.encodeToString(byteArray, Base64.DEFAULT)
+            file.absolutePath
         } catch (e: Exception) {
-            Log.e("HlsPlayerUtils", "Failed to capture screenshot", e)
+            Log.e("HlsPlayerUtils", "Failed to capture and save screenshot", e)
             null
         }
     }

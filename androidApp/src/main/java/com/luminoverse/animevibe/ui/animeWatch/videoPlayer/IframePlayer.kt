@@ -8,7 +8,6 @@ import android.graphics.Rect
 import android.os.Handler
 import android.os.Looper
 import android.util.AttributeSet
-import android.util.Base64
 import android.util.Log
 import android.view.MotionEvent
 import android.view.PixelCopy
@@ -27,7 +26,8 @@ import androidx.core.graphics.createBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.FileOutputStream
 
 /**
  * A data class to hold all relevant state from the iframe's video player.
@@ -132,65 +132,60 @@ fun IframePlayer(
 
     val controlScript = """
         javascript:(function() {
-            var iframe = document.getElementById('videoPlayer');
+            const iframe = document.getElementById('videoPlayer');
             if (!iframe) return;
 
-            var interval = setInterval(function() {
-                if (!iframe.contentWindow || !iframe.contentWindow.document) return;
-                var video = iframe.contentWindow.document.querySelector('video');
+            function setupPlayer(doc) {
+                const video = doc.querySelector('video');
+                if (!video) return;
 
-                if (video) {
-                    clearInterval(interval);
-
-                    video.controls = false;
-
-                    var style = iframe.contentWindow.document.createElement('style');
-                    
+                video.controls = false;
+                let style = doc.getElementById('av-control-hider-style');
+                if (!style) {
+                    style = doc.createElement('style');
+                    style.id = 'av-control-hider-style';
                     style.innerHTML = `
-                        video::-webkit-media-controls,
-                        video::-webkit-media-controls-enclosure {
-                            display: none !important;
-                            -webkit-appearance: none;
+                        video::-webkit-media-controls, video::-webkit-media-controls-enclosure {
+                            display: none !important; -webkit-appearance: none;
                         }
-
-                        div[class*="controls"],
-                        div[class*="player-ui"],
-                        div[class*="overlay"],
-                        .vjs-control-bar,
-                        .plyr__controls {
-                            display: none !important;
-                            opacity: 0 !important;
-                            visibility: hidden !important;
+                        div[class*="controls"], div[class*="player-ui"],
+                        div[class*="overlay"], .vjs-control-bar, .plyr__controls {
+                            display: none !important; opacity: 0 !important; visibility: hidden !important;
                         }
                     `;
-                    iframe.contentWindow.document.head.appendChild(style);
+                    doc.head.appendChild(style);
+                }
 
+                if (video.dataset.listenersAttached !== 'true') {
+                    video.dataset.listenersAttached = 'true';
+                    
                     function getBufferedEnd() {
-                        if (video.buffered.length > 0) {
-                            return video.buffered.end(video.buffered.length - 1);
-                        }
+                        if (video.buffered.length > 0) return video.buffered.end(video.buffered.length - 1);
                         return 0;
                     }
-
                     function reportState() {
-                        if (window.AndroidBridge && typeof window.AndroidBridge.updatePlayerState === 'function') {
-                            var isBuffering = video.readyState < 4 && !video.paused;
-                            window.AndroidBridge.updatePlayerState(
-                                !video.paused,
-                                isBuffering,
-                                video.ended,
-                                video.currentTime,
-                                video.duration || 0,
-                                getBufferedEnd()
-                            );
+                        if (window.AndroidBridge) {
+                            const isBuffering = video.readyState < 4 && !video.paused;
+                            window.AndroidBridge.updatePlayerState(!video.paused, isBuffering, video.ended, video.currentTime, video.duration || 0, getBufferedEnd());
                         }
                     }
-
                     ['timeupdate', 'play', 'pause', 'durationchange', 'ended', 'waiting', 'playing', 'progress'].forEach(event => {
                         video.addEventListener(event, reportState);
                     });
                     
                     reportState();
+                }
+            }
+
+            const interval = setInterval(function() {
+                if (iframe.contentWindow && iframe.contentWindow.document && iframe.contentWindow.document.body) {
+                    clearInterval(interval);
+                    const doc = iframe.contentWindow.document;
+
+                    const observer = new MutationObserver(() => setupPlayer(doc));
+                    observer.observe(doc.body, { childList: true, subtree: true });
+
+                    setupPlayer(doc);
                 }
             }, 100);
         })();
@@ -264,13 +259,12 @@ fun WebView.controlIframe(action: IframePlayerAction) {
         is IframePlayerAction.SeekTo -> "currentTime = ${action.positionMs / 1000.0}"
     }
     val script =
-        "document.getElementById('videoPlayer').contentWindow.document.querySelector('video').${command};"
+        "document.getElementById('videoPlayer').contentWindow.document.querySelector('video')?.${command};"
     evaluateJavascript(script, null)
 }
 
 /**
  * Captures the visible content of a WebView as a Bitmap using PixelCopy.
- * This is the recommended way to capture hardware-accelerated content.
  */
 private suspend fun View.getBitmapWithPixelCopy(): Bitmap? {
     val window: Window = (context as? Activity)?.window ?: return null
@@ -300,22 +294,26 @@ private suspend fun View.getBitmapWithPixelCopy(): Bitmap? {
     }
 }
 
-/**
- * Captures the WebView content and encodes it as a Base64 String.
- */
 suspend fun WebView.captureScreenshot(): String? = withContext(Dispatchers.IO) {
     try {
         val bitmap = withContext(Dispatchers.Main) {
             getBitmapWithPixelCopy()
         } ?: return@withContext null
 
-        val outputStream = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.PNG, 90, outputStream)
-        val byteArray = outputStream.toByteArray()
+        val cacheDir = this@captureScreenshot.context.cacheDir
+        val screenshotsDir = File(cacheDir, "screenshots")
+        screenshotsDir.mkdirs()
+
+        val file = File(screenshotsDir, "screenshot_${System.currentTimeMillis()}.png")
+
+        FileOutputStream(file).use { out ->
+            bitmap.compress(Bitmap.CompressFormat.PNG, 90, out)
+        }
+
         bitmap.recycle()
-        Base64.encodeToString(byteArray, Base64.DEFAULT)
+        file.absolutePath
     } catch (e: Exception) {
-        Log.e("WebViewUtils", "Failed to capture WebView screenshot", e)
+        Log.e("WebViewUtils", "Failed to capture and save WebView screenshot", e)
         null
     }
 }

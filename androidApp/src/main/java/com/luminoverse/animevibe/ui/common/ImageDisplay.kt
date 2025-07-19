@@ -9,7 +9,6 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -41,7 +40,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -53,6 +51,7 @@ import androidx.core.graphics.get
 import coil.compose.AsyncImage
 import coil.compose.AsyncImagePainter
 import coil.request.ImageRequest
+import java.io.File
 import kotlin.math.max
 import kotlin.math.min
 
@@ -137,57 +136,44 @@ fun ImageDisplay(
 ) {
     var imageBounds by remember { mutableStateOf(Rect.Zero) }
     var asyncImageSize by remember { mutableStateOf<Size?>(null) }
-    var showFallback by remember(image) { mutableStateOf(image == null) }
     var componentSize by remember { mutableStateOf<Size?>(null) }
+    var showFallbackIcon by remember { mutableStateOf(false) }
+    var isImageLoading by remember { mutableStateOf(true) }
 
     var isVerticallyCropped by remember { mutableStateOf(false) }
     var isHorizontallyCropped by remember { mutableStateOf(false) }
 
-    val (imageUrl, decodedBitmap) = remember(image) {
+    val imageModel = remember(image) {
         when {
-            image?.startsWith("http", ignoreCase = true) == true -> image to null
-            image != null -> {
-                val bitmap = try {
-                    val decodedBytes = Base64.decode(image, Base64.DEFAULT)
-                    val decoded = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
-                    if (decoded != null && !isBitmapMostlyBlack(decoded)) decoded else null
-                } catch (_: IllegalArgumentException) {
-                    null
-                }
-                null to bitmap
+            image?.startsWith("http", ignoreCase = true) == true -> image
+
+            image?.startsWith("/") == true -> File(image)
+
+            image != null -> try {
+                val decodedBytes = Base64.decode(image, Base64.DEFAULT)
+                BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.size)
+            } catch (_: Exception) {
+                null
             }
 
-            else -> null to null
+            else -> null
         }
     }
 
-    LaunchedEffect(imageUrl, decodedBitmap) {
-        if (imageUrl == null && decodedBitmap == null) {
-            showFallback = true
-        }
+    LaunchedEffect(imageModel, imagePlaceholder) {
+        showFallbackIcon = imageModel == null && imagePlaceholder == null
     }
 
-    LaunchedEffect(componentSize, asyncImageSize, decodedBitmap) {
+    LaunchedEffect(componentSize, asyncImageSize) {
         val cSize = componentSize ?: return@LaunchedEffect
+        val iSize = asyncImageSize ?: return@LaunchedEffect
 
-        val iSize = asyncImageSize ?: decodedBitmap?.let {
-            Size(it.width.toFloat(), it.height.toFloat())
-        }
+        val scale = max(cSize.width / iSize.width, cSize.height / iSize.height)
+        val scaledImageHeight = iSize.height * scale
+        val scaledImageWidth = iSize.width * scale
 
-        if (iSize != null) {
-            val scale = max(cSize.width / iSize.width, cSize.height / iSize.height)
-            val scaledImageHeight = iSize.height * scale
-            val scaledImageWidth = iSize.width * scale
-
-            val newIsVerticallyCropped = scaledImageHeight > cSize.height + 1
-            val newIsHorizontallyCropped =
-                !newIsVerticallyCropped && (scaledImageWidth > cSize.width + 1)
-
-            if (newIsVerticallyCropped != isVerticallyCropped) isVerticallyCropped =
-                newIsVerticallyCropped
-            if (newIsHorizontallyCropped != isHorizontallyCropped) isHorizontallyCropped =
-                newIsHorizontallyCropped
-        }
+        isVerticallyCropped = scaledImageHeight > cSize.height + 1
+        isHorizontallyCropped = !isVerticallyCropped && (scaledImageWidth > cSize.width + 1)
     }
 
     val infiniteTransition = rememberInfiniteTransition(label = "ImagePanTransition")
@@ -212,20 +198,7 @@ fun ImageDisplay(
         .then(
             if (onClick != null) {
                 Modifier.clickable {
-                    val bestSize = asyncImageSize ?: componentSize
-                    val (img: Any?, size: Size?) = when {
-                        showFallback -> imagePlaceholder to bestSize
-                        decodedBitmap != null -> decodedBitmap.asImageBitmap() to Size(
-                            decodedBitmap.width.toFloat(),
-                            decodedBitmap.height.toFloat()
-                        )
-
-                        imageUrl != null -> imageUrl to bestSize
-                        else -> null to null
-                    }
-                    if (img != null) {
-                        onClick(img, imageBounds, size)
-                    }
+                    onClick(imageModel ?: imagePlaceholder, imageBounds, asyncImageSize)
                 }
             } else Modifier
         )
@@ -241,84 +214,52 @@ fun ImageDisplay(
                 )
             }
     ) {
-        if (showFallback) {
-            if (imagePlaceholder != null) {
-                AsyncImage(
-                    model = ImageRequest.Builder(LocalContext.current)
-                        .data(imagePlaceholder)
-                        .build(),
-                    contentDescription = "Placeholder for $contentDescription",
-                    modifier = imageModifier.align(Alignment.Center),
-                    contentScale = ContentScale.Crop,
-                    alignment = alignment,
-                    onState = { state ->
-                        if (state is AsyncImagePainter.State.Success) {
-                            asyncImageSize = state.painter.intrinsicSize
-                        }
-                    }
-                )
-            } else {
-                Icon(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .align(Alignment.Center),
-                    imageVector = Icons.Filled.Image,
-                    contentDescription = contentDescription,
-                    tint = MaterialTheme.colorScheme.surfaceVariant,
-                )
-            }
+        if (showFallbackIcon) {
+            Icon(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .align(Alignment.Center),
+                imageVector = Icons.Filled.Image,
+                contentDescription = contentDescription,
+                tint = MaterialTheme.colorScheme.surfaceVariant,
+            )
         } else {
-            when {
-                decodedBitmap != null -> {
-                    Image(
-                        bitmap = decodedBitmap.asImageBitmap(),
-                        contentDescription = contentDescription,
-                        modifier = imageModifier.align(Alignment.Center),
-                        contentScale = ContentScale.Crop,
-                        alignment = alignment
-                    )
-                }
-
-                imageUrl != null -> {
-                    var isImageLoading by remember(imageUrl) { mutableStateOf(true) }
-
-                    AsyncImage(
-                        model = ImageRequest.Builder(LocalContext.current)
-                            .data(imageUrl)
-                            .allowHardware(false)
-                            .build(),
-                        contentDescription = contentDescription,
-                        modifier = imageModifier.align(Alignment.Center),
-                        contentScale = ContentScale.Crop,
-                        alignment = alignment,
-                        onState = { state ->
-                            isImageLoading = state is AsyncImagePainter.State.Loading
-                            when (state) {
-                                is AsyncImagePainter.State.Success -> {
-                                    asyncImageSize = state.painter.intrinsicSize
-                                    val bitmap = state.result.drawable.toBitmap()
-                                    if (isBitmapMostlyBlack(bitmap)) {
-                                        showFallback = true
-                                    }
-                                }
-
-                                is AsyncImagePainter.State.Error -> showFallback = true
-                                else -> {}
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(imageModel ?: imagePlaceholder)
+                    .allowHardware(false)
+                    .build(),
+                contentDescription = contentDescription,
+                modifier = imageModifier.align(Alignment.Center),
+                contentScale = ContentScale.Crop,
+                alignment = alignment,
+                onState = { state ->
+                    isImageLoading = state is AsyncImagePainter.State.Loading
+                    when (state) {
+                        is AsyncImagePainter.State.Success -> {
+                            asyncImageSize = state.painter.intrinsicSize
+                            val bitmap = state.result.drawable.toBitmap()
+                            if (isBitmapMostlyBlack(bitmap)) {
+                                showFallbackIcon = true
                             }
                         }
-                    )
-
-                    if (isImageLoading) {
-                        Icon(
-                            imageVector = Icons.Filled.Image,
-                            contentDescription = "Placeholder",
-                            tint = MaterialTheme.colorScheme.surfaceVariant,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .align(Alignment.Center)
-                        )
+                        is AsyncImagePainter.State.Error -> if (imageModel == null) {
+                            showFallbackIcon = true
+                        }
+                        else -> {}
                     }
                 }
+            )
+
+            if (isImageLoading) {
+                Icon(
+                    imageVector = Icons.Filled.Image,
+                    contentDescription = "Placeholder",
+                    tint = MaterialTheme.colorScheme.surfaceVariant,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .align(Alignment.Center)
+                )
             }
         }
 
