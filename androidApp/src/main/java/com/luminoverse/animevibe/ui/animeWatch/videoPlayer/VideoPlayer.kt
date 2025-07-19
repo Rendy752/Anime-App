@@ -102,6 +102,7 @@ fun VideoPlayer(
     isScreenOn: Boolean,
     screenHeightPx: Float,
     isAutoPlayVideo: Boolean,
+    useFallbackPlayer: Boolean,
     episodes: List<Episode>,
     episodeSourcesQuery: EpisodeSourcesQuery,
     handleSelectedEpisodeServer: (EpisodeSourcesQuery, Boolean) -> Unit,
@@ -461,447 +462,470 @@ fun VideoPlayer(
                     Color.White.copy(alpha = 0.5f)
                 ) else Modifier
 
-            if (videoPlayerState.isInitialLoading) {
-                ImageDisplay(
-                    modifier = Modifier.fillMaxSize(),
-                    image = episodeDetailComplement.screenshot,
-                    imagePlaceholder = imagePlaceholder,
-                    ratio = ImageAspectRatio.WIDESCREEN.ratio,
-                    contentDescription = "Thumbnail Image",
-                    roundedCorners = ImageRoundedCorner.NONE
+            when {
+                useFallbackPlayer && videoPlayerState.fallbackUrl.value != null -> {
+                    videoPlayerState.fallbackUrl.value?.let { fallbackUrl ->
+                        IframePlayer(
+                            modifier = Modifier.fillMaxSize(),
+                            fallbackUrl = fallbackUrl
+                        )
+                    }
+                }
+
+                videoPlayerState.isInitialLoading -> {
+                    ImageDisplay(
+                        modifier = Modifier.fillMaxSize(),
+                        image = episodeDetailComplement.screenshot,
+                        imagePlaceholder = imagePlaceholder,
+                        ratio = ImageAspectRatio.WIDESCREEN.ratio,
+                        contentDescription = "Thumbnail Image",
+                        roundedCorners = ImageRoundedCorner.NONE
+                    )
+                }
+
+                else -> {
+                    AndroidView(
+                        factory = { playerView },
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black)
+                            .then(borderModifier)
+                            .then(
+                                if (isPlayerDisplayFullscreen) {
+                                    Modifier.graphicsLayer(
+                                        scaleX = animatedZoom,
+                                        scaleY = animatedZoom,
+                                        translationX = videoPlayerState.panOffsetX,
+                                        translationY = videoPlayerState.panOffsetY
+                                    )
+                                } else Modifier
+                            ),
+                        update = { view ->
+                            view.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                        }
+                    )
+                }
+            }
+        }
+
+        if (!useFallbackPlayer) {
+            // PIP Mode Seek Bar
+            AnimatedVisibility(
+                modifier = Modifier.align(Alignment.BottomCenter),
+                visible = displayMode == PlayerDisplayMode.PIP,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                CustomSeekBar(
+                    currentPosition = currentPositionMs,
+                    bufferedPosition = player.bufferedPosition,
+                    duration = player.duration.takeIf { it > 0 } ?: episodeDetailComplement.duration
+                    ?: 0,
+                    intro = episodeDetailComplement.sources.intro,
+                    outro = episodeDetailComplement.sources.outro,
+                    seekAmount = videoPlayerState.seekAmountSeconds * 1000L,
+                    dragCancelTrigger = videoPlayerState.seekBarDragCancellationId,
+                    isShowSeekIndicator = videoPlayerState.seekIndicatorDirection,
+                    touchTargetHeight = 3.dp,
+                    trackHeight = 3.dp
                 )
-            } else {
-                AndroidView(
-                    factory = { playerView },
+            }
+
+            // Thumbnail Preview on Seek
+            val thumbnailTrackUrl =
+                episodeDetailComplement.sources.tracks.find { it.kind == "thumbnails" }?.file
+            thumbnailTrackUrl?.let { url ->
+                val showThumbnail =
+                    videoPlayerState.isBufferingFromSeeking || (!coreState.isPlaying && videoPlayerState.isDraggingSeekBar && !videoPlayerState.isInitialLoading)
+                val thumbnailSeekPositionKey =
+                    remember(videoPlayerState.dragSeekPositionMs) { (videoPlayerState.dragSeekPositionMs / 10000L) * 10000L }
+
+                AnimatedVisibility(visible = showThumbnail, enter = fadeIn(), exit = fadeOut()) {
+                    ThumbnailPreview(
+                        modifier = Modifier.fillMaxSize(),
+                        seekPosition = thumbnailSeekPositionKey,
+                        cues = videoPlayerState.thumbnailCues[url]
+                    )
+                }
+            }
+
+            val isPlayerControlsVisible =
+                (controlsState.isControlsVisible || videoPlayerState.isDraggingSeekBar)
+                        && !shouldShowResumeOverlay && isOverlayVisible && isPlayerDisplayFullscreen
+                        && !videoPlayerState.showLandscapeEpisodeList && !videoPlayerState.showSubtitleSyncOverlay
+            // Subtitle View
+            val animatedSubtitleTopPadding by animateDpAsState(
+                targetValue = if (isPlayerDisplayPip) 4.dp else 8.dp,
+                label = "SubtitleTopPadding"
+            )
+            val animatedSubtitleBottomPadding by animateDpAsState(
+                targetValue = if (isOverlayVisible && isPlayerControlsVisible && isLandscape && displayMode == PlayerDisplayMode.FULLSCREEN_LANDSCAPE) videoPlayerState.bottomBarHeight.dp else if (isSideSheetVisible) 16.dp else 8.dp,
+                label = "SubtitleBottomPadding"
+            )
+            AnimatedVisibility(
+                visible = !videoPlayerState.showSubtitleSyncOverlay,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                CustomSubtitleView(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color.Black)
-                        .then(borderModifier)
-                        .then(
-                            if (isPlayerDisplayFullscreen) {
-                                Modifier.graphicsLayer(
-                                    scaleX = animatedZoom,
-                                    scaleY = animatedZoom,
-                                    translationX = videoPlayerState.panOffsetX,
-                                    translationY = videoPlayerState.panOffsetY
-                                )
-                            } else Modifier
+                        .padding(
+                            top = animatedSubtitleTopPadding,
+                            bottom = animatedSubtitleBottomPadding,
+                            start = 8.dp,
+                            end = 8.dp
                         ),
-                    update = { view -> view.resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT }
+                    cues = videoPlayerState.activeCaptionCue
                 )
             }
-        }
 
-        // PIP Mode Seek Bar
-        AnimatedVisibility(
-            modifier = Modifier.align(Alignment.BottomCenter),
-            visible = displayMode == PlayerDisplayMode.PIP,
-            enter = fadeIn(),
-            exit = fadeOut()
-        ) {
-            CustomSeekBar(
+            // Player Controls Overlay
+            AnimatedVisibility(
+                visible = isPlayerControlsVisible,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                PlayerControls(
+                    isPlaying = coreState.isPlaying,
+                    currentPosition = currentPositionMs,
+                    bufferedPosition = player.bufferedPosition,
+                    duration = player.duration.takeIf { it > 0 } ?: episodeDetailComplement.duration
+                    ?: 0,
+                    playbackState = coreState.playbackState,
+                    isRefreshing = isRefreshing,
+                    setDisplayModePip = {
+                        scope.launch {
+                            verticalDragOffset.animateTo(maxVerticalDrag, spring(stiffness = 400f))
+                            setPlayerDisplayMode(PlayerDisplayMode.PIP)
+                            verticalDragOffset.snapTo(0f)
+                        }
+                    },
+                    episodeDetailComplement = episodeDetailComplement,
+                    hasPreviousEpisode = prevEpisode != null,
+                    nextEpisode = nextEpisode,
+                    nextEpisodeDetailComplement = episodeDetailComplements[nextEpisode?.id]?.data,
+                    isSideSheetVisible = isSideSheetVisible,
+                    setSideSheetVisibility = setSideSheetVisibility,
+                    isLandscape = isLandscape,
+                    isShowSpeedUp = videoPlayerState.isSpeedingUpWithLongPress,
+                    zoomText = videoPlayerState.getZoomRatioText(),
+                    onZoomReset = { videoPlayerState.resetZoom() },
+                    handlePlay = { playerAction(HlsPlayerAction.Play) },
+                    handlePause = { playerAction(HlsPlayerAction.Pause) },
+                    onPreviousEpisode = {
+                        prevEpisode?.let {
+                            handleSelectedEpisodeServer(
+                                episodeSourcesQuery.copy(id = it.id),
+                                false
+                            )
+                        }
+                    },
+                    onNextEpisode = {
+                        nextEpisode?.let {
+                            handleSelectedEpisodeServer(
+                                episodeSourcesQuery.copy(id = it.id), false
+                            )
+                        }
+                    },
+                    onSeekTo = { position -> playerAction(HlsPlayerAction.SeekTo(position)) },
+                    seekAmount = videoPlayerState.seekAmountSeconds * 1000L,
+                    isShowSeekIndicator = videoPlayerState.seekIndicatorDirection,
+                    dragSeekPosition = videoPlayerState.dragSeekPositionMs,
+                    dragCancelTrigger = videoPlayerState.seekBarDragCancellationId,
+                    onDraggingSeekBarChange = { isDragging, positionMs ->
+                        videoPlayerState.isDraggingSeekBar = isDragging
+                        videoPlayerState.dragSeekPositionMs = positionMs
+                    },
+                    isDraggingSeekBar = videoPlayerState.isDraggingSeekBar,
+                    showRemainingTime = videoPlayerState.showRemainingTime,
+                    setShowRemainingTime = { videoPlayerState.showRemainingTime = it },
+                    onSettingsClick = { videoPlayerState.showSettingsSheet = true },
+                    isAutoplayPlayNextEpisode = isAutoplayNextEpisodeEnabled,
+                    onAutoplayNextEpisodeToggle = { enabled ->
+                        setAutoplayNextEpisodeEnabled(enabled)
+                        videoPlayerState.onAutoplayNextEpisodeToggle(enabled)
+                    },
+                    onShareClick = { videoPlayerState.showShareSheet = true },
+                    onFullscreenToggle = { setPlayerDisplayMode(if (displayMode == PlayerDisplayMode.FULLSCREEN_LANDSCAPE) PlayerDisplayMode.FULLSCREEN_PORTRAIT else PlayerDisplayMode.FULLSCREEN_LANDSCAPE) },
+                    onBottomBarMeasured = { height -> videoPlayerState.bottomBarHeight = height }
+                )
+            }
+
+            // Center Indicators (Loading, Seek, etc.)
+            LoadingIndicator(
+                modifier = Modifier.align(Alignment.Center),
+                isVisible = (coreState.playbackState == Player.STATE_BUFFERING || isRefreshing) && displayMode != PlayerDisplayMode.PIP && !isPlayerControlsVisible
+            )
+            SeekIndicator(
+                modifier = Modifier.align(Alignment.Center),
+                seekDirection = videoPlayerState.seekIndicatorDirection,
+                seekAmount = videoPlayerState.seekAmountSeconds,
+                isLandscape = isLandscape,
+                isFullscreen = isPlayerDisplayFullscreen
+            )
+
+            // Skip Intro/Outro Buttons
+            val isSkipVisible =
+                displayMode != PlayerDisplayMode.SYSTEM_PIP && !controlsState.isLocked && isOverlayVisible && !videoPlayerState.isSpeedingUpWithLongPress && !videoPlayerState.isDraggingSeekBar && coreState.playbackState !in listOf(
+                    Player.STATE_ENDED,
+                    Player.STATE_IDLE
+                ) && !shouldShowResumeOverlay && !videoPlayerState.isInitialLoading
+            val skipButtonPadding =
+                if (displayMode == PlayerDisplayMode.PIP) 8.dp else if (!isLandscape) 60.dp else 120.dp
+            SkipButtonsContainer(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(end = skipButtonPadding, bottom = skipButtonPadding),
                 currentPosition = currentPositionMs,
-                bufferedPosition = player.bufferedPosition,
-                duration = player.duration.takeIf { it > 0 } ?: episodeDetailComplement.duration
-                ?: 0,
+                duration = player.duration,
                 intro = episodeDetailComplement.sources.intro,
                 outro = episodeDetailComplement.sources.outro,
-                seekAmount = videoPlayerState.seekAmountSeconds * 1000L,
-                dragCancelTrigger = videoPlayerState.seekBarDragCancellationId,
-                isShowSeekIndicator = videoPlayerState.seekIndicatorDirection,
-                touchTargetHeight = 3.dp,
-                trackHeight = 3.dp
+                isSkipVisible = isSkipVisible,
+                onSkip = { seekPosition -> playerAction(HlsPlayerAction.SeekTo(seekPosition)) }
             )
-        }
 
-        // Thumbnail Preview on Seek
-        val thumbnailTrackUrl =
-            episodeDetailComplement.sources.tracks.find { it.kind == "thumbnails" }?.file
-        thumbnailTrackUrl?.let { url ->
-            val showThumbnail =
-                videoPlayerState.isBufferingFromSeeking || (!coreState.isPlaying && videoPlayerState.isDraggingSeekBar && !videoPlayerState.isInitialLoading)
-            val thumbnailSeekPositionKey =
-                remember(videoPlayerState.dragSeekPositionMs) { (videoPlayerState.dragSeekPositionMs / 10000L) * 10000L }
-
-            AnimatedVisibility(visible = showThumbnail, enter = fadeIn(), exit = fadeOut()) {
-                ThumbnailPreview(
-                    modifier = Modifier.fillMaxSize(),
-                    seekPosition = thumbnailSeekPositionKey,
-                    cues = videoPlayerState.thumbnailCues[url]
-                )
-            }
-        }
-
-        val isPlayerControlsVisible =
-            (controlsState.isControlsVisible || videoPlayerState.isDraggingSeekBar)
-                    && !shouldShowResumeOverlay && isOverlayVisible && isPlayerDisplayFullscreen
-                    && !videoPlayerState.showLandscapeEpisodeList && !videoPlayerState.showSubtitleSyncOverlay
-        // Subtitle View
-        val animatedSubtitleTopPadding by animateDpAsState(
-            targetValue = if (isPlayerDisplayPip) 4.dp else 8.dp,
-            label = "SubtitleTopPadding"
-        )
-        val animatedSubtitleBottomPadding by animateDpAsState(
-            targetValue = if (isOverlayVisible && isPlayerControlsVisible && isLandscape && displayMode == PlayerDisplayMode.FULLSCREEN_LANDSCAPE) videoPlayerState.bottomBarHeight.dp else if (isSideSheetVisible) 16.dp else 8.dp,
-            label = "SubtitleBottomPadding"
-        )
-        AnimatedVisibility(
-            visible = !videoPlayerState.showSubtitleSyncOverlay,
-            enter = fadeIn(),
-            exit = fadeOut()
-        ) {
-            CustomSubtitleView(
+            // Top-Aligned Indicators
+            SpeedUpIndicator(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(
-                        top = animatedSubtitleTopPadding, bottom = animatedSubtitleBottomPadding,
-                        start = 8.dp, end = 8.dp
-                    ),
-                cues = videoPlayerState.activeCaptionCue
+                    .align(Alignment.TopCenter)
+                    .padding(top = if (isLandscape) 32.dp else 0.dp),
+                isVisible = videoPlayerState.isSpeedingUpWithLongPress && isOverlayVisible,
+                speedText = videoPlayerState.speedUpIndicatorText
             )
-        }
-
-        // Player Controls Overlay
-        AnimatedVisibility(visible = isPlayerControlsVisible, enter = fadeIn(), exit = fadeOut()) {
-            PlayerControls(
-                isPlaying = coreState.isPlaying,
-                currentPosition = currentPositionMs,
-                bufferedPosition = player.bufferedPosition,
-                duration = player.duration.takeIf { it > 0 } ?: episodeDetailComplement.duration
-                ?: 0,
-                playbackState = coreState.playbackState,
-                isRefreshing = isRefreshing,
-                setDisplayModePip = {
-                    scope.launch {
-                        verticalDragOffset.animateTo(maxVerticalDrag, spring(stiffness = 400f))
-                        setPlayerDisplayMode(PlayerDisplayMode.PIP)
-                        verticalDragOffset.snapTo(0f)
-                    }
-                },
-                episodeDetailComplement = episodeDetailComplement,
-                hasPreviousEpisode = prevEpisode != null,
-                nextEpisode = nextEpisode,
-                nextEpisodeDetailComplement = episodeDetailComplements[nextEpisode?.id]?.data,
-                isSideSheetVisible = isSideSheetVisible,
-                setSideSheetVisibility = setSideSheetVisibility,
-                isLandscape = isLandscape,
+            ZoomIndicator(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = if (isLandscape) 32.dp else 0.dp),
+                visible = videoPlayerState.isZooming && isOverlayVisible,
                 isShowSpeedUp = videoPlayerState.isSpeedingUpWithLongPress,
                 zoomText = videoPlayerState.getZoomRatioText(),
-                onZoomReset = { videoPlayerState.resetZoom() },
-                handlePlay = { playerAction(HlsPlayerAction.Play) },
+                isClickable = videoPlayerState.zoomScale > 1f,
+                onClick = { videoPlayerState.resetZoom() }
+            )
+            AutoplayNextEpisodeStatusIndicator(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = if (isLandscape) 100.dp else 68.dp),
+                statusText = videoPlayerState.autoplayStatusText
+            )
+
+            // Top-Right Aligned Components
+            SeekCancelPreview(
+                modifier = Modifier.align(Alignment.TopEnd),
+                visible = videoPlayerState.isDraggingSeekBar && isOverlayVisible && !videoPlayerState.isSpeedingUpWithLongPress,
+                captureScreenshot = captureScreenshot,
+                imageUrl = episodeDetailComplement.imageUrl,
+                onCancelSeekBarDrag = {
+                    videoPlayerState.cancelSeekBarDrag()
+                    playerAction(HlsPlayerAction.Play)
+                    playerAction(HlsPlayerAction.RequestToggleControlsVisibility(false))
+                },
+            )
+            LockButton(
+                visible = controlsState.isLocked && !isPlayerDisplayPip && videoPlayerState.showLockReminder,
+                onClick = { playerAction(HlsPlayerAction.ToggleLock(false)) },
+                modifier = Modifier.align(Alignment.TopEnd)
+            )
+
+            SyncSubtitleOverlay(
+                isVisible = videoPlayerState.showSubtitleSyncOverlay && isOverlayVisible,
+                isLandscape = isLandscape,
+                allCues = videoPlayerState.getAllCuesForCurrentTrack(),
+                activeCues = videoPlayerState.activeCaptionCue ?: emptyList(),
+                currentOffset = videoPlayerState.subtitleOffsetMs,
+                playerCurrentPosition = currentPositionMs,
+                onSyncToCue = { cueStartTimeMs ->
+                    videoPlayerState.syncSubtitlesToTime(cueStartTimeMs)
+                },
+                onAdjustOffset = { adjustment ->
+                    videoPlayerState.subtitleOffsetMs += adjustment
+                },
+                onResetOffset = { videoPlayerState.subtitleOffsetMs = 0L },
+                onDismiss = {
+                    videoPlayerState.showSubtitleSyncOverlay = false
+                },
+                playbackState = coreState.playbackState,
+                isPlaying = coreState.isPlaying,
+                isRefreshing = isRefreshing,
+                onSeekTo = { position -> playerAction(HlsPlayerAction.SeekTo(position)) },
                 handlePause = { playerAction(HlsPlayerAction.Pause) },
-                onPreviousEpisode = {
-                    prevEpisode?.let {
+                handlePlay = { playerAction(HlsPlayerAction.Play) }
+            )
+
+            // Landscape Episode List
+            AnimatedVisibility(
+                visible = isPlayerDisplayFullscreen && isLandscape && (verticalDragOffset.value < 0 || videoPlayerState.showLandscapeEpisodeList),
+                modifier = Modifier.fillMaxSize(),
+                enter = fadeIn(animationSpec = tween(150)),
+                exit = fadeOut(animationSpec = tween(150))
+            ) {
+                LandscapeEpisodeList(
+                    modifier = Modifier.graphicsLayer {
+                        translationY = if (videoPlayerState.showLandscapeEpisodeList) {
+                            0f
+                        } else {
+                            lerp(
+                                start = videoPlayerState.playerContainerSize.height.toFloat(),
+                                stop = 0f,
+                                fraction = landscapeEpisodeListProgress
+                            )
+                        }
+                    },
+                    listState = landscapeEpisodeListState,
+                    episodesToShow = episodesToShow,
+                    imagePlaceholder = imagePlaceholder,
+                    episodeDetailComplements = episodeDetailComplements,
+                    onEpisodeSelected = { episode ->
                         handleSelectedEpisodeServer(
-                            episodeSourcesQuery.copy(id = it.id),
+                            episodeSourcesQuery.copy(id = episode.id),
                             false
                         )
+                    },
+                    onClose = {
+                        scope.launch {
+                            verticalDragOffset.snapTo(maxDownwardDragLandscape)
+                            videoPlayerState.showLandscapeEpisodeList = false
+                            verticalDragOffset.animateTo(0f)
+                        }
                     }
-                },
-                onNextEpisode = {
-                    nextEpisode?.let {
-                        handleSelectedEpisodeServer(
-                            episodeSourcesQuery.copy(id = it.id), false
-                        )
+                )
+            }
+
+            // Fullscreen Overlays
+            episodeDetailComplement.lastTimestamp?.let { lastTimestamp ->
+                ResumePlaybackOverlay(
+                    modifier = Modifier.align(Alignment.Center),
+                    isVisible = shouldShowResumeOverlay,
+                    isPipMode = isPlayerDisplayPip,
+                    initialSeekPositionMs = initialSeekPositionMs,
+                    lastTimestamp = lastTimestamp,
+                    onDismiss = {
+                        videoPlayerState.shouldShowResumeOverlay = false
+                        playerAction(HlsPlayerAction.RequestToggleControlsVisibility(true))
+                    },
+                    onRestart = {
+                        playerAction(HlsPlayerAction.SeekTo(0))
+                        playerAction(HlsPlayerAction.Play)
+                        videoPlayerState.shouldShowResumeOverlay = false
+                    },
+                    onResume = {
+                        playerAction(HlsPlayerAction.SeekTo(it))
+                        playerAction(HlsPlayerAction.Play)
+                        videoPlayerState.shouldShowResumeOverlay = false
                     }
-                },
-                onSeekTo = { position -> playerAction(HlsPlayerAction.SeekTo(position)) },
-                seekAmount = videoPlayerState.seekAmountSeconds * 1000L,
-                isShowSeekIndicator = videoPlayerState.seekIndicatorDirection,
-                dragSeekPosition = videoPlayerState.dragSeekPositionMs,
-                dragCancelTrigger = videoPlayerState.seekBarDragCancellationId,
-                onDraggingSeekBarChange = { isDragging, positionMs ->
-                    videoPlayerState.isDraggingSeekBar = isDragging
-                    videoPlayerState.dragSeekPositionMs = positionMs
-                },
-                isDraggingSeekBar = videoPlayerState.isDraggingSeekBar,
-                showRemainingTime = videoPlayerState.showRemainingTime,
-                setShowRemainingTime = { videoPlayerState.showRemainingTime = it },
-                onSettingsClick = { videoPlayerState.showSettingsSheet = true },
-                isAutoplayPlayNextEpisode = isAutoplayNextEpisodeEnabled,
-                onAutoplayNextEpisodeToggle = { enabled ->
-                    setAutoplayNextEpisodeEnabled(enabled)
-                    videoPlayerState.onAutoplayNextEpisodeToggle(enabled)
-                },
-                onShareClick = { videoPlayerState.showShareSheet = true },
-                onFullscreenToggle = { setPlayerDisplayMode(if (displayMode == PlayerDisplayMode.FULLSCREEN_LANDSCAPE) PlayerDisplayMode.FULLSCREEN_PORTRAIT else PlayerDisplayMode.FULLSCREEN_LANDSCAPE) },
-                onBottomBarMeasured = { height -> videoPlayerState.bottomBarHeight = height }
-            )
-        }
+                )
+            }
 
-        // Center Indicators (Loading, Seek, etc.)
-        LoadingIndicator(
-            modifier = Modifier.align(Alignment.Center),
-            isVisible = (coreState.playbackState == Player.STATE_BUFFERING || isRefreshing) && displayMode != PlayerDisplayMode.PIP && !isPlayerControlsVisible
-        )
-        SeekIndicator(
-            modifier = Modifier.align(Alignment.Center),
-            seekDirection = videoPlayerState.seekIndicatorDirection,
-            seekAmount = videoPlayerState.seekAmountSeconds,
-            isLandscape = isLandscape,
-            isFullscreen = isPlayerDisplayFullscreen
-        )
-
-        // Skip Intro/Outro Buttons
-        val isSkipVisible =
-            displayMode != PlayerDisplayMode.SYSTEM_PIP && !controlsState.isLocked && isOverlayVisible && !videoPlayerState.isSpeedingUpWithLongPress && !videoPlayerState.isDraggingSeekBar && coreState.playbackState !in listOf(
-                Player.STATE_ENDED,
-                Player.STATE_IDLE
-            ) && !shouldShowResumeOverlay && !videoPlayerState.isInitialLoading
-        val skipButtonPadding =
-            if (displayMode == PlayerDisplayMode.PIP) 8.dp else if (!isLandscape) 60.dp else 120.dp
-        SkipButtonsContainer(
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = skipButtonPadding, bottom = skipButtonPadding),
-            currentPosition = currentPositionMs,
-            duration = player.duration,
-            intro = episodeDetailComplement.sources.intro,
-            outro = episodeDetailComplement.sources.outro,
-            isSkipVisible = isSkipVisible,
-            onSkip = { seekPosition -> playerAction(HlsPlayerAction.SeekTo(seekPosition)) }
-        )
-
-        // Top-Aligned Indicators
-        SpeedUpIndicator(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = if (isLandscape) 32.dp else 0.dp),
-            isVisible = videoPlayerState.isSpeedingUpWithLongPress && isOverlayVisible,
-            speedText = videoPlayerState.speedUpIndicatorText
-        )
-        ZoomIndicator(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = if (isLandscape) 32.dp else 0.dp),
-            visible = videoPlayerState.isZooming && isOverlayVisible,
-            isShowSpeedUp = videoPlayerState.isSpeedingUpWithLongPress,
-            zoomText = videoPlayerState.getZoomRatioText(),
-            isClickable = videoPlayerState.zoomScale > 1f,
-            onClick = { videoPlayerState.resetZoom() }
-        )
-        AutoplayNextEpisodeStatusIndicator(
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .padding(top = if (isLandscape) 100.dp else 68.dp),
-            statusText = videoPlayerState.autoplayStatusText
-        )
-
-        // Top-Right Aligned Components
-        SeekCancelPreview(
-            modifier = Modifier.align(Alignment.TopEnd),
-            visible = videoPlayerState.isDraggingSeekBar && isOverlayVisible && !videoPlayerState.isSpeedingUpWithLongPress,
-            captureScreenshot = captureScreenshot,
-            imageUrl = episodeDetailComplement.imageUrl,
-            onCancelSeekBarDrag = {
-                videoPlayerState.cancelSeekBarDrag()
-                playerAction(HlsPlayerAction.Play)
-                playerAction(HlsPlayerAction.RequestToggleControlsVisibility(false))
-            },
-        )
-        LockButton(
-            visible = controlsState.isLocked && !isPlayerDisplayPip && videoPlayerState.showLockReminder,
-            onClick = { playerAction(HlsPlayerAction.ToggleLock(false)) },
-            modifier = Modifier.align(Alignment.TopEnd)
-        )
-
-        SyncSubtitleOverlay(
-            isVisible = videoPlayerState.showSubtitleSyncOverlay && isOverlayVisible,
-            isLandscape = isLandscape,
-            allCues = videoPlayerState.getAllCuesForCurrentTrack(),
-            activeCues = videoPlayerState.activeCaptionCue ?: emptyList(),
-            currentOffset = videoPlayerState.subtitleOffsetMs,
-            playerCurrentPosition = currentPositionMs,
-            onSyncToCue = { cueStartTimeMs ->
-                videoPlayerState.syncSubtitlesToTime(cueStartTimeMs)
-            },
-            onAdjustOffset = { adjustment ->
-                videoPlayerState.subtitleOffsetMs += adjustment
-            },
-            onResetOffset = { videoPlayerState.subtitleOffsetMs = 0L },
-            onDismiss = {
-                videoPlayerState.showSubtitleSyncOverlay = false
-            },
-            playbackState = coreState.playbackState,
-            isPlaying = coreState.isPlaying,
-            isRefreshing = isRefreshing,
-            onSeekTo = { position -> playerAction(HlsPlayerAction.SeekTo(position)) },
-            handlePause = { playerAction(HlsPlayerAction.Pause) },
-            handlePlay = { playerAction(HlsPlayerAction.Play) }
-        )
-
-        // Landscape Episode List
-        AnimatedVisibility(
-            visible = isPlayerDisplayFullscreen && isLandscape && (verticalDragOffset.value < 0 || videoPlayerState.showLandscapeEpisodeList),
-            modifier = Modifier.fillMaxSize(),
-            enter = fadeIn(animationSpec = tween(150)),
-            exit = fadeOut(animationSpec = tween(150))
-        ) {
-            LandscapeEpisodeList(
-                modifier = Modifier.graphicsLayer {
-                    translationY = if (videoPlayerState.showLandscapeEpisodeList) {
-                        0f
-                    } else {
-                        lerp(
-                            start = videoPlayerState.playerContainerSize.height.toFloat(),
-                            stop = 0f,
-                            fraction = landscapeEpisodeListProgress
-                        )
+            nextEpisode?.let {
+                NextEpisodeOverlay(
+                    modifier = Modifier.align(Alignment.Center),
+                    isVisible = videoPlayerState.shouldShowNextEpisodeOverlay,
+                    isOnlyShowEpisodeDetail = isPlayerDisplayPip,
+                    isLandscape = isLandscape,
+                    animeImage = episodeDetailComplement.imageUrl,
+                    nextEpisode = it,
+                    nextEpisodeDetailComplement = episodeDetailComplements[it.id]?.data,
+                    isAutoplayNextEpisode = isAutoplayNextEpisodeEnabled,
+                    onDismiss = {
+                        videoPlayerState.shouldShowNextEpisodeOverlay = false
+                        playerAction(HlsPlayerAction.RequestToggleControlsVisibility(true))
+                    },
+                    onRestart = {
+                        playerAction(HlsPlayerAction.SeekTo(0))
+                        playerAction(HlsPlayerAction.Play)
+                        videoPlayerState.shouldShowNextEpisodeOverlay = false
+                    },
+                    onPlayNext = {
+                        handleSelectedEpisodeServer(episodeSourcesQuery.copy(id = it.id), false)
+                        videoPlayerState.shouldShowNextEpisodeOverlay = false
                     }
-                },
-                listState = landscapeEpisodeListState,
-                episodesToShow = episodesToShow,
-                imagePlaceholder = imagePlaceholder,
-                episodeDetailComplements = episodeDetailComplements,
-                onEpisodeSelected = { episode ->
-                    handleSelectedEpisodeServer(
-                        episodeSourcesQuery.copy(id = episode.id),
-                        false
-                    )
-                },
-                onClose = {
-                    scope.launch {
-                        verticalDragOffset.snapTo(maxDownwardDragLandscape)
-                        videoPlayerState.showLandscapeEpisodeList = false
-                        verticalDragOffset.animateTo(0f)
-                    }
-                }
-            )
-        }
+                )
+            }
 
-        // Fullscreen Overlays
-        episodeDetailComplement.lastTimestamp?.let { lastTimestamp ->
-            ResumePlaybackOverlay(
-                modifier = Modifier.align(Alignment.Center),
-                isVisible = shouldShowResumeOverlay,
-                isPipMode = isPlayerDisplayPip,
-                initialSeekPositionMs = initialSeekPositionMs,
-                lastTimestamp = lastTimestamp,
-                onDismiss = {
-                    videoPlayerState.shouldShowResumeOverlay = false
-                    playerAction(HlsPlayerAction.RequestToggleControlsVisibility(true))
-                },
-                onRestart = {
-                    playerAction(HlsPlayerAction.SeekTo(0))
-                    playerAction(HlsPlayerAction.Play)
-                    videoPlayerState.shouldShowResumeOverlay = false
-                },
-                onResume = {
-                    playerAction(HlsPlayerAction.SeekTo(it))
-                    playerAction(HlsPlayerAction.Play)
-                    videoPlayerState.shouldShowResumeOverlay = false
-                }
-            )
-        }
-
-        nextEpisode?.let {
-            NextEpisodeOverlay(
-                modifier = Modifier.align(Alignment.Center),
-                isVisible = videoPlayerState.shouldShowNextEpisodeOverlay,
-                isOnlyShowEpisodeDetail = isPlayerDisplayPip,
+            // Bottom Sheets
+            val settingsSheetConfig =
+                BottomSheetConfig(landscapeWidthFraction = 0.5f, landscapeHeightFraction = 0.7f)
+            CustomModalBottomSheet(
+                modifier = Modifier.align(Alignment.BottomCenter),
+                isVisible = videoPlayerState.showSettingsSheet && isOverlayVisible,
                 isLandscape = isLandscape,
-                animeImage = episodeDetailComplement.imageUrl,
-                nextEpisode = it,
-                nextEpisodeDetailComplement = episodeDetailComplements[it.id]?.data,
-                isAutoplayNextEpisode = isAutoplayNextEpisodeEnabled,
-                onDismiss = {
-                    videoPlayerState.shouldShowNextEpisodeOverlay = false
-                    playerAction(HlsPlayerAction.RequestToggleControlsVisibility(true))
-                },
-                onRestart = {
-                    playerAction(HlsPlayerAction.SeekTo(0))
-                    playerAction(HlsPlayerAction.Play)
-                    videoPlayerState.shouldShowNextEpisodeOverlay = false
-                },
-                onPlayNext = {
-                    handleSelectedEpisodeServer(episodeSourcesQuery.copy(id = it.id), false)
-                    videoPlayerState.shouldShowNextEpisodeOverlay = false
-                }
-            )
-        }
+                config = settingsSheetConfig,
+                onDismiss = { videoPlayerState.showSettingsSheet = false }) {
+                SettingsContent(
+                    onDismiss = { videoPlayerState.showSettingsSheet = false },
+                    onLockClick = {
+                        videoPlayerState.showLockReminder = true
+                        setPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN_LANDSCAPE)
+                        if (coreState.playbackState == Player.STATE_ENDED) playerAction(
+                            HlsPlayerAction.SeekTo(0)
+                        )
+                        playerAction(HlsPlayerAction.Play)
+                        playerAction(HlsPlayerAction.ToggleLock(true))
+                    },
+                    onPipClick = { onEnterSystemPipMode() },
+                    selectedPlaybackSpeed = controlsState.playbackSpeed,
+                    onPlaybackSpeedClick = { videoPlayerState.showPlaybackSpeedSheet = true },
+                    isSubtitleAvailable = episodeDetailComplement.sources.tracks.any { it.kind == "captions" },
+                    selectedSubtitle = controlsState.selectedSubtitle,
+                    onSubtitleClick = { videoPlayerState.showSubtitleSheet = true },
+                    subtitleOffsetMs = videoPlayerState.subtitleOffsetMs,
+                    onAdjustSyncSubtitleClick = { videoPlayerState.showSubtitleSyncOverlay = true }
+                )
+            }
+            CustomModalBottomSheet(
+                modifier = Modifier.align(Alignment.BottomCenter),
+                isVisible = videoPlayerState.showSubtitleSheet && isOverlayVisible,
+                isLandscape = isLandscape,
+                config = settingsSheetConfig,
+                onDismiss = { videoPlayerState.showSubtitleSheet = false }) {
+                SubtitleContent(
+                    tracks = episodeDetailComplement.sources.tracks,
+                    selectedSubtitle = controlsState.selectedSubtitle,
+                    onSubtitleSelected = { subtitleTrack ->
+                        playerAction(HlsPlayerAction.SetSubtitle(subtitleTrack))
+                        videoPlayerState.showSubtitleSheet = false
+                    }
+                )
+            }
+            CustomModalBottomSheet(
+                modifier = Modifier.align(Alignment.BottomCenter),
+                isVisible = videoPlayerState.showPlaybackSpeedSheet && isOverlayVisible,
+                isLandscape = isLandscape,
+                config = settingsSheetConfig,
+                onDismiss = { videoPlayerState.showPlaybackSpeedSheet = false }) {
+                PlaybackSpeedContent(
+                    selectedPlaybackSpeed = controlsState.playbackSpeed,
+                    onSpeedChange = { speed ->
+                        playerAction(HlsPlayerAction.SetPlaybackSpeed(speed))
+                    }
+                )
+            }
 
-        // Bottom Sheets
-        val settingsSheetConfig =
-            BottomSheetConfig(landscapeWidthFraction = 0.5f, landscapeHeightFraction = 0.7f)
-        CustomModalBottomSheet(
-            modifier = Modifier.align(Alignment.BottomCenter),
-            isVisible = videoPlayerState.showSettingsSheet && isOverlayVisible,
-            isLandscape = isLandscape,
-            config = settingsSheetConfig,
-            onDismiss = { videoPlayerState.showSettingsSheet = false }) {
-            SettingsContent(
-                onDismiss = { videoPlayerState.showSettingsSheet = false },
-                onLockClick = {
-                    videoPlayerState.showLockReminder = true
-                    setPlayerDisplayMode(PlayerDisplayMode.FULLSCREEN_LANDSCAPE)
-                    if (coreState.playbackState == Player.STATE_ENDED) playerAction(
-                        HlsPlayerAction.SeekTo(0)
-                    )
-                    playerAction(HlsPlayerAction.Play)
-                    playerAction(HlsPlayerAction.ToggleLock(true))
-                },
-                onPipClick = { onEnterSystemPipMode() },
-                selectedPlaybackSpeed = controlsState.playbackSpeed,
-                onPlaybackSpeedClick = { videoPlayerState.showPlaybackSpeedSheet = true },
-                isSubtitleAvailable = episodeDetailComplement.sources.tracks.any { it.kind == "captions" },
-                selectedSubtitle = controlsState.selectedSubtitle,
-                onSubtitleClick = { videoPlayerState.showSubtitleSheet = true },
-                subtitleOffsetMs = videoPlayerState.subtitleOffsetMs,
-                onAdjustSyncSubtitleClick = { videoPlayerState.showSubtitleSyncOverlay = true }
-            )
-        }
-        CustomModalBottomSheet(
-            modifier = Modifier.align(Alignment.BottomCenter),
-            isVisible = videoPlayerState.showSubtitleSheet && isOverlayVisible,
-            isLandscape = isLandscape,
-            config = settingsSheetConfig,
-            onDismiss = { videoPlayerState.showSubtitleSheet = false }) {
-            SubtitleContent(
-                tracks = episodeDetailComplement.sources.tracks,
-                selectedSubtitle = controlsState.selectedSubtitle,
-                onSubtitleSelected = { subtitleTrack ->
-                    playerAction(HlsPlayerAction.SetSubtitle(subtitleTrack))
-                    videoPlayerState.showSubtitleSheet = false
-                }
-            )
-        }
-        CustomModalBottomSheet(
-            modifier = Modifier.align(Alignment.BottomCenter),
-            isVisible = videoPlayerState.showPlaybackSpeedSheet && isOverlayVisible,
-            isLandscape = isLandscape,
-            config = settingsSheetConfig,
-            onDismiss = { videoPlayerState.showPlaybackSpeedSheet = false }) {
-            PlaybackSpeedContent(
-                selectedPlaybackSpeed = controlsState.playbackSpeed,
-                onSpeedChange = { speed ->
-                    playerAction(HlsPlayerAction.SetPlaybackSpeed(speed))
-                }
-            )
-        }
-
-        CustomModalBottomSheet(
-            modifier = Modifier.align(Alignment.BottomCenter),
-            isVisible = videoPlayerState.showShareSheet && isOverlayVisible,
-            isLandscape = isLandscape,
-            config = settingsSheetConfig,
-            onDismiss = { videoPlayerState.showShareSheet = false }
-        ) {
-            val baseUrl = "animevibe://anime/watch/${(episodeDetailComplement.malId)}/${
-                URLEncoder.encode(currentEpisode.id, "UTF-8")
-            }"
-            val generatedLink =
-                if (videoPlayerState.includeTimestampInShare && currentPositionMs > 0) {
-                    "$baseUrl/$currentPositionMs"
-                } else {
-                    baseUrl
-                }
-            ShareOptionsContent(
-                includeTimestamp = videoPlayerState.includeTimestampInShare,
-                onIncludeTimestampChange = { videoPlayerState.includeTimestampInShare = it },
-                generatedLink = generatedLink,
-                onShareClick = { ShareUtils.shareText(context, generatedLink) },
+            CustomModalBottomSheet(
+                modifier = Modifier.align(Alignment.BottomCenter),
+                isVisible = videoPlayerState.showShareSheet && isOverlayVisible,
+                isLandscape = isLandscape,
+                config = settingsSheetConfig,
                 onDismiss = { videoPlayerState.showShareSheet = false }
-            )
+            ) {
+                val baseUrl = "animevibe://anime/watch/${(episodeDetailComplement.malId)}/${
+                    URLEncoder.encode(currentEpisode.id, "UTF-8")
+                }"
+                val generatedLink =
+                    if (videoPlayerState.includeTimestampInShare && currentPositionMs > 0) {
+                        "$baseUrl/$currentPositionMs"
+                    } else {
+                        baseUrl
+                    }
+                ShareOptionsContent(
+                    includeTimestamp = videoPlayerState.includeTimestampInShare,
+                    onIncludeTimestampChange = { videoPlayerState.includeTimestampInShare = it },
+                    generatedLink = generatedLink,
+                    onShareClick = { ShareUtils.shareText(context, generatedLink) },
+                    onDismiss = { videoPlayerState.showShareSheet = false }
+                )
+            }
         }
     }
 }

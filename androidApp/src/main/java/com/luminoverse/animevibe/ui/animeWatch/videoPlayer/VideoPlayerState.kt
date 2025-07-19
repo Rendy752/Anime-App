@@ -24,6 +24,7 @@ import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.utils.media.CaptionCue
 import com.luminoverse.animevibe.utils.media.ControlsState
 import com.luminoverse.animevibe.utils.media.HlsPlayerAction
+import com.luminoverse.animevibe.utils.media.IframeUtils
 import com.luminoverse.animevibe.utils.media.ThumbnailCue
 import com.luminoverse.animevibe.utils.media.findActiveCaptionCues
 import com.luminoverse.animevibe.utils.media.parseCaptionCues
@@ -76,6 +77,12 @@ class VideoPlayerState(
     /** Tracks if the player is loading for the very first time. */
     var isInitialLoading by mutableStateOf(true)
     private val _currentPositionMs = MutableStateFlow(0L)
+    val fallbackUrl = mutableStateOf(
+        IframeUtils.buildFallbackUrl(
+            fullEpisodeId = episodeDetails.sourcesQuery.id,
+            language = episodeDetails.sourcesQuery.category
+        )
+    )
 
     /** The current playback position in milliseconds, exposed as a StateFlow. */
     val currentPositionMs: StateFlow<Long> = _currentPositionMs.asStateFlow()

@@ -33,6 +33,7 @@ data class WatchState(
     val isSideSheetVisible: Boolean = false,
     val isAutoplayNextEpisodeEnabled: Boolean = false,
     val errorSourceQueryList: List<EpisodeSourcesQuery> = emptyList(),
+    val useFallbackPlayer: Boolean = false
 )
 
 sealed class WatchAction {
@@ -73,6 +74,18 @@ class AnimeWatchViewModel @Inject constructor(
 
     val playerCoreState: StateFlow<PlayerCoreState> = hlsPlayerUtils.playerCoreState
     val controlsState: StateFlow<ControlsState> = hlsPlayerUtils.controlsState
+
+    init {
+        viewModelScope.launch {
+            playerCoreState
+                .map { it.error }
+                .distinctUntilChanged()
+                .filter { it != null }
+                .collect {
+                    _watchState.update { it.copy(useFallbackPlayer = true) }
+                }
+        }
+    }
 
     fun getPlayer(): ExoPlayer? = hlsPlayerUtils.getPlayer()
     suspend fun captureScreenshot(): String? = hlsPlayerUtils.captureScreenshot()
@@ -198,7 +211,8 @@ class AnimeWatchViewModel @Inject constructor(
             it.copy(
                 episodeDetailComplement = Resource.Loading(it.episodeDetailComplement.data),
                 episodeSourcesQuery = episodeSourcesQuery,
-                newEpisodeIdList = currentNewIds
+                newEpisodeIdList = currentNewIds,
+                useFallbackPlayer = false
             )
         }
 
@@ -222,7 +236,8 @@ class AnimeWatchViewModel @Inject constructor(
                 it.copy(
                     episodeDetailComplement = Resource.Error(
                         result.message ?: "Failed to load streaming details."
-                    )
+                    ),
+                    useFallbackPlayer = true
                 )
             }
             onAction(

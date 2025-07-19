@@ -156,12 +156,6 @@ fun AnimeWatchScreen(
         }
     }
 
-    fun refreshEpisodeSources() {
-        watchState.episodeSourcesQuery?.let { episodeSourcesQuery ->
-            onAction(WatchAction.HandleSelectedEpisodeServer(episodeSourcesQuery, isRefresh = true))
-        }
-    }
-
     LaunchedEffect(
         watchState.animeDetail,
         watchState.animeDetailComplement,
@@ -171,10 +165,8 @@ fun AnimeWatchScreen(
         hlsPlayerCoreState.error?.let { errorMessage ->
             showSnackbar(
                 SnackbarMessage(
-                    message = errorMessage,
-                    type = SnackbarMessageType.ERROR,
-                    actionLabel = "RETRY",
-                    onAction = { refreshEpisodeSources() }
+                    message = "${errorMessage}. Switching to fallback source.",
+                    type = SnackbarMessageType.ERROR
                 )
             )
         }
@@ -244,6 +236,7 @@ fun AnimeWatchScreen(
                             isScreenOn = isScreenOn,
                             screenHeightPx = screenHeightPx,
                             isAutoPlayVideo = mainState.isAutoPlayVideo,
+                            useFallbackPlayer = watchState.useFallbackPlayer,
                             episodes = watchState.animeDetailComplement.data.episodes,
                             episodeSourcesQuery = watchState.episodeSourcesQuery,
                             handleSelectedEpisodeServer = { episodeSourcesQuery, isRefresh ->
