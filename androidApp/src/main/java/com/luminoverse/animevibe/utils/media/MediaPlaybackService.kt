@@ -233,7 +233,10 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
             val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
 
             if (!playbackEnabled || !notificationManager.areNotificationsEnabled()) {
-                Log.d("MediaPlaybackService", "Playback notifications disabled by user or system. Removing notification.")
+                Log.d(
+                    "MediaPlaybackService",
+                    "Playback notifications disabled by user or system. Removing notification."
+                )
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 return@launch
             }
@@ -432,7 +435,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                         positionUpdateJob = launch {
                             while (isActive) {
                                 val currentPosition = player.currentPosition
-                                val duration = if (player.duration > 0) player.duration else 0L
+                                val duration = if (coreState.duration > 0) coreState.duration else 0L
 
                                 _state.update {
                                     it.copy(
@@ -455,7 +458,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
                     _state.update {
                         it.copy(
                             currentPosition = player.currentPosition,
-                            duration = if (player.duration > 0) player.duration else 0L
+                            duration = if (coreState.duration > 0) coreState.duration else 0L
                         )
                     }
                 }
@@ -498,7 +501,7 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
 
     private fun stopService() {
         Log.d("MediaPlaybackService", "stopService() called. Stopping foreground and self.")
-        hlsPlayerUtils.dispatch(HlsPlayerAction.Pause)
+        hlsPlayerUtils.dispatch(PlayerAction.Pause)
         updatePlaybackState(PlaybackStateCompat.STATE_STOPPED)
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopPeriodicNotificationUpdates()
@@ -541,19 +544,27 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
 
     inner class MediaSessionCallback : MediaSessionCompat.Callback() {
         override fun onPlay() {
-            hlsPlayerUtils.dispatch(HlsPlayerAction.Play)
+            hlsPlayerUtils.dispatch(PlayerAction.Play)
         }
 
         override fun onPause() {
-            hlsPlayerUtils.dispatch(HlsPlayerAction.Pause)
+            hlsPlayerUtils.dispatch(PlayerAction.Pause)
         }
 
         override fun onRewind() {
-            hlsPlayerUtils.dispatch(HlsPlayerAction.Rewind)
+            hlsPlayerUtils.dispatch(
+                PlayerAction.SeekTo(
+                    (hlsPlayerUtils.getPlayer()?.currentPosition ?: 0) - 10000
+                )
+            )
         }
 
         override fun onFastForward() {
-            hlsPlayerUtils.dispatch(HlsPlayerAction.FastForward)
+            hlsPlayerUtils.dispatch(
+                PlayerAction.SeekTo(
+                    (hlsPlayerUtils.getPlayer()?.currentPosition ?: 0) + 10000
+                )
+            )
         }
 
         override fun onSkipToNext() {
@@ -609,11 +620,11 @@ class MediaPlaybackService : MediaBrowserServiceCompat() {
         }
 
         override fun onSeekTo(pos: Long) {
-            hlsPlayerUtils.dispatch(HlsPlayerAction.SeekTo(pos))
+            hlsPlayerUtils.dispatch(PlayerAction.SeekTo(pos))
         }
 
         override fun onSetPlaybackSpeed(speed: Float) {
-            hlsPlayerUtils.dispatch(HlsPlayerAction.SetPlaybackSpeed(speed))
+            hlsPlayerUtils.dispatch(PlayerAction.SetPlaybackSpeed(speed))
         }
     }
 }

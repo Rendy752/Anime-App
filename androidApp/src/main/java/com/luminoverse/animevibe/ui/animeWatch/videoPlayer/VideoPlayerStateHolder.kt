@@ -30,7 +30,7 @@ import com.luminoverse.animevibe.ui.main.PlayerDisplayMode
 import com.luminoverse.animevibe.utils.SystemBarsUtils
 import com.luminoverse.animevibe.utils.media.BoundsUtils
 import com.luminoverse.animevibe.utils.media.ControlsState
-import com.luminoverse.animevibe.utils.media.HlsPlayerAction
+import com.luminoverse.animevibe.utils.media.PlayerAction
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -74,11 +74,12 @@ private enum class PhysicalOrientation {
 fun rememberVideoPlayerState(
     key: Any?,
     player: ExoPlayer,
-    onPlayerAction: (HlsPlayerAction) -> Unit,
+    onPlayerAction: (PlayerAction) -> Unit,
     networkDataSource: NetworkDataSource,
     episodeDetails: EpisodeDetailComplement,
     controlsStateFlow: StateFlow<ControlsState>,
     coreState: PlayerCoreState,
+    useFallbackPlayer: Boolean,
     displayMode: PlayerDisplayMode,
     setPlayerDisplayMode: (PlayerDisplayMode) -> Unit,
     setSideSheetVisibility: (Boolean) -> Unit,
@@ -148,7 +149,7 @@ fun rememberVideoPlayerState(
 
     // Effect for managing player state during playback.
     LaunchedEffect(coreState.isPlaying, coreState.playbackState) {
-        val duration = player.duration.coerceAtLeast(0L)
+        val duration = coreState.duration.coerceAtLeast(0L)
         if (coreState.isPlaying) {
             // Hide overlays when playback starts
             state.shouldShowResumeOverlay = false
@@ -158,10 +159,18 @@ fun rememberVideoPlayerState(
             }
             // Periodically update current position and save progress
             while (isActive) {
-                val currentPosition = player.currentPosition
+                val currentPosition =
+                    if (useFallbackPlayer) state.currentPositionMs.value else player.currentPosition
                 state.updatePosition(currentPosition)
-                if (duration > 0 && currentPosition >= 10_000) { // Start saving after 10s
-                    updateStoredWatchState(currentPosition.coerceAtLeast(0L), duration, captureScreenshot())
+                if (duration > 0 && currentPosition >= 10_000) {
+                    updateStoredWatchState(
+                        currentPosition.coerceAtLeast(0L), duration,
+                        if (useFallbackPlayer) {
+                            state.webViewInstance?.captureScreenshot()
+                        } else {
+                            captureScreenshot()
+                        }
+                    )
                 }
                 delay(500)
             }
@@ -171,7 +180,13 @@ fun rememberVideoPlayerState(
                 state.shouldShowResumeOverlay = false
                 state.shouldShowNextEpisodeOverlay = true
                 state.updatePosition(duration)
-                updateStoredWatchState(duration, duration, captureScreenshot())
+                updateStoredWatchState(
+                    duration, duration, if (useFallbackPlayer) {
+                        state.webViewInstance?.captureScreenshot()
+                    } else {
+                        captureScreenshot()
+                    }
+                )
             }
         }
     }
@@ -228,15 +243,29 @@ fun rememberVideoPlayerState(
     // State and effect for observing system auto-rotate setting.
     val contentResolver = context.contentResolver
     var isSystemAutoRotateEnabled by remember {
-        mutableStateOf(Settings.System.getInt(contentResolver, Settings.System.ACCELEROMETER_ROTATION, 0) == 1)
+        mutableStateOf(
+            Settings.System.getInt(
+                contentResolver,
+                Settings.System.ACCELEROMETER_ROTATION,
+                0
+            ) == 1
+        )
     }
     DisposableEffect(contentResolver) {
         val observer = object : ContentObserver(Handler(Looper.getMainLooper())) {
             override fun onChange(selfChange: Boolean) {
-                isSystemAutoRotateEnabled = Settings.System.getInt(contentResolver, Settings.System.ACCELEROMETER_ROTATION, 0) == 1
+                isSystemAutoRotateEnabled = Settings.System.getInt(
+                    contentResolver,
+                    Settings.System.ACCELEROMETER_ROTATION,
+                    0
+                ) == 1
             }
         }
-        contentResolver.registerContentObserver(Settings.System.getUriFor(Settings.System.ACCELEROMETER_ROTATION), true, observer)
+        contentResolver.registerContentObserver(
+            Settings.System.getUriFor(Settings.System.ACCELEROMETER_ROTATION),
+            true,
+            observer
+        )
         onDispose { contentResolver.unregisterContentObserver(observer) }
     }
 
@@ -268,6 +297,7 @@ fun rememberVideoPlayerState(
                 isSystemAutoRotateEnabled -> ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
                 else -> ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
             }
+
             PlayerDisplayMode.FULLSCREEN_PORTRAIT -> ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
             else -> if (isSystemAutoRotateEnabled) ActivityInfo.SCREEN_ORIENTATION_SENSOR else ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         }
@@ -307,7 +337,12 @@ fun rememberVideoPlayerState(
             override fun onVideoSizeChanged(newVideoSize: VideoSize) {
                 state.videoResolution = newVideoSize
             }
-            override fun onPositionDiscontinuity(oldPosition: Player.PositionInfo, newPosition: Player.PositionInfo, reason: Int) {
+
+            override fun onPositionDiscontinuity(
+                oldPosition: Player.PositionInfo,
+                newPosition: Player.PositionInfo,
+                reason: Int
+            ) {
                 super.onPositionDiscontinuity(oldPosition, newPosition, reason)
                 state.updatePosition(newPosition.positionMs)
             }

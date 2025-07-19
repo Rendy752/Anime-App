@@ -70,7 +70,7 @@ import com.luminoverse.animevibe.ui.animeWatch.AnimeWatchViewModel
 import com.luminoverse.animevibe.ui.animeWatch.WatchAction
 import com.luminoverse.animevibe.ui.animeWatch.components.InfoContentSection
 import com.luminoverse.animevibe.ui.animeWatch.watchContent.WatchContentSection
-import com.luminoverse.animevibe.utils.media.HlsPlayerAction
+import com.luminoverse.animevibe.utils.media.PlayerAction
 import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
 import com.luminoverse.animevibe.utils.media.PipUtil.buildPipActions
 import kotlinx.coroutines.flow.collectLatest
@@ -99,7 +99,7 @@ fun PlayerHost(
         val scope = rememberCoroutineScope()
 
         LaunchedEffect(playerState.malId, playerState.episodeId) {
-            hlsPlayerUtils.dispatch(HlsPlayerAction.Reset)
+            hlsPlayerUtils.dispatch(PlayerAction.Reset)
             watchViewModel.onAction(
                 WatchAction.SetInitialState(
                     playerState.malId, playerState.episodeId

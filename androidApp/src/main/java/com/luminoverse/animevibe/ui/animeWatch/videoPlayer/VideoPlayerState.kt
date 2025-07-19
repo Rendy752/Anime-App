@@ -4,6 +4,7 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import android.webkit.WebView
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
@@ -23,7 +24,7 @@ import com.luminoverse.animevibe.data.remote.api.NetworkDataSource
 import com.luminoverse.animevibe.models.EpisodeDetailComplement
 import com.luminoverse.animevibe.utils.media.CaptionCue
 import com.luminoverse.animevibe.utils.media.ControlsState
-import com.luminoverse.animevibe.utils.media.HlsPlayerAction
+import com.luminoverse.animevibe.utils.media.PlayerAction
 import com.luminoverse.animevibe.utils.media.IframeUtils
 import com.luminoverse.animevibe.utils.media.ThumbnailCue
 import com.luminoverse.animevibe.utils.media.findActiveCaptionCues
@@ -65,7 +66,7 @@ const val MAX_ZOOM_SCALE = 8f
 class VideoPlayerState(
     private val context: Context,
     val player: ExoPlayer,
-    val onPlayerAction: (HlsPlayerAction) -> Unit,
+    val onPlayerAction: (PlayerAction) -> Unit,
     val coroutineScope: CoroutineScope,
     private val imageLoader: ImageLoader,
     private val networkDataSource: NetworkDataSource,
@@ -77,6 +78,9 @@ class VideoPlayerState(
     /** Tracks if the player is loading for the very first time. */
     var isInitialLoading by mutableStateOf(true)
     private val _currentPositionMs = MutableStateFlow(0L)
+    val bufferPositionMs = mutableLongStateOf(0L)
+
+    var webViewInstance by mutableStateOf<WebView?>(null)
     val fallbackUrl = mutableStateOf(
         IframeUtils.buildFallbackUrl(
             fullEpisodeId = episodeDetails.sourcesQuery.id,
@@ -246,8 +250,8 @@ class VideoPlayerState(
         if (totalSeekSeconds != 0) {
             val numCalls = abs(totalSeekSeconds) / fixedSeekPerCall
             repeat(numCalls) {
-                if (totalSeekSeconds > 0) onPlayerAction(HlsPlayerAction.FastForward)
-                else onPlayerAction(HlsPlayerAction.Rewind)
+                if (totalSeekSeconds > 0) onPlayerAction(PlayerAction.SeekTo(player.currentPosition + DEFAULT_SEEK_INCREMENT_MS))
+                else onPlayerAction(PlayerAction.SeekTo(player.currentPosition - DEFAULT_SEEK_INCREMENT_MS))
             }
         }
 
@@ -255,7 +259,7 @@ class VideoPlayerState(
         seekAmountSeconds = 0L
         isSeeking = false
         fastForwardRewindCounterSeconds = 0
-        onPlayerAction(HlsPlayerAction.Play)
+        onPlayerAction(PlayerAction.Play)
     }
     // endregion
 
@@ -264,6 +268,11 @@ class VideoPlayerState(
     /** Updates the current playback position. Called from a listener. */
     fun updatePosition(positionMs: Long) {
         _currentPositionMs.value = positionMs
+    }
+
+    /** Updates the current buffer position. Called from a listener. */
+    fun updateBufferedPosition(positionMs: Long) {
+        bufferPositionMs.longValue = positionMs
     }
 
     /**
@@ -374,7 +383,7 @@ class VideoPlayerState(
     /** Resets the zoom and pan to their default state (1x scale, no offset). */
     fun resetZoom() {
         zoomScale = 1f
-        onPlayerAction(HlsPlayerAction.SetZoom(1f))
+        onPlayerAction(PlayerAction.SetZoom(1f))
         panOffsetX = 0f
         panOffsetY = 0f
     }
@@ -413,7 +422,7 @@ class VideoPlayerState(
         longPressJob?.cancel()
         if (isSpeedingUpWithLongPress) {
             isSpeedingUpWithLongPress = false
-            onPlayerAction(HlsPlayerAction.SetPlaybackSpeed(previousPlaybackSpeed))
+            onPlayerAction(PlayerAction.SetPlaybackSpeed(previousPlaybackSpeed))
         }
     }
 
@@ -424,7 +433,7 @@ class VideoPlayerState(
     /** Handles a single tap gesture, typically toggling control visibility. */
     internal fun handleSingleTap(isLocked: Boolean) {
         if (!isLocked && !isSpeedingUpWithLongPress) {
-            onPlayerAction(HlsPlayerAction.RequestToggleControlsVisibility())
+            onPlayerAction(PlayerAction.RequestToggleControlsVisibility())
         } else if (isLocked) {
             showLockReminder = true
         }
@@ -442,7 +451,7 @@ class VideoPlayerState(
 
         if (newSeekDirection != 0) {
             seekDisplayHandler.removeCallbacks(seekDisplayRunnable)
-            onPlayerAction(HlsPlayerAction.Pause)
+            onPlayerAction(PlayerAction.Pause)
             val seekIncrementSeconds = (DEFAULT_SEEK_INCREMENT_MS / 1000L)
 
             // If direction changes, reset the counter. Otherwise, accumulate.
@@ -459,7 +468,7 @@ class VideoPlayerState(
             seekDisplayHandler.postDelayed(seekDisplayRunnable, FAST_FORWARD_REWIND_DEBOUNCE_MILLIS)
         } else {
             // Tapped in the center, cancel any pending seek
-            onPlayerAction(HlsPlayerAction.Play)
+            onPlayerAction(PlayerAction.Play)
             seekDisplayHandler.removeCallbacks(seekDisplayRunnable)
             if (fastForwardRewindCounterSeconds == 0) {
                 seekIndicatorDirection = 0
@@ -475,7 +484,7 @@ class VideoPlayerState(
         isSpeedingUpWithLongPress = true
         speedUpIndicatorText = "2x speed"
         previousPlaybackSpeed = currentSpeed
-        onPlayerAction(HlsPlayerAction.SetPlaybackSpeed(2f))
+        onPlayerAction(PlayerAction.SetPlaybackSpeed(2f))
     }
 
     /** Reverts the playback speed when the long press is released. */
@@ -483,7 +492,7 @@ class VideoPlayerState(
         if (isSpeedingUpWithLongPress) {
             isSpeedingUpWithLongPress = false
             speedUpIndicatorText = ""
-            onPlayerAction(HlsPlayerAction.SetPlaybackSpeed(previousPlaybackSpeed))
+            onPlayerAction(PlayerAction.SetPlaybackSpeed(previousPlaybackSpeed))
         }
     }
 

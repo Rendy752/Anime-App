@@ -59,7 +59,7 @@ fun CustomSubtitleView(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .fillMaxHeight(if (hasMultipleCues) 0.4f else 0.25f),
+                    .fillMaxHeight(0.6f),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(4.dp, alignment = Alignment.Bottom)
             ) {

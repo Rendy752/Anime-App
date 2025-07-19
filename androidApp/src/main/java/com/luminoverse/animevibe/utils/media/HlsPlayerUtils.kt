@@ -61,6 +61,7 @@ import javax.inject.Singleton
 data class PlayerCoreState(
     val isPlaying: Boolean = false,
     val playbackState: Int = Player.STATE_IDLE,
+    val duration: Long = 0,
     val isLoading: Boolean = false,
     val error: String? = null
 )
@@ -73,26 +74,18 @@ data class ControlsState(
     val zoom: Float = 1f
 )
 
-sealed class HlsPlayerAction {
-    data class SetMedia(
-        val videoData: EpisodeSources,
-        val isAutoPlayVideo: Boolean,
-        val currentPosition: Long,
-        val duration: Long
-    ) : HlsPlayerAction()
-
-    data object Reset : HlsPlayerAction()
-    data object Play : HlsPlayerAction()
-    data object Pause : HlsPlayerAction()
-    data class SeekTo(val positionMs: Long) : HlsPlayerAction()
-    data object FastForward : HlsPlayerAction()
-    data object Rewind : HlsPlayerAction()
-    data class SetPlaybackSpeed(val speed: Float) : HlsPlayerAction()
-    data class SetVideoSurface(val surface: Any?) : HlsPlayerAction()
-    data class SetSubtitle(val track: Track?) : HlsPlayerAction()
-    data class RequestToggleControlsVisibility(val isVisible: Boolean? = null) : HlsPlayerAction()
-    data class ToggleLock(val isLocked: Boolean) : HlsPlayerAction()
-    data class SetZoom(val zoom: Float) : HlsPlayerAction()
+sealed class PlayerAction {
+    data class SetMedia(val videoData: EpisodeSources) : PlayerAction()
+    data object Reset : PlayerAction()
+    data object Play : PlayerAction()
+    data object Pause : PlayerAction()
+    data class SeekTo(val positionMs: Long) : PlayerAction()
+    data class SetPlaybackSpeed(val speed: Float) : PlayerAction()
+    data class SetVideoSurface(val surface: Any?) : PlayerAction()
+    data class SetSubtitle(val track: Track?) : PlayerAction()
+    data class RequestToggleControlsVisibility(val isVisible: Boolean? = null) : PlayerAction()
+    data class ToggleLock(val isLocked: Boolean) : PlayerAction()
+    data class SetZoom(val zoom: Float) : PlayerAction()
 }
 
 private const val CONTROLS_AUTO_HIDE_DELAY_MS = 3_000L
@@ -160,31 +153,23 @@ class HlsPlayerUtils @Inject constructor(
         }
     }
 
-    fun dispatch(action: HlsPlayerAction) {
+    fun dispatch(action: PlayerAction) {
         when (action) {
-            is HlsPlayerAction.SetMedia -> setMedia(
-                action.videoData,
-                action.isAutoPlayVideo,
-                action.currentPosition,
-                action.duration
-            )
-
-            is HlsPlayerAction.Reset -> reset()
-            is HlsPlayerAction.Play -> play()
-            is HlsPlayerAction.Pause -> pause()
-            is HlsPlayerAction.SeekTo -> seekTo(action.positionMs)
-            is HlsPlayerAction.FastForward -> fastForward()
-            is HlsPlayerAction.Rewind -> rewind()
-            is HlsPlayerAction.SetPlaybackSpeed -> setPlaybackSpeed(action.speed)
-            is HlsPlayerAction.SetVideoSurface -> setVideoSurface(action.surface)
-            is HlsPlayerAction.SetSubtitle -> setSubtitle(action.track)
-            is HlsPlayerAction.RequestToggleControlsVisibility -> {
+            is PlayerAction.SetMedia -> setMedia(action.videoData)
+            is PlayerAction.Reset -> reset()
+            is PlayerAction.Play -> play()
+            is PlayerAction.Pause -> pause()
+            is PlayerAction.SeekTo -> seekTo(action.positionMs)
+            is PlayerAction.SetPlaybackSpeed -> setPlaybackSpeed(action.speed)
+            is PlayerAction.SetVideoSurface -> setVideoSurface(action.surface)
+            is PlayerAction.SetSubtitle -> setSubtitle(action.track)
+            is PlayerAction.RequestToggleControlsVisibility -> {
                 _controlsState.update {
                     it.copy(isControlsVisible = action.isVisible ?: !it.isControlsVisible)
                 }
             }
 
-            is HlsPlayerAction.ToggleLock -> {
+            is PlayerAction.ToggleLock -> {
                 _controlsState.update {
                     it.copy(
                         isLocked = action.isLocked, isControlsVisible = !action.isLocked
@@ -192,7 +177,7 @@ class HlsPlayerUtils @Inject constructor(
                 }
             }
 
-            is HlsPlayerAction.SetZoom -> {
+            is PlayerAction.SetZoom -> {
                 _controlsState.update { it.copy(zoom = action.zoom) }
             }
         }
@@ -247,12 +232,16 @@ class HlsPlayerUtils @Inject constructor(
         }
     }
 
+    fun updateCoreState(newState: PlayerCoreState) {
+        _playerCoreState.update { newState }
+    }
+
     private fun createPlayerListener(): Player.Listener {
         return object : Player.Listener {
             override fun onIsPlayingChanged(isPlaying: Boolean) {
                 _playerCoreState.update { it.copy(isPlaying = isPlaying) }
                 if (!isPlaying) {
-                    dispatch(HlsPlayerAction.RequestToggleControlsVisibility(isVisible = true))
+                    dispatch(PlayerAction.RequestToggleControlsVisibility(isVisible = true))
                 }
             }
 
@@ -265,7 +254,7 @@ class HlsPlayerUtils @Inject constructor(
                     it.copy(isLoading = false, error = null)
                 }
                 if (playbackState == Player.STATE_ENDED) {
-                    dispatch(HlsPlayerAction.ToggleLock(false))
+                    dispatch(PlayerAction.ToggleLock(false))
                     _playerCoreState.update {
                         it.copy(isPlaying = false, isLoading = false, error = null)
                     }
@@ -358,12 +347,7 @@ class HlsPlayerUtils @Inject constructor(
         }
     }
 
-    private fun setMedia(
-        videoData: EpisodeSources,
-        isAutoPlayVideo: Boolean,
-        currentPosition: Long,
-        duration: Long
-    ) {
+    private fun setMedia(videoData: EpisodeSources) {
         try {
             _controlsState.update { ControlsState() }
             currentVideoData = videoData
@@ -382,15 +366,11 @@ class HlsPlayerUtils @Inject constructor(
                     player.prepare()
                     player.trackSelectionParameters = TrackSelectionParameters.Builder().build()
                     setSubtitle(videoData.tracks.firstOrNull { it.kind == "captions" && it.default == true })
-                    if (isAutoPlayVideo) {
-                        if (currentPosition == duration) seekTo(0)
-                        else if (currentPosition < duration) seekTo(currentPosition)
-                        dispatch(HlsPlayerAction.Play)
-                    }
+                    _playerCoreState.update { it.copy(duration = player.duration) }
                 }
             }
             dispatch(
-                HlsPlayerAction.RequestToggleControlsVisibility(isVisible = true)
+                PlayerAction.RequestToggleControlsVisibility(isVisible = true)
             )
         } catch (e: Exception) {
             Log.e("HlsPlayerUtils", "Failed to set media", e)
@@ -417,35 +397,13 @@ class HlsPlayerUtils @Inject constructor(
 
     private fun seekTo(positionMs: Long) {
         exoPlayer?.let { player ->
-            val duration = player.duration
+            val duration = _playerCoreState.value.duration
             val clampedPos = positionMs.coerceAtLeast(0)
                 .coerceAtMost(if (duration > 0) duration else Long.MAX_VALUE)
             if (player.playerError != null) {
                 player.prepare()
             }
             player.seekTo(clampedPos)
-        }
-    }
-
-    private fun fastForward() {
-        exoPlayer?.let {
-            val currentPosition = it.currentPosition
-            val duration = it.duration
-            val newPosition =
-                (currentPosition + 10_000).coerceAtMost(if (duration > 0) duration else Long.MAX_VALUE)
-            seekTo(newPosition)
-        }
-    }
-
-    private fun rewind() {
-        exoPlayer?.let {
-            try {
-                val currentPosition = it.currentPosition
-                val newPosition = (currentPosition - 10_000).coerceAtLeast(0)
-                seekTo(newPosition)
-            } catch (e: Exception) {
-                Log.e("HlsPlayer", "Rewind failed", e)
-            }
         }
     }
 
@@ -497,8 +455,8 @@ class HlsPlayerUtils @Inject constructor(
                     val audioFocusChangeListener =
                         AudioManager.OnAudioFocusChangeListener { focusChange ->
                             when (focusChange) {
-                                AudioManager.AUDIOFOCUS_LOSS -> dispatch(HlsPlayerAction.Pause)
-                                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> dispatch(HlsPlayerAction.Pause)
+                                AudioManager.AUDIOFOCUS_LOSS -> dispatch(PlayerAction.Pause)
+                                AudioManager.AUDIOFOCUS_LOSS_TRANSIENT -> dispatch(PlayerAction.Pause)
                                 AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
                                     exoPlayer?.volume = 0.5f
                                 }

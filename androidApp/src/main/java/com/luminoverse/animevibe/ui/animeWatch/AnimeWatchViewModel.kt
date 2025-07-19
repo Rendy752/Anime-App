@@ -10,7 +10,7 @@ import com.luminoverse.animevibe.repository.LoadEpisodesResult
 import com.luminoverse.animevibe.ui.main.SnackbarMessage
 import com.luminoverse.animevibe.ui.main.SnackbarMessageType
 import com.luminoverse.animevibe.utils.media.ControlsState
-import com.luminoverse.animevibe.utils.media.HlsPlayerAction
+import com.luminoverse.animevibe.utils.media.PlayerAction
 import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
 import com.luminoverse.animevibe.utils.resource.Resource
@@ -45,6 +45,7 @@ sealed class WatchAction {
 
     data class LoadEpisodeDetailComplement(val episodeId: String) : WatchAction()
     data class UpdateLastEpisodeWatchedId(val lastEpisodeWatchedId: String) : WatchAction()
+    data class UpdateCoreStateFromIframe(val coreState: PlayerCoreState) : WatchAction()
     data class UpdateStoredWatchState(
         val currentPosition: Long?, val duration: Long?, val screenShot: String?
     ) : WatchAction()
@@ -89,7 +90,7 @@ class AnimeWatchViewModel @Inject constructor(
 
     fun getPlayer(): ExoPlayer? = hlsPlayerUtils.getPlayer()
     suspend fun captureScreenshot(): String? = hlsPlayerUtils.captureScreenshot()
-    fun dispatchPlayerAction(action: HlsPlayerAction) = hlsPlayerUtils.dispatch(action)
+    fun dispatchPlayerAction(action: PlayerAction) = hlsPlayerUtils.dispatch(action)
 
     fun onAction(action: WatchAction) {
         when (action) {
@@ -100,10 +101,9 @@ class AnimeWatchViewModel @Inject constructor(
 
             is WatchAction.LoadEpisodeDetailComplement -> loadEpisodeDetailComplement(action.episodeId)
             is WatchAction.UpdateLastEpisodeWatchedId -> updateLastEpisodeWatchedId(action.lastEpisodeWatchedId)
+            is WatchAction.UpdateCoreStateFromIframe -> hlsPlayerUtils.updateCoreState(action.coreState)
             is WatchAction.UpdateStoredWatchState -> updateStoredWatchState(
-                action.currentPosition,
-                action.duration,
-                action.screenShot
+                action.currentPosition, action.duration, action.screenShot
             )
 
             is WatchAction.AddErrorSourceQueryList -> _watchState.update {

@@ -41,7 +41,7 @@ import com.luminoverse.animevibe.ui.common.ConfirmationAlert
 import com.luminoverse.animevibe.ui.main.navigation.BottomNavigationBar
 import com.luminoverse.animevibe.ui.main.navigation.NavRoute
 import com.luminoverse.animevibe.ui.theme.AppTheme
-import com.luminoverse.animevibe.utils.media.HlsPlayerAction
+import com.luminoverse.animevibe.utils.media.PlayerAction
 import com.luminoverse.animevibe.utils.media.HlsPlayerUtils
 import com.luminoverse.animevibe.utils.media.PipUtil.buildPipActions
 import dagger.hilt.android.AndroidEntryPoint
@@ -62,6 +62,7 @@ class MainActivity : AppCompatActivity() {
     @Inject
     lateinit var hlsPlayerUtils: HlsPlayerUtils
     private var playerDisplayMode: PlayerDisplayMode? = null
+    private var isPlayerPlaying: Boolean = false
 
     private val mainViewModel: MainViewModel by viewModels()
 
@@ -179,6 +180,12 @@ class MainActivity : AppCompatActivity() {
             LaunchedEffect(playerState?.displayMode) {
                 playerDisplayMode = playerState?.displayMode
             }
+
+            val playerCoreState by hlsPlayerUtils.playerCoreState.collectAsStateWithLifecycle()
+            LaunchedEffect(playerCoreState.isPlaying) {
+                isPlayerPlaying = playerCoreState.isPlaying
+            }
+
             LaunchedEffect(state.snackbarMessage) {
                 state.snackbarMessage?.let { snackbarMessage ->
                     val messageText = when (snackbarMessage.type) {
@@ -378,7 +385,7 @@ class MainActivity : AppCompatActivity() {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
         onPictureInPictureModeChangedListeners.forEach {
             if (!isInPictureInPictureMode && !lifecycle.currentState.isAtLeast(Lifecycle.State.STARTED)) {
-                hlsPlayerUtils.dispatch(HlsPlayerAction.Pause)
+                hlsPlayerUtils.dispatch(PlayerAction.Pause)
             }
             it(isInPictureInPictureMode)
         }
@@ -396,16 +403,15 @@ class MainActivity : AppCompatActivity() {
         super.onUserLeaveHint()
         resetIdleTimer()
         if (::navController.isInitialized) {
-            val isPlaying = hlsPlayerUtils.getPlayer()?.isPlaying == true
             if (playerDisplayMode in listOf(
                     PlayerDisplayMode.FULLSCREEN_PORTRAIT,
                     PlayerDisplayMode.FULLSCREEN_LANDSCAPE
-                ) && isPlaying
+                ) && isPlayerPlaying
             ) {
                 pipParamsBuilder.setActions(buildPipActions(this@MainActivity, true))
                 enterPictureInPictureMode(pipParamsBuilder.build())
             } else {
-                hlsPlayerUtils.dispatch(HlsPlayerAction.Pause)
+                hlsPlayerUtils.dispatch(PlayerAction.Pause)
             }
         }
     }
@@ -426,12 +432,12 @@ class MainActivity : AppCompatActivity() {
     private fun startIdleDetection(isShowIdleDialog: Boolean, action: (Boolean) -> Unit) {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
-                var wasPlaying = hlsPlayerUtils.getPlayer()?.isPlaying ?: false
+                var wasPlaying = isPlayerPlaying
 
                 while (true) {
                     delay(1000)
 
-                    val isCurrentlyPlaying = hlsPlayerUtils.getPlayer()?.isPlaying ?: false
+                    val isCurrentlyPlaying = isPlayerPlaying
 
                     if (isCurrentlyPlaying != wasPlaying) {
                         resetIdleTimer()

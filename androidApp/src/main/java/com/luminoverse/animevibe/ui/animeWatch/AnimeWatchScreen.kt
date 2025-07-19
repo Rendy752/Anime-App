@@ -60,7 +60,7 @@ import com.luminoverse.animevibe.ui.main.PlayerDisplayMode
 import com.luminoverse.animevibe.ui.main.SnackbarMessage
 import com.luminoverse.animevibe.ui.main.SnackbarMessageType
 import com.luminoverse.animevibe.utils.media.ControlsState
-import com.luminoverse.animevibe.utils.media.HlsPlayerAction
+import com.luminoverse.animevibe.utils.media.PlayerAction
 import com.luminoverse.animevibe.utils.media.PlayerCoreState
 import com.luminoverse.animevibe.utils.receivers.ScreenOffReceiver
 import com.luminoverse.animevibe.utils.receivers.ScreenOnReceiver
@@ -88,7 +88,7 @@ fun AnimeWatchScreen(
     hlsPlayerCoreState: PlayerCoreState,
     hlsControlsStateFlow: StateFlow<ControlsState>,
     onAction: (WatchAction) -> Unit,
-    dispatchPlayerAction: (HlsPlayerAction) -> Unit,
+    dispatchPlayerAction: (PlayerAction) -> Unit,
     getPlayer: () -> ExoPlayer?,
     captureScreenshot: suspend () -> String?,
     onEnterSystemPipMode: () -> Unit,
@@ -179,7 +179,7 @@ fun AnimeWatchScreen(
 
     LaunchedEffect(mainState.networkStatus.isConnected) {
         if (!mainState.networkStatus.isConnected) return@LaunchedEffect
-        if (getPlayer()?.isPlaying == false) dispatchPlayerAction(HlsPlayerAction.Play)
+        if (getPlayer()?.isPlaying == false) dispatchPlayerAction(PlayerAction.Play)
         if (watchState.episodeDetailComplement is Resource.Error && watchState.episodeSourcesQuery != null) {
             onAction(
                 WatchAction.HandleSelectedEpisodeServer(
@@ -209,7 +209,8 @@ fun AnimeWatchScreen(
                             ?: watchState.animeDetail.data?.images?.webp?.large_image_url,
                         ratio = ImageAspectRatio.WIDESCREEN.ratio,
                         contentDescription = "Anime cover",
-                        roundedCorners = if (playerDisplayMode == PlayerDisplayMode.PIP) ImageRoundedCorner.ALL else ImageRoundedCorner.NONE
+                        roundedCorners = if (playerDisplayMode == PlayerDisplayMode.PIP) ImageRoundedCorner.ALL else ImageRoundedCorner.NONE,
+                        onClick = { _, _, _ -> }
                     )
                 } else {
                     player?.let { exoPlayer ->
@@ -225,6 +226,9 @@ fun AnimeWatchScreen(
                             playerAction = dispatchPlayerAction,
                             isLandscape = mainState.isLandscape,
                             captureScreenshot = captureScreenshot,
+                            onIframeStateChange = {
+                                onAction(WatchAction.UpdateCoreStateFromIframe(it))
+                            },
                             updateStoredWatchState = { currentPosition, duration, screenShot ->
                                 onAction(WatchAction.UpdateLastEpisodeWatchedId(watchState.episodeDetailComplement.data.id))
                                 onAction(
@@ -285,9 +289,9 @@ fun AnimeWatchScreen(
                         playbackState = hlsPlayerCoreState.playbackState,
                         isRefreshing = watchState.animeDetail is Resource.Loading || watchState.animeDetailComplement is Resource.Loading || watchState.episodeDetailComplement is Resource.Loading,
                         isPlaying = hlsPlayerCoreState.isPlaying,
-                        handleRestart = { dispatchPlayerAction(HlsPlayerAction.SeekTo(0)) },
-                        handlePause = { dispatchPlayerAction(HlsPlayerAction.Pause) },
-                        handlePlay = { dispatchPlayerAction(HlsPlayerAction.Play) },
+                        handleRestart = { dispatchPlayerAction(PlayerAction.SeekTo(0)) },
+                        handlePause = { dispatchPlayerAction(PlayerAction.Pause) },
+                        handlePlay = { dispatchPlayerAction(PlayerAction.Play) },
                         size = 48.dp
                     )
                 }
@@ -306,7 +310,7 @@ fun AnimeWatchScreen(
                             .clip(CircleShape)
                             .clickable {
                                 onAction(WatchAction.SetInitialState(malId, episodeId))
-                                dispatchPlayerAction(HlsPlayerAction.Reset)
+                                dispatchPlayerAction(PlayerAction.Reset)
                                 closePlayer()
                             }
                             .background(

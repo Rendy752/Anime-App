@@ -7,7 +7,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.PointerInputChange
 import com.luminoverse.animevibe.utils.media.BoundsUtils
-import com.luminoverse.animevibe.utils.media.HlsPlayerAction
+import com.luminoverse.animevibe.utils.media.PlayerAction
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.abs
@@ -84,7 +84,7 @@ suspend fun AwaitPointerEventScope.handleGestures(
                 state.longPressJob?.cancel()
                 state.handleLongPressEnd()
                 isPanning = false
-                state.onPlayerAction(HlsPlayerAction.RequestToggleControlsVisibility(false))
+                state.onPlayerAction(PlayerAction.RequestToggleControlsVisibility(false))
             }
             val zoomChange = event.calculateZoom()
             state.zoomScale = (state.zoomScale * zoomChange).coerceIn(1f, MAX_ZOOM_SCALE)
@@ -118,7 +118,7 @@ suspend fun AwaitPointerEventScope.handleGestures(
                 if (pan.x != 0f || pan.y != 0f) {
                     if (!isPanning) {
                         isPanning = true
-                        state.onPlayerAction(HlsPlayerAction.RequestToggleControlsVisibility(false))
+                        state.onPlayerAction(PlayerAction.RequestToggleControlsVisibility(false))
                         state.longPressJob?.cancel()
                         state.handleLongPressEnd()
                     }
@@ -171,7 +171,7 @@ suspend fun AwaitPointerEventScope.handleGestures(
         else if (state.zoomScale in halfWayRatio..state.zoomToFillRatio) state.zoomToFillRatio
         else state.zoomScale
 
-        state.onPlayerAction(HlsPlayerAction.SetZoom(finalZoom))
+        state.onPlayerAction(PlayerAction.SetZoom(finalZoom))
         state.zoomScale = finalZoom
         if (state.zoomScale <= 1.01f) { // Reset pan on zoom out
             state.panOffsetX = 0f
